@@ -10,7 +10,15 @@ export enum RecastScene {
     Whiteboard = 'whiteboard',
 }
 
+export type RecastViewId = string & {
+    /**
+     * Type differentiator only.
+     */
+    readonly __isViewId: true;
+};
+
 type BaseView = {
+    id: RecastViewId;
     name: string;
     // TODO: design this
     // order?: string[];
@@ -25,4 +33,8 @@ export interface KanbanView extends BaseView {
     groupBy: RecastPropertyId;
 }
 
-export type RecastView = PageView | KanbanView;
+export interface TableView extends BaseView {
+    type: RecastScene.Kanban;
+}
+
+export type RecastView = PageView | KanbanView | TableView;
