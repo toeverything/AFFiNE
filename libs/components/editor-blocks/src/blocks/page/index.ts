@@ -1,4 +1,4 @@
-import { withRecastTable } from '@toeverything/components/editor-core';
+import { withRecastBlock } from '@toeverything/components/editor-core';
 import {
     Protocol,
     DefaultColumnsValue,
@@ -19,7 +19,7 @@ export const PageChildrenView: FC<ChildrenView> = props => props.children;
 
 export class PageBlock extends BaseView {
     type = Protocol.Block.Type.page;
-    View = withRecastTable(PageView);
+    View = withRecastBlock(PageView);
     // override ChildrenView = withRecastTable(PageChildrenView);
     public override allowPendant = false;
     override async onCreate(block: AsyncBlock): Promise<AsyncBlock> {

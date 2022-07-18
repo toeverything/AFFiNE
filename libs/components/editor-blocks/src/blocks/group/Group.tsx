@@ -1,4 +1,4 @@
-import { withRecastTable } from '@toeverything/components/editor-core';
+import { withRecastBlock } from '@toeverything/components/editor-core';
 import { Protocol } from '@toeverything/datasource/db-service';
 import {
     AsyncBlock,
@@ -13,7 +13,7 @@ export class Group extends BaseView {
     public override allowPendant = false;
 
     type = Protocol.Block.Type.group;
-    View = withRecastTable(GroupView);
+    View = withRecastBlock(GroupView);
 
     override async onDeleteChild(block: AsyncBlock): Promise<boolean> {
         if (block.childrenIds.length === 0) {

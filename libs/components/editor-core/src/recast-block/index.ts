@@ -9,7 +9,6 @@ export * from './types';
 export {
     RecastBlockProvider,
     withRecastBlock,
-    withRecastTable,
     useRecastBlock,
 } from './Context';
 

@@ -67,8 +67,3 @@ export const withRecastBlock =
             </RecastBlockProvider>
         );
     };
-
-/**
- * @deprecated Use {@link withRecastBlock} instead.
- */
-export const withRecastTable = withRecastBlock;
