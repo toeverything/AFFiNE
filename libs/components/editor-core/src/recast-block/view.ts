@@ -1,7 +1,13 @@
 import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 import { useRecastBlock } from './Context';
-import { META_VIEWS_KEY, RecastScene, RecastView, RecastViewId } from './types';
+import {
+    META_VIEWS_KEY,
+    RecastScene,
+    RecastView,
+    RecastViewId,
+    RecastViewWithoutId,
+} from './types';
 
 /**
  * Generate a unique id for a recast view
@@ -23,7 +29,10 @@ const DEFAULT_VIEWS: RecastView[] = [
 
 export const useRecastView = () => {
     const recastBlock = useRecastBlock();
-    const recastViews = recastBlock.getProperty(META_VIEWS_KEY) ?? [];
+    const recastViews =
+        recastBlock.getProperty(META_VIEWS_KEY) ?? DEFAULT_VIEWS;
+    // TODO save cur view
+    const currentView = recastViews[0];
 
     const getView = useCallback(
         (id: RecastViewId) => {
@@ -44,7 +53,7 @@ export const useRecastView = () => {
     );
 
     const addView = useCallback(
-        async (newView: Omit<RecastView, 'id'>) => {
+        async (newView: RecastViewWithoutId) => {
             await setViews([
                 ...recastViews,
                 { ...newView, id: genViewId() } as RecastView,
@@ -79,6 +88,9 @@ export const useRecastView = () => {
 
     const removeView = useCallback(
         async (id: RecastViewId) => {
+            if (recastViews.length <= 1) {
+                throw new Error('Can not remove the last view! view id: ' + id);
+            }
             await setViews(recastViews.filter(v => v.id !== id));
         },
         [recastViews, setViews]
@@ -103,11 +115,11 @@ export const useRecastView = () => {
     );
 
     return {
+        currentView,
         recastViews,
         addView,
         updateView,
         renameView,
         removeView,
-        // TODO API to reorder views
     };
 };

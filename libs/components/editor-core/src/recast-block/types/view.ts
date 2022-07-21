@@ -38,3 +38,4 @@ export interface TableView extends BaseView {
 }
 
 export type RecastView = PageView | KanbanView | TableView;
+export type RecastViewWithoutId = Omit<RecastView, 'id'>;

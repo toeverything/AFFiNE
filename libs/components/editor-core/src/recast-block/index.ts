@@ -21,3 +21,4 @@ export {
 };
 
 export * from './group';
+export * from './view';
