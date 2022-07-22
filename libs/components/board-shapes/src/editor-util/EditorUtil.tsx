@@ -1,0 +1,267 @@
+/* eslint-disable no-restricted-syntax */
+import { useRef, useCallback, useEffect, memo } from 'react';
+import type { SyntheticEvent } from 'react';
+import { Utils, HTMLContainer, TLBounds } from '@tldraw/core';
+import {
+    EditorShape,
+    TDMeta,
+    TDShapeType,
+    TransformInfo,
+} from '@toeverything/components/board-types';
+import {
+    defaultTextStyle,
+    getBoundsRectangle,
+    getTextSvgElement,
+} from '../shared';
+import { TDShapeUtil } from '../TDShapeUtil';
+import { getShapeStyle } from '../shared/shape-styles';
+import { styled } from '@toeverything/components/ui';
+import { Vec } from '@tldraw/vec';
+import { AffineEditor } from '@toeverything/components/affine-editor';
+import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
+const MemoAffineEditor = memo(AffineEditor, (prev, next) => {
+    return (
+        prev.workspace === next.workspace &&
+        prev.rootBlockId === next.rootBlockId
+    );
+});
+
+type T = EditorShape;
+type E = HTMLDivElement;
+
+export class EditorUtil extends TDShapeUtil<T, E> {
+    type = TDShapeType.Editor as const;
+
+    override canBind = true;
+
+    override canEdit = true;
+
+    override canClone = true;
+
+    override showCloneHandles = true;
+    /**
+     * Prevent editor from being destroyed when moving out of viewport
+     */
+    override isStateful = true;
+
+    getShape = (props: Partial<T>): T => {
+        return Utils.deepMerge<T>(
+            {
+                id: props.id,
+                type: TDShapeType.Editor,
+                name: 'Editor',
+                parentId: 'page',
+                childIndex: 1,
+                point: [0, 0],
+                size: [MIN_PAGE_WIDTH, 200],
+                rotation: 0,
+                style: defaultTextStyle,
+                rootBlockId: props.rootBlockId,
+                workspace: props.workspace,
+            },
+            props
+        );
+    };
+
+    Component = TDShapeUtil.Component<T, E, TDMeta>(
+        (
+            {
+                shape,
+                meta: {
+                    app: { useStore },
+                },
+                events,
+                isEditing,
+                onShapeChange,
+            },
+            ref
+        ) => {
+            const containerRef = useRef<HTMLDivElement>();
+            const {
+                workspace,
+                rootBlockId,
+                size: [width, height],
+            } = shape;
+
+            const state = useStore();
+            const { currentPageId } = state.appState;
+            const { editingId } = state.document.pageStates[currentPageId];
+            const { shapes } = state.document.pages[currentPageId];
+            const editingText =
+                editingId != null &&
+                shapes[editingId].type === TDShapeType.Editor;
+
+            const zoomLevel =
+                state.document.pageStates[state.appState.currentPageId].camera
+                    .zoom;
+
+            // TODO: useEvent
+            const onResize = useRef((_: ResizeObserverEntry[]) => {});
+
+            useEffect(() => {
+                onResize.current = e => {
+                    const first = e[0];
+                    const bounds = first.contentRect;
+                    const realHeight = bounds.height / zoomLevel;
+                    if (
+                        bounds.height !== 0 &&
+                        Math.abs(realHeight - height) > 1
+                    ) {
+                        onShapeChange({
+                            id: shape.id,
+                            size: [width, realHeight],
+                        });
+                    }
+                };
+            }, [height, onShapeChange, shape.id, width, zoomLevel]);
+
+            useEffect(() => {
+                if (containerRef.current) {
+                    const obv = new ResizeObserver(e => onResize.current(e));
+
+                    obv.observe(containerRef.current);
+
+                    return () => obv.disconnect();
+                }
+            }, [onShapeChange]);
+
+            const stopPropagation = useCallback(
+                (e: SyntheticEvent) => {
+                    if (isEditing) {
+                        e.stopPropagation();
+                    }
+                },
+                [isEditing]
+            );
+
+            return (
+                <HTMLContainer ref={ref} {...events}>
+                    <Container
+                        ref={containerRef}
+                        onPointerDown={stopPropagation}
+                    >
+                        <MemoAffineEditor
+                            workspace={workspace}
+                            rootBlockId={rootBlockId}
+                            scrollBlank={false}
+                            isWhiteboard
+                        />
+                        {editingText ? null : <Mask />}
+                    </Container>
+                </HTMLContainer>
+            );
+        }
+    );
+
+    Indicator = TDShapeUtil.Indicator<T>(({ shape }) => {
+        const {
+            size: [width, height],
+        } = shape;
+
+        return (
+            <rect
+                x={0}
+                y={0}
+                rx={3}
+                ry={3}
+                width={Math.max(1, width)}
+                height={Math.max(1, height)}
+            />
+        );
+    });
+
+    getBounds = (shape: T) => {
+        return getBoundsRectangle(shape, this.boundsCache);
+    };
+
+    override shouldRender = (prev: T, next: T) => {
+        return (
+            next.size !== prev.size ||
+            next.style !== prev.style ||
+            next.rootBlockId !== prev.rootBlockId ||
+            next.workspace !== prev.workspace
+        );
+    };
+
+    override transform = (
+        shape: T,
+        bounds: TLBounds,
+        { scaleX, scaleY, transformOrigin }: TransformInfo<T>
+    ): Partial<T> => {
+        const point = Vec.toFixed([
+            bounds.minX +
+                (bounds.width - shape.size[0]) *
+                    (scaleX < 0 ? 1 - transformOrigin[0] : transformOrigin[0]),
+            bounds.minY +
+                (bounds.height - shape.size[1]) *
+                    (scaleY < 0 ? 1 - transformOrigin[1] : transformOrigin[1]),
+        ]);
+
+        return {
+            point,
+        };
+    };
+
+    override transformSingle = (shape: T, bounds: TLBounds): Partial<T> => {
+        return {
+            size: Vec.toFixed([
+                bounds.width > MIN_PAGE_WIDTH ? MIN_PAGE_WIDTH : bounds.width,
+                shape.size[1],
+            ]),
+        };
+    };
+
+    override getSvgElement = (
+        shape: T,
+        isDarkMode: boolean
+    ): SVGElement | void => {
+        const bounds = this.getBounds(shape);
+        const textBounds = Utils.expandBounds(bounds, -PADDING);
+        const textElm = getTextSvgElement(
+            'This feature is currently not supported',
+            shape.style,
+            textBounds
+        );
+        const style = getShapeStyle(shape.style, isDarkMode);
+        textElm.setAttribute('fill', style.fill);
+        textElm.setAttribute('transform', `translate(${PADDING}, ${PADDING})`);
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const rect = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'rect'
+        );
+        rect.setAttribute('width', bounds.width + '');
+        rect.setAttribute('height', bounds.height + '');
+        rect.setAttribute('fill', style.fill);
+        rect.setAttribute('rx', '3');
+        rect.setAttribute('ry', '3');
+
+        g.appendChild(rect);
+        g.appendChild(textElm);
+
+        return g;
+    };
+}
+
+/* -------------------------------------------------- */
+/*                       Helpers                      */
+/* -------------------------------------------------- */
+
+const PADDING = 16;
+// const MIN_CONTAINER_HEIGHT = 200;
+
+const Container = styled('div')({
+    pointerEvents: 'all',
+    position: 'relative',
+    width: '100%',
+});
+
+const Mask = styled('div')({
+    position: 'absolute',
+    userSelect: 'none',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+});

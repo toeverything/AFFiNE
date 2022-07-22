@@ -1,0 +1,1 @@
+export { ZoomBar } from './ZoomBar';

@@ -1,0 +1,11 @@
+{
+    "name": "@toeverything/datasource/jwt-rpc",
+    "version": "0.0.1",
+    "license": "MIT",
+    "author": "DarkSky <darksky2048@gmail.com>",
+    "dependencies": {
+        "lib0": "^0.2.51",
+        "yjs": "^13.5.39",
+        "y-protocols": "^1.0.5"
+    }
+}

@@ -1,0 +1,45 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "libs/components/board-state/src",
+    "projectType": "library",
+    "tags": ["components"],
+    "targets": {
+        "build": {
+            "executor": "@nrwl/web:rollup",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/libs/components/board-state",
+                "tsConfig": "libs/components/board-state/tsconfig.lib.json",
+                "project": "libs/components/board-state/package.json",
+                "entryFile": "libs/components/board-state/src/index.ts",
+                "external": ["react/jsx-runtime"],
+                "rollupConfig": "libs/rollup.config.cjs",
+                "compiler": "babel",
+                "assets": [
+                    {
+                        "glob": "libs/components/board-state/README.md",
+                        "input": ".",
+                        "output": "."
+                    }
+                ]
+            }
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": [
+                    "libs/components/board-state/**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/libs/components/board-state"],
+            "options": {
+                "jestConfig": "libs/components/board-state/jest.config.ts",
+                "passWithNoTests": true
+            }
+        }
+    }
+}

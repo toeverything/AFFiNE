@@ -1,0 +1,12 @@
+{
+    "name": "@toeverything/datasource/state",
+    "version": "0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "jotai": "^1.7.4"
+    },
+    "devDependencies": {
+        "authing-js-sdk": "^4.23.33",
+        "firebase": "^9.8.4"
+    }
+}

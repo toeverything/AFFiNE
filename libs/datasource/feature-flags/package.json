@@ -1,0 +1,8 @@
+{
+    "name": "@toeverything/datasource/feature-flags",
+    "version": "0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "ffc-js-client-side-sdk": "^1.1.4"
+    }
+}

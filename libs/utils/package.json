@@ -1,0 +1,14 @@
+{
+    "name": "@toeverything/utils",
+    "version": "0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "copy-to-clipboard": "^3.3.1",
+        "ffc-js-client-side-sdk": "^1.1.4",
+        "js-logger": "^1.6.1",
+        "lodash-es": "^4.17.21"
+    },
+    "devDependencies": {
+        "@types/lodash-es": "^4.17.6"
+    }
+}

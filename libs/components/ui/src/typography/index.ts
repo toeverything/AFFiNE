@@ -1,0 +1,1 @@
+export { Typography } from './Typo';

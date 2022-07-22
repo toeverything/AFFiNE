@@ -1,0 +1,32 @@
+{
+    "version": 2,
+    "projects": {
+        "components-account": "libs/components/account",
+        "components-affine-board": "libs/components/affine-board",
+        "components-affine-editor": "libs/components/affine-editor",
+        "components-board-commands": "libs/components/board-commands",
+        "components-board-draw": "libs/components/board-draw",
+        "components-board-sessions": "libs/components/board-sessions",
+        "components-board-shapes": "libs/components/board-shapes",
+        "components-board-state": "libs/components/board-state",
+        "components-board-tools": "libs/components/board-tools",
+        "components-board-types": "libs/components/board-types",
+        "components-common": "libs/components/common",
+        "components-editor-blocks": "libs/components/editor-blocks",
+        "components-editor-core": "libs/components/editor-core",
+        "components-editor-plugins": "libs/components/editor-plugins",
+        "components-icons": "libs/components/icons",
+        "components-layout": "libs/components/layout",
+        "components-ui": "libs/components/ui",
+        "datasource-commands": "libs/datasource/commands",
+        "datasource-db-service": "libs/datasource/db-service",
+        "datasource-feature-flags": "libs/datasource/feature-flags",
+        "datasource-jwt": "libs/datasource/jwt",
+        "datasource-jwt-rpc": "libs/datasource/jwt-rpc",
+        "datasource-remote-kv": "libs/datasource/remote-kv",
+        "datasource-state": "libs/datasource/state",
+        "framework-virgo": "libs/framework/virgo",
+        "ligo-virgo": "apps/ligo-virgo",
+        "utils": "libs/utils"
+    }
+}

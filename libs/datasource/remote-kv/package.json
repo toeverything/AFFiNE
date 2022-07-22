@@ -1,0 +1,13 @@
+{
+    "name": "@toeverything/datasource/remote-kv",
+    "version": "0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "aws-sdk": "^2.1167.0",
+        "file-saver": "^2.0.5",
+        "util": "^0.12.4"
+    },
+    "devDependencies": {
+        "@types/file-saver": "^2.0.5"
+    }
+}

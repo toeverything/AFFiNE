@@ -1,0 +1,9 @@
+{
+    "executors": {
+        "svgOptimize": {
+            "implementation": "./svgo.js",
+            "schema": "./schema.json",
+            "description": "Run `svgo` (to optimize svg)."
+        }
+    }
+}

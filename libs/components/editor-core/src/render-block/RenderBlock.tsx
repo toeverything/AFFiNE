@@ -1,0 +1,72 @@
+import { styled, Theme } from '@toeverything/components/ui';
+import { FC, useContext, useLayoutEffect, useMemo, useRef } from 'react';
+
+// import { RenderChildren } from './RenderChildren';
+import { RootContext } from '../contexts';
+import { useBlock } from '../hooks';
+
+interface RenderBlockProps {
+    blockId: string;
+    hasContainer?: boolean;
+}
+
+export const RenderBlock: FC<RenderBlockProps> = ({
+    blockId,
+    hasContainer = true,
+}) => {
+    const { editor, editorElement } = useContext(RootContext);
+    const { block } = useBlock(blockId);
+    const blockRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        if (block && blockRef.current) {
+            block.dom = blockRef.current;
+        }
+    });
+
+    const blockView = useMemo(() => {
+        if (block?.type) {
+            return editor.getView(block.type);
+        }
+        return null;
+    }, [editor, block?.type]);
+
+    if (!block) {
+        return null;
+    }
+
+    /**
+     * @deprecated
+     */
+    const columns = {
+        fromId: block.id ?? '',
+        columns: block.columns ?? [],
+    };
+
+    const view = blockView?.View ? (
+        <blockView.View
+            editor={editor}
+            block={block}
+            columns={columns.columns}
+            columnsFromId={columns.fromId}
+            scene="page"
+            editorElement={editorElement}
+        />
+    ) : null;
+
+    return hasContainer ? (
+        <BlockContainer
+            block-id={blockId}
+            ref={blockRef}
+            data-block-id={blockId}
+        >
+            {view}
+        </BlockContainer>
+    ) : (
+        <> {view}</>
+    );
+};
+
+const BlockContainer = styled('div')(({ theme }) => ({
+    fontSize: theme.typography.body1.fontSize,
+}));

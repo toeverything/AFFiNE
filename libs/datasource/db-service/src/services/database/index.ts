@@ -1,0 +1,180 @@
+import { getAuth, type User } from 'firebase/auth';
+
+import {
+    BlockClient,
+    BlockClientInstance,
+    BlockContentExporter,
+    BlockMatcher,
+    BlockInitOptions,
+} from '@toeverything/datasource/jwt';
+import { sleep } from '@toeverything/utils';
+
+import { ObserverManager, getObserverName } from './observer';
+import type { ObserveCallback, ReturnUnobserve } from './observer';
+export type { ObserveCallback, ReturnUnobserve } from './observer';
+
+const workspaces: Record<string, BlockClientInstance> = {};
+
+const loading = new Set();
+
+const waitLoading = async (key: string) => {
+    while (loading.has(key)) {
+        await sleep();
+    }
+};
+
+async function _getCurrentToken() {
+    if (process.env['NX_FREE_LOGIN']) {
+        return 'NX_FREE_LOGIN';
+    }
+    const token = await getAuth().currentUser?.getIdToken();
+    if (token) return token;
+    return new Promise<string>(resolve => {
+        getAuth().onIdTokenChanged((user: User | null) => {
+            if (user) resolve(user.getIdToken());
+        });
+    });
+}
+
+async function _getBlockDatabase(
+    workspace: string,
+    options?: BlockInitOptions
+) {
+    if (loading.has(workspace)) {
+        await waitLoading(workspace);
+    }
+
+    // if (
+    //     options?.userId &&
+    //     workspaces[workspace]?.getUserId() !== options?.userId
+    // ) {
+    //     delete workspaces[workspace];
+    // }
+
+    if (!workspaces[workspace]) {
+        loading.add(workspace);
+
+        workspaces[workspace] = await BlockClient.init(workspace, {
+            ...options,
+            token: await _getCurrentToken(),
+        });
+        (window as any).client = workspaces[workspace];
+        await workspaces[workspace].buildIndex();
+        loading.delete(workspace);
+    }
+    return workspaces[workspace];
+}
+
+interface DatabaseProps {
+    options?: BlockInitOptions;
+}
+
+export class Database {
+    readonly #observers = new ObserverManager();
+
+    readonly #options?: BlockInitOptions;
+    constructor(props: DatabaseProps) {
+        this.#options = props.options;
+    }
+
+    async getDatabase(workspace: string, options?: BlockInitOptions) {
+        const db = await _getBlockDatabase(workspace, options);
+        return db;
+    }
+
+    async registerContentExporter(
+        workspace: string,
+        name: string,
+        matcher: BlockMatcher,
+        exporter: BlockContentExporter
+    ) {
+        const db = await this.getDatabase(workspace);
+        db.registerContentExporter(name, matcher, exporter);
+    }
+
+    async unregisterContentExporter(workspace: string, name: string) {
+        const db = await this.getDatabase(workspace);
+        db.unregisterContentExporter(name);
+    }
+
+    async registerMetadataExporter(
+        workspace: string,
+        name: string,
+        matcher: BlockMatcher,
+        exporter: BlockContentExporter<
+            Array<[string, number | string | string[]]>
+        >
+    ) {
+        const db = await this.getDatabase(workspace);
+        db.registerMetadataExporter(name, matcher, exporter);
+    }
+
+    async unregisterMetadataExporter(workspace: string, name: string) {
+        const db = await this.getDatabase(workspace);
+        db.unregisterMetadataExporter(name);
+    }
+
+    async registerTagExporter(
+        workspace: string,
+        name: string,
+        matcher: BlockMatcher,
+        exporter: BlockContentExporter<string[]>
+    ) {
+        const db = await this.getDatabase(workspace);
+        db.registerTagExporter(name, matcher, exporter);
+    }
+
+    async unregisterTagExporter(workspace: string, name: string) {
+        const db = await this.getDatabase(workspace);
+        db.unregisterTagExporter(name);
+    }
+
+    async observe(
+        workspace: string,
+        blockId: string,
+        callback: ObserveCallback
+    ): Promise<ReturnUnobserve> {
+        const observer_name = getObserverName(workspace, blockId);
+        const unobserve = this.#observers.addCallback(observer_name, callback);
+        if (this.#observers.getStatus(observer_name) === 'observing') {
+            return unobserve;
+        }
+        const db = await this.getDatabase(workspace, this.#options);
+        const block = await db.get(blockId as 'block');
+        if (block) {
+            const listener: Parameters<
+                typeof block['on']
+            >[2] = async states => {
+                const new_block = await db.get(blockId as 'block');
+                this.#observers.getCallbacks(observer_name).forEach(cb => {
+                    cb(states, new_block);
+                });
+            };
+
+            block.on('children', observer_name, listener);
+            block.on('content', observer_name, listener);
+            block.on('parent', observer_name, listener);
+        }
+        this.#observers.setStatus(observer_name, 'observing');
+
+        return unobserve;
+    }
+
+    async unobserve(
+        workspace: string,
+        blockId: string,
+        callback?: ObserveCallback
+    ) {
+        const observer_name = getObserverName(workspace, blockId);
+        this.#observers.removeCallback(observer_name, callback);
+        if (!this.#observers.getCallbacks(observer_name).length) {
+            const db = await this.getDatabase(workspace, this.#options);
+            const block = await db.get(blockId as 'block');
+            if (block) {
+                block.off('children', observer_name);
+                block.off('content', observer_name);
+                block.off('parent', observer_name);
+            }
+        }
+    }
+}

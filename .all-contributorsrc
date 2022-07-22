@@ -1,0 +1,125 @@
+{
+    "projectName": "Ligo-Virgo",
+    "projectOwner": "toeverything",
+    "repoType": "github",
+    "repoHost": "https://github.com",
+    "files": [
+        "README.md"
+    ],
+    "imageSize": 100,
+    "commit": false,
+    "commitConvention": "angular",
+    "contributorsPerLine": 7,
+    "contributors": [
+        {
+            "login": "darkskygit",
+            "name": "DarkSky",
+            "avatar_url": "https://avatars.githubusercontent.com/u/25152247?v=4",
+            "profile": "https://darksky.eu.org/",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "tzhangchi",
+            "name": "Chi Zhang",
+            "avatar_url": "https://avatars.githubusercontent.com/u/5910926?v=4",
+            "profile": "https://zhangchi.blog.csdn.net/",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "alt1o",
+            "name": "alt1o",
+            "avatar_url": "https://avatars.githubusercontent.com/u/21084335?v=4",
+            "profile": "https://github.com/alt1o",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "DiamondThree",
+            "name": "Diamond",
+            "avatar_url": "https://avatars.githubusercontent.com/u/24630517?v=4",
+            "profile": "https://github.com/DiamondThree",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "lawvs",
+            "name": "Whitewater",
+            "avatar_url": "https://avatars.githubusercontent.com/u/18554747?v=4",
+            "profile": "https://lawvs.github.io/profile/",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "zuoxiaodong0815",
+            "name": "zuoxiaodong0815",
+            "avatar_url": "https://avatars.githubusercontent.com/u/53252747?v=4",
+            "profile": "https://github.com/zuoxiaodong0815",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "SaikaSakura",
+            "name": "SaikaSakura",
+            "avatar_url": "https://avatars.githubusercontent.com/u/11530942?v=4",
+            "profile": "https://github.com/SaikaSakura",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "QiShaoXuan",
+            "name": "Qi",
+            "avatar_url": "https://avatars.githubusercontent.com/u/22772830?v=4",
+            "profile": "https://github.com/QiShaoXuan",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "tuluffy",
+            "name": "tuluffy",
+            "avatar_url": "https://avatars.githubusercontent.com/u/26808339?v=4",
+            "profile": "https://tuluffy.github.io/angular.github.io/",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "Austaras",
+            "name": "Austaras",
+            "avatar_url": "https://avatars.githubusercontent.com/u/15013925?v=4",
+            "profile": "https://shockwave.me/",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "uptonking",
+            "name": "Jin Yao",
+            "avatar_url": "https://avatars.githubusercontent.com/u/11391549?v=4",
+            "profile": "https://github.com/uptonking?tab=repositories&type=source",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        }
+    ]
+}

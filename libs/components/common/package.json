@@ -1,0 +1,22 @@
+{
+    "name": "@toeverything/components/common",
+    "version": "0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "@emotion/react": "^11.9.3",
+        "@emotion/styled": "^11.9.3",
+        "@mui/icons-material": "^5.8.4",
+        "@mui/material": "^5.8.6",
+        "@mui/x-data-grid": "^5.12.3",
+        "is-hotkey": "^0.2.0",
+        "is-url": "^1.2.4",
+        "slate": "^0.81.1",
+        "slate-react": "^0.81.0",
+        "tinycolor2": "^1.4.2"
+    },
+    "devDependencies": {
+        "@types/is-hotkey": "^0.1.7",
+        "@types/is-url": "^1.2.30",
+        "@types/tinycolor2": "^1.4.3"
+    }
+}

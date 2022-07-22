@@ -1,0 +1,44 @@
+{
+    "sourceRoot": "libs/components/account/src",
+    "projectType": "library",
+    "tags": ["components"],
+    "targets": {
+        "build": {
+            "executor": "@nrwl/web:rollup",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/libs/components/account",
+                "tsConfig": "libs/components/account/tsconfig.lib.json",
+                "project": "libs/components/account/package.json",
+                "entryFile": "libs/components/account/src/index.ts",
+                "external": ["react/jsx-runtime"],
+                "rollupConfig": "libs/rollup.config.cjs",
+                "compiler": "babel",
+                "assets": [
+                    {
+                        "glob": "libs/components/account/README.md",
+                        "input": ".",
+                        "output": "."
+                    }
+                ]
+            }
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": [
+                    "libs/components/account/**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/libs/components/account"],
+            "options": {
+                "jestConfig": "libs/components/account/jest.config.js",
+                "passWithNoTests": true
+            }
+        }
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "sourceRoot": "libs/components/editor-core/src",
+    "projectType": "library",
+    "tags": ["components:editor-core"],
+    "targets": {
+        "build": {
+            "executor": "@nrwl/web:rollup",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/libs/components/editor-core",
+                "tsConfig": "libs/components/editor-core/tsconfig.lib.json",
+                "project": "libs/components/editor-core/package.json",
+                "entryFile": "libs/components/editor-core/src/index.ts",
+                "external": ["react/jsx-runtime"],
+                "rollupConfig": "libs/rollup.config.cjs",
+                "compiler": "babel",
+                "assets": [
+                    {
+                        "glob": "libs/components/editor-core/README.md",
+                        "input": ".",
+                        "output": "."
+                    }
+                ]
+            }
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": [
+                    "libs/components/editor-core/**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "check": {
+            "executor": "./tools/executors/tsCheck:tsCheck"
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/libs/components/editor-core"],
+            "options": {
+                "jestConfig": "libs/components/editor-core/jest.config.js",
+                "passWithNoTests": true
+            }
+        }
+    }
+}

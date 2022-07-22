@@ -1,0 +1,13 @@
+{
+    "/api": {
+        "target": "https://nightly.affine.pro/",
+        "secure": false,
+        "changeOrigin": true
+    },
+    "/collaboration": {
+        "target": "https://canary.affine.pro",
+        "ws": true,
+        "changeOrigin": true,
+        "secure": false
+    }
+}

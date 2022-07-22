@@ -1,0 +1,10 @@
+{
+    "name": "@toeverything/components/editor-plugins",
+    "version": "0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "@mui/icons-material": "^5.8.4",
+        "date-fns": "^2.28.0",
+        "style9": "^0.13.3"
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "libs/framework/virgo/src",
+    "projectType": "library",
+    "tags": ["framework:editor"],
+    "targets": {
+        "build": {
+            "executor": "@nrwl/web:rollup",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/libs/framework/virgo",
+                "tsConfig": "libs/framework/virgo/tsconfig.lib.json",
+                "project": "libs/framework/virgo/package.json",
+                "entryFile": "libs/framework/virgo/src/index.ts",
+                "external": ["react/jsx-runtime"],
+                "rollupConfig": "@nrwl/react/plugins/bundle-rollup",
+                "compiler": "babel",
+                "assets": [
+                    {
+                        "glob": "libs/framework/virgo/README.md",
+                        "input": ".",
+                        "output": "."
+                    }
+                ]
+            }
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": [
+                    "libs/framework/virgo/**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "check": {
+            "executor": "./tools/executors/tsCheck:tsCheck"
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/libs/framework/virgo"],
+            "options": {
+                "jestConfig": "libs/framework/virgo/jest.config.js",
+                "passWithNoTests": true
+            }
+        }
+    }
+}

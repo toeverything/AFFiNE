@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# npx lint-staged
+
+pnpm run lint:with-cache
+pnpm run check
+pnpm run format:ci

@@ -1,0 +1,15 @@
+# Add files here to ignore them from prettier formatting
+
+/dist
+/coverage
+pnpm-lock.yaml
+
+# Editoe assets
+apps/editoe/src/app/assets/svg
+
+# Automatically generated from Figma
+libs/components/icons/src/auto-icons
+libs/components/common/src/lib/icon
+
+# DevOps
+.github/**

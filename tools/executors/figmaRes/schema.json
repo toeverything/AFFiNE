@@ -1,0 +1,11 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "type": "object",
+    "cli": "nx",
+    "properties": {
+        "figmaRes": {
+            "type": "string",
+            "description": "Download figma icons and pictures."
+        }
+    }
+}

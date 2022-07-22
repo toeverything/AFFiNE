@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Show just the current branch in Git
+# See https://stackoverflow.com/questions/1417957/show-just-the-current-branch-in-git/1418022#1418022
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+default_branch="master"
+
+if test $current_branch != $default_branch; then
+  exit 0
+fi
+
+npm run type:check

@@ -1,0 +1,45 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "libs/datasource/jwt-rpc/src",
+    "projectType": "library",
+    "tags": ["datasource:jwt-rpc"],
+    "targets": {
+        "build": {
+            "executor": "@nrwl/web:rollup",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/libs/datasource/jwt-rpc",
+                "tsConfig": "libs/datasource/jwt-rpc/tsconfig.lib.json",
+                "project": "libs/datasource/jwt-rpc/package.json",
+                "entryFile": "libs/datasource/jwt-rpc/src/index.ts",
+                "external": ["react/jsx-runtime"],
+                "rollupConfig": "@nrwl/react/plugins/bundle-rollup",
+                "compiler": "babel",
+                "assets": [
+                    {
+                        "glob": "libs/datasource/jwt-rpc/README.md",
+                        "input": ".",
+                        "output": "."
+                    }
+                ]
+            }
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": [
+                    "libs/datasource/jwt-rpc/**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/libs/datasource/jwt-rpc"],
+            "options": {
+                "jestConfig": "libs/datasource/jwt-rpc/jest.config.ts",
+                "passWithNoTests": true
+            }
+        }
+    }
+}

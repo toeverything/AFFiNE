@@ -1,0 +1,57 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "libs/components/icons/src",
+    "projectType": "library",
+    "tags": ["components:icons"],
+    "targets": {
+        "build": {
+            "executor": "@nrwl/web:rollup",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/libs/components/icons",
+                "tsConfig": "libs/components/icons/tsconfig.lib.json",
+                "project": "libs/components/icons/package.json",
+                "entryFile": "libs/components/icons/src/index.ts",
+                "external": ["react/jsx-runtime"],
+                "rollupConfig": "@nrwl/react/plugins/bundle-rollup",
+                "compiler": "babel",
+                "assets": [
+                    {
+                        "glob": "libs/components/icons/README.md",
+                        "input": ".",
+                        "output": "."
+                    }
+                ]
+            }
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": [
+                    "libs/components/icons/**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/libs/components/icons"],
+            "options": {
+                "jestConfig": "libs/components/icons/jest.config.ts",
+                "passWithNoTests": true
+            }
+        },
+        "figmaRes": {
+            "executor": "./tools/executors/figmaRes:figmaRes",
+            "options": {
+                "assets": [
+                    {
+                        "fileId": "7pyx5gMz6CN0qSRADmScQ7",
+                        "nodeId": "6146%3A2601",
+                        "folder": "./src/auto-icons"
+                    }
+                ]
+            }
+        }
+    }
+}

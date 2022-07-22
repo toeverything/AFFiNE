@@ -1,0 +1,59 @@
+name: Build Lisa
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+# See https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+    # The concurrency group contains the workflow name and the branch name for
+    # pull requests or the commit hash for any other events.
+    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+    cancel-in-progress: true
+
+env:
+    REGISTRY: ghcr.io
+    NAMESPACE: toeverything
+    LISA_IMAGE_NAME: lisa
+    IMAGE_TAG: canary-${{ github.sha }}
+    IMAGE_TAG_LATEST: nightly-latest
+
+jobs:
+    ligo-virgo:
+        runs-on: self-hosted
+        environment: development
+        permissions:
+            contents: read
+            packages: write
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Log in to the Container registry
+              uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract metadata (tags, labels) for Docker (lisa)
+              id: meta_lisa
+              uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+              with:
+                  images: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.LISA_IMAGE_NAME }}
+                  tags: |
+                      ${{ env.IMAGE_TAG }}
+                      ${{ env.IMAGE_TAG_LATEST }}
+
+            - name: Build and push Docker image (lisa)
+              uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+              with:
+                  context: .
+                  push: ${{ github.ref == 'refs/heads/master' && true || false }}
+                  tags: ${{ steps.meta_lisa.outputs.tags }}
+                  labels: ${{ steps.meta_lisa.outputs.labels }}
+                  target: lisa

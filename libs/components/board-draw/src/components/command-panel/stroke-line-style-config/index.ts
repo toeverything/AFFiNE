@@ -1,0 +1,1 @@
+export { StrokeLineStyleConfig } from './StrokeLineStyleConfig';

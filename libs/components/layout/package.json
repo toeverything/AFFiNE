@@ -1,0 +1,22 @@
+{
+    "name": "@toeverything/components/layout",
+    "version": "0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "@date-io/date-fns": "^2.14.0",
+        "@dnd-kit/core": "^6.0.5",
+        "@dnd-kit/modifiers": "^6.0.0",
+        "@dnd-kit/sortable": "^7.0.1",
+        "@dnd-kit/utilities": "^3.2.0",
+        "@mui/icons-material": "^5.8.4",
+        "clsx": "^1.2.1",
+        "date-fns": "^2.28.0",
+        "jotai": "^1.7.4",
+        "tinycolor2": "^1.4.2",
+        "turndown": "7.1.1"
+    },
+    "devDependencies": {
+        "@types/tinycolor2": "^1.4.3",
+        "@types/turndown": "^5.0.1"
+    }
+}

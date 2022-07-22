@@ -1,0 +1,44 @@
+{
+    "sourceRoot": "libs/datasource/state/src",
+    "projectType": "library",
+    "tags": ["datasource:state"],
+    "targets": {
+        "build": {
+            "executor": "@nrwl/web:rollup",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/libs/datasource/state",
+                "tsConfig": "libs/datasource/state/tsconfig.lib.json",
+                "project": "libs/datasource/state/package.json",
+                "entryFile": "libs/datasource/state/src/index.ts",
+                "external": ["react/jsx-runtime"],
+                "rollupConfig": "libs/rollup-ts-checker.config.cjs",
+                "compiler": "babel",
+                "assets": [
+                    {
+                        "glob": "libs/datasource/state/README.md",
+                        "input": ".",
+                        "output": "."
+                    }
+                ]
+            }
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": [
+                    "libs/datasource/state/**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/libs/datasource/state"],
+            "options": {
+                "jestConfig": "libs/datasource/state/jest.config.js",
+                "passWithNoTests": true
+            }
+        }
+    }
+}

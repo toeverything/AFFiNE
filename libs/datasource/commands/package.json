@@ -1,0 +1,7 @@
+{
+    "name": "@toeverything/datasource/commands",
+    "version": "0.0.1",
+    "license": "MIT",
+    "type": "commonjs",
+    "dependencies": {}
+}

@@ -1,0 +1,287 @@
+{
+    "root": true,
+    "ignorePatterns": ["**/*"],
+    "plugins": ["@nrwl/nx", "react", "filename-rules", "import", "prettier"],
+    "parserOptions": {
+        "project": ["./tsconfig.base.json"]
+    },
+    "overrides": [
+        {
+            "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+            "rules": {
+                "prettier/prettier": "warn",
+                "@nrwl/nx/enforce-module-boundaries": [
+                    "error",
+                    {
+                        "enforceBuildableLibDependency": true,
+                        "allow": [],
+                        "depConstraints": [
+                            {
+                                "sourceTag": "library:utils",
+                                "onlyDependOnLibsWithTags": ["library:utils"]
+                            },
+                            {
+                                "sourceTag": "datasource:jwt",
+                                "onlyDependOnLibsWithTags": [
+                                    "library:utils",
+                                    "datasource:remote-kv",
+                                    "datasource:jwt-rpc"
+                                ]
+                            },
+                            {
+                                "sourceTag": "datasource:db-services",
+                                "onlyDependOnLibsWithTags": [
+                                    "library:utils",
+                                    "datasource:jwt"
+                                ]
+                            },
+                            {
+                                "sourceTag": "datasource:hooks",
+                                "onlyDependOnLibsWithTags": [
+                                    "library:utils",
+                                    "datasource:jwt",
+                                    "datasource:db-services"
+                                ]
+                            },
+                            {
+                                "sourceTag": "datasource:http",
+                                "onlyDependOnLibsWithTags": ["library:utils"]
+                            },
+                            {
+                                "sourceTag": "datasource:state",
+                                "onlyDependOnLibsWithTags": [
+                                    "library:utils",
+                                    "library:feature-flags",
+                                    "datasource:http",
+                                    "datasource:jwt"
+                                ]
+                            },
+                            {
+                                "sourceTag": "components:common",
+                                "onlyDependOnLibsWithTags": [
+                                    "library:utils",
+                                    "components:icons",
+                                    "components:ui"
+                                ]
+                            },
+                            {
+                                "sourceTag": "components:editor-core",
+                                "onlyDependOnLibsWithTags": [
+                                    "library:utils",
+                                    "library:feature-flags",
+                                    "datasource:db-services",
+                                    "datasource:state",
+                                    "datasource:commands",
+                                    "datasource:jwt",
+                                    "components:ui",
+                                    "components:common",
+                                    "components:icons"
+                                ]
+                            },
+                            {
+                                "sourceTag": "components:editor-blocks",
+                                "onlyDependOnLibsWithTags": [
+                                    "library:utils",
+                                    "library:feature-flags",
+                                    "components:common",
+                                    "components:editor-core",
+                                    "framework:editor",
+                                    "datasource:db-services",
+                                    "components:ui",
+                                    "components:icons"
+                                ]
+                            },
+                            {
+                                "sourceTag": "components:editor-plugins",
+                                "onlyDependOnLibsWithTags": [
+                                    "library:utils",
+                                    "components:common",
+                                    "components:editor-core",
+                                    "framework:editor",
+                                    "components:editor-blocks",
+                                    "datasource:db-services",
+                                    "components:ui",
+                                    "components:icons",
+                                    "library:feature-flags"
+                                ]
+                            },
+                            {
+                                "sourceTag": "components:ui",
+                                "onlyDependOnLibsWithTags": [
+                                    "components:icons",
+                                    "library:utils"
+                                ]
+                            },
+                            {
+                                "sourceTag": "framework:editor",
+                                "onlyDependOnLibsWithTags": [
+                                    "components:editor-core"
+                                ]
+                            },
+                            {
+                                "sourceTag": "*",
+                                "onlyDependOnLibsWithTags": ["*"]
+                            }
+                        ],
+                        "allowCircularSelfDependency": false
+                    }
+                ],
+                "filename-rules/match": [
+                    "warn",
+                    {
+                        ".tsx": "PascalCase",
+                        ".ts": "kebab-case",
+                        ".json": "kebab-case",
+                        "": "kebab-case"
+                    }
+                ],
+                "no-restricted-imports": [
+                    "error",
+                    {
+                        "patterns": [
+                            {
+                                "group": ["lodash"],
+                                "message": "Forbid direct import of lodash, use @toeverything/utils"
+                            },
+                            {
+                                "group": ["lodash-es"],
+                                "message": "Forbid direct import of lodash-es, use @toeverything/utils"
+                            },
+                            {
+                                "group": ["@mui/material", "@mui/material/*"],
+                                "message": "Forbid direct import of @mui/material, use @toeverything/components/ui"
+                            }
+                        ]
+                    }
+                ],
+                "@typescript-eslint/naming-convention": [
+                    "warn",
+                    {
+                        "selector": [
+                            "property",
+                            "parameterProperty",
+                            "accessor",
+                            "enumMember"
+                        ],
+                        "format": ["strictCamelCase"]
+                    },
+                    {
+                        "selector": ["property", "accessor"],
+                        "modifiers": ["private"],
+                        "format": ["strictCamelCase"],
+                        "leadingUnderscore": "require"
+                    },
+                    {
+                        "selector": ["method"],
+                        "modifiers": ["public"],
+                        "format": ["strictCamelCase"]
+                    },
+                    // Private methods
+                    {
+                        "selector": ["method"],
+                        "modifiers": ["private"],
+                        "format": ["strictCamelCase"],
+                        "leadingUnderscore": "require"
+                    },
+                    {
+                        "selector": ["method"],
+                        "modifiers": ["protected"],
+                        "format": ["strictCamelCase"],
+                        "leadingUnderscore": "require"
+                    },
+                    // Top Level Methods
+                    // const func: Function
+                    // allow PascalCase for react components
+                    {
+                        "selector": ["variable"],
+                        "modifiers": ["global"],
+                        "types": ["function"],
+                        "format": ["strictCamelCase", "StrictPascalCase"],
+                        "leadingUnderscore": "allow"
+                    },
+                    // function something() { }
+                    {
+                        "selector": ["function"],
+                        "modifiers": ["global"],
+                        "format": ["strictCamelCase"],
+                        "leadingUnderscore": "require"
+                    },
+                    // export const func: Function
+                    {
+                        "selector": ["variable"],
+                        "modifiers": ["exported"],
+                        "types": ["function"],
+                        "format": ["strictCamelCase", "StrictPascalCase"],
+                        "leadingUnderscore": "forbid"
+                    },
+                    // export function something() { }
+                    {
+                        "selector": ["function"],
+                        "modifiers": ["exported"],
+                        "format": ["strictCamelCase", "StrictPascalCase"],
+                        "leadingUnderscore": "forbid"
+                    },
+                    // Top Level Variables
+                    {
+                        "selector": ["variable"],
+                        "modifiers": ["global", "const"],
+                        "types": ["boolean", "string", "number"],
+                        "format": ["UPPER_CASE"]
+                    },
+                    {
+                        "selector": ["variable"],
+                        "modifiers": ["global"],
+                        "format": ["strictCamelCase"],
+                        "leadingUnderscore": "require"
+                    },
+                    {
+                        "selector": ["variable"],
+                        "modifiers": ["exported"],
+                        "format": ["strictCamelCase"]
+                    },
+                    // types, enums
+                    {
+                        "selector": "typeLike",
+                        "format": ["PascalCase"]
+                    },
+                    {
+                        "selector": "variableLike",
+                        "format": ["strictCamelCase"]
+                    }
+                ],
+                "react/self-closing-comp": "warn",
+                "no-restricted-syntax": [
+                    "warn",
+                    {
+                        "selector": ":matches(PropertyDefinition)[accessibility!='private'][accessibility!='protected'][key.name!='constructor']",
+                        "message": "Use private instead, please implement getter or setXxx for external read and write requirements"
+                    }
+                ]
+            }
+        },
+        {
+            "files": ["*.ts", "*.tsx"],
+            "extends": ["plugin:@nrwl/nx/typescript"],
+            "rules": {
+                "prefer-const": "warn",
+                "no-console": ["warn", { "allow": ["warn", "error"] }],
+                "@typescript-eslint/ban-ts-comment": "warn",
+                "@typescript-eslint/no-empty-interface": "warn",
+                "@typescript-eslint/no-empty-function": "warn",
+                // https://github.com/nrwl/nx/issues/10445
+                "react/jsx-key": "error",
+                "import/no-default-export": "warn",
+                "import/no-duplicates": "warn",
+                "max-lines": [
+                    "warn",
+                    { "max": 300, "skipComments": true, "skipBlankLines": true }
+                ]
+            }
+        },
+        {
+            "files": ["*.js", "*.jsx"],
+            "extends": ["plugin:@nrwl/nx/javascript"],
+            "rules": {}
+        }
+    ]
+}
