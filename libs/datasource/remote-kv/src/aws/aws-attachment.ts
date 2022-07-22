@@ -1,4 +1,3 @@
-
 import * as AWS from 'aws-sdk';
 import type { Credentials } from 'aws-sdk';
 import type { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload';

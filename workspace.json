@@ -26,6 +26,7 @@
         "datasource-remote-kv": "libs/datasource/remote-kv",
         "datasource-state": "libs/datasource/state",
         "framework-virgo": "libs/framework/virgo",
+        "keck": "apps/keck",
         "ligo-virgo": "apps/ligo-virgo",
         "utils": "libs/utils"
     }

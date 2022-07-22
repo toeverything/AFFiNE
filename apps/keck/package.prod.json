@@ -1,0 +1,9 @@
+{
+    "name": "@toeverything/keck",
+    "license": "MIT",
+    "version": "0.0.1",
+    "dependencies": {
+        "level": "^8.0.0",
+        "level-read-stream": "1.1.0"
+    }
+}

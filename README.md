@@ -67,6 +67,7 @@ Have a look at [the examples to see AFFiNE in action](https://app.affine.pro/).
 -   [how-to-customize-rollup-config.md](docs/how-to-customize-rollup-config.md)
 -   [how-to-auto-download-figma-assets-in-affine.md](docs/how-to-auto-download-figma-assets-in-affine.md)
 -   [affine-icons-user-guide.md](docs/affine-icons-user-guide.md)
+-   [How to develop api server in virgo](./apps/keck/README.md)
 
 ## Community
 
