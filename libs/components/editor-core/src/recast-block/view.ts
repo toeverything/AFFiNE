@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useRecastBlock } from './Context';
 import {
     META_VIEWS_KEY,
@@ -17,7 +17,7 @@ const genViewId = () => nanoid(16) as RecastViewId; // This is a safe type cast
 const DEFAULT_VIEWS: RecastView[] = [
     {
         id: genViewId(),
-        name: 'ToDo List',
+        name: 'List',
         type: RecastScene.Page,
     },
     {
@@ -31,8 +31,9 @@ export const useRecastView = () => {
     const recastBlock = useRecastBlock();
     const recastViews =
         recastBlock.getProperty(META_VIEWS_KEY) ?? DEFAULT_VIEWS;
+
     // TODO save cur view
-    const currentView = recastViews[0];
+    const [currentView, changeView] = useState(recastViews[0]);
 
     const getView = useCallback(
         (id: RecastViewId) => {
@@ -117,6 +118,7 @@ export const useRecastView = () => {
     return {
         currentView,
         recastViews,
+        changeView,
         addView,
         updateView,
         renameView,
