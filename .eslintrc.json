@@ -61,7 +61,8 @@
                                 "onlyDependOnLibsWithTags": [
                                     "library:utils",
                                     "components:icons",
-                                    "components:ui"
+                                    "components:ui",
+                                    "library:feature-flags"
                                 ]
                             },
                             {

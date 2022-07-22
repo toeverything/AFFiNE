@@ -29,6 +29,7 @@ import type { ActivePanel } from './types';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { GroupBy } from './components/group-by/GroupBy';
 
+import { CommingSoon } from '@toeverything/components/common';
 const GroupMenuWrapper = ({
     block,
     editor,
@@ -107,7 +108,7 @@ const GroupMenuWrapper = ({
                         //         Table View
                         //     </IconButton>
                         // )
-                        <Tooltip content={'Comming Soon'} placement="top">
+                        <CommingSoon>
                             <IconButton
                                 active={scene === SCENE_CONFIG.TABLE}
                                 style={{ cursor: 'not-allowed' }}
@@ -115,9 +116,9 @@ const GroupMenuWrapper = ({
                                 <TableIcon fontSize="small" />
                                 Table
                             </IconButton>
-                        </Tooltip>
+                        </CommingSoon>
                     }
-                    <Tooltip content={'Comming Soon'} placement="top">
+                    <CommingSoon>
                         <IconButton
                             active={scene === SCENE_CONFIG.TABLE}
                             style={{ cursor: 'not-allowed' }}
@@ -125,8 +126,8 @@ const GroupMenuWrapper = ({
                             <KanBanIcon fontSize="small" />
                             Calendar
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip content={'Comming Soon'} placement="top">
+                    </CommingSoon>
+                    <CommingSoon>
                         <IconButton
                             active={scene === SCENE_CONFIG.TABLE}
                             style={{ cursor: 'not-allowed' }}
@@ -134,8 +135,8 @@ const GroupMenuWrapper = ({
                             <TableIcon fontSize="small" />
                             Timeline
                         </IconButton>
-                    </Tooltip>
-                    <Tooltip content={'Comming Soon'} placement="top">
+                    </CommingSoon>
+                    <CommingSoon>
                         <IconButton
                             active={scene === SCENE_CONFIG.TABLE}
                             style={{ cursor: 'not-allowed' }}
@@ -143,7 +144,7 @@ const GroupMenuWrapper = ({
                             <KanBanIcon fontSize="small" />
                             BI
                         </IconButton>
-                    </Tooltip>
+                    </CommingSoon>
 
                     {
                         // Closed beta period temporarily

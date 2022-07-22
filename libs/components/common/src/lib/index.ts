@@ -49,3 +49,5 @@ export {
     FullScreenIcon,
     UnGroupIcon,
 } from './icon';
+
+export * from './comming-soon/CommingSoon';
