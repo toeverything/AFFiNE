@@ -63,7 +63,7 @@ const _useUserAndSpace = () => {
 };
 
 const _useUserAndSpacesForFreeLogin = () => {
-    const [loading] = useAtom(_loadingAtom);
+    const [loading, setLoading] = useAtom(_loadingAtom);
 
     useEffect(() => setLoading(false), []);
     const BRAND_ID = 'AFFiNE';
@@ -78,6 +78,6 @@ const _useUserAndSpacesForFreeLogin = () => {
         loading,
     };
 };
-export const useUserAndSpaces = process.env['NX_FREE_LOGIN']
+export const useUserAndSpaces = process.env['NX_LOCAL']
     ? _useUserAndSpacesForFreeLogin
     : _useUserAndSpace;

@@ -16,6 +16,7 @@ import {
     transact,
     encodeStateAsUpdate,
     applyUpdate,
+    snapshot,
 } from 'yjs';
 
 import { WebsocketProvider } from '@toeverything/datasource/jwt-rpc';
@@ -62,7 +63,7 @@ async function _initWebsocketProvider(
     params?: YjsInitOptions['params']
 ): Promise<[Awareness, WebsocketProvider | undefined]> {
     const awareness = new Awareness(doc);
-    if (token && !process.env['NX_FREE_LOGIN']) {
+    if (token) {
         const ws = new WebsocketProvider(token, url, room, doc, {
             awareness,
             params,
@@ -129,10 +130,13 @@ async function _initYjsDatabase(
         binaries
     ).whenSynced;
 
+    const gateKeeperData = doc.getMap<YMap<string>>('gatekeeper');
+
     const gatekeeper = new GateKeeper(
         userId,
-        doc.getMap('creators'),
-        doc.getMap('common')
+        gateKeeperData.get('creators') ||
+            gateKeeperData.set('creators', new YMap()),
+        gateKeeperData.get('common') || gateKeeperData.set('common', new YMap())
     );
 
     _yjsDatabaseInstance.set(workspace, {
@@ -206,8 +210,11 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         this.#awareness = providers.awareness;
         this.#gatekeeper = providers.gatekeeper;
 
-        this.#blocks = this.#doc.getMap('blocks');
-        this.#block_updated = this.#doc.getMap('block_updated');
+        const blocks = this.#doc.getMap<YMap<any>>('blocks');
+        this.#blocks =
+            blocks.get('content') || blocks.set('content', new YMap());
+        this.#block_updated =
+            blocks.get('updated') || blocks.set('updated', new YMap());
         this.#block_caches = new LRUCache({ max: 1024, ttl: 1000 * 60 * 10 });
         this.#binaries = new YjsRemoteBinaries(
             providers.binariesIdb.doc.getMap(),
@@ -381,6 +388,18 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 this.#blocks.clear();
                 this.#block_updated.clear();
                 this.#gatekeeper.clear();
+                this.#doc.getMap('blocks').clear();
+                this.#doc.getMap('gatekeeper').clear();
+            },
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            clear_old: () => {
+                this.#doc.getMap('block_updated').clear();
+                this.#doc.getMap('blocks').clear();
+                this.#doc.getMap('common').clear();
+                this.#doc.getMap('creators').clear();
+            },
+            snapshot: () => {
+                return snapshot(this.#doc);
             },
         };
     }

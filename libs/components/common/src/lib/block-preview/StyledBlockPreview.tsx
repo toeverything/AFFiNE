@@ -84,9 +84,9 @@ const Title = styled('div')<{ size: PreviewSize }>(({ size }) => {
 
 const ScopedEditorWrapper = styled('div')<{ size: PreviewSize }>(({ size }) => {
     return {
-        width: '750px',
+        width: '940px',
         height: '750px',
-        transform: 'scale(32%) translate(-102%, -104%)',
+        transform: 'scale(25%) translate(-145%, -145%)',
         // eslint-disable-next-line @typescript-eslint/naming-convention
         '&>:first-child': {
             margin: 'auto',

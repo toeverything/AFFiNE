@@ -24,16 +24,16 @@ const waitLoading = async (key: string) => {
 };
 
 async function _getCurrentToken() {
-    if (process.env['NX_FREE_LOGIN']) {
-        return 'NX_FREE_LOGIN';
-    }
-    const token = await getAuth().currentUser?.getIdToken();
-    if (token) return token;
-    return new Promise<string>(resolve => {
-        getAuth().onIdTokenChanged((user: User | null) => {
-            if (user) resolve(user.getIdToken());
+    if (!process.env['NX_LOCAL']) {
+        const token = await getAuth().currentUser?.getIdToken();
+        if (token) return token;
+        return new Promise<string>(resolve => {
+            getAuth().onIdTokenChanged((user: User | null) => {
+                if (user) resolve(user.getIdToken());
+            });
         });
-    });
+    }
+    return undefined;
 }
 
 async function _getBlockDatabase(

@@ -4,10 +4,11 @@
     "license": "MIT",
     "author": "AFFiNE <developer@affine.pro>",
     "scripts": {
-        "start": "nx serve ligo-virgo",
-        "start:free": "env-cmd -f .free.env nx serve ligo-virgo",
+        "start": "env-cmd -f .env.local nx serve ligo-virgo",
+        "start:affine": "nx serve ligo-virgo",
         "start:keck": "nx serve keck",
         "build": "nx build ligo-virgo",
+        "build:local": "env-cmd -f .env.local nx build ligo-virgo",
         "build:keck": "nx build keck",
         "build:analytic": "cross-env BUNDLE_ANALYZER=true nx build --skip-nx-cache",
         "test": "nx run-many --target test --all",

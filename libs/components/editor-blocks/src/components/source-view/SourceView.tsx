@@ -136,7 +136,6 @@ const SourceViewContainer = styled('div')<{
         borderRadius: theme.affine.shape.borderRadius,
         background: isSelected ? 'rgba(152, 172, 189, 0.1)' : 'transparent',
         padding: '8px',
-        // border:
         iframe: {
             width: '100%',
             height: '100%',
@@ -171,6 +170,7 @@ export const SourceView: FC<Props> = props => {
             <SourceViewContainer
                 isSelected={isSelected}
                 scene={SCENE_CONFIG.REFLINK}
+                style={{ padding: '0' }}
             >
                 <MemoBlockPreview
                     block={block}
