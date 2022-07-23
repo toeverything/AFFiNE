@@ -187,18 +187,6 @@ const groupTemplateMap: GroupTemplateMap = {
                     numberType: 'type1',
                     collapsed: { value: false },
                 },
-                blocks: [
-                    {
-                        type: 'figma',
-                        properties: {
-                            embedLink: {
-                                value: 'https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Ffile%2F7pyx5gMz6CN0qSRADmScQ7%2FAFFINE%3Fnode-id%3D40%253A2',
-                                name: 'figma',
-                            },
-                        },
-                        blocks: [],
-                    },
-                ],
             },
         ],
     },
