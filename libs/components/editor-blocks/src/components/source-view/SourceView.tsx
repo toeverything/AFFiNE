@@ -8,7 +8,15 @@ import { formatUrl } from './format-url';
 import { SCENE_CONFIG } from '../../blocks/group/config';
 import { services } from '@toeverything/datasource/db-service';
 import { debounce } from '@toeverything/utils';
-
+const MouseMaskContainer = styled('div')({
+    position: 'absolute',
+    zIndex: 1,
+    top: '0px',
+    left: '0px',
+    right: '0px',
+    bottom: '0px',
+    backgroundColor: 'transparent',
+});
 export interface Props {
     block: AsyncBlock;
     editorElement?: () => JSX.Element;
@@ -149,6 +157,7 @@ export const SourceView: FC<Props> = props => {
     const { link, isSelected, block, editorElement } = props;
     const { scene } = useRecastBlockScene();
     const src = formatUrl(link);
+
     if (src?.startsWith('http')) {
         return (
             <div
@@ -161,7 +170,9 @@ export const SourceView: FC<Props> = props => {
                         src={src}
                         frameBorder="0"
                         allowFullScreen
+                        sandbox="allow-scripts  allow-popups allow-top-navigation-by-user-activation allow-forms allow-same-origin"
                     />
+                    <MouseMaskContainer />
                 </SourceViewContainer>
             </div>
         );
