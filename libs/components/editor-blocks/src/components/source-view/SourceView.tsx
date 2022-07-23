@@ -16,6 +16,9 @@ const MouseMaskContainer = styled('div')({
     right: '0px',
     bottom: '0px',
     backgroundColor: 'transparent',
+    '&:hover': {
+        pointerEvents: 'none',
+    },
 });
 export interface Props {
     block: AsyncBlock;
