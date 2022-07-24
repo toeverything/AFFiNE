@@ -62,7 +62,7 @@ const GroupContainer = styled('div')<{ isSelect?: boolean }>(
         background: theme.affine.palette.white,
         border: '2px solid #ECF1FB',
         boxShadow: isSelect
-            ? '0px 0px 5px 5px rgba(98, 137, 255, 0.25), 0px 0px 5px 5px #E3EAFF;'
+            ? '0px 0px 5px 5px rgba(98, 137, 255, 0.25), 0px 0px 5px 5px #E3EAFF !important'
             : '#none',
         padding: '15px 12px',
         borderRadius: '10px',
