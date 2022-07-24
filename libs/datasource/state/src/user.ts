@@ -78,6 +78,7 @@ const _useUserAndSpacesForFreeLogin = () => {
         loading,
     };
 };
+
 export const useUserAndSpaces = process.env['NX_LOCAL']
     ? _useUserAndSpacesForFreeLogin
     : _useUserAndSpace;

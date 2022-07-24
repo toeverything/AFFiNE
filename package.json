@@ -4,7 +4,7 @@
     "license": "MIT",
     "author": "AFFiNE <developer@affine.pro>",
     "scripts": {
-        "start": "env-cmd -f .env.local nx serve ligo-virgo",
+        "start": "env-cmd -f .env.local-dev nx serve ligo-virgo",
         "start:affine": "nx serve ligo-virgo",
         "start:keck": "nx serve keck",
         "build": "nx build ligo-virgo",

@@ -379,6 +379,7 @@ importers:
       code-example: ^3.3.6
       codemirror: 6.0.1
       keymap: link:@codemirror/next/keymap
+      nanoid: ^4.0.0
       react-resizable: ^3.0.4
       react-window: ^1.8.7
       slate: ^0.81.1
@@ -414,6 +415,7 @@ importers:
       code-example: 3.3.6
       codemirror: 6.0.1
       keymap: link:@codemirror/next/keymap
+      nanoid: 4.0.0
       react-resizable: 3.0.4
       react-window: 1.8.7
       slate: 0.81.1

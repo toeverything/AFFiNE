@@ -1,13 +1,11 @@
-import { FC, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { FC } from 'react';
 
-import { StyledBlockPreview } from '@toeverything/components/common';
 import { styled } from '@toeverything/components/ui';
 import { AsyncBlock, useRecastBlockScene } from '@toeverything/framework/virgo';
 
 import { formatUrl } from './format-url';
 import { SCENE_CONFIG } from '../../blocks/group/config';
-import { services } from '@toeverything/datasource/db-service';
-import { debounce } from '@toeverything/utils';
+import { BlockPreview } from './BlockView';
 const MouseMaskContainer = styled('div')({
     position: 'absolute',
     zIndex: 1,
@@ -46,96 +44,6 @@ const _getLinkStyle = (scene: string) => {
             };
     }
 };
-
-type BlockPreviewProps = {
-    block: AsyncBlock;
-    blockId: string;
-    editorElement?: () => JSX.Element;
-};
-
-const BlockPreview = (props: BlockPreviewProps) => {
-    const container = useRef<HTMLDivElement>();
-    const [preview, setPreview] = useState(true);
-    const [title, setTitle] = useState('Loading...');
-    useEffect(() => {
-        let callback: any = undefined;
-        services.api.editorBlock
-            .getBlock(props.block.workspace, props.blockId)
-            .then(block => {
-                if (block.id === props.blockId) {
-                    const updateTitle = debounce(
-                        async () => {
-                            const [page] =
-                                await services.api.editorBlock.search(
-                                    props.block.workspace,
-                                    { tag: 'id:affine67Uz4DstDk6PKUbz' }
-                                );
-
-                            console.log(page);
-                            setTitle(page?.content || 'Untitled');
-                        },
-                        100,
-                        { maxWait: 500 }
-                    );
-                    block.on('content', props.block.id, updateTitle);
-                    callback = () => block.off('content', props.block.id);
-                    updateTitle();
-                } else {
-                    setTitle('Untitled');
-                }
-            });
-        return () => callback?.();
-    }, [props.block.id, props.block.workspace, props.blockId]);
-
-    const AffineEditor = props.editorElement as any;
-
-    useEffect(() => {
-        if (container?.current) {
-            const element = container?.current;
-            const resizeObserver = new IntersectionObserver(entries => {
-                const height = entries?.[0]?.intersectionRect.height;
-                setPreview(height < 174);
-            });
-
-            resizeObserver.observe(element);
-            return () => resizeObserver.unobserve(element);
-        }
-        return undefined;
-    }, [container]);
-
-    return (
-        <div ref={container}>
-            <StyledBlockPreview title={title}>
-                {preview ? (
-                    <span
-                        style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            fontSize: '128px',
-                            height: '480px',
-                            alignItems: 'center',
-                            color: '#5591ff',
-                        }}
-                    >
-                        Preview
-                    </span>
-                ) : AffineEditor ? (
-                    <AffineEditor
-                        workspace={props.block.workspace}
-                        rootBlockId={props.blockId}
-                    />
-                ) : null}
-            </StyledBlockPreview>
-        </div>
-    );
-};
-
-const MemoBlockPreview = memo(BlockPreview, (prev, next) => {
-    return (
-        prev.block.workspace === next.block.workspace &&
-        prev.blockId === next.blockId
-    );
-});
 
 const SourceViewContainer = styled('div')<{
     isSelected: boolean;
@@ -186,7 +94,7 @@ export const SourceView: FC<Props> = props => {
                 scene={SCENE_CONFIG.REFLINK}
                 style={{ padding: '0' }}
             >
-                <MemoBlockPreview
+                <BlockPreview
                     block={block}
                     editorElement={editorElement}
                     blockId={src}

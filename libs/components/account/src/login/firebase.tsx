@@ -1,7 +1,6 @@
 /* eslint-disable filename-rules/match */
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { initializeApp } from 'firebase/app';
-import { Error } from './../error';
 import {
     GoogleAuthProvider,
     getAuth,
@@ -13,10 +12,11 @@ import { LogoImg } from '@toeverything/components/common';
 import {
     MuiButton,
     MuiBox,
-    MuiTypography,
-    MuiContainer,
     MuiGrid,
+    MuiSnackbar,
 } from '@toeverything/components/ui';
+
+import { Error } from './../error';
 
 const _firebaseConfig = {
     apiKey: 'AIzaSyD7A_VyGaKTXsPqtga9IbwrEsbWWc4rH3Y',
@@ -83,6 +83,8 @@ export const Firebase = () => {
         return [auth, provider];
     }, []);
 
+    const [error, setError] = useState(false);
+
     const handleAuth = useCallback(() => {
         signInWithPopup(auth, provider).catch(error => {
             const errorCode = error.code;
@@ -90,11 +92,18 @@ export const Firebase = () => {
             const email = error.customData.email;
             const credential = GoogleAuthProvider.credentialFromError(error);
             console.log(errorCode, errorMessage, email, credential);
+            setError(true);
+            setTimeout(() => setError(false), 3000);
         });
     }, [auth, provider]);
 
     return (
         <MuiGrid container>
+            <MuiSnackbar
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                open={error}
+                message="Login failed, please check if you have permission"
+            />
             <MuiGrid item xs={8}>
                 <Error
                     title="Welcome to Affine"
