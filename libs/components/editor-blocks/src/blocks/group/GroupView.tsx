@@ -61,15 +61,18 @@ const GroupContainer = styled('div')<{ isSelect?: boolean }>(
     ({ isSelect, theme }) => ({
         background: theme.affine.palette.white,
         border: '2px solid #ECF1FB',
-        boxShadow: isSelect
-            ? '0px 0px 5px 5px rgba(98, 137, 255, 0.25), 0px 0px 5px 5px #E3EAFF !important'
-            : '#none',
         padding: '15px 12px',
         borderRadius: '10px',
-        '&:hover': {
-            // borderColor: 'none',
-            boxShadow: '0px 1px 10px rgb(152 172 189 / 60%)',
-        },
+        ...(isSelect
+            ? {
+                  boxShadow:
+                      '0px 0px 5px 5px rgba(98, 137, 255, 0.25), 0px 0px 5px 5px #E3EAFF',
+              }
+            : {
+                  '&:hover': {
+                      boxShadow: '0px 1px 10px rgb(152 172 189 / 60%)',
+                  },
+              }),
     })
 );
 

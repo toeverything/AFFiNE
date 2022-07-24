@@ -15,5 +15,4 @@ export const List = styled('div')(({ theme }) => ({
 }));
 export const LinkContainer = styled('div')(() => ({
     position: 'relative',
-    overflowBlock: 'hidden',
 }));

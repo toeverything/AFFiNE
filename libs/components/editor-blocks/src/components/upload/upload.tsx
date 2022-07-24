@@ -51,20 +51,17 @@ const UploadBox = styled('div')<{ isSelected: boolean }>(
     ({ theme, isSelected }) => {
         return {
             width: '100%',
-            background: '#f7f7f7',
             padding: '15px 10px',
             fontSize: theme.affine.typography.body1.fontSize,
             borderRadius: '4px',
             cursor: 'pointer',
-            border: isSelected
-                ? `1px solid ${theme.affine.palette.primary}`
-                : '1px solid #e0e0e0',
+            background: isSelected ? 'rgba(152, 172, 189, 0.2)' : '#fafafa',
+            border: '1px solid #e0e0e0',
             '.delete': {
                 display: 'none',
                 float: 'right',
             },
             '&:hover': {
-                background: '#eee',
                 '.delete': {
                     display: 'inline-block',
                 },

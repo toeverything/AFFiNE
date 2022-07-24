@@ -6,18 +6,7 @@ import { AsyncBlock, useRecastBlockScene } from '@toeverything/framework/virgo';
 import { formatUrl } from './format-url';
 import { SCENE_CONFIG } from '../../blocks/group/config';
 import { BlockPreview } from './BlockView';
-const MouseMaskContainer = styled('div')({
-    position: 'absolute',
-    zIndex: 1,
-    top: '0px',
-    left: '0px',
-    right: '0px',
-    bottom: '0px',
-    backgroundColor: 'transparent',
-    '&:hover': {
-        pointerEvents: 'none',
-    },
-});
+
 export interface Props {
     block: AsyncBlock;
     editorElement?: () => JSX.Element;
@@ -44,7 +33,29 @@ const _getLinkStyle = (scene: string) => {
             };
     }
 };
-
+const getHost = (url: string) => new URL(url).host;
+const LinkContainer = styled('div')<{
+    isSelected: boolean;
+}>(({ theme, isSelected }) => {
+    return {
+        // overflow: 'hidden',
+        borderRadius: theme.affine.shape.borderRadius,
+        fontSize: '0',
+        background: isSelected ? 'rgba(152, 172, 189, 0.2)' : '#fafafa',
+        padding: '0 8px',
+        width: '100%',
+        height: '72px',
+        lineHeight: '32px',
+        border: '1px solid #ccc',
+        cursor: 'pointer',
+        p: {
+            overflow: 'hidden',
+            fontSize: theme.affine.typography.body1.fontSize,
+            height: '36px',
+            textOverflow: 'ellipsis',
+        },
+    };
+});
 const SourceViewContainer = styled('div')<{
     isSelected: boolean;
     scene: string;
@@ -68,24 +79,28 @@ export const SourceView: FC<Props> = props => {
     const { link, isSelected, block, editorElement } = props;
     const { scene } = useRecastBlockScene();
     const src = formatUrl(link);
-
+    const openTabOnBrowser = () => {
+        window.open(link, '_blank');
+    };
     if (src?.startsWith('http')) {
         return (
-            <div
+            <LinkContainer
+                isSelected={isSelected}
                 onMouseDown={e => e.preventDefault()}
-                style={{ display: 'flex' }}
+                onClick={openTabOnBrowser}
             >
-                <SourceViewContainer isSelected={isSelected} scene={scene}>
+                <p>{getHost(src)}</p>
+                <p>{src}</p>
+                {/* <SourceViewContainer isSelected={isSelected} scene={scene}>
                     <iframe
                         title={link}
                         src={src}
                         frameBorder="0"
                         allowFullScreen
-                        sandbox="allow-scripts  allow-popups allow-top-navigation-by-user-activation allow-forms allow-same-origin"
+                        sandbox=""
                     />
-                    <MouseMaskContainer />
-                </SourceViewContainer>
-            </div>
+                </SourceViewContainer> */}
+            </LinkContainer>
         );
     } else if (src?.startsWith('affine')) {
         return (
