@@ -112,17 +112,15 @@ const KanbanTag = (group: KanbanGroup) => {
     const [color, bg] = getKanbanColor(group);
 
     return (
-        <>
+        <MuiClickAwayListener onClickAway={() => setAnchorEl(null)}>
             <Tag
                 interactive={!isDefaultGroup}
                 color={color}
                 background={bg}
                 onClick={handleClickTag}
             >
-                {group.name}
-            </Tag>
+                <span>{group.name}</span>
 
-            <MuiClickAwayListener onClickAway={() => setAnchorEl(null)}>
                 <MuiPopper
                     open={open}
                     anchorEl={anchorEl}
@@ -148,8 +146,8 @@ const KanbanTag = (group: KanbanGroup) => {
                         </IconButton>
                     </PopperContainer>
                 </MuiPopper>
-            </MuiClickAwayListener>
-        </>
+            </Tag>
+        </MuiClickAwayListener>
     );
 };
 
