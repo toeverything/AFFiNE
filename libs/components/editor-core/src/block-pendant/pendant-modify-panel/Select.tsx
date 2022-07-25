@@ -1,4 +1,10 @@
-import React, { CSSProperties, useEffect, useState } from 'react';
+import React, {
+    CSSProperties,
+    useEffect,
+    useState,
+    KeyboardEvent,
+    useRef,
+} from 'react';
 import { Add, Delete, Close } from '@mui/icons-material';
 import { ModifyPanelContentProps } from './types';
 import {
@@ -10,7 +16,13 @@ import {
     RecastBlockValue,
     RecastMetaProperty,
 } from '../../recast-block';
-import { Checkbox, Radio, styled, useTheme } from '@toeverything/components/ui';
+import {
+    Checkbox,
+    Radio,
+    styled,
+    useTheme,
+    Tooltip,
+} from '@toeverything/components/ui';
 import { HighLightIconInput } from './IconInput';
 import {
     PendantIconConfig,
@@ -33,10 +45,13 @@ type OptionItemType = {
         background: CSSProperties['background'];
         color: CSSProperties['color'];
     };
+    onEnter?: (e: KeyboardEvent) => void;
+    focused?: boolean;
 };
 
 type SelectPropsType = {
     isMulti?: boolean;
+    onEnter?: (e: KeyboardEvent) => void;
 } & ModifyPanelContentProps;
 
 export const BasicSelect = ({
@@ -53,9 +68,11 @@ export const BasicSelect = ({
     onValueChange: (value: any) => void;
     onPropertyChange?: (newProperty: any) => void;
     iconConfig?: PendantIconConfig;
+    onEnter?: (e: KeyboardEvent) => void;
 }) => {
     const [options, setOptions] = useState<OptionType[]>(initialOptions);
     const [selectIds, setSelectIds] = useState<OptionIdType[]>(initialValue);
+    const [focusedId, setFocusedId] = useState<OptionIdType>();
 
     const insertOption = (insertId: OptionIdType) => {
         const newOption = genBasicOption({
@@ -98,14 +115,18 @@ export const BasicSelect = ({
 
     useEffect(() => {
         onValueChange(isMulti ? selectIds : selectIds[0]);
-    }, [selectIds]);
+    }, [selectIds, onValueChange]);
 
     useEffect(() => {
         if (options.every(o => !o.name)) {
             return;
         }
         onPropertyChange?.([...options.filter(o => o.name)]);
-    }, [options]);
+    }, [options, onPropertyChange]);
+
+    useEffect(() => {
+        setFocusedId(options[options.length - 1].id);
+    }, [options.length]);
 
     return (
         <div className="">
@@ -115,6 +136,7 @@ export const BasicSelect = ({
                 return (
                     <OptionItem
                         key={option.id}
+                        focused={focusedId === option.id}
                         isMulti={isMulti}
                         checked={checked}
                         option={option}
@@ -126,6 +148,9 @@ export const BasicSelect = ({
                             name: option?.iconName as IconNames,
                             color: option?.color,
                             background: option?.background,
+                        }}
+                        onEnter={() => {
+                            insertOption(options[options.length - 1].id);
                         }}
                     />
                 );
@@ -183,15 +208,34 @@ const OptionItem = ({
     checked,
     isMulti,
     iconConfig,
+    onEnter,
+    focused,
 }: OptionItemType) => {
     const theme = useTheme();
+    const inputRef = useRef<HTMLInputElement>();
+    useEffect(() => {
+        inputRef.current?.focus();
+    }, [focused]);
     return (
         <HighLightIconInput
+            componentsProps={{
+                input: {
+                    ref: ref => (inputRef.current = ref),
+                },
+            }}
             iconName={iconConfig?.name}
             color={iconConfig?.color}
             background={iconConfig?.background}
             value={option.name}
             placeholder="Option content"
+            onKeyDown={e => {
+                if (e.keyCode === 13) {
+                    onEnter?.(e);
+                }
+                if (e.ctrlKey && e.keyCode === 8) {
+                    onDelete?.(option.id);
+                }
+            }}
             onChange={e => {
                 onNameChange(option.id, e.target.value);
             }}
@@ -222,12 +266,14 @@ const OptionItem = ({
                         onDelete(option.id);
                     }}
                 >
-                    <Close
-                        style={{
-                            fontSize: 12,
-                            color: theme.affine.palette.icons,
-                        }}
-                    />
+                    <Tooltip content="ctrl + backspace">
+                        <Close
+                            style={{
+                                fontSize: 12,
+                                color: theme.affine.palette.icons,
+                            }}
+                        />
+                    </Tooltip>
                 </StyledCloseButton>
             }
         />
