@@ -172,5 +172,6 @@ export class LeftMenuPlugin extends BasePlugin {
     public override dispose(): void {
         // TODO: rxjs
         this.root?.unmount();
+        super.dispose();
     }
 }

@@ -1,4 +1,4 @@
-export { PageTree } from './page-tree';
+export { PageTree } from './PageTree';
 export { usePageTree } from './use-page-tree';
 
 export * from './types';

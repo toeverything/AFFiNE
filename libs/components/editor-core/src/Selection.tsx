@@ -1,6 +1,5 @@
 import React, {
     forwardRef,
-    useCallback,
     useImperativeHandle,
     useEffect,
     useRef,
@@ -14,16 +13,13 @@ import { styled } from '@toeverything/components/ui';
 type MouseType = 'up' | 'down';
 
 interface SelectionProps {
-    container?: HTMLElement;
     editor: BlockEditor;
 }
 
-const styles = style9.create({
-    selectionRect: {
-        backgroundColor: 'rgba(152, 172, 189, 0.1)',
-        position: 'absolute',
-        zIndex: 99,
-    },
+const RectContainer = styled('div')({
+    backgroundColor: 'rgba(152, 172, 189, 0.1)',
+    position: 'absolute',
+    zIndex: 99,
 });
 
 type VerticalTypes = 'up' | 'down' | null;
@@ -103,10 +99,10 @@ const setSelectedNodesByPoints = async (
 
 export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
     (props, ref) => {
-        const { container, editor } = props;
+        const { editor } = props;
         const { selectionManager, scrollManager } = editor;
 
-        const [isShow, setIsShow] = useState<boolean>(false);
+        const [show, setShow] = useState<boolean>(false);
         const startPointRef = useRef<Point>();
         const endPointRef = useRef<Point>();
         const [rect, setRect] = useState<Rect>(Rect.fromLTRB(0, 0, 0, 0));
@@ -137,7 +133,7 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
             if (mouseType.current === 'down' && !startPointAtBlock.current) {
                 event.preventDefault();
                 endPointRef.current = new Point(event.clientX, event.clientY);
-                setIsShow(true);
+                setShow(true);
 
                 if (startPointRef.current) {
                     await setSelectedNodesByPoints(
@@ -182,7 +178,7 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
         const onMouseUp = () => {
             mouseType.current = 'up';
             startPointAtBlock.current = false;
-            setIsShow(false);
+            setShow(false);
             scrollManager.stopAutoScroll();
         };
 
@@ -250,11 +246,10 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
             scrollManager.onScrolling(scrollingCallback);
 
             return () => scrollManager.removeScrolling(scrollingCallback);
-        }, [scrollManager]);
+        }, [editor, scrollManager]);
 
-        return isShow ? (
-            <div
-                className={styles('selectionRect')}
+        return show ? (
+            <RectContainer
                 style={{
                     left: `${rect.left}px`,
                     top: `${rect.top}px`,

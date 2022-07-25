@@ -4,7 +4,7 @@ import { styled, usePatchNodes } from '@toeverything/components/ui';
 import type { FC, PropsWithChildren } from 'react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { RootContext } from './contexts';
-import { SelectionRect, SelectionRef } from './selection';
+import { SelectionRect, SelectionRef } from './Selection';
 import {
     Protocol,
     services,
@@ -205,20 +205,17 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                     {children}
                     {patchedNodes}
                 </Content>
-                {editor.isWhiteboard ? null : <ScrollBlank editor={editor} />}
                 {/** TODO: remove selectionManager insert */}
                 {container && editor && (
-                    <SelectionRect
-                        ref={selectionRef}
-                        container={container}
-                        editor={editor}
-                    />
+                    <SelectionRect ref={selectionRef} editor={editor} />
                 )}
+                {editor.isWhiteboard ? null : <ScrollBlank editor={editor} />}
             </Container>
         </RootContext.Provider>
     );
 };
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 function ScrollBlank({ editor }: { editor: BlockEditor }) {
     const mouseMoved = useRef(false);
 
@@ -281,6 +278,7 @@ const Container = styled('div')(
         overflowY: isWhiteboard ? 'unset' : 'auto',
         padding: isWhiteboard ? 0 : '96px 150px 0 150px',
         minWidth: isWhiteboard ? 'unset' : '940px',
+        position: 'relative',
     })
 );
 

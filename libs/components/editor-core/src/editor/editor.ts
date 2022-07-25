@@ -1,5 +1,4 @@
 /* eslint-disable max-lines */
-import type { ReactNode } from 'react';
 import HotKeys from 'hotkeys-js';
 import LRUCache from 'lru-cache';
 
@@ -9,7 +8,7 @@ import type {
     ReturnEditorBlock,
     UpdateEditorBlock,
 } from '@toeverything/datasource/db-service';
-import type { PatchNode, UnPatchNode } from '@toeverything/components/ui';
+import type { PatchNode } from '@toeverything/components/ui';
 
 import { AsyncBlock } from './block';
 import type { WorkspaceAndBlockId } from './block';
@@ -46,7 +45,7 @@ export interface EditorCtorProps {
 }
 
 export class Editor implements Virgo {
-    private cache_manager = new LRUCache<string, Promise<AsyncBlock | null>>({
+    private _cacheManager = new LRUCache<string, Promise<AsyncBlock | null>>({
         max: 8192,
         ttl: 1000 * 60 * 30,
     });
@@ -136,7 +135,7 @@ export class Editor implements Virgo {
 
     public set container(v: HTMLDivElement) {
         this.ui_container = v;
-        this.init_clipboard();
+        this._initClipboard();
     }
 
     public get container() {
@@ -171,7 +170,7 @@ export class Editor implements Virgo {
         this.clipboard_populator?.disposeInternal();
     }
 
-    private init_clipboard() {
+    private _initClipboard() {
         this._disposeClipboard();
         if (this.ui_container && !this._isDisposed) {
             this.clipboard = new BrowserClipboard(
@@ -261,7 +260,7 @@ export class Editor implements Virgo {
         workspace,
         id,
     }: WorkspaceAndBlockId): Promise<AsyncBlock | null> {
-        const block = this.cache_manager.get(id);
+        const block = this._cacheManager.get(id);
         if (block) {
             return block;
         }
@@ -288,7 +287,7 @@ export class Editor implements Virgo {
             };
             create();
         });
-        this.cache_manager.set(id, block_promise);
+        this._cacheManager.set(id, block_promise);
         return await block_promise;
     }
 
@@ -301,7 +300,7 @@ export class Editor implements Virgo {
         });
         const block = await this._initBlock(blockData);
         if (block) {
-            this.cache_manager.set(block.id, Promise.resolve(block));
+            this._cacheManager.set(block.id, Promise.resolve(block));
         }
         return block;
     }
