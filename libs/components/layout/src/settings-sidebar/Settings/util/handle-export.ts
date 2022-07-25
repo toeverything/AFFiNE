@@ -40,12 +40,3 @@ export const exportMarkdown = async ({
     const htmlContent = await clipboardParse.page2html();
     fileExporter.exportMarkdown(title, htmlContent);
 };
-
-export const clearWorkspace = async ({
-    workspaceId,
-    rootBlockId,
-    title,
-}: ExportHandlerProps) => {
-    //@ts-ignore
-    client.inspector().clear();
-};
