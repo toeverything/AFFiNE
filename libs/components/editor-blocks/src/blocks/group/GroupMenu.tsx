@@ -1,35 +1,61 @@
-import { useState } from 'react';
-import type { ReactNode } from 'react';
+import { CommingSoon } from '@toeverything/components/common';
 import {
     mergeToPreviousGroup,
     RecastScene,
+    RecastView,
     useRecastBlockScene,
     useRecastKanbanGroupBy,
+    useRecastView,
 } from '@toeverything/components/editor-core';
-import { Popover, useTheme, Tooltip } from '@toeverything/components/ui';
+import {
+    AddViewIcon,
+    FilterIcon,
+    FullScreenIcon,
+    GroupByIcon,
+    GroupIcon,
+    KanBanIcon,
+    SortIcon,
+    TableIcon,
+    TodoListIcon,
+} from '@toeverything/components/icons';
+import { Popover, useTheme } from '@toeverything/components/ui';
+import { useFlag } from '@toeverything/datasource/feature-flags';
 import type { AsyncBlock, BlockEditor } from '@toeverything/framework/virgo';
+import type { ReactElement, ReactNode } from 'react';
+import { useState } from 'react';
 import { Filter } from './components/filter';
-import { Sorter } from './components/sorter';
+import { GroupBy } from './components/group-by/GroupBy';
 import { GroupPanel } from './components/group-panel/GroupPanel';
 import { IconButton } from './components/IconButton';
 import { Line } from './components/Line';
-import {
-    TodoListIcon,
-    KanBanIcon,
-    TableIcon,
-    FilterIcon,
-    SortIcon,
-    FullScreenIcon,
-    GroupIcon,
-    GroupByIcon,
-} from '@toeverything/components/icons';
+import { Sorter } from './components/sorter';
 import { PANEL_CONFIG, SCENE_CONFIG } from './config';
-
 import type { ActivePanel } from './types';
-import { useFlag } from '@toeverything/datasource/feature-flags';
-import { GroupBy } from './components/group-by/GroupBy';
 
-import { CommingSoon } from '@toeverything/components/common';
+const VIEW_ICON_MAP: Record<RecastView['type'], ReactElement> = {
+    page: <TodoListIcon fontSize="small" />,
+    kanban: <KanBanIcon fontSize="small" />,
+    table: <TableIcon fontSize="small" />,
+};
+
+const ViewsMenu = () => {
+    const { currentView, recastViews, changeView } = useRecastView();
+    return (
+        <>
+            {recastViews.map(view => (
+                <IconButton
+                    key={view.id}
+                    active={view.id === currentView.id}
+                    onClick={() => changeView(view)}
+                >
+                    {VIEW_ICON_MAP[view.type]}
+                    {view.name}
+                </IconButton>
+            ))}
+        </>
+    );
+};
+
 const GroupMenuWrapper = ({
     block,
     editor,
@@ -59,7 +85,6 @@ const GroupMenuWrapper = ({
         if (!groupBy?.id) {
             setActivePanel(null);
         }
-
         setOpenPanel(null);
     };
 
@@ -97,6 +122,18 @@ const GroupMenuWrapper = ({
                         <KanBanIcon fontSize="small" />
                         Kanban
                     </IconButton>
+
+                    <ViewsMenu />
+                    <IconButton
+                        active={activePanel === PANEL_CONFIG.ADD_VIEW}
+                        onClick={() =>
+                            setActivePanel(PANEL_CONFIG.ADD_VIEW as ActivePanel)
+                        }
+                    >
+                        <AddViewIcon fontSize="small" />
+                        Add View
+                    </IconButton>
+
                     {
                         // // Closed beta period temporarily
                         // filterSorterFlag && (
