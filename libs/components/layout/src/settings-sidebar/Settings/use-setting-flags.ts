@@ -7,6 +7,7 @@ export const useSettingFlags = () => {
     const booleanExportHtml = useFlag('BooleanExportHtml', false);
     const booleanExportPdf = useFlag('BooleanExportPdf', false);
     const booleanExportMarkdown = useFlag('BooleanExportMarkdown', false);
+    const booleanClearWorkspace = useFlag('BooleanClearWorkspace', true);
 
     return {
         booleanFullWidthChecked,
@@ -15,6 +16,7 @@ export const useSettingFlags = () => {
         booleanExportHtml,
         booleanExportPdf,
         booleanExportMarkdown,
+        booleanClearWorkspace,
     };
 };
 

@@ -10,6 +10,7 @@ import {
     exportWorkspace,
     useWorkspaceAndPageId,
     useReadingMode,
+    clearWorkspace,
 } from './util';
 
 interface BaseSettingItem {
@@ -133,6 +134,12 @@ export const useSettings = (): SettingItem[] => {
             name: 'Export Workspace',
             onClick: () => exportWorkspace(),
             flag: 'booleanExportWorkspace',
+        },
+        {
+            type: 'button',
+            name: 'Clear Workspace',
+            onClick: () => clearWorkspace(workspaceId),
+            flag: 'booleanClearWorkspace',
         },
     ];
 
