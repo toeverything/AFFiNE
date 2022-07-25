@@ -17,6 +17,10 @@ export type PopperArrowProps = {
 export type PopperProps = {
     // Popover content
     content: ReactNode;
+
+    // Popover trigger
+    children?: ReactNode;
+
     // Position of Popover
     placement?: PopperPlacementType;
 

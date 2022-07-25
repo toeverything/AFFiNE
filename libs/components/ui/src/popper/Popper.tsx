@@ -6,8 +6,6 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import type { PropsWithChildren } from 'react';
-
 import {
     MuiPopper,
     MuiClickAwayListener as ClickAwayListener,
@@ -18,7 +16,7 @@ import { styled } from '../styled';
 import { PopperProps, PopperHandler, VirtualElement } from './interface';
 import { useTheme } from '../theme';
 import { PopperArrow } from './PopoverArrow';
-export const Popper = forwardRef<PopperHandler, PropsWithChildren<PopperProps>>(
+export const Popper = forwardRef<PopperHandler, PopperProps>(
     (
         {
             children,

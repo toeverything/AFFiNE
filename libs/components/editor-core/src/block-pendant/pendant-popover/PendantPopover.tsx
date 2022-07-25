@@ -1,15 +1,19 @@
 import React, { FC, useRef } from 'react';
 import { AsyncBlock } from '../../editor';
 import { PendantHistoryPanel } from '../pendant-history-panel';
-import { Popover, type PopperHandler } from '@toeverything/components/ui';
+import {
+    Popover,
+    type PopperHandler,
+    PopperProps,
+} from '@toeverything/components/ui';
 import { AddPendantPopover } from '../AddPendantPopover';
 
-export const PendantPopover: FC<{
-    block: AsyncBlock;
-    container: HTMLElement;
-    children?: React.ReactElement;
-}> = props => {
-    const { block, children, container } = props;
+export const PendantPopover: FC<
+    {
+        block: AsyncBlock;
+    } & Omit<PopperProps, 'content'>
+> = props => {
+    const { block, ...popoverProps } = props;
     const popoverHandlerRef = useRef<PopperHandler>();
     return (
         <Popover
@@ -17,7 +21,6 @@ export const PendantPopover: FC<{
             pointerEnterDelay={300}
             pointerLeaveDelay={200}
             placement="bottom-start"
-            container={container}
             // visible={true}
             // trigger="click"
             content={
@@ -37,9 +40,8 @@ export const PendantPopover: FC<{
             }
             offset={[0, 0]}
             style={popoverContainerStyle}
-        >
-            {children}
-        </Popover>
+            {...popoverProps}
+        />
     );
 };
 
