@@ -278,7 +278,11 @@ export const useKanban = () => {
                 // 1.1 Target group is not specified, just set the nowGroup as the targetGroup
                 targetGroup = nowGroup;
             }
-            if (nowGroup.id !== targetGroup.id) {
+            const isChangedGroup = nowGroup.id !== targetGroup.id;
+            const previousIdx = nowGroup.items.findIndex(
+                card => card.id === targetCard.id
+            );
+            if (isChangedGroup) {
                 // 1.2 Move to the target group
                 await moveCardToGroup(groupBy.id, targetCard, targetGroup);
             }
@@ -296,6 +300,10 @@ export const useKanban = () => {
             if (idx === 0) {
                 await moveCardToBefore(targetCard, nowGroup.items[0].block);
                 return;
+            }
+            // Fix move card from idx 0 to idx 1 at same group
+            if (!isChangedGroup && previousIdx < idx && previousIdx !== -1) {
+                idx++;
             }
             if (idx > nowGroup.items.length) {
                 idx = nowGroup.items.length;
