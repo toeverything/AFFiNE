@@ -30,11 +30,11 @@ export interface PageView extends BaseView {
 
 export interface KanbanView extends BaseView {
     type: RecastScene.Kanban;
-    groupBy: RecastPropertyId;
+    groupBy?: RecastPropertyId;
 }
 
 export interface TableView extends BaseView {
-    type: RecastScene.Kanban;
+    type: RecastScene.Table;
 }
 
 export type RecastView = PageView | KanbanView | TableView;
