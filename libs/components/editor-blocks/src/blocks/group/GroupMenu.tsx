@@ -3,8 +3,7 @@ import {
     mergeToPreviousGroup,
     RecastScene,
     RecastView,
-    useRecastBlockScene,
-    useRecastKanbanGroupBy,
+    useCurrentView,
     useRecastView,
 } from '@toeverything/components/editor-core';
 import {
@@ -29,7 +28,7 @@ import { GroupPanel } from './components/group-panel/GroupPanel';
 import { IconButton } from './components/IconButton';
 import { Line } from './components/Line';
 import { Sorter } from './components/sorter';
-import { PANEL_CONFIG, SCENE_CONFIG } from './config';
+import { PANEL_CONFIG } from './config';
 import type { ActivePanel } from './types';
 
 const VIEW_ICON_MAP: Record<RecastView['type'], ReactElement> = {
@@ -39,14 +38,14 @@ const VIEW_ICON_MAP: Record<RecastView['type'], ReactElement> = {
 };
 
 const ViewsMenu = () => {
-    const { currentView, recastViews, changeView } = useRecastView();
+    const { currentView, recastViews, setCurrentView } = useRecastView();
     return (
         <>
             {recastViews.map(view => (
                 <IconButton
                     key={view.id}
                     active={view.id === currentView.id}
-                    onClick={() => changeView(view)}
+                    onClick={() => setCurrentView(view)}
                 >
                     {VIEW_ICON_MAP[view.type]}
                     {view.name}
@@ -67,24 +66,21 @@ const GroupMenuWrapper = ({
 }) => {
     /* feature flag: sprint14 close Filter、Sort feature */
     const filterSorterFlag = useFlag('FilterSorter', false);
-    const { scene, setPage, setKanban, setTable } = useRecastBlockScene();
-    const { groupBy } = useRecastKanbanGroupBy();
+    const [currentView] = useCurrentView();
     const theme = useTheme();
 
     /* state: add active-style */
-    const [activePanel, setActivePanel] = useState<ActivePanel>(
+    const [activePanel, setActivePanel] = useState<ActivePanel | null>(
         PANEL_CONFIG.GROUP_BY
     );
     /* state: open panel */
-    const [openPanel, setOpenPanel] = useState<ActivePanel>(null);
+    const [openPanel, setOpenPanel] = useState<ActivePanel | null>(null);
 
     /**
      * close panel state/active state
      */
     const closePanel = () => {
-        if (!groupBy?.id) {
-            setActivePanel(null);
-        }
+        setActivePanel(null);
         setOpenPanel(null);
     };
 
@@ -108,21 +104,6 @@ const GroupMenuWrapper = ({
             zIndex={theme.affine.zIndex.header - 1}
             content={
                 <GroupPanel>
-                    <IconButton
-                        active={scene === SCENE_CONFIG.PAGE}
-                        onClick={setPage}
-                    >
-                        <TodoListIcon fontSize="small" />
-                        <span>Text View</span>
-                    </IconButton>
-                    <IconButton
-                        active={scene === SCENE_CONFIG.KANBAN}
-                        onClick={setKanban}
-                    >
-                        <KanBanIcon fontSize="small" />
-                        Kanban
-                    </IconButton>
-
                     <ViewsMenu />
                     <IconButton
                         active={activePanel === PANEL_CONFIG.ADD_VIEW}
@@ -146,38 +127,26 @@ const GroupMenuWrapper = ({
                         //     </IconButton>
                         // )
                         <CommingSoon>
-                            <IconButton
-                                active={scene === SCENE_CONFIG.TABLE}
-                                style={{ cursor: 'not-allowed' }}
-                            >
+                            <IconButton style={{ cursor: 'not-allowed' }}>
                                 <TableIcon fontSize="small" />
                                 Table
                             </IconButton>
                         </CommingSoon>
                     }
                     <CommingSoon>
-                        <IconButton
-                            active={scene === SCENE_CONFIG.TABLE}
-                            style={{ cursor: 'not-allowed' }}
-                        >
+                        <IconButton style={{ cursor: 'not-allowed' }}>
                             <KanBanIcon fontSize="small" />
                             Calendar
                         </IconButton>
                     </CommingSoon>
                     <CommingSoon>
-                        <IconButton
-                            active={scene === SCENE_CONFIG.TABLE}
-                            style={{ cursor: 'not-allowed' }}
-                        >
+                        <IconButton style={{ cursor: 'not-allowed' }}>
                             <TableIcon fontSize="small" />
                             Timeline
                         </IconButton>
                     </CommingSoon>
                     <CommingSoon>
-                        <IconButton
-                            active={scene === SCENE_CONFIG.TABLE}
-                            style={{ cursor: 'not-allowed' }}
-                        >
+                        <IconButton style={{ cursor: 'not-allowed' }}>
                             <KanBanIcon fontSize="small" />
                             BI
                         </IconButton>
@@ -227,9 +196,9 @@ const GroupMenuWrapper = ({
                             )
                     }
 
-                    {scene === RecastScene.Kanban && (
+                    {currentView.type === RecastScene.Kanban && (
                         <IconButton
-                            active={activePanel === PANEL_CONFIG.GROUP_BY}
+                            active={true}
                             onClick={() => onPanelChange(PANEL_CONFIG.GROUP_BY)}
                         >
                             <GroupByIcon fontSize="small" />

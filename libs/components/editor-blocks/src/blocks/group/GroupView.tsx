@@ -1,17 +1,17 @@
 import {
     addNewGroup,
     RecastScene,
+    useCurrentView,
     useOnSelect,
-    useRecastBlockScene,
 } from '@toeverything/components/editor-core';
+import { styled } from '@toeverything/components/ui';
+import type { CreateView } from '@toeverything/framework/virgo';
+import type { ComponentType, FC } from 'react';
+import { useState } from 'react';
+import { GroupMenuWrapper } from './GroupMenu';
 import { SceneKanban } from './scene-kanban';
 import { ScenePage } from './ScenePage';
 import { SceneTable } from './SceneTable';
-import { GroupMenuWrapper } from './GroupMenu';
-import { styled } from '@toeverything/components/ui';
-import { useState } from 'react';
-import type { FC, ComponentType } from 'react';
-import type { CreateView } from '@toeverything/framework/virgo';
 
 const SceneMap: Record<RecastScene, ComponentType<CreateView>> = {
     page: ScenePage,
@@ -78,7 +78,7 @@ const GroupContainer = styled('div')<{ isSelect?: boolean }>(
 
 export const GroupView: FC<CreateView> = props => {
     const { block, editor } = props;
-    const { scene } = useRecastBlockScene();
+    const [currentView] = useCurrentView();
     const [groupIsSelect, setGroupIsSelect] = useState(false);
 
     useOnSelect(block.id, (groupIsSelect: boolean) => {
@@ -89,9 +89,9 @@ export const GroupView: FC<CreateView> = props => {
         addNewGroup(editor, block, true);
     };
 
-    const View = SceneMap[scene];
+    const View = SceneMap[currentView.type];
     if (!View) {
-        return <>Group scene not found: {scene}!</>;
+        return <>Group scene not found: {currentView.type}!</>;
     }
 
     return (
