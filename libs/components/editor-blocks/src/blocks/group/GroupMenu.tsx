@@ -105,15 +105,20 @@ const GroupMenuWrapper = ({
             content={
                 <GroupPanel>
                     <ViewsMenu />
-                    <IconButton
-                        active={activePanel === PANEL_CONFIG.ADD_VIEW}
-                        onClick={() =>
-                            setActivePanel(PANEL_CONFIG.ADD_VIEW as ActivePanel)
-                        }
-                    >
-                        <AddViewIcon fontSize="small" />
-                        Add View
-                    </IconButton>
+
+                    {filterSorterFlag && (
+                        <IconButton
+                            active={activePanel === PANEL_CONFIG.ADD_VIEW}
+                            onClick={() =>
+                                setActivePanel(
+                                    PANEL_CONFIG.ADD_VIEW as ActivePanel
+                                )
+                            }
+                        >
+                            <AddViewIcon fontSize="small" />
+                            Add View
+                        </IconButton>
+                    )}
 
                     {
                         // // Closed beta period temporarily
