@@ -3,7 +3,7 @@ import { Input, Option, Select, Tooltip } from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 import { AsyncBlock } from '../../editor';
 
-import { pendantOptions, IconMap } from '../config';
+import { IconMap, pendantOptions } from '../config';
 import { OptionType, PendantOptions, PendantTypes } from '../types';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import {
@@ -15,12 +15,11 @@ import {
     StyledPopoverWrapper,
 } from '../StyledComponent';
 import {
-    PropertyType,
+    genSelectOptionId,
+    InformationProperty,
     useRecastBlock,
     useRecastBlockMeta,
     useSelectProperty,
-    genSelectOptionId,
-    InformationProperty,
 } from '../../recast-block';
 import {
     genInitialOptions,
@@ -103,9 +102,7 @@ export const CreatePendantPanel = ({
                             selectedOption.type,
                             getPendantConfigByType(selectedOption.type)
                         )}
-                        iconConfig={getPendantConfigByType(
-                            selectedOption.type
-                        )}
+                        iconConfig={getPendantConfigByType(selectedOption.type)}
                         // isStatusSelect={selectedOption.name === 'Status'}
                         onSure={async (type, newPropertyItem, newValue) => {
                             if (!fieldName) {
@@ -177,8 +174,7 @@ export const CreatePendantPanel = ({
                                 });
                             } else {
                                 // TODO: Color and background should use pendant config, but ui is not design now
-                                const iconConfig =
-                                    getPendantConfigByType(type);
+                                const iconConfig = getPendantConfigByType(type);
                                 // TODO: Color and background should be choose by user in the future
                                 const newProperty = await addProperty({
                                     type: type,

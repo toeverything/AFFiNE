@@ -1,11 +1,10 @@
-import React, { ReactNode, useRef, useState } from 'react';
+import React, { ReactNode, useRef } from 'react';
 import { getLatestPropertyValue } from '../utils';
 import {
     getRecastItemValue,
     RecastMetaProperty,
     useRecastBlock,
     useRecastBlockMeta,
-    RecastBlockValue,
 } from '../../recast-block';
 import { AsyncBlock } from '../../editor';
 import { Popover, PopperHandler, styled } from '@toeverything/components/ui';
@@ -19,10 +18,6 @@ export const PendantHistoryPanel = ({
     block: AsyncBlock;
     endElement?: ReactNode;
 }) => {
-    const [propertyWithValue, setPropertyWithValue] = useState<{
-        value: RecastBlockValue;
-        property: RecastMetaProperty;
-    }>();
     const popoverHandlerRef = useRef<{ [key: string]: PopperHandler }>({});
 
     const { getProperty } = useRecastBlockMeta();
@@ -53,25 +48,23 @@ export const PendantHistoryPanel = ({
                         }}
                         placement="bottom-start"
                         content={
-                            propertyWithValue && (
-                                <UpdatePendantPanel
-                                    block={block}
-                                    value={propertyWithValue.value}
-                                    property={propertyWithValue.property}
-                                    hasDelete={false}
-                                    onSure={() => {
-                                        popoverHandlerRef.current[
-                                            item.id
-                                        ].setVisible(false);
-                                    }}
-                                    onCancel={() => {
-                                        popoverHandlerRef.current[
-                                            item.id
-                                        ].setVisible(false);
-                                    }}
-                                    titleEditable={false}
-                                />
-                            )
+                            <UpdatePendantPanel
+                                block={block}
+                                value={item}
+                                property={property}
+                                hasDelete={false}
+                                onSure={() => {
+                                    popoverHandlerRef.current[
+                                        item.id
+                                    ].setVisible(false);
+                                }}
+                                onCancel={() => {
+                                    popoverHandlerRef.current[
+                                        item.id
+                                    ].setVisible(false);
+                                }}
+                                titleEditable={false}
+                            />
                         }
                         trigger="click"
                     >
@@ -84,14 +77,6 @@ export const PendantHistoryPanel = ({
                             }}
                             property={property as RecastMetaProperty}
                             value={item}
-                            onClick={e => {
-                                if (property) {
-                                    setPropertyWithValue({
-                                        property,
-                                        value: item,
-                                    });
-                                }
-                            }}
                         />
                     </Popover>
                 );

@@ -1,11 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { AsyncBlock } from '../../editor';
-import {
-    getRecastItemValue,
-    RecastBlockValue,
-    RecastMetaProperty,
-    useRecastBlockMeta,
-} from '../../recast-block';
+import { getRecastItemValue, useRecastBlockMeta } from '../../recast-block';
 import {
     MuiZoom,
     Popover,
