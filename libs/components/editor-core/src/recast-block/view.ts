@@ -20,7 +20,7 @@ const genViewId = () => nanoid(16) as RecastViewId; // This is a safe type cast
 const DEFAULT_VIEWS: RecastView[] = [
     {
         id: genViewId(),
-        name: 'List',
+        name: 'Text View',
         type: RecastScene.Page,
     },
     {
@@ -137,6 +137,23 @@ export const useRecastView = () => {
         [getView, recastViews, setViews]
     );
 
+    /**
+     * Get kanban ability
+     */
+    const withKanbanView = useCallback(
+        (view: KanbanView) => {
+            const groupBy = view.groupBy ?? null;
+            const setGroupBy = (groupBy: RecastPropertyId) => {
+                updateView({ ...view, groupBy });
+            };
+            return {
+                groupBy,
+                setGroupBy,
+            };
+        },
+        [updateView]
+    );
+
     return {
         currentView,
         recastViews,
@@ -145,5 +162,8 @@ export const useRecastView = () => {
         updateView,
         renameView,
         removeView,
+
+        withKanbanView,
+        // TODO reorder API
     };
 };

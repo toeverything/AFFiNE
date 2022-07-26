@@ -2,17 +2,18 @@ import { Protocol } from '@toeverything/datasource/db-service';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useEditor } from '../contexts';
 import { AsyncBlock } from '../editor';
+import { useRecastView } from '../recast-block';
 import { useRecastBlock } from '../recast-block/Context';
 import {
     useRecastBlockMeta,
     useSelectProperty,
 } from '../recast-block/property';
-import type { RecastItem } from '../recast-block/types';
 import {
-    KANBAN_PROPERTIES_KEY,
     PropertyType,
+    RecastItem,
     RecastMetaProperty,
     RecastPropertyId,
+    RecastScene,
 } from '../recast-block/types';
 import { supportChildren } from '../utils';
 import {
@@ -39,9 +40,9 @@ import { KanbanCard, KanbanGroup } from './types';
  * @public
  */
 export const useRecastKanbanGroupBy = () => {
-    const recastBlock = useRecastBlock();
     const { getProperty, getProperties } = useRecastBlockMeta();
-    const kanbanProperties = recastBlock.getProperty(KANBAN_PROPERTIES_KEY);
+    const { currentView, withKanbanView } = useRecastView();
+    const isKanbanView = currentView.type === RecastScene.Kanban;
 
     // TODO: remove filter
     // Add other type groupBy support
@@ -53,18 +54,19 @@ export const useRecastKanbanGroupBy = () => {
 
     const setGroupBy = useCallback(
         async (id: RecastPropertyId) => {
-            const ok = await recastBlock.setProperty(KANBAN_PROPERTIES_KEY, {
-                ...kanbanProperties,
-                groupBy: id,
-            });
-            if (!ok) {
-                throw new Error('Failed to set groupBy');
+            if (!isKanbanView) {
+                console.error('current view:', currentView);
+                throw new Error(
+                    'Failed to set groupBy! Current view is not kanban view!'
+                );
             }
+            const { setGroupBy } = withKanbanView(currentView);
+            await setGroupBy(id);
         },
-        [recastBlock, kanbanProperties]
+        [currentView, isKanbanView, withKanbanView]
     );
 
-    const groupById = kanbanProperties?.groupBy;
+    const groupById = isKanbanView ? currentView.groupBy : null;
     // 1. groupBy is not set
     if (!groupById) {
         return {
