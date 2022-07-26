@@ -63,6 +63,8 @@ const TitleContainer = styled('div')(({ theme }) => {
         fontStyle: 'normal',
         fontWeight: '400',
         letterSpacing: '1.06px',
+        display: 'flex',
+        alignItems: 'center',
     };
 });
 
