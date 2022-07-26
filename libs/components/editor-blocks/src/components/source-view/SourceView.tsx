@@ -1,11 +1,8 @@
-import { FC } from 'react';
-
+import type { AsyncBlock } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
-import { AsyncBlock, useRecastBlockScene } from '@toeverything/framework/virgo';
-
-import { formatUrl } from './format-url';
-import { SCENE_CONFIG } from '../../blocks/group/config';
+import type { FC } from 'react';
 import { BlockPreview } from './BlockView';
+import { formatUrl } from './format-url';
 
 export interface Props {
     block: AsyncBlock;
@@ -17,23 +14,8 @@ export interface Props {
     resize?: boolean;
 }
 
-const _getLinkStyle = (scene: string) => {
-    switch (scene) {
-        case SCENE_CONFIG.PAGE:
-            return {
-                width: '420px',
-                height: '198px',
-            };
-        case SCENE_CONFIG.REFLINK:
-            return {};
-        default:
-            return {
-                width: '252px',
-                height: '126px',
-            };
-    }
-};
 const getHost = (url: string) => new URL(url).host;
+
 const LinkContainer = styled('div')<{
     isSelected: boolean;
 }>(({ theme, isSelected }) => {
@@ -56,12 +38,11 @@ const LinkContainer = styled('div')<{
         },
     };
 });
+
 const SourceViewContainer = styled('div')<{
     isSelected: boolean;
-    scene: string;
-}>(({ theme, isSelected, scene }) => {
+}>(({ theme, isSelected }) => {
     return {
-        ..._getLinkStyle(scene),
         overflow: 'hidden',
         borderRadius: theme.affine.shape.borderRadius,
         background: isSelected ? 'rgba(152, 172, 189, 0.1)' : 'transparent',
@@ -77,7 +58,6 @@ const SourceViewContainer = styled('div')<{
 
 export const SourceView: FC<Props> = props => {
     const { link, isSelected, block, editorElement } = props;
-    const { scene } = useRecastBlockScene();
     const src = formatUrl(link);
     const openTabOnBrowser = () => {
         window.open(link, '_blank');
@@ -91,22 +71,12 @@ export const SourceView: FC<Props> = props => {
             >
                 <p>{getHost(src)}</p>
                 <p>{src}</p>
-                {/* <SourceViewContainer isSelected={isSelected} scene={scene}>
-                    <iframe
-                        title={link}
-                        src={src}
-                        frameBorder="0"
-                        allowFullScreen
-                        sandbox=""
-                    />
-                </SourceViewContainer> */}
             </LinkContainer>
         );
     } else if (src?.startsWith('affine')) {
         return (
             <SourceViewContainer
                 isSelected={isSelected}
-                scene={SCENE_CONFIG.REFLINK}
                 style={{ padding: '0' }}
             >
                 <BlockPreview
