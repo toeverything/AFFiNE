@@ -69,6 +69,7 @@ export const PendantHistoryPanel = ({
                                             item.id
                                         ].setVisible(false);
                                     }}
+                                    titleEditable={false}
                                 />
                             )
                         }

@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import type { AsyncBlock } from '../../editor';
 import {
@@ -29,6 +29,8 @@ import {
     StyledPopoverSubTitle,
 } from '../StyledComponent';
 import { IconMap, pendantOptions } from '../config';
+import { Input, Tooltip } from '@toeverything/components/ui';
+import { HelpCenterIcon } from '@toeverything/components/icons';
 
 type SelectPropertyType = MultiSelectProperty | SelectProperty;
 
@@ -39,6 +41,7 @@ type Props = {
     hasDelete?: boolean;
     onSure?: () => void;
     onCancel?: () => void;
+    titleEditable?: boolean;
 };
 
 export const UpdatePendantPanel = ({
@@ -48,6 +51,7 @@ export const UpdatePendantPanel = ({
     hasDelete = false,
     onSure,
     onCancel,
+    titleEditable = false,
 }: Props) => {
     const { updateSelect } = useSelectProperty();
     const { setPendant, removePendant } = usePendant(block);
@@ -55,6 +59,7 @@ export const UpdatePendantPanel = ({
     const iconConfig = getPendantConfigByType(property.type);
     const Icon = IconMap[iconConfig.iconName];
     const { updateProperty } = useRecastBlockMeta();
+    const [fieldTitle, setFieldTitle] = useState(property.name);
 
     return (
         <StyledPopoverWrapper>
@@ -70,7 +75,25 @@ export const UpdatePendantPanel = ({
                 {property.type}
             </StyledPopoverContent>
             <StyledOperationLabel>Field Title</StyledOperationLabel>
-            <StyledPopoverContent>{property.name}</StyledPopoverContent>
+            {titleEditable ? (
+                <Input
+                    value={fieldTitle}
+                    placeholder="Input your field name here"
+                    onChange={e => {
+                        setFieldTitle(e.target.value);
+                    }}
+                    endAdornment={
+                        <Tooltip content="Help info here">
+                            <StyledInputEndAdornment>
+                                <HelpCenterIcon />
+                            </StyledInputEndAdornment>
+                        </Tooltip>
+                    }
+                />
+            ) : (
+                <StyledPopoverContent>{property.name}</StyledPopoverContent>
+            )}
+
             <StyledDivider />
             {pendantOption.subTitle && (
                 <StyledPopoverSubTitle>
@@ -190,6 +213,12 @@ export const UpdatePendantPanel = ({
                         await setPendant(property, newValue);
                     }
 
+                    if (fieldTitle !== property.name) {
+                        await updateProperty({
+                            ...property,
+                            name: fieldTitle,
+                        });
+                    }
                     onSure?.();
                 }}
                 onDelete={
