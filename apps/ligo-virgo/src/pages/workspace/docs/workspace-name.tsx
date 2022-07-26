@@ -1,6 +1,6 @@
 import {
     MuiButton as Button,
-    MuiSwitch as Switch,
+    Switch,
     styled,
     MuiOutlinedInput as OutlinedInput,
 } from '@toeverything/components/ui';
@@ -155,12 +155,11 @@ export const WorkspaceName = () => {
                     </WorkspaceNameContainer>
                 )}
             </LeftContainer>
-            <ToggleDisplayContainer>
-                <span>{fixedDisplay ? 'ON' : 'OFF'}</span>
+            <ToggleDisplayContainer onClick={toggleSpaceSidebar}>
                 <Switch
                     checked={fixedDisplay}
-                    onChange={toggleSpaceSidebar}
-                    size="small"
+                    checkedLabel="ON"
+                    uncheckedLabel="OFF"
                 />
             </ToggleDisplayContainer>
         </WorkspaceContainer>
