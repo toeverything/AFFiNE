@@ -1,10 +1,11 @@
 import {
+    CreateView,
     RenderBlock,
+    useCurrentView,
     useOnSelect,
-    useRecastBlockScene,
     WrapperWithPendantAndDragDrop,
 } from '@toeverything/components/editor-core';
-import { CreateView } from '@toeverything/framework/virgo';
+import { styled } from '@toeverything/components/ui';
 import type {
     ComponentPropsWithoutRef,
     ComponentPropsWithRef,
@@ -13,10 +14,8 @@ import type {
 } from 'react';
 import { forwardRef, useState } from 'react';
 import style9 from 'style9';
-
-import { BlockContainer } from '../components/BlockContainer';
-import { styled } from '@toeverything/components/ui';
 import { SCENE_CONFIG } from '../blocks/group/config';
+import { BlockContainer } from '../components/BlockContainer';
 
 type WithChildrenConfig = {
     indent: CSSProperties['marginLeft'];
@@ -68,8 +67,8 @@ const ChildrenView = ({
     handleCollapse,
     indent,
 }: ChildrenViewProp) => {
-    const { scene } = useRecastBlockScene();
-    const isKanbanScene = scene === SCENE_CONFIG.KANBAN;
+    const [currentView] = useCurrentView();
+    const isKanbanScene = currentView.type === SCENE_CONFIG.KANBAN;
 
     return (
         <div
@@ -130,9 +129,9 @@ export const withTreeViewChildren = (
         const childrenIds = block.childrenIds;
         const showChildren = !collapsed && childrenIds.length > 0;
 
-        const [isSelect, setIsSelect] = useState<boolean>();
-        useOnSelect(block.id, (is_select: boolean) => {
-            setIsSelect(is_select);
+        const [isSelect, setIsSelect] = useState<boolean>(false);
+        useOnSelect(block.id, (isSelect: boolean) => {
+            setIsSelect(isSelect);
         });
         const handleCollapse = () => {
             block.setProperty('collapsed', { value: true });

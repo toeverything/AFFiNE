@@ -1,3 +1,5 @@
+import { RecastScene } from '@toeverything/components/editor-core';
+
 export const PANEL_CONFIG = {
     FILTER: 'filter',
     SORTER: 'sorter',
@@ -5,9 +7,11 @@ export const PANEL_CONFIG = {
     GROUP_BY: 'group_by',
 } as const;
 
-export const SCENE_CONFIG = {
+/**
+ * See {@link RecastScene}
+ */
+export const SCENE_CONFIG: Record<Uppercase<RecastScene>, string> = {
     PAGE: 'page',
     KANBAN: 'kanban',
     TABLE: 'table',
-    REFLINK: 'reflink',
 } as const;

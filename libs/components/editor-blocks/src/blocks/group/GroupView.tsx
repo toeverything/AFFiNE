@@ -17,7 +17,6 @@ const SceneMap: Record<RecastScene, ComponentType<CreateView>> = {
     page: ScenePage,
     table: SceneTable,
     kanban: SceneKanban,
-    whiteboard: ScenePage,
 } as const;
 
 const GroupBox = styled('div')(({ theme }) => {

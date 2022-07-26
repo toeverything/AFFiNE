@@ -7,7 +7,7 @@ export enum RecastScene {
     Page = 'page',
     Kanban = 'kanban',
     Table = 'table',
-    Whiteboard = 'whiteboard',
+    // Whiteboard = 'whiteboard',
 }
 
 export type RecastViewId = string & {

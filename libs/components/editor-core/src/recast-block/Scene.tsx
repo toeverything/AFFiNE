@@ -7,6 +7,7 @@ import { RecastScene } from './types';
  *
  * 获取/设置多维区块场景
  * @public
+ * @deprecated Use the `useRecastView` or `useCurrentView` API
  */
 export const useRecastBlockScene = () => {
     const groupBlock = useRecastBlock();

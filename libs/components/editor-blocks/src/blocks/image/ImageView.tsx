@@ -1,18 +1,16 @@
-import { FC, useState, useEffect, useRef } from 'react';
-import { CreateView } from '@toeverything/framework/virgo';
-import { Upload } from '../../components/upload/upload';
-import { services } from '@toeverything/datasource/db-service';
-import { styled } from '@toeverything/components/ui';
-import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
-import DownloadIcon from '@mui/icons-material/Download';
-import { Image as SourceView } from '../../components/ImageView';
 import {
+    useCurrentView,
     useOnSelect,
-    useRecastBlockScene,
     WrapperWithPendantAndDragDrop,
 } from '@toeverything/components/editor-core';
-import './styles.css';
+import { styled } from '@toeverything/components/ui';
+import { services } from '@toeverything/datasource/db-service';
+import { CreateView } from '@toeverything/framework/virgo';
+import { FC, useEffect, useRef, useState } from 'react';
+import { Image as SourceView } from '../../components/ImageView';
+import { Upload } from '../../components/upload/upload';
 import { SCENE_CONFIG } from '../group/config';
+import './styles.css';
 const MESSAGES = {
     ADD_AN_IMAGE: 'Add an image',
 };
@@ -62,14 +60,14 @@ export const ImageView: FC<ImageView> = ({ block, editor }) => {
     const [imgWidth, setImgWidth] = useState<number>(0);
     const [ratio, set_ratio] = useState<number>(0);
     const resize_box = useRef(null);
-    const { scene } = useRecastBlockScene();
+    const [currentView] = useCurrentView();
     const [isSelect, setIsSelect] = useState<boolean>();
     useOnSelect(block.id, (isSelect: boolean) => {
         setIsSelect(isSelect);
     });
 
     const img_load = (url: string) => {
-        let boxWidth = resize_box.current.offsetWidth;
+        const boxWidth = resize_box.current.offsetWidth;
 
         const imageStyle = block.getProperty('image_style');
         if (imageStyle?.width) {
@@ -171,7 +169,7 @@ export const ImageView: FC<ImageView> = ({ block, editor }) => {
                                 e.stopPropagation();
                             }}
                         >
-                            {scene === SCENE_CONFIG.PAGE ? (
+                            {currentView.type === SCENE_CONFIG.PAGE ? (
                                 <SourceView
                                     block={block}
                                     viewStyle={{
