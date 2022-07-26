@@ -412,7 +412,6 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
             binary?: ArrayBufferLike;
         }
     ): Promise<YjsBlockInstance> {
-        console.trace('createBlock', options);
         const uuid = options.uuid || `affine${nanoid(16)}`;
         if (options.type === BlockTypes.binary) {
             if (options.binary && options.binary instanceof ArrayBuffer) {
