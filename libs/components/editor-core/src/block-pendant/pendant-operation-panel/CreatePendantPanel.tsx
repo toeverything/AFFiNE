@@ -3,7 +3,7 @@ import { Input, Option, Select, Tooltip } from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 import { AsyncBlock } from '../../editor';
 
-import { pendantOptions, IconMap, pendantIconConfig } from '../config';
+import { pendantOptions, IconMap } from '../config';
 import { OptionType, PendantOptions, PendantTypes } from '../types';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import {
@@ -25,7 +25,7 @@ import {
 import {
     genInitialOptions,
     getOfficialSelected,
-    getPendantIconsConfigByType,
+    getPendantConfigByType,
 } from '../utils';
 import { usePendant } from '../use-pendant';
 
@@ -101,9 +101,9 @@ export const CreatePendantPanel = ({
                         // Select, MultiSelect, Status use this props as initial property
                         initialOptions={genInitialOptions(
                             selectedOption.type,
-                            getPendantIconsConfigByType(selectedOption.type)
+                            getPendantConfigByType(selectedOption.type)
                         )}
-                        iconConfig={getPendantIconsConfigByType(
+                        iconConfig={getPendantConfigByType(
                             selectedOption.type
                         )}
                         // isStatusSelect={selectedOption.name === 'Status'}
@@ -178,7 +178,7 @@ export const CreatePendantPanel = ({
                             } else {
                                 // TODO: Color and background should use pendant config, but ui is not design now
                                 const iconConfig =
-                                    getPendantIconsConfigByType(type);
+                                    getPendantConfigByType(type);
                                 // TODO: Color and background should be choose by user in the future
                                 const newProperty = await addProperty({
                                     type: type,
@@ -186,7 +186,7 @@ export const CreatePendantPanel = ({
                                     background:
                                         iconConfig.background as CSSProperties['background'],
                                     color: iconConfig.color as CSSProperties['color'],
-                                    iconName: iconConfig.name,
+                                    iconName: iconConfig.iconName,
                                 });
 
                                 await setPendant(newProperty, newValue);

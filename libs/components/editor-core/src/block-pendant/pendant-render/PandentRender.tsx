@@ -10,7 +10,7 @@ import {
 import { Popover, PopperHandler, styled } from '@toeverything/components/ui';
 import { PendantTag } from '../PendantTag';
 
-import { pendantColors } from '../config';
+import { defaultPendantColors } from '../config';
 import { UpdatePendantPanel } from '../pendant-operation-panel';
 import { AddPendantPopover } from '../AddPendantPopover';
 import { PendantTypes } from '../types';

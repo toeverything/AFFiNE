@@ -34,8 +34,8 @@ export type PendantOptions = {
     subTitle: string;
 };
 
-export type PendantIconConfig = {
-    name: IconNames;
+export type PendantConfig = {
+    iconName: IconNames;
     // background: CSSProperties['background'];
     // color: CSSProperties['color'];
     background: CSSProperties['background'] | CSSProperties['background'][];

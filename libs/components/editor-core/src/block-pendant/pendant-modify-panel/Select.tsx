@@ -9,12 +9,8 @@ import { Add, Delete, Close } from '@mui/icons-material';
 import { ModifyPanelContentProps } from './types';
 import {
     MultiSelectProperty,
-    MultiSelectValue,
-    SelectOption,
     SelectProperty,
     SelectOptionId,
-    RecastBlockValue,
-    RecastMetaProperty,
 } from '../../recast-block';
 import {
     Checkbox,
@@ -24,12 +20,7 @@ import {
     Tooltip,
 } from '@toeverything/components/ui';
 import { HighLightIconInput } from './IconInput';
-import {
-    PendantIconConfig,
-    IconNames,
-    OptionIdType,
-    OptionType,
-} from '../types';
+import { PendantConfig, IconNames, OptionIdType, OptionType } from '../types';
 import { genBasicOption } from '../utils';
 
 type OptionItemType = {
@@ -67,7 +58,7 @@ export const BasicSelect = ({
     initialOptions: OptionType[];
     onValueChange: (value: any) => void;
     onPropertyChange?: (newProperty: any) => void;
-    iconConfig?: PendantIconConfig;
+    iconConfig?: PendantConfig;
     onEnter?: (e: KeyboardEvent) => void;
 }) => {
     const [options, setOptions] = useState<OptionType[]>(initialOptions);

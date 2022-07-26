@@ -11,7 +11,7 @@ export default ({
     const [text, setText] = useState(initialValue?.value || '');
     return (
         <HighLightIconInput
-            iconName={iconConfig?.name}
+            iconName={iconConfig?.iconName}
             color={iconConfig?.color as CSSProperties['color']}
             background={iconConfig?.background as CSSProperties['background']}
             value={text}

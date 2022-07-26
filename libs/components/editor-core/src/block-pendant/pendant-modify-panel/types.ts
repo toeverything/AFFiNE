@@ -1,6 +1,5 @@
-import { OptionType, PendantIconConfig, PendantTypes } from '../types';
+import { OptionType, PendantConfig, PendantTypes } from '../types';
 import type { RecastBlockValue, RecastMetaProperty } from '../../recast-block';
-import { FunctionComponent } from 'react';
 
 export type ModifyPanelProps = {
     type: PendantTypes | PendantTypes[];
@@ -9,7 +8,7 @@ export type ModifyPanelProps = {
     onCancel?: () => void;
     initialValue?: RecastBlockValue;
     initialOptions?: OptionType[];
-    iconConfig?: PendantIconConfig;
+    iconConfig?: PendantConfig;
     isStatusSelect?: boolean;
     property?: RecastMetaProperty;
 };
@@ -20,7 +19,7 @@ export type ModifyPanelContentProps = {
     onPropertyChange?: (newProperty: any) => void;
     initialValue?: RecastBlockValue;
     initialOptions?: OptionType[];
-    iconConfig?: PendantIconConfig;
+    iconConfig?: PendantConfig;
     isStatusSelect?: boolean;
     property?: RecastMetaProperty;
 };

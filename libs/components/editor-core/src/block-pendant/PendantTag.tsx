@@ -1,4 +1,9 @@
-import React from 'react';
+import React, {
+    FC,
+    FunctionComponent,
+    PropsWithChildren,
+    CSSProperties,
+} from 'react';
 import { Tag, type TagProps } from '@toeverything/components/ui';
 import {
     DateValue,
@@ -18,7 +23,7 @@ import {
 } from '../recast-block';
 import { IconNames, PendantTypes } from './types';
 import format from 'date-fns/format';
-import { IconMap, pendantColors } from './config';
+import { IconMap, defaultPendantColors } from './config';
 
 type PendantTagProps = {
     value: RecastBlockValue;
@@ -28,37 +33,33 @@ type PendantTagProps = {
 const MultiSelectRender = ({
     options,
     tagProps,
+    property,
 }: {
     options: SelectOption[];
     tagProps: TagProps;
+    property: RecastMetaProperty;
 }) => {
     const { style, ...otherProps } = tagProps;
+
     return (
         <>
             {options.map((option: SelectOption) => {
-                const Icon = IconMap[option.iconName as IconNames];
+                const { background, color, icon, content } = getOptionInfo({
+                    option,
+                    property,
+                });
                 return (
                     <Tag
                         key={option.id}
                         {...otherProps}
                         style={{
-                            background: style?.background || option.background,
-                            color: style?.color || option.color,
+                            background: style?.background || background,
+                            color: style?.color || color,
                             ...style,
                         }}
-                        startElement={
-                            Icon && (
-                                <Icon
-                                    style={{
-                                        fontSize: 12,
-                                        color: style?.color || option.color,
-                                        marginRight: '4px',
-                                    }}
-                                />
-                            )
-                        }
+                        startElement={icon}
                     >
-                        {option.name}
+                        {content}
                     </Tag>
                 );
             })}
@@ -66,23 +67,80 @@ const MultiSelectRender = ({
     );
 };
 
-export const PendantTag = (props: PendantTagProps) => {
-    const { value, property, ...tagProps } = props;
+const getOptionInfo = ({
+    option,
+    property,
+}: {
+    option: SelectOption;
+    property: RecastMetaProperty;
+}) => {
+    const { type } = property;
+    const {
+        background: defaultBackground,
+        color: defaultColor,
+        iconName: defaultIconName,
+    } = defaultPendantColors[type];
+    const Icon =
+        IconMap[option?.iconName as IconNames] ||
+        IconMap[defaultIconName as IconNames];
+
+    return {
+        background: option?.background || defaultBackground,
+        color: option?.color || defaultColor,
+        icon: Icon && (
+            <Icon
+                style={{
+                    fontSize: 12,
+                    marginRight: '4px',
+                }}
+            />
+        ),
+        content: option?.name || property.name,
+    };
+};
+
+const getNormalInfo = (
+    value: RecastBlockValue,
+    property: RecastMetaProperty
+) => {
+    const type = value.type;
+    const {
+        background: defaultBackground,
+        color: defaultColor,
+        iconName: defaultIconName,
+    } = defaultPendantColors[type];
+
     const {
         background: customBackground,
         color: customColor,
         iconName,
     } = property;
-    const { style: styleTagStyle, ...otherTagProps } = tagProps;
-    const type = value.type;
-    const { background: defaultBackground, color: defaultColor } =
-        pendantColors[type];
-
     const background = customBackground || defaultBackground;
     const color = customColor || defaultColor;
-    const Icon = IconMap[iconName as IconNames];
+    const Icon =
+        IconMap[iconName as IconNames] || IconMap[defaultIconName as IconNames];
+
+    return {
+        background,
+        color,
+        icon: Icon && (
+            <Icon
+                style={{
+                    fontSize: 12,
+                    marginRight: '4px',
+                }}
+            />
+        ),
+    };
+};
+
+export const PendantTag = (props: PendantTagProps) => {
+    const { value, property, ...tagProps } = props;
+    const { style: styleTagStyle, ...otherTagProps } = tagProps;
+
     if (value.type === PendantTypes.Text) {
         const { value: textValue } = value as TextValue;
+        const { background, color, icon } = getNormalInfo(value, property);
         return (
             <Tag
                 style={{
@@ -90,17 +148,7 @@ export const PendantTag = (props: PendantTagProps) => {
                     color,
                     ...styleTagStyle,
                 }}
-                startElement={
-                    Icon && (
-                        <Icon
-                            style={{
-                                fontSize: 12,
-                                color: color || '#fff',
-                                marginRight: '4px',
-                            }}
-                        />
-                    )
-                }
+                startElement={icon}
                 {...otherTagProps}
             >
                 {textValue}
@@ -110,32 +158,14 @@ export const PendantTag = (props: PendantTagProps) => {
 
     if (value.type === PendantTypes.Date) {
         const { value: dateValue } = value as DateValue;
-        if (Array.isArray(dateValue)) {
-            return (
-                <Tag
-                    style={{
-                        background,
-                        color,
-                        ...styleTagStyle,
-                    }}
-                    startElement={
-                        Icon && (
-                            <Icon
-                                style={{
-                                    fontSize: 12,
-                                    color: color || '#fff',
-                                    marginRight: '4px',
-                                }}
-                            />
-                        )
-                    }
-                    {...otherTagProps}
-                >
-                    {format(dateValue[0], 'yyyy-MM-dd')} ~{' '}
-                    {format(dateValue[1], 'yyyy-MM-dd')}
-                </Tag>
-            );
-        }
+        const { background, color, icon } = getNormalInfo(value, property);
+        const content = Array.isArray(dateValue)
+            ? `${format(dateValue[0], 'yyyy-MM-dd')} ~ ${format(
+                  dateValue[1],
+                  'yyyy-MM-dd'
+              )}`
+            : format(dateValue, 'yyyy-MM-dd');
+
         return (
             <Tag
                 style={{
@@ -143,20 +173,10 @@ export const PendantTag = (props: PendantTagProps) => {
                     color,
                     ...styleTagStyle,
                 }}
-                startElement={
-                    Icon && (
-                        <Icon
-                            style={{
-                                fontSize: 12,
-                                color: color || '#fff',
-                                marginRight: '4px',
-                            }}
-                        />
-                    )
-                }
+                startElement={icon}
                 {...otherTagProps}
             >
-                {format(dateValue, 'yyyy-MM-dd')}
+                {content}
             </Tag>
         );
     }
@@ -166,13 +186,31 @@ export const PendantTag = (props: PendantTagProps) => {
         const selectedOptions = (
             property as MultiSelectProperty
         ).options.filter(o => multiSelectValue.includes(o.id));
+        const { style, ...otherProps } = tagProps;
 
         if (selectedOptions.length) {
             return (
                 <MultiSelectRender
                     options={selectedOptions}
                     tagProps={tagProps}
+                    property={property}
                 />
+            );
+        } else {
+            const { background, color, icon } = getNormalInfo(value, property);
+
+            return (
+                <Tag
+                    style={{
+                        background,
+                        color,
+                        ...styleTagStyle,
+                    }}
+                    startElement={icon}
+                    {...otherTagProps}
+                >
+                    {property.name}
+                </Tag>
             );
         }
     }
@@ -184,28 +222,23 @@ export const PendantTag = (props: PendantTagProps) => {
         const option = (property as SelectProperty).options.find(
             o => o.id === selectValue
         );
-        const OptionIcon = IconMap[option.iconName as IconNames];
+
+        const { background, color, icon, content } = getOptionInfo({
+            option,
+            property,
+        });
+
         return (
             <Tag
                 style={{
-                    background: option.background,
-                    color: option.color,
+                    background,
+                    color,
                     ...style,
                 }}
-                startElement={
-                    OptionIcon && (
-                        <OptionIcon
-                            style={{
-                                fontSize: 12,
-                                color: option.color || '#fff',
-                                marginRight: '4px',
-                            }}
-                        />
-                    )
-                }
+                startElement={icon}
                 {...otherProps}
             >
-                {option.name}
+                {content}
             </Tag>
         );
     }
@@ -217,35 +250,29 @@ export const PendantTag = (props: PendantTagProps) => {
         const option = (property as StatusProperty).options.find(
             o => o.id === statusValue
         );
-        const OptionIcon = IconMap[option.iconName as IconNames];
+        const { background, color, icon, content } = getOptionInfo({
+            option,
+            property,
+        });
 
         return (
             <Tag
                 style={{
-                    background: option.background,
-                    color: option.color,
+                    background,
+                    color,
                     ...style,
                 }}
-                startElement={
-                    OptionIcon && (
-                        <OptionIcon
-                            style={{
-                                fontSize: 12,
-                                color: option.color || '#fff',
-                                marginRight: '4px',
-                            }}
-                        />
-                    )
-                }
+                startElement={icon}
                 {...otherProps}
             >
-                {option.name}
+                {content}
             </Tag>
         );
     }
 
     if (value.type === PendantTypes.Mention) {
         const { value: mentionValue } = value as MentionValue;
+        const { background, color, icon } = getNormalInfo(value, property);
 
         return (
             <Tag
@@ -254,20 +281,10 @@ export const PendantTag = (props: PendantTagProps) => {
                     color,
                     ...styleTagStyle,
                 }}
-                startElement={
-                    Icon && (
-                        <Icon
-                            style={{
-                                fontSize: 12,
-                                color: color || '#fff',
-                                marginRight: '4px',
-                            }}
-                        />
-                    )
-                }
+                startElement={icon}
                 {...otherTagProps}
             >
-                @{mentionValue}
+                {mentionValue}
             </Tag>
         );
     }
@@ -299,16 +316,35 @@ export const PendantTag = (props: PendantTagProps) => {
                     <MultiSelectRender
                         options={emailSelectedOptions}
                         tagProps={tagProps}
+                        property={property}
                     />
                     <MultiSelectRender
                         options={phoneSelectedOptions}
                         tagProps={tagProps}
+                        property={property}
                     />
                     <MultiSelectRender
                         options={locationSelectedOptions}
                         tagProps={tagProps}
+                        property={property}
                     />
                 </>
+            );
+        } else {
+            const { background, color, icon } = getNormalInfo(value, property);
+
+            return (
+                <Tag
+                    style={{
+                        background,
+                        color,
+                        ...styleTagStyle,
+                    }}
+                    startElement={icon}
+                    {...otherTagProps}
+                >
+                    {property.name}
+                </Tag>
             );
         }
     }

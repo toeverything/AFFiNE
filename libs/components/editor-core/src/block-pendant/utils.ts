@@ -1,14 +1,11 @@
 import {
-    PropertyType,
     RecastBlockValue,
     RecastPropertyId,
-    RecastMetaProperty,
     SelectOption,
-    SelectOptionId,
 } from '../recast-block';
 import { OptionIdType, OptionType } from './types';
-import { pendantIconConfig } from './config';
-import { PendantIconConfig, PendantTypes } from './types';
+import { pendantConfig } from './config';
+import { PendantConfig, PendantTypes } from './types';
 type Props = {
     recastBlockId: string;
     blockId: string;
@@ -24,12 +21,12 @@ type StorageMap = {
     };
 };
 
-const LOCAL_STROAGE_NAME = 'TEMPORARY_PENDANT_DATA';
+const LOCAL_STORAGE_NAME = 'TEMPORARY_PENDANT_DATA';
 
 const ensureLocalStorage = () => {
-    const data = localStorage.getItem(LOCAL_STROAGE_NAME);
+    const data = localStorage.getItem(LOCAL_STORAGE_NAME);
     if (!data) {
-        localStorage.setItem(LOCAL_STROAGE_NAME, JSON.stringify({}));
+        localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify({}));
     }
 };
 
@@ -40,7 +37,7 @@ export const setLatestPropertyValue = ({
 }: Props) => {
     ensureLocalStorage();
     const data: StorageMap = JSON.parse(
-        localStorage.getItem(LOCAL_STROAGE_NAME) as string
+        localStorage.getItem(LOCAL_STORAGE_NAME) as string
     );
 
     if (!data[recastBlockId]) {
@@ -53,7 +50,7 @@ export const setLatestPropertyValue = ({
         value,
     };
 
-    localStorage.setItem(LOCAL_STROAGE_NAME, JSON.stringify(data));
+    localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(data));
 };
 
 export const getLatestPropertyValue = ({
@@ -68,7 +65,7 @@ export const getLatestPropertyValue = ({
 }> => {
     ensureLocalStorage();
     const data: StorageMap = JSON.parse(
-        localStorage.getItem(LOCAL_STROAGE_NAME) as string
+        localStorage.getItem(LOCAL_STORAGE_NAME) as string
     );
 
     if (!data[recastBlockId]) {
@@ -95,7 +92,7 @@ export const removePropertyValueRecord = ({
 }) => {
     ensureLocalStorage();
     const data: StorageMap = JSON.parse(
-        localStorage.getItem(LOCAL_STROAGE_NAME) as string
+        localStorage.getItem(LOCAL_STORAGE_NAME) as string
     );
     if (!data[recastBlockId]) {
         return;
@@ -103,7 +100,7 @@ export const removePropertyValueRecord = ({
 
     delete data[recastBlockId][propertyId];
 
-    localStorage.setItem(LOCAL_STROAGE_NAME, JSON.stringify(data));
+    localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(data));
 };
 
 /**
@@ -146,16 +143,14 @@ export const getOfficialSelected = ({
     return selectedId;
 };
 
-export const getPendantIconsConfigByType = (
-    pendantType: string
-): PendantIconConfig => {
-    return pendantIconConfig[pendantType];
+export const getPendantConfigByType = (pendantType: string): PendantConfig => {
+    return pendantConfig[pendantType];
 };
 
 export const getPendantIconsConfigByName = (
     pendantName?: string
-): PendantIconConfig => {
-    return pendantIconConfig[pendantName];
+): PendantConfig => {
+    return pendantConfig[pendantName];
 };
 
 export const genBasicOption = ({
@@ -164,10 +159,10 @@ export const genBasicOption = ({
     name = '',
 }: {
     index: number;
-    iconConfig: PendantIconConfig;
+    iconConfig: PendantConfig;
     name?: string;
 }): OptionType => {
-    const iconName = iconConfig.name;
+    const iconName = iconConfig.iconName;
     const background = Array.isArray(iconConfig.background)
         ? iconConfig.background[index % iconConfig.background.length]
         : iconConfig.background;
@@ -189,7 +184,7 @@ export const genBasicOption = ({
  * **/
 export const genInitialOptions = (
     type: PendantTypes,
-    iconConfig: PendantIconConfig
+    iconConfig: PendantConfig
 ) => {
     if (type === PendantTypes.Status) {
         return [

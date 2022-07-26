@@ -27,7 +27,7 @@ export default ({
             placeholder={
                 <>
                     <PendantIcon
-                        iconName={iconConfig?.name}
+                        iconName={iconConfig?.iconName}
                         color={iconConfig?.color as CSSProperties['color']}
                         background={
                             iconConfig?.background as CSSProperties['background']

@@ -15,7 +15,7 @@ import {
 import { OptionType, PendantTypes, TempInformationType } from '../types';
 import {
     getOfficialSelected,
-    getPendantIconsConfigByType,
+    getPendantConfigByType,
     // getPendantIconsConfigByNameOrType,
 } from '../utils';
 import { usePendant } from '../use-pendant';
@@ -52,8 +52,8 @@ export const UpdatePendantPanel = ({
     const { updateSelect } = useSelectProperty();
     const { setPendant, removePendant } = usePendant(block);
     const pendantOption = pendantOptions.find(v => v.type === property.type);
-    const iconConfig = getPendantIconsConfigByType(property.type);
-    const Icon = IconMap[iconConfig.name];
+    const iconConfig = getPendantConfigByType(property.type);
+    const Icon = IconMap[iconConfig.iconName];
     const { updateProperty } = useRecastBlockMeta();
 
     return (
@@ -84,7 +84,7 @@ export const UpdatePendantPanel = ({
                         value: value.value,
                     } as RecastBlockValue
                 }
-                iconConfig={getPendantIconsConfigByType(property.type)}
+                iconConfig={getPendantConfigByType(property.type)}
                 property={property}
                 type={property.type}
                 onSure={async (type, newPropertyItem, newValue) => {
