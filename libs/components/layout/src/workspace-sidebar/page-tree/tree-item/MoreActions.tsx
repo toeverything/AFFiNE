@@ -176,24 +176,24 @@ function DndTreeItemMoreActions(props: ActionsProps) {
             title: '',
             isDivide: true,
         },
-        {
-            title: 'New Child Page',
-            callback: () => {
-                handle_new_child_page();
-            },
-        },
-        {
-            title: 'New Prev Page',
-            callback: () => {
-                handle_new_prev_page();
-            },
-        },
-        {
-            title: 'New Next Page',
-            callback: () => {
-                handle_new_next_page();
-            },
-        },
+        // {
+        //     title: 'New Child Page',
+        //     callback: () => {
+        //         handle_new_child_page();
+        //     },
+        // },
+        // {
+        //     title: 'New Prev Page',
+        //     callback: () => {
+        //         handle_new_prev_page();
+        //     },
+        // },
+        // {
+        //     title: 'New Next Page',
+        //     callback: () => {
+        //         handle_new_next_page();
+        //     },
+        // },
         {
             title: 'New From Template',
             subItems: templateMenuList,
