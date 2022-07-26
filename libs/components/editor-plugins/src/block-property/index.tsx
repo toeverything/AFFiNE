@@ -60,7 +60,7 @@ export class BlockPropertyPlugin extends BasePlugin {
         );
     };
 
-    protected override on_render(): void {
+    protected override _onRender(): void {
         this.hooks.addHook(
             HookType.AFTER_ON_NODE_MOUSE_MOVE,
             this.on_mouse_move,

@@ -14,8 +14,7 @@ export class CommandMenuPlugin extends BasePlugin {
         return PLUGIN_NAME;
     }
 
-    protected override on_render(): void {
-        if (this.editor.isWhiteboard) return;
+    protected override _onRender(): void {
         const container = document.createElement('div');
         // TODO remove
         container.classList.add(`id-${PLUGIN_NAME}`);

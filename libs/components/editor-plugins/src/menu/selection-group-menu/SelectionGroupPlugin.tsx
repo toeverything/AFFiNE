@@ -12,7 +12,7 @@ export class SelectionGroupPlugin extends BasePlugin {
 
     private root: PluginRenderRoot | undefined;
 
-    protected override on_render() {
+    protected override _onRender() {
         this.root = new PluginRenderRoot({
             name: SelectionGroupPlugin.pluginName,
             render: this.editor.reactRenderRoot?.render,

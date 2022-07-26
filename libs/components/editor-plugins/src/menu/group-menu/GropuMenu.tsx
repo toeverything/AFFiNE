@@ -4,7 +4,7 @@ import {
     PluginHooks,
     Virgo,
 } from '@toeverything/components/editor-core';
-import { domToRect, Point } from '@toeverything/utils';
+import { Point } from '@toeverything/utils';
 import { GroupDirection } from '@toeverything/framework/virgo';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { DragItem } from './DragItem';
@@ -46,7 +46,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
                 setShowMenu(false);
             }
         },
-        [setShowMenu]
+        []
     );
 
     const handleRootDragOver = useCallback(
@@ -128,8 +128,8 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
             if (editor.container) {
                 setPosition(
                     new Point(
-                        groupBlock.dom.offsetLeft - editor.container.offsetLeft,
-                        groupBlock.dom.offsetTop - editor.container.offsetTop
+                        groupBlock.dom.offsetLeft,
+                        groupBlock.dom.offsetTop
                     )
                 );
             }

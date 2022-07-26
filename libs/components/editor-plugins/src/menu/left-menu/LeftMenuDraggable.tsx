@@ -39,8 +39,8 @@ type LineInfo = {
     blockInfo: BlockDomInfo;
 };
 
-function Line(props: { lineInfo: LineInfo }) {
-    const { lineInfo } = props;
+function Line(props: { lineInfo: LineInfo; rootRect: DOMRect }) {
+    const { lineInfo, rootRect } = props;
     if (!lineInfo || lineInfo.direction === BlockDropPlacement.none) {
         return null;
     }
@@ -58,7 +58,7 @@ function Line(props: { lineInfo: LineInfo }) {
         ...lineStyle,
         width: intersectionRect.width,
         height: 2,
-        left: intersectionRect.x - blockInfo.rootRect.x,
+        left: intersectionRect.x - rootRect.x,
     };
     const topLineStyle = {
         ...horizontalLineStyle,
@@ -66,22 +66,22 @@ function Line(props: { lineInfo: LineInfo }) {
     };
     const bottomLineStyle = {
         ...horizontalLineStyle,
-        top: intersectionRect.bottom + 1 - blockInfo.rootRect.y,
+        top: intersectionRect.bottom + 1 - rootRect.y,
     };
 
     const verticalLineStyle = {
         ...lineStyle,
         width: 2,
         height: intersectionRect.height,
-        top: intersectionRect.y - blockInfo.rootRect.y,
+        top: intersectionRect.y - rootRect.y,
     };
     const leftLineStyle = {
         ...verticalLineStyle,
-        left: intersectionRect.x - 10 - blockInfo.rootRect.x,
+        left: intersectionRect.x - 10 - rootRect.x,
     };
     const rightLineStyle = {
         ...verticalLineStyle,
-        left: intersectionRect.right + 10 - blockInfo.rootRect.x,
+        left: intersectionRect.right + 10 - rootRect.x,
     };
     const styleMap = {
         left: leftLineStyle,
@@ -120,6 +120,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
     const [visible, setVisible] = useState(defaultVisible);
     const [anchorEl, setAnchorEl] = useState<Element>();
 
+    const [rootRect, setRootRect] = useState(() => new DOMRect());
     const [block, setBlock] = useState<BlockDomInfo | undefined>();
     const [line, setLine] = useState<LineInfo | undefined>(undefined);
 
@@ -135,6 +136,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
         const onDragStart = async (event: React.DragEvent<Element>) => {
             editor.dragDropManager.isOnDrag = true;
             if (block == null) return;
+            setRootRect(editor.container.getBoundingClientRect());
             const dragImage = await editor.blockHelper.getBlockDragImg(
                 block.blockId
             );
@@ -182,6 +184,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
         const sub = blockInfo.subscribe(block => {
             setBlock(block);
             if (block != null) {
+                setRootRect(editor.container.getBoundingClientRect());
                 setVisible(true);
             }
         });
@@ -194,6 +197,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
                 setLine(undefined);
             } else {
                 const { direction, blockInfo } = data;
+                setRootRect(editor.container.getBoundingClientRect());
                 setLine(prev => {
                     if (
                         prev?.blockInfo.blockId !== blockInfo.blockId ||
@@ -210,7 +214,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
             }
         });
         return () => sub.unsubscribe();
-    }, [editor.dragDropManager, lineInfo]);
+    }, [editor, lineInfo]);
 
     return (
         <>
@@ -223,8 +227,8 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
                                 block.rect.left -
                                     MENU_WIDTH -
                                     MENU_BUTTON_OFFSET
-                            ) - block.rootRect.left,
-                        top: block.rect.top - block.rootRect.top,
+                            ) - rootRect.left,
+                        top: block.rect.top - rootRect.top,
                         opacity: visible ? 1 : 0,
                         zIndex: 1,
                     }}
@@ -246,7 +250,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
                     }
                 </DragComponent>
             )}
-            <Line lineInfo={line} />
+            <Line lineInfo={line} rootRect={rootRect} />
         </>
     );
 };

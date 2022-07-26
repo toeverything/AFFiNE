@@ -12,7 +12,7 @@ export class AddCommentPlugin extends BasePlugin {
 
     private root: PluginRenderRoot;
 
-    protected override on_render(): void {
+    protected override _onRender(): void {
         this.root = new PluginRenderRoot({
             name: AddCommentPlugin.pluginName,
             render: this.editor.reactRenderRoot?.render,

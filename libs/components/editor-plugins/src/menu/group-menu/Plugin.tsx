@@ -13,7 +13,7 @@ export class GroupMenuPlugin extends BasePlugin {
         return PLUGIN_NAME;
     }
 
-    protected override on_render(): void {
+    protected override _onRender(): void {
         if (this.editor.isWhiteboard) return;
         this.root = new PluginRenderRoot({
             name: PLUGIN_NAME,

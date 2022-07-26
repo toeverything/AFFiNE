@@ -20,6 +20,7 @@ export function LigoVirgoRootContainer() {
 const StyledMainContainer = styled('div')({
     flex: 'auto',
     display: 'flex',
+    overflowY: 'hidden',
 });
 
 const StyledRootContainer = styled('div')({

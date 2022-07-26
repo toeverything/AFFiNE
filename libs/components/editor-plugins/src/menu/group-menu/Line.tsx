@@ -22,9 +22,9 @@ export const Line = function ({ direction, editor, groupBlock }: LineProps) {
         if (groupBlock && groupBlock.dom && editor.container) {
             setRect(
                 Rect.fromLWTH(
-                    groupBlock.dom.offsetLeft - editor.container.offsetLeft,
+                    groupBlock.dom.offsetLeft,
                     groupBlock.dom.offsetWidth,
-                    groupBlock.dom.offsetTop - editor.container.offsetTop,
+                    groupBlock.dom.offsetTop,
                     groupBlock.dom.offsetHeight
                 )
             );

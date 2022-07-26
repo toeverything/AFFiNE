@@ -55,7 +55,7 @@ export function Page(props: PageProps) {
             );
             await services.api.editorBlock.clearUndoRedo(props.workspace);
         };
-        update_recent_pages();
+        updateRecentPages();
     }, [user, props.workspace, page_id]);
 
     return (
@@ -89,7 +89,7 @@ export function Page(props: PageProps) {
                                     title="Activities"
                                     initialOpen={false}
                                 >
-                                    <Activities></Activities>
+                                    <Activities />
                                 </CollapsibleTitle>
                             </div>
                             <div>
@@ -102,25 +102,23 @@ export function Page(props: PageProps) {
                 </WorkspaceSidebar>
             </LigoLeftContainer>
             <LigoRightContainer>
-                <LigoEditorOuterContainer>
-                    {page_id ? (
-                        <AffineEditor
-                            workspace={props.workspace}
-                            rootBlockId={page_id}
-                        />
-                    ) : (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                width: '100%',
-                            }}
-                        >
-                            <CircularProgress />
-                        </Box>
-                    )}
-                </LigoEditorOuterContainer>
+                {page_id ? (
+                    <AffineEditor
+                        workspace={props.workspace}
+                        rootBlockId={page_id}
+                    />
+                ) : (
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            width: '100%',
+                        }}
+                    >
+                        <CircularProgress />
+                    </Box>
+                )}
             </LigoRightContainer>
         </LigoApp>
     );
@@ -128,7 +126,6 @@ export function Page(props: PageProps) {
 
 const LigoApp = styled('div')({
     width: '100vw',
-    position: 'relative',
     display: 'flex',
     flex: '1 1 0%',
     backgroundColor: 'white',
@@ -136,17 +133,9 @@ const LigoApp = styled('div')({
 });
 
 const LigoRightContainer = styled('div')({
-    position: 'relative',
     width: '100%',
+    overflowY: 'auto',
     flex: 'auto',
-});
-
-const LigoEditorOuterContainer = styled('div')({
-    position: 'absolute',
-    height: '100%',
-    width: '100%',
-    overflowX: 'hidden',
-    overflowY: 'hidden',
 });
 
 const LigoLeftContainer = styled('div')({

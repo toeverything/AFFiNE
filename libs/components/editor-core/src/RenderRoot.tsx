@@ -31,10 +31,8 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     editorElement,
     children,
 }) => {
-    const contentRef = useRef<HTMLDivElement>(null);
     const selectionRef = useRef<SelectionRef>(null);
     const triggeredBySelect = useRef(false);
-    const [container, setContainer] = useState<HTMLDivElement>();
     const [pageWidth, setPageWidth] = useState<number>(MIN_PAGE_WIDTH);
     const isOnDrag = useIsOnDrag(editor);
 
@@ -54,13 +52,6 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
             setPageWidth(MIN_PAGE_WIDTH);
         }
     }, [editor.workspace, rootId]);
-
-    useEffect(() => {
-        if (container) {
-            editor.container = container;
-            editor.getHooks().render();
-        }
-    }, [editor, container]);
 
     useEffect(() => {
         fetchPageBlockWidth();
@@ -85,11 +76,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
         event: React.MouseEvent<HTMLDivElement, MouseEvent>
     ) => {
         selectionRef.current?.onMouseMove(event);
-        if (!contentRef.current) {
-            return;
-        }
-        const rootRect: DOMRect = contentRef.current.getBoundingClientRect();
-        editor.getHooks().onRootNodeMouseMove(event, rootRect);
+        editor.getHooks().onRootNodeMouseMove(event);
 
         const slidingBlock = await editor.getBlockByPoint(
             new Point(event.clientX, event.clientY)
@@ -100,7 +87,6 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 blockId: slidingBlock.id,
                 dom: slidingBlock.dom,
                 rect: slidingBlock.dom.getBoundingClientRect(),
-                rootRect: rootRect,
                 type: slidingBlock.type,
                 properties: slidingBlock.getProperties(),
             });
@@ -149,33 +135,21 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     };
 
     const onDragOver = (event: React.DragEvent<Element>) => {
-        event.dataTransfer.dropEffect = 'move';
-        event.preventDefault();
-        if (!contentRef.current) {
-            return;
-        }
-        const rootRect: DOMRect = contentRef.current.getBoundingClientRect();
         editor.dragDropManager.handlerEditorDragOver(event);
         if (editor.dragDropManager.isEnabled()) {
-            editor.getHooks().onRootNodeDragOver(event, rootRect);
+            editor.getHooks().onRootNodeDragOver(event);
         }
     };
 
     const onDragOverCapture = (event: React.DragEvent<Element>) => {
-        event.preventDefault();
-        if (!contentRef.current) {
-            return;
-        }
-        const rootRect: DOMRect = contentRef.current.getBoundingClientRect();
         if (editor.dragDropManager.isEnabled()) {
-            editor.getHooks().onRootNodeDragOver(event, rootRect);
+            editor.getHooks().onRootNodeDragOver(event);
         }
     };
 
     const onDragEnd = (event: React.DragEvent<Element>) => {
-        const rootRect: DOMRect = contentRef.current.getBoundingClientRect();
         editor.dragDropManager.handlerEditorDragEnd(event);
-        editor.getHooks().onRootNodeDragEnd(event, rootRect);
+        editor.getHooks().onRootNodeDragEnd(event);
     };
 
     const onDrop = (event: React.DragEvent<Element>) => {
@@ -192,7 +166,10 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
             <Container
                 isWhiteboard={editor.isWhiteboard}
                 ref={ref => {
-                    ref && setContainer(ref);
+                    if (ref != null && ref !== editor.container) {
+                        editor.container = ref;
+                        editor.getHooks().render();
+                    }
                 }}
                 onMouseMove={onMouseMove}
                 onMouseDown={onMouseDown}
@@ -208,18 +185,13 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 onDrop={onDrop}
                 isOnDrag={isOnDrag}
             >
-                <Content
-                    ref={contentRef}
-                    style={{ maxWidth: pageWidth + 'px' }}
-                >
+                <Content style={{ maxWidth: pageWidth + 'px' }}>
                     {children}
-                    {patchedNodes}
                 </Content>
                 {/** TODO: remove selectionManager insert */}
-                {container && editor && (
-                    <SelectionRect ref={selectionRef} editor={editor} />
-                )}
+                {editor && <SelectionRect ref={selectionRef} editor={editor} />}
                 {editor.isWhiteboard ? null : <ScrollBlank editor={editor} />}
+                {patchedNodes}
             </Container>
         </RootContext.Provider>
     );
@@ -281,6 +253,8 @@ function ScrollBlank({ editor }: { editor: BlockEditor }) {
     );
 }
 
+const PADDING_X = 150;
+
 const Container = styled('div')(
     ({
         isWhiteboard,
@@ -290,9 +264,7 @@ const Container = styled('div')(
         isOnDrag: boolean;
     }) => ({
         width: '100%',
-        height: '100%',
-        overflowY: isWhiteboard ? 'unset' : 'auto',
-        padding: isWhiteboard ? 0 : '96px 150px 0 150px',
+        padding: isWhiteboard ? 0 : `96px ${PADDING_X}px 0 ${PADDING_X}px`,
         minWidth: isWhiteboard ? 'unset' : '940px',
         position: 'relative',
         ...(isOnDrag && {
@@ -309,7 +281,9 @@ const Content = styled('div')({
     margin: '0 auto',
     transitionDuration: '.2s',
     transitionTimingFunction: 'ease-in',
-    position: 'relative',
 });
 
-const ScrollBlankContainter = styled('div')({ paddingBottom: '30vh' });
+const ScrollBlankContainter = styled('div')({
+    paddingBottom: '30vh',
+    margin: `0 -${PADDING_X}px`,
+});

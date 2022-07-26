@@ -15,37 +15,37 @@ interface PluginHookInfo {
 }
 
 export class Hooks implements HooksRunner, PluginHooks {
-    private hooks_map: Map<string, PluginHookInfo[]> = new Map();
+    private _hooksMap: Map<string, PluginHookInfo[]> = new Map();
 
     dispose() {
-        this.hooks_map.clear();
+        this._hooksMap.clear();
     }
 
-    private run_hook(key: HookType, ...params: unknown[]): void {
-        const hook_infos: PluginHookInfo[] = this.hooks_map.get(key) || [];
-        hook_infos.forEach(hook_info => {
-            if (hook_info.once) {
-                this.removeHook(key, hook_info.callback);
+    private _runHook(key: HookType, ...params: unknown[]): void {
+        const hookInfos: PluginHookInfo[] = this._hooksMap.get(key) || [];
+        hookInfos.forEach(hookInfo => {
+            if (hookInfo.once) {
+                this.removeHook(key, hookInfo.callback);
             }
-            let is_stopped_propagation = false;
+            let isStoppedPropagation = false;
             const hookOption: HookBaseArgs = {
                 stopImmediatePropagation: () => {
-                    is_stopped_propagation = true;
+                    isStoppedPropagation = true;
                 },
             };
-            hook_info.callback.call(
-                hook_info.thisObj || this,
+            hookInfo.callback.call(
+                hookInfo.thisObj || this,
                 ...params,
                 hookOption
             );
-            return is_stopped_propagation;
+            return isStoppedPropagation;
         });
     }
 
-    private has_hook(key: HookType, callback: AnyFunction): boolean {
-        const hook_infos: PluginHookInfo[] = this.hooks_map.get(key) || [];
-        for (let i = hook_infos.length - 1; i >= 0; i--) {
-            if (hook_infos[i].callback === callback) {
+    private _hasHook(key: HookType, callback: AnyFunction): boolean {
+        const hookInfos: PluginHookInfo[] = this._hooksMap.get(key) || [];
+        for (let i = hookInfos.length - 1; i >= 0; i--) {
+            if (hookInfos[i].callback === callback) {
                 return true;
             }
         }
@@ -59,14 +59,14 @@ export class Hooks implements HooksRunner, PluginHooks {
         thisObj?: AnyThisType,
         once?: boolean
     ): void {
-        if (this.has_hook(key, callback)) {
+        if (this._hasHook(key, callback)) {
             throw new Error('Duplicate registration of the same class');
         }
-        if (!this.hooks_map.has(key)) {
-            this.hooks_map.set(key, []);
+        if (!this._hooksMap.has(key)) {
+            this._hooksMap.set(key, []);
         }
-        const hook_infos: PluginHookInfo[] = this.hooks_map.get(key);
-        hook_infos.push({ callback, thisObj, once });
+        const hookInfos: PluginHookInfo[] = this._hooksMap.get(key);
+        hookInfos.push({ callback, thisObj, once });
     }
 
     // 执行一次
@@ -80,122 +80,112 @@ export class Hooks implements HooksRunner, PluginHooks {
 
     // 移除
     public removeHook(key: HookType, callback: AnyFunction): void {
-        const hook_infos: PluginHookInfo[] = this.hooks_map.get(key) || [];
-        for (let i = hook_infos.length - 1; i >= 0; i--) {
-            if (hook_infos[i].callback === callback) {
-                hook_infos.splice(i, 1);
+        const hookInfos: PluginHookInfo[] = this._hooksMap.get(key) || [];
+        for (let i = hookInfos.length - 1; i >= 0; i--) {
+            if (hookInfos[i].callback === callback) {
+                hookInfos.splice(i, 1);
             }
         }
     }
 
     public init(): void {
-        this.run_hook(HookType.INIT);
+        this._runHook(HookType.INIT);
     }
 
     public render(): void {
-        this.run_hook(HookType.RENDER);
+        this._runHook(HookType.RENDER);
     }
 
     public onRootNodeKeyDown(e: React.KeyboardEvent<HTMLDivElement>): void {
-        this.run_hook(HookType.ON_ROOT_NODE_KEYDOWN, e);
+        this._runHook(HookType.ON_ROOT_NODE_KEYDOWN, e);
     }
 
     public onRootNodeKeyDownCapture(
         e: React.KeyboardEvent<HTMLDivElement>
     ): void {
-        this.run_hook(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE, e);
+        this._runHook(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE, e);
     }
 
     public onRootNodeKeyUp(e: React.KeyboardEvent<HTMLDivElement>): void {
-        this.run_hook(HookType.ON_ROOT_NODE_KEYUP, e);
+        this._runHook(HookType.ON_ROOT_NODE_KEYUP, e);
     }
 
     public onRootNodeMouseDown(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ): void {
-        this.run_hook(HookType.ON_ROOTNODE_MOUSE_DOWN, e);
+        this._runHook(HookType.ON_ROOTNODE_MOUSE_DOWN, e);
     }
 
     public onRootNodeMouseMove(
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-        root_rect: DOMRect
+        e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ): void {
-        this.run_hook(HookType.ON_ROOTNODE_MOUSE_MOVE, e, root_rect);
+        this._runHook(HookType.ON_ROOTNODE_MOUSE_MOVE, e);
     }
 
     public onRootNodeMouseUp(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ): void {
-        this.run_hook(HookType.ON_ROOTNODE_MOUSE_UP, e);
+        this._runHook(HookType.ON_ROOTNODE_MOUSE_UP, e);
     }
 
     public onRootNodeMouseOut(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ): void {
-        this.run_hook(HookType.ON_ROOTNODE_MOUSE_OUT, e);
+        this._runHook(HookType.ON_ROOTNODE_MOUSE_OUT, e);
     }
 
     public onRootNodeMouseLeave(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ): void {
-        this.run_hook(HookType.ON_ROOTNODE_MOUSE_LEAVE, e);
+        this._runHook(HookType.ON_ROOTNODE_MOUSE_LEAVE, e);
     }
 
     public afterOnNodeMouseMove(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>,
         node: BlockDomInfo
     ): void {
-        this.run_hook(HookType.AFTER_ON_NODE_MOUSE_MOVE, e, node);
+        this._runHook(HookType.AFTER_ON_NODE_MOUSE_MOVE, e, node);
     }
 
     public afterOnResize(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ): void {
-        this.run_hook(HookType.AFTER_ON_RESIZE, e);
+        this._runHook(HookType.AFTER_ON_RESIZE, e);
     }
 
-    public onRootNodeDragOver(
-        e: React.DragEvent<Element>,
-        root_rect: DOMRect
-    ): void {
-        this.run_hook(HookType.ON_ROOTNODE_DRAG_OVER, e, root_rect);
+    public onRootNodeDragOver(e: React.DragEvent<Element>): void {
+        this._runHook(HookType.ON_ROOTNODE_DRAG_OVER, e);
     }
 
-    public onRootNodeDragEnd(
-        e: React.DragEvent<Element>,
-        root_rect: DOMRect
-    ): void {
-        this.run_hook(HookType.ON_ROOTNODE_DRAG_END, e, root_rect);
+    public onRootNodeDragEnd(e: React.DragEvent<Element>): void {
+        this._runHook(HookType.ON_ROOTNODE_DRAG_END, e);
     }
 
     public onRootNodeDrop(e: React.DragEvent<Element>): void {
-        this.run_hook(HookType.ON_ROOTNODE_DROP, e);
+        this._runHook(HookType.ON_ROOTNODE_DROP, e);
     }
 
-    public onRootNodeDragOverCapture(
-        e: React.DragEvent<Element>,
-        root_rect: DOMRect
-    ): void {
-        this.run_hook(HookType.ON_ROOTNODE_DRAG_OVER_CAPTURE, e, root_rect);
+    public onRootNodeDragOverCapture(e: React.DragEvent<Element>): void {
+        this._runHook(HookType.ON_ROOTNODE_DRAG_OVER_CAPTURE, e);
     }
 
     public afterOnNodeDragOver(
         e: React.DragEvent<Element>,
         node: BlockDomInfo
     ): void {
-        this.run_hook(HookType.AFTER_ON_NODE_DRAG_OVER, e, node);
+        this._runHook(HookType.AFTER_ON_NODE_DRAG_OVER, e, node);
     }
 
     public onSearch(): void {
-        this.run_hook(HookType.ON_SEARCH);
+        this._runHook(HookType.ON_SEARCH);
     }
 
     public beforeCopy(e: ClipboardEvent): void {
-        this.run_hook(HookType.BEFORE_COPY, e);
+        this._runHook(HookType.BEFORE_COPY, e);
     }
 
     public beforeCut(e: ClipboardEvent): void {
-        this.run_hook(HookType.BEFORE_CUT, e);
+        this._runHook(HookType.BEFORE_CUT, e);
     }
 
     public onRootNodeScroll(e: React.UIEvent): void {

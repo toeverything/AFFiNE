@@ -186,7 +186,6 @@ export interface BlockDomInfo {
     dom: HTMLElement;
     type: BlockFlavorKeys;
     rect: DOMRect;
-    rootRect: DOMRect;
     properties: Record<string, unknown>;
 }
 
@@ -201,8 +200,7 @@ export interface HooksRunner {
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ) => void;
     onRootNodeMouseMove: (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-        root_rect: DOMRect
+        e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ) => void;
     onRootNodeMouseUp: (
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
@@ -219,14 +217,8 @@ export interface HooksRunner {
         node: BlockDomInfo
     ) => void;
     afterOnResize: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-    onRootNodeDragOver: (
-        e: React.DragEvent<Element>,
-        root_rect: DOMRect
-    ) => void;
-    onRootNodeDragEnd: (
-        e: React.DragEvent<Element>,
-        root_rect: DOMRect
-    ) => void;
+    onRootNodeDragOver: (e: React.DragEvent<Element>) => void;
+    onRootNodeDragEnd: (e: React.DragEvent<Element>) => void;
     onRootNodeDrop: (e: React.DragEvent<Element>) => void;
     afterOnNodeDragOver: (
         e: React.DragEvent<Element>,

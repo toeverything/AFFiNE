@@ -6,12 +6,12 @@ export type UnPatchNode = () => void;
 export type PatchNode = (key: string, node: ReactNode) => UnPatchNode;
 
 export const usePatchNodes = () => {
-    const [nodes, set_nodes] = useState<Record<string, ReactNode>>({});
+    const [nodes, setNodes] = useState<Record<string, ReactNode>>({});
 
-    const patch_node: PatchNode = (key: string, node: ReactNode) => {
-        set_nodes(oldNodes => ({ ...oldNodes, [key]: node }));
+    const patchNode: PatchNode = (key: string, node: ReactNode) => {
+        setNodes(oldNodes => ({ ...oldNodes, [key]: node }));
         return () => {
-            set_nodes(oldNodes => {
+            setNodes(oldNodes => {
                 const nodes = { ...oldNodes };
                 delete nodes[key];
                 return nodes;
@@ -19,11 +19,11 @@ export const usePatchNodes = () => {
         };
     };
 
-    const has_node = (key: string) => {
+    const hasNode = (key: string) => {
         return has(nodes, key);
     };
 
-    const patched_nodes = (
+    const patchedNodes = (
         <>
             {Object.entries(nodes).map(([key, node]) => {
                 return <Fragment key={key}>{node}</Fragment>;
@@ -32,8 +32,8 @@ export const usePatchNodes = () => {
     );
 
     return {
-        patch: patch_node,
-        has: has_node,
-        patchedNodes: patched_nodes,
+        patch: patchNode,
+        has: hasNode,
+        patchedNodes: patchedNodes,
     };
 };

@@ -147,7 +147,7 @@ export class LeftMenuPlugin extends BasePlugin {
         this._blockInfo.next(blockInfo);
     };
 
-    protected override on_render(): void {
+    protected override _onRender(): void {
         this.root = new PluginRenderRoot({
             name: LeftMenuPlugin.pluginName,
             render: (...args) => {

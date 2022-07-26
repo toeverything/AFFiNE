@@ -12,7 +12,7 @@ export class PlaceholderPlugin extends BasePlugin {
         return PLUGIN_NAME;
     }
 
-    protected override on_render(): void {
+    protected override _onRender(): void {
         const container = document.createElement('div');
         // TODO remove
         container.classList.add(`id-${PLUGIN_NAME}`);

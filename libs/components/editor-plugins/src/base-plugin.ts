@@ -41,8 +41,8 @@ export abstract class BasePlugin implements Plugin {
                 return hooks.removeHook(...args);
             },
         };
-        this.on_render = this.on_render.bind(this);
-        hooks.addHook(HookType.RENDER, this.on_render, this);
+        this._onRender = this._onRender.bind(this);
+        hooks.addHook(HookType.RENDER, this._onRender, this);
     }
 
     /**
@@ -55,7 +55,7 @@ export abstract class BasePlugin implements Plugin {
     /**
      * will trigger multiple times
      */
-    protected on_render(): void {
+    protected _onRender(): void {
         // implement in subclass
     }
 
