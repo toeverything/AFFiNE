@@ -19,7 +19,7 @@ const loading = new Set();
 
 const waitLoading = async (key: string) => {
     while (loading.has(key)) {
-        await sleep();
+        await sleep(50);
     }
 };
 
@@ -53,7 +53,6 @@ async function _getBlockDatabase(
 
     if (!workspaces[workspace]) {
         loading.add(workspace);
-
         workspaces[workspace] = await BlockClient.init(workspace, {
             ...options,
             token: await _getCurrentToken(),

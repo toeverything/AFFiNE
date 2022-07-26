@@ -115,14 +115,16 @@ async function _initYjsDatabase(
 
     const doc = new Doc({ autoLoad: true, shouldLoad: true });
 
-    const idb = await new IndexeddbPersistence(workspace, doc).whenSynced;
-    const [awareness, ws] = await _initWebsocketProvider(
+    const idbp = new IndexeddbPersistence(workspace, doc).whenSynced;
+    const wsp = _initWebsocketProvider(
         backend,
         workspace,
         doc,
         remoteToken,
         params
     );
+
+    const [idb, [awareness, ws]] = await Promise.all([idbp, wsp]);
 
     const binaries = new Doc({ autoLoad: true, shouldLoad: true });
     const binariesIdb = await new IndexeddbPersistence(
@@ -410,6 +412,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
             binary?: ArrayBufferLike;
         }
     ): Promise<YjsBlockInstance> {
+        console.trace('createBlock', options);
         const uuid = options.uuid || `affine${nanoid(16)}`;
         if (options.type === BlockTypes.binary) {
             if (options.binary && options.binary instanceof ArrayBuffer) {

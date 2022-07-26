@@ -82,6 +82,7 @@ export abstract class ServiceBaseClass {
         workspace: string,
         blockId: string
     ): Promise<BlockImplInstance | undefined> {
+        if (!blockId) return undefined;
         const db = await this.database.getDatabase(workspace);
         const db_block = await db.get(blockId as 'block');
         if (db_block.id !== blockId) {

@@ -51,7 +51,7 @@ export function isBlock(obj: any) {
 }
 
 export function sleep() {
-    return new Promise(resolve => setTimeout(resolve, 500));
+    return new Promise(resolve => setTimeout(resolve, 100));
 }
 
 export { BlockEventBus } from './event-bus';

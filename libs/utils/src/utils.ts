@@ -23,7 +23,7 @@ export function getPageId() {
     return path ? path[2] : undefined;
 }
 
-export async function sleep(delay?: number) {
+export async function sleep(delay = 100) {
     return new Promise(res => {
         window.setTimeout(() => {
             res(true);
