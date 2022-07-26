@@ -1,10 +1,11 @@
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties } from 'react';
 import {
     KANBAN_PROPERTIES_KEY,
+    META_CURRENT_VIEW_ID_KEY,
     META_PROPERTIES_KEY,
     META_VIEWS_KEY,
 } from './constant';
-import { RecastScene, RecastView } from './view';
+import { RecastScene, RecastView, RecastViewId } from './view';
 
 // ---------------------------------------------------
 // Property
@@ -117,5 +118,6 @@ export type RecastDataProperties = Partial<{
     scene: RecastScene;
     [META_PROPERTIES_KEY]: RecastMetaProperty[];
     [META_VIEWS_KEY]: RecastView[];
+    [META_CURRENT_VIEW_ID_KEY]: RecastViewId;
     [KANBAN_PROPERTIES_KEY]: RecastKanbanProperty;
 }>;

@@ -1,8 +1,11 @@
 import { nanoid } from 'nanoid';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useRecastBlock } from './Context';
 import {
+    KanbanView,
+    META_CURRENT_VIEW_ID_KEY,
     META_VIEWS_KEY,
+    RecastPropertyId,
     RecastScene,
     RecastView,
     RecastViewId,
@@ -27,13 +30,32 @@ const DEFAULT_VIEWS: RecastView[] = [
     },
 ];
 
-export const useRecastView = () => {
+/**
+ * Get the current view of the group
+ */
+export const useCurrentView = () => {
     const recastBlock = useRecastBlock();
     const recastViews =
         recastBlock.getProperty(META_VIEWS_KEY) ?? DEFAULT_VIEWS;
 
-    // TODO save cur view
-    const [currentView, changeView] = useState(recastViews[0]);
+    const currentViewId = recastBlock.getProperty(META_CURRENT_VIEW_ID_KEY);
+    const currentView =
+        recastViews.find(v => v.id === currentViewId) ?? recastViews[0];
+
+    const setCurrentView = useCallback(
+        async (newView: RecastView) => {
+            await recastBlock.setProperty(META_CURRENT_VIEW_ID_KEY, newView.id);
+        },
+        [recastBlock]
+    );
+    return [currentView, setCurrentView] as const;
+};
+
+export const useRecastView = () => {
+    const recastBlock = useRecastBlock();
+    const recastViews =
+        recastBlock.getProperty(META_VIEWS_KEY) ?? DEFAULT_VIEWS;
+    const [currentView, setCurrentView] = useCurrentView();
 
     const getView = useCallback(
         (id: RecastViewId) => {
@@ -118,7 +140,7 @@ export const useRecastView = () => {
     return {
         currentView,
         recastViews,
-        changeView,
+        setCurrentView,
         addView,
         updateView,
         renameView,
