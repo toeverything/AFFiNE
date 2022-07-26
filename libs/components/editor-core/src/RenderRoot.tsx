@@ -11,7 +11,7 @@ import {
     type ReturnUnobserve,
 } from '@toeverything/datasource/db-service';
 import { addNewGroup } from './recast-block';
-import { HookType } from './editor';
+import { useIsOnDrag } from '.';
 
 interface RenderRootProps {
     editor: BlockEditor;
@@ -35,6 +35,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     const triggeredBySelect = useRef(false);
     const [container, setContainer] = useState<HTMLDivElement>();
     const [pageWidth, setPageWidth] = useState<number>(MIN_PAGE_WIDTH);
+    const isOnDrag = useIsOnDrag(editor);
 
     const { patch, has, patchedNodes } = usePatchNodes();
 
@@ -147,6 +148,8 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     };
 
     const onDragOver = (event: React.DragEvent<Element>) => {
+        event.dataTransfer.dropEffect = 'move';
+        event.preventDefault();
         if (!contentRef.current) {
             return;
         }
@@ -155,10 +158,10 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
         if (editor.dragDropManager.isEnabled()) {
             editor.getHooks().onRootNodeDragOver(event, rootRect);
         }
-        event.preventDefault();
     };
 
     const onDragOverCapture = (event: React.DragEvent<Element>) => {
+        event.preventDefault();
         if (!contentRef.current) {
             return;
         }
@@ -202,7 +205,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 onDragOverCapture={onDragOverCapture}
                 onDragEnd={onDragEnd}
                 onDrop={onDrop}
-                onScroll={onScroll}
+                isOnDrag={isOnDrag}
             >
                 <Content
                     ref={contentRef}
@@ -278,13 +281,25 @@ function ScrollBlank({ editor }: { editor: BlockEditor }) {
 }
 
 const Container = styled('div')(
-    ({ isWhiteboard }: { isWhiteboard: boolean }) => ({
+    ({
+        isWhiteboard,
+        isOnDrag,
+    }: {
+        isWhiteboard: boolean;
+        isOnDrag: boolean;
+    }) => ({
         width: '100%',
         height: '100%',
         overflowY: isWhiteboard ? 'unset' : 'auto',
         padding: isWhiteboard ? 0 : '96px 150px 0 150px',
         minWidth: isWhiteboard ? 'unset' : '940px',
         position: 'relative',
+        ...(isOnDrag && {
+            cursor: 'grabbing',
+            // expected css selector
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            '& *': { cursor: 'grabbing' },
+        }),
     })
 );
 

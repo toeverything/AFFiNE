@@ -23,6 +23,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
     const [direction, setDirection] = useState<GroupDirection>(
         GroupDirection.down
     );
+    const dragItemRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLUListElement>(null);
 
     const handleRootMouseMove = useCallback(
@@ -50,6 +51,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
 
     const handleRootDragOver = useCallback(
         async (e: React.DragEvent<Element>) => {
+            e.preventDefault();
             let groupBlockOnDragOver = null;
             const mousePoint = new Point(e.clientX, e.clientY);
             if (editor.dragDropManager.isDragGroup(e)) {
@@ -89,7 +91,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
         [editor, groupBlock]
     );
 
-    const handleRootDragEnd = () => {
+    const handleRootDragEnd = (e: DragEvent) => {
         setDragOverGroup(null);
     };
 
@@ -139,13 +141,16 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
     };
 
     const handleDragStart = async (e: React.DragEvent<HTMLDivElement>) => {
+        editor.dragDropManager.isOnDrag = true;
         const dragImage = await editor.blockHelper.getBlockDragImg(
             groupBlock.id
         );
         if (dragImage) {
-            e.dataTransfer.setDragImage(dragImage, 0, 0);
             editor.dragDropManager.setDragGroupInfo(e, groupBlock.id);
+            dragImage.style.cursor = 'grabbing !important';
+            e.dataTransfer.setDragImage(dragImage, 0, 0);
         }
+        e.dataTransfer.setData('text/plain', groupBlock.id);
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -169,11 +174,15 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
                     menuRef={menuRef}
                 >
                     <DragItem
+                        item={dragItemRef}
                         editor={editor}
                         isShow={!!groupBlock}
                         groupBlock={groupBlock}
                         onClick={handleClick}
                         onDragStart={handleDragStart}
+                        onDragCapture={() => {
+                            editor.dragDropManager.isOnDrag = true;
+                        }}
                         onMouseDown={handleMouseDown}
                         draggable={true}
                     />

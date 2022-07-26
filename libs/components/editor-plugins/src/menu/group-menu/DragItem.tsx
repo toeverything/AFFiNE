@@ -10,6 +10,7 @@ type DragItemProps = {
     isShow: boolean;
     groupBlock: AsyncBlock;
     editor: Virgo;
+    item: React.MutableRefObject<HTMLDivElement>;
     onPositionChange?: (position: Point) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
@@ -17,10 +18,11 @@ export const DragItem = function ({
     isShow,
     editor,
     groupBlock,
+    item,
     ...divProps
 }: DragItemProps) {
     return (
-        <StyledDiv {...divProps}>
+        <StyledDiv {...divProps} ref={item}>
             <StyledButton>
                 <HandleParentIcon />
             </StyledButton>
@@ -33,13 +35,14 @@ const StyledDiv = styled('div')({
     display: 'inlineFlex',
     width: `${ICON_WIDTH}px`,
     height: `${ICON_WIDTH}px`,
+    cursor: 'grab',
     ':hover': {
         backgroundColor: '#edeef0',
         borderRadius: '4px',
     },
 });
 
-const StyledButton = styled(Button)({
+const StyledButton = styled('div')({
     padding: '0',
     display: 'inlineFlex',
     alignItems: 'center',

@@ -1,5 +1,6 @@
 import {
     AsyncBlock,
+    BlockEditor,
     SelectEventTypes,
     SelectionInfo,
     SelectionSettingsMap,
@@ -201,4 +202,22 @@ export const useOnSelectStartWith = (
             editor.mouseManager.offSelectStartWith(blockId, cb);
         };
     }, [editor, cb, blockId]);
+};
+
+/**
+ *
+ * hooks run when drag state change
+ * @export
+ */
+export const useIsOnDrag = (editor: BlockEditor) => {
+    const editorInstance = editor;
+    const [isOnDrag, setIsOnDrag] = useState(false);
+    useEffect(() => {
+        const callback = (isDrag: boolean) => setIsOnDrag(isDrag);
+        editorInstance.dragDropManager.onDragStateChange(callback);
+        return () => {
+            editorInstance.dragDropManager.offDragStateChange(callback);
+        };
+    }, [editorInstance]);
+    return isOnDrag;
 };

@@ -133,6 +133,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
         );
 
         const onDragStart = async (event: React.DragEvent<Element>) => {
+            editor.dragDropManager.isOnDrag = true;
             if (block == null) return;
             const dragImage = await editor.blockHelper.getBlockDragImg(
                 block.blockId

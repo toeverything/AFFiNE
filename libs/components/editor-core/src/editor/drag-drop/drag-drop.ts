@@ -9,9 +9,12 @@ import EventEmitter from 'eventemitter3';
 type DargType =
     | ValueOf<InstanceType<typeof DragDropManager>['dragActions']>
     | '';
+
+const DRAG_STATE_CHANGE_EVENT_KEY = 'dragStateChange';
 export class DragDropManager {
     private _editor: Editor;
     private _enabled: boolean;
+    private _events = new EventEmitter();
 
     private _blockIdKey = 'blockId';
     private _rootIdKey = 'rootId';
@@ -26,8 +29,21 @@ export class DragDropManager {
         dragGroup: 'dragGroup',
     } as const;
 
+    private _isOnDrag = false;
+
     get dragActions() {
         return this._dragActions;
+    }
+
+    get isOnDrag() {
+        return this._isOnDrag;
+    }
+
+    set isOnDrag(isOnDrag: boolean) {
+        if (this._isOnDrag !== isOnDrag) {
+            this._events.emit(DRAG_STATE_CHANGE_EVENT_KEY, isOnDrag);
+        }
+        this._isOnDrag = isOnDrag;
     }
 
     constructor(editor: Editor) {
@@ -35,6 +51,7 @@ export class DragDropManager {
         this._enabled = true;
         this._dragType = '';
         this._blockDragDirection = BlockDropPlacement.none;
+        this._initMouseEvent();
     }
 
     get dragType() {
@@ -43,6 +60,15 @@ export class DragDropManager {
 
     set dragType(type: DargType) {
         this._dragType = type;
+    }
+
+    private async _initMouseEvent() {
+        this._editor.mouseManager.onMouseUp(() => {
+            // IMP: temporarily last protect for dragging across editor instances，bad case
+            if (this.isOnDrag) {
+                this.isOnDrag = false;
+            }
+        });
     }
 
     private _setBlockDragDirection(direction: BlockDropPlacement) {
@@ -244,6 +270,9 @@ export class DragDropManager {
 
     public handlerEditorDragEnd(event: React.DragEvent<Element>) {
         this._resetDragDropData();
+        if (this.isOnDrag) {
+            this.isOnDrag = false;
+        }
         if (this.isEnabled()) {
             // TODO: handle drag end event flow
         }
@@ -286,5 +315,17 @@ export class DragDropManager {
             }
         }
         return direction;
+    }
+
+    public onDragStateChange(cb: (isOnDrag: boolean) => void) {
+        this._events.on(DRAG_STATE_CHANGE_EVENT_KEY, cb);
+    }
+
+    public offDragStateChange(cb: (isOnDrag: boolean) => void) {
+        this._events.off(DRAG_STATE_CHANGE_EVENT_KEY, cb);
+    }
+
+    public dispose() {
+        this._events.removeAllListeners();
     }
 }

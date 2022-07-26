@@ -17,8 +17,8 @@ export function DragDropWrapper({
     const handler_drag_over: React.DragEventHandler<
         HTMLDivElement
     > = async event => {
+        event.preventDefault();
         const rootDom = await editor.getBlockDomById(editor.getRootBlockId());
-
         if (block.dom && rootDom) {
             editor.getHooks().afterOnNodeDragOver(event, {
                 blockId: block.id,

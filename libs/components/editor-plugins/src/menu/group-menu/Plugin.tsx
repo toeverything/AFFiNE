@@ -15,9 +15,6 @@ export class GroupMenuPlugin extends BasePlugin {
 
     protected override on_render(): void {
         if (this.editor.isWhiteboard) return;
-        const container = document.createElement('div');
-        // TODO remove
-        container.classList.add(`id-${PLUGIN_NAME}`);
         this.root = new PluginRenderRoot({
             name: PLUGIN_NAME,
             render: this.editor.reactRenderRoot.render,

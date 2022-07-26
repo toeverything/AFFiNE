@@ -55,8 +55,8 @@ export class LeftMenuPlugin extends BasePlugin {
         blockInfo: BlockDomInfo
     ) => {
         const { type, dom, blockId } = blockInfo;
+        event.preventDefault();
         if (this.editor.dragDropManager.isDragBlock(event)) {
-            event.preventDefault();
             if (ignoreBlockTypes.includes(type)) {
                 return;
             }

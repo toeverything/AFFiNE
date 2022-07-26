@@ -20,6 +20,7 @@ import type { AsyncBlock } from './block';
 import type { BlockHelper } from './block/block-helper';
 import type { BlockCommands } from './commands/block-commands';
 import type { DragDropManager } from './drag-drop';
+import { MouseManager } from './mouse';
 
 // import { BrowserClipboard } from './clipboard/browser-clipboard';
 
@@ -104,6 +105,7 @@ export interface Virgo {
     workspace: string;
     getBlockDomById: (id: string) => Promise<HTMLElement>;
     isWhiteboard: boolean;
+    mouseManager: MouseManager;
 }
 
 export interface Plugin {
