@@ -120,24 +120,6 @@ export const useRecastView = () => {
     );
 
     /**
-     * @deprecated Use updateView instead
-     */
-    const changeScene = useCallback(
-        async (
-            id: RecastViewId,
-            newScene: RecastScene.Page | RecastScene.Kanban
-        ) => {
-            const curView = getView(id);
-            if (curView.type === newScene) {
-                return;
-            }
-            curView.type = newScene;
-            await setViews(recastViews);
-        },
-        [getView, recastViews, setViews]
-    );
-
-    /**
      * Get kanban ability
      */
     const withKanbanView = useCallback(
@@ -159,11 +141,11 @@ export const useRecastView = () => {
         recastViews,
         setCurrentView,
         addView,
-        updateView,
+        // updateView,
         renameView,
         removeView,
+        // TODO reorder API
 
         withKanbanView,
-        // TODO reorder API
     };
 };
