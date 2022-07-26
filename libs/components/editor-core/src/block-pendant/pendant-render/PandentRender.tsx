@@ -1,30 +1,38 @@
-import React, { useRef, useState } from 'react';
-import { AsyncBlock } from '../../editor';
+import React, {useRef, useState} from 'react';
+import {AsyncBlock} from '../../editor';
 import {
     getRecastItemValue,
-    PropertyType,
     RecastBlockValue,
     RecastMetaProperty,
     useRecastBlockMeta,
 } from '../../recast-block';
-import { Popover, PopperHandler, styled } from '@toeverything/components/ui';
-import { PendantTag } from '../PendantTag';
+import {
+    MuiZoom,
+    Popover,
+    PopperHandler,
+    styled,
+} from '@toeverything/components/ui';
+import {PendantTag} from '../PendantTag';
+import {
+    UpdatePendantPanel
+} from '../pendant-operation-panel';
+import {AddPendantPopover} from '../AddPendantPopover';
 
-import { defaultPendantColors } from '../config';
-import { UpdatePendantPanel } from '../pendant-operation-panel';
-import { AddPendantPopover } from '../AddPendantPopover';
-import { PendantTypes } from '../types';
-
-export const PendantRender = ({ block }: { block: AsyncBlock }) => {
+export const PendantRender = ({block}: { block: AsyncBlock }) => {
     const [propertyWithValue, setPropertyWithValue] = useState<{
         value: RecastBlockValue;
         property: RecastMetaProperty;
     }>();
     const popoverHandlerRef = useRef<{ [key: string]: PopperHandler }>({});
+    const blockRenderContainerRef = useRef<HTMLDivElement>(null);
+    const [showAddBtn, setShowAddBtn] = useState(false);
 
-    const { getProperties } = useRecastBlockMeta();
+    const {getProperties} = useRecastBlockMeta();
 
-    const { getValue, removeValue } = getRecastItemValue(block);
+    const {
+        getValue,
+        removeValue
+    } = getRecastItemValue(block);
 
     const properties = getProperties();
 
@@ -38,9 +46,17 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
         .filter(v => v.value);
 
     return (
-        <BlockPendantContainer>
+        <BlockPendantContainer
+            ref={blockRenderContainerRef}
+            onPointerEnter={() => {
+                setShowAddBtn(true);
+            }}
+            onPointerLeave={() => {
+                setShowAddBtn(false);
+            }}
+        >
             {propertyWithValues.map(pWithV => {
-                const { id, type } = pWithV.value;
+                const {id, type} = pWithV.value;
 
                 /* （暂时关闭，HOOK中需要加入Scene的判断）Remove duplicate label(tag) */
                 // if (groupBy?.id === id) {
@@ -52,6 +68,7 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                         ref={ref => {
                             popoverHandlerRef.current[id] = ref;
                         }}
+                        container={blockRenderContainerRef.current}
                         key={id}
                         trigger="click"
                         placement="bottom-start"
@@ -96,7 +113,15 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                 );
             })}
             {propertyWithValues.length ? (
-                <AddPendantPopover block={block} iconStyle={{ marginTop: 5 }} />
+                <MuiZoom in={showAddBtn}>
+                    <div>
+                        <AddPendantPopover
+                            block={block}
+                            iconStyle={{marginTop: 4}}
+                            container={blockRenderContainerRef.current}
+                        />
+                    </div>
+                </MuiZoom>
             ) : null}
         </BlockPendantContainer>
     );
