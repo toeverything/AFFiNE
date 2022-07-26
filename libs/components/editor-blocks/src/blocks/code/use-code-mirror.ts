@@ -41,9 +41,9 @@ export interface UseCodeMirror extends ReactCodeMirrorProps {
 }
 
 const basicSetup: Extension = [
-    lineNumbers(),
-    highlightActiveLineGutter(),
-    highlightSpecialChars(),
+    // lineNumbers(),
+    // highlightActiveLineGutter(),
+    // highlightSpecialChars(),
     history(),
     foldGutter(),
     drawSelection(),
@@ -89,7 +89,10 @@ export function useCodeMirror(props: UseCodeMirror) {
     const defaultLightThemeOption = EditorView.theme(
         {
             '&': {
-                backgroundColor: '#fff',
+                backgroundColor: '#F2F5F9',
+            },
+            '.cm-gutters': {
+                display: 'none',
             },
         },
         {

@@ -45,7 +45,9 @@ import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile';
 import { julia } from '@codemirror/legacy-modes/mode/julia';
 import { r } from '@codemirror/legacy-modes/mode/r';
 import { Extension } from '@codemirror/state';
-import { Select } from '../../components/select';
+// import { Select } from '../../components/select';
+import { Option, Select } from '@toeverything/components/ui';
+
 import {
     useOnSelect,
     WrapperWithPendantAndDragDrop,
@@ -102,8 +104,9 @@ const langs: Record<string, any> = {
 };
 
 const CodeBlock = styled('div')(({ theme }) => ({
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #e0e0e0',
+    backgroundColor: '#F2F5F9',
+    padding: '8px 24px',
+    borderRadius: theme.affine.shape.borderRadius,
     '&:hover': {
         '.operation': {
             display: 'flex',
@@ -113,27 +116,15 @@ const CodeBlock = styled('div')(({ theme }) => ({
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        borderBottom: '1px solid #e0e0e0',
-        padding: '0 8px 0px',
     },
     '.delete-block': {
-        padding: '10px 4px 10px 10px',
+        padding: '6px 10px',
+        backgroundColor: '#fff',
+        borderRadius: theme.affine.shape.borderRadius,
+        cursor: 'pointer',
     },
     '.cm-focused': {
         outline: 'none !important',
-    },
-    '.select': {
-        marginTop: '10px',
-        select: {
-            border: 'none',
-            outline: 'none',
-            height: '22px',
-            lineHeight: theme.affine.typography.body1.lineHeight,
-            paddingLeft: '10px',
-            maxHeight: '400px',
-            background: '#f1f1f1',
-            borderRadius: '6px',
-        },
     },
 }));
 export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
@@ -180,19 +171,38 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
             >
                 <div className="operation">
                     <div className="select">
-                        <Select
+                        {/* <Select
                             label="Lang"
                             options={Object.keys(langs)}
                             value={mode}
                             onChange={evn => handleLangChange(evn.target.value)}
-                        />
+                        /> */}
+                        <Select
+                            width={128}
+                            placeholder="Search for a field type"
+                            value={mode}
+                            listboxStyle={{ maxHeight: '400px' }}
+                            onChange={(selectedValue: string) => {
+                                // setSelectedOption(selectedValue);
+                                handleLangChange(selectedValue);
+                            }}
+                        >
+                            {Object.keys(langs).map(item => {
+                                return (
+                                    <Option key={item} value={item}>
+                                        {item}
+                                    </Option>
+                                );
+                            })}
+                        </Select>
                     </div>
                     <div>
                         <div
                             className="delete-block"
-                            onClick={handle_remove_block}
+                            // onClick={handle_remove_block}
                         >
-                            <DeleteSweepOutlinedIcon
+                            Copy
+                            {/* <DeleteSweepOutlinedIcon
                                 className="delete-icon"
                                 fontSize="small"
                                 sx={{
@@ -200,7 +210,7 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
                                     cursor: 'pointer',
                                     '&:hover': { color: 'rgba(0,0,0,.9)' },
                                 }}
-                            />
+                            /> */}
                         </div>
                     </div>
                 </div>
