@@ -187,8 +187,4 @@ export class Hooks implements HooksRunner, PluginHooks {
     public beforeCut(e: ClipboardEvent): void {
         this._runHook(HookType.BEFORE_CUT, e);
     }
-
-    public onRootNodeScroll(e: React.UIEvent): void {
-        this.run_hook(HookType.ON_ROOTNODE_SCROLL, e);
-    }
 }
