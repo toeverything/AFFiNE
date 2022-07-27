@@ -444,6 +444,7 @@ export class Editor implements Virgo {
         this.hooks.dispose();
         this.plugin_manager.dispose();
         this.selectionManager.dispose();
+        this.dragDropManager.dispose();
         this._disposeClipboard();
     }
 }
