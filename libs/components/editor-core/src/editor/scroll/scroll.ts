@@ -1,7 +1,7 @@
 import EventEmitter from 'eventemitter3';
 
 import { domToRect, Rect } from '@toeverything/utils';
-import type { Editor as BlockEditor } from '../editor';
+import type { Editor as Block_editor } from '../editor';
 
 import { AsyncBlock } from '../block';
 
@@ -9,22 +9,23 @@ type VerticalTypes = 'up' | 'down' | null;
 type HorizontalTypes = 'left' | 'right' | null;
 
 export class ScrollManager {
-    private _editor: BlockEditor;
-    private _animation_frame: null | number = null;
-    private _event_name = 'scrolling';
-    private _current_move_direction: [HorizontalTypes, VerticalTypes] = [
+    private _editor: Block_editor;
+    private _animationFrame: null | number = null;
+    private _eventName = 'scrolling';
+    private _currentMoveDirection: [HorizontalTypes, VerticalTypes] = [
         null,
         null,
     ];
 
-    public scrollMoveOffset = 8;
-    public scrollingEvent = new EventEmitter();
+    private _scrollMoveOffset = 8;
+    private _scrollingEvent = new EventEmitter();
 
-    constructor(editor: BlockEditor) {
+    constructor(editor: Block_editor) {
         this._editor = editor;
+        console.log('scrollmanager constructor', this._editor.ui_container);
     }
 
-    private update_scroll_info(left: number, top: number) {
+    private _updateScrollInfo(left: number, top: number) {
         this.scrollTop = top;
         this.scrollLeft = left;
     }
@@ -32,12 +33,12 @@ export class ScrollManager {
     public onScrolling(
         cb: (args: { direction: [HorizontalTypes, VerticalTypes] }) => void
     ) {
-        this.scrollingEvent.on(this._event_name, cb);
+        this._scrollingEvent.on(this._eventName, cb);
     }
     public removeScrolling(
         cb: (args: { direction: [HorizontalTypes, VerticalTypes] }) => void
     ) {
-        this.scrollingEvent.removeListener(this._event_name, cb);
+        this._scrollingEvent.removeListener(this._eventName, cb);
     }
 
     public get scrollContainer() {
@@ -63,6 +64,12 @@ export class ScrollManager {
     }
     public set scrollLeft(left: number) {
         this._editor.ui_container.scrollLeft = left;
+    }
+    public get scrollMoveOffset() {
+        return this._scrollMoveOffset;
+    }
+    public get scrollingEvent() {
+        return this._scrollingEvent;
     }
 
     public scrollTo({
@@ -116,7 +123,7 @@ export class ScrollManager {
             top: blockRelativeTopToEditor,
             behavior,
         });
-        this.update_scroll_info(
+        this._updateScrollInfo(
             blockRelativeLeftToEditor,
             blockRelativeTopToEditor
         );
@@ -136,7 +143,7 @@ export class ScrollManager {
         }
         const blockRect = domToRect(block.dom);
 
-        const value = this.get_keep_in_view_params(blockRect);
+        const value = this._getKeepInViewParams(blockRect);
 
         if (value !== 0) {
             this.scrollTo({
@@ -146,7 +153,7 @@ export class ScrollManager {
         }
     }
 
-    private get_keep_in_view_params(blockRect: Rect) {
+    private _getKeepInViewParams(blockRect: Rect) {
         const { top, bottom } = domToRect(this._editor.ui_container);
         if (blockRect.top <= top + blockRect.height * 3) {
             return -1;
@@ -169,22 +176,22 @@ export class ScrollManager {
         this.scrollTo({ top: 0, behavior });
     }
 
-    private auto_scroll() {
+    private _autoScroll() {
         const xValue =
-            this._current_move_direction[0] === 'left'
+            this._currentMoveDirection[0] === 'left'
                 ? -1
-                : this._current_move_direction[0] === 'right'
+                : this._currentMoveDirection[0] === 'right'
                 ? 1
                 : 0;
         const yValue =
-            this._current_move_direction[1] === 'up'
+            this._currentMoveDirection[1] === 'up'
                 ? -1
-                : this._current_move_direction[1] === 'down'
+                : this._currentMoveDirection[1] === 'down'
                 ? 1
                 : 0;
 
-        const horizontalOffset = this.scrollMoveOffset * xValue;
-        const verticalOffset = this.scrollMoveOffset * yValue;
+        const horizontalOffset = this._scrollMoveOffset * xValue;
+        const verticalOffset = this._scrollMoveOffset * yValue;
 
         const calcLeft = this.scrollLeft + horizontalOffset;
         const calcTop = this.scrollTop + verticalOffset;
@@ -202,7 +209,7 @@ export class ScrollManager {
             return;
         }
 
-        this._animation_frame = requestAnimationFrame(() => {
+        this._animationFrame = requestAnimationFrame(() => {
             const left = this.scrollLeft + horizontalOffset;
             const top = this.scrollTop + verticalOffset;
 
@@ -211,35 +218,35 @@ export class ScrollManager {
                 top,
                 behavior: 'auto',
             });
-            this.update_scroll_info(left, top);
-            this.scrollingEvent.emit(this._event_name, {
-                direction: this._current_move_direction,
+            this._updateScrollInfo(left, top);
+            this._scrollingEvent.emit(this._eventName, {
+                direction: this._currentMoveDirection,
             });
-            this.auto_scroll();
+            this._autoScroll();
         });
     }
 
     public startAutoScroll(direction: [HorizontalTypes, VerticalTypes]) {
         if (direction[0] === null && direction[1] === null) {
-            this._current_move_direction = direction;
+            this._currentMoveDirection = direction;
             this.stopAutoScroll();
             return;
         }
         if (
-            direction[0] !== this._current_move_direction[0] ||
-            direction[1] !== this._current_move_direction[1]
+            direction[0] !== this._currentMoveDirection[0] ||
+            direction[1] !== this._currentMoveDirection[1]
         ) {
-            this._current_move_direction = direction;
+            this._currentMoveDirection = direction;
             this.stopAutoScroll();
         } else {
             return;
         }
-        this.auto_scroll();
+        this._autoScroll();
     }
     public stopAutoScroll() {
-        if (this._animation_frame) {
-            cancelAnimationFrame(this._animation_frame);
-            this._animation_frame = null;
+        if (this._animationFrame) {
+            cancelAnimationFrame(this._animationFrame);
+            this._animationFrame = null;
         }
     }
 }
