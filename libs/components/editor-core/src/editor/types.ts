@@ -175,6 +175,7 @@ export enum HookType {
     AFTER_ON_NODE_DRAG_OVER = 'afterOnNodeDragOver',
     BEFORE_COPY = 'beforeCopy',
     BEFORE_CUT = 'beforeCut',
+    ON_ROOTNODE_SCROLL = 'onRootNodeScroll',
 }
 
 export interface BlockDomInfo {
@@ -222,6 +223,7 @@ export interface HooksRunner {
     ) => void;
     beforeCopy: (e: ClipboardEvent) => void;
     beforeCut: (e: ClipboardEvent) => void;
+    onRootNodeScroll: (e: React.UIEvent) => void;
 }
 
 export type PayloadType<T extends Array<any>> = T extends []

@@ -1,3 +1,4 @@
+import { type UIEvent } from 'react';
 import EventEmitter from 'eventemitter3';
 
 import { domToRect, Rect } from '@toeverything/utils';
@@ -9,7 +10,8 @@ type VerticalTypes = 'up' | 'down' | null;
 type HorizontalTypes = 'left' | 'right' | null;
 
 export class ScrollManager {
-    private _editor: BlockEditor;
+    private _editor: Block_editor;
+    private _scrollContainer: HTMLElement;
     private _animationFrame: null | number = null;
     private _eventName = 'scrolling';
     private _currentMoveDirection: [HorizontalTypes, VerticalTypes] = [
@@ -41,7 +43,10 @@ export class ScrollManager {
     }
 
     public get scrollContainer() {
-        return this._editor.ui_container;
+        return this._scrollContainer;
+    }
+    public set scrollContainer(dom: HTMLElement) {
+        this._scrollContainer = dom;
     }
 
     public get verticalScrollTriggerDistance() {
@@ -53,22 +58,26 @@ export class ScrollManager {
     }
 
     public get scrollTop() {
-        return this._editor.ui_container.scrollTop;
+        return this._scrollContainer.scrollTop;
     }
     public set scrollTop(top: number) {
-        this._editor.ui_container.scrollTop = top;
+        this._scrollContainer.scrollTop = top;
     }
     public get scrollLeft() {
-        return this._editor.ui_container.scrollLeft;
+        return this._scrollContainer.scrollLeft;
     }
     public set scrollLeft(left: number) {
-        this._editor.ui_container.scrollLeft = left;
+        this._scrollContainer.scrollLeft = left;
     }
     public get scrollMoveOffset() {
         return this._scrollMoveOffset;
     }
-    public get scrollingEvent() {
-        return this._scrollingEvent;
+
+    public emitScrollEvent(event: UIEvent) {
+        this._scrollingEvent.emit(this._eventName, {
+            direction: this._currentMoveDirection,
+            event,
+        });
     }
 
     public scrollTo({
@@ -84,13 +93,13 @@ export class ScrollManager {
         left = left !== undefined ? left : this.scrollContainer.scrollLeft;
 
         if (behavior === 'smooth') {
-            this._editor.ui_container.scrollBy({
+            this._scrollContainer.scrollBy({
                 top,
                 left,
                 behavior,
             });
         } else {
-            this._editor.ui_container.scrollTo(left, top);
+            this._scrollContainer.scrollTo(left, top);
         }
     }
 
@@ -110,7 +119,7 @@ export class ScrollManager {
         if (!block.dom) {
             return console.warn(`Block is not exist.`);
         }
-        const containerRect = domToRect(this._editor.ui_container);
+        const containerRect = domToRect(this._scrollContainer);
         const blockRect = domToRect(block.dom);
 
         const blockRelativeTopToEditor =
@@ -153,7 +162,7 @@ export class ScrollManager {
     }
 
     private _getKeepInViewParams(blockRect: Rect) {
-        const { top, bottom } = domToRect(this._editor.ui_container);
+        const { top, bottom } = domToRect(this._scrollContainer);
         if (blockRect.top <= top + blockRect.height * 3) {
             return -1;
         }
@@ -218,9 +227,9 @@ export class ScrollManager {
                 behavior: 'auto',
             });
             this._updateScrollInfo(left, top);
-            this._scrollingEvent.emit(this._eventName, {
-                direction: this._currentMoveDirection,
-            });
+            // this._scrollingEvent.emit(this._eventName, {
+            //     direction: this._currentMoveDirection,
+            // });
             this._autoScroll();
         });
     }

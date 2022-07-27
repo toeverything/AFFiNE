@@ -1,5 +1,5 @@
 /* eslint-disable filename-rules/match */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type UIEvent } from 'react';
 import { useParams } from 'react-router';
 import {
     MuiBox as Box,
@@ -37,7 +37,8 @@ export function Page(props: PageProps) {
     const { user } = useUserAndSpaces();
     const templatesPortalFlag = useFlag('BooleanTemplatesPortal', false);
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
-    const editor = useRef<BlockEditor>();
+    const editorRef = useRef<BlockEditor>();
+    const scrollContainerRef = useRef();
 
     useEffect(() => {
         if (!user?.id || !page_id) return;
@@ -59,6 +60,13 @@ export function Page(props: PageProps) {
         };
         updateRecentPages();
     }, [user, props.workspace, page_id]);
+
+    const onScroll = (event: UIEvent) => {
+        editorRef.current.scrollManager.scrollContainer =
+            scrollContainerRef.current;
+        editorRef.current.getHooks().onRootNodeScroll(event);
+        editorRef.current.scrollManager.emitScrollEvent(event);
+    };
 
     return (
         <LigoApp>
@@ -104,12 +112,12 @@ export function Page(props: PageProps) {
                     </WorkspaceSidebarContent>
                 </WorkspaceSidebar>
             </LigoLeftContainer>
-            <LigoRightContainer>
+            <LigoRightContainer ref={scrollContainerRef} onScroll={onScroll}>
                 {page_id ? (
                     <AffineEditor
                         workspace={props.workspace}
                         rootBlockId={page_id}
-                        ref={editor}
+                        ref={editorRef}
                     />
                 ) : (
                     <Box
