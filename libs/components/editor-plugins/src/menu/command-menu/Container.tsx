@@ -50,7 +50,7 @@ export const CommandMenuContainer = ({
     >();
     const [needCheckIntoView, setNeedCheckIntoView] = useState<boolean>(false);
 
-    const current_category = useMemo(
+    const currentCategory = useMemo(
         () =>
             (Object.entries(menuItemsMap).find(
                 ([, infos]) =>
@@ -62,23 +62,23 @@ export const CommandMenuContainer = ({
     useEffect(() => {
         if (needCheckIntoView) {
             if (currentItem && menuRef.current) {
-                const item_ele =
+                const itemEle =
                     menuRef.current.querySelector<HTMLButtonElement>(
                         `.item-${currentItem}`
                     );
-                const scroll_ele =
+                const scrollEle =
                     menuRef.current.querySelector<HTMLButtonElement>(
                         `.${commonListContainer}`
                     );
-                if (item_ele) {
-                    const itemRect = domToRect(item_ele);
-                    const scrollRect = domToRect(scroll_ele);
+                if (itemEle) {
+                    const itemRect = domToRect(itemEle);
+                    const scrollRect = domToRect(scrollEle);
                     if (
                         itemRect.top < scrollRect.top ||
                         itemRect.bottom > scrollRect.bottom
                     ) {
                         // IMP: may be do it with self function
-                        item_ele.scrollIntoView({
+                        itemEle.scrollIntoView({
                             block: 'nearest',
                         });
                     }
@@ -195,17 +195,17 @@ export const CommandMenuContainer = ({
             ...(blocks || []),
             ...Object.entries(menuItemsMap).flatMap(
                 ([category, items], idx, all) => {
-                    let render_separator = false;
+                    let renderSeparator = false;
                     const lines: CommonListItem[] = items
                         .filter(item => types.includes(item.type))
                         .map(item => {
                             const { text, type, icon } = item;
-                            render_separator = true;
+                            renderSeparator = true;
                             return {
                                 content: { id: type, content: text, icon },
                             };
                         });
-                    if (render_separator && idx !== all.length - 1) {
+                    if (renderSeparator && idx !== all.length - 1) {
                         lines.push({ divider: category });
                     }
                     return lines;
@@ -223,7 +223,7 @@ export const CommandMenuContainer = ({
         >
             <div className={styles('contentContainer')}>
                 <MenuCategories
-                    currentCategories={current_category}
+                    currentCategories={currentCategory}
                     onSetCategories={handleSetCategories}
                     categories={categories}
                 />
