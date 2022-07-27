@@ -62,11 +62,14 @@ export function Page(props: PageProps) {
     }, [user, props.workspace, page_id]);
 
     const onScroll = (event: UIEvent) => {
-        editorRef.current.scrollManager.scrollContainer =
-            scrollContainerRef.current;
         editorRef.current.getHooks().onRootNodeScroll(event);
         editorRef.current.scrollManager.emitScrollEvent(event);
     };
+
+    useEffect(() => {
+        editorRef.current.scrollManager.scrollContainer =
+            scrollContainerRef.current;
+    }, []);
 
     return (
         <LigoApp>

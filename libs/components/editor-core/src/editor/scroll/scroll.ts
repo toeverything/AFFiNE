@@ -1,4 +1,4 @@
-import { type UIEvent } from 'react';
+import { CSSProperties, type UIEvent } from 'react';
 import EventEmitter from 'eventemitter3';
 
 import { domToRect, Rect } from '@toeverything/utils';
@@ -8,6 +8,29 @@ import { AsyncBlock } from '../block';
 
 type VerticalTypes = 'up' | 'down' | null;
 type HorizontalTypes = 'left' | 'right' | null;
+
+const setStyle = (dom: HTMLElement, style: CSSProperties) => {
+    const styleStr = Object.entries(style).reduce(
+        (styleStr, [styleName, styleValue]) => {
+            return `${styleStr} ${styleName}: ${styleValue};`;
+        },
+        ''
+    );
+
+    dom.setAttribute('style', styleStr);
+};
+
+// 这里只获取 style 里设置过的属性
+// 在恢复 body 后重新设置，不需要获取计算属性
+const getStyle = (dom: HTMLElement, styleName: any) => {
+    return dom.style[styleName];
+};
+const getStyles = (dom: HTMLElement, styleNames: any[]) => {
+    return styleNames.reduce((style, styleName) => {
+        style[styleName] = getStyle(dom, styleName);
+        return style;
+    }, {});
+};
 
 export class ScrollManager {
     private _editor: Block_editor;
@@ -21,9 +44,13 @@ export class ScrollManager {
     private _scrollMoveOffset = 8;
     private _autoScrollMoveOffset = 8;
     private _scrollingEvent = new EventEmitter();
+    private _isFrozen = false;
+    private _scrollContainerStyle: CSSProperties = {};
 
     constructor(editor: BlockEditor) {
         this._editor = editor;
+
+        (window as any).scrollManager = this;
     }
 
     private _updateScrollInfo(left: number, top: number) {
@@ -279,5 +306,48 @@ export class ScrollManager {
             cancelAnimationFrame(this._animationFrame);
             this._animationFrame = null;
         }
+    }
+
+    public frozen() {
+        if (this._isFrozen) {
+            return;
+        }
+
+        this._scrollContainerStyle = getStyles(this._scrollContainer, [
+            // 'position',
+            // 'top',
+            // 'left',
+            'overflow',
+            'height',
+        ]);
+
+        // const [recordScrollLeft, recordScrollTop] = this._scrollRecord;
+
+        setStyle(this._scrollContainer, {
+            // Position style maybe should set in mobile
+
+            // position: 'fixed',
+            // top: `-${recordScrollTop}px`,
+            // left: `-${recordScrollLeft}px`,
+            overflow: 'hidden',
+            height: '100%',
+        });
+
+        this._isFrozen = true;
+    }
+
+    public thaw() {
+        if (!this._isFrozen) {
+            return;
+        }
+
+        setStyle(this._scrollContainer, this._scrollContainerStyle);
+
+        const [recordScrollLeft, recordScrollTop] = this._scrollRecord;
+        this._scrollContainer.scrollTo(recordScrollLeft, recordScrollTop);
+
+        this._scrollContainerStyle = {};
+
+        this._isFrozen = false;
     }
 }
