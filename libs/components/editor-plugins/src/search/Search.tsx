@@ -103,13 +103,16 @@ export const Search = (props: SearchProps) => {
                         result_hide: !result.length,
                     })}
                 >
-                    {result.map(block => (
-                        <BlockPreview
-                            key={block.id}
-                            block={block}
-                            onClick={() => handle_navigate(block.id)}
-                        />
-                    ))}
+                    {result
+                        // 过滤掉空标题的文档
+                        .filter(block => block.content)
+                        .map(block => (
+                            <BlockPreview
+                                key={block.id}
+                                block={block}
+                                onClick={() => handle_navigate(block.id)}
+                            />
+                        ))}
                 </MuiBox>
             </Box>
         </TransitionsModal>

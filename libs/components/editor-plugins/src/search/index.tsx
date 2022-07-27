@@ -1,9 +1,10 @@
+/* eslint-disable filename-rules/match */
 import { StrictMode } from 'react';
 
 import { HookType } from '@toeverything/framework/virgo';
 
 import { BasePlugin } from '../base-plugin';
-import { Search } from './search';
+import { Search } from './Search';
 import { PluginRenderRoot } from '../utils';
 
 export class FullTextSearchPlugin extends BasePlugin {
@@ -15,6 +16,13 @@ export class FullTextSearchPlugin extends BasePlugin {
 
     public override init(): void {
         this.hooks.addHook(HookType.ON_SEARCH, this.handle_search, this);
+    }
+
+    protected override _onRender(): void {
+        this.#root = new PluginRenderRoot({
+            name: FullTextSearchPlugin.pluginName,
+            render: this.editor.reactRenderRoot.render,
+        });
     }
 
     private unmount() {
@@ -30,21 +38,22 @@ export class FullTextSearchPlugin extends BasePlugin {
         this.render_search();
     }
     private render_search() {
-        this.#root = new PluginRenderRoot({
-            name: FullTextSearchPlugin.pluginName,
-            render: this.editor.reactRenderRoot.render,
-        });
-        this.#root.mount();
-        this.#root.render(
-            <StrictMode>
-                <Search onClose={() => this.unmount()} editor={this.editor} />
-            </StrictMode>
-        );
+        if (this.#root) {
+            this.#root.mount();
+            this.#root.render(
+                <StrictMode>
+                    <Search
+                        onClose={() => this.unmount()}
+                        editor={this.editor}
+                    />
+                </StrictMode>
+            );
+        }
     }
     public renderSearch() {
         this.render_search();
     }
 }
 
-export type { QueryResult } from './search';
-export { QueryBlocks } from './search';
+export type { QueryResult } from './Search';
+export { QueryBlocks } from './Search';
