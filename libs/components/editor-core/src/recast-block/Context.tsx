@@ -16,6 +16,18 @@ export const isRecastBlock = (block: unknown): block is RecastBlock => {
     );
 };
 
+/**
+ * Remove legacy properties
+ */
+const normalizeRecastBlockData = (block: RecastBlock) => {
+    if (block.getProperty('scene')) {
+        block.removeProperty('scene');
+    }
+    if (block.getProperty('kanbanProps')) {
+        block.removeProperty('kanbanProps');
+    }
+};
+
 export const RecastBlockContext = createContext<RecastBlock | null>(null);
 
 export const RecastBlockProvider = ({
@@ -30,6 +42,8 @@ export const RecastBlockProvider = ({
             'RecastBlockProvider only works for page and group block'
         );
     }
+
+    normalizeRecastBlockData(block);
 
     return (
         <RecastBlockContext.Provider value={block}>

@@ -49,7 +49,6 @@ export const RenderBlock: FC<RenderBlockProps> = ({
             block={block}
             columns={columns.columns}
             columnsFromId={columns.fromId}
-            scene="page"
             editorElement={editorElement}
         />
     ) : null;
