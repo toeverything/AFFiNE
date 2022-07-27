@@ -63,7 +63,6 @@ export const BasicSelect = ({
 }) => {
     const [options, setOptions] = useState<OptionType[]>(initialOptions);
     const [selectIds, setSelectIds] = useState<OptionIdType[]>(initialValue);
-    const [focusedId, setFocusedId] = useState<OptionIdType>();
 
     const insertOption = (insertId: OptionIdType) => {
         const newOption = genBasicOption({
@@ -115,10 +114,6 @@ export const BasicSelect = ({
         onPropertyChange?.([...options.filter(o => o.name)]);
     }, [options, onPropertyChange]);
 
-    useEffect(() => {
-        setFocusedId(options[options.length - 1].id);
-    }, [options.length]);
-
     return (
         <div className="">
             {options.map((option, index) => {
@@ -127,7 +122,7 @@ export const BasicSelect = ({
                 return (
                     <OptionItem
                         key={option.id}
-                        focused={focusedId === option.id}
+                        focused={index === options.length - 1}
                         isMulti={isMulti}
                         checked={checked}
                         option={option}
@@ -205,13 +200,13 @@ const OptionItem = ({
     const theme = useTheme();
     const inputRef = useRef<HTMLInputElement>();
     useEffect(() => {
-        inputRef.current?.focus();
+        focused && inputRef.current?.focus();
     }, [focused]);
     return (
         <HighLightIconInput
             componentsProps={{
                 input: {
-                    ref: ref => (inputRef.current = ref),
+                    ref: inputRef,
                 },
             }}
             iconName={iconConfig?.name}
@@ -219,12 +214,14 @@ const OptionItem = ({
             background={iconConfig?.background}
             value={option.name}
             placeholder="Option content"
-            onKeyDown={e => {
-                if (e.keyCode === 13) {
+            onKeyDown={(e: KeyboardEvent) => {
+                if (e.code === 'Enter') {
                     onEnter?.(e);
+                    e.preventDefault();
                 }
-                if (e.ctrlKey && e.keyCode === 8) {
+                if (e.ctrlKey && e.code === 'Backspace') {
                     onDelete?.(option.id);
+                    e.preventDefault();
                 }
             }}
             onChange={e => {

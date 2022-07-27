@@ -59,12 +59,12 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                                 property={property}
                                 hasDelete={false}
                                 onSure={() => {
-                                    popoverHandlerRef.current[id].setVisible(
+                                    popoverHandlerRef?.current[id].setVisible(
                                         false
                                     );
                                 }}
                                 onCancel={() => {
-                                    popoverHandlerRef.current[id].setVisible(
+                                    popoverHandlerRef?.current[id].setVisible(
                                         false
                                     );
                                 }}
