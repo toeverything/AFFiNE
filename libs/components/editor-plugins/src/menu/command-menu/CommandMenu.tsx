@@ -3,24 +3,28 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import { BasePlugin } from '../../base-plugin';
 import { CommandMenu } from './Menu';
+import { PluginRenderRoot } from '../../utils';
 
 const PLUGIN_NAME = 'command-menu';
 
 export class CommandMenuPlugin extends BasePlugin {
-    private root?: Root;
+    private root?: PluginRenderRoot;
 
     public static override get pluginName(): string {
         return PLUGIN_NAME;
     }
 
     protected override on_render(): void {
+        if (this.editor.isWhiteboard) return;
         const container = document.createElement('div');
         // TODO remove
         container.classList.add(`id-${PLUGIN_NAME}`);
-        // this.editor.attachElement(this.menu_container);
-        window.document.body.appendChild(container);
-        this.root = createRoot(container);
-        this.render_command_menu();
+        this.root = new PluginRenderRoot({
+            name: PLUGIN_NAME,
+            render: this.editor.reactRenderRoot.render,
+        });
+        this.root.mount();
+        this.renderCommandMenu();
     }
 
     private renderCommandMenu(): void {

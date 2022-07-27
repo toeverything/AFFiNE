@@ -10,7 +10,6 @@ import style9 from 'style9';
 
 import { MuiClickAwayListener } from '@toeverything/components/ui';
 import { Virgo, HookType, PluginHooks } from '@toeverything/framework/virgo';
-import { Point } from '@toeverything/utils';
 
 import { CommandMenuContainer } from './Container';
 import {
@@ -237,21 +236,24 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             ref={commandMenuContentRef}
         >
             <MuiClickAwayListener onClickAway={handle_click_away}>
-                <CommandMenuContainer
-                    editor={editor}
-                    hooks={hooks}
-                    style={{
-                        ...commandMenuPosition,
-                        ...style,
-                    }}
-                    isShow={is_show}
-                    blockId={block_id}
-                    onSelected={handle_selected}
-                    onclose={handle_close}
-                    searchBlocks={search_blocks}
-                    types={types}
-                    categories={categories}
-                />
+                {/* MuiClickAwayListener  渲染子节点问题*/}
+                <div>
+                    <CommandMenuContainer
+                        editor={editor}
+                        hooks={hooks}
+                        style={{
+                            ...commandMenuPosition,
+                            ...style,
+                        }}
+                        isShow={is_show}
+                        blockId={block_id}
+                        onSelected={handle_selected}
+                        onclose={handle_close}
+                        searchBlocks={search_blocks}
+                        types={types}
+                        categories={categories}
+                    />
+                </div>
             </MuiClickAwayListener>
         </div>
     );
