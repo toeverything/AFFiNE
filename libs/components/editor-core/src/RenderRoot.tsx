@@ -11,6 +11,7 @@ import {
     type ReturnUnobserve,
 } from '@toeverything/datasource/db-service';
 import { addNewGroup } from './recast-block';
+import { HookType } from './editor';
 
 interface RenderRootProps {
     editor: BlockEditor;
@@ -178,6 +179,10 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
         editor.getHooks().onRootNodeDrop(event);
     };
 
+    const onScroll = (event: React.UIEvent) => {
+        editor.getHooks().onRootNodeScroll(event);
+    };
+
     return (
         <RootContext.Provider value={{ editor, editorElement }}>
             <Container
@@ -197,6 +202,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 onDragOverCapture={onDragOverCapture}
                 onDragEnd={onDragEnd}
                 onDrop={onDrop}
+                onScroll={onScroll}
             >
                 <Content
                     ref={contentRef}
