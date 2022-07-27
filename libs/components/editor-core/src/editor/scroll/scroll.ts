@@ -14,12 +14,12 @@ export class ScrollManager {
     private _scrollContainer: HTMLElement;
     private _animationFrame: null | number = null;
     private _eventName = 'scrolling';
-    private _currentMoveDirection: [HorizontalTypes, VerticalTypes] = [
-        null,
-        null,
-    ];
+
+    private _scrollRecord: [number, number] = [0, 0];
+    private _scrollDirection: [HorizontalTypes, VerticalTypes] = [null, null];
 
     private _scrollMoveOffset = 8;
+    private _autoScrollMoveOffset = 8;
     private _scrollingEvent = new EventEmitter();
 
     constructor(editor: BlockEditor) {
@@ -32,12 +32,18 @@ export class ScrollManager {
     }
 
     public onScrolling(
-        cb: (args: { direction: [HorizontalTypes, VerticalTypes] }) => void
+        cb: (args: {
+            direction: [HorizontalTypes, VerticalTypes];
+            event: UIEvent;
+        }) => void
     ) {
         this._scrollingEvent.on(this._eventName, cb);
     }
     public removeScrolling(
-        cb: (args: { direction: [HorizontalTypes, VerticalTypes] }) => void
+        cb: (args: {
+            direction: [HorizontalTypes, VerticalTypes];
+            event: UIEvent;
+        }) => void
     ) {
         this._scrollingEvent.removeListener(this._eventName, cb);
     }
@@ -73,9 +79,34 @@ export class ScrollManager {
         return this._scrollMoveOffset;
     }
 
+    private _getScrollDirection(): [HorizontalTypes, VerticalTypes] {
+        const [recordScrollTop, recordScrollLeft] = this._scrollRecord;
+        return [
+            this.scrollContainer.scrollLeft === recordScrollLeft
+                ? null
+                : this.scrollContainer.scrollLeft > recordScrollLeft
+                ? 'right'
+                : 'left',
+            this.scrollContainer.scrollTop === recordScrollTop
+                ? null
+                : this.scrollContainer.scrollTop > recordScrollTop
+                ? 'down'
+                : 'up',
+        ];
+    }
+
     public emitScrollEvent(event: UIEvent) {
+        this._scrollDirection = this._getScrollDirection();
+        this._scrollMoveOffset = Math.abs(
+            this.scrollContainer.scrollTop - this._scrollRecord[0]
+        );
+        this._scrollRecord = [
+            this.scrollContainer.scrollTop,
+            this.scrollContainer.scrollLeft,
+        ];
+
         this._scrollingEvent.emit(this._eventName, {
-            direction: this._currentMoveDirection,
+            direction: this._scrollDirection,
             event,
         });
     }
@@ -184,22 +215,14 @@ export class ScrollManager {
         this.scrollTo({ top: 0, behavior });
     }
 
-    private _autoScroll() {
+    private _autoScroll(direction: [HorizontalTypes, VerticalTypes]) {
         const xValue =
-            this._currentMoveDirection[0] === 'left'
-                ? -1
-                : this._currentMoveDirection[0] === 'right'
-                ? 1
-                : 0;
+            direction[0] === 'left' ? -1 : direction[0] === 'right' ? 1 : 0;
         const yValue =
-            this._currentMoveDirection[1] === 'up'
-                ? -1
-                : this._currentMoveDirection[1] === 'down'
-                ? 1
-                : 0;
+            direction[1] === 'up' ? -1 : direction[1] === 'down' ? 1 : 0;
 
-        const horizontalOffset = this._scrollMoveOffset * xValue;
-        const verticalOffset = this._scrollMoveOffset * yValue;
+        const horizontalOffset = this._autoScrollMoveOffset * xValue;
+        const verticalOffset = this._autoScrollMoveOffset * yValue;
 
         const calcLeft = this.scrollLeft + horizontalOffset;
         const calcTop = this.scrollTop + verticalOffset;
@@ -230,26 +253,26 @@ export class ScrollManager {
             // this._scrollingEvent.emit(this._eventName, {
             //     direction: this._currentMoveDirection,
             // });
-            this._autoScroll();
+            this._autoScroll(direction);
         });
     }
 
     public startAutoScroll(direction: [HorizontalTypes, VerticalTypes]) {
         if (direction[0] === null && direction[1] === null) {
-            this._currentMoveDirection = direction;
+            this._scrollDirection = direction;
             this.stopAutoScroll();
             return;
         }
         if (
-            direction[0] !== this._currentMoveDirection[0] ||
-            direction[1] !== this._currentMoveDirection[1]
+            direction[0] !== this._scrollDirection[0] ||
+            direction[1] !== this._scrollDirection[1]
         ) {
-            this._currentMoveDirection = direction;
+            this._scrollDirection = direction;
             this.stopAutoScroll();
         } else {
             return;
         }
-        this._autoScroll();
+        this._autoScroll(direction);
     }
     public stopAutoScroll() {
         if (this._animationFrame) {
