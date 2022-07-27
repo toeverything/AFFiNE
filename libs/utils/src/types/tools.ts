@@ -3,7 +3,7 @@
  *
  * @example
  * ```ts
- * // except: type Values = 1 | '2'
+ * except: type Values = 1 | '2'
  * type Values = ValueOf<{a: 1, b: '2'}>
  * ```
  */
@@ -14,7 +14,7 @@ export type ValueOf<X extends Record<string, unknown>> = X[keyof X];
  *
  * @example
  * ```ts
- * // except: type FirstType = string;
+ * except: type FirstType = string;
  * type FirstType = First<[string], 0>
  * ```
  */
@@ -25,7 +25,7 @@ export type IndexOf<X extends unknown[], I extends number> = X[I];
  *
  * @example
  * ```ts
- * // except: type FirstType = string;
+ * except: type FirstType = string;
  * type FirstType = First<[string]>
  * ```
  */

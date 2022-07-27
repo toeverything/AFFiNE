@@ -252,6 +252,7 @@ export class DragDropManager {
     }
 
     public handlerEditorDrop(event: React.DragEvent<Element>) {
+        event.preventDefault();
         // IMP: can not use Decorators now may use decorators is right
         if (this.isEnabled()) {
             if (this.isDragBlock(event)) {

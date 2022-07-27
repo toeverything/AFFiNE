@@ -9,6 +9,7 @@ export class GridBlock extends BaseView {
     public override selectable = false;
     public override activatable = false;
     public override allowPendant = false;
+    public override layoutOnly = true;
 
     type = Protocol.Block.Type.grid;
     View = GridRender(Grid);

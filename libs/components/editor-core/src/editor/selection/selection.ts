@@ -324,9 +324,21 @@ export class SelectionManager implements VirgoSelection {
         }
         if (block && block.dom) {
             if (selectionRect.isIntersect(domToRect(block.dom))) {
-                const selectableChildren = await (
-                    await block.children()
-                ).filter(childBlock => {
+                const childrenBlocks = await block.children();
+                // should check directly in structured block
+                const structuredChildrenBlocks: Array<AsyncBlock> =
+                    childrenBlocks.filter(childBlock => {
+                        return this._editor.getView(childBlock.type).layoutOnly;
+                    });
+                for await (const childBlock of structuredChildrenBlocks) {
+                    const childSelectedNodes =
+                        await this.calcRenderBlockIntersect(
+                            selectionRect,
+                            childBlock
+                        );
+                    selectedNodes.push(...childSelectedNodes);
+                }
+                const selectableChildren = childrenBlocks.filter(childBlock => {
                     return this._editor.getView(childBlock.type).selectable;
                 });
                 for await (const childBlock of selectableChildren) {
@@ -350,6 +362,7 @@ export class SelectionManager implements VirgoSelection {
                 }
             }
         }
+        console.log({ selectedNodes });
         return selectedNodes;
     }
 
