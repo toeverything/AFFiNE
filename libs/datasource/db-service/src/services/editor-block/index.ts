@@ -143,8 +143,13 @@ export class EditorBlock extends ServiceBaseClass {
         const decorations = db_block.getDecorations();
         Object.entries(businessBlock.properties || {}).forEach(
             ([key, value]) => {
+                if (value === undefined) {
+                    db_block.removeDecoration(key);
+                    return;
+                }
                 if (decorations[key] !== value) {
                     db_block.setDecoration(key, value);
+                    return;
                 }
             }
         );

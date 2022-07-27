@@ -453,6 +453,18 @@ export class AsyncBlock {
         });
     }
 
+    async removeProperty<
+        T extends keyof DefaultColumnsValue = keyof DefaultColumnsValue
+    >(key: T) {
+        return this.services.update({
+            id: this.id,
+            workspace: this.raw_data.workspace,
+            properties: {
+                [key]: undefined,
+            },
+        });
+    }
+
     private async load_node(id: string): Promise<AsyncBlock | null> {
         return await this.services.load({
             workspace: this.raw_data.workspace,
