@@ -53,7 +53,6 @@ export const InlineMenuContainer = ({
             setShowMenu(true);
             setContainerStyle({ left: rect.left, top: rect.top - 64 });
         });
-
         return unsubscribe;
     }, [editor]);
 
