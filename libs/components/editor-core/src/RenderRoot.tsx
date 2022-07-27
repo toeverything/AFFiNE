@@ -11,7 +11,8 @@ import {
     type ReturnUnobserve,
 } from '@toeverything/datasource/db-service';
 import { addNewGroup } from './recast-block';
-import { useIsOnDrag } from '.';
+import { useIsOnDrag } from './hooks';
+import { HookType } from './editor';
 
 interface RenderRootProps {
     editor: BlockEditor;
