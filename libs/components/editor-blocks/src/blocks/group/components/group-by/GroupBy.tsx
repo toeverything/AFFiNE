@@ -62,7 +62,7 @@ const GroupBy = ({ closePanel }: { closePanel: () => void }) => {
     };
 
     return (
-        <Panel extraStyle={panelStyle}>
+        <Panel style={panelStyle}>
             <Item disabled>
                 <div>COLUMN</div>
             </Item>

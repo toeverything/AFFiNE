@@ -24,7 +24,7 @@ const Sorter = ({
     };
 
     return (
-        <Panel extraStyle={extraStyle}>
+        <Panel style={extraStyle}>
             <GroupBySelector />
             <div>
                 <Title>
