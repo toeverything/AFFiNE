@@ -1,6 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
-import { RenderRoot, RenderBlock } from '@toeverything/components/editor-core';
+import {
+    RenderRoot,
+    RenderBlock,
+    type BlockEditor,
+} from '@toeverything/components/editor-core';
 import { useCurrentEditors } from '@toeverything/datasource/state';
 
 import { createEditor } from './create-editor';
@@ -23,41 +27,40 @@ function useConstant<T>(init: () => T): T {
     return ref.current;
 }
 
-export const AffineEditor = ({
-    workspace,
-    rootBlockId,
-    scrollBlank = true,
-    isWhiteboard,
-}: AffineEditorProps) => {
-    const { setCurrentEditors } = useCurrentEditors();
-    const editor = useConstant(() => {
-        const editor = createEditor(workspace, isWhiteboard);
+export const AffineEditor = forwardRef<BlockEditor, AffineEditorProps>(
+    ({ workspace, rootBlockId, scrollBlank = true, isWhiteboard }, ref) => {
+        const { setCurrentEditors } = useCurrentEditors();
+        const editor = useConstant(() => {
+            const editor = createEditor(workspace, isWhiteboard);
 
-        // @ts-ignore
-        globalThis.virgo = editor;
-        return editor;
-    });
+            // @ts-ignore
+            globalThis.virgo = editor;
+            return editor;
+        });
 
-    useEffect(() => {
-        if (rootBlockId) {
-            editor.setRootBlockId(rootBlockId);
-        } else {
-            console.error('rootBlockId for page is required. ');
-        }
-    }, [editor, rootBlockId]);
+        useImperativeHandle(ref, () => editor);
 
-    useEffect(() => {
-        if (!rootBlockId) return;
-        setCurrentEditors(prev => ({ ...prev, [rootBlockId]: editor }));
-    }, [editor, rootBlockId, setCurrentEditors]);
+        useEffect(() => {
+            if (rootBlockId) {
+                editor.setRootBlockId(rootBlockId);
+            } else {
+                console.error('rootBlockId for page is required. ');
+            }
+        }, [editor, rootBlockId]);
 
-    return (
-        <RenderRoot
-            editor={editor}
-            editorElement={AffineEditor as any}
-            scrollBlank={scrollBlank}
-        >
-            <RenderBlock blockId={rootBlockId} />
-        </RenderRoot>
-    );
-};
+        useEffect(() => {
+            if (!rootBlockId) return;
+            setCurrentEditors(prev => ({ ...prev, [rootBlockId]: editor }));
+        }, [editor, rootBlockId, setCurrentEditors]);
+
+        return (
+            <RenderRoot
+                editor={editor}
+                editorElement={AffineEditor as any}
+                scrollBlank={scrollBlank}
+            >
+                <RenderBlock blockId={rootBlockId} />
+            </RenderRoot>
+        );
+    }
+);

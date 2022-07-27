@@ -1,5 +1,5 @@
 /* eslint-disable filename-rules/match */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams } from 'react-router';
 import {
     MuiBox as Box,
@@ -24,6 +24,7 @@ import { WorkspaceName } from './workspace-name';
 import { CollapsiblePageTree } from './collapsible-page-tree';
 import TemplatesPortal from './templates-portal';
 import { useFlag } from '@toeverything/datasource/feature-flags';
+import { type BlockEditor } from '@toeverything/components/editor-core';
 
 type PageProps = {
     workspace: string;
@@ -36,6 +37,7 @@ export function Page(props: PageProps) {
     const { user } = useUserAndSpaces();
     const templatesPortalFlag = useFlag('BooleanTemplatesPortal', false);
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
+    const editor = useRef<BlockEditor>();
 
     useEffect(() => {
         if (!user?.id || !page_id) return;
@@ -107,6 +109,7 @@ export function Page(props: PageProps) {
                     <AffineEditor
                         workspace={props.workspace}
                         rootBlockId={page_id}
+                        ref={editor}
                     />
                 ) : (
                     <Box
