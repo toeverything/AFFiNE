@@ -77,10 +77,9 @@ export const useRecastView = () => {
 
     const addView = useCallback(
         async (newView: RecastViewWithoutId) => {
-            await setViews([
-                ...recastViews,
-                { ...newView, id: genViewId() } as RecastView,
-            ]);
+            const newViewWithId = { ...newView, id: genViewId() } as RecastView;
+            await setViews([...recastViews, newViewWithId]);
+            return newViewWithId;
         },
         [recastViews, setViews]
     );
@@ -88,7 +87,7 @@ export const useRecastView = () => {
     const updateView = useCallback(
         async (newView: RecastView) => {
             const idx = recastViews.findIndex(v => v.id === newView.id);
-            if (!idx) {
+            if (idx === -1) {
                 throw new Error('Failed to find view with id ' + newView.id);
             }
             await setViews([
@@ -141,7 +140,7 @@ export const useRecastView = () => {
         recastViews,
         setCurrentView,
         addView,
-        // updateView,
+        updateView,
         renameView,
         removeView,
         // TODO reorder API
