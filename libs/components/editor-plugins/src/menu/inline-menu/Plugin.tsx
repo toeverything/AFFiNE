@@ -10,28 +10,28 @@ export class InlineMenuPlugin extends BasePlugin {
         return PLUGIN_NAME;
     }
 
-    private root: PluginRenderRoot;
+    private _root: PluginRenderRoot;
 
     protected override _onRender(): void {
-        this.root = new PluginRenderRoot({
+        this._root = new PluginRenderRoot({
             name: InlineMenuPlugin.pluginName,
             render: this.editor.reactRenderRoot?.render,
         });
 
-        this.root.mount();
+        this._root.mount();
         this._renderInlineMenu();
     }
 
     private _renderInlineMenu(): void {
-        this.root?.render(
+        this._root?.render(
             <StrictMode>
-                <InlineMenuContainer editor={this.editor} hooks={this.hooks} />
+                <InlineMenuContainer editor={this.editor} />
             </StrictMode>
         );
     }
 
     public override dispose() {
-        this.root?.unmount();
+        this._root?.unmount();
         super.dispose();
     }
 }
