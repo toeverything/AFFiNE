@@ -1,13 +1,14 @@
 import { CommingSoon } from '@toeverything/components/common';
+import type {
+    AsyncBlock,
+    BlockEditor,
+} from '@toeverything/components/editor-core';
 import {
     mergeToPreviousGroup,
     RecastScene,
-    RecastView,
     useCurrentView,
-    useRecastView,
 } from '@toeverything/components/editor-core';
 import {
-    AddViewIcon,
     FilterIcon,
     FullScreenIcon,
     GroupByIcon,
@@ -15,45 +16,21 @@ import {
     KanBanIcon,
     SortIcon,
     TableIcon,
-    TodoListIcon,
 } from '@toeverything/components/icons';
 import { Popover, useTheme } from '@toeverything/components/ui';
 import { useFlag } from '@toeverything/datasource/feature-flags';
-import type { AsyncBlock, BlockEditor } from '@toeverything/framework/virgo';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Filter } from './components/filter';
-import { GroupBy } from './components/group-by/GroupBy';
-import { GroupPanel } from './components/group-panel/GroupPanel';
-import { IconButton } from './components/IconButton';
-import { Line } from './components/Line';
-import { Sorter } from './components/sorter';
-import { PANEL_CONFIG } from './config';
-import type { ActivePanel } from './types';
-
-const VIEW_ICON_MAP: Record<RecastView['type'], ReactElement> = {
-    page: <TodoListIcon fontSize="small" />,
-    kanban: <KanBanIcon fontSize="small" />,
-    table: <TableIcon fontSize="small" />,
-};
-
-const ViewsMenu = () => {
-    const { currentView, recastViews, setCurrentView } = useRecastView();
-    return (
-        <>
-            {recastViews.map(view => (
-                <IconButton
-                    key={view.id}
-                    active={view.id === currentView.id}
-                    onClick={() => setCurrentView(view)}
-                >
-                    {VIEW_ICON_MAP[view.type]}
-                    {view.name}
-                </IconButton>
-            ))}
-        </>
-    );
-};
+import { Filter } from '../components/filter';
+import { GroupBy } from '../components/group-by/GroupBy';
+import { GroupPanel } from '../components/group-panel/GroupPanel';
+import { IconButton } from '../components/IconButton';
+import { Line } from '../components/Line';
+import { Sorter } from '../components/sorter';
+import { PANEL_CONFIG } from '../config';
+import type { ActivePanel } from '../types';
+import { AddViewMenu } from './AddViewMenu';
+import { ViewsMenu } from './ViewsMenu';
 
 const GroupMenuWrapper = ({
     block,
@@ -105,21 +82,7 @@ const GroupMenuWrapper = ({
             content={
                 <GroupPanel>
                     <ViewsMenu />
-
-                    {filterSorterFlag && (
-                        <IconButton
-                            active={activePanel === PANEL_CONFIG.ADD_VIEW}
-                            onClick={() =>
-                                setActivePanel(
-                                    PANEL_CONFIG.ADD_VIEW as ActivePanel
-                                )
-                            }
-                        >
-                            <AddViewIcon fontSize="small" />
-                            Add View
-                        </IconButton>
-                    )}
-
+                    <AddViewMenu />
                     {
                         // // Closed beta period temporarily
                         // filterSorterFlag && (

@@ -1,0 +1,1 @@
+export { GroupMenuWrapper } from './MainMenu';
