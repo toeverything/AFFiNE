@@ -1,11 +1,10 @@
 import { CSSProperties } from 'react';
 import {
-    KANBAN_PROPERTIES_KEY,
     META_CURRENT_VIEW_ID_KEY,
     META_PROPERTIES_KEY,
     META_VIEWS_KEY,
 } from './constant';
-import { RecastScene, RecastView, RecastViewId } from './view';
+import { RecastView, RecastViewId } from './view';
 
 // ---------------------------------------------------
 // Property
@@ -108,16 +107,23 @@ export type RecastMetaProperty =
     | InformationProperty;
 
 /**
- * @deprecated Use {@link RecastView}
+ * @deprecated Use {@link META_VIEWS_KEY} instead.
  */
-export type RecastKanbanProperty = {
-    groupBy: RecastPropertyId;
-};
+const KANBAN_PROPERTIES_KEY = 'kanbanProps' as const;
 
 export type RecastDataProperties = Partial<{
-    scene: RecastScene;
+    /**
+     * PLEASE DO NOT USE IT
+     * @deprecated Use {@link RecastView} instead
+     */
+    scene?: undefined;
+    /**
+     * PLEASE DO NOT USE IT
+     * @deprecated Use {@link RecastView} instead
+     */
+    [KANBAN_PROPERTIES_KEY]?: undefined;
+
     [META_PROPERTIES_KEY]: RecastMetaProperty[];
     [META_VIEWS_KEY]: RecastView[];
     [META_CURRENT_VIEW_ID_KEY]: RecastViewId;
-    [KANBAN_PROPERTIES_KEY]: RecastKanbanProperty;
 }>;

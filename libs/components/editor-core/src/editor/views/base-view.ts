@@ -27,7 +27,6 @@ export interface CreateView {
      * @deprecated Use recast table instead
      */
     columnsFromId: string;
-    scene: 'page' | 'kanban' | 'table' | 'whiteboard';
 }
 
 export interface ChildrenView extends CreateView {

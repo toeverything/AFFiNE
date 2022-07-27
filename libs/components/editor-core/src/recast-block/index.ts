@@ -4,7 +4,6 @@ import {
     useSelectProperty,
     genSelectOptionId,
 } from './property';
-import { useRecastBlockScene } from './Scene';
 export * from './types';
 export {
     RecastBlockProvider,
@@ -14,7 +13,6 @@ export {
 
 export {
     getRecastItemValue,
-    useRecastBlockScene,
     useRecastBlockMeta,
     useSelectProperty,
     genSelectOptionId,
