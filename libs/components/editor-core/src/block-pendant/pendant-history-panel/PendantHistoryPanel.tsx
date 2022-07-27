@@ -1,10 +1,12 @@
-import React, { ReactNode, useRef } from 'react';
-import { getLatestPropertyValue } from '../utils';
+import React, { ReactNode, useRef, useEffect, useState } from 'react';
+import { getPendantHistory } from '../utils';
 import {
     getRecastItemValue,
     RecastMetaProperty,
     useRecastBlock,
     useRecastBlockMeta,
+    RecastBlockValue,
+    RecastPropertyId,
 } from '../../recast-block';
 import { AsyncBlock } from '../../editor';
 import { Popover, PopperHandler, styled } from '@toeverything/components/ui';
@@ -14,27 +16,60 @@ import { UpdatePendantPanel } from '../pendant-operation-panel';
 export const PendantHistoryPanel = ({
     block,
     endElement,
+    onClose,
 }: {
     block: AsyncBlock;
     endElement?: ReactNode;
+    onClose?: () => void;
 }) => {
-    const popoverHandlerRef = useRef<{ [key: string]: PopperHandler }>({});
-
+    const groupBlock = useRecastBlock();
+    const { getProperties } = useRecastBlockMeta();
     const { getProperty } = useRecastBlockMeta();
 
     const { getAllValue } = getRecastItemValue(block);
-
     const recastBlock = useRecastBlock();
 
-    const latestPropertyValues = getLatestPropertyValue({
-        recastBlockId: recastBlock.id,
-        blockId: block.id,
-    });
-    const blockValues = getAllValue();
+    const [history, setHistory] = useState<RecastBlockValue[]>([]);
+    const popoverHandlerRef = useRef<{ [key: string]: PopperHandler }>({});
 
-    const history = latestPropertyValues
-        .filter(latest => !blockValues.find(v => v && v.id === latest.value.id))
-        .map(v => v.value);
+    useEffect(() => {
+        const init = async () => {
+            const currentBlockValues = getAllValue();
+            const allProperties = getProperties();
+            const missProperties = allProperties.filter(
+                property => !currentBlockValues.find(v => v.id === property.id)
+            );
+            const pendantHistory = getPendantHistory({
+                recastBlockId: recastBlock.id,
+            });
+            const historyMap = missProperties.reduce<{
+                [key: RecastPropertyId]: string;
+            }>((history, property) => {
+                if (pendantHistory[property.id]) {
+                    history[property.id] = pendantHistory[property.id];
+                }
+
+                return history;
+            }, {});
+
+            const blockHistory = await Promise.all(
+                Object.entries(historyMap).map(
+                    async ([propertyId, blockId]) => {
+                        const latestValueBlock = (
+                            await groupBlock.children()
+                        ).find((block: AsyncBlock) => block.id === blockId);
+
+                        return getRecastItemValue(latestValueBlock).getValue(
+                            propertyId as RecastPropertyId
+                        );
+                    }
+                )
+            );
+
+            setHistory(blockHistory);
+        };
+        init();
+    }, [getAllValue, getProperties, groupBlock, recastBlock]);
 
     return (
         <StyledPendantHistoryPanel>
@@ -57,11 +92,13 @@ export const PendantHistoryPanel = ({
                                     popoverHandlerRef.current[
                                         item.id
                                     ].setVisible(false);
+                                    onClose?.();
                                 }}
                                 onCancel={() => {
                                     popoverHandlerRef.current[
                                         item.id
                                     ].setVisible(false);
+                                    onClose?.();
                                 }}
                                 titleEditable={false}
                             />
@@ -85,6 +122,7 @@ export const PendantHistoryPanel = ({
         </StyledPendantHistoryPanel>
     );
 };
+
 const StyledPendantHistoryPanel = styled('div')`
     display: flex;
     flex-wrap: wrap;

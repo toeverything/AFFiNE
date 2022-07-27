@@ -36,6 +36,9 @@ export const PendantPopover: FC<
                             trigger="click"
                         />
                     }
+                    onClose={() => {
+                        popoverHandlerRef.current?.setVisible(false);
+                    }}
                 />
             }
             offset={[0, 0]}

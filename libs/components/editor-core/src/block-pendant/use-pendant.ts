@@ -1,4 +1,4 @@
-import { removePropertyValueRecord, setLatestPropertyValue } from './utils';
+import { removePropertyValueRecord, setPendantHistory } from './utils';
 import { AsyncBlock } from '../editor';
 import {
     getRecastItemValue,
@@ -19,10 +19,10 @@ export const usePendant = (block: AsyncBlock) => {
             value: newValue,
         };
         await setValue(nv);
-        setLatestPropertyValue({
+        setPendantHistory({
             recastBlockId: recastBlock.id,
             blockId: block.id,
-            value: nv,
+            propertyId: property.id,
         });
     };
 

@@ -9,15 +9,12 @@ import { PendantConfig, PendantTypes } from './types';
 type Props = {
     recastBlockId: string;
     blockId: string;
-    value: RecastBlockValue;
+    propertyId: RecastPropertyId;
 };
 
 type StorageMap = {
     [recastBlockId: string]: {
-        [propertyId: RecastPropertyId]: {
-            blockId: string;
-            value: RecastBlockValue;
-        };
+        [propertyId: RecastPropertyId]: string;
     };
 };
 
@@ -30,10 +27,10 @@ const ensureLocalStorage = () => {
     }
 };
 
-export const setLatestPropertyValue = ({
+export const setPendantHistory = ({
     recastBlockId,
     blockId,
-    value,
+    propertyId,
 }: Props) => {
     ensureLocalStorage();
     const data: StorageMap = JSON.parse(
@@ -44,43 +41,22 @@ export const setLatestPropertyValue = ({
         data[recastBlockId] = {};
     }
     const propertyValueRecord = data[recastBlockId];
-    const propertyId = value.id;
-    propertyValueRecord[propertyId] = {
-        blockId: blockId,
-        value,
-    };
+    propertyValueRecord[propertyId] = blockId;
 
     localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(data));
 };
 
-export const getLatestPropertyValue = ({
+export const getPendantHistory = ({
     recastBlockId,
 }: {
     recastBlockId: string;
-    blockId: string;
-}): Array<{
-    blockId: string;
-    value: RecastBlockValue;
-    propertyId: RecastPropertyId;
-}> => {
+}) => {
     ensureLocalStorage();
     const data: StorageMap = JSON.parse(
         localStorage.getItem(LOCAL_STORAGE_NAME) as string
     );
 
-    if (!data[recastBlockId]) {
-        return [];
-    }
-
-    const returnData = [];
-    for (const propertyId in data[recastBlockId]) {
-        returnData.push({
-            propertyId: propertyId as RecastPropertyId,
-            ...data[recastBlockId][propertyId as RecastPropertyId],
-        });
-    }
-
-    return returnData;
+    return data[recastBlockId] ?? {};
 };
 
 export const removePropertyValueRecord = ({
