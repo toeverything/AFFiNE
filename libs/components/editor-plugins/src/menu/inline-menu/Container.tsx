@@ -39,7 +39,7 @@ export const InlineMenuContainer = ({ editor }: InlineMenuContainerProps) => {
 
             // This is relative to window
             const rect = browserSelection.getRangeAt(0).getBoundingClientRect();
-
+            const { top, left } = editor.container.getBoundingClientRect();
             setSelectionInfo(info);
             setShowMenu(true);
             setContainerStyle({
