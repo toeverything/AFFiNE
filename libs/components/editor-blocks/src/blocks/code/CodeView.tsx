@@ -52,6 +52,7 @@ import {
     useOnSelect,
     WrapperWithPendantAndDragDrop,
 } from '@toeverything/components/editor-core';
+import { copyToClipboard } from '@toeverything/utils';
 interface CreateCodeView extends CreateView {
     style9?: StyleWithAtRules;
     containerClassName?: string;
@@ -128,8 +129,8 @@ const CodeBlock = styled('div')(({ theme }) => ({
     },
 }));
 export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
-    const init_value: string = block.getProperty('text')?.value?.[0]?.text;
-    const lang_type: string = block.getProperty('lang')?.value?.[0]?.text;
+    const initValue: string = block.getProperty('text')?.value?.[0]?.text;
+    const langType: string = block.getProperty('lang')?.value?.[0]?.text;
     const [mode, setMode] = useState('javascript');
     const [extensions, setExtensions] = useState<Extension[]>();
     const codeMirror = useRef();
@@ -140,21 +141,20 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
         }
     });
     const onChange = (value: any, codeEditor: any) => {
-        console.log(value);
         block.setProperty('text', {
             value: [{ text: value }],
         });
     };
     useEffect(() => {
-        handleLangChange(lang_type ? lang_type : 'javascript');
+        handleLangChange(langType ? langType : 'javascript');
     }, []);
     function handleLangChange(lang: string) {
         block.setProperty('lang', lang);
         setMode(lang);
         setExtensions([langs[lang]()]);
     }
-    const handle_remove_block = () => {
-        block.remove();
+    const copyCode = () => {
+        copyToClipboard(initValue);
     };
     const handleKeyArrowDown = () => {
         editor.selectionManager.activeNextNode(block.id, 'start');
@@ -197,10 +197,7 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
                         </Select>
                     </div>
                     <div>
-                        <div
-                            className="delete-block"
-                            // onClick={handle_remove_block}
-                        >
+                        <div className="delete-block" onClick={copyCode}>
                             Copy
                             {/* <DeleteSweepOutlinedIcon
                                 className="delete-icon"
@@ -217,7 +214,7 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
 
                 <CodeMirror
                     ref={codeMirror}
-                    value={init_value}
+                    value={initValue}
                     height={'auto'}
                     extensions={extensions}
                     onChange={onChange}

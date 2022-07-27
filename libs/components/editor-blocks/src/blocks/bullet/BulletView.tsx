@@ -97,8 +97,12 @@ export const BulletView: FC<CreateView> = ({ block, editor }) => {
             }
             block.setProperty('numberType', getChildrenType(parentNumberType));
         } catch (e) {
-            // TODO
-            console.log('undo redo bugfix');
+            console.warn(
+                'Failed to update bullet list numbers!',
+                'This issue may be related to the undo redo. block:',
+                block
+            );
+            console.warn(e);
         }
     };
 

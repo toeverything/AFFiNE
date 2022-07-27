@@ -59,7 +59,6 @@ class ClipboardPopulator {
             }
         }
     }
-
     private copy_to_cliboard_from_pc(clips: any[]) {
         let success = false;
         const tempElem = document.createElement('textarea');
@@ -113,8 +112,7 @@ class ClipboardPopulator {
 
     private async get_inner_clip(): Promise<InnerClipInfo> {
         const clips: ClipBlockInfo[] = [];
-        const select_info: SelectInfo =
-            await this.selection_manager.getSelectInfo();
+        const select_info: SelectInfo = await this.selection_manager.getSelectInfo();
         for (let i = 0; i < select_info.blocks.length; i++) {
             const sel_block = select_info.blocks[i];
             const clip_block_info = await this.get_clip_block_info(sel_block);
