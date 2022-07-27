@@ -29,7 +29,7 @@ export class FullTextSearchPlugin extends BasePlugin {
         if (this.#root) {
             this.editor.setHotKeysScope();
             this.#root.unmount();
-            this.#root = undefined;
+            // this.#root = undefined;
         }
     }
 

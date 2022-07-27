@@ -26,8 +26,11 @@ const styles = style9.create({
         lineHeight: '17px',
         textAlign: 'justify',
         letterSpacing: '1.5px',
-        marginLeft: '21px',
+        marginLeft: '8px',
         color: '#4C6275',
+        textOverflow: 'ellipsis',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
     },
 });
 

@@ -41,7 +41,10 @@ const styles = style9.create({
         overflowX: 'hidden',
         overflowY: 'hidden',
     },
-    result_hide: {
+    resultItem: {
+        width: '100%',
+    },
+    resultHide: {
         opacity: 0,
     },
 });
@@ -53,7 +56,9 @@ const query_blocks = (
     search: string,
     callback: (result: QueryResult) => void
 ) => {
-    (editor as BlockEditor).search(search).then(pages => callback(pages));
+    (editor as BlockEditor)
+        .search(search)
+        .then(pages => callback(pages.filter(b => !!b.content)));
 };
 
 export const QueryBlocks = throttle(query_blocks, 500);
@@ -100,19 +105,20 @@ export const Search = (props: SearchProps) => {
                 <MuiBox
                     sx={{ maxHeight: `${result.length * 28 + 32 + 20}px` }}
                     className={styles('result', {
-                        result_hide: !result.length,
+                        resultHide: !result.length,
                     })}
                 >
-                    {result
-                        // 过滤掉空标题的文档
-                        .filter(block => block.content)
-                        .map(block => (
-                            <BlockPreview
-                                key={block.id}
-                                block={block}
-                                onClick={() => handle_navigate(block.id)}
-                            />
-                        ))}
+                    {result.map(block => (
+                        <BlockPreview
+                            className={styles('resultItem')}
+                            key={block.id}
+                            block={block}
+                            onClick={() => {
+                                handle_navigate(block.id);
+                                props.onClose();
+                            }}
+                        />
+                    ))}
                 </MuiBox>
             </Box>
         </TransitionsModal>
