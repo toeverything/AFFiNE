@@ -13,6 +13,7 @@ import {
     ContentOperation,
     HistoryManager,
     ContentTypes,
+    Connectivity,
 } from './adapter';
 import { YjsBlockInstance } from './adapter/yjs';
 import {
@@ -124,6 +125,12 @@ export class BlockClient<
             this.#event_bus.topic('updated').emit(states)
         );
 
+        this.#adapter.on(
+            'connectivity',
+            (states: ChangedStates<Connectivity>) =>
+                this.#event_bus.topic('connectivity').emit(states)
+        );
+
         this.#event_bus
             .topic<string[]>('rebuild_index')
             .on('rebuild_index', this.rebuild_index.bind(this), {
@@ -136,7 +143,7 @@ export class BlockClient<
     public addBlockListener(tag: string, listener: BlockListener) {
         const bus = this.#event_bus.topic<ChangedStates>('updated');
         if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
-        else console.error(`block listener ${tag} is reserved`);
+        else console.error(`block listener ${tag} is reserved or exists`);
     }
 
     public removeBlockListener(tag: string) {
@@ -150,11 +157,26 @@ export class BlockClient<
         const bus =
             this.#event_bus.topic<ChangedStates<Set<string>>>('editing');
         if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
-        else console.error(`editing listener ${tag} is reserved`);
+        else console.error(`editing listener ${tag} is reserved or exists`);
     }
 
     public removeEditingListener(tag: string) {
         this.#event_bus.topic('editing').off(tag);
+    }
+
+    public addConnectivityListener(
+        tag: string,
+        listener: BlockListener<Connectivity>
+    ) {
+        const bus =
+            this.#event_bus.topic<ChangedStates<Connectivity>>('connectivity');
+        if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
+        else
+            console.error(`connectivity listener ${tag} is reserved or exists`);
+    }
+
+    public removeConnectivityListener(tag: string) {
+        this.#event_bus.topic('connectivity').off(tag);
     }
 
     private inspector() {
@@ -580,6 +602,7 @@ export type {
     ArrayOperation,
     MapOperation,
     ChangedStates,
+    Connectivity,
 } from './adapter';
 export type {
     BlockSearchItem,

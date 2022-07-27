@@ -9,6 +9,8 @@ export type BlockListener<S = ChangedStateKeys, R = unknown> = (
     states: ChangedStates<S>
 ) => Promise<R> | R;
 
+export type Connectivity = 'disconnect' | 'connecting' | 'connected' | 'retry';
+
 export type Operable<T, Base = YAbstractType<any>> = T extends Base
     ? ContentOperation
     : T;
@@ -145,7 +147,10 @@ interface AsyncDatabaseAdapter<C extends ContentOperation> {
     getBlockByType(type: BlockItem<C>['type']): Promise<string[]>;
     checkBlocks(keys: string[]): Promise<boolean>;
     deleteBlocks(keys: string[]): Promise<string[]>;
-    on<S, R>(key: 'editing' | 'updated', listener: BlockListener<S, R>): void;
+    on<S, R>(
+        key: 'editing' | 'updated' | 'connectivity',
+        listener: BlockListener<S, R>
+    ): void;
     suspend(suspend: boolean): void;
     history(): HistoryManager;
     getUserId(): string;

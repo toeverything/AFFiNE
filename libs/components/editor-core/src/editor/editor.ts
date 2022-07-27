@@ -107,6 +107,11 @@ export class Editor implements Virgo {
             );
         }
         this.bdCommands = new Commands(props.workspace);
+
+        services.api.editorBlock.listenConnectivity(this.workspace, state => {
+            console.log(this.workspace, state);
+        });
+
         services.api.editorBlock.onHistoryChange(
             this.workspace,
             'affine',

@@ -6,6 +6,7 @@ import {
     BlockContentExporter,
     BlockMatcher,
     BlockInitOptions,
+    Connectivity,
 } from '@toeverything/datasource/jwt';
 import { sleep } from '@toeverything/utils';
 
@@ -79,6 +80,18 @@ export class Database {
     async getDatabase(workspace: string, options?: BlockInitOptions) {
         const db = await _getBlockDatabase(workspace, options);
         return db;
+    }
+
+    async listenConnectivity(
+        workspace: string,
+        name: string,
+        listener: (connectivity: Connectivity) => void
+    ) {
+        const db = await _getBlockDatabase(workspace);
+        return db.addConnectivityListener(name, state => {
+            const connectivity = state.get(name);
+            if (connectivity) listener(connectivity);
+        });
     }
 
     async registerContentExporter(

@@ -25,6 +25,7 @@ import {
     AsyncDatabaseAdapter,
     BlockListener,
     ChangedStateKeys,
+    Connectivity,
     HistoryManager,
 } from '../../adapter';
 import { BucketBackend, BlockItem, BlockTypes } from '../../types';
@@ -63,6 +64,7 @@ async function _initWebsocketProvider(
     params?: YjsInitOptions['params']
 ): Promise<[Awareness, WebsocketProvider | undefined]> {
     const awareness = new Awareness(doc);
+
     if (token) {
         const ws = new WebsocketProvider(token, url, room, doc, {
             awareness,
@@ -75,7 +77,7 @@ async function _initWebsocketProvider(
             // There needs to be an event mechanism to emit the synchronization state to the upper layer
             ws.once('synced', () => resolve([awareness, ws]));
             ws.once('lost-connection', () => resolve([awareness, ws]));
-            ws.on('connection-error', reject);
+            ws.once('connection-error', () => reject());
         });
     } else {
         return [awareness, undefined];
@@ -225,6 +227,19 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         this.#history = new YjsHistoryManager(this.#blocks);
 
         this.#listener = new Map();
+
+        const ws = providers.ws as any;
+        if (ws) {
+            const workspace = providers.idb.name;
+            const emitState = (connectivity: Connectivity) => {
+                this.#listener.get('connectivity')?.(
+                    new Map([[workspace, connectivity]])
+                );
+            };
+            ws.on('synced', () => emitState('connected'));
+            ws.on('lost-connection', () => emitState('retry'));
+            ws.on('connection-error', () => emitState('retry'));
+        }
 
         const debounced_editing_notifier = debounce(
             () => {
@@ -612,7 +627,10 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         return fail;
     }
 
-    on<S, R>(key: 'editing' | 'updated', listener: BlockListener<S, R>): void {
+    on<S, R>(
+        key: 'editing' | 'updated' | 'connectivity',
+        listener: BlockListener<S, R>
+    ): void {
         this.#listener.set(key, listener);
     }
 

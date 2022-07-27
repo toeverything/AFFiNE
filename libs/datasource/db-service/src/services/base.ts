@@ -23,6 +23,13 @@ export abstract class ServiceBaseClass {
         return db.getWorkspace();
     }
 
+    async listenConnectivity(
+        workspace: string,
+        callback: (state: string) => void
+    ) {
+        this.database.listenConnectivity(workspace, workspace, callback);
+    }
+
     async onHistoryChange(
         workspace: string,
         name: string,
