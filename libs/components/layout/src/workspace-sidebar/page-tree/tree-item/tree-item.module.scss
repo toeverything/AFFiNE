@@ -1,7 +1,6 @@
 .Wrapper {
     box-sizing: border-box;
     padding-left: var(--spacing);
-    margin-bottom: -1px;
     list-style: none;
     padding: 6px 0;
     font-size: 14px;
@@ -68,12 +67,24 @@
 
 .TreeItem {
     box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    color: #4c6275;
+}
+
+.ItemContent {
+    box-sizing: border-box;
+    width: 100%;
+    height: 32px;
     position: relative;
     display: flex;
     align-items: center;
-    padding: 4px 0;
+    justify-content: space-around;
     background-color: #fff;
     color: #4c6275;
+    padding: 0 0.5rem;
+    overflow: hidden;
 
     .TreeItemMoreActions {
         visibility: hidden;
@@ -85,11 +96,15 @@
             display: block;
         }
     }
+
+    &:hover {
+        background: #f5f7f8;
+        border-radius: 5px;
+    }
 }
 
 .Text {
     flex-grow: 1;
-    padding-left: 0.5rem;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -98,13 +113,13 @@
 
 .Count {
     position: absolute;
-    top: -10px;
-    right: -10px;
+    top: 8px;
+    right: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background-color: #2389ff;
     font-size: 0.9rem;
@@ -118,6 +133,7 @@
 
 .disableSelection,
 .clone {
+    width: 100%;
     .Text,
     .Count {
         user-select: none;

@@ -1,6 +1,6 @@
 // Base abstract feature for all UI components
 export { Theme, useTheme, withTheme, ThemeProvider } from './theme';
-export { styled } from './styled';
+export { styled, keyframes } from './styled';
 export type { SxProps } from './styled';
 
 export * from './mui';

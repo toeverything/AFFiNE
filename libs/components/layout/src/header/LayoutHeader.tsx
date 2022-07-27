@@ -34,6 +34,7 @@ const StyledContainerForHeaderRoot = styled('div')(({ theme }) => {
     return {
         width: '100%',
         zIndex: theme.affine.zIndex.header,
+        backgroundColor: '#fff',
     };
 });
 

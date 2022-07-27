@@ -13,6 +13,8 @@ export const CurrentPageTitle = () => {
     const { workspace_id } = params;
     const [pageId, setPageId] = useState<string>('');
     const [pageTitle, setPageTitle] = useState<string | undefined>();
+    /* card.7 */
+    // const { items } = usePageTree();
 
     useEffect(() => {
         if (params['*']) {

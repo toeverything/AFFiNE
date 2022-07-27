@@ -68,6 +68,7 @@ export function Page(props: PageProps) {
                             !showSpaceSidebar && !fixedDisplay
                                 ? 'translateX(-270px)'
                                 : 'translateX(0px)',
+                        transition: '0.8s',
                     }}
                     onMouseEnter={() => setSpaceSidebarVisible(true)}
                     onMouseLeave={() => setSpaceSidebarVisible(false)}
@@ -144,12 +145,13 @@ const LigoLeftContainer = styled('div')({
 
 const WorkspaceSidebar = styled('div')(({ hidden }) => ({
     position: 'absolute',
+    bottom: '48px',
+    top: '0px',
     zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
     width: 300,
     minWidth: 300,
-    height: '100%',
     borderRadius: '0px 10px 10px 0px',
     boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
     backgroundColor: '#FFFFFF',

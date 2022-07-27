@@ -81,6 +81,8 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                 style={
                     {
                         '--spacing': `${indentationWidth * depth}px`,
+                        paddingTop: 0,
+                        paddingBottom: 0,
                     } as CSSProperties
                 }
                 {...props}
@@ -94,30 +96,35 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                     <Action onClick={onCollapse}>
                         {collapsed ? <ArrowRightIcon /> : <ArrowDropDownIcon />}
                     </Action>
-                    <Action>
-                        <DocumentIcon />
-                    </Action>
-                    <span
-                        className={styles['Text']}
-                        {...handleProps}
-                        onClick={() => {
-                            navigate(`/${workspace_id}/${pageId}`);
-                        }}
-                    >
-                        {value}
-                    </span>
-                    {BooleanPageTreeItemMoreActions && (
-                        <MoreActions
-                            workspaceId={workspace_id}
-                            pageId={pageId}
-                            onRemove={onRemove}
-                        />
-                    )}
+                    {/*<Action>*/}
+                    {/*    <DocumentIcon />*/}
+                    {/*</Action>*/}
 
-                    {!clone && onRemove && <Remove onClick={onRemove} />}
-                    {clone && childCount && childCount > 1 ? (
-                        <span className={styles['Count']}>{childCount}</span>
-                    ) : null}
+                    <div className={styles['ItemContent']}>
+                        <span
+                            className={styles['Text']}
+                            {...handleProps}
+                            onClick={() => {
+                                navigate(`/${workspace_id}/${pageId}`);
+                            }}
+                        >
+                            {value}
+                        </span>
+                        {BooleanPageTreeItemMoreActions && (
+                            <MoreActions
+                                workspaceId={workspace_id}
+                                pageId={pageId}
+                                onRemove={onRemove}
+                            />
+                        )}
+
+                        {/*{!clone && onRemove && <Remove onClick={onRemove} />}*/}
+                        {clone && childCount && childCount > 1 ? (
+                            <span className={styles['Count']}>
+                                {childCount}
+                            </span>
+                        ) : null}
+                    </div>
                 </div>
             </li>
         );

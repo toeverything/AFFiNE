@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-restricted-imports
-import { styled as muiStyled } from '@mui/material/styles';
+import { styled as muiStyled, keyframes } from '@mui/material/styles';
 import { ReactHTML, ReactSVG } from 'react';
 import isPropValid from '@emotion/is-prop-valid';
 export type { SxProps } from '@mui/system';
@@ -71,3 +71,5 @@ export const styled: typeof muiStyled = (
     options.shouldForwardProp = isValidProp;
     return muiStyled(component, options);
 };
+
+export { keyframes };
