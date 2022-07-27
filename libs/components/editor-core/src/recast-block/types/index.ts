@@ -18,6 +18,7 @@ type VariantBlock<Props> = Omit<
         value: Props[T]
     ): Promise<boolean>;
     setProperties(value: Partial<Props>): Promise<boolean>;
+    removeProperty<T extends keyof Props>(key: T): Promise<boolean>;
 };
 
 export type RecastBlock = VariantBlock<RecastDataProperties>;

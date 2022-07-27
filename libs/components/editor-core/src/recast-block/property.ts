@@ -248,10 +248,8 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
     };
 
     const removeValue = (propertyId: RecastPropertyId) => {
-        return recastItem.setProperty(TABLE_VALUES_KEY, {
-            ...props,
-            [propertyId]: null,
-        });
+        const { [propertyId]: omitted, ...restProps } = props;
+        return recastItem.setProperty(TABLE_VALUES_KEY, restProps);
     };
     return { getAllValue, getValue, setValue, removeValue };
 };
