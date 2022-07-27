@@ -5,7 +5,7 @@ import { MuiClickAwayListener } from '@toeverything/components/ui';
 import { Virgo, HookType, PluginHooks } from '@toeverything/framework/virgo';
 import { Point } from '@toeverything/utils';
 
-import { ReferenceMenuContainer } from './container';
+import { ReferenceMenuContainer } from './Container';
 import { QueryBlocks, QueryResult } from '../../search';
 
 export type ReferenceMenuProps = {
@@ -87,15 +87,17 @@ export const ReferenceMenu = ({ editor, hooks, style }: ReferenceMenuProps) => {
     );
 
     useEffect(() => {
-        hooks.addHook(HookType.ON_ROOT_NODE_KEYUP, handle_keyup);
-        hooks.addHook(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE, handle_key_down);
+        const sub = hooks
+            .get(HookType.ON_ROOT_NODE_KEYUP)
+            .subscribe(handle_keyup);
+        sub.add(
+            hooks
+                .get(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE)
+                .subscribe(handle_key_down)
+        );
 
         return () => {
-            hooks.removeHook(HookType.ON_ROOT_NODE_KEYUP, handle_keyup);
-            hooks.removeHook(
-                HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE,
-                handle_key_down
-            );
+            sub.unsubscribe();
         };
     }, [handle_keyup, handle_key_down, hooks]);
 

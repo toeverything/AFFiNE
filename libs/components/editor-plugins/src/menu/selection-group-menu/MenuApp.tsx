@@ -3,30 +3,10 @@ import {
     styled,
 } from '@toeverything/components/ui';
 import { Protocol } from '@toeverything/datasource/db-service';
-import type {
-    AsyncBlock,
-    PluginHooks,
-    Virgo,
-} from '@toeverything/framework/virgo';
-import {
-    createContext,
-    useContext,
-    useEffect,
-    useState,
-    type CSSProperties,
-} from 'react';
+import type { AsyncBlock, Virgo } from '@toeverything/framework/virgo';
+import { useEffect, useState, type CSSProperties } from 'react';
 
-export type Store =
-    | {
-          editor: Virgo;
-          hooks: PluginHooks;
-      }
-    | Record<string, never>;
-
-export const StoreContext = createContext<Store>({});
-
-export const MenuApp = () => {
-    const { editor } = useContext(StoreContext);
+export const MenuApp = ({ editor }: { editor: Virgo }) => {
     const [show, setShow] = useState<boolean>(false);
     const [style, setStyle] = useState<CSSProperties>();
     const [selectedNodes, setSelectedNodes] = useState<AsyncBlock[]>([]);

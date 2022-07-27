@@ -190,13 +190,12 @@ export const CommandMenuContainer = ({
     );
 
     useEffect(() => {
-        hooks.addHook(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE, handleKeyDown);
+        const sub = hooks
+            .get(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE)
+            .subscribe(handle_key_down);
 
         return () => {
-            hooks.removeHook(
-                HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE,
-                handleKeyDown
-            );
+            sub.unsubscribe();
         };
     }, [hooks, handleKeyDown]);
 

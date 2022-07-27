@@ -1,91 +1,37 @@
-import {
-    HooksRunner,
-    PluginHooks,
-    HookType,
-    HookBaseArgs,
-    BlockDomInfo,
-    AnyFunction,
-    AnyThisType,
-} from '../types';
-
-interface PluginHookInfo {
-    thisObj?: AnyThisType;
-    callback: AnyFunction;
-    once: boolean;
-}
+import { Observable, Subject } from 'rxjs';
+import { HooksRunner, HookType, BlockDomInfo, PluginHooks } from '../types';
 
 export class Hooks implements HooksRunner, PluginHooks {
-    private _hooksMap: Map<string, PluginHookInfo[]> = new Map();
+    private _subject: Record<string, Subject<unknown>> = {};
+    private _observable: Record<string, Observable<unknown>> = {};
 
     dispose() {
-        this._hooksMap.clear();
+        this._subject = {};
     }
 
     private _runHook(key: HookType, ...params: unknown[]): void {
-        const hookInfos: PluginHookInfo[] = this._hooksMap.get(key) || [];
-        hookInfos.forEach(hookInfo => {
-            if (hookInfo.once) {
-                this.removeHook(key, hookInfo.callback);
-            }
-            let isStoppedPropagation = false;
-            const hookOption: HookBaseArgs = {
-                stopImmediatePropagation: () => {
-                    isStoppedPropagation = true;
-                },
-            };
-            hookInfo.callback.call(
-                hookInfo.thisObj || this,
-                ...params,
-                hookOption
-            );
-            return isStoppedPropagation;
-        });
+        if (this._subject[key] == null) {
+            this._subject[key] = new Subject();
+            this._observable[key] = this._subject[key].asObservable();
+        }
+        let payload: unknown = params;
+
+        if (params.length === 0) {
+            payload = undefined;
+        }
+        if (params.length === 1) {
+            payload = params[0];
+        }
+        this._subject[key].next(payload);
     }
 
-    private _hasHook(key: HookType, callback: AnyFunction): boolean {
-        const hookInfos: PluginHookInfo[] = this._hooksMap.get(key) || [];
-        for (let i = hookInfos.length - 1; i >= 0; i--) {
-            if (hookInfos[i].callback === callback) {
-                return true;
-            }
+    public get<K extends keyof HooksRunner>(key: K) {
+        if (this._subject[key] == null) {
+            this._subject[key] = new Subject();
+            this._observable[key] = this._subject[key].asObservable();
         }
-        return false;
-    }
 
-    // 执行多次
-    public addHook(
-        key: HookType,
-        callback: AnyFunction,
-        thisObj?: AnyThisType,
-        once?: boolean
-    ): void {
-        if (this._hasHook(key, callback)) {
-            throw new Error('Duplicate registration of the same class');
-        }
-        if (!this._hooksMap.has(key)) {
-            this._hooksMap.set(key, []);
-        }
-        const hookInfos: PluginHookInfo[] = this._hooksMap.get(key);
-        hookInfos.push({ callback, thisObj, once });
-    }
-
-    // 执行一次
-    public addOnceHook(
-        key: HookType,
-        callback: AnyFunction,
-        thisObj?: AnyThisType
-    ): void {
-        this.addHook(key, callback, thisObj, true);
-    }
-
-    // 移除
-    public removeHook(key: HookType, callback: AnyFunction): void {
-        const hookInfos: PluginHookInfo[] = this._hooksMap.get(key) || [];
-        for (let i = hookInfos.length - 1; i >= 0; i--) {
-            if (hookInfos[i].callback === callback) {
-                hookInfos.splice(i, 1);
-            }
-        }
+        return this._observable[key] as any;
     }
 
     public init(): void {

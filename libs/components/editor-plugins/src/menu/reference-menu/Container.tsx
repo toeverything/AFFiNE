@@ -142,13 +142,12 @@ export const ReferenceMenuContainer = ({
     );
 
     useEffect(() => {
-        hooks.addHook(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE, handle_key_down);
+        const sub = hooks
+            .get(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE)
+            .subscribe(handle_key_down);
 
         return () => {
-            hooks.removeHook(
-                HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE,
-                handle_key_down
-            );
+            sub.unsubscribe();
         };
     }, [hooks, handle_key_down]);
 

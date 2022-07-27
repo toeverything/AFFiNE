@@ -3,7 +3,6 @@ import { useState, useEffect, FC } from 'react';
 import {
     Virgo,
     BlockDomInfo,
-    HookType,
     PluginHooks,
     BlockDropPlacement,
 } from '@toeverything/framework/virgo';
@@ -116,7 +115,7 @@ function DragComponent(props: {
 }
 
 export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
-    const { editor, blockInfo, defaultVisible, hooks, lineInfo } = props;
+    const { editor, blockInfo, defaultVisible, lineInfo } = props;
     const [visible, setVisible] = useState(defaultVisible);
     const [anchorEl, setAnchorEl] = useState<Element>();
 
@@ -128,10 +127,6 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
         window.addEventListener('dragover', handleDragOverCapture, {
             capture: true,
         });
-        hooks.addHook(
-            HookType.ON_ROOTNODE_DRAG_OVER_CAPTURE,
-            handleDragOverCapture
-        );
 
         const onDragStart = async (event: React.DragEvent<Element>) => {
             editor.dragDropManager.isOnDrag = true;

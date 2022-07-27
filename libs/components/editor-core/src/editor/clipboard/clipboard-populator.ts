@@ -9,30 +9,35 @@ import {
 import { Clip } from './clip';
 import assert from 'assert';
 import ClipboardParse from './clipboard-parse';
+import { Subscription } from 'rxjs';
 
 class ClipboardPopulator {
-    private editor: Editor;
-    private hooks: PluginHooks;
-    private selection_manager: SelectionManager;
-    private clipboard: any;
-    private clipboard_parse: ClipboardParse;
+    private _editor: Editor;
+    private _hooks: PluginHooks;
+    private _selectionManager: SelectionManager;
+    private _clipboardParse: ClipboardParse;
+    private _sub = new Subscription();
 
     constructor(
         editor: Editor,
         hooks: PluginHooks,
-        selectionManager: SelectionManager,
-        clipboard: any
+        selectionManager: SelectionManager
     ) {
-        this.editor = editor;
-        this.hooks = hooks;
-        this.selection_manager = selectionManager;
-        this.clipboard = clipboard;
-        this.clipboard_parse = new ClipboardParse(editor);
-        hooks.addHook(HookType.BEFORE_COPY, this.populate_app_clipboard, this);
-        hooks.addHook(HookType.BEFORE_CUT, this.populate_app_clipboard, this);
+        this._editor = editor;
+        this._hooks = hooks;
+        this._selectionManager = selectionManager;
+        this._clipboardParse = new ClipboardParse(editor);
+        this._sub.add(
+            hooks
+                .get(HookType.BEFORE_COPY)
+                .subscribe(this._populateAppClipboard)
+        );
+        this._sub.add(
+            hooks.get(HookType.BEFORE_CUT).subscribe(this._populateAppClipboard)
+        );
     }
 
-    private async populate_app_clipboard(e: ClipboardEvent) {
+    private _populateAppClipboard = async (e: ClipboardEvent) => {
         e.preventDefault();
         e.stopPropagation();
         const clips = await this.getClips();
@@ -58,7 +63,8 @@ class ClipboardPopulator {
                 }
             }
         }
-    }
+    };
+
     private copy_to_cliboard_from_pc(clips: any[]) {
         let success = false;
         const tempElem = document.createElement('textarea');
@@ -91,8 +97,8 @@ class ClipboardPopulator {
     }
 
     private async get_clip_block_info(selBlock: SelectBlock) {
-        const block = await this.editor.getBlockById(selBlock.blockId);
-        const block_view = this.editor.getView(block.type);
+        const block = await this._editor.getBlockById(selBlock.blockId);
+        const block_view = this._editor.getView(block.type);
         assert(block_view);
         const block_info: ClipBlockInfo = {
             type: block.type,
@@ -112,7 +118,8 @@ class ClipboardPopulator {
 
     private async get_inner_clip(): Promise<InnerClipInfo> {
         const clips: ClipBlockInfo[] = [];
-        const select_info: SelectInfo = await this.selection_manager.getSelectInfo();
+        const select_info: SelectInfo =
+            await this._selectionManager.getSelectInfo();
         for (let i = 0; i < select_info.blocks.length; i++) {
             const sel_block = select_info.blocks[i];
             const clip_block_info = await this.get_clip_block_info(sel_block);
@@ -136,7 +143,7 @@ class ClipboardPopulator {
             )
         );
 
-        const html_clip = await this.clipboard_parse.generateHtml();
+        const html_clip = await this._clipboardParse.generateHtml();
         html_clip &&
             clips.push(new Clip(OFFICE_CLIPBOARD_MIMETYPE.HTML, html_clip));
 
@@ -144,12 +151,8 @@ class ClipboardPopulator {
     }
 
     disposeInternal() {
-        this.hooks.removeHook(
-            HookType.BEFORE_COPY,
-            this.populate_app_clipboard
-        );
-        this.hooks.removeHook(HookType.BEFORE_CUT, this.populate_app_clipboard);
-        this.hooks = null;
+        this._sub.unsubscribe();
+        this._hooks = null;
     }
 }
 

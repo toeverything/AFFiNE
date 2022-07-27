@@ -91,29 +91,31 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
         [editor, groupBlock]
     );
 
-    const handleRootDragEnd = (e: DragEvent) => {
+    const handleRootDragEnd = () => {
         setDragOverGroup(null);
     };
 
     useEffect(() => {
-        hooks.addHook(HookType.ON_ROOTNODE_MOUSE_MOVE, handleRootMouseMove);
-        hooks.addHook(HookType.ON_ROOTNODE_MOUSE_DOWN, handleRootMouseDown);
-        hooks.addHook(HookType.ON_ROOTNODE_DRAG_OVER, handleRootDragOver);
-        hooks.addHook(HookType.ON_ROOTNODE_DRAG_END, handleRootDragEnd);
+        const sub = hooks
+            .get(HookType.ON_ROOTNODE_MOUSE_MOVE)
+            .subscribe(handleRootMouseMove);
+        sub.add(
+            hooks
+                .get(HookType.ON_ROOTNODE_MOUSE_DOWN)
+                .subscribe(handleRootMouseDown)
+        );
+        sub.add(
+            hooks
+                .get(HookType.ON_ROOTNODE_DRAG_OVER)
+                .subscribe(handleRootDragOver)
+        );
+        sub.add(
+            hooks
+                .get(HookType.ON_ROOTNODE_DRAG_END)
+                .subscribe(handleRootDragEnd)
+        );
         return () => {
-            hooks.removeHook(
-                HookType.ON_ROOTNODE_MOUSE_MOVE,
-                handleRootMouseMove
-            );
-            hooks.removeHook(
-                HookType.ON_ROOTNODE_MOUSE_DOWN,
-                handleRootMouseDown
-            );
-            hooks.removeHook(
-                HookType.ON_ROOTNODE_DRAG_OVER,
-                handleRootDragOver
-            );
-            hooks.removeHook(HookType.ON_ROOTNODE_DRAG_END, handleRootDragEnd);
+            sub.unsubscribe();
         };
     }, [
         hooks,

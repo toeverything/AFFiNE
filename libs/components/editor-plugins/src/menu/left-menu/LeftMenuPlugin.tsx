@@ -8,10 +8,10 @@ import { Subject } from 'rxjs';
 import { domToRect, last, Point } from '@toeverything/utils';
 
 export class LeftMenuPlugin extends BasePlugin {
-    private mousedown?: boolean;
-    private root?: PluginRenderRoot;
-    private preBlockId: string;
-    private hideTimer: number;
+    private _mousedown?: boolean;
+    private _root?: PluginRenderRoot;
+    private _preBlockId: string;
+    private _hideTimer: number;
 
     private _blockInfo: Subject<BlockDomInfo | undefined> = new Subject();
     private _lineInfo: LineInfoSubject = new Subject();
@@ -21,39 +21,49 @@ export class LeftMenuPlugin extends BasePlugin {
     }
 
     public override init(): void {
-        this.hooks.addHook(
-            HookType.AFTER_ON_NODE_MOUSE_MOVE,
-            this._handleMouseMove
+        this.sub.add(
+            this.hooks
+                .get(HookType.AFTER_ON_NODE_MOUSE_MOVE)
+                .subscribe(this._handleMouseMove)
         );
-        this.hooks.addHook(
-            HookType.ON_ROOTNODE_MOUSE_DOWN,
-            this._handleMouseDown
+        this.sub.add(
+            this.hooks
+                .get(HookType.ON_ROOTNODE_MOUSE_DOWN)
+                .subscribe(this._handleMouseDown)
         );
-        this.hooks.addHook(
-            HookType.ON_ROOTNODE_MOUSE_LEAVE,
-            this._handleRootMouseLeave,
-            this
+        this.sub.add(
+            this.hooks
+                .get(HookType.ON_ROOTNODE_MOUSE_LEAVE)
+                .subscribe(this._hideLeftMenu)
         );
-        this.hooks.addHook(HookType.ON_ROOTNODE_MOUSE_UP, this._handleMouseUp);
-        this.hooks.addHook(
-            HookType.AFTER_ON_NODE_DRAG_OVER,
-            this._handleDragOverBlockNode
+        this.sub.add(
+            this.hooks
+                .get(HookType.ON_ROOTNODE_MOUSE_UP)
+                .subscribe(this._handleMouseUp)
         );
-        this.hooks.addHook(HookType.ON_ROOT_NODE_KEYDOWN, this._handleKeyDown);
-        this.hooks.addHook(HookType.ON_ROOTNODE_DROP, this._onDrop);
+        this.sub.add(
+            this.hooks
+                .get(HookType.AFTER_ON_NODE_DRAG_OVER)
+                .subscribe(this._handleDragOverBlockNode)
+        );
+        this.sub.add(
+            this.hooks
+                .get(HookType.ON_ROOT_NODE_KEYDOWN)
+                .subscribe(this._handleKeyDown)
+        );
+        this.sub.add(
+            this.hooks.get(HookType.ON_ROOTNODE_DROP).subscribe(this._onDrop)
+        );
     }
 
-    private _handleRootMouseLeave() {
-        this._hideLeftMenu();
-    }
     private _onDrop = () => {
-        this.preBlockId = '';
+        this._preBlockId = '';
         this._lineInfo.next(undefined);
     };
-    private _handleDragOverBlockNode = async (
-        event: React.DragEvent<Element>,
-        blockInfo: BlockDomInfo
-    ) => {
+    private _handleDragOverBlockNode = async ([event, blockInfo]: [
+        React.DragEvent<Element>,
+        BlockDomInfo
+    ]) => {
         const { type, dom, blockId } = blockInfo;
         event.preventDefault();
         if (this.editor.dragDropManager.isDragBlock(event)) {
@@ -70,24 +80,24 @@ export class LeftMenuPlugin extends BasePlugin {
         }
     };
 
-    private _handleMouseMove = async (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-        node: BlockDomInfo
-    ) => {
-        if (!this.hideTimer) {
-            this.hideTimer = window.setTimeout(() => {
-                if (this.mousedown) {
+    private _handleMouseMove = async ([e, node]: [
+        React.MouseEvent<HTMLDivElement, MouseEvent>,
+        BlockDomInfo
+    ]) => {
+        if (!this._hideTimer) {
+            this._hideTimer = window.setTimeout(() => {
+                if (this._mousedown) {
                     this._hideLeftMenu();
                     return;
                 }
-                this.hideTimer = 0;
+                this._hideTimer = 0;
             }, 300);
         }
         if (this.editor.readonly) {
             this._hideLeftMenu();
             return;
         }
-        if (node.blockId !== this.preBlockId) {
+        if (node.blockId !== this._preBlockId) {
             if (node.dom) {
                 const mousePoint = new Point(e.clientX, e.clientY);
                 const children = await (
@@ -109,27 +119,21 @@ export class LeftMenuPlugin extends BasePlugin {
                     }
                 }
             }
-            this.preBlockId = node.blockId;
+            this._preBlockId = node.blockId;
             this._showLeftMenu(node);
         }
     };
 
-    private _handleMouseUp(
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-        node: BlockDomInfo
-    ) {
-        if (this.hideTimer) {
-            window.clearTimeout(this.hideTimer);
-            this.hideTimer = 0;
+    private _handleMouseUp() {
+        if (this._hideTimer) {
+            window.clearTimeout(this._hideTimer);
+            this._hideTimer = 0;
         }
-        this.mousedown = false;
+        this._mousedown = false;
     }
 
-    private _handleMouseDown = (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-        node: BlockDomInfo
-    ) => {
-        this.mousedown = true;
+    private _handleMouseDown = () => {
+        this._mousedown = true;
     };
 
     private _hideLeftMenu = (): void => {
@@ -148,14 +152,14 @@ export class LeftMenuPlugin extends BasePlugin {
     };
 
     protected override _onRender(): void {
-        this.root = new PluginRenderRoot({
+        this._root = new PluginRenderRoot({
             name: LeftMenuPlugin.pluginName,
             render: (...args) => {
                 return this.editor.reactRenderRoot?.render(...args);
             },
         });
-        this.root.mount();
-        this.root.render(
+        this._root.mount();
+        this._root.render(
             <StrictMode>
                 <LeftMenuDraggable
                     key={Math.random() + ''}
@@ -170,8 +174,7 @@ export class LeftMenuPlugin extends BasePlugin {
     }
 
     public override dispose(): void {
-        // TODO: rxjs
-        this.root?.unmount();
+        this._root?.unmount();
         super.dispose();
     }
 }

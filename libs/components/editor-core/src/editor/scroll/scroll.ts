@@ -1,7 +1,7 @@
 import EventEmitter from 'eventemitter3';
 
 import { domToRect, Rect } from '@toeverything/utils';
-import type { Editor as Block_editor } from '../editor';
+import type { Editor as BlockEditor } from '../editor';
 
 import { AsyncBlock } from '../block';
 
@@ -9,7 +9,7 @@ type VerticalTypes = 'up' | 'down' | null;
 type HorizontalTypes = 'left' | 'right' | null;
 
 export class ScrollManager {
-    private _editor: Block_editor;
+    private _editor: BlockEditor;
     private _animationFrame: null | number = null;
     private _eventName = 'scrolling';
     private _currentMoveDirection: [HorizontalTypes, VerticalTypes] = [
@@ -20,9 +20,8 @@ export class ScrollManager {
     private _scrollMoveOffset = 8;
     private _scrollingEvent = new EventEmitter();
 
-    constructor(editor: Block_editor) {
+    constructor(editor: BlockEditor) {
         this._editor = editor;
-        console.log('scrollmanager constructor', this._editor.ui_container);
     }
 
     private _updateScrollInfo(left: number, top: number) {

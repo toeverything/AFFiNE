@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { BasePlugin } from '../../base-plugin';
 import { PluginRenderRoot } from '../../utils';
-import { MenuApp, StoreContext } from './MenuApp';
+import { MenuApp } from './MenuApp';
 
 const PLUGIN_NAME = 'selection-group';
 
@@ -10,27 +10,23 @@ export class SelectionGroupPlugin extends BasePlugin {
         return PLUGIN_NAME;
     }
 
-    private root: PluginRenderRoot | undefined;
+    private _root: PluginRenderRoot | undefined;
 
     protected override _onRender() {
-        this.root = new PluginRenderRoot({
+        this._root = new PluginRenderRoot({
             name: SelectionGroupPlugin.pluginName,
             render: this.editor.reactRenderRoot?.render,
         });
-        this.root.mount();
-        this.root.render(
+        this._root.mount();
+        this._root.render(
             <StrictMode>
-                <StoreContext.Provider
-                    value={{ editor: this.editor, hooks: this.hooks }}
-                >
-                    <MenuApp />
-                </StoreContext.Provider>
+                <MenuApp editor={this.editor} />
             </StrictMode>
         );
     }
 
     public override dispose() {
-        this.root?.unmount();
+        this._root?.unmount();
         super.dispose();
     }
 }

@@ -186,8 +186,7 @@ export class Editor implements Virgo {
             this.clipboard_populator = new ClipboardPopulator(
                 this,
                 this.hooks,
-                this.selectionManager,
-                this.clipboard
+                this.selectionManager
             );
         }
     }

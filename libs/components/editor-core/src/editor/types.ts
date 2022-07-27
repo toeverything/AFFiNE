@@ -21,6 +21,7 @@ import type { BlockHelper } from './block/block-helper';
 import type { BlockCommands } from './commands/block-commands';
 import type { DragDropManager } from './drag-drop';
 import { MouseManager } from './mouse';
+import { Observable } from 'rxjs';
 
 // import { BrowserClipboard } from './clipboard/browser-clipboard';
 
@@ -176,10 +177,6 @@ export enum HookType {
     BEFORE_CUT = 'beforeCut',
 }
 
-export interface HookBaseArgs {
-    stopImmediatePropagation: () => void;
-}
-
 export interface BlockDomInfo {
     blockId: string;
     dom: HTMLElement;
@@ -227,25 +224,16 @@ export interface HooksRunner {
     beforeCut: (e: ClipboardEvent) => void;
 }
 
-export type AnyFunction = (...args: any[]) => any;
-export type AnyThisType = ThisParameterType<any>;
+export type PayloadType<T extends Array<any>> = T extends []
+    ? void
+    : T extends [infer U]
+    ? U
+    : T;
 
-// hook管理，在editor、plugin中使用
 export interface PluginHooks {
-    // 执行多次
-    addHook: (
-        key: HookType,
-        callback: AnyFunction,
-        thisObj?: AnyThisType,
-        once?: boolean
-    ) => void;
-    // 执行一次
-    addOnceHook: (
-        key: HookType,
-        callback: AnyFunction,
-        thisObj?: AnyThisType
-    ) => void;
-    // 移除
-    removeHook: (key: HookType, callback: AnyFunction) => void;
+    get<K extends keyof HooksRunner>(
+        key: K
+    ): Observable<PayloadType<Parameters<HooksRunner[K]>>>;
 }
+
 export * from './drag-drop/types';

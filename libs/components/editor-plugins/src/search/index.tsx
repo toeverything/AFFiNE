@@ -15,7 +15,9 @@ export class FullTextSearchPlugin extends BasePlugin {
     }
 
     public override init(): void {
-        this.hooks.addHook(HookType.ON_SEARCH, this.handle_search, this);
+        this.sub.add(
+            this.hooks.get(HookType.ON_SEARCH).subscribe(this._handleSearch)
+        );
     }
 
     protected override _onRender(): void {
@@ -31,12 +33,13 @@ export class FullTextSearchPlugin extends BasePlugin {
             this.#root.unmount();
             // this.#root = undefined;
         }
+        this.sub.unsubscribe();
     }
 
-    private handle_search() {
+    private _handleSearch = () => {
         this.editor.setHotKeysScope('search');
         this.render_search();
-    }
+    };
     private render_search() {
         if (this.#root) {
             this.#root.mount();

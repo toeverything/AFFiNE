@@ -1,17 +1,17 @@
 import {
-    HookType,
     Virgo,
     Plugin,
     PluginHooks,
+    HookType,
 } from '@toeverything/framework/virgo';
 import { genErrorObj } from '@toeverything/utils';
+import { Subscription } from 'rxjs';
 
 export abstract class BasePlugin implements Plugin {
     protected editor: Virgo;
     protected hooks: PluginHooks;
-    private hook_queue: [type: HookType, fn: (...args: unknown[]) => void][] =
-        [];
-    private is_disposed = false;
+    protected sub: Subscription;
+    private _disposed = false;
 
     // Unique identifier to distinguish between different Plugins
     public static get pluginName(): string {
@@ -27,22 +27,8 @@ export abstract class BasePlugin implements Plugin {
 
     constructor(editor: Virgo, hooks: PluginHooks) {
         this.editor = editor;
-        // TODO perfect it
-        this.hooks = {
-            addHook: (...args) => {
-                this.hook_queue.push([args[0], args[1]]);
-                return hooks.addHook(...args);
-            },
-            addOnceHook(...args) {
-                return hooks.addHook(...args);
-            },
-            // TODO fix remove
-            removeHook(...args) {
-                return hooks.removeHook(...args);
-            },
-        };
-        this._onRender = this._onRender.bind(this);
-        hooks.addHook(HookType.RENDER, this._onRender, this);
+        this.hooks = hooks;
+        this.sub = hooks.get(HookType.RENDER).subscribe(() => this._onRender());
     }
 
     /**
@@ -62,18 +48,12 @@ export abstract class BasePlugin implements Plugin {
     public dispose(): void {
         // See https://stackoverflow.com/questions/33387318/access-to-static-properties-via-this-constructor-in-typescript
         const pluginName = (this.constructor as typeof BasePlugin).pluginName;
-        if (this.is_disposed) {
+        if (this._disposed) {
             console.warn(`Plugin '${pluginName}' already disposed`);
             return;
         }
-        this.is_disposed = true;
-        // FIX will remove hook multiple times
-        // if the hook has been removed manually
-        // or set once flag when add hook
-        this.hook_queue.forEach(([type, fn]) => {
-            this.hooks.removeHook(type, fn);
-        });
-        this.hook_queue = [];
+        this.sub.unsubscribe();
+        this._disposed = true;
 
         const errorMsg = `You are trying to access an invalid editor or hooks.
                 The plugin '${pluginName}' has been disposed.
