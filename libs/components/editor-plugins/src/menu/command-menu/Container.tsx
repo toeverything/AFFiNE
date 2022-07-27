@@ -19,6 +19,7 @@ import { domToRect } from '@toeverything/utils';
 import { MenuCategories } from './Categories';
 import { menuItemsMap, CommandMenuCategories } from './config';
 import { QueryResult } from '../../search';
+import { MuiClickAwayListener as ClickAwayListener } from '@toeverything/components/ui';
 
 export type CommandMenuContainerProps = {
     editor: Virgo;
@@ -43,31 +44,30 @@ export const CommandMenuContainer = ({
     searchBlocks,
     style,
 }: CommandMenuContainerProps) => {
-    const menu_ref = useRef<HTMLDivElement>(null);
-    const [current_item, set_current_item] = useState<
+    const menuRef = useRef<HTMLDivElement>(null);
+    const [currentItem, setCurrentItem] = useState<
         BlockFlavorKeys | string | undefined
     >();
-    const [need_check_into_view, set_need_check_into_view] =
-        useState<boolean>(false);
+    const [needCheckIntoView, setNeedCheckIntoView] = useState<boolean>(false);
 
     const current_category = useMemo(
         () =>
             (Object.entries(menuItemsMap).find(
                 ([, infos]) =>
-                    infos.findIndex(info => current_item === info.type) !== -1
+                    infos.findIndex(info => currentItem === info.type) !== -1
             )?.[0] || CommandMenuCategories.pages) as CommandMenuCategories,
-        [current_item]
+        [currentItem]
     );
 
     useEffect(() => {
-        if (need_check_into_view) {
-            if (current_item && menu_ref.current) {
+        if (needCheckIntoView) {
+            if (currentItem && menuRef.current) {
                 const item_ele =
-                    menu_ref.current.querySelector<HTMLButtonElement>(
-                        `.item-${current_item}`
+                    menuRef.current.querySelector<HTMLButtonElement>(
+                        `.item-${currentItem}`
                     );
                 const scroll_ele =
-                    menu_ref.current.querySelector<HTMLButtonElement>(
+                    menuRef.current.querySelector<HTMLButtonElement>(
                         `.${commonListContainer}`
                     );
                 if (item_ele) {
@@ -84,13 +84,13 @@ export const CommandMenuContainer = ({
                     }
                 }
             }
-            set_need_check_into_view(false);
+            setNeedCheckIntoView(false);
         }
-    }, [need_check_into_view, current_item]);
+    }, [needCheckIntoView, currentItem]);
 
     useEffect(() => {
         if (isShow && types) {
-            set_current_item(types[0]);
+            setCurrentItem(types[0]);
         }
         if (!isShow) {
             onclose && onclose();
@@ -99,89 +99,89 @@ export const CommandMenuContainer = ({
 
     useEffect(() => {
         if (isShow && types) {
-            if (!types.includes(current_item)) {
-                set_need_check_into_view(true);
+            if (!types.includes(currentItem)) {
+                setNeedCheckIntoView(true);
                 if (types.length) {
-                    set_current_item(types[0]);
+                    setCurrentItem(types[0]);
                 } else {
-                    set_current_item(undefined);
+                    setCurrentItem(undefined);
                 }
             }
         }
-    }, [isShow, types, current_item]);
+    }, [isShow, types, currentItem]);
 
-    const handle_click_up = useCallback(
+    const handleClickUp = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
             if (isShow && types && event.code === 'ArrowUp') {
                 event.preventDefault();
-                if (!current_item && types.length) {
-                    set_current_item(types[types.length - 1]);
+                if (!currentItem && types.length) {
+                    setCurrentItem(types[types.length - 1]);
                 }
-                if (current_item) {
-                    const idx = types.indexOf(current_item);
+                if (currentItem) {
+                    const idx = types.indexOf(currentItem);
                     if (idx > 0) {
-                        set_need_check_into_view(true);
-                        set_current_item(types[idx - 1]);
+                        setNeedCheckIntoView(true);
+                        setCurrentItem(types[idx - 1]);
                     }
                 }
             }
         },
-        [isShow, types, current_item]
+        [isShow, types, currentItem]
     );
 
-    const handle_click_down = useCallback(
+    const handleClickDown = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
             if (isShow && types && event.code === 'ArrowDown') {
                 event.preventDefault();
-                if (!current_item && types.length) {
-                    set_current_item(types[0]);
+                if (!currentItem && types.length) {
+                    setCurrentItem(types[0]);
                 }
-                if (current_item) {
-                    const idx = types.indexOf(current_item);
+                if (currentItem) {
+                    const idx = types.indexOf(currentItem);
                     if (idx < types.length - 1) {
-                        set_need_check_into_view(true);
-                        set_current_item(types[idx + 1]);
+                        setNeedCheckIntoView(true);
+                        setCurrentItem(types[idx + 1]);
                     }
                 }
             }
         },
-        [isShow, types, current_item]
+        [isShow, types, currentItem]
     );
 
-    const handle_click_enter = useCallback(
+    const handleClickEnter = useCallback(
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (isShow && event.code === 'Enter' && current_item) {
+            if (isShow && event.code === 'Enter' && currentItem) {
                 event.preventDefault();
-                onSelected && onSelected(current_item);
+                onSelected && onSelected(currentItem);
             }
         },
-        [isShow, current_item, onSelected]
+        [isShow, currentItem, onSelected]
     );
 
-    const handle_key_down = useCallback(
+    const handleKeyDown = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            handle_click_up(event);
-            handle_click_down(event);
-            handle_click_enter(event);
+            handleClickUp(event);
+            handleClickDown(event);
+            handleClickEnter(event);
         },
-        [handle_click_up, handle_click_down, handle_click_enter]
+        [handleClickUp, handleClickDown, handleClickEnter]
     );
 
     useEffect(() => {
-        hooks.addHook(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE, handle_key_down);
+        hooks.addHook(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE, handleKeyDown);
 
         return () => {
             hooks.removeHook(
                 HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE,
-                handle_key_down
+                handleKeyDown
             );
         };
-    }, [hooks, handle_key_down]);
+    }, [hooks, handleKeyDown]);
 
     const handleSetCategories = (type: CommandMenuCategories) => {
         const newItem = menuItemsMap[type][0].type;
-        set_need_check_into_view(true);
-        set_current_item(newItem);
+        setNeedCheckIntoView(true);
+        setCurrentItem(newItem);
     };
 
     const items = useMemo(() => {
@@ -216,9 +216,9 @@ export const CommandMenuContainer = ({
 
     return isShow ? (
         <div
-            ref={menu_ref}
+            ref={menuRef}
             className={styles('rootContainer')}
-            onKeyDownCapture={handle_key_down}
+            onKeyDownCapture={handleKeyDown}
             style={style}
         >
             <div className={styles('contentContainer')}>
@@ -230,8 +230,8 @@ export const CommandMenuContainer = ({
                 <CommonList
                     items={items}
                     onSelected={type => onSelected?.(type)}
-                    currentItem={current_item}
-                    setCurrentItem={set_current_item}
+                    currentItem={currentItem}
+                    setCurrentItem={setCurrentItem}
                 />
             </div>
         </div>
