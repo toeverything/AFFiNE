@@ -110,14 +110,7 @@ export const MenuDropdownItem = ({
                             );
                         })}
                     </div>
-                } // id={anchor_ele ? 'inline-menu-pop' : undefined}
-                // open={Boolean(anchor_ele)}
-                // anchorEl={anchor_ele}
-                // onClose={handle_close_dropdown_menu}
-                // anchorOrigin={{
-                //     horizontal: 'left',
-                //     vertical: 40,
-                // }}
+                }
             >
                 <Tooltip
                     content={
