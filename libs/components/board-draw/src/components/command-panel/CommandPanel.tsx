@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { Fragment } from 'react';
+import { Vec } from '@tldraw/vec';
 import { TldrawApp, TLDR } from '@toeverything/components/board-state';
 import { Popover, styled, Divider } from '@toeverything/components/ui';
 import { getAnchor, useConfig } from './utils';
@@ -14,6 +15,9 @@ import { Lock, Unlock } from './LockOperation';
 export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
     const state = app.useStore();
     const bounds = TLDR.get_selected_bounds(state);
+    const camera = app.useStore(
+        s => s.document.pageStates[s.appState.currentPageId].camera
+    );
     const point = bounds
         ? app.getScreenPoint([bounds.minX, bounds.minY])
         : undefined;
@@ -21,8 +25,8 @@ export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
     const anchor = getAnchor({
         x: point?.[0] || 0,
         y: (point?.[1] || 0) + 40,
-        width: bounds?.width || 0,
-        height: bounds?.height || 0,
+        width: bounds?.width ? bounds.width * camera.zoom : 0,
+        height: bounds?.height ? bounds.height * camera.zoom : 0,
     });
 
     const config = useConfig(app);
