@@ -141,12 +141,13 @@ const LigoRightContainer = styled('div')({
 
 const LigoLeftContainer = styled('div')({
     flex: '0 0 auto',
+    position: 'relative',
 });
 
 const WorkspaceSidebar = styled('div')(({ hidden }) => ({
     position: 'absolute',
     bottom: '48px',
-    top: '72px',
+    top: '8px',
     zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
