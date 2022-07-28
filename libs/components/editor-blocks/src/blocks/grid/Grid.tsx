@@ -26,14 +26,14 @@ export const Grid: FC<CreateView> = function (props) {
     const { block, editor } = props;
     const [isOnDrag, setIsOnDrag] = useState<boolean>(false);
     const isSetMouseUp = useRef<boolean>(false);
-    const GridContainerRef = useRef<HTMLDivElement>();
+    const gridContainerRef = useRef<HTMLDivElement>();
     const mouseStartPoint = useRef<Point>();
     const gridItemCountRef = useRef<number>();
     const originalLeftWidth = useRef<number>(GRID_ITEM_MIN_WIDTH);
     const originalRightWidth = useRef<number>(GRID_ITEM_MIN_WIDTH);
 
     const getLeftRightGridItemDomByIndex = (index: number) => {
-        const gridItems = Array.from(GridContainerRef.current?.children).filter(
+        const gridItems = Array.from(gridContainerRef.current?.children).filter(
             child => {
                 return child.classList.contains(GRID_ITEM_CLASS_NAME);
             }
@@ -138,14 +138,14 @@ export const Grid: FC<CreateView> = function (props) {
                 leftGrid &&
                 rightGrid &&
                 mouseStartPoint.current &&
-                GridContainerRef.current
+                gridContainerRef.current
             ) {
                 const currentMousePoint = new Point(e.clientX, e.clientY);
                 const totalWidth =
                     Number(removePercent(leftGrid.style.width)) +
                     Number(removePercent(rightGrid.style.width));
                 const containerWidth = domToRect(
-                    GridContainerRef.current
+                    gridContainerRef.current
                 ).width;
                 const xDistance =
                     mouseStartPoint.current.xDistance(currentMousePoint);
@@ -203,7 +203,8 @@ export const Grid: FC<CreateView> = function (props) {
         <>
             <GridContainer
                 className={clsx({ [GRID_ON_DRAG_CLASS]: isOnDrag })}
-                ref={GridContainerRef}
+                ref={gridContainerRef}
+                isOnDrag={isOnDrag}
             >
                 {children}
             </GridContainer>
@@ -214,17 +215,24 @@ export const Grid: FC<CreateView> = function (props) {
     );
 };
 
-const GridContainer = styled('div')({
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'stretch',
-    borderRadius: '10px',
-    border: '1px solid #FFF',
-    minWidth: `${GRID_ITEM_MIN_WIDTH}%`,
-    [`&:hover .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
-        borderColor: '#E0E6EB',
-    },
-});
+const GridContainer = styled('div')<{ isOnDrag: boolean }>(
+    ({ isOnDrag, theme }) => ({
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'stretch',
+        borderRadius: '10px',
+        border: '1px solid #FFF',
+        minWidth: `${GRID_ITEM_MIN_WIDTH}%`,
+        [`&:hover .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
+            borderColor: theme.affine.palette.borderColor,
+        },
+        ...(isOnDrag && {
+            [`& .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
+                borderColor: theme.affine.palette.borderColor,
+            },
+        }),
+    })
+);
 
 const GridMask = styled('div')({
     position: 'fixed',
