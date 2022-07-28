@@ -45,7 +45,7 @@ export const MenuIconItem = ({
                     {shortcut && <p>{shortcut}</p>}
                 </div>
             }
-            placement="bottom"
+            placement="top"
             trigger="hover"
         >
             <button

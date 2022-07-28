@@ -59,7 +59,7 @@ const GroupActionWrapper = styled('div')(({ theme }) => ({
 const GroupContainer = styled('div')<{ isSelect?: boolean }>(
     ({ isSelect, theme }) => ({
         background: theme.affine.palette.white,
-        border: '2px solid #ECF1FB',
+        border: '2px solid rgba(236,241,251,.5)',
         padding: '15px 12px',
         borderRadius: '10px',
         ...(isSelect
