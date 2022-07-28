@@ -6,9 +6,7 @@ import { copy } from './copy';
 const IconBooth: FC<{ name: string; Icon: FC<any> }> = ({ name, Icon }) => {
     const on_click = () => {
         copy(`<${name} />`);
-        message.success({
-            content: 'Copied.',
-        });
+        message.success('Copied ~');
     };
     return (
         <IconContainer title={name} onClick={on_click}>
