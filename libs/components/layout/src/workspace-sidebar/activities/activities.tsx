@@ -45,23 +45,27 @@ const StyledWrapper = styled('div')({
 });
 
 export const Activities = () => {
+    const navigate = useNavigate();
     const { user, currentSpaceId } = useUserAndSpaces();
-    const [recenPages, setRecentPages] = useState([]);
+    const [recentPages, setRecentPages] = useState([]);
+    const userId = user?.id;
 
     const fetchRecentPages = useCallback(async () => {
-        if (!user || !currentSpaceId) {
+        if (!userId || !currentSpaceId) {
             return;
         }
         const recent_pages = await services.api.userConfig.getRecentPages(
             currentSpaceId,
-            user.id
+            userId
         );
         setRecentPages(recent_pages);
-    }, [user, currentSpaceId]);
+    }, [userId, currentSpaceId]);
 
     useEffect(() => {
-        fetchRecentPages();
-    }, [user, currentSpaceId]);
+        (async () => {
+            await fetchRecentPages();
+        })();
+    }, [fetchRecentPages]);
 
     useEffect(() => {
         let unobserve: () => void;
@@ -80,12 +84,10 @@ export const Activities = () => {
         };
     }, [currentSpaceId, fetchRecentPages]);
 
-    const navigate = useNavigate();
-
     return (
         <StyledWrapper>
             <List>
-                {recenPages.map(({ id, title, lastOpenTime }) => {
+                {recentPages.map(({ id, title, lastOpenTime }) => {
                     return (
                         <ListItem className="item" key={id}>
                             <ListItemButton
