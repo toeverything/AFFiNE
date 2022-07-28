@@ -1,15 +1,20 @@
-import React, { useRef, useState } from 'react';
-import { AsyncBlock } from '../../editor';
-import { getRecastItemValue, useRecastBlockMeta } from '../../recast-block';
 import {
     MuiZoom,
     Popover,
     PopperHandler,
     styled,
 } from '@toeverything/components/ui';
-import { PendantTag } from '../PendantTag';
-import { UpdatePendantPanel } from '../pendant-operation-panel';
+import { useRef, useState } from 'react';
+import { AsyncBlock } from '../../editor';
+import {
+    getRecastItemValue,
+    RecastScene,
+    useCurrentView,
+    useRecastBlockMeta,
+} from '../../recast-block';
 import { AddPendantPopover } from '../AddPendantPopover';
+import { UpdatePendantPanel } from '../pendant-operation-panel';
+import { PendantTag } from '../PendantTag';
 
 export const PendantRender = ({ block }: { block: AsyncBlock }) => {
     const popoverHandlerRef = useRef<{ [key: string]: PopperHandler }>({});
@@ -17,7 +22,8 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
     const [showAddBtn, setShowAddBtn] = useState(false);
 
     const { getProperties } = useRecastBlockMeta();
-
+    const [currentView] = useCurrentView();
+    const isKanbanView = currentView.type === RecastScene.Kanban;
     const { getValue, removeValue } = getRecastItemValue(block);
 
     const properties = getProperties();
@@ -38,6 +44,11 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                 const value = getValue(property.id);
 
                 if (!value) {
+                    return null;
+                }
+
+                // Hide the groupBy pendant at kanban view
+                if (isKanbanView && currentView.groupBy === property.id) {
                     return null;
                 }
 
