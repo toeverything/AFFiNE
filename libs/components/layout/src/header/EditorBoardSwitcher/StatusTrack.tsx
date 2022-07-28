@@ -21,7 +21,7 @@ const Container = styled('div')(({ theme }) => {
         backgroundColor: theme.affine.palette.textHover,
         borderRadius: '5px',
         height: '30px',
-        width: '63px',
+        width: '50px',
         cursor: 'pointer',
         padding: '5px',
     };

@@ -1,5 +1,9 @@
 import { IconButton, styled } from '@toeverything/components/ui';
-import { LogoIcon, SideBarViewIcon } from '@toeverything/components/icons';
+import {
+    LogoIcon,
+    SideBarViewIcon,
+    SearchIcon,
+} from '@toeverything/components/icons';
 import { useShowSettingsSidebar } from '@toeverything/datasource/state';
 import { CurrentPageTitle } from './Title';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
@@ -18,9 +22,18 @@ export const LayoutHeader = () => {
                     </TitleContainer>
                 </FlexContainer>
                 <FlexContainer>
-                    <IconButton onClick={toggleInfoSidebar}>
-                        <SideBarViewIcon />
-                    </IconButton>
+                    <StyledHelper>
+                        <StyledShare>Share</StyledShare>
+                        <div style={{ margin: '0px 12px' }}>
+                            <IconButton size="large">
+                                <SearchIcon />
+                            </IconButton>
+                        </div>
+
+                        <IconButton onClick={toggleInfoSidebar} size="large">
+                            <SideBarViewIcon />
+                        </IconButton>
+                    </StyledHelper>
                 </FlexContainer>
                 <StyledContainerForEditorBoardSwitcher>
                     <EditorBoardSwitcher />
@@ -67,6 +80,24 @@ const TitleContainer = styled('div')(({ theme }) => {
         display: 'flex',
         alignItems: 'center',
     };
+});
+
+const StyledHelper = styled('div')({
+    display: 'flex',
+    alignItems: 'center',
+});
+
+const StyledShare = styled('div')({
+    padding: '10px 12px',
+    fontWeight: 600,
+    fontSize: '14px',
+    color: '#3E6FDB',
+    cursor: 'pointer',
+
+    '&:hover': {
+        background: '#F5F7F8',
+        borderRadius: '5px',
+    },
 });
 
 const StyledLogoIcon = styled(LogoIcon)(({ theme }) => {

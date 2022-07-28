@@ -173,7 +173,6 @@ const LigoApp = styled('div')({
     display: 'flex',
     flex: '1 1 0%',
     backgroundColor: 'white',
-    margin: '10px 0',
 });
 
 const LigoLeftContainer = styled('div')({
@@ -184,7 +183,7 @@ const LigoLeftContainer = styled('div')({
 const WorkspaceSidebar = styled('div')(({ hidden }) => ({
     position: 'absolute',
     bottom: '48px',
-    top: '8px',
+    top: '12px',
     zIndex: 1,
     display: 'flex',
     flexDirection: 'column',

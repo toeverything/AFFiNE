@@ -24,7 +24,7 @@ const IconWrapper = styled('div')<Pick<StatusIconProps, 'mode'>>(
             color: theme.affine.palette.primary,
             cursor: 'pointer',
             backgroundColor: theme.affine.palette.white,
-            transform: `translateX(${mode === DocMode.doc ? 0 : 33}px)`,
+            transform: `translateX(${mode === DocMode.doc ? 0 : 20}px)`,
             transition: 'transform 300ms ease',
 
             '& > svg': {

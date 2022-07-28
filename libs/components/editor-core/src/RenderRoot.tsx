@@ -257,7 +257,7 @@ const Container = styled('div')(
         isOnDrag: boolean;
     }) => ({
         width: '100%',
-        padding: isWhiteboard ? 0 : `96px ${PADDING_X}px 0 ${PADDING_X}px`,
+        padding: isWhiteboard ? 0 : `72px ${PADDING_X}px 0 ${PADDING_X}px`,
         minWidth: isWhiteboard ? 'unset' : '940px',
         position: 'relative',
         ...(isOnDrag && {
