@@ -20,7 +20,7 @@ const genViewId = () => nanoid(16) as RecastViewId; // This is a safe type cast
 const DEFAULT_VIEWS: RecastView[] = [
     {
         id: genViewId(),
-        name: 'Text View',
+        name: 'Text',
         type: RecastScene.Page,
     },
     {

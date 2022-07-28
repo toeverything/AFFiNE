@@ -8,7 +8,7 @@ import type { ChangeEvent, KeyboardEvent } from 'react';
 import { useState } from 'react';
 import { IconButton } from '../components/IconButton';
 import { Panel } from '../components/Panel';
-import { VIEW_ICON_MAP } from './constant';
+import { VIEW_LIST } from './constant';
 import { PanelItem } from './styles';
 
 export const AddViewMenu = () => {
@@ -61,26 +61,23 @@ export const AddViewMenu = () => {
                         </PanelItem>
 
                         <PanelItem>
-                            {Object.entries(VIEW_ICON_MAP).map(
-                                ([name, icon]) => (
-                                    <IconButton
-                                        key={name}
-                                        active={
-                                            viewType === (name as RecastScene)
+                            {VIEW_LIST.map(({ name, icon, scene }) => (
+                                <IconButton
+                                    key={name}
+                                    active={viewType === scene}
+                                    onClick={() => {
+                                        if (scene === RecastScene.Table) {
+                                            // The table view is under progress
+                                            return;
                                         }
-                                        onClick={() => {
-                                            if (name === 'table') {
-                                                // The table view is under progress
-                                                return;
-                                            }
-                                            setViewType(name as RecastScene);
-                                        }}
-                                    >
-                                        {VIEW_ICON_MAP[name as RecastScene]}
-                                        {name.toUpperCase()}
-                                    </IconButton>
-                                )
-                            )}
+                                        setViewType(scene);
+                                    }}
+                                    style={{ textTransform: 'uppercase' }}
+                                >
+                                    {icon}
+                                    {name}
+                                </IconButton>
+                            ))}
                         </PanelItem>
                     </Panel>
                 )}

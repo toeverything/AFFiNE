@@ -1,13 +1,24 @@
-import { RecastView } from '@toeverything/components/editor-core';
+import { RecastScene } from '@toeverything/components/editor-core';
 import {
     KanBanIcon,
     TableIcon,
     TodoListIcon,
 } from '@toeverything/components/icons';
-import type { ReactElement } from 'react';
 
-export const VIEW_ICON_MAP: Record<RecastView['type'], ReactElement> = {
-    page: <TodoListIcon fontSize="small" />,
-    kanban: <KanBanIcon fontSize="small" />,
-    table: <TableIcon fontSize="small" />,
-};
+export const VIEW_LIST = [
+    {
+        name: 'Text',
+        scene: RecastScene.Page,
+        icon: <TodoListIcon fontSize="small" />,
+    },
+    {
+        name: 'Kanban',
+        scene: RecastScene.Kanban,
+        icon: <KanBanIcon fontSize="small" />,
+    },
+    {
+        name: 'Table',
+        scene: RecastScene.Table,
+        icon: <TableIcon fontSize="small" />,
+    },
+] as const;
