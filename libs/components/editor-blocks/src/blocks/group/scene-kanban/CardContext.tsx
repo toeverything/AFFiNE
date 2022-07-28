@@ -43,17 +43,24 @@ export const CardContext = (props: Props) => {
                 const { id, block } = item;
 
                 return (
-                    <div key={id} style={{ cursor: 'pointer' }}>
+                    <StyledCardContainer key={id}>
                         <CardItemPanelWrapper
                             item={item}
                             active={activeId === id}
                         >
                             <CardItem id={id} block={block} />
                         </CardItemPanelWrapper>
-                    </div>
+                    </StyledCardContainer>
                 );
             })}
             <AddCard group={group} />
         </>
     );
 };
+
+const StyledCardContainer = styled('div')`
+    cursor: pointer;
+    &:focus-within {
+        z-index: 1;
+    }
+`;
