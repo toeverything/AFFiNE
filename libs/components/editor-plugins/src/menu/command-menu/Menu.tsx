@@ -113,7 +113,8 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                             let clientHeight =
                                 document.documentElement.clientHeight;
 
-                            const COMMAND_MENU_HEIGHT = 509;
+                            const COMMAND_MENU_HEIGHT =
+                                window.innerHeight * 0.4;
                             if (clientHeight - top <= COMMAND_MENU_HEIGHT) {
                                 top = clientHeight - top + 10;
                                 setCommandMenuPosition({

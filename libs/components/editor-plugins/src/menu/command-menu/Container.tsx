@@ -19,8 +19,30 @@ import { domToRect } from '@toeverything/utils';
 import { MenuCategories } from './Categories';
 import { menuItemsMap, CommandMenuCategories } from './config';
 import { QueryResult } from '../../search';
-import { MuiClickAwayListener as ClickAwayListener } from '@toeverything/components/ui';
+import {
+    MuiClickAwayListener as ClickAwayListener,
+    styled,
+} from '@toeverything/components/ui';
 
+const RootContainer = styled('div')(({ theme }) => {
+    return {
+        position: 'fixed',
+        zIndex: 1,
+        width: 352,
+        maxHeight: 525,
+        borderRadius: '10px',
+        boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+        backgroundColor: '#fff',
+        padding: '8px 4px',
+    };
+});
+const ContentContainer = styled('div')(({ theme }) => {
+    return {
+        display: 'flex',
+        overflow: 'hidden',
+        maxHeight: '35vh',
+    };
+});
 export type CommandMenuContainerProps = {
     editor: Virgo;
     hooks: PluginHooks;
@@ -215,13 +237,12 @@ export const CommandMenuContainer = ({
     }, [searchBlocks, types]);
 
     return isShow ? (
-        <div
+        <RootContainer
             ref={menuRef}
-            className={styles('rootContainer')}
             onKeyDownCapture={handleKeyDown}
             style={style}
         >
-            <div className={styles('contentContainer')}>
+            <ContentContainer>
                 <MenuCategories
                     currentCategories={currentCategory}
                     onSetCategories={handleSetCategories}
@@ -233,25 +254,7 @@ export const CommandMenuContainer = ({
                     currentItem={currentItem}
                     setCurrentItem={setCurrentItem}
                 />
-            </div>
-        </div>
+            </ContentContainer>
+        </RootContainer>
     ) : null;
 };
-
-const styles = style9.create({
-    rootContainer: {
-        position: 'fixed',
-        zIndex: 1,
-        width: 352,
-        maxHeight: 525,
-        borderRadius: '10px',
-        boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
-        backgroundColor: '#fff',
-        padding: '8px 4px',
-    },
-    contentContainer: {
-        display: 'flex',
-        overflow: 'hidden',
-        maxHeight: 493,
-    },
-});
