@@ -761,12 +761,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         assets: Record<string, TDAsset>,
         pageId = this.currentPageId
     ): this => {
-        if (this.just_sent) {
-            // The incoming update was caused by an update that the client sent, noop.
-            this.just_sent = false;
-            return this;
-        }
-
         const page = this.document.pages[this.currentPageId];
 
         Object.values(shapes).forEach(shape => {
@@ -783,56 +777,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             const { hoveredId, editingId, bindingId, selectedIds } =
                 current.document.pageStates[pageId];
 
-            const coreReservedIds = [...selectedIds];
-
-            const editingShape =
-                editingId &&
-                current.document.pages[this.currentPageId].shapes[editingId];
-            if (editingShape) coreReservedIds.push(editingShape.id);
-
-            const { reservedShapes, reservedBindings, strongReservedShapeIds } =
-                this.getReservedContent(coreReservedIds, this.currentPageId);
-
-            // Merge in certain changes to reserved shapes
-            Object.values(reservedShapes)
-                // Don't merge updates to shapes with text (Text or Sticky)
-                .filter(reservedShape => !('text' in reservedShape))
-                .forEach(reservedShape => {
-                    const incomingShape = shapes[reservedShape.id];
-                    if (!incomingShape) return;
-
-                    // If the shape isn't "strongly reserved", then use the incoming shape;
-                    // note that this is only if the incoming shape exists! If the shape was
-                    // deleted in the incoming shapes, then we'll keep out reserved shape.
-                    // This logic would need more work for arrows, because the incoming shape
-                    // include a binding change that we'll need to resolve with our reserved bindings.
-                    if (
-                        !(
-                            reservedShape.type === TDShapeType.Arrow ||
-                            strongReservedShapeIds.has(reservedShape.id)
-                        )
-                    ) {
-                        shapes[reservedShape.id] = incomingShape;
-                        return;
-                    }
-
-                    // Only allow certain merges.
-
-                    // Allow decorations (of an arrow) to be changed
-                    if (
-                        'decorations' in incomingShape &&
-                        'decorations' in reservedShape
-                    ) {
-                        shapes[reservedShape.id] = {
-                            ...reservedShape,
-                            decorations: incomingShape.decorations,
-                        };
-                    }
-
-                    // Allow the shape's style to be changed
-                    reservedShape.style = incomingShape.style;
-                });
-
             // Use the incoming shapes / bindings as comparisons for what
             // will have changed. This is important because we want to restore
             // related shapes that may not have changed on our side, but which
@@ -843,16 +787,10 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
             const nextShapes = {
                 ...shapes,
-                ...reservedShapes,
             };
-
-            if (editingShape) {
-                nextShapes[editingShape.id] = editingShape;
-            }
 
             const nextBindings = {
                 ...bindings,
-                ...reservedBindings,
             };
             const nextAssets = {
                 ...assets,
@@ -882,7 +820,11 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                                     ? undefined
                                     : hoveredId
                                 : undefined,
-                            editingId,
+                            editingId: editingId
+                                ? nextShapes[editingId] === undefined
+                                    ? undefined
+                                    : editingId
+                                : undefined,
                             bindingId: bindingId
                                 ? nextBindings[bindingId] === undefined
                                     ? undefined
@@ -952,8 +894,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             });
 
             this.state.document = next.document;
-            // this.prevShapes = nextShapes
-            // this.prevBindings = nextBindings
 
             return next;
         }, true);
