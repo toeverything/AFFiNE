@@ -22,3 +22,4 @@ export * from './translate-shapes';
 export * from './ungroup-shapes';
 export * from './update-shapes';
 export * from './set-shapes-props';
+export * from './set-shapes-lock-status';

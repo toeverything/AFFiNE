@@ -4,7 +4,15 @@ import { TDShapeType } from '@toeverything/components/board-types';
 import { TLDR } from '@toeverything/components/board-state';
 
 interface Config {
-    type: 'stroke' | 'fill' | 'font' | 'group' | 'ungroup' | 'deleteShapes';
+    type:
+        | 'stroke'
+        | 'fill'
+        | 'font'
+        | 'group'
+        | 'ungroup'
+        | 'deleteShapes'
+        | 'lock'
+        | 'unlock';
     selectedShapes: TDShape[];
 }
 
@@ -32,6 +40,14 @@ const _createInitConfig = (): Record<Config['type'], Config> => {
         },
         deleteShapes: {
             type: 'deleteShapes',
+            selectedShapes: [],
+        },
+        lock: {
+            type: 'lock',
+            selectedShapes: [],
+        },
+        unlock: {
+            type: 'unlock',
             selectedShapes: [],
         },
     };
@@ -64,6 +80,17 @@ const _isSupportFill = (shape: TDShape): boolean => {
     ].some(type => type === shape.type);
 };
 
+const _isSupportFont = (shape: TDShape): boolean => {
+    return [
+        TDShapeType.Rectangle,
+        TDShapeType.Ellipse,
+        TDShapeType.Hexagon,
+        TDShapeType.Triangle,
+        TDShapeType.WhiteArrow,
+        TDShapeType.Pentagram,
+    ].some(type => type === shape.type);
+};
+
 export const useConfig = (app: TldrawApp): Record<Config['type'], Config> => {
     const state = app.useStore();
     const selectedShapes = TLDR.get_selected_shapes(state, app.currentPageId);
@@ -74,6 +101,8 @@ export const useConfig = (app: TldrawApp): Record<Config['type'], Config> => {
             }
             if (_isSupportFill(cur)) {
                 acc.fill.selectedShapes.push(cur);
+            }
+            if (_isSupportFont(cur)) {
                 acc.font.selectedShapes.push(cur);
             }
             return acc;
@@ -81,6 +110,7 @@ export const useConfig = (app: TldrawApp): Record<Config['type'], Config> => {
         _createInitConfig()
     );
 
+    // group
     if (
         selectedShapes.length === 1 &&
         selectedShapes[0].type === TDShapeType.Group
@@ -89,6 +119,13 @@ export const useConfig = (app: TldrawApp): Record<Config['type'], Config> => {
     }
     if (selectedShapes.length > 1) {
         config.group.selectedShapes = selectedShapes;
+    }
+
+    // lock
+    if (selectedShapes.length === 1 && selectedShapes[0].isLocked) {
+        config.unlock.selectedShapes = selectedShapes;
+    } else {
+        config.lock.selectedShapes = selectedShapes;
     }
 
     config.deleteShapes.selectedShapes = selectedShapes;

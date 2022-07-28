@@ -9,6 +9,7 @@ import { FontSizeConfig } from './FontSizeConfig';
 import { StrokeLineStyleConfig } from './stroke-line-style-config';
 import { Group, UnGroup } from './GroupOperation';
 import { DeleteShapes } from './DeleteOperation';
+import { Lock, Unlock } from './LockOperation';
 
 export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
     const state = app.useStore();
@@ -61,6 +62,16 @@ export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
                 key="ungroup"
                 app={app}
                 shapes={config.ungroup.selectedShapes}
+            />
+        ) : null,
+        lock: config.lock.selectedShapes.length ? (
+            <Lock key="lock" app={app} shapes={config.lock.selectedShapes} />
+        ) : null,
+        unlock: config.unlock.selectedShapes.length ? (
+            <Unlock
+                key="unlock"
+                app={app}
+                shapes={config.unlock.selectedShapes}
             />
         ) : null,
         delete: (

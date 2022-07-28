@@ -102,4 +102,9 @@ export interface Commands {
         updates: ({ id: string } & Partial<TDShape>)[],
         pageId: string
     ): TldrawCommand;
+    setShapesLockStatus(
+        app: TldrawApp,
+        ids: string[],
+        isLocked: boolean
+    ): TldrawCommand;
 }

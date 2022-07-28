@@ -3577,6 +3577,24 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         );
     };
 
+    lock = (ids = this.selectedIds): this => {
+        if (ids.length === 0) {
+            return this;
+        }
+        return this.set_state(
+            this.commands.setShapesLockStatus(this, ids, true)
+        );
+    };
+
+    unlock = (ids = this.selectedIds): this => {
+        if (ids.length === 0) {
+            return this;
+        }
+        return this.set_state(
+            this.commands.setShapesLockStatus(this, ids, false)
+        );
+    };
+
     /**
      * Toggle the fixed-aspect-ratio property of one or more shapes.
      * @param ids The ids to change (defaults to selection).
