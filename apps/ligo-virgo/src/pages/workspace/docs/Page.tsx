@@ -146,7 +146,7 @@ const LigoLeftContainer = styled('div')({
 const WorkspaceSidebar = styled('div')(({ hidden }) => ({
     position: 'absolute',
     bottom: '48px',
-    top: '0px',
+    top: '72px',
     zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
