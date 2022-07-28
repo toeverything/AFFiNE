@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { styled } from '@toeverything/components/ui';
 import { BlockEditor } from '@toeverything/framework/virgo';
 
+const GRID_ADD_HANDLE_NAME = 'rid-add-handle';
+
 type GridHandleProps = {
     editor: BlockEditor;
     onDrag?: (e: MouseEvent) => void;
@@ -56,7 +58,7 @@ export const GridHandle: FC<GridHandleProps> = function ({
             {enabledAddItem ? (
                 <AddGridHandle
                     onClick={handleCreateGridItem}
-                    className="grid-add-handle"
+                    className={GRID_ADD_HANDLE_NAME}
                 >
                     +
                 </AddGridHandle>
@@ -70,14 +72,14 @@ const GridHandleContainer = styled('div')(({ theme }) => ({
     width: '10px',
     flexGrow: '0',
     flexShrink: '0',
-    padding: '5px 4px',
+    padding: '5px 4.5px',
     minHeight: '15px',
     cursor: 'col-resize',
     borderRadius: '1px',
     backgroundClip: 'content-box',
     ' &:hover': {
         backgroundColor: theme.affine.palette.primary,
-        '.grid-add-handle': {
+        [`.${GRID_ADD_HANDLE_NAME}`]: {
             display: 'block',
         },
     },
@@ -87,25 +89,18 @@ const AddGridHandle = styled('div')(({ theme }) => ({
     display: 'none',
     position: 'absolute',
     transition: 'all 0.2s ease-in-out',
-    height: '6px',
-    width: '6px',
-    borderRadius: '6px',
-    top: '-6px',
-    left: '2px',
-    cursor: 'pointer',
-    backgroundColor: theme.affine.palette.menuSeparator,
-    color: theme.affine.palette.menuSeparator,
-    overflow: 'hidden',
-    fontWeight: 'bold',
+    height: '20px',
     lineHeight: '18px',
+    width: '10px',
+    borderRadius: '6px',
+    top: 'calc(50% - 10px)',
+    left: '0px',
+    cursor: 'pointer',
+    color: theme.affine.palette.primary,
+    overflow: 'hidden',
     textAlign: 'center',
-    ' &:hover': {
-        width: '20px',
-        height: '20px',
-        borderRadius: '10px',
-        backgroundColor: theme.affine.palette.primary,
-        color: theme.affine.palette.white,
-        top: '-20px',
-        left: '-5px',
+    backgroundColor: theme.affine.palette.white,
+    '&:hover': {
+        fontWeight: 'bold',
     },
 }));

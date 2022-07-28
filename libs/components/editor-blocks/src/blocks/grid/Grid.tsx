@@ -177,7 +177,7 @@ export const Grid: FC<CreateView> = function (props) {
                         style={{
                             transition: isOnDrag
                                 ? 'none'
-                                : 'width 0.2s ease-in-out',
+                                : 'all 0.2s ease-in-out',
                         }}
                         key={id}
                         className={GRID_ITEM_CLASS_NAME}
@@ -218,9 +218,11 @@ const GridContainer = styled('div')({
     position: 'relative',
     display: 'flex',
     alignItems: 'stretch',
+    borderRadius: '10px',
+    border: '1px solid #FFF',
     minWidth: `${GRID_ITEM_MIN_WIDTH}%`,
     [`&:hover .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
-        backgroundColor: 'rgba(100, 106, 115, 0.05)',
+        borderColor: '#E0E6EB',
     },
 });
 

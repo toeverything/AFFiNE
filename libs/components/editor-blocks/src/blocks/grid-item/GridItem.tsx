@@ -124,7 +124,7 @@ export const GridItem: FC<ChildrenView> = function (props) {
 const GridItemContainer = styled('div')({
     transition: 'background-color 0.3s ease-in-out',
     maxWidth: 'calc(100% - 10px)',
-    padding: '4px',
+    padding: '1px 3px',
     flexGrow: 1,
     border: '1px solid transparent',
     borderRadius: '4px',

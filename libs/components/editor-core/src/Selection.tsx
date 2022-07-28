@@ -16,11 +16,12 @@ interface SelectionProps {
     editor: BlockEditor;
 }
 
-const RectContainer = styled('div')({
-    backgroundColor: 'rgba(152, 172, 189, 0.1)',
-    position: 'absolute',
-    zIndex: 99,
-});
+const DIRECTION_VALUE_MAP = {
+    right: -1,
+    left: 1,
+    down: -1,
+    up: 1,
+} as const;
 
 type VerticalTypes = 'up' | 'down' | null;
 type HorizontalTypes = 'left' | 'right' | null;
@@ -106,7 +107,7 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
         const startPointRef = useRef<Point>();
         const endPointRef = useRef<Point>();
         const [rect, setRect] = useState<Rect>(Rect.fromLTRB(0, 0, 0, 0));
-        const startPointAtBlock = useRef<boolean>(false);
+        const startPointBlock = useRef<AsyncBlock | null>();
         const mouseType = useRef<MouseType>('up');
 
         const scrollContainerRect = useRef<Rect>();
@@ -116,9 +117,12 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
         ) => {
             await selectionManager.setSelectedNodesIds([]);
             startPointRef.current = new Point(event.clientX, event.clientY);
-            startPointAtBlock.current =
-                (await selectionManager.rootDomReady()) &&
-                (await selectionManager.isPointInBlocks(startPointRef.current));
+            startPointBlock.current =
+                ((await selectionManager.rootDomReady()) &&
+                    (await selectionManager.getBlockByPoint(
+                        startPointRef.current
+                    ))) ||
+                null;
             mouseType.current = 'down';
             if (scrollManager.scrollContainer) {
                 scrollContainerRect.current = domToRect(
@@ -130,11 +134,35 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
         const onMouseMove = async (
             event: React.MouseEvent<HTMLDivElement, MouseEvent>
         ) => {
-            if (mouseType.current === 'down' && !startPointAtBlock.current) {
-                event.preventDefault();
+            if (mouseType.current === 'down') {
                 endPointRef.current = new Point(event.clientX, event.clientY);
+                if (startPointBlock.current) {
+                    const endpointBlock =
+                        await selectionManager.getBlockByPoint(
+                            endPointRef.current
+                        );
+                    // TODO: delete after multi-block text selection done
+                    // if drag out of startblock change selection type to block
+                    if (endpointBlock?.id === startPointBlock.current.id) {
+                        return;
+                    }
+                    const selection = window.getSelection();
+                    if (
+                        selection &&
+                        selection.rangeCount > 0 &&
+                        editor.blockHelper.hasBlockTextUtils(
+                            startPointBlock.current.id
+                        )
+                    ) {
+                        // slate will run hooks reset selection unless mouseup,
+                        // remove slate selection by textUtils
+                        editor.blockHelper.setBlockBlur(
+                            startPointBlock.current.id
+                        );
+                    }
+                    event.preventDefault();
+                }
                 setShow(true);
-
                 if (startPointRef.current) {
                     await setSelectedNodesByPoints(
                         editor,
@@ -177,7 +205,7 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
 
         const onMouseUp = () => {
             mouseType.current = 'up';
-            startPointAtBlock.current = false;
+            startPointBlock.current = null;
             setShow(false);
             scrollManager.stopAutoScroll();
         };
@@ -200,24 +228,14 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
                     scrollManager.scrollContainer &&
                     scrollContainerRect.current
                 ) {
-                    const xValue =
-                        direction[0] === 'right'
-                            ? -1
-                            : direction[0] === 'left'
-                            ? 1
-                            : 0;
-                    const yValue =
-                        direction[1] === 'down'
-                            ? -1
-                            : direction[1] === 'up'
-                            ? 1
-                            : 0;
+                    const xSign = DIRECTION_VALUE_MAP[direction[0]] || 0;
+                    const ySign = DIRECTION_VALUE_MAP[direction[1]] || 0;
 
                     startPointRef.current = new Point(
                         startPointRef.current.x +
-                            xValue * scrollManager.scrollMoveOffset,
+                            xSign * scrollManager.scrollMoveOffset,
                         startPointRef.current.y +
-                            yValue * scrollManager.scrollMoveOffset
+                            ySign * scrollManager.scrollMoveOffset
                     );
 
                     setSelectedNodesByPoints(
@@ -260,3 +278,9 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
         ) : null;
     }
 );
+
+const RectContainer = styled('div')({
+    backgroundColor: 'rgba(62, 111, 219, 0.1)',
+    position: 'absolute',
+    zIndex: 99,
+});

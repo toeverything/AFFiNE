@@ -57,6 +57,10 @@ export class BlockHelper {
         delete this._blockTextUtilsMap[blockId];
     }
 
+    public hasBlockTextUtils(blockId: string) {
+        return !!this._blockTextUtilsMap[blockId];
+    }
+
     /**
      *
      * get block serializer text by block id
