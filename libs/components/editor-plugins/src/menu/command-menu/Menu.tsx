@@ -239,21 +239,23 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             ref={commandMenuContentRef}
         >
             <MuiClickAwayListener onClickAway={handle_click_away}>
-                <CommandMenuContainer
-                    editor={editor}
-                    hooks={hooks}
-                    style={{
-                        ...commandMenuPosition,
-                        ...style,
-                    }}
-                    isShow={show}
-                    blockId={blockId}
-                    onSelected={handle_selected}
-                    onclose={handle_close}
-                    searchBlocks={search_blocks}
-                    types={types}
-                    categories={categories}
-                />
+                <div>
+                    <CommandMenuContainer
+                        editor={editor}
+                        hooks={hooks}
+                        style={{
+                            ...commandMenuPosition,
+                            ...style,
+                        }}
+                        isShow={show}
+                        blockId={blockId}
+                        onSelected={handle_selected}
+                        onclose={handle_close}
+                        searchBlocks={search_blocks}
+                        types={types}
+                        categories={categories}
+                    />
+                </div>
             </MuiClickAwayListener>
         </div>
     );
