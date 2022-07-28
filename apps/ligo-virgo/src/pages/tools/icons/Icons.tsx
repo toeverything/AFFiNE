@@ -46,6 +46,8 @@ export const Icons: FC = () => {
 };
 
 const Container = styled('div')({
+    height: '100vh',
+    overflow: 'auto',
     color: '#98ACBD',
     padding: '20px',
 });
