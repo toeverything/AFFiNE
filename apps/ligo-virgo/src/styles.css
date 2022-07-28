@@ -14,6 +14,8 @@ html {
     font-family: -apple-system, BlinkMacSystemFont, Helvetica Neue, Tahoma,
         PingFang SC, Microsoft Yahei, Arial, Hiragino Sans GB, sans-serif,
         Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    /* prevent page shaking when scroll show or hide*/
+    padding-left: calc(100vw - 100%);
 }
 
 *,

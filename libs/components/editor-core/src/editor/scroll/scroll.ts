@@ -9,27 +9,9 @@ import { AsyncBlock } from '../block';
 type VerticalTypes = 'up' | 'down' | null;
 type HorizontalTypes = 'left' | 'right' | null;
 
-const setStyle = (dom: HTMLElement, style: CSSProperties) => {
-    const styleStr = Object.entries(style).reduce(
-        (styleStr, [styleName, styleValue]) => {
-            return `${styleStr} ${styleName}: ${styleValue};`;
-        },
-        ''
-    );
-
-    dom.setAttribute('style', styleStr);
-};
-
-// 这里只获取 style 里设置过的属性
-// 在恢复 body 后重新设置，不需要获取计算属性
-const getStyle = (dom: HTMLElement, styleName: any) => {
-    return dom.style[styleName];
-};
-const getStyles = (dom: HTMLElement, styleNames: any[]) => {
-    return styleNames.reduce((style, styleName) => {
-        style[styleName] = getStyle(dom, styleName);
-        return style;
-    }, {});
+type ScrollController = {
+    lockScroll: () => void;
+    unLockScroll: () => void;
 };
 
 export class ScrollManager {
@@ -44,12 +26,10 @@ export class ScrollManager {
     private _scrollMoveOffset = 8;
     private _autoScrollMoveOffset = 8;
     private _scrollingEvent = new EventEmitter();
-    private _isFrozen = false;
-    private _scrollContainerStyle: CSSProperties = {};
+    private _scrollController: ScrollController;
 
     constructor(editor: BlockEditor) {
         this._editor = editor;
-
         (window as any).scrollManager = this;
     }
 
@@ -80,6 +60,14 @@ export class ScrollManager {
     }
     public set scrollContainer(dom: HTMLElement) {
         this._scrollContainer = dom;
+    }
+
+    public get scrollController() {
+        return this._scrollController;
+    }
+
+    public set scrollController(controller: ScrollController) {
+        this._scrollController = controller;
     }
 
     public get verticalScrollTriggerDistance() {
@@ -308,46 +296,11 @@ export class ScrollManager {
         }
     }
 
-    public frozen() {
-        if (this._isFrozen) {
-            return;
-        }
-
-        this._scrollContainerStyle = getStyles(this._scrollContainer, [
-            // 'position',
-            // 'top',
-            // 'left',
-            'overflow',
-            'height',
-        ]);
-
-        // const [recordScrollLeft, recordScrollTop] = this._scrollRecord;
-
-        setStyle(this._scrollContainer, {
-            // Position style maybe should set in mobile
-
-            // position: 'fixed',
-            // top: `-${recordScrollTop}px`,
-            // left: `-${recordScrollLeft}px`,
-            overflow: 'hidden',
-            height: '100%',
-        });
-
-        this._isFrozen = true;
+    public lock() {
+        this._scrollController.lockScroll();
     }
 
-    public thaw() {
-        if (!this._isFrozen) {
-            return;
-        }
-
-        setStyle(this._scrollContainer, this._scrollContainerStyle);
-
-        const [recordScrollLeft, recordScrollTop] = this._scrollRecord;
-        this._scrollContainer.scrollTo(recordScrollLeft, recordScrollTop);
-
-        this._scrollContainerStyle = {};
-
-        this._isFrozen = false;
+    public unLock() {
+        this._scrollController.unLockScroll();
     }
 }

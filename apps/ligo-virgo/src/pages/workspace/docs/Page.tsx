@@ -1,5 +1,5 @@
 /* eslint-disable filename-rules/match */
-import { useEffect, useRef, type UIEvent } from 'react';
+import { useEffect, useRef, type UIEvent, useState } from 'react';
 import { useParams } from 'react-router';
 import {
     MuiBox as Box,
@@ -37,8 +37,6 @@ export function Page(props: PageProps) {
     const { user } = useUserAndSpaces();
     const templatesPortalFlag = useFlag('BooleanTemplatesPortal', false);
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
-    const editorRef = useRef<BlockEditor>();
-    const scrollContainerRef = useRef();
 
     useEffect(() => {
         if (!user?.id || !page_id) return;
@@ -60,16 +58,6 @@ export function Page(props: PageProps) {
         };
         updateRecentPages();
     }, [user, props.workspace, page_id]);
-
-    const onScroll = (event: UIEvent) => {
-        editorRef.current.getHooks().onRootNodeScroll(event);
-        editorRef.current.scrollManager.emitScrollEvent(event);
-    };
-
-    useEffect(() => {
-        editorRef.current.scrollManager.scrollContainer =
-            scrollContainerRef.current;
-    }, []);
 
     return (
         <LigoApp>
@@ -115,29 +103,73 @@ export function Page(props: PageProps) {
                     </WorkspaceSidebarContent>
                 </WorkspaceSidebar>
             </LigoLeftContainer>
-            <LigoRightContainer ref={scrollContainerRef} onScroll={onScroll}>
-                {page_id ? (
-                    <AffineEditor
-                        workspace={props.workspace}
-                        rootBlockId={page_id}
-                        ref={editorRef}
-                    />
-                ) : (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            width: '100%',
-                        }}
-                    >
-                        <CircularProgress />
-                    </Box>
-                )}
-            </LigoRightContainer>
+            <EditorContainer workspace={props.workspace} pageId={page_id} />
         </LigoApp>
     );
 }
+
+const EditorContainer = ({
+    pageId,
+    workspace,
+}: {
+    pageId: string;
+    workspace: string;
+}) => {
+    const [lockScroll, setLockScroll] = useState(false);
+    const scrollContainerRef = useRef();
+    const editorRef = useRef<BlockEditor>();
+    const onScroll = (event: UIEvent) => {
+        editorRef.current.getHooks().onRootNodeScroll(event);
+        editorRef.current.scrollManager.emitScrollEvent(event);
+    };
+
+    useEffect(() => {
+        editorRef.current.scrollManager.scrollContainer =
+            scrollContainerRef.current;
+
+        editorRef.current.scrollManager.scrollController = {
+            lockScroll: () => setLockScroll(true),
+            unLockScroll: () => setLockScroll(false),
+        };
+    }, []);
+
+    return (
+        <StyledEditorContainer
+            lockScroll={lockScroll}
+            ref={scrollContainerRef}
+            onScroll={onScroll}
+        >
+            {pageId ? (
+                <AffineEditor
+                    workspace={workspace}
+                    rootBlockId={pageId}
+                    ref={editorRef}
+                />
+            ) : (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        width: '100%',
+                    }}
+                >
+                    <CircularProgress />
+                </Box>
+            )}
+        </StyledEditorContainer>
+    );
+};
+
+const StyledEditorContainer = styled('div')<{ lockScroll: boolean }>(
+    ({ lockScroll }) => {
+        return {
+            width: '100%',
+            overflowY: lockScroll ? 'hidden' : 'auto',
+            flex: 'auto',
+        };
+    }
+);
 
 const LigoApp = styled('div')({
     width: '100vw',
@@ -145,12 +177,6 @@ const LigoApp = styled('div')({
     flex: '1 1 0%',
     backgroundColor: 'white',
     margin: '10px 0',
-});
-
-const LigoRightContainer = styled('div')({
-    width: '100%',
-    overflowY: 'auto',
-    flex: 'auto',
 });
 
 const LigoLeftContainer = styled('div')({
