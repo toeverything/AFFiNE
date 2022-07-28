@@ -1,4 +1,4 @@
-export const timestamp = 1658396276897;
+export const timestamp = 1658999074664;
 export * from './image/image';
 export * from './format-clear/format-clear';
 export * from './backward-undo/backward-undo';
@@ -78,7 +78,7 @@ export * from './multi-select/multi-select';
 export * from './shape/shape';
 export * from './edit/edit';
 export * from './embed/embed';
-export * from './indent-right/indent-right';
+export * from './arrow-big/arrow-big';
 export * from './comment/comment';
 export * from './at/at';
 export * from './reaction/reaction';
@@ -124,4 +124,5 @@ export * from './settings/settings';
 export * from './eraser/eraser';
 export * from './group-by/group-by';
 export * from './layout/layout';
-
+export * from './lock/lock';
+export * from './unlock/unlock';

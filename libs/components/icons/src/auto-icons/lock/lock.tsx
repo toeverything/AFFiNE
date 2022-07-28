@@ -5,17 +5,17 @@ import { SvgIcon } from '@mui/material';
 // eslint-disable-next-line no-restricted-imports
 import type { SvgIconProps } from '@mui/material';
 
-export interface FullScreenIconProps extends Omit<SvgIconProps, 'color'> {
+export interface LockIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const FullScreenIcon: FC<FullScreenIconProps> = ({ color, style, ...props}) => {
+export const LockIcon: FC<LockIconProps> = ({ color, style, ...props}) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}
     return (
         <SvgIcon style={styles} {...props}>
-        <path fillRule="evenodd" d="M18.069 4.8H14V3.2h6.8V10h-1.6V5.931l-4.634 4.635-1.132-1.132L18.07 4.8ZM5.931 19.2l4.635-4.634-1.132-1.132L4.8 18.07V14H3.2v6.8H10v-1.6H5.931Z" clipRule="evenodd" />
+        <path fillRule="evenodd" d="M18 11.6H6a.4.4 0 0 0-.4.4v8c0 .22.18.4.4.4h12a.4.4 0 0 0 .4-.4v-8a.4.4 0 0 0-.4-.4ZM6 10a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2H6ZM7.2 7a4.8 4.8 0 0 1 9.6 0v3h-1.6V7a3.2 3.2 0 0 0-6.4 0v3H7.2V7Z" clipRule="evenodd" /><circle cx={12} cy={16} r={2} />
         </SvgIcon>
     )
 };

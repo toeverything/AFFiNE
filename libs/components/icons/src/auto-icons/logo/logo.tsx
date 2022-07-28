@@ -15,7 +15,7 @@ export const LogoIcon: FC<LogoIconProps> = ({ color, style, ...props}) => {
     const styles = {...propsStyles, ...customStyles, ...style}
     return (
         <SvgIcon style={styles} {...props}>
-        <path fillRule="evenodd" d="M10.71 1 3 23h4.516L12.42 7.784 17.327 23h4.5l-7.71-22H10.71Z" clipRule="evenodd" />
+        <path fillRule="evenodd" d="M10.962 2 4 22h4.078l4.428-13.833L16.936 22H21L14.037 2h-3.075Z" clipRule="evenodd" />
         </SvgIcon>
     )
 };
