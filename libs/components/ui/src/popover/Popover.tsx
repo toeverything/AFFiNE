@@ -4,7 +4,7 @@ import { type PopperHandler, Popper } from '../popper';
 import { PopoverContainer } from './container';
 import type { PopoverProps, PopoverDirection } from './interface';
 
-const placementToContainerDirection: Record<
+export const placementToContainerDirection: Record<
     PopperPlacementType,
     PopoverDirection
 > = {
