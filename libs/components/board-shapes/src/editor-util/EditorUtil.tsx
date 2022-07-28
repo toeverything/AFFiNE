@@ -102,7 +102,7 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                 onResize.current = e => {
                     const first = e[0];
                     const bounds = first.contentRect;
-                    const realHeight = bounds.height / zoomLevel;
+                    const realHeight = bounds.height;
                     if (
                         bounds.height !== 0 &&
                         Math.abs(realHeight - height) > 1
