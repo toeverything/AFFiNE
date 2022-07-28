@@ -40,7 +40,7 @@ export interface EditorCtorProps {
     workspace: string;
     views: Partial<Record<keyof BlockFlavors, BaseView>>;
     plugins: PluginCreator[];
-    rootBlockId?: string;
+    rootBlockId: string;
     isWhiteboard?: boolean;
 }
 
@@ -65,7 +65,7 @@ export class Editor implements Virgo {
     private views: Record<string, BaseView> = {};
     workspace: string;
     readonly = false;
-    private root_block_id: string;
+    private _rootBlockId: string;
     private storage_manager?: StorageManager;
     private clipboard?: BrowserClipboard;
     private clipboard_populator?: ClipboardPopulator;
@@ -79,7 +79,7 @@ export class Editor implements Virgo {
     constructor(props: EditorCtorProps) {
         this.workspace = props.workspace;
         this.views = props.views;
-        this.root_block_id = props.rootBlockId || '';
+        this._rootBlockId = props.rootBlockId;
         this.hooks = new Hooks();
         this.plugin_manager = new PluginManager(this, this.hooks);
         this.plugin_manager.registerAll(props.plugins);
@@ -108,9 +108,9 @@ export class Editor implements Virgo {
         }
         this.bdCommands = new Commands(props.workspace);
 
-        services.api.editorBlock.listenConnectivity(this.workspace, state => {
-            console.log(this.workspace, state);
-        });
+        // services.api.editorBlock.listenConnectivity(this.workspace, state => {
+        //     console.log(this.workspace, state);
+        // });
 
         services.api.editorBlock.onHistoryChange(
             this.workspace,
@@ -193,11 +193,7 @@ export class Editor implements Virgo {
 
     /** Root Block Id */
     getRootBlockId() {
-        return this.root_block_id;
-    }
-
-    setRootBlockId(rootBlockId: string) {
-        this.root_block_id = rootBlockId;
+        return this._rootBlockId;
     }
 
     setHotKeysScope(scope?: string) {

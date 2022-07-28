@@ -1,5 +1,5 @@
 import { FC, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate } from 'react-router';
 import clsx from 'clsx';
 import style9 from 'style9';
 
@@ -17,7 +17,6 @@ import { BlockPreview } from '../block-preview';
 import { BackwardUndoIcon } from '@toeverything/components/icons';
 
 export const commonListContainer = 'commonListContainer';
-import { useFlag } from '@toeverything/datasource/feature-flags';
 
 type Content = {
     id: string;

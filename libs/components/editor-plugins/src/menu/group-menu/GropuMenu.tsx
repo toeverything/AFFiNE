@@ -32,7 +32,11 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
                 await editor.dragDropManager.getGroupBlockByPoint(
                     new Point(e.clientX, e.clientY)
                 );
-            groupBlockNew && setGroupBlock(groupBlockNew || null);
+            if (groupBlockNew) {
+                setGroupBlock(groupBlockNew);
+            } else {
+                setGroupBlock(null);
+            }
         },
         [editor, setGroupBlock]
     );

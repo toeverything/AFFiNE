@@ -113,19 +113,19 @@ export const AffineBoardWitchContext = ({
     workspace,
     rootBlockId,
 }: AffineBoardProps) => {
-    const [editor, set_editor] = useState<BlockEditor>();
+    const [editor, setEditor] = useState<BlockEditor>();
     useEffect(() => {
-        const inner_editor = createEditor(workspace, true);
-        set_editor(inner_editor);
+        const innerEditor = createEditor(workspace, rootBlockId, true);
+        setEditor(innerEditor);
         return () => {
-            inner_editor.dispose();
+            innerEditor.dispose();
         };
-    }, [workspace]);
+    }, [workspace, rootBlockId]);
 
-    const [page, set_page] = useState<AsyncBlock>();
+    const [page, setPage] = useState<AsyncBlock>();
     useEffect(() => {
         editor?.getBlockById(rootBlockId).then(block => {
-            set_page(block);
+            setPage(block);
         });
     }, [editor, rootBlockId]);
     return page ? (

@@ -27,9 +27,14 @@ import {
 import { Protocol } from '@toeverything/datasource/db-service';
 import { plugins } from '@toeverything/components/editor-plugins';
 
-export const createEditor = (workspace: string, isWhiteboard?: boolean) => {
+export const createEditor = (
+    workspace: string,
+    rootBlockId: string,
+    isWhiteboard?: boolean
+) => {
     const blockEditor = new BlockEditor({
         workspace,
+        rootBlockId,
         views: {
             [Protocol.Block.Type.page]: new PageBlock(),
             [Protocol.Block.Type.reference]: new RefLinkBlock(),

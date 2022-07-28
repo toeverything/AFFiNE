@@ -16,13 +16,11 @@ if (!container) {
 }
 const root = createRoot(container);
 root.render(
-    <StrictMode>
-        <BrowserRouter>
-            <ThemeProvider>
-                <FeatureFlagsProvider>
-                    <LigoVirgoRoutes />
-                </FeatureFlagsProvider>
-            </ThemeProvider>
-        </BrowserRouter>
-    </StrictMode>
+    <BrowserRouter>
+        <ThemeProvider>
+            <FeatureFlagsProvider>
+                <LigoVirgoRoutes />
+            </FeatureFlagsProvider>
+        </ThemeProvider>
+    </BrowserRouter>
 );

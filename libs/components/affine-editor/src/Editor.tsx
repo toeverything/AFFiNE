@@ -20,38 +20,47 @@ interface AffineEditorProps {
     isWhiteboard?: boolean;
 }
 
-function useConstant<T>(init: () => T): T {
-    const ref = useRef<T>(null);
-    ref.current ??= init();
+function _useConstantWithDispose(
+    workspace: string,
+    rootBlockId: string,
+    isWhiteboard: boolean
+) {
+    const ref = useRef<{ data: BlockEditor; onInit: boolean }>(null);
+    const { setCurrentEditors } = useCurrentEditors();
+    ref.current ??= {
+        data: createEditor(workspace, rootBlockId, isWhiteboard),
+        onInit: true,
+    };
 
-    return ref.current;
+    useEffect(() => {
+        if (ref.current.onInit) {
+            ref.current.onInit = false;
+        } else {
+            ref.current.data = createEditor(
+                workspace,
+                rootBlockId,
+                isWhiteboard
+            );
+        }
+        setCurrentEditors(prev => ({
+            ...prev,
+            [rootBlockId]: ref.current.data,
+        }));
+        return () => ref.current.data.dispose();
+    }, [workspace, rootBlockId, isWhiteboard, setCurrentEditors]);
+
+    return ref.current.data;
 }
 
 export const AffineEditor = forwardRef<BlockEditor, AffineEditorProps>(
     ({ workspace, rootBlockId, scrollBlank = true, isWhiteboard }, ref) => {
-        const { setCurrentEditors } = useCurrentEditors();
-        const editor = useConstant(() => {
-            const editor = createEditor(workspace, isWhiteboard);
-
-            // @ts-ignore
-            globalThis.virgo = editor;
-            return editor;
-        });
+        const editor = _useConstantWithDispose(
+            workspace,
+            rootBlockId,
+            isWhiteboard
+        );
 
         useImperativeHandle(ref, () => editor);
-
-        useEffect(() => {
-            if (rootBlockId) {
-                editor.setRootBlockId(rootBlockId);
-            } else {
-                console.error('rootBlockId for page is required. ');
-            }
-        }, [editor, rootBlockId]);
-
-        useEffect(() => {
-            if (!rootBlockId) return;
-            setCurrentEditors(prev => ({ ...prev, [rootBlockId]: editor }));
-        }, [editor, rootBlockId, setCurrentEditors]);
 
         return (
             <RenderRoot
@@ -59,7 +68,7 @@ export const AffineEditor = forwardRef<BlockEditor, AffineEditorProps>(
                 editorElement={AffineEditor as any}
                 scrollBlank={scrollBlank}
             >
-                <RenderBlock blockId={rootBlockId} />
+                <RenderBlock blockId={editor.getRootBlockId()} />
             </RenderRoot>
         );
     }

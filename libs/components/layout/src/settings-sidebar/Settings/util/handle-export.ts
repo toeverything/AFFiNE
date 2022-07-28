@@ -11,8 +11,7 @@ const createClipboardParse = ({
     workspaceId,
     rootBlockId,
 }: CreateClipboardParseProps) => {
-    const editor = createEditor(workspaceId);
-    editor.setRootBlockId(rootBlockId);
+    const editor = createEditor(workspaceId, rootBlockId);
 
     return new ClipboardParse(editor);
 };
