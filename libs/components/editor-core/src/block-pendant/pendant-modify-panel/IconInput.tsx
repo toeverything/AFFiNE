@@ -1,4 +1,4 @@
-import React, { type CSSProperties, useState } from 'react';
+import React, { forwardRef, type CSSProperties, useState } from 'react';
 import { Input, styled, InputProps } from '@toeverything/components/ui';
 import { StyledHighLightWrapper } from '../StyledComponent';
 import { IconNames } from '../types';
@@ -29,38 +29,39 @@ export const PendantIcon = ({
     );
 };
 
-export const IconInput = ({
-    iconName,
-    iconStyle,
-    color,
-    background,
-    ...inputProps
-}: IconInputProps) => {
-    return (
-        <>
-            <PendantIcon
-                iconName={iconName}
-                iconStyle={iconStyle}
-                color={color}
-                background={background}
-            />
-            <Input
-                style={{
-                    flexGrow: '1',
-                    border: 'none',
-                }}
-                {...inputProps}
-            />
-        </>
-    );
-};
+export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(
+    ({ iconName, iconStyle, color, background, ...inputProps }, ref) => {
+        return (
+            <>
+                <PendantIcon
+                    iconName={iconName}
+                    iconStyle={iconStyle}
+                    color={color}
+                    background={background}
+                />
+                <Input
+                    ref={ref}
+                    style={{
+                        flexGrow: '1',
+                    }}
+                    noBorder
+                    {...inputProps}
+                />
+            </>
+        );
+    }
+);
 
 type HighLightIconInputProps = {
     startElement?: React.ReactNode;
     endElement?: React.ReactNode;
+    tabIndex?: number;
 } & IconInputProps;
 
-export const HighLightIconInput = (props: HighLightIconInputProps) => {
+export const HighLightIconInput = forwardRef<
+    HTMLInputElement,
+    HighLightIconInputProps
+>((props, ref) => {
     const {
         onFocus,
         onBlur,
@@ -74,6 +75,7 @@ export const HighLightIconInput = (props: HighLightIconInputProps) => {
         <StyledHighLightWrapper isFocus={focus}>
             {startElement}
             <IconInput
+                ref={ref}
                 onFocus={e => {
                     setFocus(true);
                     onFocus?.(e);
@@ -87,7 +89,7 @@ export const HighLightIconInput = (props: HighLightIconInputProps) => {
             {endElement}
         </StyledHighLightWrapper>
     );
-};
+});
 
 const StyledIconWrapper = styled('div')`
     display: inline-flex;

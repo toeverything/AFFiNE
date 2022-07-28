@@ -5,7 +5,7 @@ import React, {
     KeyboardEvent,
     useRef,
 } from 'react';
-import { Add, Delete, Close } from '@mui/icons-material';
+import { Add, Close } from '@mui/icons-material';
 import { ModifyPanelContentProps } from './types';
 import {
     MultiSelectProperty,
@@ -38,6 +38,7 @@ type OptionItemType = {
     };
     onEnter?: (e: KeyboardEvent) => void;
     focused?: boolean;
+    tabIndex?: number;
 };
 
 type SelectPropsType = {
@@ -138,6 +139,7 @@ export const BasicSelect = ({
                         onEnter={() => {
                             insertOption(options[options.length - 1].id);
                         }}
+                        tabIndex={index + 1}
                     />
                 );
             })}
@@ -196,6 +198,7 @@ const OptionItem = ({
     iconConfig,
     onEnter,
     focused,
+    tabIndex,
 }: OptionItemType) => {
     const theme = useTheme();
     const inputRef = useRef<HTMLInputElement>();
@@ -204,11 +207,8 @@ const OptionItem = ({
     }, [focused]);
     return (
         <HighLightIconInput
-            componentsProps={{
-                input: {
-                    ref: inputRef,
-                },
-            }}
+            tabIndex={tabIndex}
+            ref={inputRef}
             iconName={iconConfig?.name}
             color={iconConfig?.color}
             background={iconConfig?.background}

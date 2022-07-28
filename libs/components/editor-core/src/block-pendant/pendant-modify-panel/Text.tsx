@@ -8,7 +8,7 @@ export default ({
     initialValue,
     iconConfig,
 }: ModifyPanelContentProps) => {
-    const [text, setText] = useState(initialValue?.value || '');
+    const [text, setText] = useState((initialValue?.value as string) || '');
     return (
         <HighLightIconInput
             iconName={iconConfig?.iconName}
