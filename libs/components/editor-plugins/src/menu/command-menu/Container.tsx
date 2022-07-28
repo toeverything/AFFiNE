@@ -26,7 +26,7 @@ import {
 
 const RootContainer = styled('div')(({ theme }) => {
     return {
-        position: 'fixed',
+        position: 'absolute',
         zIndex: 1,
         width: 352,
         maxHeight: 525,

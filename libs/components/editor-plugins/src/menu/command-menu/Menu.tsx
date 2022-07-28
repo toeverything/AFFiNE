@@ -6,7 +6,6 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import style9 from 'style9';
 
 import { MuiClickAwayListener } from '@toeverything/components/ui';
 import { Virgo, HookType, PluginHooks } from '@toeverything/framework/virgo';
@@ -30,8 +29,6 @@ type CommandMenuPosition = {
     top: number | 'initial';
     bottom: number | 'initial';
 };
-
-const COMMAND_MENU_HEIGHT = 509;
 
 export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     const [show, setShow] = useState(false);
@@ -111,22 +108,24 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                                 ?.getRangeAt(0)
                                 ?.getBoundingClientRect();
                         if (rect) {
-                            let top = rect.top;
+                            let rectTop = rect.top;
                             const clientHeight =
                                 document.documentElement.clientHeight;
 
-                            if (clientHeight - top <= COMMAND_MENU_HEIGHT) {
-                                top = clientHeight - top + 10;
+                            const COMMAND_MENU_HEIGHT =
+                                window.innerHeight * 0.4;
+                            const { top, left } =
+                                editor.container.getBoundingClientRect();
+                            if (clientHeight - rectTop <= COMMAND_MENU_HEIGHT) {
                                 setCommandMenuPosition({
-                                    left: rect.left,
-                                    bottom: top,
+                                    left: rect.left - left,
+                                    bottom: rectTop - top + 10,
                                     top: 'initial',
                                 });
                             } else {
-                                top += 24;
                                 setCommandMenuPosition({
-                                    left: rect.left,
-                                    top: top,
+                                    left: rect.left - left,
+                                    top: rectTop - top + 24,
                                     bottom: 'initial',
                                 });
                             }
@@ -234,7 +233,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
 
     return (
         <div
-            className={styles('commandMenu')}
+            style={{ zIndex: 1 }}
             onKeyUpCapture={handle_keyup}
             ref={commandMenuContentRef}
         >
@@ -260,10 +259,3 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
         </div>
     );
 };
-
-const styles = style9.create({
-    commandMenu: {
-        position: 'absolute',
-        zIndex: 1,
-    },
-});
