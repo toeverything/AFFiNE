@@ -1,4 +1,5 @@
-import React, { CSSProperties, useState } from 'react';
+import React, { CSSProperties, useState, useEffect } from 'react';
+import { nanoid } from 'nanoid';
 import { Input, Option, Select, Tooltip } from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 import { AsyncBlock } from '../../editor';
@@ -28,6 +29,9 @@ import {
 } from '../utils';
 import { usePendant } from '../use-pendant';
 
+const upperFirst = (str: string) => {
+    return `${str[0].toUpperCase()}${str.slice(1)}`;
+};
 export const CreatePendantPanel = ({
     block,
     onSure,
@@ -38,10 +42,13 @@ export const CreatePendantPanel = ({
     const [selectedOption, setSelectedOption] = useState<PendantOptions>();
     const [fieldName, setFieldName] = useState<string>('');
     const { addProperty, removeProperty } = useRecastBlockMeta();
-    // const { getValue, setValue, getAllValue } = getRecastItemValue(block);
     const { createSelect } = useSelectProperty();
     const { setPendant } = usePendant(block);
-    const recastBlock = useRecastBlock();
+
+    useEffect(() => {
+        selectedOption &&
+            setFieldName(upperFirst(`${selectedOption.type}#${nanoid(4)}`));
+    }, [selectedOption]);
 
     return (
         <StyledPopoverWrapper>

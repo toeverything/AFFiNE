@@ -106,6 +106,7 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                             block={block}
                             iconStyle={{ marginTop: 4 }}
                             container={blockRenderContainerRef.current}
+                            trigger="click"
                         />
                     </div>
                 </MuiZoom>
