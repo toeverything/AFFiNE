@@ -63,6 +63,10 @@ const StyledInputElement = styled('input')(({ theme }) => ({
     lineHeight: '1.5',
     color: `${theme.affine.palette.secondaryText}`,
     flexGrow: 1,
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
     '&::placeholder': {
         color: `${theme.affine.palette.borderColor}`,
     },
