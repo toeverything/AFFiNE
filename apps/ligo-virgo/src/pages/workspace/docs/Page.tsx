@@ -22,7 +22,6 @@ import { services } from '@toeverything/datasource/db-service';
 
 import { WorkspaceName } from './workspace-name';
 import { CollapsiblePageTree } from './collapsible-page-tree';
-import TemplatesPortal from './templates-portal';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { type BlockEditor } from '@toeverything/components/editor-core';
 
@@ -35,7 +34,6 @@ export function Page(props: PageProps) {
     const { showSpaceSidebar, fixedDisplay, setSpaceSidebarVisible } =
         useShowSpaceSidebar();
     const { user } = useUserAndSpaces();
-    const templatesPortalFlag = useFlag('BooleanTemplatesPortal', false);
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
 
     useEffect(() => {
@@ -78,7 +76,6 @@ export function Page(props: PageProps) {
                     <Divider light={true} sx={{ my: 1, margin: '6px 0px' }} />
                     <WorkspaceSidebarContent>
                         <div>
-                            {templatesPortalFlag && <TemplatesPortal />}
                             {dailyNotesFlag && (
                                 <div>
                                     <CollapsibleTitle title="Daily Notes">

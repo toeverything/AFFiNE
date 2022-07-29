@@ -13,7 +13,6 @@ import { WorkspaceNotFound } from './status/workspace-not-found';
 import { RoutePrivate } from './RoutePrivate';
 import { RoutePublicAutoLogin } from './RoutePublicAutoLogin';
 import { Tools } from './tools';
-import { Templates } from './templates';
 import { LigoVirgoRootContainer } from './AppContainer';
 import { UIPage } from './ui';
 
@@ -33,7 +32,6 @@ export function LigoVirgoRoutes() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/shared" element={<Shared />} />
                 <Route path="/started" element={<Starred />} />
-                <Route path="/templates" element={<Templates />} />
                 <Route path="/ui" element={<UIPage />} />
                 <Route
                     path="/:workspace_id/*"
