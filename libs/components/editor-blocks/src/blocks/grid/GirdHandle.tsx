@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { styled } from '@toeverything/components/ui';
 import { BlockEditor } from '@toeverything/framework/virgo';
 
-const GRID_ADD_HANDLE_NAME = 'rid-add-handle';
+const GRID_ADD_HANDLE_NAME = 'grid-add-handle';
 
 type GridHandleProps = {
     editor: BlockEditor;
