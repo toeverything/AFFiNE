@@ -23,7 +23,7 @@ ENV FIREBASE_PROJECT=
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
-# 编码相关
+# coding
 ENV TZ 'Asia/Shanghai'
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en

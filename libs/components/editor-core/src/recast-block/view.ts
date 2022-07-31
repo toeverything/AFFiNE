@@ -143,7 +143,7 @@ export const useRecastView = () => {
         updateView,
         renameView,
         removeView,
-        // TODO reorder API
+        // TODO: reorder API
 
         withKanbanView,
     };

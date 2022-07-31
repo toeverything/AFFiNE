@@ -13,6 +13,7 @@ export function DragDropWrapper({
     block,
 }: DragDropWrapperProps) {
     const handlerDragOver: React.DragEventHandler<HTMLDivElement> = event => {
+        event.preventDefault();
         if (block.dom) {
             editor.getHooks().afterOnNodeDragOver(event, {
                 blockId: block.id,

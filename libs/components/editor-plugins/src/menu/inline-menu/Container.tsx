@@ -34,6 +34,7 @@ export const InlineMenuContainer = ({ editor }: InlineMenuContainerProps) => {
                 !editor.blockHelper.getCurrentSelection(anchorNode.id) ||
                 editor.blockHelper.isSelectionCollapsed(anchorNode.id)
             ) {
+                setShowMenu(false);
                 return;
             }
 
@@ -43,46 +44,34 @@ export const InlineMenuContainer = ({ editor }: InlineMenuContainerProps) => {
             setSelectionInfo(info);
             setShowMenu(true);
             setContainerStyle({
-                left: rect.left - editor.container.getBoundingClientRect().left,
-                top: anchorNode.dom.offsetTop - 64,
+                left: rect.left - left,
+                top: rect.top - top - 64,
             });
         });
         return unsubscribe;
     }, [editor]);
 
-    useEffect(() => {
-        const hideInlineMenu = () => {
-            setShowMenu(false);
-        };
-        editor.plugins.observe('hide-inline-menu', hideInlineMenu);
-
-        return () =>
-            editor.plugins.unobserve('hide-inline-menu', hideInlineMenu);
-    }, [editor.plugins]);
-
     return showMenu && containerStyle ? (
-        <ClickAwayListener onClickAway={() => setShowMenu(false)}>
-            <Grow
-                in={showMenu}
-                style={{ transformOrigin: '0 0 0' }}
-                {...{ timeout: 'auto' }}
+        <Grow
+            in={showMenu}
+            style={{ transformOrigin: '0 0 0' }}
+            {...{ timeout: 'auto' }}
+        >
+            <ToolbarContainer
+                style={containerStyle}
+                onMouseDown={e => {
+                    // prevent toolbar from taking focus away from editor
+                    e.preventDefault();
+                    e.stopPropagation();
+                }}
             >
-                <ToolbarContainer
-                    style={containerStyle}
-                    onMouseDown={e => {
-                        // prevent toolbar from taking focus away from editor
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }}
-                >
-                    <InlineMenuToolbar
-                        editor={editor}
-                        selectionInfo={selectionInfo}
-                        setShow={setShowMenu}
-                    />
-                </ToolbarContainer>
-            </Grow>
-        </ClickAwayListener>
+                <InlineMenuToolbar
+                    editor={editor}
+                    selectionInfo={selectionInfo}
+                    setShow={setShowMenu}
+                />
+            </ToolbarContainer>
+        </Grow>
     ) : null;
 };
 

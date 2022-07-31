@@ -15,7 +15,7 @@ type ScrollController = {
 };
 
 export class ScrollManager {
-    private _editor: Block_editor;
+    private _editor: BlockEditor;
     private _scrollContainer: HTMLElement;
     private _animationFrame: null | number = null;
     private _eventName = 'scrolling';

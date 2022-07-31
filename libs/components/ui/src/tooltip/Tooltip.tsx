@@ -20,7 +20,7 @@ export const Tooltip = forwardRef<
 >((props, ref) => {
     const { content, placement = 'top-start' } = props;
     const style = useTooltipStyle();
-    // 如果没有内容，则永远隐藏
+    // If there is no content, hide forever
     const visibleProp = content ? {} : { visible: false };
     return (
         <Popper

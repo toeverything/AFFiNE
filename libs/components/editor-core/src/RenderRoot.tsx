@@ -11,6 +11,7 @@ import {
     type ReturnUnobserve,
 } from '@toeverything/datasource/db-service';
 import { addNewGroup } from './recast-block';
+import { useIsOnDrag } from './hooks';
 
 interface RenderRootProps {
     editor: BlockEditor;
@@ -133,6 +134,8 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     };
 
     const onDragOver = (event: React.DragEvent<Element>) => {
+        event.dataTransfer.dropEffect = 'move';
+        event.preventDefault();
         editor.dragDropManager.handlerEditorDragOver(event);
         if (editor.dragDropManager.isEnabled()) {
             editor.getHooks().onRootNodeDragOver(event);
@@ -140,6 +143,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     };
 
     const onDragOverCapture = (event: React.DragEvent<Element>) => {
+        event.preventDefault();
         if (editor.dragDropManager.isEnabled()) {
             editor.getHooks().onRootNodeDragOver(event);
         }
@@ -177,6 +181,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 onDragOverCapture={onDragOverCapture}
                 onDragEnd={onDragEnd}
                 onDrop={onDrop}
+                isOnDrag={isOnDrag}
             >
                 <Content style={{ maxWidth: pageWidth + 'px' }}>
                     {children}

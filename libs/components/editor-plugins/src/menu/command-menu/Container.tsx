@@ -192,7 +192,7 @@ export const CommandMenuContainer = ({
     useEffect(() => {
         const sub = hooks
             .get(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE)
-            .subscribe(handle_key_down);
+            .subscribe(handleKeyDown);
 
         return () => {
             sub.unsubscribe();
