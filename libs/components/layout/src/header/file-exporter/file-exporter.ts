@@ -34,7 +34,7 @@ const FileExporter = {
         </html>`;
     },
     decoreateAffineBrand: (pageTitle: string) => {
-        return pageTitle + ` Created in Affine`;
+        return pageTitle + ` Created in AFFiNE`;
     },
     exportHtml: (pageTitle: string, htmlContent: string) => {
         FileExporter.exportFile(

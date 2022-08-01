@@ -1,6 +1,6 @@
 # Tutorial
 
-Affine defines a new component development specification in Figma, extends Affine UI Components based on MUI BASE and MUI SYSTEM, and supplements as needed https://github.com/toeverything/AFFiNE/tree/master/libs/components/ui , eg `src/libs/components/ui/src/button/base-button.ts`
+AFFiNE defines a new component development specification in Figma, extends AFFiNE UI Components based on MUI BASE and MUI SYSTEM, and supplements as needed https://github.com/toeverything/AFFiNE/tree/master/libs/components/ui , eg `src/libs/components/ui/src/button/base-button.ts`
 
 ```jsx
 import ButtonUnstyled, {
