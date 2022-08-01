@@ -28,14 +28,11 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
 
     const handleRootMouseMove = useCallback(
         async (e: React.MouseEvent<HTMLDivElement>) => {
-            const groupBlockNew =
-                await editor.dragDropManager.getGroupBlockByPoint(
-                    new Point(e.clientX, e.clientY)
-                );
+            const groupBlockNew = await editor.getGroupBlockByPoint(
+                new Point(e.clientX, e.clientY)
+            );
             if (groupBlockNew) {
                 setGroupBlock(groupBlockNew);
-            } else {
-                setGroupBlock(null);
             }
         },
         [editor, setGroupBlock]
@@ -59,10 +56,9 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
             let groupBlockOnDragOver = null;
             const mousePoint = new Point(e.clientX, e.clientY);
             if (editor.dragDropManager.isDragGroup(e)) {
-                groupBlockOnDragOver =
-                    await editor.dragDropManager.getGroupBlockByPoint(
-                        mousePoint
-                    );
+                groupBlockOnDragOver = await editor.getGroupBlockByPoint(
+                    mousePoint
+                );
                 if (groupBlockOnDragOver?.id === groupBlock?.id) {
                     groupBlockOnDragOver = null;
                 }
@@ -83,10 +79,9 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
         async (e: React.DragEvent<Element>) => {
             let groupBlockOnDrop = null;
             if (editor.dragDropManager.isDragGroup(e)) {
-                groupBlockOnDrop =
-                    await editor.dragDropManager.getGroupBlockByPoint(
-                        new Point(e.clientX, e.clientY)
-                    );
+                groupBlockOnDrop = await editor.getGroupBlockByPoint(
+                    new Point(e.clientX, e.clientY)
+                );
                 if (groupBlockOnDrop?.id === groupBlock?.id) {
                     groupBlockOnDrop = null;
                 }
@@ -94,6 +89,8 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
         },
         [editor, groupBlock]
     );
+
+    const handleRootMouseLeave = useCallback(() => setGroupBlock(null), []);
 
     const handleRootDragEnd = () => {
         setDragOverGroup(null);
@@ -118,6 +115,11 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
                 .get(HookType.ON_ROOTNODE_DRAG_END)
                 .subscribe(handleRootDragEnd)
         );
+        sub.add(
+            hooks
+                .get(HookType.ON_ROOTNODE_MOUSE_LEAVE)
+                .subscribe(handleRootMouseLeave)
+        );
         return () => {
             sub.unsubscribe();
         };
@@ -127,6 +129,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
         handleRootMouseDown,
         handleRootDragOver,
         handleRootDrop,
+        handleRootMouseLeave,
     ]);
 
     useEffect(() => {

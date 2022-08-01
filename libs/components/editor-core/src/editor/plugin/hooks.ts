@@ -1,3 +1,4 @@
+import { DragEvent } from 'react';
 import { Observable, Subject } from 'rxjs';
 import { HooksRunner, HookType, BlockDomInfo, PluginHooks } from '../types';
 
@@ -86,13 +87,6 @@ export class Hooks implements HooksRunner, PluginHooks {
         this._runHook(HookType.ON_ROOTNODE_MOUSE_LEAVE, e);
     }
 
-    public afterOnNodeMouseMove(
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-        node: BlockDomInfo
-    ): void {
-        this._runHook(HookType.AFTER_ON_NODE_MOUSE_MOVE, e, node);
-    }
-
     public afterOnResize(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ): void {
@@ -101,6 +95,10 @@ export class Hooks implements HooksRunner, PluginHooks {
 
     public onRootNodeDragOver(e: React.DragEvent<Element>): void {
         this._runHook(HookType.ON_ROOTNODE_DRAG_OVER, e);
+    }
+
+    public onRootNodeDragLeave(e: React.DragEvent<Element>): void {
+        this._runHook(HookType.ON_ROOTNODE_DRAG_LEAVE, e);
     }
 
     public onRootNodeDragEnd(e: React.DragEvent<Element>): void {

@@ -10,8 +10,7 @@ import { Button } from '@toeverything/components/common';
 import { styled } from '@toeverything/components/ui';
 
 import { LeftMenu } from './LeftMenu';
-import { debounce } from '@toeverything/utils';
-import type { Subject } from 'rxjs';
+import { distinctUntilChanged, Subject } from 'rxjs';
 import { HandleChildIcon } from '@toeverything/components/icons';
 import { MENU_WIDTH } from './menu-config';
 
@@ -123,33 +122,24 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
     const [block, setBlock] = useState<BlockDomInfo | undefined>();
     const [line, setLine] = useState<LineInfo | undefined>(undefined);
 
-    const handleDragStart = (event: React.DragEvent<Element>) => {
-        window.addEventListener('dragover', handleDragOverCapture, {
-            capture: true,
-        });
-
-        const onDragStart = async (event: React.DragEvent<Element>) => {
-            editor.dragDropManager.isOnDrag = true;
-            if (block == null) return;
-            setRootRect(editor.container.getBoundingClientRect());
-            const dragImage = await editor.blockHelper.getBlockDragImg(
-                block.blockId
-            );
-            if (dragImage) {
-                event.dataTransfer.setDragImage(dragImage, -50, -10);
-                editor.dragDropManager.setDragBlockInfo(event, block.blockId);
-            }
-            setVisible(false);
-        };
-        onDragStart(event);
+    const handleDragStart = async (event: React.DragEvent<Element>) => {
         event.stopPropagation();
+        setVisible(false);
+
+        editor.dragDropManager.isOnDrag = true;
+        if (block == null) return;
+        setRootRect(editor.container.getBoundingClientRect());
+        const dragImage = await editor.blockHelper.getBlockDragImg(
+            block.blockId
+        );
+        if (dragImage) {
+            event.dataTransfer.setDragImage(dragImage, -50, -10);
+            editor.dragDropManager.setDragBlockInfo(event, block.blockId);
+        }
     };
 
     const handleDragEnd = (event: React.DragEvent<Element>) => {
         event.preventDefault();
-        window.removeEventListener('dragover', handleDragOverCapture, {
-            capture: true,
-        });
         setLine(undefined);
     };
 
@@ -161,28 +151,20 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
         setAnchorEl(currentTarget);
     };
 
-    /**
-     * clear line info
-     */
-    const handleDragOverCapture = debounce((e: MouseEvent) => {
-        const { target } = e;
-        if (
-            target instanceof HTMLElement &&
-            (!target.closest('[data-block-id]') ||
-                !editor.container.contains(target))
-        ) {
-            setLine(undefined);
-        }
-    }, 10);
-
     useEffect(() => {
-        const sub = blockInfo.subscribe(block => {
-            setBlock(block);
-            if (block != null) {
-                setRootRect(editor.container.getBoundingClientRect());
-                setVisible(true);
-            }
-        });
+        const sub = blockInfo
+            .pipe(
+                distinctUntilChanged(
+                    (prev, curr) => prev?.blockId === curr?.blockId
+                )
+            )
+            .subscribe(block => {
+                setBlock(block);
+                if (block != null) {
+                    setRootRect(editor.container.getBoundingClientRect());
+                    setVisible(true);
+                }
+            });
         return () => sub.unsubscribe();
     }, [blockInfo, editor]);
 
