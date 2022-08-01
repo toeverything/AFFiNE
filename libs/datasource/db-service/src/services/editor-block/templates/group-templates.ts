@@ -200,7 +200,7 @@ const groupTemplateMap: GroupTemplateMap = {
                     text: {
                         value: [
                             {
-                                text: 'As a collaborative real-time editor, Affine aims to resolve problems in three situations:',
+                                text: 'As a collaborative real-time editor, AFFiNE aims to resolve problems in three situations:',
                             },
                         ],
                     },

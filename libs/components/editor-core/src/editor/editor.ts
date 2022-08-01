@@ -59,7 +59,7 @@ export class Editor implements Virgo {
     public bdCommands: Commands;
     public ui_container?: HTMLDivElement;
     public version = '0.0.1';
-    public copyright = '@Affine 2019-2022';
+    public copyright = '@AFFiNE 2020-2022';
     private plugin_manager: PluginManager;
     private hooks: Hooks;
     private views: Record<string, BaseView> = {};
