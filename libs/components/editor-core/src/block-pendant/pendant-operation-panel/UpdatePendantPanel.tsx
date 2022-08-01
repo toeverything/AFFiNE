@@ -16,12 +16,11 @@ import { OptionType, PendantTypes, TempInformationType } from '../types';
 import {
     getOfficialSelected,
     getPendantConfigByType,
-    // getPendantIconsConfigByNameOrType,
+    checkPendantForm,
 } from '../utils';
 import { usePendant } from '../use-pendant';
 import {
     StyledPopoverWrapper,
-    StyledOperationTitle,
     StyledOperationLabel,
     StyledInputEndAdornment,
     StyledDivider,
@@ -29,7 +28,7 @@ import {
     StyledPopoverSubTitle,
 } from '../StyledComponent';
 import { IconMap, pendantOptions } from '../config';
-import { Input, Tooltip } from '@toeverything/components/ui';
+import { Input, message, Tooltip } from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 
 type SelectPropertyType = MultiSelectProperty | SelectProperty;
@@ -111,6 +110,18 @@ export const UpdatePendantPanel = ({
                 property={property}
                 type={property.type}
                 onSure={async (type, newPropertyItem, newValue) => {
+                    const checkResult = checkPendantForm(
+                        type,
+                        fieldTitle,
+                        newPropertyItem,
+                        newValue
+                    );
+
+                    if (!checkResult.passed) {
+                        await message.error(checkResult.message);
+                        return;
+                    }
+
                     if (
                         type === PendantTypes.MultiSelect ||
                         type === PendantTypes.Select ||

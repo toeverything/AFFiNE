@@ -1,6 +1,12 @@
 import React, { CSSProperties, useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
-import { Input, Option, Select, Tooltip } from '@toeverything/components/ui';
+import {
+    Input,
+    Option,
+    Select,
+    Tooltip,
+    message,
+} from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 import { AsyncBlock } from '../../editor';
 
@@ -23,6 +29,7 @@ import {
     useSelectProperty,
 } from '../../recast-block';
 import {
+    checkPendantForm,
     genInitialOptions,
     getOfficialSelected,
     getPendantConfigByType,
@@ -112,7 +119,15 @@ export const CreatePendantPanel = ({
                         iconConfig={getPendantConfigByType(selectedOption.type)}
                         // isStatusSelect={selectedOption.name === 'Status'}
                         onSure={async (type, newPropertyItem, newValue) => {
-                            if (!fieldName) {
+                            const checkResult = checkPendantForm(
+                                type,
+                                fieldName,
+                                newPropertyItem,
+                                newValue
+                            );
+
+                            if (!checkResult.passed) {
+                                await message.error(checkResult.message);
                                 return;
                             }
 
