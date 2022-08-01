@@ -55,36 +55,36 @@ export function LeftMenu(props: LeftMenuProps) {
 
     const [menuList, setMenuList] = useState<CascaderItemProps[]>(menu);
 
-    const filter_items = (
-        value: string,
-        menuList: CascaderItemProps[],
-        filterList: CascaderItemProps[]
-    ) => {
-        menuList.forEach(item => {
-            if (item?.subItems.length === 0) {
-                if (item.title.toLocaleLowerCase().indexOf(value) !== -1) {
-                    filterList.push(item);
-                }
-            } else {
-                filter_items(value, item.subItems || [], filterList);
-            }
-        });
-    };
+    // const filterItems = (
+    //     value: string,
+    //     menuList: CascaderItemProps[],
+    //     filterList: CascaderItemProps[]
+    // ) => {
+    //     menuList.forEach(item => {
+    //         if (item?.subItems.length === 0) {
+    //             if (item.title.toLocaleLowerCase().indexOf(value) !== -1) {
+    //                 filterList.push(item);
+    //             }
+    //         } else {
+    //             filterItems(value, item.subItems || [], filterList);
+    //         }
+    //     });
+    // };
 
-    const on_filter = (
-        e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
-    ) => {
-        const value = e.currentTarget.value;
-        if (!value) {
-            setMenuList(menu);
-        } else {
-            const filterList: CascaderItemProps[] = [];
-            filter_items(value.toLocaleLowerCase(), menu, filterList);
-            setMenuList(
-                filterList.length > 0 ? filterList : [{ title: 'No Result' }]
-            );
-        }
-    };
+    // const on_filter = (
+    //     e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
+    // ) => {
+    //     const value = e.currentTarget.value;
+    //     if (!value) {
+    //         setMenuList(menu);
+    //     } else {
+    //         const filterList: CascaderItemProps[] = [];
+    //         filter_items(value.toLocaleLowerCase(), menu, filterList);
+    //         setMenuList(
+    //             filterList.length > 0 ? filterList : [{ title: 'No Result' }]
+    //         );
+    //     }
+    // };
 
     return (
         <>

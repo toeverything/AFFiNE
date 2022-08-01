@@ -1,5 +1,4 @@
 import type { BlockEditor } from './editor';
-import { Point } from '@toeverything/utils';
 import { styled, usePatchNodes } from '@toeverything/components/ui';
 import type { FC, PropsWithChildren } from 'react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -76,20 +75,6 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     ) => {
         selectionRef.current?.onMouseMove(event);
         editor.getHooks().onRootNodeMouseMove(event);
-
-        const slidingBlock = await editor.getBlockByPoint(
-            new Point(event.clientX, event.clientY)
-        );
-
-        if (slidingBlock && slidingBlock.dom) {
-            editor.getHooks().afterOnNodeMouseMove(event, {
-                blockId: slidingBlock.id,
-                dom: slidingBlock.dom,
-                rect: slidingBlock.dom.getBoundingClientRect(),
-                type: slidingBlock.type,
-                properties: slidingBlock.getProperties(),
-            });
-        }
     };
 
     const onMouseDown = (
@@ -142,6 +127,12 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
         }
     };
 
+    const onDragLeave = (event: React.DragEvent<Element>) => {
+        if (editor.dragDropManager.isEnabled()) {
+            editor.getHooks().onRootNodeDragLeave(event);
+        }
+    };
+
     const onDragOverCapture = (event: React.DragEvent<Element>) => {
         event.preventDefault();
         if (editor.dragDropManager.isEnabled()) {
@@ -178,6 +169,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 onKeyDownCapture={onKeyDownCapture}
                 onKeyUp={onKeyUp}
                 onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
                 onDragOverCapture={onDragOverCapture}
                 onDragEnd={onDragEnd}
                 onDrop={onDrop}

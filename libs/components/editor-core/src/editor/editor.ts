@@ -389,6 +389,19 @@ export class Editor implements Virgo {
         });
     }
 
+    public async getGroupBlockByPoint(point: Point) {
+        const blockList = await this.getBlockList();
+        return blockList.find(block => {
+            if (block.type === 'group' && block.dom) {
+                const rect = domToRect(block.dom);
+                if (rect.fromNewLeft(rect.left - 30).isContainPoint(point)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
     async undo() {
         await services.api.editorBlock.undo(this.workspace);
     }

@@ -119,9 +119,7 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
             startPointRef.current = new Point(event.clientX, event.clientY);
             startPointBlock.current =
                 ((await selectionManager.rootDomReady()) &&
-                    (await selectionManager.getBlockByPoint(
-                        startPointRef.current
-                    ))) ||
+                    (await editor.getBlockByPoint(startPointRef.current))) ||
                 null;
             mouseType.current = 'down';
             if (scrollManager.scrollContainer) {
@@ -137,10 +135,9 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
             if (mouseType.current === 'down') {
                 endPointRef.current = new Point(event.clientX, event.clientY);
                 if (startPointBlock.current) {
-                    const endpointBlock =
-                        await selectionManager.getBlockByPoint(
-                            endPointRef.current
-                        );
+                    const endpointBlock = await editor.getBlockByPoint(
+                        endPointRef.current
+                    );
                     // TODO: delete after multi-block text selection done
                     // if drag out of startblock change selection type to block
                     if (endpointBlock?.id === startPointBlock.current.id) {
