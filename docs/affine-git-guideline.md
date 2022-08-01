@@ -7,7 +7,7 @@
 
 # 2. **Commit message guidelines**
 
-Affine uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and package publishing. For that to work, commitmessages need to be in the right format.
+AFFiNE uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and package publishing. For that to work, commitmessages need to be in the right format.
 
 ### **Atomic commits**
 
