@@ -4,8 +4,6 @@
 /coverage
 pnpm-lock.yaml
 
-# Editoe assets
-apps/editoe/src/app/assets/svg
 
 # Automatically generated from Figma
 libs/components/icons/src/auto-icons
