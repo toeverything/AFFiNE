@@ -31,7 +31,7 @@ export const KanbanContainer = styled('div')({
     // overscrollBehavior: 'contain',
 
     '& > * + *': {
-        marginLeft: '10px',
+        marginLeft: '20px',
     },
 });
 
