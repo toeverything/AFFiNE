@@ -35,7 +35,7 @@ const _useUserAndSpace = () => {
                 onAuthStateChanged(auth, async fbuser => {
                     if (fbuser) {
                         const user = _fromFirebaseUser(fbuser);
-                        await identifyUser({
+                        identifyUser({
                             userName: user.nickname,
                             id: user.id,
                             email: user.email,
