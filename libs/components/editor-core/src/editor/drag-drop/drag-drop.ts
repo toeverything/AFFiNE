@@ -1,4 +1,4 @@
-import { domToRect, Point, ValueOf } from '@toeverything/utils';
+import { domToRect, Point } from '@toeverything/utils';
 import { AsyncBlock } from '../..';
 import { GridDropType } from '../commands/types';
 import { Editor } from '../editor';
@@ -6,9 +6,10 @@ import { BlockDropPlacement, GroupDirection } from '../types';
 // TODO: Evaluate implementing custom events with Rxjs
 import EventEmitter from 'eventemitter3';
 
-type DargType =
-    | ValueOf<InstanceType<typeof DragDropManager>['dragActions']>
-    | '';
+enum DragType {
+    dragBlock = 'dragBlock',
+    dragGroup = 'dragGroup',
+}
 
 const DRAG_STATE_CHANGE_EVENT_KEY = 'dragStateChange';
 export class DragDropManager {
@@ -18,16 +19,13 @@ export class DragDropManager {
 
     private _blockIdKey = 'blockId';
     private _rootIdKey = 'rootId';
-    private _dragType: DargType;
+    private _dragType?: DragType;
     private _blockDragDirection: BlockDropPlacement;
-    private _blockDragTargetId = '';
+    private _blockDragTargetId?: string;
 
     private _dragBlockHotDistance = 20;
 
-    private _dragActions = {
-        dragBlock: 'dragBlock',
-        dragGroup: 'dragGroup',
-    } as const;
+    private _dragActions = DragType;
 
     private _isOnDrag = false;
 
@@ -49,7 +47,6 @@ export class DragDropManager {
     constructor(editor: Editor) {
         this._editor = editor;
         this._enabled = true;
-        this._dragType = '';
         this._blockDragDirection = BlockDropPlacement.none;
         this._initMouseEvent();
     }
@@ -58,7 +55,7 @@ export class DragDropManager {
         return this._dragType;
     }
 
-    set dragType(type: DargType) {
+    set dragType(type: DragType) {
         this._dragType = type;
     }
 
@@ -119,22 +116,9 @@ export class DragDropManager {
         }
     }
 
-    public async getGroupBlockByPoint(point: Point) {
-        const blockList = await this._editor.getBlockList();
-        return blockList.find(block => {
-            if (block.type === 'group' && block.dom) {
-                const rect = domToRect(block.dom);
-                if (rect.fromNewLeft(rect.left - 30).isContainPoint(point)) {
-                    return true;
-                }
-            }
-            return false;
-        });
-    }
-
     private async _handleDropGroup(event: React.DragEvent<Element>) {
         const blockId = event.dataTransfer.getData(this._blockIdKey);
-        const toGroup = await this.getGroupBlockByPoint(
+        const toGroup = await this._editor.getGroupBlockByPoint(
             new Point(event.clientX, event.clientY)
         );
         if (toGroup && blockId && toGroup.id !== blockId) {
@@ -262,7 +246,7 @@ export class DragDropManager {
                 this._handleDropGroup(event);
             }
         }
-        this.dragType = '';
+        this.dragType = undefined;
     }
 
     public handlerEditorDragOver(event: React.DragEvent<Element>) {
@@ -280,9 +264,14 @@ export class DragDropManager {
     }
 
     private _resetDragDropData() {
-        this._dragType = '';
+        this._dragType = undefined;
         this._setBlockDragDirection(BlockDropPlacement.none);
-        this._setBlockDragTargetId('');
+        this._setBlockDragTargetId(undefined);
+    }
+
+    public clearDropInfo() {
+        this._setBlockDragDirection(BlockDropPlacement.none);
+        this._setBlockDragTargetId(undefined);
     }
 
     public async checkDragGroupDirection(
