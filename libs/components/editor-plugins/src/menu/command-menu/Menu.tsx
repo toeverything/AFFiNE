@@ -39,7 +39,6 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             top: 0,
             bottom: 0,
         });
-
     const [search_text, set_search_text] = useState<string>('');
     const [search_blocks, set_search_blocks] = useState<QueryResult>([]);
     const commandMenuContentRef = useRef();
@@ -103,6 +102,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                         });
                         set_search_text('');
                         setShow(true);
+                        editor.scrollManager.lock();
                         const rect =
                             editor.selection.currentSelectInfo?.browserSelection
                                 ?.getRangeAt(0)
@@ -142,7 +142,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             if (show) {
                 const { anchorNode } = editor.selection.currentSelectInfo;
                 if (anchorNode.id !== blockId) {
-                    setShow(false);
+                    hideMenu();
                     return;
                 }
                 setTimeout(() => {
@@ -152,10 +152,10 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                     if (searchText && searchText.startsWith('/')) {
                         set_search_text(searchText.slice(1));
                     } else {
-                        setShow(false);
+                        hideMenu();
                     }
                     if (searchText.length > 6 && !types.length) {
-                        setShow(false);
+                        hideMenu();
                     }
                 });
             }
@@ -174,7 +174,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     const handle_key_down = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
             if (event.code === 'Escape') {
-                setShow(false);
+                hideMenu();
             }
         },
         []
@@ -196,7 +196,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     }, [handle_keyup, handle_key_down, hooks]);
 
     const handle_click_away = () => {
-        setShow(false);
+        hideMenu();
     };
 
     const handle_selected = async (type: BlockFlavorKeys | string) => {
@@ -224,7 +224,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                 block.firstCreateFlag = true;
             }
         }
-        setShow(false);
+        hideMenu();
     };
 
     const handle_close = () => {
