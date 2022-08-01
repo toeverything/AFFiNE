@@ -161,7 +161,7 @@ module.exports = function (webpackConfig) {
         }),
         isProd &&
             new HtmlWebpackPlugin({
-                title: 'Affine - All In One Workos',
+                title: 'AFFiNE - All In One Workos',
                 favicon: path.resolve(
                     __dirname,
                     './src/assets/images/favicon.ico'

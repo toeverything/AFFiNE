@@ -13,7 +13,7 @@ const defaultTemplateList: Array<TemplateMeta> = [
 const TemplateFactory = {
     defaultTemplateList: defaultTemplateList,
     generatePageTemplateByGroupKeys(props: TemplateMeta): Template {
-        const newTitle = props.name || 'Get Started with Affine';
+        const newTitle = props.name || 'Get Started with AFFiNE';
         const keys = props.groupKeys || [];
         const blankPage: Template = {
             type: 'page',

@@ -106,7 +106,7 @@ export const Firebase = () => {
             />
             <MuiGrid item xs={8}>
                 <Error
-                    title="Welcome to Affine"
+                    title="Welcome to AFFiNE"
                     subTitle="blocks of knowledge to power your team"
                     action1Text="Login &nbsp; or &nbsp; Register"
                 />
