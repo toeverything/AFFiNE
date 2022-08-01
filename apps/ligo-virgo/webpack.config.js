@@ -151,6 +151,8 @@ module.exports = function (webpackConfig) {
         }
     }
 
+    addEmotionBabelPlugin(config);
+
     config.plugins = [
         ...config.plugins.filter(
             p => !(isProd && p instanceof MiniCssExtractPlugin)
@@ -161,7 +163,7 @@ module.exports = function (webpackConfig) {
         }),
         isProd &&
             new HtmlWebpackPlugin({
-                title: 'Affine - All In One Workos',
+                title: 'AFFiNE - All In One Workos',
                 favicon: path.resolve(
                     __dirname,
                     './src/assets/images/favicon.ico'
@@ -194,4 +196,60 @@ module.exports = function (webpackConfig) {
     };
 
     return config;
+};
+
+// TODO handle nx issue
+// see https://github.com/nrwl/nx/issues/8870
+// see https://github.com/nrwl/nx/issues/4520#issuecomment-787473383
+const addEmotionBabelPlugin = config => {
+    const babelLoader = config.module.rules.find(
+        rule =>
+            typeof rule !== 'string' &&
+            rule.loader?.toString().includes('babel-loader')
+    );
+    if (!babelLoader) {
+        return;
+    }
+
+    babelLoader.options.plugins = [
+        [
+            require.resolve('@emotion/babel-plugin'),
+            {
+                // See https://github.com/mui/material-ui/issues/27380#issuecomment-928973157
+                // See https://github.com/emotion-js/emotion/tree/main/packages/babel-plugin#importmap
+                importMap: {
+                    '@toeverything/components/ui': {
+                        styled: {
+                            canonicalImport: ['@emotion/styled', 'default'],
+                            styledBaseImport: [
+                                '@toeverything/components/ui',
+                                'styled',
+                            ],
+                        },
+                    },
+                    '@mui/material': {
+                        styled: {
+                            canonicalImport: ['@emotion/styled', 'default'],
+                            styledBaseImport: ['@mui/material', 'styled'],
+                        },
+                    },
+                    '@mui/material/styles': {
+                        styled: {
+                            canonicalImport: ['@emotion/styled', 'default'],
+                            styledBaseImport: [
+                                '@mui/material/styles',
+                                'styled',
+                            ],
+                        },
+                    },
+                },
+                // sourceMap is on by default but source maps are dead code eliminated in production
+                sourceMap: true,
+                autoLabel: 'dev-only',
+                labelFormat: '[filename]-[local]',
+                cssPropOptimization: true,
+            },
+        ],
+        ...(babelLoader.options.plugins ?? []),
+    ];
 };

@@ -343,7 +343,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 const handles = await window.showOpenFilePicker({
                     types: [
                         {
-                            description: 'Affine Package',
+                            description: 'AFFiNE Package',
                             accept: {
                                 // eslint-disable-next-line @typescript-eslint/naming-convention
                                 'application/affine': ['.apk'],
