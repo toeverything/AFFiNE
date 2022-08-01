@@ -11,6 +11,7 @@ import {
     findSibling,
     pickIdFromCards,
     shouldUpdate,
+    findMoveInfo,
 } from '../helper';
 import type {
     CollisionDetection,
@@ -19,11 +20,13 @@ import type {
     DragEndEvent,
 } from '@dnd-kit/core';
 import type { DndableItems, UseDndableRes } from '../type';
+import { useKanban } from '@toeverything/components/editor-core';
 
 export const useDndable = (
     dndableItems: DndableItems,
     dndableContainerIds: string[]
 ): UseDndableRes => {
+    const { kanban, moveCard } = useKanban();
     const [items, setItems] = useState(dndableItems);
     const [containerIds, setContainerIds] = useState(dndableContainerIds);
     const [active, setActive] = useState(null);
@@ -259,16 +262,14 @@ export const useDndable = (
                         ).filter(Boolean),
                     };
 
-                    const activeItems = items[activeContainer];
-                    const activeItem = activeItems.find(
-                        item => item.id === activeId
-                    );
-                    const [beforeId, afterId] = findSibling(
-                        items[overContainer],
-                        activeId
-                    );
+                    const { targetCard } = findMoveInfo({
+                        id: activeId,
+                        activeContainer,
+                        overContainer,
+                        kanban,
+                    });
 
-                    activeItem?.moveTo(overContainer, beforeId, afterId);
+                    moveCard(targetCard, null, overIndex);
 
                     return data;
                 });
