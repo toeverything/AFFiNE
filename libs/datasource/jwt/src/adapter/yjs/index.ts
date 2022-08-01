@@ -346,7 +346,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                             description: 'AFFiNE Package',
                             accept: {
                                 // eslint-disable-next-line @typescript-eslint/naming-convention
-                                'application/AFFiNE': ['.apk'],
+                                'application/affine': ['.apk'],
                             },
                         },
                     ],
