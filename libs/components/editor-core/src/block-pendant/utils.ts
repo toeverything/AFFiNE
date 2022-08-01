@@ -184,7 +184,7 @@ export const checkPendantForm = (
     newValue: any
 ): { passed: boolean; message: string } => {
     if (!fieldTitle) {
-        return { passed: false, message: 'Please input field title !' };
+        return { passed: false, message: 'The field title cannot be empty !' };
     }
 
     if (
@@ -195,7 +195,7 @@ export const checkPendantForm = (
         if (!newProperty) {
             return {
                 passed: false,
-                message: 'Ensure at least on non-empty option !',
+                message: 'Ensure at least one non-empty option !',
             };
         }
     }
@@ -203,7 +203,7 @@ export const checkPendantForm = (
         if (!newProperty) {
             return {
                 passed: false,
-                message: 'Ensure at least on non-empty option !',
+                message: 'Ensure at least one non-empty option !',
             };
         }
     }
@@ -215,7 +215,7 @@ export const checkPendantForm = (
         if (!newValue) {
             return {
                 passed: false,
-                message: `Please input content !`,
+                message: `The content of the input must not be empty !`,
             };
         }
     }
