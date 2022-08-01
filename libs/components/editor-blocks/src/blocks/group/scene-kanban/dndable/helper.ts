@@ -6,6 +6,7 @@ import type { DndableItems } from './type';
 import type {
     KanbanCard,
     KanbanGroup,
+    RecastItem,
 } from '@toeverything/components/editor-core';
 import { isEqual } from '@toeverything/utils';
 
@@ -33,15 +34,44 @@ const findContainer = (id: string, items: DndableItems) => {
     );
 };
 
+type FindMoveInfo = (params: {
+    id: string;
+    activeContainer: string;
+    overContainer: string;
+    kanban: KanbanGroup[];
+}) => {
+    targetCard: RecastItem;
+    targetGroup: KanbanGroup | null;
+};
+
+const findMoveInfo: FindMoveInfo = ({
+    id,
+    activeContainer,
+    overContainer,
+    kanban,
+}) => {
+    const activeGroup = kanban.find(group => group.id === activeContainer);
+    const overGroup = kanban.find(group => group.id === overContainer);
+    const activityCard = activeGroup.items.find(item => item.id === id);
+
+    return {
+        targetCard: activityCard.block,
+        targetGroup: overGroup,
+    };
+};
+
 /**
  * Find the sibling node after the dragging of the moved node ends
  * @param cards
  * @param currentCardId
  */
-const findSibling = (cards: KanbanCard[], currentCardId: string) => {
+const findSibling = (
+    cards: KanbanCard[],
+    currentCardId: string
+): [string, string, number] => {
     const index = cards.findIndex(card => card.id === currentCardId);
 
-    return [cards[index - 1]?.id ?? null, cards[index + 1]?.id ?? null];
+    return [cards[index - 1]?.id ?? null, cards[index + 1]?.id ?? null, index];
 };
 
 /**
@@ -84,4 +114,5 @@ export {
     findSibling,
     pickIdFromCards,
     shouldUpdate,
+    findMoveInfo,
 };

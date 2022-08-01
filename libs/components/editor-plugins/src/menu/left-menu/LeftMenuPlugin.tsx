@@ -10,7 +10,6 @@ import { domToRect, last, Point } from '@toeverything/utils';
 export class LeftMenuPlugin extends BasePlugin {
     private _mousedown?: boolean;
     private _root?: PluginRenderRoot;
-    private _preBlockId: string;
     private _hideTimer: number;
 
     private _blockInfo: Subject<BlockDomInfo | undefined> = new Subject();
@@ -23,18 +22,13 @@ export class LeftMenuPlugin extends BasePlugin {
     public override init(): void {
         this.sub.add(
             this.hooks
-                .get(HookType.AFTER_ON_NODE_MOUSE_MOVE)
+                .get(HookType.ON_ROOTNODE_MOUSE_MOVE)
                 .subscribe(this._handleMouseMove)
         );
         this.sub.add(
             this.hooks
                 .get(HookType.ON_ROOTNODE_MOUSE_DOWN)
                 .subscribe(this._handleMouseDown)
-        );
-        this.sub.add(
-            this.hooks
-                .get(HookType.ON_ROOTNODE_MOUSE_LEAVE)
-                .subscribe(this._hideLeftMenu)
         );
         this.sub.add(
             this.hooks
@@ -47,9 +41,21 @@ export class LeftMenuPlugin extends BasePlugin {
                 .subscribe(this._handleDragOverBlockNode)
         );
         this.sub.add(
+            this.hooks.get(HookType.ON_ROOTNODE_MOUSE_LEAVE).subscribe(() => {
+                this._hideLeftMenu();
+                this._lineInfo.next(undefined);
+            })
+        );
+        this.sub.add(
+            this.hooks.get(HookType.ON_ROOTNODE_DRAG_LEAVE).subscribe(() => {
+                this.editor.dragDropManager.clearDropInfo();
+                this._lineInfo.next(undefined);
+            })
+        );
+        this.sub.add(
             this.hooks
                 .get(HookType.ON_ROOT_NODE_KEYDOWN)
-                .subscribe(this._handleKeyDown)
+                .subscribe(this._hideLeftMenu)
         );
         this.sub.add(
             this.hooks.get(HookType.ON_ROOTNODE_DROP).subscribe(this._onDrop)
@@ -57,7 +63,6 @@ export class LeftMenuPlugin extends BasePlugin {
     }
 
     private _onDrop = () => {
-        this._preBlockId = '';
         this._lineInfo.next(undefined);
     };
     private _handleDragOverBlockNode = async ([event, blockInfo]: [
@@ -80,10 +85,9 @@ export class LeftMenuPlugin extends BasePlugin {
         }
     };
 
-    private _handleMouseMove = async ([e, node]: [
-        React.MouseEvent<HTMLDivElement, MouseEvent>,
-        BlockDomInfo
-    ]) => {
+    private _handleMouseMove = async (
+        event: React.MouseEvent<HTMLDivElement, MouseEvent>
+    ) => {
         if (!this._hideTimer) {
             this._hideTimer = window.setTimeout(() => {
                 if (this._mousedown) {
@@ -97,31 +101,40 @@ export class LeftMenuPlugin extends BasePlugin {
             this._hideLeftMenu();
             return;
         }
-        if (node.blockId !== this._preBlockId) {
-            if (node.dom) {
-                const mousePoint = new Point(e.clientX, e.clientY);
-                const children = await (
-                    await this.editor.getBlockById(node.blockId)
-                ).children();
-                // if mouse point is between the first and last child do not show left menu
-                if (children.length) {
-                    const firstChildren = children[0];
-                    const lastChildren = last(children);
-                    if (firstChildren.dom && lastChildren.dom) {
-                        const firstChildrenRect = domToRect(firstChildren.dom);
-                        const lastChildrenRect = domToRect(lastChildren.dom);
-                        if (
-                            firstChildrenRect.top < mousePoint.y &&
-                            lastChildrenRect.bottom > mousePoint.y
-                        ) {
-                            return;
-                        }
+        const node = await this.editor.getBlockByPoint(
+            new Point(event.clientX, event.clientY)
+        );
+        if (node == null || ignoreBlockTypes.includes(node.type)) {
+            return;
+        }
+        if (node.dom) {
+            const mousePoint = new Point(event.clientX, event.clientY);
+            const children = await (
+                await this.editor.getBlockById(node.id)
+            ).children();
+            // if mouse point is between the first and last child do not show left menu
+            if (children.length) {
+                const firstChildren = children[0];
+                const lastChildren = last(children);
+                if (firstChildren.dom && lastChildren.dom) {
+                    const firstChildrenRect = domToRect(firstChildren.dom);
+                    const lastChildrenRect = domToRect(lastChildren.dom);
+                    if (
+                        firstChildrenRect.top < mousePoint.y &&
+                        lastChildrenRect.bottom > mousePoint.y
+                    ) {
+                        return;
                     }
                 }
             }
-            this._preBlockId = node.blockId;
-            this._showLeftMenu(node);
         }
+        this._blockInfo.next({
+            blockId: node.id,
+            dom: node.dom,
+            rect: node.dom.getBoundingClientRect(),
+            type: node.type,
+            properties: node.getProperties(),
+        });
     };
 
     private _handleMouseUp() {
@@ -138,17 +151,6 @@ export class LeftMenuPlugin extends BasePlugin {
 
     private _hideLeftMenu = (): void => {
         this._blockInfo.next(undefined);
-    };
-
-    private _handleKeyDown = () => {
-        this._hideLeftMenu();
-    };
-
-    private _showLeftMenu = (blockInfo: BlockDomInfo): void => {
-        if (ignoreBlockTypes.includes(blockInfo.type)) {
-            return;
-        }
-        this._blockInfo.next(blockInfo);
     };
 
     protected override _onRender(): void {

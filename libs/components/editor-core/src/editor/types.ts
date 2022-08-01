@@ -22,6 +22,7 @@ import type { BlockCommands } from './commands/block-commands';
 import type { DragDropManager } from './drag-drop';
 import { MouseManager } from './mouse';
 import { Observable } from 'rxjs';
+import { Point } from '@toeverything/utils';
 
 // import { BrowserClipboard } from './clipboard/browser-clipboard';
 
@@ -105,6 +106,8 @@ export interface Virgo {
     // clipboard: BrowserClipboard;
     workspace: string;
     getBlockDomById: (id: string) => Promise<HTMLElement>;
+    getBlockByPoint: (point: Point) => Promise<AsyncBlock>;
+    getGroupBlockByPoint: (point: Point) => Promise<AsyncBlock>;
     isWhiteboard: boolean;
     mouseManager: MouseManager;
 }
@@ -166,9 +169,9 @@ export enum HookType {
     ON_ROOTNODE_MOUSE_OUT = 'onRootNodeMouseOut',
     ON_ROOTNODE_MOUSE_LEAVE = 'onRootNodeMouseLeave',
     ON_SEARCH = 'onSearch',
-    AFTER_ON_NODE_MOUSE_MOVE = 'afterOnNodeMouseMove',
     AFTER_ON_RESIZE = 'afterOnResize',
     ON_ROOTNODE_DRAG_OVER = 'onRootNodeDragOver',
+    ON_ROOTNODE_DRAG_LEAVE = 'onRootNodeDragLeave',
     ON_ROOTNODE_DRAG_END = 'onRootNodeDragEnd',
     ON_ROOTNODE_DRAG_OVER_CAPTURE = 'onRootNodeDragOverCapture',
     ON_ROOTNODE_DROP = 'onRootNodeDrop',
@@ -209,13 +212,10 @@ export interface HooksRunner {
         e: React.MouseEvent<HTMLDivElement, MouseEvent>
     ) => void;
     onSearch: () => void;
-    afterOnNodeMouseMove: (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-        node: BlockDomInfo
-    ) => void;
     afterOnResize: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
     onRootNodeDragOver: (e: React.DragEvent<Element>) => void;
     onRootNodeDragEnd: (e: React.DragEvent<Element>) => void;
+    onRootNodeDragLeave: (e: React.DragEvent<Element>) => void;
     onRootNodeDrop: (e: React.DragEvent<Element>) => void;
     afterOnNodeDragOver: (
         e: React.DragEvent<Element>,

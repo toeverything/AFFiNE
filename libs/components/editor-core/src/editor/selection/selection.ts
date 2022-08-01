@@ -293,21 +293,8 @@ export class SelectionManager implements VirgoSelection {
         return Boolean(rootBlock?.dom);
     }
 
-    public async getBlockByPoint(point: Point) {
-        const blockList = await this._editor.getBlockList();
-        const outBlockList = blockList.filter(block => {
-            return (
-                Boolean(block.dom) && domToRect(block.dom).isContainPoint(point)
-            );
-        });
-
-        return outBlockList.length
-            ? outBlockList[outBlockList.length - 1]
-            : undefined;
-    }
-
     public async isPointInBlocks(point: Point) {
-        return Boolean(this.getBlockByPoint(point));
+        return Boolean(this._editor.getBlockByPoint(point));
     }
 
     /**
