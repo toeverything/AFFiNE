@@ -47,10 +47,6 @@ NODE_ENV=development
 6. Create react/node program: use nx console
 7. If you need to use the git cz function, please install it globally first commitizen `npm install -g commitizen conventional-changelog conventional-changelog-cli`
 
-## Examples
-
-Have a look at [the examples to see AFFiNE in action](https://app.affine.pro/).
-
 ## Contributing
 
 -   Generic functional components (such as ui components) are placed in `libs/components/common`
