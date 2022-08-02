@@ -1,13 +1,16 @@
 import {
+    getRecastItemValue,
     PropertyType,
-    RecastBlockValue,
+    RecastBlock,
+    RecastItem,
+    RecastMetaProperty,
     RecastPropertyId,
     SelectOption,
 } from '../recast-block';
-import { OptionIdType, OptionType } from './types';
+import { OptionIdType, OptionType, PendantConfig, PendantTypes } from './types';
 import { pendantConfig } from './config';
-import { PendantConfig, PendantTypes } from './types';
 import { nanoid } from 'nanoid';
+import { AsyncBlock } from '../editor';
 type Props = {
     recastBlockId: string;
     blockId: string;
@@ -79,6 +82,42 @@ export const removePendantHistory = ({
     delete data[recastBlockId][propertyId];
 
     localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(data));
+};
+
+export const getPendantController = (
+    recastBlock: RecastBlock,
+    block: AsyncBlock | RecastItem
+) => {
+    const { setValue, removeValue } = getRecastItemValue(block);
+
+    const setPendant = async (property: RecastMetaProperty, newValue: any) => {
+        const nv = {
+            id: property.id,
+            type: property.type,
+            value: newValue,
+        };
+
+        setPendantHistory({
+            recastBlockId: recastBlock.id,
+            blockId: block.id,
+            propertyId: property.id,
+        });
+
+        return await setValue(nv);
+    };
+
+    const removePendant = async (property: RecastMetaProperty) => {
+        removePendantHistory({
+            recastBlockId: block.id,
+            propertyId: property.id,
+        });
+        return await removeValue(property.id);
+    };
+
+    return {
+        setPendant,
+        removePendant,
+    };
 };
 
 /**

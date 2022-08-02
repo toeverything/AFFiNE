@@ -199,7 +199,12 @@ export const useRecastKanban = () => {
                         beforeBlock: string | null,
                         afterBlock: string | null
                     ) => {
-                        await moveCardToGroup(groupBy.id, child, kanbanMap[id]);
+                        await moveCardToGroup({
+                            groupBy,
+                            cardBlock: child,
+                            group: kanbanMap[id],
+                            recastBlock,
+                        });
                         if (beforeBlock) {
                             const block = await editor.getBlockById(
                                 beforeBlock
@@ -288,7 +293,12 @@ export const useKanban = () => {
             );
             if (isChangedGroup) {
                 // 1.2 Move to the target group
-                await moveCardToGroup(groupBy.id, targetCard, targetGroup);
+                await moveCardToGroup({
+                    groupBy,
+                    cardBlock: targetCard,
+                    group: targetGroup,
+                    recastBlock,
+                });
             }
 
             // 2. Reorder the card
@@ -326,7 +336,12 @@ export const useKanban = () => {
             }
             recastBlock.append(newBlock);
             const newCard = newBlock as unknown as RecastItem;
-            await moveCardToGroup(groupBy.id, newCard, group);
+            await moveCardToGroup({
+                groupBy,
+                cardBlock: newCard,
+                group,
+                recastBlock,
+            });
         },
         [editor, groupBy.id, recastBlock]
     );

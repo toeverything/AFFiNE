@@ -6,7 +6,6 @@ import {
     PropertyType,
     RecastBlockValue,
     RecastMetaProperty,
-    RecastPropertyId,
 } from '../recast-block/types';
 import type { DefaultGroup, KanbanGroup } from './types';
 import { DEFAULT_GROUP_ID } from './types';
@@ -14,6 +13,7 @@ import {
     generateInitialOptions,
     generateRandomFieldName,
     getPendantIconsConfigByName,
+    getPendantController,
 } from '../block-pendant/utils';
 import { SelectOption } from '../recast-block';
 
@@ -106,49 +106,42 @@ export const calcCardGroup = (
 /**
  * Set group value for the card block
  */
-export const moveCardToGroup = async (
-    groupById: RecastPropertyId,
-    cardBlock: RecastItem,
-    group: KanbanGroup
-) => {
-    const { setValue, removeValue } = getRecastItemValue(cardBlock);
+export const moveCardToGroup = async ({
+    groupBy,
+    cardBlock,
+    group,
+    recastBlock,
+}: {
+    groupBy: RecastMetaProperty;
+    cardBlock: RecastItem;
+    group: KanbanGroup;
+    recastBlock: RecastBlock;
+}) => {
+    const { setPendant, removePendant } = getPendantController(
+        recastBlock,
+        cardBlock
+    );
     let success = false;
     if (group.id === DEFAULT_GROUP_ID) {
-        success = await removeValue(groupById);
+        success = await removePendant(groupBy);
         return false;
     }
 
     switch (group.type) {
         case PropertyType.Select: {
-            success = await setValue({
-                id: groupById,
-                type: group.type,
-                value: group.id,
-            });
+            success = await setPendant(groupBy, group.id);
             break;
         }
         case PropertyType.Status: {
-            success = await setValue({
-                id: groupById,
-                type: group.type,
-                value: group.id,
-            });
+            success = await setPendant(groupBy, group.id);
             break;
         }
         case PropertyType.MultiSelect: {
-            success = await setValue({
-                id: groupById,
-                type: group.type,
-                value: [group.id],
-            });
+            success = await setPendant(groupBy, [group.id]);
             break;
         }
         case PropertyType.Text: {
-            success = await setValue({
-                id: groupById,
-                type: group.type,
-                value: group.id,
-            });
+            success = await setPendant(groupBy, group.id);
             break;
         }
         default:
