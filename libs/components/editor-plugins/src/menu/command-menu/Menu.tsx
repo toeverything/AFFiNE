@@ -40,26 +40,30 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             bottom: 0,
         });
 
-    const [search_text, set_search_text] = useState<string>('');
-    const [search_blocks, set_search_blocks] = useState<QueryResult>([]);
+    const [searchText, setSearchText] = useState<string>('');
+    const [searchBlocks, setSearchBlocks] = useState<QueryResult>([]);
     const commandMenuContentRef = useRef();
     // TODO: Two-way link to be developed
     // useEffect(() => {
-    //     QueryBlocks(editor, search_text, result => set_search_blocks(result));
-    // }, [editor, search_text]);
+    //     QueryBlocks(editor, searchText, result => set_searchBlocks(result));
+    // }, [editor, searchText]);
 
+    const hideMenu = () => {
+        setShow(false);
+        editor.scrollManager.unLock();
+    };
     const [types, categories] = useMemo(() => {
         const types: Array<BlockFlavorKeys | string> = [];
         const categories: Array<CommandMenuCategories> = [];
-        if (search_blocks.length) {
-            Object.values(search_blocks).forEach(({ id }) => types.push(id));
+        if (searchBlocks.length) {
+            Object.values(searchBlocks).forEach(({ id }) => types.push(id));
             categories.push(CommandMenuCategories.pages);
         }
         Object.entries(menuItemsMap).forEach(([category, itemInfoList]) => {
             itemInfoList.forEach(info => {
                 if (
-                    !search_text ||
-                    info.text.toLowerCase().includes(search_text.toLowerCase())
+                    !searchText ||
+                    info.text.toLowerCase().includes(searchText.toLowerCase())
                 ) {
                     types.push(info.type);
                 }
@@ -73,9 +77,9 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             });
         });
         return [types, categories];
-    }, [search_blocks, search_text]);
+    }, [searchBlocks, searchText]);
 
-    const check_if_show_command_menu = useCallback(
+    const checkIfShowCommandMenu = useCallback(
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
             const { type, anchorNode } = editor.selection.currentSelectInfo;
             if (event.key === '/' && type === 'Range') {
@@ -101,8 +105,9 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                                 );
                             }
                         });
-                        set_search_text('');
+                        setSearchText('');
                         setShow(true);
+                        editor.scrollManager.lock();
                         const rect =
                             editor.selection.currentSelectInfo?.browserSelection
                                 ?.getRangeAt(0)
@@ -137,12 +142,12 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
         [editor, blockId]
     );
 
-    const handle_click_others = useCallback(
+    const handleClickOthers = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
             if (show) {
                 const { anchorNode } = editor.selection.currentSelectInfo;
                 if (anchorNode.id !== blockId) {
-                    setShow(false);
+                    hideMenu();
                     return;
                 }
                 setTimeout(() => {
@@ -150,12 +155,12 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                         editor.blockHelper.getSearchSlashText(blockId);
                     // check if has search text
                     if (searchText && searchText.startsWith('/')) {
-                        set_search_text(searchText.slice(1));
+                        setSearchText(searchText.slice(1));
                     } else {
-                        setShow(false);
+                        hideMenu();
                     }
                     if (searchText.length > 6 && !types.length) {
-                        setShow(false);
+                        hideMenu();
                     }
                 });
             }
@@ -163,18 +168,18 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
         [editor, show, blockId, types]
     );
 
-    const handle_keyup = useCallback(
+    const handleKeyup = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            check_if_show_command_menu(event);
-            handle_click_others(event);
+            checkIfShowCommandMenu(event);
+            handleClickOthers(event);
         },
-        [check_if_show_command_menu, handle_click_others]
+        [checkIfShowCommandMenu, handleClickOthers]
     );
 
-    const handle_key_down = useCallback(
+    const handleKeyDown = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
             if (event.code === 'Escape') {
-                setShow(false);
+                hideMenu();
             }
         },
         []
@@ -183,23 +188,23 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     useEffect(() => {
         const sub = hooks
             .get(HookType.ON_ROOT_NODE_KEYUP)
-            .subscribe(handle_keyup);
+            .subscribe(handleKeyup);
         sub.add(
             hooks
                 .get(HookType.ON_ROOT_NODE_KEYDOWN_CAPTURE)
-                .subscribe(handle_key_down)
+                .subscribe(handleKeyDown)
         );
 
         return () => {
             sub.unsubscribe();
         };
-    }, [handle_keyup, handle_key_down, hooks]);
+    }, [handleKeyup, handleKeyDown, hooks]);
 
-    const handle_click_away = () => {
-        setShow(false);
+    const handleClickAway = () => {
+        hideMenu();
     };
 
-    const handle_selected = async (type: BlockFlavorKeys | string) => {
+    const handleSelected = async (type: BlockFlavorKeys | string) => {
         const text = await editor.commands.textCommands.getBlockText(blockId);
         editor.blockHelper.removeSearchSlash(blockId, true);
         if (type.startsWith('Virgo')) {
@@ -224,20 +229,20 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                 block.firstCreateFlag = true;
             }
         }
-        setShow(false);
+        hideMenu();
     };
 
-    const handle_close = () => {
+    const handleClose = () => {
         editor.blockHelper.removeSearchSlash(blockId);
     };
 
     return (
         <div
             style={{ zIndex: 1 }}
-            onKeyUpCapture={handle_keyup}
+            onKeyUpCapture={handleKeyup}
             ref={commandMenuContentRef}
         >
-            <MuiClickAwayListener onClickAway={handle_click_away}>
+            <MuiClickAwayListener onClickAway={handleClickAway}>
                 <div>
                     <CommandMenuContainer
                         editor={editor}
@@ -248,9 +253,9 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                         }}
                         isShow={show}
                         blockId={blockId}
-                        onSelected={handle_selected}
-                        onclose={handle_close}
-                        searchBlocks={search_blocks}
+                        onSelected={handleSelected}
+                        onclose={handleClose}
+                        searchBlocks={searchBlocks}
                         types={types}
                         categories={categories}
                     />

@@ -23,6 +23,7 @@ import type { DragDropManager } from './drag-drop';
 import { MouseManager } from './mouse';
 import { Observable } from 'rxjs';
 import { Point } from '@toeverything/utils';
+import { ScrollManager } from './scroll';
 
 // import { BrowserClipboard } from './clipboard/browser-clipboard';
 
@@ -63,6 +64,7 @@ export interface VirgoSelection {
 // Editor's external API
 export interface Virgo {
     selectionManager: SelectionManager;
+    scrollManager: ScrollManager;
     createBlock: (
         type: keyof BlockFlavors,
         parentId?: string
