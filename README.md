@@ -31,40 +31,22 @@ Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Fre
 # Stay Up-to-Date
 ![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
 
-# The Philosophy of Affine
 ## Shape your page
-An always good-to-read, structured docs-form page is the best for your notes, but a boundless doodle surface is better for collaboration and creativity. 
-We make the shift and reshape easy, so you can shape the docs your way. 
-With affine, every page comes with 2 views, and you can access and edit fully functioned blocks at anywhere, in any form.
 ![546163d6-4c39-4128-ae7f-55d59bc3b76b](https://user-images.githubusercontent.com/79301703/182365611-b0ba3690-21c0-4d9b-bfbc-0bc15da05aeb.gif)
 
 ## Plan your task
-We really appreciate the idea of monday, airtable and notion database. They inspired what we think is right for task management. But we don't like the repeated works -- we don't want to set a todo easily with markdown but end up re-write it again in kanban or other databases. 
-With affine, every block group has infinite views, for you to keep your single source of truth.
 ![41a7b3a4-32f2-4d18-ac6b-57d1e1fda753](https://user-images.githubusercontent.com/79301703/182366553-1f6558a7-f17b-4611-ab95-aea3ec997154.gif)
 
 ## Sort your knowledge
-A good, semantic knowledge base is made of reusable, linked elements. Affine is completely made on top of the idea of blocks. Blocks can be 2-way linked, duplicated, reused and synced between docs. 
-Rich-text paragraphs are blocks. Images are blocks. Todos are blocks and quotes are blocks. You can assemble blocks to form a bigger block, and you can even embed another as a block!
-As semantic web lovers, we don't like the idea of folders that much, and we make everything easy to find.
 ![c9e1ff46-cec2-411b-b89d-6727a5e6f6c3](https://user-images.githubusercontent.com/79301703/182366602-08e44d28-a031-4097-9904-52fb9b1e9e17.gif)
 
 ## Create your story
 We want your data always to be yours, and we don't want to make any sacrifice to your accessibility. Your data is always local-stored first, yet we support real-time collaboration on a peer-to-peer basis. We don't think "privacy-first" is a good excuse for not supporting modern web features. 
-You may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators. 
+Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators. 
 Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows and Linux.  The local file system support will be available when version 0.0.1beta is released.
 
-User Installation 
-Please view the documentation for OS specific installation instructions.
 
-Built With
-- Typescript
-- Rust
-- React
-Getting Started with development 
-Please view the documentation for OS specific development instructions
-
-# User Installation 
+# Installation 
 Please view the documentation for OS specific installation instructions.
 
 # Built With
