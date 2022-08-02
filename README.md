@@ -2,7 +2,7 @@
     <b>
         <a href="https://affine.pro">AFFiNE.PRO</a><br>
     </b>
-    The Next-Gen Knowledge Base to Replace Notion & Miro. 
+    The Next-Gen Knowledge Base to Replace Notion & Miro.
     <br>
 </h1>
 
@@ -10,12 +10,23 @@
 Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Free to use.
 </p>
 
-<div align="center"> 
+<div align="center">
+
+<!--
+Make New Badge Pattern badges inline
+See https://github.com/all-contributors/all-contributors/issues/361#issuecomment-637166066
+-->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square)](#contributors-)
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+[![All Contributors][all-contributors-badge]](#contributors-)
+[![React](https://img.shields.io/badge/TypeScript-3178c6)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-61dafb)](https://reactjs.org/)
+[![Rust](https://img.shields.io/badge/Rust-dea584)](https://www.rust-lang.org/)
+
 </div>
 
 <p align="center">
@@ -82,11 +93,13 @@ Get our latest [release notes](https://github.com/toeverything/AFFiNE/wiki) from
 
 # Feature requests
 
-Please go to [Feature request](https://github.com/toeverything/AFFiNE/issues)
+Please go to [Feature request](https://github.com/toeverything/AFFiNE/issues).
 
 # FAQ
 
-Please go to [our community channel](https://discord.com/invite/yz6tGVsf5p)
+Get quick help on [Telegram](https://t.me/affineworkos) and [Discord](https://discord.gg/yz6tGVsf5p) along with other developers and contributors.
+
+Latest news and technology sharing on [Twitter](https://twitter.com/AffineOfficial), [Medium](https://medium.com/@affineworkos) and [AFFiNE Blog](https://blog.affine.pro/).
 
 # The Philosophy of AFFiNE
 
@@ -123,6 +136,64 @@ We would also like to give thanks to open-source projects that make affine possi
 -   Yjs & Yrs
 -   React
 -   Rust
+
+# Installation
+
+Please view the [documentation](https://affine.gitbook.io/affine/) for OS specific installation instructions.
+
+```sh
+# Clone the repo
+git clone git@github.com:toeverything/AFFiNE.git
+```
+
+Once cloned, switch to the master branch and navigate to the folder by typing `cd AFFiNE` and then running the following commands:
+
+```sh
+# Install all project dependencies
+npm i -g pnpm
+pnpm i
+
+# Start the project
+pnpm start
+open http://localhost:4200/
+```
+
+This project uses pnpm for package management and is built based on nx. It is recommended to install the [nx console](https://marketplace.visualstudio.com/items?itemName=nrwl.angular-console) plugin to create dependencies
+
+**If it is development, you can add environment variables in the project directory .env.local file**
+
+```
+NODE_ENV=development
+```
+
+## Scripts
+
+1. Create react dependency library: `pnpm run add:library`
+2. Create react components: `pnpm run add:components`
+3. Create a data source: `pnpm run add:datasource`
+4. Unit testing: `pnpm test`
+5. Compile specific components
+    - `pnpm build/test/lint `project name
+    - Project name reference workspace.json
+6. Create react/node program: use nx console
+7. If you need to use the git cz function, please install it globally first commitizen `npm install -g commitizen conventional-changelog conventional-changelog-cli`
+
+## Contributing
+
+-   Generic functional components (such as ui components) are placed in `libs/components/common`
+    -   components within common are not allowed to reference _components_ except utils and dependencies
+    -   Common components can reference each other
+-   Business components are placed in `libs/components`
+-   The data source component is placed in `libs/datasource` - api request code, schema, etc. belong to the data source
+    Please see [CONTRIBUTING](/docs/CONTRIBUTING.md)
+
+## Documentation
+
+-   [how-to-write-css-in-affine.md](/docs/how-to-write-css-in-affine.md)
+-   [how-to-add-ui-component-in-affine.md](/docs/how-to-add-ui-component-in-affine.md)
+-   [how-to-customize-rollup-config.md](docs/how-to-customize-rollup-config.md)
+-   [how-to-auto-download-figma-assets-in-affine.md](docs/how-to-auto-download-figma-assets-in-affine.md)
+-   [affine-icons-user-guide.md](docs/affine-icons-user-guide.md)
 
 # Community
 
