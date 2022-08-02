@@ -3,13 +3,14 @@ import {
     LogoIcon,
     SideBarViewIcon,
     SearchIcon,
+    SideBarViewCloseIcon,
 } from '@toeverything/components/icons';
 import { useShowSettingsSidebar } from '@toeverything/datasource/state';
 import { CurrentPageTitle } from './Title';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 
 export const LayoutHeader = () => {
-    const { toggleSettingsSidebar: toggleInfoSidebar } =
+    const { toggleSettingsSidebar: toggleInfoSidebar, showSettingsSidebar } =
         useShowSettingsSidebar();
 
     return (
@@ -31,7 +32,11 @@ export const LayoutHeader = () => {
                         </div>
 
                         <IconButton onClick={toggleInfoSidebar} size="large">
-                            <SideBarViewIcon />
+                            {showSettingsSidebar ? (
+                                <SideBarViewIcon />
+                            ) : (
+                                <SideBarViewCloseIcon />
+                            )}
                         </IconButton>
                     </StyledHelper>
                 </FlexContainer>

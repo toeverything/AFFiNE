@@ -47,11 +47,11 @@ export function Page(props: PageProps) {
                 }
             );
 
-            await services.api.userConfig.addRecentPage(
-                props.workspace,
-                user.id,
-                page_id
-            );
+            // await services.api.userConfig.addRecentPage(
+            //     props.workspace,
+            //     user.id,
+            //     page_id
+            // );
             await services.api.editorBlock.clearUndoRedo(props.workspace);
         };
         updateRecentPages();

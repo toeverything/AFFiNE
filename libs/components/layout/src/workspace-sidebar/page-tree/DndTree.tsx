@@ -95,30 +95,37 @@ export function DndTree(props: DndTreeProps) {
             >
                 {/* <button onClick={() => handleAdd()}> add top node</button> */}
                 {flattenedItems.map(
-                    ({ id, title, children, collapsed, depth }) => (
-                        <DndTreeItem
-                            key={id}
-                            id={id}
-                            // value={id}
-                            value={title}
-                            collapsed={Boolean(collapsed && children.length)}
-                            depth={
-                                id === activeId && projected
-                                    ? projected.depth
-                                    : depth
-                            }
-                            indentationWidth={indentationWidth}
-                            indicator={showDragIndicator}
-                            onCollapse={
-                                collapsible && children.length
-                                    ? () => handleCollapse(id)
-                                    : undefined
-                            }
-                            onRemove={
-                                removable ? () => handleRemove(id) : undefined
-                            }
-                        />
-                    )
+                    ({ id, title, children, collapsed, depth }) => {
+                        return (
+                            <DndTreeItem
+                                key={id}
+                                id={id}
+                                // value={id}
+                                value={title}
+                                collapsed={Boolean(
+                                    collapsed && children.length
+                                )}
+                                depth={
+                                    id === activeId && projected
+                                        ? projected.depth
+                                        : depth
+                                }
+                                indentationWidth={indentationWidth}
+                                indicator={showDragIndicator}
+                                childCount={children.length}
+                                onCollapse={
+                                    collapsible && children.length
+                                        ? () => handleCollapse(id)
+                                        : undefined
+                                }
+                                onRemove={
+                                    removable
+                                        ? () => handleRemove(id)
+                                        : undefined
+                                }
+                            />
+                        );
+                    }
                 )}
                 <DragOverlay
                     dropAnimation={dropAnimation}

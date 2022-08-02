@@ -50,31 +50,35 @@ export const Activities = () => {
     const [recentPages, setRecentPages] = useState([]);
     const userId = user?.id;
 
-    const fetchRecentPages = useCallback(async () => {
-        if (!userId || !currentSpaceId) {
-            return;
-        }
-        const recent_pages = await services.api.userConfig.getRecentPages(
-            currentSpaceId,
-            userId
-        );
-        setRecentPages(recent_pages);
-    }, [userId, currentSpaceId]);
+    /* temporarily remove:show recently viewed documents */
+    // const fetchRecentPages = useCallback(async () => {
+    //     if (!userId || !currentSpaceId) {
+    //         return;
+    //     }
+    //     const recent_pages = await services.api.userConfig.getRecentPages(
+    //         currentSpaceId,
+    //         userId
+    //     );
+    //     setRecentPages(recent_pages);
+    // }, [userId, currentSpaceId]);
 
-    useEffect(() => {
-        (async () => {
-            await fetchRecentPages();
-        })();
-    }, [fetchRecentPages]);
+    // useEffect(() => {
+    //     (async () => {
+    //         await fetchRecentPages();
+    //     })();
+    // }, [fetchRecentPages]);
+
+    /* show recently edit documents */
+    const getRecentEditPages = async (state, block) => {
+        console.log(state, await block.children());
+    };
 
     useEffect(() => {
         let unobserve: () => void;
         const observe = async () => {
             unobserve = await services.api.userConfig.observe(
                 { workspace: currentSpaceId },
-                () => {
-                    fetchRecentPages();
-                }
+                getRecentEditPages
             );
         };
         observe();
@@ -82,7 +86,7 @@ export const Activities = () => {
         return () => {
             unobserve?.();
         };
-    }, [currentSpaceId, fetchRecentPages]);
+    }, [currentSpaceId, getRecentEditPages]);
 
     return (
         <StyledWrapper>
