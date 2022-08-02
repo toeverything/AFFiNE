@@ -6,6 +6,7 @@ import {
     MuiDivider as Divider,
     IconButton,
     styled,
+    MuiClickAwayListener as ClickAwayListener,
 } from '@toeverything/components/ui';
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -14,7 +15,6 @@ import { services, TemplateFactory } from '@toeverything/datasource/db-service';
 import { NewFromTemplatePortal } from './NewFromTemplatePortal';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { MoreIcon, AddIcon } from '@toeverything/components/icons';
-import clsx from 'clsx';
 
 const MESSAGES = {
     COPY_LINK_SUCCESS: 'Copyed link to clipboard',
@@ -244,37 +244,39 @@ function DndTreeItemMoreActions(props: ActionsProps) {
     ];
 
     return (
-        <>
-            <div className={styles['TreeItemMoreActions']}>
-                <StyledAction>
-                    <IconButton size="small" onClick={handle_new_child_page}>
-                        <AddIcon />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        hoverColor="#E0E6EB"
-                        onClick={handleClick}
-                    >
-                        <MoreIcon />
-                    </IconButton>
-                </StyledAction>
+        <ClickAwayListener onClickAway={() => handleClose()}>
+            <div>
+                <div className={styles['TreeItemMoreActions']}>
+                    <StyledAction>
+                        <IconButton size="small" onClick={handle_new_child_page}>
+                            <AddIcon />
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            hoverColor="#E0E6EB"
+                            onClick={handleClick}
+                        >
+                            <MoreIcon />
+                        </IconButton>
+                    </StyledAction>
+                </div>
+                <Cascader
+                    items={menuList}
+                    anchorEl={anchorEl}
+                    placement="right-start"
+                    open={open}
+                    onClose={handleClose}
+                ></Cascader>
+                <Snackbar
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                    open={alert_open}
+                    message={MESSAGES.COPY_LINK_SUCCESS}
+                    key={'bottomcenter'}
+                    autoHideDuration={2000}
+                    onClose={handle_alert_close}
+                />
             </div>
-            <Cascader
-                items={menuList}
-                anchorEl={anchorEl}
-                placement="right-start"
-                open={open}
-                onClose={handleClose}
-            ></Cascader>
-            <Snackbar
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                open={alert_open}
-                message={MESSAGES.COPY_LINK_SUCCESS}
-                key={'bottomcenter'}
-                autoHideDuration={2000}
-                onClose={handle_alert_close}
-            />
-        </>
+        </ClickAwayListener>
     );
 }
 
