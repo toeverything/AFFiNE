@@ -4,6 +4,7 @@ import {
     Cascader,
     CascaderItemProps,
     MuiDivider as Divider,
+    MuiClickAwayListener as ClickAwayListener,
 } from '@toeverything/components/ui';
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -233,29 +234,31 @@ function DndTreeItemMoreActions(props: ActionsProps) {
     ];
 
     return (
-        <>
-            <span
-                className={styles['TreeItemMoreActions']}
-                onClick={handleClick}
-            >
-                ···
-            </span>
-            <Cascader
-                items={menuList}
-                anchorEl={anchorEl}
-                placement="right-start"
-                open={open}
-                onClose={handleClose}
-            ></Cascader>
-            <Snackbar
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                open={alert_open}
-                message={MESSAGES.COPY_LINK_SUCCESS}
-                key={'bottomcenter'}
-                autoHideDuration={2000}
-                onClose={handle_alert_close}
-            />
-        </>
+        <ClickAwayListener onClickAway={() => handleClose()}>
+            <div>
+                <span
+                    className={styles['TreeItemMoreActions']}
+                    onClick={handleClick}
+                >
+                    ···
+                </span>
+                <Cascader
+                    items={menuList}
+                    anchorEl={anchorEl}
+                    placement="right-start"
+                    open={open}
+                    onClose={handleClose}
+                ></Cascader>
+                <Snackbar
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                    open={alert_open}
+                    message={MESSAGES.COPY_LINK_SUCCESS}
+                    key={'bottomcenter'}
+                    autoHideDuration={2000}
+                    onClose={handle_alert_close}
+                />
+            </div>
+        </ClickAwayListener>
     );
 }
 
