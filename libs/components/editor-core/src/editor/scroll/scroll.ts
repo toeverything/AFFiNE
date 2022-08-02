@@ -297,10 +297,10 @@ export class ScrollManager {
     }
 
     public lock() {
-        this._scrollController.lockScroll();
+        this._scrollController?.lockScroll();
     }
 
     public unLock() {
-        this._scrollController.unLockScroll();
+        this._scrollController?.unLockScroll();
     }
 }
