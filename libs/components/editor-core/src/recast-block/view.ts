@@ -53,7 +53,7 @@ export const useCurrentView = () => {
 export const useLazyIframe = (
     link: string,
     timers: number,
-    container: MutableRefObject<any>
+    container: MutableRefObject<HTMLElement>
 ) => {
     const [iframeShow, setIframeShow] = useState(false);
     useEffect(() => {
