@@ -45,14 +45,6 @@ We want your data always to be yours, and we don't want to make any sacrifice to
 Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators. 
 Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows and Linux.  The local file system support will be available when version 0.0.1beta is released.
 
-# Installation 
-Please view the [documentation](https://affine.gitbook.io/affine/) for OS specific installation instructions.
-
-# Built With
-- Typescript
-- Rust
-- React
-
 # Getting Started with development 
 Please view the [documentation](https://affine.gitbook.io/affine/) for OS specific development instructions
 
