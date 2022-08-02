@@ -31,6 +31,7 @@ export const Grid: FC<CreateView> = function (props) {
     const gridItemCountRef = useRef<number>();
     const originalLeftWidth = useRef<number>(GRID_ITEM_MIN_WIDTH);
     const originalRightWidth = useRef<number>(GRID_ITEM_MIN_WIDTH);
+    const [alertHandleId, setAlertHandleId] = useState<string>(null);
 
     const getLeftRightGridItemDomByIndex = (index: number) => {
         const gridItems = Array.from(gridContainerRef.current?.children).filter(
@@ -117,7 +118,7 @@ export const Grid: FC<CreateView> = function (props) {
         itemDom.style.width = width;
     };
 
-    const handleDragGrid = (e: MouseEvent, index: number) => {
+    const handleDragGrid = async (e: MouseEvent, index: number) => {
         setIsOnDrag(true);
         window.getSelection().removeAllRanges();
         if (!isSetMouseUp.current) {
@@ -165,39 +166,47 @@ export const Grid: FC<CreateView> = function (props) {
                 setItemWidth(leftGrid, newLeft);
                 setItemWidth(rightGrid, newRight);
                 updateDbWidth(leftBlockId, newLeft, rightBlockId, newRight);
+                [leftBlockId, rightBlockId].forEach(async blockId => {
+                    if (await checkGridItemHasOverflow(blockId)) {
+                        setAlertHandleId(leftBlockId);
+                    } else {
+                        setAlertHandleId(null);
+                    }
+                });
             }
         }
     };
 
-    const children = (
-        <>
-            {block.childrenIds.map((id, i) => {
-                return (
-                    <GridItem
-                        style={{
-                            transition: isOnDrag
-                                ? 'none'
-                                : 'all 0.2s ease-in-out',
-                        }}
-                        key={id}
-                        className={GRID_ITEM_CLASS_NAME}
-                    >
-                        <RenderBlock hasContainer={false} blockId={id} />
-                        <GridHandle
-                            onDrag={event => handleDragGrid(event, i)}
-                            editor={editor}
-                            onMouseDown={event => handleMouseDown(event, i)}
-                            blockId={id}
-                            enabledAddItem={
-                                block.childrenIds.length < MAX_ITEM_COUNT
-                            }
-                            draggable={i !== block.childrenIds.length - 1}
-                        />
-                    </GridItem>
-                );
-            })}
-        </>
-    );
+    const checkGridItemHasOverflow = async (blockId: string) => {
+        let isOverflow = false;
+        const block = await editor.getBlockById(blockId);
+        if (block) {
+            const blockDom = block.dom;
+            if (blockDom) {
+                block.dom.style.overflow = 'scroll';
+                if (block.dom.clientWidth !== block.dom.scrollWidth) {
+                    isOverflow = true;
+                }
+                blockDom.style.overflow = 'visible';
+            }
+        }
+        return isOverflow;
+    };
+
+    const handleHandleMouseEnter = (
+        e: React.MouseEvent<HTMLDivElement>,
+        index: number
+    ) => {
+        const leftBlockId = block.childrenIds[index];
+        const rightBlockId = block.childrenIds[index + 1];
+        [leftBlockId, rightBlockId].forEach(async blockId => {
+            if (await checkGridItemHasOverflow(blockId)) {
+                setAlertHandleId(leftBlockId);
+            } else {
+                setAlertHandleId(null);
+            }
+        });
+    };
 
     return (
         <>
@@ -206,7 +215,35 @@ export const Grid: FC<CreateView> = function (props) {
                 ref={gridContainerRef}
                 isOnDrag={isOnDrag}
             >
-                {children}
+                {block.childrenIds.map((id, i) => {
+                    return (
+                        <GridItem
+                            style={{
+                                transition: isOnDrag
+                                    ? 'none'
+                                    : 'all 0.2s ease-in-out',
+                            }}
+                            key={id}
+                            className={GRID_ITEM_CLASS_NAME}
+                        >
+                            <RenderBlock hasContainer={false} blockId={id} />
+                            <GridHandle
+                                onDrag={event => handleDragGrid(event, i)}
+                                editor={editor}
+                                onMouseDown={event => handleMouseDown(event, i)}
+                                blockId={id}
+                                enabledAddItem={
+                                    block.childrenIds.length < MAX_ITEM_COUNT
+                                }
+                                onMouseEnter={event =>
+                                    handleHandleMouseEnter(event, i)
+                                }
+                                alertHandleId={alertHandleId}
+                                draggable={i !== block.childrenIds.length - 1}
+                            />
+                        </GridItem>
+                    );
+                })}
             </GridContainer>
             {isOnDrag
                 ? ReactDOM.createPortal(<GridMask />, window.document.body)
