@@ -1,6 +1,19 @@
-import { groupTemplateMap } from './group-templates';
-import { Template, TemplateMeta } from './types';
-const defaultTemplateList: Array<TemplateMeta> = [
+import { Template, TemplateMeta, GroupTemplate } from './types';
+import blogTemplate from './blog.json';
+import emptyTemplate from './empty.json';
+import gridTemplate from './grid.json';
+import todoTemplate from './todo.json';
+
+export type GroupTemplateKeys = 'todolist' | 'blog' | 'empty' | 'grid';
+type GroupTemplateMap = Record<GroupTemplateKeys, GroupTemplate>;
+const groupTemplateMap = {
+    empty: emptyTemplate,
+    todolist: todoTemplate,
+    blog: blogTemplate,
+    grid: gridTemplate,
+} as GroupTemplateMap;
+
+const defaultTemplateList = [
     {
         name: 'New From Quick Start',
         groupKeys: ['todolist'],
@@ -9,12 +22,13 @@ const defaultTemplateList: Array<TemplateMeta> = [
     { name: 'New From Blog', groupKeys: ['blog'] },
     { name: ' New Todolist', groupKeys: ['todolist'] },
     { name: ' New Empty Page', groupKeys: ['empty'] },
-];
+] as const;
+
 const TemplateFactory = {
     defaultTemplateList: defaultTemplateList,
     generatePageTemplateByGroupKeys(props: TemplateMeta): Template {
         const newTitle = props.name || 'Get Started with AFFiNE';
-        const keys = props.groupKeys || [];
+        const keys: GroupTemplateKeys[] = props.groupKeys || [];
         const blankPage: Template = {
             type: 'page',
             properties: {

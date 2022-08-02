@@ -1,0 +1,15 @@
+{
+    "type": "group",
+    "properties": {},
+    "blocks": [
+        {
+            "type": "text",
+            "properties": {
+                "text": {
+                    "value": [{ "text": "" }]
+                }
+            },
+            "blocks": []
+        }
+    ]
+}
