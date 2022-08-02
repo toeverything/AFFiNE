@@ -11,11 +11,22 @@ Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Fre
 </p>
 
 <div align="center">
+
+<!--
+Make New Badge Pattern badges inline
+See https://github.com/all-contributors/all-contributors/issues/361#issuecomment-637166066
+-->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square)](#contributors-)
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+[![All Contributors][all-contributors-badge]](#contributors-)
+[![React](https://img.shields.io/badge/TypeScript-3178c6)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-61dafb)](https://reactjs.org/)
+[![Rust](https://img.shields.io/badge/Rust-dea584)](https://www.rust-lang.org/)
+
 </div>
 
 <p align="center">
