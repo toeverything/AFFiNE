@@ -1,0 +1,173 @@
+{
+    "type": "group",
+    "properties": {},
+    "blocks": [
+        {
+            "type": "heading1",
+            "properties": {
+                "text": {
+                    "value": [{ "text": "🎓Graduating from the project" }]
+                }
+            },
+            "blocks": []
+        },
+        {
+            "type": "todo",
+            "properties": {
+                "text": {
+                    "value": [
+                        {
+                            "text": "Congratulations! Now you can start create your own projects!"
+                        }
+                    ]
+                }
+            },
+            "blocks": []
+        },
+        {
+            "type": "todo",
+            "properties": {
+                "text": {
+                    "value": [
+                        {
+                            "text": "To start using workspaces and folders hit the "
+                        },
+                        {
+                            "bold": true,
+                            "text": "button at the top left of the screen"
+                        }
+                    ]
+                }
+            },
+            "blocks": []
+        },
+        {
+            "type": "todo",
+            "properties": {
+                "text": {
+                    "value": [
+                        {
+                            "text": ""
+                        },
+                        {
+                            "text": "At any time if you feel lost do visit our 📚Blog: "
+                        },
+                        {
+                            "type": "link",
+                            "url": "https://blog.affine.pro/",
+                            "id": "link.qx4yhw81or54",
+                            "children": [
+                                {
+                                    "text": "https://blog.affine.pro"
+                                }
+                            ]
+                        },
+                        {
+                            "text": ""
+                        }
+                    ]
+                },
+                "collapsed": {
+                    "value": false
+                }
+            },
+            "blocks": []
+        },
+        {
+            "type": "todo",
+            "properties": {
+                "text": {
+                    "value": [
+                        {
+                            "text": ""
+                        },
+                        {
+                            "text": "If you have any suggestions drop a post in our Reddit Channel："
+                        },
+                        {
+                            "type": "link",
+                            "url": "https://www.reddit.com/r/Affine/",
+                            "id": "link.zeafc4ogfvrb",
+                            "children": [
+                                {
+                                    "text": "https://www.reddit.com/r/Affine/"
+                                }
+                            ]
+                        },
+                        {
+                            "text": " "
+                        }
+                    ]
+                }
+            },
+            "blocks": []
+        },
+        {
+            "type": "heading2",
+            "properties": {
+                "text": {
+                    "value": [
+                        {
+                            "text": "🎉 The Essentials. Check things off after you tried them!"
+                        }
+                    ]
+                }
+            },
+            "blocks": []
+        },
+        {
+            "type": "todo",
+            "properties": {
+                "text": {
+                    "value": [
+                        { "text": " ✅ " },
+                        { "bold": true, "text": "Check" },
+                        {
+                            "text": " the text box here to complete the task!"
+                        }
+                    ]
+                }
+            },
+            "blocks": []
+        },
+        {
+            "type": "todo",
+            "properties": {
+                "text": {
+                    "value": [
+                        { "text": "" },
+                        { "text": "" },
+                        { "text": " 👋 " },
+                        { "bold": true, "text": "Drag" },
+                        {
+                            "text": " the ⠟ button left of the checkbox to reorder tasks"
+                        },
+                        { "text": "" },
+                        { "text": "" }
+                    ]
+                }
+            },
+            "blocks": []
+        },
+        {
+            "type": "todo",
+            "properties": {
+                "text": {
+                    "value": [
+                        { "text": "" },
+                        { "text": "" },
+                        { "text": " ➡️ " },
+                        { "bold": true, "text": "Fold" },
+                        { "text": " and " },
+                        { "bold": true, "text": "Unfold" },
+                        {
+                            "text": " a task to simplify your list using the arrow on the right ⤵️"
+                        }
+                    ]
+                },
+                "numberType": "type1",
+                "collapsed": { "value": false }
+            }
+        }
+    ]
+}
