@@ -32,6 +32,24 @@ Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Fre
 
 ![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
 
+# Table of contents
+
+-   [Stay Up-to-Date](#stay-up-to-date)
+-   [Table of contents](#table-of-contents)
+    -   [Shape your page](#shape-your-page)
+    -   [Plan your task](#plan-your-task)
+    -   [Sort your knowledge](#sort-your-knowledge)
+    -   [Create your story](#create-your-story)
+-   [Getting Started with development](#getting-started-with-development)
+-   [Roadmap](#roadmap)
+-   [Releases](#releases)
+-   [Feature requests](#feature-requests)
+-   [FAQ](#faq)
+-   [The Philosophy of AFFiNE](#the-philosophy-of-affine)
+-   [Community](#community)
+-   [Contributors](#contributors)
+-   [License](#license)
+
 ## Shape your page
 
 ![546163d6-4c39-4128-ae7f-55d59bc3b76b](https://user-images.githubusercontent.com/79301703/182365611-b0ba3690-21c0-4d9b-bfbc-0bc15da05aeb.gif)
@@ -106,13 +124,13 @@ We would also like to give thanks to open-source projects that make affine possi
 -   React
 -   Rust
 
-## Community
+# Community
 
 For help, discussion about best practices, or any other conversation that would benefit from being searchable:
 
 [Discuss AFFiNE on GitHub](https://github.com/toeverything/AFFiNE/discussions)
 
-## Contributors
+# Contributors
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -140,7 +158,7 @@ For help, discussion about best practices, or any other conversation that would 
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-## License
+# License
 
 AFFiNE is distributed under the terms of MIT license.
 
