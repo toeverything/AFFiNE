@@ -36,7 +36,7 @@ interface IconButtonProps {
     style?: CSSProperties;
     className?: string;
     size?: SizeType;
-    hoverColor?: CSSProperties['backgroundColor'];
+    hoverColor?: string;
 }
 
 export const IconButton: FC<PropsWithChildren<IconButtonProps>> = ({
@@ -60,7 +60,7 @@ export const IconButton: FC<PropsWithChildren<IconButtonProps>> = ({
 
 const Container = styled('button')<{
     size?: SizeType;
-    hoverColor?: CSSProperties['backgroundColor'];
+    hoverColor?: string;
 }>(({ theme, size = SIZE_MIDDLE, hoverColor }) => {
     const { iconSize, areaSize } = SIZE_CONFIG[size];
 
