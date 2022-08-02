@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { useCallback } from 'react';
+import { MutableRefObject, useCallback, useEffect, useState } from 'react';
 import { useRecastBlock } from './Context';
 import {
     KanbanView,
@@ -50,7 +50,28 @@ export const useCurrentView = () => {
     );
     return [currentView, setCurrentView] as const;
 };
+export const useLazyIframe = (
+    link: string,
+    timers: number,
+    container: MutableRefObject<any>
+) => {
+    const [iframeShow, setIframeShow] = useState(false);
+    useEffect(() => {
+        const iframe = document.createElement('iframe');
+        iframe.src = link;
+        iframe.onload = () => {
+            setTimeout(() => {
+                setIframeShow(true);
+            }, timers);
+        };
+        container.current.appendChild(iframe);
+        return () => {
+            iframe.remove();
+        };
+    }, [link, container]);
 
+    return iframeShow;
+};
 export const useRecastView = () => {
     const recastBlock = useRecastBlock();
     const recastViews =
