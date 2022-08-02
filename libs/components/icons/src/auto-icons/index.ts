@@ -1,4 +1,4 @@
-export const timestamp = 1659000896562;
+export const timestamp = 1659423582387;
 export * from './image/image';
 export * from './format-clear/format-clear';
 export * from './backward-undo/backward-undo';
@@ -126,3 +126,7 @@ export * from './group-by/group-by';
 export * from './layout/layout';
 export * from './lock/lock';
 export * from './unlock/unlock';
+export * from './more-tags-an-subblocks/more-tags-an-subblocks';
+export * from './page-in-page-tree/page-in-page-tree';
+export * from './pin/pin';
+export * from './add/add';
