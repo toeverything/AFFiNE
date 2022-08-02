@@ -2,7 +2,7 @@
     <b>
         <a href="https://affine.pro">AFFiNE.PRO</a><br>
     </b>
-    The Next-Gen Knowledge Base to Replace Notion & Miro. 
+    The Next-Gen Knowledge Base to Replace Notion & Miro.
     <br>
 </h1>
 
@@ -10,12 +10,23 @@
 Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Free to use.
 </p>
 
-<div align="center"> 
+<div align="center">
+
+<!--
+Make New Badge Pattern badges inline
+See https://github.com/all-contributors/all-contributors/issues/361#issuecomment-637166066
+-->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square)](#contributors-)
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+[![All Contributors][all-contributors-badge]](#contributors-)
+[![React](https://img.shields.io/badge/TypeScript-3178c6)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-61dafb)](https://reactjs.org/)
+[![Rust](https://img.shields.io/badge/Rust-dea584)](https://www.rust-lang.org/)
+
 </div>
 
 <p align="center">
@@ -24,80 +35,94 @@ Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Fre
     <a href="https://twitter.com/AffineOfficial"><b>Twitter</b></a> •
     <a href="https://medium.com/@affineworkos"><b>Medium</b></a> •
     <a href="https://t.me/affineworkos"><b>Telegram</b></a>
-</p>  
+</p>
 
 <p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/79301703/182363099-48b479c3-dc26-4fc3-8f9b-45f9cf358f9a.png"><p/>
 
 # Stay Up-to-Date
+
 ![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
 
 ## Shape your page
+
 ![546163d6-4c39-4128-ae7f-55d59bc3b76b](https://user-images.githubusercontent.com/79301703/182365611-b0ba3690-21c0-4d9b-bfbc-0bc15da05aeb.gif)
 
 ## Plan your task
+
 ![41a7b3a4-32f2-4d18-ac6b-57d1e1fda753](https://user-images.githubusercontent.com/79301703/182366553-1f6558a7-f17b-4611-ab95-aea3ec997154.gif)
 
 ## Sort your knowledge
+
 ![c9e1ff46-cec2-411b-b89d-6727a5e6f6c3](https://user-images.githubusercontent.com/79301703/182366602-08e44d28-a031-4097-9904-52fb9b1e9e17.gif)
 
 ## Create your story
-We want your data always to be yours, and we don't want to make any sacrifice to your accessibility. Your data is always local-stored first, yet we support real-time collaboration on a peer-to-peer basis. We don't think "privacy-first" is a good excuse for not supporting modern web features. 
-Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators. 
-Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows and Linux.  The local file system support will be available when version 0.0.1beta is released.
 
-# Getting Started with development 
+We want your data always to be yours, and we don't want to make any sacrifice to your accessibility. Your data is always local-stored first, yet we support real-time collaboration on a peer-to-peer basis. We don't think "privacy-first" is a good excuse for not supporting modern web features.
+Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators.
+Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows and Linux. The local file system support will be available when version 0.0.1beta is released.
+
+# Getting Started with development
+
 Please view the [documentation](https://affine.gitbook.io/affine/) for OS specific development instructions
 
 # Roadmap
+
 Coming Soon...
 
 # Releases
+
 Get our latest [release notes](https://github.com/toeverything/AFFiNE/wiki) from here.
 
 # Feature requests
+
 Please go to [Feature request](https://github.com/toeverything/AFFiNE/issues).
 
 # FAQ
+
 Get quick help on [Telegram](https://t.me/affineworkos) and [Discord](https://discord.gg/yz6tGVsf5p) along with other developers and contributors.
 
 Latest news and technology sharing on [Twitter](https://twitter.com/AffineOfficial), [Medium](https://medium.com/@affineworkos) and [AFFiNE Blog](https://blog.affine.pro/).
 
-
 # The Philosophy of AFFiNE
-Timothy Berners-Lee once taught us about the idea of the semantic web, where all the data can be interpreted in any form while the "truth" is kept. This gives our best image of an ideal knowledge base by far, that sorting of information, planning of project and goals as well as creating of knowledge can be all together. 
+
+Timothy Berners-Lee once taught us about the idea of the semantic web, where all the data can be interpreted in any form while the "truth" is kept. This gives our best image of an ideal knowledge base by far, that sorting of information, planning of project and goals as well as creating of knowledge can be all together.
 We have witnessed waves of paradigm shift so many times. At first, everything was noted on office-like apps or DSL like LaTeX, then we found todo-list apps and WYSIWYG markdown editors better for writing and planning. Finally, here comes Notion and Miro, who take advantage of the idea of blocks to further liberate our creativity.
-It is all perfect... If there are not so many waste operations and redundant information. And, we insist that privacy first should always be given by default. 
+It is all perfect... If there are not so many waste operations and redundant information. And, we insist that privacy first should always be given by default.
 That's why we are making AFFiNE. Some of the most important features are:
-- Transformable
-  - Every block can be transformed equally as a database
-    - e.g. you can now set up a to-do with MarkDown in text view and edit it in kanban view.
-  - Every doc can be turned into a whiteboard
-    - An always good-to-read, structured docs-form page is the best for your notes, but a boundless doodle surface is better for collaboration and creativity. 
-- Atomic
-  - The basic element of affine are blocks, not pages.
-    - Blocks can be directly reuse and synced between pages. 
-  - Pages and blocks are searched and organized on the basis of connected graphs, not tree-like paths.
-  - Dual-link and semantic search are fully supported.
-- Collaborative and privacy-first
-  - Data is always stored locally by default
-  - CRDTs are applied so that peer-to-peer collaboration is possible.
-  
-We really appreciate the idea of Monday, airtable and notion database. They inspired what we think is right for task management. But we don't like the repeated works -- we don't want to set a todo easily with markdown but end up re-write it again in kanban or other databases. 
+
+-   Transformable
+    -   Every block can be transformed equally as a database
+        -   e.g. you can now set up a to-do with MarkDown in text view and edit it in kanban view.
+    -   Every doc can be turned into a whiteboard
+        -   An always good-to-read, structured docs-form page is the best for your notes, but a boundless doodle surface is better for collaboration and creativity.
+-   Atomic
+    -   The basic element of affine are blocks, not pages.
+        -   Blocks can be directly reuse and synced between pages.
+    -   Pages and blocks are searched and organized on the basis of connected graphs, not tree-like paths.
+    -   Dual-link and semantic search are fully supported.
+-   Collaborative and privacy-first
+    -   Data is always stored locally by default
+    -   CRDTs are applied so that peer-to-peer collaboration is possible.
+
+We really appreciate the idea of Monday, airtable and notion database. They inspired what we think is right for task management. But we don't like the repeated works -- we don't want to set a todo easily with markdown but end up re-write it again in kanban or other databases.
 With AFFiNE, every block group has infinite views, for you to keep your single source of truth.
 
 We would like to give special thanks to the innovators and pioneers who greatly inspired us:
-- Quip & Notion -- that docs can be organized as blocks
-- Taskade & Monday -- brillant multi-demensional tables
-- Height & Linear -- beautiful task management tool
+
+-   Quip & Notion -- that docs can be organized as blocks
+-   Taskade & Monday -- brillant multi-demensional tables
+-   Height & Linear -- beautiful task management tool
 
 We would also like to give thanks to open-source projects that make affine possible:
-- Yjs & Yrs
-- React
-- Rust
 
+-   Yjs & Yrs
+-   React
+-   Rust
 
 # Installation
+
 Please view the [documentation](https://affine.gitbook.io/affine/) for OS specific installation instructions.
+
 ```sh
 # Clone the repo
 git clone git@github.com:toeverything/AFFiNE.git
