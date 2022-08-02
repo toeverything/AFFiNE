@@ -1,7 +1,7 @@
-import { RenderBlock } from '@toeverything/components/editor-core';
 import { MuiBackdrop, styled, useTheme } from '@toeverything/components/ui';
 import { createContext, ReactNode, useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { RenderBlock } from '../render-block';
 
 const Dialog = styled('div')({
     flex: 1,
