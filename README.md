@@ -47,7 +47,7 @@ Affine is fully built with web technologies so that consistency and accessibilit
 
 
 # Installation 
-Please view the documentation for OS specific installation instructions.
+Please view the [documentation](https://affine.gitbook.io/affine/) for OS specific installation instructions.
 
 # Built With
 - Typescript
@@ -101,7 +101,7 @@ We would also like to give thanks to open-source projects that make affine possi
 
 
 # Installation
-Please view the documentation for OS specific installation instructions.
+Please view the documentation[] for OS specific installation instructions.
 ```sh
 # Clone the repo
 git clone git@github.com:toeverything/AFFiNE.git
