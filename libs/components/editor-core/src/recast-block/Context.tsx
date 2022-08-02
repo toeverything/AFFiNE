@@ -2,6 +2,7 @@ import { Protocol } from '@toeverything/datasource/db-service';
 import { AsyncBlock } from '../editor';
 import { ComponentType, createContext, ReactNode, useContext } from 'react';
 import { RecastBlock } from './types';
+import { SubPageProvider } from '../sub-page';
 
 /**
  * Determine whether the block supports RecastBlock
@@ -47,7 +48,7 @@ export const RecastBlockProvider = ({
 
     return (
         <RecastBlockContext.Provider value={block}>
-            {children}
+            <SubPageProvider>{children}</SubPageProvider>
         </RecastBlockContext.Provider>
     );
 };
@@ -60,7 +61,7 @@ export const useRecastBlock = () => {
     const recastBlock = useContext(RecastBlockContext);
     if (!recastBlock) {
         throw new Error(
-            'Failed to find recastBlock! Please use the hook under `RecastTableProvider`.'
+            'Failed to find recastBlock! Please use the hook under `RecastBlockProvider`.'
         );
     }
     return recastBlock;

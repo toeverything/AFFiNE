@@ -16,3 +16,5 @@ export * from './kanban/types';
 export * from './utils';
 
 export * from './editor';
+
+export { SubPageProvider, useSubPage } from './sub-page';
