@@ -1,5 +1,11 @@
 /* eslint-disable filename-rules/match */
-import { useEffect, useRef, type UIEvent, useState } from 'react';
+import {
+    useEffect,
+    useRef,
+    type UIEvent,
+    useState,
+    useLayoutEffect,
+} from 'react';
 import { useParams } from 'react-router';
 import {
     MuiBox as Box,
@@ -17,6 +23,7 @@ import { CollapsibleTitle } from '@toeverything/components/common';
 import {
     useShowSpaceSidebar,
     useUserAndSpaces,
+    usePageClientWidth,
 } from '@toeverything/datasource/state';
 import { services } from '@toeverything/datasource/db-service';
 
@@ -113,7 +120,7 @@ const EditorContainer = ({
     workspace: string;
 }) => {
     const [lockScroll, setLockScroll] = useState(false);
-    const scrollContainerRef = useRef();
+    const scrollContainerRef = useRef<HTMLDivElement>();
     const editorRef = useRef<BlockEditor>();
     const onScroll = (event: UIEvent) => {
         editorRef.current.getHooks().onRootNodeScroll(event);
@@ -129,6 +136,17 @@ const EditorContainer = ({
             unLockScroll: () => setLockScroll(false),
         };
     }, []);
+
+    const { setPageClientWidth } = usePageClientWidth();
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            const obv = new ResizeObserver(e => {
+                setPageClientWidth(e[0].contentRect.width);
+            });
+            obv.observe(scrollContainerRef.current);
+            return () => obv.disconnect();
+        }
+    });
 
     return (
         <StyledEditorContainer
