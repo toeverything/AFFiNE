@@ -1,3 +1,19 @@
+<h1 align="center" style="border-bottom: none">
+    <b>
+        <a href="https://affine.pro">AFFiNE.PRO</a><br>
+    </b>
+    The Next-Gen Knowledge Base to Replace Notion & Miro. 
+    <br>
+</h1>
+
+<p align="center">
+Planning, Sorting and Creating all Together.
+</p>
+<p align="center"> 
+Open-source, Privacy-First, and Free to use.
+</p>
+
+
 # AFFiNE
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
