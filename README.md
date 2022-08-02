@@ -22,10 +22,11 @@ See https://github.com/all-contributors/all-contributors/issues/361#issuecomment
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-[![All Contributors][all-contributors-badge]](#contributors-)
-[![React](https://img.shields.io/badge/TypeScript-3178c6)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-61dafb)](https://reactjs.org/)
-[![Rust](https://img.shields.io/badge/Rust-dea584)](https://www.rust-lang.org/)
+[![All Contributors][all-contributors-badge]](#contributors)
+[![Node](https://img.shields.io/badge/node->=16.0-success)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/TypeScript-4.7-3178c6)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61dafb)](https://reactjs.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.62-dea584)](https://www.rust-lang.org/)
 
 </div>
 
