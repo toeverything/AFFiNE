@@ -52,10 +52,12 @@ Please view the [documentation](https://affine.gitbook.io/affine/) for OS specif
 Coming Soon...
 
 # Feature requests
-Please go to [Feature request](https://github.com/toeverything/AFFiNE/issues)
+Please go to [Feature request](https://github.com/toeverything/AFFiNE/issues).
 
 # FAQ
-Please go to [our community channel](https://www.reddit.com/r/Affine/)
+Get quick help on [Telegram](https://t.me/affineworkos) and [Discord](https://discord.gg/yz6tGVsf5p) along with other developers and contributors.
+
+Latest news and technology sharing on [Twitter](https://twitter.com/AffineOfficial), [Medium](https://medium.com/@affineworkos) and [AFFiNE Blog](https://blog.affine.pro/).
 
 
 # The Philosophy of AFFiNE
