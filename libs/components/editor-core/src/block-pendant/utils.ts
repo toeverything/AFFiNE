@@ -7,6 +7,7 @@ import {
 import { OptionIdType, OptionType } from './types';
 import { pendantConfig } from './config';
 import { PendantConfig, PendantTypes } from './types';
+import { nanoid } from 'nanoid';
 type Props = {
     recastBlockId: string;
     blockId: string;
@@ -60,7 +61,7 @@ export const getPendantHistory = ({
     return data[recastBlockId] ?? {};
 };
 
-export const removePropertyValueRecord = ({
+export const removePendantHistory = ({
     recastBlockId,
     propertyId,
 }: {
@@ -107,7 +108,7 @@ export const getOfficialSelected = ({
             .map(id => {
                 return tempOptions.findIndex((o: OptionType) => o.id === id);
             })
-            .filter(index => index != -1);
+            .filter(index => index !== -1);
         selectedId = selectedIndex.map((index: number) => {
             return options[index].id;
         });
@@ -130,7 +131,7 @@ export const getPendantIconsConfigByName = (
     return pendantConfig[pendantName];
 };
 
-export const genBasicOption = ({
+export const generateBasicOption = ({
     index,
     iconConfig,
     name = '',
@@ -159,22 +160,22 @@ export const genBasicOption = ({
 /**
  * Status Pendant is a Select Pendant built-in some options
  * **/
-export const genInitialOptions = (
+export const generateInitialOptions = (
     type: PendantTypes,
     iconConfig: PendantConfig
 ) => {
     if (type === PendantTypes.Status) {
         return [
-            genBasicOption({ index: 0, iconConfig, name: 'No Started' }),
-            genBasicOption({
+            generateBasicOption({ index: 0, iconConfig, name: 'No Started' }),
+            generateBasicOption({
                 index: 1,
                 iconConfig,
                 name: 'In Progress',
             }),
-            genBasicOption({ index: 2, iconConfig, name: 'Complete' }),
+            generateBasicOption({ index: 2, iconConfig, name: 'Complete' }),
         ];
     }
-    return [genBasicOption({ index: 0, iconConfig })];
+    return [generateBasicOption({ index: 0, iconConfig })];
 };
 
 export const checkPendantForm = (
@@ -222,3 +223,10 @@ export const checkPendantForm = (
 
     return { passed: true, message: 'Check passed !' };
 };
+
+const upperFirst = (str: string) => {
+    return `${str[0].toUpperCase()}${str.slice(1)}`;
+};
+
+export const generateRandomFieldName = (type: PendantTypes) =>
+    upperFirst(`${type}#${nanoid(4)}`);

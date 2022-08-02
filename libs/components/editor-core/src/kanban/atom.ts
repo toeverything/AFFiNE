@@ -10,6 +10,12 @@ import {
 } from '../recast-block/types';
 import type { DefaultGroup, KanbanGroup } from './types';
 import { DEFAULT_GROUP_ID } from './types';
+import {
+    generateInitialOptions,
+    generateRandomFieldName,
+    getPendantIconsConfigByName,
+} from '../block-pendant/utils';
+import { SelectOption } from '../recast-block';
 
 /**
  * - If the `groupBy` is `SelectProperty` or `MultiSelectProperty`, return `(Multi)SelectProperty.options`.
@@ -23,6 +29,7 @@ export const getGroupOptions = async (
         return [];
     }
     switch (groupBy.type) {
+        case PropertyType.Status:
         case PropertyType.Select:
         case PropertyType.MultiSelect: {
             return groupBy.options.map(option => ({
@@ -56,6 +63,9 @@ const isValueBelongOption = (
         }
         case PropertyType.MultiSelect: {
             return propertyValue.value.some(i => i === option.id);
+        }
+        case PropertyType.Status: {
+            return propertyValue.value === option.id;
         }
         // case PropertyType.Text: {
         // TOTODO:DO support this type
@@ -107,8 +117,17 @@ export const moveCardToGroup = async (
         success = await removeValue(groupById);
         return false;
     }
+
     switch (group.type) {
         case PropertyType.Select: {
+            success = await setValue({
+                id: groupById,
+                type: group.type,
+                value: group.id,
+            });
+            break;
+        }
+        case PropertyType.Status: {
             success = await setValue({
                 id: groupById,
                 type: group.type,
@@ -194,14 +213,18 @@ export const genDefaultGroup = (groupBy: RecastMetaProperty): DefaultGroup => ({
     items: [],
 });
 
-export const DEFAULT_GROUP_BY_PROPERTY = {
-    name: 'Status',
-    options: [
-        { name: 'No Started', color: '#E53535', background: '#FFCECE' },
-        { name: 'In Progress', color: '#A77F1A', background: '#FFF5AB' },
-        { name: 'Complete', color: '#3C8867', background: '#C5FBE0' },
-    ],
-};
+export const generateDefaultGroupByProperty = (): {
+    name: string;
+    options: Omit<SelectOption, 'id'>[];
+    type: PropertyType.Status;
+} => ({
+    name: generateRandomFieldName(PropertyType.Status),
+    type: PropertyType.Status,
+    options: generateInitialOptions(
+        PropertyType.Status,
+        getPendantIconsConfigByName(PropertyType.Status)
+    ),
+});
 
 /**
  * Unwrap blocks from the grid recursively.

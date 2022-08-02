@@ -4,7 +4,7 @@ import { ModifyPanelContentProps } from './types';
 import { StyledDivider, StyledPopoverSubTitle } from '../StyledComponent';
 import { BasicSelect } from './Select';
 import { InformationProperty, InformationValue } from '../../recast-block';
-import { genInitialOptions, getPendantIconsConfigByName } from '../utils';
+import { generateInitialOptions, getPendantIconsConfigByName } from '../utils';
 
 export default (props: ModifyPanelContentProps) => {
     const { onPropertyChange, onValueChange, initialValue, property } = props;
@@ -38,7 +38,7 @@ export default (props: ModifyPanelContentProps) => {
                 }}
                 initialOptions={
                     propProperty?.emailOptions ||
-                    genInitialOptions(
+                    generateInitialOptions(
                         property?.type,
                         getPendantIconsConfigByName('Email')
                     )
@@ -66,7 +66,7 @@ export default (props: ModifyPanelContentProps) => {
                 }}
                 initialOptions={
                     propProperty?.phoneOptions ||
-                    genInitialOptions(
+                    generateInitialOptions(
                         property?.type,
                         getPendantIconsConfigByName('Phone')
                     )
@@ -94,7 +94,7 @@ export default (props: ModifyPanelContentProps) => {
                 }}
                 initialOptions={
                     propProperty?.locationOptions ||
-                    genInitialOptions(
+                    generateInitialOptions(
                         property?.type,
                         getPendantIconsConfigByName('Location')
                     )

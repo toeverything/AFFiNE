@@ -18,8 +18,8 @@ import {
 import { supportChildren } from '../utils';
 import {
     calcCardGroup,
-    DEFAULT_GROUP_BY_PROPERTY,
     genDefaultGroup,
+    generateDefaultGroupByProperty,
     getCardGroup,
     getGroupOptions,
     moveCardToAfter,
@@ -48,6 +48,7 @@ export const useRecastKanbanGroupBy = () => {
     // Add other type groupBy support
     const supportedGroupBy = getProperties().filter(
         prop =>
+            prop.type === PropertyType.Status ||
             prop.type === PropertyType.Select ||
             prop.type === PropertyType.MultiSelect
     );
@@ -88,7 +89,8 @@ export const useRecastKanbanGroupBy = () => {
     // TODO: support other property type
     if (
         groupByProperty.type !== PropertyType.Select &&
-        groupByProperty.type !== PropertyType.MultiSelect
+        groupByProperty.type !== PropertyType.MultiSelect &&
+        groupByProperty.type !== PropertyType.Status
     ) {
         console.warn('Not support groupBy type', groupByProperty);
 
@@ -134,7 +136,7 @@ export const useInitKanbanEffect = ():
             }
             // 3. no group by, no properties
             // create a new property and set it as group by
-            const prop = await createSelect(DEFAULT_GROUP_BY_PROPERTY);
+            const prop = await createSelect(generateDefaultGroupByProperty());
             await setGroupBy(prop.id);
         };
 

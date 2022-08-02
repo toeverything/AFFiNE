@@ -257,14 +257,12 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
 const isSelectLikeProperty = (
     metaProperty?: RecastMetaProperty
 ): metaProperty is SelectProperty | MultiSelectProperty => {
-    if (
+    return !(
         !metaProperty ||
-        (metaProperty.type !== PropertyType.Select &&
+        (metaProperty.type !== PropertyType.Status &&
+            metaProperty.type !== PropertyType.Select &&
             metaProperty.type !== PropertyType.MultiSelect)
-    ) {
-        return false;
-    }
-    return true;
+    );
 };
 
 /**
@@ -312,7 +310,7 @@ export const useSelectProperty = () => {
     };
 
     const updateSelect = (
-        selectProperty: SelectProperty | MultiSelectProperty
+        selectProperty: StatusProperty | SelectProperty | MultiSelectProperty
     ) => {
         // if (typeof selectProperty === 'string') {
         //     const maybeSelectProperty = getProperty(selectProperty);

@@ -46,7 +46,10 @@ export type DefaultGroup = KanbanGroupBase & {
 
 type SelectGroup = KanbanGroupBase &
     SelectOption & {
-        type: PropertyType.Select | PropertyType.MultiSelect;
+        type:
+            | PropertyType.Select
+            | PropertyType.MultiSelect
+            | PropertyType.Status;
     };
 
 type TextGroup = KanbanGroupBase & {
