@@ -149,6 +149,7 @@ export interface TDMeta {
     isDarkMode: boolean;
     app: {
         useStore: () => TDSnapshot;
+        setEditingText: (id: string) => void;
     };
 }
 

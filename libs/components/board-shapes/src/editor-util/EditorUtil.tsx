@@ -64,18 +64,7 @@ export class EditorUtil extends TDShapeUtil<T, E> {
     };
 
     Component = TDShapeUtil.Component<T, E, TDMeta>(
-        (
-            {
-                shape,
-                meta: {
-                    app: { useStore },
-                },
-                events,
-                isEditing,
-                onShapeChange,
-            },
-            ref
-        ) => {
+        ({ shape, meta: { app }, events, isEditing, onShapeChange }, ref) => {
             const containerRef = useRef<HTMLDivElement>();
             const {
                 workspace,
@@ -83,7 +72,7 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                 size: [width, height],
             } = shape;
 
-            const state = useStore();
+            const state = app.useStore();
             const { currentPageId } = state.appState;
             const { editingId } = state.document.pageStates[currentPageId];
             const { shapes } = state.document.pages[currentPageId];
@@ -134,11 +123,19 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                 [isEditing]
             );
 
+            const activateIfEditing = useCallback(() => {
+                if (editingText && editingId !== shape.id) {
+                    app.setEditingText(shape.id);
+                }
+            }, [app, shape.id, editingText, editingId]);
+
             return (
                 <HTMLContainer ref={ref} {...events}>
                     <Container
                         ref={containerRef}
                         onPointerDown={stopPropagation}
+                        onMouseEnter={activateIfEditing}
+                        onDragEnter={activateIfEditing}
                     >
                         <MemoAffineEditor
                             workspace={workspace}
