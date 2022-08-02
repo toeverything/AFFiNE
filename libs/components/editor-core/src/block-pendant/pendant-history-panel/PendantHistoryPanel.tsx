@@ -26,7 +26,6 @@ export const PendantHistoryPanel = ({
     const { getProperties } = useRecastBlockMeta();
     const { getProperty } = useRecastBlockMeta();
 
-    const { getAllValue } = getRecastItemValue(block);
     const recastBlock = useRecastBlock();
 
     const [history, setHistory] = useState<RecastBlockValue[]>([]);
@@ -34,7 +33,7 @@ export const PendantHistoryPanel = ({
 
     useEffect(() => {
         const init = async () => {
-            const currentBlockValues = getAllValue();
+            const currentBlockValues = getRecastItemValue(block).getAllValue();
             const allProperties = getProperties();
             const missProperties = allProperties.filter(
                 property => !currentBlockValues.find(v => v.id === property.id)
@@ -52,24 +51,26 @@ export const PendantHistoryPanel = ({
                 return history;
             }, {});
 
-            const blockHistory = await Promise.all(
-                Object.entries(historyMap).map(
-                    async ([propertyId, blockId]) => {
-                        const latestValueBlock = (
-                            await groupBlock.children()
-                        ).find((block: AsyncBlock) => block.id === blockId);
+            const blockHistory = (
+                await Promise.all(
+                    Object.entries(historyMap).map(
+                        async ([propertyId, blockId]) => {
+                            const latestValueBlock = (
+                                await groupBlock.children()
+                            ).find((block: AsyncBlock) => block.id === blockId);
 
-                        return getRecastItemValue(latestValueBlock).getValue(
-                            propertyId as RecastPropertyId
-                        );
-                    }
+                            return getRecastItemValue(
+                                latestValueBlock
+                            ).getValue(propertyId as RecastPropertyId);
+                        }
+                    )
                 )
-            );
-
+            ).filter(v => v);
             setHistory(blockHistory);
         };
+
         init();
-    }, [getAllValue, getProperties, groupBlock, recastBlock]);
+    }, [block, getProperties, groupBlock, recastBlock]);
 
     return (
         <StyledPendantHistoryPanel>
