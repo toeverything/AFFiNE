@@ -61,10 +61,15 @@ export const useLazyIframe = (
         iframe.src = link;
         iframe.onload = () => {
             setTimeout(() => {
+                // Prevent iframe from scrolling parent container
+                //  TODO W3C https://github.com/w3c/csswg-drafts/issues/7134
+                // https://forum.figma.com/t/prevent-figmas-embed-code-from-automatically-scrolling-to-it-on-page-load/26029/6
                 setIframeShow(true);
             }, timers);
         };
-        container.current.appendChild(iframe);
+        if (container?.current) {
+            container.current.appendChild(iframe);
+        }
         return () => {
             iframe.remove();
         };
