@@ -51,6 +51,9 @@ Please view the [documentation](https://affine.gitbook.io/affine/) for OS specif
 # Roadmap
 Coming Soon...
 
+# Releases
+Get our latest [release notes](https://github.com/toeverything/AFFiNE/wiki) from here.
+
 # Feature requests
 Please go to [Feature request](https://github.com/toeverything/AFFiNE/issues)
 
