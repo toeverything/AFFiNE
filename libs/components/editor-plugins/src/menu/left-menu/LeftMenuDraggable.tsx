@@ -239,11 +239,15 @@ const Draggable = styled(Button)({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    width: '24px',
-    height: '24px',
+    width: '16px',
+    height: '20px',
+    '& svg': {
+        fontSize: '20px',
+        marginLeft: '-2px',
+    },
     ':hover': {
-        backgroundColor: '#edeef0',
-        borderRadius: '4px',
+        backgroundColor: '#F5F7F8',
+        borderRadius: '3.75px',
     },
 });
 

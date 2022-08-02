@@ -4,7 +4,7 @@ import { HandleParentIcon } from '@toeverything/components/icons';
 import { styled } from '@toeverything/components/ui';
 import { Point } from '@toeverything/utils';
 
-export const ICON_WIDTH = 24;
+export const ICON_WIDTH = 16;
 
 type DragItemProps = {
     isShow: boolean;
@@ -30,17 +30,21 @@ export const DragItem = function ({
     );
 };
 
-const StyledDiv = styled('div')({
+const StyledDiv = styled('div')(theme => ({
     padding: '0',
-    display: 'inlineFlex',
+    display: 'inline-flex',
     width: `${ICON_WIDTH}px`,
-    height: `${ICON_WIDTH}px`,
+    height: '20px',
     cursor: 'grab',
-    ':hover': {
-        backgroundColor: '#edeef0',
-        borderRadius: '4px',
+    '& svg': {
+        fontSize: '20px',
+        marginLeft: '-2px',
     },
-});
+    ':hover': {
+        backgroundColor: '#F5F7F8',
+        borderRadius: '3.75px',
+    },
+}));
 
 const StyledButton = styled('div')({
     padding: '0',
