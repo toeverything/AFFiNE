@@ -247,7 +247,7 @@ const Draggable = styled(Button)({
     },
     ':hover': {
         backgroundColor: '#F5F7F8',
-        borderRadius: '3.75px',
+        borderRadius: '4px',
     },
 });
 

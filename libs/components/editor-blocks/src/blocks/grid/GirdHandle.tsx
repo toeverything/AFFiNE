@@ -86,9 +86,7 @@ const GridHandleContainer = styled('div')<{
     borderRadius: '1px',
     backgroundClip: 'content-box',
     ' &:hover': {
-        backgroundColor: isAlert
-            ? 'red !important'
-            : theme.affine.palette.primary,
+        backgroundColor: isAlert ? 'red' : theme.affine.palette.primary,
         [`.${GRID_ADD_HANDLE_NAME}`]: {
             display: 'block',
         },
