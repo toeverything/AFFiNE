@@ -276,12 +276,12 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
 
 const isSelectLikeProperty = (
     metaProperty?: RecastMetaProperty
-): metaProperty is SelectProperty | MultiSelectProperty => {
-    return !(
-        !metaProperty ||
-        (metaProperty.type !== PropertyType.Status &&
-            metaProperty.type !== PropertyType.Select &&
-            metaProperty.type !== PropertyType.MultiSelect)
+): metaProperty is SelectProperty | MultiSelectProperty | StatusProperty => {
+    return (
+        metaProperty &&
+        (metaProperty.type === PropertyType.Status ||
+            metaProperty.type === PropertyType.Select ||
+            metaProperty.type === PropertyType.MultiSelect)
     );
 };
 

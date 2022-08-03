@@ -57,15 +57,15 @@ const isValueBelongOption = (
     option: KanbanGroup
 ) => {
     switch (propertyValue.type) {
-        case PropertyType.Select: {
+        case PropertyType.Select || PropertyType.Status: {
             return propertyValue.value === option.id;
         }
         case PropertyType.MultiSelect: {
             return propertyValue.value.some(i => i === option.id);
         }
-        case PropertyType.Status: {
-            return propertyValue.value === option.id;
-        }
+        // case PropertyType.Status: {
+        //     return propertyValue.value === option.id;
+        // }
         // case PropertyType.Text: {
         // TOTODO:DO support this type
         // }
