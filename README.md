@@ -18,7 +18,7 @@ See https://github.com/all-contributors/all-contributors/issues/361#issuecomment
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square)](#contributors-)
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
