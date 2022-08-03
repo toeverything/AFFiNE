@@ -241,15 +241,11 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
         return props[id];
     };
 
-    const setValue = (
-        newValue: RecastBlockValue,
-        recastBlockId: string,
-        propertyId: RecastPropertyId
-    ) => {
+    const setValue = (newValue: RecastBlockValue, recastBlockId: string) => {
         setHistory({
             recastBlockId: recastBlockId,
             blockId: block.id,
-            propertyId: propertyId,
+            propertyId: newValue.id,
         });
 
         return recastItem.setProperty(TABLE_VALUES_KEY, {

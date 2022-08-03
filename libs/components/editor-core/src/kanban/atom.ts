@@ -131,8 +131,7 @@ export const moveCardToGroup = async ({
                     type: group.type,
                     value: group.id,
                 },
-                recastBlock.id,
-                groupBy.id
+                recastBlock.id
             );
             break;
         }
@@ -143,8 +142,7 @@ export const moveCardToGroup = async ({
                     type: group.type,
                     value: group.id,
                 },
-                recastBlock.id,
-                groupBy.id
+                recastBlock.id
             );
             break;
         }
@@ -155,8 +153,7 @@ export const moveCardToGroup = async ({
                     type: group.type,
                     value: [group.id],
                 },
-                recastBlock.id,
-                groupBy.id
+                recastBlock.id
             );
             break;
         }
@@ -167,8 +164,7 @@ export const moveCardToGroup = async ({
                     type: group.type,
                     value: group.id,
                 },
-                recastBlock.id,
-                groupBy.id
+                recastBlock.id
             );
             break;
         }

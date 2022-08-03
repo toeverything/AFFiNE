@@ -92,8 +92,7 @@ export const useOnCreateSure = ({ block }: { block: AsyncBlock }) => {
                     type: newProperty.type,
                     value: selectedId,
                 } as SelectValue | MultiSelectValue | StatusValue,
-                recastBlock.id,
-                newProperty.id
+                recastBlock.id
             );
         } else if (type === PendantTypes.Information) {
             const emailOptions = genOptionWithId(newPropertyItem.emailOptions);
@@ -137,8 +136,7 @@ export const useOnCreateSure = ({ block }: { block: AsyncBlock }) => {
                         }),
                     },
                 } as InformationValue,
-                recastBlock.id,
-                newProperty.id
+                recastBlock.id
             );
         } else {
             // TODO: Color and background should use pendant config, but ui is not design now
@@ -158,8 +156,7 @@ export const useOnCreateSure = ({ block }: { block: AsyncBlock }) => {
                     type: newProperty.type,
                     value: newValue,
                 } as TextValue | DateValue,
-                recastBlock.id,
-                newProperty.id
+                recastBlock.id
             );
         }
     };
@@ -236,8 +233,7 @@ export const useOnUpdateSure = ({
                     type: selectProperty.type,
                     value: selectedId,
                 } as SelectValue | MultiSelectValue | StatusValue,
-                recastBlock.id,
-                selectProperty.id
+                recastBlock.id
             );
         } else if (type === PendantTypes.Information) {
             // const { emailOptions, phoneOptions, locationOptions } =
@@ -295,8 +291,7 @@ export const useOnUpdateSure = ({
                         }),
                     },
                 } as InformationValue,
-                recastBlock.id,
-                newProperty.id
+                recastBlock.id
             );
         } else {
             await setValue(
@@ -305,8 +300,7 @@ export const useOnUpdateSure = ({
                     type: property.type,
                     value: newValue,
                 } as TextValue | DateValue,
-                recastBlock.id,
-                property.id
+                recastBlock.id
             );
         }
 
