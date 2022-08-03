@@ -30,7 +30,7 @@ export const DragItem = function ({
     );
 };
 
-const StyledDiv = styled('div')(theme => ({
+const StyledDiv = styled('div')(({ theme }) => ({
     padding: '0',
     display: 'inline-flex',
     width: `${ICON_WIDTH}px`,
@@ -42,7 +42,7 @@ const StyledDiv = styled('div')(theme => ({
     },
     ':hover': {
         backgroundColor: '#F5F7F8',
-        borderRadius: '3.75px',
+        borderRadius: '4px',
     },
 }));
 
