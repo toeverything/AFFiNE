@@ -13,7 +13,7 @@ const groupTemplateMap = {
     grid: gridTemplate,
 } as GroupTemplateMap;
 
-const defaultTemplateList = [
+const defaultTemplateList: Array<TemplateMeta> = [
     {
         name: 'New From Quick Start',
         groupKeys: ['todolist'],
@@ -22,10 +22,10 @@ const defaultTemplateList = [
     { name: 'New From Blog', groupKeys: ['blog'] },
     { name: ' New Todolist', groupKeys: ['todolist'] },
     { name: ' New Empty Page', groupKeys: ['empty'] },
-] as const;
+];
 
 const TemplateFactory = {
-    defaultTemplateList: defaultTemplateList,
+    defaultTemplateList,
     generatePageTemplateByGroupKeys(props: TemplateMeta): Template {
         const newTitle = props.name || 'Get Started with AFFiNE';
         const keys: GroupTemplateKeys[] = props.groupKeys || [];
