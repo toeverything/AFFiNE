@@ -26,3 +26,13 @@ export const useCurrentEditors = () => {
         setCurrentEditors,
     };
 };
+
+// when first time transfer doc to board, need init the editor shape size to page size.
+const _pageClientWidth = atom<number>(1020);
+export const usePageClientWidth = () => {
+    const [pageClientWidth, setPageClientWidth] = useAtom(_pageClientWidth);
+    return {
+        pageClientWidth,
+        setPageClientWidth,
+    };
+};

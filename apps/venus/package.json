@@ -1,0 +1,19 @@
+{
+    "name": "venus",
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": "",
+    "scripts": {},
+    "keywords": [],
+    "author": "DarkSky <darksky2048@gmail.com>",
+    "dependencies": {
+        "@mui/joy": "^5.0.0-alpha.39",
+        "@emotion/react": "^11.10.0",
+        "@emotion/styled": "^11.10.0",
+        "lozad": "^1.16.0"
+    },
+    "devDependencies": {
+        "mini-css-extract-plugin": "^2.6.1",
+        "webpack": "^5.73.0"
+    }
+}

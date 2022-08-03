@@ -1,5 +1,5 @@
-import { DefaultColumnsValue, BlockFlavorKeys } from './../index';
-import { groupTemplateMap, GroupTemplateKeys } from './group-templates';
+import { BlockFlavorKeys, DefaultColumnsValue } from './../index';
+import { GroupTemplateKeys } from './template-factory';
 
 // interface Block {
 //     type: BlockFlavorKeys;

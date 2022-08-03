@@ -65,7 +65,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         const navigate = useNavigate();
         const BooleanPageTreeItemMoreActions = useFlag(
             'BooleanPageTreeItemMoreActions',
-            false
+            true
         );
         return (
             <li
@@ -94,7 +94,12 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                     title={value}
                 >
                     <Action onClick={onCollapse}>
-                        {collapsed ? <ArrowRightIcon /> : <ArrowDropDownIcon />}
+                        {childCount !== 0 &&
+                            (collapsed ? (
+                                <ArrowRightIcon />
+                            ) : (
+                                <ArrowDropDownIcon />
+                            ))}
                     </Action>
                     {/*<Action>*/}
                     {/*    <DocumentIcon />*/}
