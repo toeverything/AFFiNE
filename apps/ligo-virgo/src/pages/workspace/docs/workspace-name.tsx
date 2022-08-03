@@ -3,14 +3,13 @@ import {
     MuiOutlinedInput as OutlinedInput,
 } from '@toeverything/components/ui';
 import { PinIcon } from '@toeverything/components/icons';
-import logo from '../../../assets/images/logo.svg';
 import {
     useUserAndSpaces,
     useShowSpaceSidebar,
 } from '@toeverything/datasource/state';
 import React, { useCallback, useEffect, useState } from 'react';
-import type { CSSProperties } from 'react';
 import { services } from '@toeverything/datasource/db-service';
+import { Logo } from './components/logo/Logo';
 
 const WorkspaceContainer = styled('div')({
     display: 'flex',
@@ -33,10 +32,6 @@ const LogoContainer = styled('div')({
     height: 24,
     minWidth: 24,
 });
-
-export const LogoImg = ({ style = {} }: { style?: CSSProperties }) => {
-    return <img style={style} src={logo} alt="AFFiNE Logo" />;
-};
 
 const StyledPin = styled('div')({
     display: 'flex',
@@ -168,7 +163,7 @@ export const WorkspaceName = () => {
             </StyledPin>
             <LeftContainer>
                 <LogoContainer>
-                    <LogoImg />
+                    <Logo color={undefined} style={undefined} />
                 </LogoContainer>
 
                 <StyledWorkspace>
