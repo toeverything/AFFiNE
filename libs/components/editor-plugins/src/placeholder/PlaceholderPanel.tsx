@@ -141,6 +141,7 @@ export const PlaceholderPanel = (props: PlaceholderPanelProps) => {
         setOpen(false);
         props.onClickTips();
     };
+    //@ts-ignore lint rule change result this code lint error, add ingore
     const templateList: Array<TemplateMeta> =
         TemplateFactory.defaultTemplateList;
     const handleNewFromTemplate = async (template: TemplateMeta) => {
