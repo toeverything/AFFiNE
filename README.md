@@ -140,9 +140,14 @@ We would like to give special thanks to the innovators and pioneers who greatly 
 
 We would also like to give thanks to open-source projects that make affine possible:
 
--   Yjs & Yrs
--   React
--   Rust
+-   [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implements on state management and data sync.
+-   [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
+-   [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
+-   [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
+-   [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend. 
+-   [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
+-   [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
+-   Other [dependancies](https://github.com/toeverything/AFFiNE/network/dependencies)
 
 # Community
 
