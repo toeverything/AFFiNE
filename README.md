@@ -52,7 +52,8 @@ See https://github.com/all-contributors/all-contributors/issues/361#issuecomment
     -   [Plan your task](#plan-your-task)
     -   [Sort your knowledge](#sort-your-knowledge)
     -   [Create your story](#create-your-story)
--   [Getting Started with development](#getting-started-with-development)
+-   [Documentation](#documentation)
+    -   [Getting Started with development](#getting-started-with-development)
 -   [Roadmap](#roadmap)
 -   [Releases](#releases)
 -   [Feature requests](#feature-requests)
@@ -60,6 +61,7 @@ See https://github.com/all-contributors/all-contributors/issues/361#issuecomment
 -   [The Philosophy of AFFiNE](#the-philosophy-of-affine)
 -   [Community](#community)
 -   [Contributors](#contributors)
+-   [Acknowledgments](#acknowledgments)
 -   [License](#license)
 
 ## Shape your page
@@ -80,9 +82,13 @@ We want your data always to be yours, and we don't want to make any sacrifice to
 Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators.
 Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows and Linux. The local file system support will be available when version 0.0.1beta is released.
 
-# Getting Started with development
+# Documentation
 
-Please view the [documentation](https://affine.gitbook.io/affine/) in Contribute-to-AFFiNE/Software-Contributions/Environment-setup.
+Please view the [documentation](https://affine.gitbook.io/affine/)
+
+## Getting Started with development
+
+Please view the path Contribute-to-AFFiNE/Software-Contributions/Quick-Start in documentation.
 
 # Roadmap
 
@@ -171,6 +177,10 @@ For help, discussion about best practices, or any other conversation that would 
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
+
+# Acknowledgments
+
+Thanks a lot to the community for providing such powerful and simple libraries as [slatejs](https://github.com/ianstormtaylor/slate), [tldraw](https://github.com/tldraw/tldraw), [yjs](https://github.com/yjs/yjs), etc., so that we can focus more on the implementation of the business logic, and we hope that in the future our projects will provide a more easy-to-use knowledge base for everyone.
 
 # License
 
