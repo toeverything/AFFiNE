@@ -38,7 +38,7 @@ See https://github.com/all-contributors/all-contributors/issues/361#issuecomment
     <a href="https://t.me/affineworkos"><b>Telegram</b></a>
 </p>
 
-<p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/79301703/182363099-48b479c3-dc26-4fc3-8f9b-45f9cf358f9a.png"><p/>
+<p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/21084335/182552060-972cac0e-6258-4ccb-85bd-3bb466c30ccd.png"><p/>
 
 # Stay Up-to-Date
 
