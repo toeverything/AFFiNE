@@ -9,6 +9,7 @@ type BlockContentWrapperProps = {
     children: ReactElement | null;
 };
 
+// TODO: remove
 export const WrapperWithPendantAndDragDrop: FC<BlockContentWrapperProps> =
     function ({ block, children, editor }) {
         return (

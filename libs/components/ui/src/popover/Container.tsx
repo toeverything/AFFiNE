@@ -15,11 +15,11 @@ export const PopoverContainer = styled('div')<
     const shadow = theme.affine.shadows.shadowSxDownLg;
     const white = theme.affine.palette.white;
 
-    const border_radius =
+    const borderRadius =
         border_radius_map[direction] || border_radius_map['left-top'];
     return {
         boxShadow: shadow,
-        borderRadius: border_radius,
+        borderRadius: borderRadius,
         padding: '8px 4px',
         backgroundColor: white,
         ...style,

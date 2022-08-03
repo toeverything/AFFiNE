@@ -1,5 +1,5 @@
 import { BlockDomInfo, HookType } from '@toeverything/framework/virgo';
-import React, { StrictMode } from 'react';
+import { StrictMode } from 'react';
 import { BasePlugin } from '../../base-plugin';
 import { ignoreBlockTypes } from './menu-config';
 import { LineInfoSubject, LeftMenuDraggable } from './LeftMenuDraggable';
