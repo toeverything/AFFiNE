@@ -1,4 +1,4 @@
-import React, { FC, useRef } from 'react';
+import { FC, useRef } from 'react';
 import { AsyncBlock } from '../../editor';
 import { PendantHistoryPanel } from '../pendant-history-panel';
 import {
@@ -21,8 +21,6 @@ export const PendantPopover: FC<
             pointerEnterDelay={300}
             pointerLeaveDelay={200}
             placement="bottom-start"
-            // visible={true}
-            // trigger="click"
             content={
                 <PendantHistoryPanel
                     block={block}

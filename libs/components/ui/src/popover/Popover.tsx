@@ -1,7 +1,7 @@
 import type { MuiPopperPlacementType as PopperPlacementType } from '../mui';
 import React, { forwardRef, type PropsWithChildren } from 'react';
 import { type PopperHandler, Popper } from '../popper';
-import { PopoverContainer } from './container';
+import { PopoverContainer } from './Container';
 import type { PopoverProps, PopoverDirection } from './interface';
 
 export const placementToContainerDirection: Record<
