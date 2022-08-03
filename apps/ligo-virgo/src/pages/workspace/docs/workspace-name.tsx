@@ -1,27 +1,29 @@
 import {
-    MuiButton as Button,
-    Switch,
     styled,
     MuiOutlinedInput as OutlinedInput,
 } from '@toeverything/components/ui';
-import { LogoIcon } from '@toeverything/components/icons';
+import { PinIcon } from '@toeverything/components/icons';
+import logo from '../../../assets/images/logo.svg';
 import {
     useUserAndSpaces,
     useShowSpaceSidebar,
 } from '@toeverything/datasource/state';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { services } from '@toeverything/datasource/db-service';
 
 const WorkspaceContainer = styled('div')({
     display: 'flex',
-    alignItems: 'center',
-    minHeight: 60,
-    padding: '12px 0px',
+    flexDirection: 'column',
+    paddingBottom: '12px',
     color: '#566B7D',
 });
 const LeftContainer = styled('div')({
     flex: 'auto',
     display: 'flex',
+    height: '52px',
+    alignItems: 'center',
+    margin: '0 12px',
 });
 
 const LogoContainer = styled('div')({
@@ -32,20 +34,40 @@ const LogoContainer = styled('div')({
     minWidth: 24,
 });
 
-const StyledLogoIcon = styled(LogoIcon)(({ theme }) => {
-    return {
-        color: theme.affine.palette.primary,
-        width: '16px !important',
-        height: '16px !important',
-    };
+export const LogoImg = ({ style = {} }: { style?: CSSProperties }) => {
+    return <img style={style} src={logo} alt="AFFiNE Logo" />;
+};
+
+const StyledPin = styled('div')({
+    display: 'flex',
+    justifyContent: 'end',
+    alignItems: 'center',
+});
+
+const StyledWorkspace = styled('div')({
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    marginLeft: '12px',
+    paddingLeft: '12px',
+});
+
+const StyledWorkspaceDesc = styled('div')({
+    fontSize: '12px',
+    color: '#98ACBD',
+    height: '18px',
+
+    display: 'flex',
+    alignItems: 'center',
 });
 
 const WorkspaceNameContainer = styled('div')({
     display: 'flex',
     alignItems: 'center',
     flex: 'auto',
-    width: '100px',
-    marginRight: '10px',
+    width: '165px',
+    height: '34px',
     input: {
         padding: '5px 10px',
     },
@@ -58,19 +80,13 @@ const WorkspaceNameContainer = styled('div')({
 });
 
 const WorkspaceReNameContainer = styled('div')({
-    marginRight: '10px',
+    height: '34px',
+    display: 'flex',
+    alignItems: 'center',
+
     input: {
         padding: '5px 10px',
     },
-});
-
-const ToggleDisplayContainer = styled('div')({
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: 12,
-    color: '#3E6FDB',
-    padding: 6,
-    minWidth: 64,
 });
 
 export const WorkspaceName = () => {
@@ -139,35 +155,46 @@ export const WorkspaceName = () => {
 
     return (
         <WorkspaceContainer>
+            <StyledPin>
+                <PinIcon
+                    style={{
+                        width: '20px',
+                        height: '20px',
+                        color: fixedDisplay ? '#3E6FDB' : '',
+                        cursor: 'pointer',
+                    }}
+                    onClick={toggleSpaceSidebar}
+                />
+            </StyledPin>
             <LeftContainer>
                 <LogoContainer>
-                    <StyledLogoIcon />
+                    <LogoImg />
                 </LogoContainer>
 
-                {inRename ? (
-                    <WorkspaceReNameContainer>
-                        <OutlinedInput
-                            value={workspaceName}
-                            onChange={handleChange}
-                            onKeyDown={handleKeyDown}
-                            onMouseLeave={() => setInRename(false)}
-                        />
-                    </WorkspaceReNameContainer>
-                ) : (
-                    <WorkspaceNameContainer>
-                        <span onClick={() => setInRename(true)}>
-                            {workspaceName || workspaceId}
-                        </span>
-                    </WorkspaceNameContainer>
-                )}
+                <StyledWorkspace>
+                    {inRename ? (
+                        <WorkspaceReNameContainer>
+                            <OutlinedInput
+                                style={{ width: '140px', height: '28px' }}
+                                value={workspaceName}
+                                onChange={handleChange}
+                                onKeyDown={handleKeyDown}
+                                onMouseLeave={() => setInRename(false)}
+                            />
+                        </WorkspaceReNameContainer>
+                    ) : (
+                        <WorkspaceNameContainer>
+                            <span onClick={() => setInRename(true)}>
+                                {workspaceName || workspaceId}
+                            </span>
+                        </WorkspaceNameContainer>
+                    )}
+
+                    <StyledWorkspaceDesc>
+                        To shape, Not to Adapt.
+                    </StyledWorkspaceDesc>
+                </StyledWorkspace>
             </LeftContainer>
-            <ToggleDisplayContainer onClick={toggleSpaceSidebar}>
-                <Switch
-                    checked={fixedDisplay}
-                    checkedLabel="ON"
-                    uncheckedLabel="OFF"
-                />
-            </ToggleDisplayContainer>
         </WorkspaceContainer>
     );
 };
