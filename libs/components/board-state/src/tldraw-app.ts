@@ -968,6 +968,29 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     /**
+     * used for EditorUtil only
+     * @param id
+     * @returns
+     */
+    setEditingText = (id: string) => {
+        if (this.readOnly) return;
+
+        this.patchState(
+            {
+                document: {
+                    pageStates: {
+                        [this.currentPageId]: {
+                            selectedIds: [id],
+                            editingId: id,
+                        },
+                    },
+                },
+            },
+            `set_editing_id`
+        );
+    };
+
+    /**
      * Set or clear the hovered id
      * @param id [string]
      */

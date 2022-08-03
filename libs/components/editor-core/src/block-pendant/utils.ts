@@ -1,4 +1,5 @@
 import {
+    PropertyType,
     RecastBlockValue,
     RecastPropertyId,
     SelectOption,
@@ -174,4 +175,50 @@ export const genInitialOptions = (
         ];
     }
     return [genBasicOption({ index: 0, iconConfig })];
+};
+
+export const checkPendantForm = (
+    type: PropertyType,
+    fieldTitle: string,
+    newProperty: any,
+    newValue: any
+): { passed: boolean; message: string } => {
+    if (!fieldTitle) {
+        return { passed: false, message: 'The field title cannot be empty !' };
+    }
+
+    if (
+        type === PendantTypes.MultiSelect ||
+        type === PendantTypes.Select ||
+        type === PendantTypes.Status
+    ) {
+        if (!newProperty) {
+            return {
+                passed: false,
+                message: 'Ensure at least one non-empty option !',
+            };
+        }
+    }
+    if (type === PendantTypes.Information) {
+        if (!newProperty) {
+            return {
+                passed: false,
+                message: 'Ensure at least one non-empty option !',
+            };
+        }
+    }
+    if (
+        type === PendantTypes.Text ||
+        type === PendantTypes.Date ||
+        type === PendantTypes.Mention
+    ) {
+        if (!newValue) {
+            return {
+                passed: false,
+                message: `The content of the input must not be empty !`,
+            };
+        }
+    }
+
+    return { passed: true, message: 'Check passed !' };
 };

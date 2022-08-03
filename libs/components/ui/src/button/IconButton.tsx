@@ -36,6 +36,7 @@ interface IconButtonProps {
     style?: CSSProperties;
     className?: string;
     size?: SizeType;
+    hoverColor?: string;
 }
 
 export const IconButton: FC<PropsWithChildren<IconButtonProps>> = ({
@@ -57,47 +58,48 @@ export const IconButton: FC<PropsWithChildren<IconButtonProps>> = ({
     );
 };
 
-const Container = styled('button')<{ size?: SizeType }>(
-    ({ theme, size = SIZE_MIDDLE }) => {
-        const { iconSize, areaSize } = SIZE_CONFIG[size];
+const Container = styled('button')<{
+    size?: SizeType;
+    hoverColor?: string;
+}>(({ theme, size = SIZE_MIDDLE, hoverColor }) => {
+    const { iconSize, areaSize } = SIZE_CONFIG[size];
 
-        return {
+    return {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: areaSize,
+        height: areaSize,
+        backgroundColor: 'transparent',
+        color: theme.affine.palette.icons,
+        padding: theme.affine.spacing.iconPadding,
+        borderRadius: '3px',
+
+        '& svg': {
+            width: iconSize,
+            height: iconSize,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            width: areaSize,
-            height: areaSize,
-            backgroundColor: theme.affine.palette.white,
-            color: theme.affine.palette.icons,
-            padding: theme.affine.spacing.iconPadding,
-            borderRadius: '5px',
+        },
 
-            '& svg': {
-                width: iconSize,
-                height: iconSize,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-            },
+        '&:hover': {
+            backgroundColor: hoverColor || theme.affine.palette.hover,
+        },
 
-            '&:hover': {
-                backgroundColor: theme.affine.palette.hover,
-            },
+        [`&${buttonStatus.hover}`]: {
+            backgroundColor: theme.affine.palette.hover,
+        },
 
-            [`&${buttonStatus.hover}`]: {
-                backgroundColor: theme.affine.palette.hover,
-            },
+        '&:focus': {
+            color: theme.affine.palette.primary,
+        },
+        [`&.${buttonStatus.focus}`]: {
+            color: theme.affine.palette.primary,
+        },
 
-            '&:focus': {
-                color: theme.affine.palette.primary,
-            },
-            [`&.${buttonStatus.focus}`]: {
-                color: theme.affine.palette.primary,
-            },
-
-            [`&${buttonStatus.disabled}`]: {
-                cursor: 'not-allowed',
-            },
-        };
-    }
-);
+        [`&${buttonStatus.disabled}`]: {
+            cursor: 'not-allowed',
+        },
+    };
+});

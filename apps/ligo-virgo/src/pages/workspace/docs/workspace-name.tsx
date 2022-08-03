@@ -9,7 +9,7 @@ import {
     useUserAndSpaces,
     useShowSpaceSidebar,
 } from '@toeverything/datasource/state';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { services } from '@toeverything/datasource/db-service';
 
 const WorkspaceContainer = styled('div')({
@@ -78,6 +78,7 @@ export const WorkspaceName = () => {
     const { fixedDisplay, toggleSpaceSidebar } = useShowSpaceSidebar();
     const [inRename, setInRename] = useState(false);
     const [workspaceName, setWorkspaceName] = useState('');
+    const [workspaceId, setWorkspaceId] = useState('');
 
     const fetchWorkspaceName = useCallback(async () => {
         if (!currentSpaceId) {
@@ -88,6 +89,11 @@ export const WorkspaceName = () => {
             currentSpaceId
         );
         setWorkspaceName(name);
+
+        const workspaceId = await services.api.userConfig.getWorkspaceId(
+            currentSpaceId
+        );
+        setWorkspaceId(workspaceId);
     }, [currentSpaceId]);
 
     useEffect(() => {
@@ -150,7 +156,7 @@ export const WorkspaceName = () => {
                 ) : (
                     <WorkspaceNameContainer>
                         <span onClick={() => setInRename(true)}>
-                            {workspaceName}
+                            {workspaceName || workspaceId}
                         </span>
                     </WorkspaceNameContainer>
                 )}

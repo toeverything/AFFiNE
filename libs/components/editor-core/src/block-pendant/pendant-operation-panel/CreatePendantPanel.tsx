@@ -1,11 +1,11 @@
-import React, { CSSProperties, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { Input, Option, Select, Tooltip } from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 import { AsyncBlock } from '../../editor';
 
 import { IconMap, pendantOptions } from '../config';
-import { OptionType, PendantOptions, PendantTypes } from '../types';
+import { PendantOptions } from '../types';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import {
     StyledDivider,
@@ -15,23 +15,13 @@ import {
     StyledPopoverSubTitle,
     StyledPopoverWrapper,
 } from '../StyledComponent';
-import {
-    genSelectOptionId,
-    InformationProperty,
-    useRecastBlock,
-    useRecastBlockMeta,
-    useSelectProperty,
-} from '../../recast-block';
-import {
-    genInitialOptions,
-    getOfficialSelected,
-    getPendantConfigByType,
-} from '../utils';
-import { usePendant } from '../use-pendant';
+import { genInitialOptions, getPendantConfigByType } from '../utils';
+import { useOnCreateSure } from './hooks';
 
 const upperFirst = (str: string) => {
     return `${str[0].toUpperCase()}${str.slice(1)}`;
 };
+
 export const CreatePendantPanel = ({
     block,
     onSure,
@@ -41,9 +31,7 @@ export const CreatePendantPanel = ({
 }) => {
     const [selectedOption, setSelectedOption] = useState<PendantOptions>();
     const [fieldName, setFieldName] = useState<string>('');
-    const { addProperty, removeProperty } = useRecastBlockMeta();
-    const { createSelect } = useSelectProperty();
-    const { setPendant } = usePendant(block);
+    const onCreateSure = useOnCreateSure({ block });
 
     useEffect(() => {
         selectedOption &&
@@ -110,91 +98,13 @@ export const CreatePendantPanel = ({
                             getPendantConfigByType(selectedOption.type)
                         )}
                         iconConfig={getPendantConfigByType(selectedOption.type)}
-                        // isStatusSelect={selectedOption.name === 'Status'}
                         onSure={async (type, newPropertyItem, newValue) => {
-                            if (!fieldName) {
-                                return;
-                            }
-
-                            if (
-                                type === PendantTypes.MultiSelect ||
-                                type === PendantTypes.Select ||
-                                type === PendantTypes.Status
-                            ) {
-                                const newProperty = await createSelect({
-                                    name: fieldName,
-                                    options: newPropertyItem,
-                                    type,
-                                });
-
-                                const selectedId = getOfficialSelected({
-                                    isMulti: type === PendantTypes.MultiSelect,
-                                    options: newProperty.options,
-                                    tempOptions: newPropertyItem,
-                                    tempSelectedId: newValue,
-                                });
-
-                                await setPendant(newProperty, selectedId);
-                            } else if (type === PendantTypes.Information) {
-                                const emailOptions = genOptionWithId(
-                                    newPropertyItem.emailOptions
-                                );
-
-                                const phoneOptions = genOptionWithId(
-                                    newPropertyItem.phoneOptions
-                                );
-
-                                const locationOptions = genOptionWithId(
-                                    newPropertyItem.locationOptions
-                                );
-
-                                const newProperty = await addProperty({
-                                    type,
-                                    name: fieldName,
-                                    emailOptions,
-                                    phoneOptions,
-                                    locationOptions,
-                                } as Omit<InformationProperty, 'id'>);
-
-                                await setPendant(newProperty, {
-                                    email: getOfficialSelected({
-                                        isMulti: true,
-                                        options: emailOptions,
-                                        tempOptions:
-                                            newPropertyItem.emailOptions,
-                                        tempSelectedId: newValue.email,
-                                    }),
-                                    phone: getOfficialSelected({
-                                        isMulti: true,
-                                        options: phoneOptions,
-                                        tempOptions:
-                                            newPropertyItem.phoneOptions,
-                                        tempSelectedId: newValue.phone,
-                                    }),
-                                    location: getOfficialSelected({
-                                        isMulti: true,
-                                        options: locationOptions,
-                                        tempOptions:
-                                            newPropertyItem.locationOptions,
-                                        tempSelectedId: newValue.location,
-                                    }),
-                                });
-                            } else {
-                                // TODO: Color and background should use pendant config, but ui is not design now
-                                const iconConfig = getPendantConfigByType(type);
-                                // TODO: Color and background should be choose by user in the future
-                                const newProperty = await addProperty({
-                                    type: type,
-                                    name: fieldName,
-                                    background:
-                                        iconConfig.background as CSSProperties['background'],
-                                    color: iconConfig.color as CSSProperties['color'],
-                                    iconName: iconConfig.iconName,
-                                });
-
-                                await setPendant(newProperty, newValue);
-                            }
-
+                            await onCreateSure({
+                                type,
+                                newPropertyItem,
+                                newValue,
+                                fieldName,
+                            });
                             onSure?.();
                         }}
                     />
@@ -202,11 +112,4 @@ export const CreatePendantPanel = ({
             ) : null}
         </StyledPopoverWrapper>
     );
-};
-
-const genOptionWithId = (options: OptionType[] = []) => {
-    return options.map((option: OptionType) => ({
-        ...option,
-        id: genSelectOptionId(),
-    }));
 };
