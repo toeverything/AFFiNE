@@ -661,10 +661,8 @@ export function App() {
                             margin: 'auto',
                             transition: 'all .5s',
                             transform: 'scale(0.98)',
-                            boxShadow: '2px 2px 40px #0002',
                             ':hover': {
                                 transform: 'scale(1)',
-                                boxShadow: '2px 2px 40px #0004',
                             },
                         }}
                     >
