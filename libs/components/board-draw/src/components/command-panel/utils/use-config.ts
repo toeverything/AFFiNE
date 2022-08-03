@@ -69,6 +69,7 @@ const _isSupportStroke = (shape: TDShape): boolean => {
         TDShapeType.Pencil,
         TDShapeType.Laser,
         TDShapeType.Highlight,
+        TDShapeType.Draw,
         TDShapeType.Arrow,
         TDShapeType.Line,
     ].some(type => type === shape.type);
