@@ -260,6 +260,7 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
         removeHistory({
             recastBlockId: block.id,
             propertyId: propertyId,
+            blockId: block.id,
         });
 
         return recastItem.setProperty(TABLE_VALUES_KEY, restProps);

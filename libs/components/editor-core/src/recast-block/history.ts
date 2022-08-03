@@ -9,7 +9,7 @@ type Props = {
 
 type HistoryStorageMap = {
     [recastBlockId: string]: {
-        [propertyId: RecastPropertyId]: string;
+        [propertyId: RecastPropertyId]: string[];
     };
 };
 
@@ -21,18 +21,34 @@ const ensureLocalStorage = () => {
         localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify({}));
     }
 };
+const ensureHistoryAtom = (
+    data: HistoryStorageMap,
+    recastBlockId: string,
+    propertyId: RecastPropertyId
+): HistoryStorageMap => {
+    if (!data[recastBlockId]) {
+        data[recastBlockId] = {};
+    }
+    if (!data[recastBlockId][propertyId]) {
+        data[recastBlockId][propertyId] = [];
+    }
+    return data;
+};
 
 export const setHistory = ({ recastBlockId, blockId, propertyId }: Props) => {
     ensureLocalStorage();
     const data: HistoryStorageMap = JSON.parse(
         localStorage.getItem(LOCAL_STORAGE_NAME) as string
     );
+    ensureHistoryAtom(data, recastBlockId, propertyId);
+    const propertyHistory = data[recastBlockId][propertyId];
 
-    if (!data[recastBlockId]) {
-        data[recastBlockId] = {};
+    if (propertyHistory.includes(blockId)) {
+        const idIndex = propertyHistory.findIndex(id => id === blockId);
+        propertyHistory.splice(idIndex, 1);
     }
-    const propertyValueRecord = data[recastBlockId];
-    propertyValueRecord[propertyId] = blockId;
+
+    propertyHistory.push(blockId);
 
     localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(data));
 };
@@ -48,20 +64,21 @@ export const getHistory = ({ recastBlockId }: { recastBlockId: string }) => {
 
 export const removeHistory = ({
     recastBlockId,
+    blockId,
     propertyId,
-}: {
-    recastBlockId: string;
-    propertyId: RecastPropertyId;
-}) => {
+}: Props) => {
     ensureLocalStorage();
     const data: HistoryStorageMap = JSON.parse(
         localStorage.getItem(LOCAL_STORAGE_NAME) as string
     );
-    if (!data[recastBlockId]) {
-        return;
-    }
+    ensureHistoryAtom(data, recastBlockId, propertyId);
 
-    delete data[recastBlockId][propertyId];
+    const propertyHistory = data[recastBlockId][propertyId];
+
+    if (propertyHistory.includes(blockId)) {
+        const idIndex = propertyHistory.findIndex(id => id === blockId);
+        propertyHistory.splice(idIndex, 1);
+    }
 
     localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(data));
 };
