@@ -15,7 +15,7 @@ const Dialog = styled('div')({
 
 const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
     const theme = useTheme();
-    const { closeSubPage } = useSubPage();
+    const { closeSubPage } = useRefPage();
 
     return createPortal(
         <MuiBackdrop
@@ -55,7 +55,7 @@ const SubPageContext = createContext<
     ReturnType<typeof useState<string | null>> | undefined
 >(undefined);
 
-export const SubPageProvider = ({ children }: { children: ReactNode }) => {
+export const RefPageProvider = ({ children }: { children: ReactNode }) => {
     const state = useState<string | null>();
     const [blockId, setBlockId] = state;
 
@@ -67,7 +67,7 @@ export const SubPageProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-export const useSubPage = () => {
+export const useRefPage = () => {
     const context = useContext(SubPageContext);
     if (!context) {
         throw new Error(

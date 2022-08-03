@@ -2,7 +2,7 @@ import type { KanbanCard } from '@toeverything/components/editor-core';
 import {
     RenderBlock,
     useKanban,
-    useSubPage,
+    useRefPage,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 
@@ -62,7 +62,7 @@ export const CardItem = ({
     block: KanbanCard['block'];
 }) => {
     const { addSubItem } = useKanban();
-    const { openSubPage } = useSubPage();
+    const { openSubPage } = useRefPage();
     const onAddItem = async () => {
         await addSubItem(block);
     };
