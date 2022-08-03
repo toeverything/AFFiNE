@@ -14,7 +14,7 @@ Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Fre
 
 <!--
 Make New Badge Pattern badges inline
-See https://github.com/all-contributors/all-contributors/issues/361#issuecomment-637166066
+See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
@@ -38,7 +38,7 @@ See https://github.com/all-contributors/all-contributors/issues/361#issuecomment
     <a href="https://t.me/affineworkos"><b>Telegram</b></a>
 </p>
 
-<p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/79301703/182363099-48b479c3-dc26-4fc3-8f9b-45f9cf358f9a.png"><p/>
+<p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/21084335/182552060-972cac0e-6258-4ccb-85bd-3bb466c30ccd.png"><p/>
 
 # Stay Up-to-Date
 
@@ -52,7 +52,8 @@ See https://github.com/all-contributors/all-contributors/issues/361#issuecomment
     -   [Plan your task](#plan-your-task)
     -   [Sort your knowledge](#sort-your-knowledge)
     -   [Create your story](#create-your-story)
--   [Getting Started with development](#getting-started-with-development)
+-   [Documentation](#documentation)
+    -   [Getting Started with development](#getting-started-with-development)
 -   [Roadmap](#roadmap)
 -   [Releases](#releases)
 -   [Feature requests](#feature-requests)
@@ -60,6 +61,7 @@ See https://github.com/all-contributors/all-contributors/issues/361#issuecomment
 -   [The Philosophy of AFFiNE](#the-philosophy-of-affine)
 -   [Community](#community)
 -   [Contributors](#contributors)
+-   [Acknowledgments](#acknowledgments)
 -   [License](#license)
 
 ## Shape your page
@@ -80,9 +82,13 @@ We want your data always to be yours, and we don't want to make any sacrifice to
 Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators.
 Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows and Linux. The local file system support will be available when version 0.0.1beta is released.
 
-# Getting Started with development
+# Documentation
 
-Please view the [documentation](https://affine.gitbook.io/affine/) in Contribute-to-AFFiNE/Software-Contributions/Environment-setup.
+Please view the [documentation](https://affine.gitbook.io/affine/)
+
+## Getting Started with development
+
+Please view the path Contribute-to-AFFiNE/Software-Contributions/Quick-Start in documentation.
 
 # Roadmap
 
@@ -151,19 +157,19 @@ For help, discussion about best practices, or any other conversation that would 
 <!-- markdownlint-disable -->
 <table>
   <tr>
-    <td align="center"><a href="https://darksky.eu.org/"><img src="https://avatars.githubusercontent.com/u/25152247?v=4?s=100" width="100px;" alt=""/><br /><sub><b>DarkSky</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=darkskygit" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=darkskygit" title="Documentation">📖</a></td>
-    <td align="center"><a href="http://zhangchi.page/"><img src="https://avatars.githubusercontent.com/u/5910926?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Chi Zhang</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=tzhangchi" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=tzhangchi" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/alt1o"><img src="https://avatars.githubusercontent.com/u/21084335?v=4?s=100" width="100px;" alt=""/><br /><sub><b>wang xinglong</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=alt1o" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=alt1o" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/DiamondThree"><img src="https://avatars.githubusercontent.com/u/24630517?v=4?s=100" width="100px;" alt=""/><br /><sub><b>DiamondThree</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=DiamondThree" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=DiamondThree" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://lawvs.github.io/profile/"><img src="https://avatars.githubusercontent.com/u/18554747?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Whitewater</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=lawvs" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=lawvs" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/zuoxiaodong0815"><img src="https://avatars.githubusercontent.com/u/53252747?v=4?s=100" width="100px;" alt=""/><br /><sub><b>xiaodong zuo</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=zuoxiaodong0815" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=zuoxiaodong0815" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/SaikaSakura"><img src="https://avatars.githubusercontent.com/u/11530942?v=4?s=100" width="100px;" alt=""/><br /><sub><b>MingLIang Wang</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=SaikaSakura" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=SaikaSakura" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://darksky.eu.org/"><img src="https://avatars.githubusercontent.com/u/25152247?v=4?s=100" width="100px;" alt=""/><br /><sub><b>DarkSky</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=darkskygit" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=darkskygit" title="Documentation">📖</a></td>
+    <td align="center"><a href="http://zhangchi.page/"><img src="https://avatars.githubusercontent.com/u/5910926?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Chi Zhang</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=tzhangchi" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=tzhangchi" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/alt1o"><img src="https://avatars.githubusercontent.com/u/21084335?v=4?s=100" width="100px;" alt=""/><br /><sub><b>wang xinglong</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=alt1o" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=alt1o" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/DiamondThree"><img src="https://avatars.githubusercontent.com/u/24630517?v=4?s=100" width="100px;" alt=""/><br /><sub><b>DiamondThree</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=DiamondThree" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=DiamondThree" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://lawvs.github.io/profile/"><img src="https://avatars.githubusercontent.com/u/18554747?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Whitewater</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=lawvs" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=lawvs" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/zuoxiaodong0815"><img src="https://avatars.githubusercontent.com/u/53252747?v=4?s=100" width="100px;" alt=""/><br /><sub><b>xiaodong zuo</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=zuoxiaodong0815" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=zuoxiaodong0815" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/SaikaSakura"><img src="https://avatars.githubusercontent.com/u/11530942?v=4?s=100" width="100px;" alt=""/><br /><sub><b>MingLIang Wang</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=SaikaSakura" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=SaikaSakura" title="Documentation">📖</a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/QiShaoXuan"><img src="https://avatars.githubusercontent.com/u/22772830?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Qi</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=QiShaoXuan" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=QiShaoXuan" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/mitsuhatu"><img src="https://avatars.githubusercontent.com/u/110213079?v=4?s=100" width="100px;" alt=""/><br /><sub><b>mitsuhatu</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=mitsuhatu" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=mitsuhatu" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://shockwave.me/"><img src="https://avatars.githubusercontent.com/u/15013925?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Austaras</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=Austaras" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=Austaras" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/uptonking?tab=repositories&type=source"><img src="https://avatars.githubusercontent.com/u/11391549?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jin Yao</b></sub></a><br /><a href="https://github.com/toeverything/Ligo-Virgo/commits?author=uptonking" title="Code">💻</a> <a href="https://github.com/toeverything/Ligo-Virgo/commits?author=uptonking" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/QiShaoXuan"><img src="https://avatars.githubusercontent.com/u/22772830?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Qi</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=QiShaoXuan" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=QiShaoXuan" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/mitsuhatu"><img src="https://avatars.githubusercontent.com/u/110213079?v=4?s=100" width="100px;" alt=""/><br /><sub><b>mitsuhatu</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=mitsuhatu" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=mitsuhatu" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://shockwave.me/"><img src="https://avatars.githubusercontent.com/u/15013925?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Austaras</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Austaras" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=Austaras" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/uptonking?tab=repositories&type=source"><img src="https://avatars.githubusercontent.com/u/11391549?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jin Yao</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=uptonking" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=uptonking" title="Documentation">📖</a></td>
   </tr>
 </table>
 
@@ -171,6 +177,10 @@ For help, discussion about best practices, or any other conversation that would 
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
+
+# Acknowledgments
+
+Thanks a lot to the community for providing such powerful and simple libraries as [slatejs](https://github.com/ianstormtaylor/slate), [tldraw](https://github.com/tldraw/tldraw), [yjs](https://github.com/yjs/yjs), etc., so that we can focus more on the implementation of the business logic, and we hope that in the future our projects will provide a more easy-to-use knowledge base for everyone.
 
 # License
 

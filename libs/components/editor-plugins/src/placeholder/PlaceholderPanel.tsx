@@ -141,9 +141,7 @@ export const PlaceholderPanel = (props: PlaceholderPanelProps) => {
         setOpen(false);
         props.onClickTips();
     };
-    //@ts-ignore lint rule change result this code lint error, add ingore
-    const templateList: Array<TemplateMeta> =
-        TemplateFactory.defaultTemplateList;
+    const templateList = TemplateFactory.defaultTemplateList;
     const handleNewFromTemplate = async (template: TemplateMeta) => {
         const pageId = await editor.getRootBlockId();
         const newPage = await services.api.editorBlock.getBlock(
@@ -163,33 +161,30 @@ export const PlaceholderPanel = (props: PlaceholderPanelProps) => {
         setOpen(false);
     };
     return (
-        <>
-            <PlaceholderPanelContainer
-                style={{
-                    top: point.y + 'px',
-                    left: point.x + 'px',
-                    display: open ? 'block' : 'none',
-                }}
-            >
-                <EmptyPageTipContainer onClick={handleClickEmptyPage}>
-                    Press Enter to continue with an empty page, or pick a
-                    template
-                </EmptyPageTipContainer>
-                <div style={{ marginTop: '4px', marginLeft: '-8px' }}>
-                    {templateList.map((template, index) => {
-                        return (
-                            <TemplateItemContainer
-                                key={index}
-                                onClick={() => {
-                                    handleNewFromTemplate(template);
-                                }}
-                            >
-                                <BaseButton>{template.name}</BaseButton>
-                            </TemplateItemContainer>
-                        );
-                    })}
-                </div>
-            </PlaceholderPanelContainer>
-        </>
+        <PlaceholderPanelContainer
+            style={{
+                top: point.y + 'px',
+                left: point.x + 'px',
+                display: open ? 'block' : 'none',
+            }}
+        >
+            <EmptyPageTipContainer onClick={handleClickEmptyPage}>
+                Press Enter to continue with an empty page, or pick a template
+            </EmptyPageTipContainer>
+            <div style={{ marginTop: '4px', marginLeft: '-8px' }}>
+                {templateList.map((template, index) => {
+                    return (
+                        <TemplateItemContainer
+                            key={index}
+                            onClick={() => {
+                                handleNewFromTemplate(template);
+                            }}
+                        >
+                            <BaseButton>{template.name}</BaseButton>
+                        </TemplateItemContainer>
+                    );
+                })}
+            </div>
+        </PlaceholderPanelContainer>
     );
 };
