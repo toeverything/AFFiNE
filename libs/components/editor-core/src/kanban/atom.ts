@@ -13,7 +13,6 @@ import {
     generateInitialOptions,
     generateRandomFieldName,
     getPendantIconsConfigByName,
-    getPendantController,
 } from '../block-pendant/utils';
 import { SelectOption } from '../recast-block';
 
@@ -117,31 +116,60 @@ export const moveCardToGroup = async ({
     group: KanbanGroup;
     recastBlock: RecastBlock;
 }) => {
-    const { setPendant, removePendant } = getPendantController(
-        recastBlock,
-        cardBlock
-    );
+    const { setValue, removeValue } = getRecastItemValue(cardBlock);
     let success = false;
     if (group.id === DEFAULT_GROUP_ID) {
-        success = await removePendant(groupBy);
+        success = await removeValue(groupBy.id);
         return false;
     }
 
     switch (group.type) {
         case PropertyType.Select: {
-            success = await setPendant(groupBy, group.id);
+            success = await setValue(
+                {
+                    id: groupBy.id,
+                    type: group.type,
+                    value: group.id,
+                },
+                recastBlock.id,
+                groupBy.id
+            );
             break;
         }
         case PropertyType.Status: {
-            success = await setPendant(groupBy, group.id);
+            success = await setValue(
+                {
+                    id: groupBy.id,
+                    type: group.type,
+                    value: group.id,
+                },
+                recastBlock.id,
+                groupBy.id
+            );
             break;
         }
         case PropertyType.MultiSelect: {
-            success = await setPendant(groupBy, [group.id]);
+            success = await setValue(
+                {
+                    id: groupBy.id,
+                    type: group.type,
+                    value: [group.id],
+                },
+                recastBlock.id,
+                groupBy.id
+            );
             break;
         }
         case PropertyType.Text: {
-            success = await setPendant(groupBy, group.id);
+            success = await setValue(
+                {
+                    id: groupBy.id,
+                    type: group.type,
+                    value: group.id,
+                },
+                recastBlock.id,
+                groupBy.id
+            );
             break;
         }
         default:

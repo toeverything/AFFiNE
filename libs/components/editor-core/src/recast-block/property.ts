@@ -15,6 +15,7 @@ import {
     SelectProperty,
     TABLE_VALUES_KEY,
 } from './types';
+import { getHistory, removeHistory, setHistory } from './history';
 
 /**
  * Generate a unique id for a property
@@ -240,7 +241,17 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
         return props[id];
     };
 
-    const setValue = (newValue: RecastBlockValue) => {
+    const setValue = (
+        newValue: RecastBlockValue,
+        recastBlockId: string,
+        propertyId: RecastPropertyId
+    ) => {
+        setHistory({
+            recastBlockId: recastBlockId,
+            blockId: block.id,
+            propertyId: propertyId,
+        });
+
         return recastItem.setProperty(TABLE_VALUES_KEY, {
             ...props,
             [newValue.id]: newValue,
@@ -249,9 +260,18 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
 
     const removeValue = (propertyId: RecastPropertyId) => {
         const { [propertyId]: omitted, ...restProps } = props;
+
+        removeHistory({
+            recastBlockId: block.id,
+            propertyId: propertyId,
+        });
+
         return recastItem.setProperty(TABLE_VALUES_KEY, restProps);
     };
-    return { getAllValue, getValue, setValue, removeValue };
+
+    const getValueHistory = getHistory;
+
+    return { getAllValue, getValue, setValue, removeValue, getValueHistory };
 };
 
 const isSelectLikeProperty = (

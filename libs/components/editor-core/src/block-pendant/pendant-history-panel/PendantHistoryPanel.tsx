@@ -1,5 +1,4 @@
 import React, { ReactNode, useRef, useEffect, useState } from 'react';
-import { getPendantHistory } from '../utils';
 import {
     getRecastItemValue,
     RecastMetaProperty,
@@ -30,6 +29,7 @@ export const PendantHistoryPanel = ({
 
     const [history, setHistory] = useState<RecastBlockValue[]>([]);
     const popoverHandlerRef = useRef<{ [key: string]: PopperHandler }>({});
+    const { getValueHistory } = getRecastItemValue(block);
 
     useEffect(() => {
         const init = async () => {
@@ -38,7 +38,7 @@ export const PendantHistoryPanel = ({
             const missProperties = allProperties.filter(
                 property => !currentBlockValues.find(v => v.id === property.id)
             );
-            const pendantHistory = getPendantHistory({
+            const pendantHistory = getValueHistory({
                 recastBlockId: recastBlock.id,
             });
             const historyMap = missProperties.reduce<{
