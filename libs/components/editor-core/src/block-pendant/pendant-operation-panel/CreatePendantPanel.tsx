@@ -44,7 +44,7 @@ export const CreatePendantPanel = ({
             <Select
                 width={284}
                 placeholder="Search for a field type"
-                value={selectedOption}
+                value={selectedOption ?? null}
                 onChange={(selectedValue: PendantOptions) => {
                     setSelectedOption(selectedValue);
                 }}
