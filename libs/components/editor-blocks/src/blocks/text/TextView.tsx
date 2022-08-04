@@ -99,7 +99,7 @@ export const TextView: FC<CreateTextView> = ({
             if (!parentBlock) {
                 return false;
             }
-
+            let preParent = await parentBlock.previousSibling();
             if (Protocol.Block.Type.group === parentBlock.type) {
                 const children = await block.children();
                 const preNode = await block.physicallyPerviousSibling();
@@ -129,34 +129,15 @@ export const TextView: FC<CreateTextView> = ({
                             'start'
                         );
                         if (block.blockProvider.isEmpty()) {
-                            block.remove();
-                        }
-                    }
-                    return true;
-                } else {
-                    // TODO remove timing problem
-                    const prevGroupBlock = await parentBlock.previousSibling();
-
-                    if (!prevGroupBlock) {
-                        const childrenBlock = await parentBlock.children();
-                        if (childrenBlock.length) {
-                            if (children.length) {
-                                await parentBlock.append(...children);
-                            }
                             await block.remove();
-                            return true;
+                            let parentChild = await parentBlock.children();
+                            if (!parentChild.length) {
+                                await editor.selectionManager.setSelectedNodesIds(
+                                    [preParent.id]
+                                );
+                            }
                         }
-
-                        parentBlock.remove();
-                        return true;
                     }
-                    if (prevGroupBlock.type !== Protocol.Block.Type.group) {
-                        unwrapGroup(parentBlock);
-                        return true;
-                    }
-
-                    mergeGroup(prevGroupBlock, parentBlock);
-
                     return true;
                 }
             }
