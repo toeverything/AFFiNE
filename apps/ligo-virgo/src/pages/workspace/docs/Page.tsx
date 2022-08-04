@@ -33,29 +33,7 @@ export function Page(props: PageProps) {
     const { page_id } = useParams();
     const { showSpaceSidebar, fixedDisplay, setSpaceSidebarVisible } =
         useShowSpaceSidebar();
-    const { user } = useUserAndSpaces();
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
-
-    useEffect(() => {
-        if (!user?.id || !page_id) return;
-        const updateRecentPages = async () => {
-            // TODO: deal with it temporarily
-            await services.api.editorBlock.getWorkspaceDbBlock(
-                props.workspace,
-                {
-                    userId: user.id,
-                }
-            );
-
-            await services.api.userConfig.addRecentPage(
-                props.workspace,
-                user.id,
-                page_id
-            );
-            await services.api.editorBlock.clearUndoRedo(props.workspace);
-        };
-        updateRecentPages();
-    }, [user, props.workspace, page_id]);
 
     return (
         <LigoApp>

@@ -64,30 +64,34 @@ export const Activities = () => {
     const [recentPages, setRecentPages] = useState([]);
     const userId = user?.id;
 
-    /* temporarily remove:show recently viewed documents */
-    const fetchRecentPages = useCallback(async () => {
+    /* show recently edit documents */
+    const getRecentEditPages = useCallback(async () => {
         if (!userId || !currentSpaceId) {
             return;
         }
-        const recent_pages = await services.api.userConfig.getRecentPages(
-            currentSpaceId,
-            userId
-        );
-        setRecentPages(recent_pages);
-    }, [userId, currentSpaceId]);
+
+        console.log('不执行吗');
+
+        const RecentEditPages =
+            (await services.api.userConfig.getRecentEditedPages(
+                currentSpaceId
+            )) || [];
+
+        setRecentPages(RecentEditPages);
+    }, [currentSpaceId, userId]);
 
     useEffect(() => {
         (async () => {
-            await fetchRecentPages();
+            await getRecentEditPages();
         })();
-    }, [fetchRecentPages]);
+    }, [getRecentEditPages]);
 
     useEffect(() => {
         let unobserve: () => void;
         const observe = async () => {
             unobserve = await services.api.userConfig.observe(
                 { workspace: currentSpaceId },
-                fetchRecentPages
+                getRecentEditPages
             );
         };
         observe();
@@ -95,12 +99,13 @@ export const Activities = () => {
         return () => {
             unobserve?.();
         };
-    }, [currentSpaceId, fetchRecentPages]);
+    }, [currentSpaceId, getRecentEditPages]);
 
     return (
         <StyledWrapper>
             <List style={{ padding: '0px' }}>
-                {recentPages.map(({ id, title, lastOpenTime }) => {
+                {recentPages.map(item => {
+                    const { id, title, updated } = item;
                     return (
                         <ListItem className="item" key={id}>
                             <StyledItemContent
@@ -114,7 +119,7 @@ export const Activities = () => {
                                 />
                                 <ListItemText
                                     className="itemRight"
-                                    primary={formatDistanceToNow(lastOpenTime, {
+                                    primary={formatDistanceToNow(updated, {
                                         includeSeconds: true,
                                     })}
                                 />
