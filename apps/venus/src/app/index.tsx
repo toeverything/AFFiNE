@@ -6,12 +6,17 @@ import clsx from 'clsx';
 
 import { CssVarsProvider, styled } from '@mui/joy/styles';
 import { Box, Button, Container, Grid, SvgIcon, Typography } from '@mui/joy';
-import Card from '@mui/joy/Card';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import RedditIcon from '@mui/icons-material/Reddit';
 import TelegramIcon from '@mui/icons-material/Telegram';
 // eslint-disable-next-line no-restricted-imports
 import { useMediaQuery } from '@mui/material';
+
+import LogoImage from './logo.png';
+import CollaborationImage from './collaboration.png';
+import PageImage from './page.png';
+import ShapeImage from './shape.png';
+import TaskImage from './task.png';
 
 const DiscordIcon = (props: any) => {
     return (
@@ -407,10 +412,7 @@ export function App() {
                             },
                         }}
                     >
-                        <AffineImage
-                            src="/assets/page.png"
-                            alt="AFFiNE main ui"
-                        />
+                        <AffineImage src={PageImage} alt="AFFiNE main ui" />
                     </Box>
                 </Grid>
                 <Grid xs={12} sx={{ display: 'flex' }}>
@@ -524,7 +526,7 @@ export function App() {
                             }}
                         >
                             <AffineImage
-                                src="/assets/shape.png"
+                                src={ShapeImage}
                                 alt="AFFiNE Shape Your Page"
                             />
                         </Box>
@@ -606,7 +608,7 @@ export function App() {
                             }}
                         >
                             <AffineImage
-                                src="/assets/task.png"
+                                src={TaskImage}
                                 alt="AFFiNE Plan Your Task"
                             />
                         </Box>
@@ -667,7 +669,7 @@ export function App() {
                         }}
                     >
                         <AffineImage
-                            src="/assets/collaboration.png"
+                            src={CollaborationImage}
                             alt="AFFiNE Privacy-first, and collaborative"
                         />
                     </Box>
@@ -680,7 +682,7 @@ export function App() {
                             margin: 'auto',
                         }}
                     >
-                        <AffineImage src="/assets/logo.png" alt="AFFiNE Logo" />
+                        <AffineImage src={LogoImage} alt="AFFiNE Logo" />
                     </Box>
                 </Grid>
                 <Grid xs={12} sx={{ display: 'flex' }}>
