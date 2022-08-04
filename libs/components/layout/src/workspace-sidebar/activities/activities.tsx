@@ -70,12 +70,12 @@ export const Activities = () => {
             return;
         }
 
-        const RecentEditPages =
+        const recentEditPages =
             (await services.api.userConfig.getRecentEditedPages(
                 currentSpaceId
             )) || [];
 
-        setRecentPages(RecentEditPages);
+        setRecentPages(recentEditPages);
     }, [currentSpaceId, userId]);
 
     useEffect(() => {
