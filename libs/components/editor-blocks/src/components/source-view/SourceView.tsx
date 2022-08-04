@@ -135,8 +135,25 @@ const LazyIframe = ({
             >
                 <iframe src={src} onLoad={onLoad} />
             </div>
+            {show ? '' : fallback}
         </>
     );
+};
+
+const Loading = styled('div')(() => {
+    return {
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        lineHeight: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '1px solid #EAEEF2',
+    };
+});
+
+const LoadingContiner = () => {
+    return <Loading>loading...</Loading>;
 };
 
 export const SourceView: FC<Props> = props => {
@@ -151,7 +168,10 @@ export const SourceView: FC<Props> = props => {
                 <SourceViewContainer isSelected={isSelected} scene={type}>
                     <MouseMaskContainer />
 
-                    <LazyIframe src={src} fallback={'Loading……'}></LazyIframe>
+                    <LazyIframe
+                        src={src}
+                        fallback={LoadingContiner()}
+                    ></LazyIframe>
                 </SourceViewContainer>
             </div>
         );
