@@ -69,14 +69,14 @@ export class BlockClient<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > {
-    readonly _adapter: A;
-    readonly _workspace: string;
+    private readonly _adapter: A;
+    private readonly _workspace: string;
 
     // Maximum cache Block 8192, ttl 30 minutes
-    readonly _blockCaches: LRUCache<string, BaseBlock<B, C>>;
-    readonly _blockIndexer: BlockIndexer<A, B, C>;
+    private readonly _blockCaches: LRUCache<string, BaseBlock<B, C>>;
+    private readonly _blockIndexer: BlockIndexer<A, B, C>;
 
-    readonly _exporters: {
+    private readonly _exporters: {
         readonly content: BlockExporters<string>;
         readonly metadata: BlockExporters<
             Array<[string, number | string | string[]]>
@@ -84,12 +84,12 @@ export class BlockClient<
         readonly tag: BlockExporters<string[]>;
     };
 
-    readonly _eventBus: BlockEventBus;
+    private readonly _eventBus: BlockEventBus;
 
-    readonly _parentMapping: Map<string, string[]>;
-    readonly _pageMapping: Map<string, string>;
+    private readonly _parentMapping: Map<string, string[]>;
+    private readonly _pageMapping: Map<string, string>;
 
-    readonly _root: { node?: BaseBlock<B, C> };
+    private readonly _root: { node?: BaseBlock<B, C> };
 
     private constructor(
         adapter: A,

@@ -107,18 +107,18 @@ export class BlockIndexer<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > {
-    readonly _adapter: A;
-    readonly _idb: BlockIdbInstance;
+    private readonly _adapter: A;
+    private readonly _idb: BlockIdbInstance;
 
-    readonly _blockIndexer: DocumentIndexer<IndexMetadata>;
-    readonly _blockMetadata: LRUCache<string, QueryMetadata>;
-    readonly _eventBus: BlockEventBus;
+    private readonly _blockIndexer: DocumentIndexer<IndexMetadata>;
+    private readonly _blockMetadata: LRUCache<string, QueryMetadata>;
+    private readonly _eventBus: BlockEventBus;
 
-    readonly _blockBuilder: (
+    private readonly _blockBuilder: (
         block: BlockInstance<C>
     ) => Promise<BaseBlock<B, C>>;
 
-    readonly _delayIndex: { documents: Map<string, BaseBlock<B, C>> };
+    private readonly _delayIndex: { documents: Map<string, BaseBlock<B, C>> };
 
     constructor(
         adapter: A,

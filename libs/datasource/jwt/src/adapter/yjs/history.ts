@@ -5,10 +5,10 @@ import { HistoryCallback, HistoryManager } from '../../adapter';
 type StackItem = UndoManager['undoStack'][0];
 
 export class YjsHistoryManager implements HistoryManager {
-    readonly _blocks: YMap<any>;
-    readonly _historyManager: UndoManager;
-    readonly _pushListeners: Map<string, HistoryCallback<any>>;
-    readonly _popListeners: Map<string, HistoryCallback<any>>;
+    private readonly _blocks: YMap<any>;
+    private readonly _historyManager: UndoManager;
+    private readonly _pushListeners: Map<string, HistoryCallback<any>>;
+    private readonly _popListeners: Map<string, HistoryCallback<any>>;
 
     constructor(scope: YMap<any>, tracker?: any[]) {
         this._blocks = scope;
