@@ -4,7 +4,14 @@ import {
     useLazyIframe,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
-import { FC, useRef } from 'react';
+import {
+    FC,
+    ReactElement,
+    ReactNode,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { SCENE_CONFIG } from '../../blocks/group/config';
 import { BlockPreview } from './BlockView';
 import { formatUrl } from './format-url';
@@ -88,18 +95,54 @@ const SourceViewContainer = styled('div')<{
         },
     };
 });
-const IframeContainer = styled('div')<{ show: boolean }>(({ show }) => {
-    return {
-        height: '100%',
-        display: show ? 'block' : 'none',
+
+const LazyIframe = ({
+    src,
+    delay = 3000,
+    fallback,
+}: {
+    src: string;
+    delay?: number;
+    fallback?: ReactNode;
+}) => {
+    const [show, setShow] = useState(false);
+    const timer = useRef<number>();
+
+    useEffect(() => {
+        // Hide iframe when the src changed
+        setShow(false);
+    }, [src]);
+
+    const onLoad = () => {
+        clearTimeout(timer.current);
+        timer.current = window.setTimeout(() => {
+            // Prevent iframe scrolling parent container
+            // Remove the delay after the issue is resolved
+            // See W3C https://github.com/w3c/csswg-drafts/issues/7134
+            // See https://forum.figma.com/t/prevent-figmas-embed-code-from-automatically-scrolling-to-it-on-page-load/26029/6
+            setShow(true);
+        }, delay);
     };
-});
+
+    return (
+        <>
+            <div
+                onMouseDown={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }}
+                style={{ display: show ? 'block' : 'none', height: '100%' }}
+            >
+                <iframe src={src} onLoad={onLoad} />
+            </div>
+        </>
+    );
+};
+
 export const SourceView: FC<Props> = props => {
     const { link, isSelected, block, editorElement } = props;
     const src = formatUrl(link);
-
-    const iframeContainer = useRef(null);
-    let iframeShow = useLazyIframe(src, 3000, iframeContainer);
+    // let iframeShow = useLazyIframe(src, 3000, iframeContainer);
     const [currentView] = useCurrentView();
     const { type } = currentView;
     if (src?.startsWith('http')) {
@@ -107,14 +150,8 @@ export const SourceView: FC<Props> = props => {
             <div style={{ display: 'flex' }}>
                 <SourceViewContainer isSelected={isSelected} scene={type}>
                     <MouseMaskContainer />
-                    <IframeContainer
-                        onMouseDown={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }}
-                        show={iframeShow}
-                        ref={iframeContainer}
-                    ></IframeContainer>
+
+                    <LazyIframe src={src} fallback={'Loading……'}></LazyIframe>
                 </SourceViewContainer>
             </div>
         );
