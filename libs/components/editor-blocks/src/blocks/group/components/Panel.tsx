@@ -6,7 +6,7 @@ const StyledPanel = styled('div')(({ theme }) => ({
     position: 'absolute',
     top: 50,
     background: '#FFFFFF',
-    boxShadow: theme.affine.shadows.shadowSxDownLg,
+    boxShadow: theme.affine.shadows.shadow1,
     borderRadius: 10,
     padding: '12px 24px',
 }));

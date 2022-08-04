@@ -179,7 +179,7 @@ const RootContainer = styled('div')(({ theme }) => ({
     zIndex: 1,
     maxHeight: '525px',
     borderRadius: '10px',
-    boxShadow: theme.affine.shadows.shadowSxDownLg,
+    boxShadow: theme.affine.shadows.shadow1,
     backgroundColor: '#fff',
     padding: '8px 4px',
 }));

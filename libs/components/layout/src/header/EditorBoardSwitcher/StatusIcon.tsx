@@ -20,7 +20,7 @@ const IconWrapper = styled('div')<Pick<StatusIconProps, 'mode'>>(
             width: '20px',
             height: '20px',
             borderRadius: '5px',
-            boxShadow: theme.affine.shadows.shadowSxDownLg,
+            boxShadow: theme.affine.shadows.shadow1,
             color: theme.affine.palette.primary,
             cursor: 'pointer',
             backgroundColor: theme.affine.palette.white,

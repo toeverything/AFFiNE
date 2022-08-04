@@ -82,6 +82,6 @@ const ToolbarContainer = styled('div')(({ theme }) => ({
     alignItems: 'center',
     padding: '0 12px',
     borderRadius: '10px',
-    boxShadow: theme.affine.shadows.shadowSxDownLg,
+    boxShadow: theme.affine.shadows.shadow1,
     backgroundColor: '#fff',
 }));

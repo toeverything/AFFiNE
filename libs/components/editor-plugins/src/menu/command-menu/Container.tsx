@@ -31,7 +31,7 @@ const RootContainer = styled('div')(({ theme }) => {
         width: 352,
         maxHeight: 525,
         borderRadius: '10px',
-        boxShadow: theme.affine.shadows.shadowSxDownLg,
+        boxShadow: theme.affine.shadows.shadow1,
         backgroundColor: '#fff',
         padding: '8px 4px',
     };

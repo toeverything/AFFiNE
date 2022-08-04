@@ -108,7 +108,7 @@ export const Search = (props: SearchProps) => {
 const SearchInput = styled('input')(({ theme }) => ({
     margin: '0.5em',
     backgroundColor: 'white',
-    boxShadow: theme.affine.shadows.shadowSxDownLg,
+    boxShadow: theme.affine.shadows.shadow1,
     padding: '16px 32px',
     borderRadius: '10px',
 }));
@@ -116,7 +116,7 @@ const SearchInput = styled('input')(({ theme }) => ({
 const ResultContainer = styled(MuiBox)(({ theme }) => ({
     margin: '0.5em',
     backgroundColor: 'white',
-    boxShadow: theme.affine.shadows.shadowSxDownLg,
+    boxShadow: theme.affine.shadows.shadow1,
     padding: '16px 32px',
     borderRadius: '10px',
     transitionProperty: 'max-height',

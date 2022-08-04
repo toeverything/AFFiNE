@@ -125,7 +125,7 @@ const LinkStyledTooltip = styled(({ className, ...props }: MuiTooltipProps) => (
     [`& .${muiTooltipClasses.tooltip}`]: {
         backgroundColor: '#fff',
         color: '#4C6275',
-        boxShadow: theme.affine.shadows.shadowSxDownLg,
+        boxShadow: theme.affine.shadows.shadow1,
         fontSize: '14px',
     },
     [`& .MuiTooltip-tooltipPlacementBottom`]: {
@@ -497,7 +497,7 @@ const LinkModalContainer = styled('div')(({ theme }) => ({
     padding: '12px',
     display: 'flex',
     borderRadius: '4px',
-    boxShadow: theme.affine.shadows.shadowSxDownLg,
+    boxShadow: theme.affine.shadows.shadow1,
     backgroundColor: '#fff',
     alignItems: 'center',
     zIndex: '1',
