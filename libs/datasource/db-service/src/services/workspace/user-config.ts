@@ -3,7 +3,7 @@ import { ServiceBaseClass } from '../base';
 import { ObserveCallback, ReturnUnobserve } from '../database';
 import { PageTree } from './page-tree';
 import { PageConfigItem } from './types';
-import { QueryIndexMetadata } from '@toeverything/datasource/jwt';
+import type { QueryIndexMetadata } from '@toeverything/datasource/jwt';
 
 /** Operate the user configuration at the workspace level */
 export class UserConfig extends ServiceBaseClass {

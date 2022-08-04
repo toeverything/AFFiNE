@@ -70,8 +70,6 @@ export const Activities = () => {
             return;
         }
 
-        console.log('不执行吗');
-
         const RecentEditPages =
             (await services.api.userConfig.getRecentEditedPages(
                 currentSpaceId
