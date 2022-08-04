@@ -284,7 +284,6 @@ export class SelectTool extends BaseTool<Status> {
 
     override onPointerMove: TLPointerEventHandler = (info, e) => {
         const { originPoint, currentPoint } = this.app;
-        console.log('this.status', this.status);
 
         switch (this.status) {
             case Status.PointingBoundsHandle: {
