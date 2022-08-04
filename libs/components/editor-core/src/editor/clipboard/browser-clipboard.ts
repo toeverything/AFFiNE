@@ -17,6 +17,18 @@ import { MarkdownParser } from './markdown-parse';
 
 // todo needs to be a switch
 const support_markdown_paste = true;
+const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
+
+const shouldHandlerContinue = (event: Event, editor: Editor) => {
+    if (event.defaultPrevented) {
+        return false;
+    }
+    if (filterNodes.includes((event.target as HTMLElement)?.tagName)) {
+        return false;
+    }
+
+    return editor.selectionManager.currentSelectInfo.type !== 'None';
+};
 
 enum ClipboardAction {
     COPY = 'copy',
@@ -72,8 +84,7 @@ class BrowserClipboard {
     }
 
     private handle_copy(e: Event) {
-        //@ts-ignore
-        if (e.defaultPrevented || e.target.nodeName === 'INPUT') {
+        if (!shouldHandlerContinue(e, this.editor)) {
             return;
         }
 
@@ -84,33 +95,31 @@ class BrowserClipboard {
     }
 
     private handle_cut(e: Event) {
-        //@ts-ignore
-        if (e.defaultPrevented || e.target.nodeName === 'INPUT') {
+        if (!shouldHandlerContinue(e, this.editor)) {
             return;
         }
+
         this.dispatch_clipboard_event(ClipboardAction.CUT, e as ClipboardEvent);
     }
 
     private handle_paste(e: Event) {
-        //@ts-ignore TODO should be handled more scientifically here, whether to trigger the paste time, also need some whitelist mechanism
-        if (e.defaultPrevented || e.target.nodeName === 'INPUT') {
+        if (!shouldHandlerContinue(e, this.editor)) {
             return;
         }
+        e.stopPropagation();
 
         const clipboardData = (e as ClipboardEvent).clipboardData;
 
         const isPureFile = this.is_pure_file_in_clipboard(clipboardData);
 
-        if (!isPureFile) {
-            this.paste_content(clipboardData);
-        } else {
+        if (isPureFile) {
             this.paste_file(clipboardData);
+        } else {
+            this.paste_content(clipboardData);
         }
         // this.editor.selectionManager
         //     .getSelectInfo()
         //     .then(selectionInfo => console.log(selectionInfo));
-
-        e.stopPropagation();
     }
 
     private paste_content(clipboardData: any) {
