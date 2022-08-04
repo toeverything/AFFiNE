@@ -8,4 +8,5 @@ export const config: IOption = {
     //   id: 'the user's unique identifier'
     // }
     devModePassword: '-',
+    enableDataSync: !!process.env['AFFINE_FEATURE_FLAG_TOKEN'],
 };
