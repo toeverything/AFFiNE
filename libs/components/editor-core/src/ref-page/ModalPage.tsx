@@ -1,6 +1,7 @@
 import { MuiBackdrop, styled, useTheme } from '@toeverything/components/ui';
 import { createContext, ReactNode, useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useEditor } from '../Contexts';
 import { RenderBlock } from '../render-block';
 
 const Dialog = styled('div')({
@@ -10,7 +11,7 @@ const Dialog = styled('div')({
     background: '#fff',
     boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
     borderRadius: '10px',
-    padding: '40px 50px',
+    padding: '72px 120px',
 });
 
 const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
@@ -40,18 +41,17 @@ const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
     );
 };
 
-const ModalPage = ({ blockId }: { blockId: string }) => {
-    if (!blockId) {
-        return null;
-    }
+const ModalPage = ({ blockId }: { blockId: string | null }) => {
+    const { editor } = useEditor();
+
     return (
-        <Modal open={true}>
-            <RenderBlock blockId={blockId} />
+        <Modal open={!!blockId}>
+            {blockId && <RenderBlock blockId={blockId} />}
         </Modal>
     );
 };
 
-const SubPageContext = createContext<
+const RefPageContext = createContext<
     ReturnType<typeof useState<string | null>> | undefined
 >(undefined);
 
@@ -60,15 +60,15 @@ export const RefPageProvider = ({ children }: { children: ReactNode }) => {
     const [blockId, setBlockId] = state;
 
     return (
-        <SubPageContext.Provider value={state}>
+        <RefPageContext.Provider value={state}>
             {children}
-            {blockId && <ModalPage blockId={blockId} />}
-        </SubPageContext.Provider>
+            <ModalPage blockId={blockId ?? null} />
+        </RefPageContext.Provider>
     );
 };
 
 export const useRefPage = () => {
-    const context = useContext(SubPageContext);
+    const context = useContext(RefPageContext);
     if (!context) {
         throw new Error(
             'Wrap your app inside of a `SubPageProvider` to have access to the hook context!'
