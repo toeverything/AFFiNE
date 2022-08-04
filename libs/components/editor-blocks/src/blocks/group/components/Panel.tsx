@@ -2,11 +2,11 @@ import { styled } from '@toeverything/components/ui';
 import type { ComponentPropsWithRef, MouseEvent } from 'react';
 import { forwardRef } from 'react';
 
-const StyledPanel = styled('div')(() => ({
+const StyledPanel = styled('div')(({ theme }) => ({
     position: 'absolute',
     top: 50,
     background: '#FFFFFF',
-    boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+    boxShadow: theme.affine.shadows.shadowSxDownLg,
     borderRadius: 10,
     padding: '12px 24px',
 }));

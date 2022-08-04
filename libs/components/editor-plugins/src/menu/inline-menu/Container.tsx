@@ -75,13 +75,13 @@ export const InlineMenuContainer = ({ editor }: InlineMenuContainerProps) => {
     ) : null;
 };
 
-const ToolbarContainer = styled('div')({
+const ToolbarContainer = styled('div')(({ theme }) => ({
     position: 'absolute',
     zIndex: 1,
     display: 'flex',
     alignItems: 'center',
     padding: '0 12px',
     borderRadius: '10px',
-    boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+    boxShadow: theme.affine.shadows.shadowSxDownLg,
     backgroundColor: '#fff',
-});
+}));

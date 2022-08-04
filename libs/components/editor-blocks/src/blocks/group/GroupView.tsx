@@ -69,7 +69,7 @@ const GroupContainer = styled('div')<{ isSelect?: boolean }>(
               }
             : {
                   '&:hover': {
-                      boxShadow: '0px 1px 10px rgb(152 172 189 / 60%)',
+                      boxShadow: theme.affine.shadows.shadowSxDownLg,
                   },
               }),
     })

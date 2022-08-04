@@ -200,7 +200,7 @@ const LigoLeftContainer = styled('div')({
     position: 'relative',
 });
 
-const WorkspaceSidebar = styled('div')(({ hidden }) => ({
+const WorkspaceSidebar = styled('div')(({ theme }) => ({
     position: 'absolute',
     bottom: '48px',
     top: '12px',
@@ -210,7 +210,7 @@ const WorkspaceSidebar = styled('div')(({ hidden }) => ({
     width: 300,
     minWidth: 300,
     borderRadius: '0px 10px 10px 0px',
-    boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+    boxShadow: theme.affine.shadows.shadowSxDownLg,
     backgroundColor: '#FFFFFF',
     transitionProperty: 'left',
     transitionDuration: '0.35s',

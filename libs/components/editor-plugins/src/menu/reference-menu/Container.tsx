@@ -8,6 +8,7 @@ import {
     commonListContainer,
 } from '@toeverything/components/common';
 import { domToRect } from '@toeverything/utils';
+import { styled } from '@toeverything/components/ui';
 
 import { QueryResult } from '../../search';
 
@@ -152,13 +153,12 @@ export const ReferenceMenuContainer = ({
     }, [hooks, handle_key_down]);
 
     return isShow ? (
-        <div
+        <RootContainer
             ref={menu_ref}
-            className={styles('rootContainer')}
             onKeyDownCapture={handle_key_down}
             style={style}
         >
-            <div className={styles('contentContainer')}>
+            <ContentContainer>
                 <CommonList
                     items={
                         searchBlocks?.map(
@@ -169,24 +169,23 @@ export const ReferenceMenuContainer = ({
                     currentItem={current_item}
                     setCurrentItem={set_current_item}
                 />
-            </div>
-        </div>
+            </ContentContainer>
+        </RootContainer>
     ) : null;
 };
 
-const styles = style9.create({
-    rootContainer: {
-        position: 'fixed',
-        zIndex: 1,
-        maxHeight: 525,
-        borderRadius: '10px',
-        boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
-        backgroundColor: '#fff',
-        padding: '8px 4px',
-    },
-    contentContainer: {
-        display: 'flex',
-        overflow: 'hidden',
-        maxHeight: 493,
-    },
-});
+const RootContainer = styled('div')(({ theme }) => ({
+    position: 'fixed',
+    zIndex: 1,
+    maxHeight: '525px',
+    borderRadius: '10px',
+    boxShadow: theme.affine.shadows.shadowSxDownLg,
+    backgroundColor: '#fff',
+    padding: '8px 4px',
+}));
+
+const ContentContainer = styled('div')(({ theme }) => ({
+    display: 'flex',
+    overflow: 'hidden',
+    maxHeight: '493px',
+}));
