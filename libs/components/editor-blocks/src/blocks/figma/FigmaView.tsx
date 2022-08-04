@@ -2,7 +2,7 @@ import { FC, useState } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import {
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { Upload } from '../../components/upload/upload';
 import { SourceView } from '../../components/source-view';
@@ -30,7 +30,7 @@ export const FigmaView: FC<FigmaView> = ({ block, editor }) => {
         setIsSelect(isSelect);
     });
     return (
-        <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+        <BlockPendantProvider block={block}>
             <LinkContainer>
                 {figmaUrl ? (
                     <SourceView
@@ -52,6 +52,6 @@ export const FigmaView: FC<FigmaView> = ({ block, editor }) => {
                     />
                 )}
             </LinkContainer>
-        </WrapperWithPendantAndDragDrop>
+        </BlockPendantProvider>
     );
 };

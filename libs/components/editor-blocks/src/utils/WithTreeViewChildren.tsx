@@ -3,7 +3,7 @@ import {
     RenderBlock,
     useCurrentView,
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import type {
@@ -128,9 +128,9 @@ export const withTreeViewChildren = (
                 selected={isSelect}
                 className={Wrapper.toString()}
             >
-                <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+                <BlockPendantProvider block={block}>
                     <div>{creator(props)}</div>
-                </WrapperWithPendantAndDragDrop>
+                </BlockPendantProvider>
 
                 {collapsed && (
                     <CollapsedNode

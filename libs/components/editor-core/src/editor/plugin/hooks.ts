@@ -113,13 +113,6 @@ export class Hooks implements HooksRunner, PluginHooks {
         this._runHook(HookType.ON_ROOTNODE_DRAG_OVER_CAPTURE, e);
     }
 
-    public afterOnNodeDragOver(
-        e: React.DragEvent<Element>,
-        node: BlockDomInfo
-    ): void {
-        this._runHook(HookType.AFTER_ON_NODE_DRAG_OVER, e, node);
-    }
-
     public onSearch(): void {
         this._runHook(HookType.ON_SEARCH);
     }
