@@ -144,10 +144,13 @@ We would also like to give thanks to open-source projects that make affine possi
 -   [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
 -   [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
 -   [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
+-   [slatejs](https://github.com/ianstormtaylor/slate) -- Customizable rich-text editor.
 -   [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend. 
 -   [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
 -   [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
 -   Other [dependancies](https://github.com/toeverything/AFFiNE/network/dependencies)
+
+Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 
 # Community
 
@@ -182,10 +185,6 @@ For help, discussion about best practices, or any other conversation that would 
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
-
-# Acknowledgments
-
-Thanks a lot to the community for providing such powerful and simple libraries as [slatejs](https://github.com/ianstormtaylor/slate), [tldraw](https://github.com/tldraw/tldraw), [yjs](https://github.com/yjs/yjs), etc., so that we can focus more on the implementation of the business logic, and we hope that in the future our projects will provide a more easy-to-use knowledge base for everyone.
 
 # License
 
