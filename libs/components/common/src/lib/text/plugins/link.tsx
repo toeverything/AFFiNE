@@ -121,11 +121,11 @@ const isLinkActive = (editor: ReactEditor) => {
 
 const LinkStyledTooltip = styled(({ className, ...props }: MuiTooltipProps) => (
     <Tooltip {...props} classes={{ popper: className }} />
-))(() => ({
+))(({ theme }) => ({
     [`& .${muiTooltipClasses.tooltip}`]: {
         backgroundColor: '#fff',
         color: '#4C6275',
-        boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+        boxShadow: theme.affine.shadows.shadow1,
         fontSize: '14px',
     },
     [`& .MuiTooltip-tooltipPlacementBottom`]: {
@@ -412,8 +412,7 @@ export const LinkModal = memo((props: LinkModalProps) => {
         visible && (
             <>
                 <LinkBehavior onMousedown={handle_mouse_down} rects={rects} />
-                <div
-                    className={styles('linkModalContainer')}
+                <LinkModalContainer
                     style={{
                         top: top + height + GAP_BETWEEN_CONTENT_AND_MODAL,
                         left,
@@ -431,7 +430,7 @@ export const LinkModal = memo((props: LinkModalProps) => {
                         autoComplete="off"
                         ref={inputEl}
                     />
-                </div>
+                </LinkModalContainer>
             </>
         ),
         body
@@ -491,19 +490,20 @@ const LinkBehavior = (props: {
     );
 };
 
+const LinkModalContainer = styled('div')(({ theme }) => ({
+    position: 'fixed',
+    width: '354px',
+    height: '40px',
+    padding: '12px',
+    display: 'flex',
+    borderRadius: '4px',
+    boxShadow: theme.affine.shadows.shadow1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    zIndex: '1',
+}));
+
 const styles = style9.create({
-    linkModalContainer: {
-        position: 'fixed',
-        width: '354px',
-        height: '40px',
-        padding: '12px',
-        display: 'flex',
-        borderRadius: '4px',
-        boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        zIndex: '1',
-    },
     linkModalContainerIcon: {
         width: '16px',
         margin: '0 16px 0 4px',
