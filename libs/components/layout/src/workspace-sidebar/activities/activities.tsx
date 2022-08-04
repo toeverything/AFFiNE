@@ -12,17 +12,22 @@ import { useNavigate } from 'react-router';
 import { formatDistanceToNow } from 'date-fns';
 
 const StyledWrapper = styled('div')({
-    margin: '0 16px 0 32px',
+    paddingLeft: '12px',
     span: {
         textOverflow: 'ellipsis',
         overflow: 'hidden',
     },
     '.item': {
+        height: '32px',
         display: 'flex',
         alignItems: 'center',
-        ustifyContent: 'space-between',
-        padding: '7px 0px',
+        justifyContent: 'space-between',
+        paddingRight: '20px',
         whiteSpace: 'nowrap',
+        '&:hover': {
+            background: '#f5f7f8',
+            borderRadius: '5px',
+        },
     },
     '.itemButton': {
         padding: 0,
@@ -31,6 +36,7 @@ const StyledWrapper = styled('div')({
     '.itemLeft': {
         color: '#4c6275',
         marginRight: '20px',
+        cursor: 'pointer',
         span: {
             fontSize: 14,
         },
@@ -44,6 +50,14 @@ const StyledWrapper = styled('div')({
     },
 });
 
+const StyledItemContent = styled('div')({
+    width: '100%',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+});
+
 export const Activities = () => {
     const navigate = useNavigate();
     const { user, currentSpaceId } = useUserAndSpaces();
@@ -51,34 +65,29 @@ export const Activities = () => {
     const userId = user?.id;
 
     /* temporarily remove:show recently viewed documents */
-    // const fetchRecentPages = useCallback(async () => {
-    //     if (!userId || !currentSpaceId) {
-    //         return;
-    //     }
-    //     const recent_pages = await services.api.userConfig.getRecentPages(
-    //         currentSpaceId,
-    //         userId
-    //     );
-    //     setRecentPages(recent_pages);
-    // }, [userId, currentSpaceId]);
+    const fetchRecentPages = useCallback(async () => {
+        if (!userId || !currentSpaceId) {
+            return;
+        }
+        const recent_pages = await services.api.userConfig.getRecentPages(
+            currentSpaceId,
+            userId
+        );
+        setRecentPages(recent_pages);
+    }, [userId, currentSpaceId]);
 
-    // useEffect(() => {
-    //     (async () => {
-    //         await fetchRecentPages();
-    //     })();
-    // }, [fetchRecentPages]);
-
-    /* show recently edit documents */
-    const getRecentEditPages = async (state, block) => {
-        console.log(state, await block.children());
-    };
+    useEffect(() => {
+        (async () => {
+            await fetchRecentPages();
+        })();
+    }, [fetchRecentPages]);
 
     useEffect(() => {
         let unobserve: () => void;
         const observe = async () => {
             unobserve = await services.api.userConfig.observe(
                 { workspace: currentSpaceId },
-                getRecentEditPages
+                fetchRecentPages
             );
         };
         observe();
@@ -86,16 +95,15 @@ export const Activities = () => {
         return () => {
             unobserve?.();
         };
-    }, [currentSpaceId, getRecentEditPages]);
+    }, [currentSpaceId, fetchRecentPages]);
 
     return (
         <StyledWrapper>
-            <List>
+            <List style={{ padding: '0px' }}>
                 {recentPages.map(({ id, title, lastOpenTime }) => {
                     return (
                         <ListItem className="item" key={id}>
-                            <ListItemButton
-                                className="itemButton"
+                            <StyledItemContent
                                 onClick={() => {
                                     navigate(`/${currentSpaceId}/${id}`);
                                 }}
@@ -110,7 +118,7 @@ export const Activities = () => {
                                         includeSeconds: true,
                                     })}
                                 />
-                            </ListItemButton>
+                            </StyledItemContent>
                         </ListItem>
                     );
                 })}

@@ -1,16 +1,9 @@
 /* eslint-disable filename-rules/match */
-import {
-    useEffect,
-    useRef,
-    type UIEvent,
-    useState,
-    useLayoutEffect,
-} from 'react';
+import { useEffect, useRef, type UIEvent, useState } from 'react';
 import { useParams } from 'react-router';
 import {
     MuiBox as Box,
     MuiCircularProgress as CircularProgress,
-    MuiDivider as Divider,
     styled,
 } from '@toeverything/components/ui';
 import { AffineEditor } from '@toeverything/components/affine-editor';
@@ -54,11 +47,11 @@ export function Page(props: PageProps) {
                 }
             );
 
-            // await services.api.userConfig.addRecentPage(
-            //     props.workspace,
-            //     user.id,
-            //     page_id
-            // );
+            await services.api.userConfig.addRecentPage(
+                props.workspace,
+                user.id,
+                page_id
+            );
             await services.api.editorBlock.clearUndoRedo(props.workspace);
         };
         updateRecentPages();
@@ -94,14 +87,14 @@ export function Page(props: PageProps) {
                             )}
                             <div>
                                 <CollapsibleTitle
-                                    title="Activities"
+                                    title="ACTIVITIES"
                                     initialOpen={false}
                                 >
                                     <Activities />
                                 </CollapsibleTitle>
                             </div>
                             <div>
-                                <CollapsiblePageTree title="Page Tree">
+                                <CollapsiblePageTree title="PAGES">
                                     {page_id ? <PageTree /> : null}
                                 </CollapsiblePageTree>
                             </div>
