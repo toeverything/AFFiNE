@@ -30,7 +30,6 @@ export class ScrollManager {
 
     constructor(editor: BlockEditor) {
         this._editor = editor;
-        (window as any).scrollManager = this;
     }
 
     private _updateScrollInfo(left: number, top: number) {
@@ -111,6 +110,7 @@ export class ScrollManager {
     }
 
     public emitScrollEvent(event: UIEvent) {
+        this.scrollContainer = event.target as HTMLElement;
         this._scrollDirection = this._getScrollDirection();
         this._scrollMoveOffset = Math.abs(
             this.scrollContainer.scrollTop - this._scrollRecord[0]

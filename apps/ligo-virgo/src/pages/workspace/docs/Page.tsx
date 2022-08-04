@@ -148,7 +148,7 @@ const EditorContainer = ({
             obv.observe(scrollContainerRef.current);
             return () => obv.disconnect();
         }
-    });
+    }, [setPageClientWidth]);
 
     return (
         <StyledEditorContainer
