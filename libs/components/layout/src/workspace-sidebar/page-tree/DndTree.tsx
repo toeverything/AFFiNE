@@ -44,7 +44,7 @@ export type DndTreeProps = {
  */
 export function DndTree(props: DndTreeProps) {
     const {
-        indentationWidth = 16,
+        indentationWidth = 12,
         collapsible,
         removable,
         showDragIndicator,
