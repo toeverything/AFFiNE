@@ -9,4 +9,17 @@ export const config: IOption = {
     // }
     devModePassword: '-',
     enableDataSync: !!process.env['AFFINE_FEATURE_FLAG_TOKEN'],
+    // bootstrap: [
+    //     {
+    //         // the feature flag key
+    //         id: 'flag',
+    //         // the feature flag value
+    //         variation: false,
+    //         // the variation data type, string is used if not provided
+    //         variationType: VariationDataType.boolean,
+    //         variationOptions: [],
+    //         timestamp: 0,
+    //         sendToExperiment: false,
+    //     },
+    // ],
 };
