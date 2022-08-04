@@ -1,3 +1,6 @@
+import { noop, Point } from '@toeverything/utils';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEditor } from './Contexts';
 import {
     AsyncBlock,
     BlockEditor,
@@ -5,9 +8,6 @@ import {
     SelectionInfo,
     SelectionSettingsMap,
 } from './editor';
-import { noop, Point } from '@toeverything/utils';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useEditor } from './Contexts';
 
 function useRequestReRender() {
     const [, setUpdateCounter] = useState(0);
