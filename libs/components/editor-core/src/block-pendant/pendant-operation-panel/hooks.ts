@@ -1,16 +1,23 @@
 import type { CSSProperties } from 'react';
 import {
     genSelectOptionId,
+    getRecastItemValue,
     type InformationProperty,
     type MultiSelectProperty,
     type RecastMetaProperty,
     type SelectOption,
     type SelectProperty,
+    useRecastBlock,
     useRecastBlockMeta,
     useSelectProperty,
+    SelectValue,
+    MultiSelectValue,
+    StatusValue,
+    InformationValue,
+    TextValue,
+    DateValue,
 } from '../../recast-block';
 import { type AsyncBlock } from '../../editor';
-import { usePendant } from '../use-pendant';
 import {
     type OptionType,
     PendantTypes,
@@ -41,8 +48,8 @@ const genOptionWithId = (options: OptionType[] = []) => {
 export const useOnCreateSure = ({ block }: { block: AsyncBlock }) => {
     const { addProperty } = useRecastBlockMeta();
     const { createSelect } = useSelectProperty();
-    const { setPendant } = usePendant(block);
-
+    const recastBlock = useRecastBlock();
+    const { setValue } = getRecastItemValue(block);
     return async ({
         type,
         fieldName,
@@ -79,7 +86,14 @@ export const useOnCreateSure = ({ block }: { block: AsyncBlock }) => {
                 tempSelectedId: newValue,
             });
 
-            await setPendant(newProperty, selectedId);
+            await setValue(
+                {
+                    id: newProperty.id,
+                    type: newProperty.type,
+                    value: selectedId,
+                } as SelectValue | MultiSelectValue | StatusValue,
+                recastBlock.id
+            );
         } else if (type === PendantTypes.Information) {
             const emailOptions = genOptionWithId(newPropertyItem.emailOptions);
 
@@ -97,26 +111,33 @@ export const useOnCreateSure = ({ block }: { block: AsyncBlock }) => {
                 locationOptions,
             } as Omit<InformationProperty, 'id'>);
 
-            await setPendant(newProperty, {
-                email: getOfficialSelected({
-                    isMulti: true,
-                    options: emailOptions,
-                    tempOptions: newPropertyItem.emailOptions,
-                    tempSelectedId: newValue.email,
-                }),
-                phone: getOfficialSelected({
-                    isMulti: true,
-                    options: phoneOptions,
-                    tempOptions: newPropertyItem.phoneOptions,
-                    tempSelectedId: newValue.phone,
-                }),
-                location: getOfficialSelected({
-                    isMulti: true,
-                    options: locationOptions,
-                    tempOptions: newPropertyItem.locationOptions,
-                    tempSelectedId: newValue.location,
-                }),
-            });
+            await setValue(
+                {
+                    id: newProperty.id,
+                    type: newProperty.type,
+                    value: {
+                        email: getOfficialSelected({
+                            isMulti: true,
+                            options: emailOptions,
+                            tempOptions: newPropertyItem.emailOptions,
+                            tempSelectedId: newValue.email,
+                        }),
+                        phone: getOfficialSelected({
+                            isMulti: true,
+                            options: phoneOptions,
+                            tempOptions: newPropertyItem.phoneOptions,
+                            tempSelectedId: newValue.phone,
+                        }),
+                        location: getOfficialSelected({
+                            isMulti: true,
+                            options: locationOptions,
+                            tempOptions: newPropertyItem.locationOptions,
+                            tempSelectedId: newValue.location,
+                        }),
+                    },
+                } as InformationValue,
+                recastBlock.id
+            );
         } else {
             // TODO: Color and background should use pendant config, but ui is not design now
             const iconConfig = getPendantConfigByType(type);
@@ -129,8 +150,14 @@ export const useOnCreateSure = ({ block }: { block: AsyncBlock }) => {
                 color: iconConfig.color as CSSProperties['color'],
                 iconName: iconConfig.iconName,
             });
-
-            await setPendant(newProperty, newValue);
+            await setValue(
+                {
+                    id: newProperty.id,
+                    type: newProperty.type,
+                    value: newValue,
+                } as TextValue | DateValue,
+                recastBlock.id
+            );
         }
     };
 };
@@ -144,8 +171,9 @@ export const useOnUpdateSure = ({
     property: RecastMetaProperty;
 }) => {
     const { updateSelect } = useSelectProperty();
-    const { setPendant } = usePendant(block);
     const { updateProperty } = useRecastBlockMeta();
+    const { setValue } = getRecastItemValue(block);
+    const recastBlock = useRecastBlock();
 
     return async ({
         type,
@@ -199,7 +227,14 @@ export const useOnUpdateSure = ({
                 tempSelectedId: newValue,
             });
 
-            await setPendant(selectProperty, selectedId);
+            await setValue(
+                {
+                    id: selectProperty.id,
+                    type: selectProperty.type,
+                    value: selectedId,
+                } as SelectValue | MultiSelectValue | StatusValue,
+                recastBlock.id
+            );
         } else if (type === PendantTypes.Information) {
             // const { emailOptions, phoneOptions, locationOptions } =
             //     property as InformationProperty;
@@ -231,28 +266,42 @@ export const useOnUpdateSure = ({
                 locationOptions,
             } as InformationProperty);
 
-            await setPendant(newProperty, {
-                email: getOfficialSelected({
-                    isMulti: true,
-                    options: emailOptions as SelectOption[],
-                    tempOptions: newPropertyItem.emailOptions,
-                    tempSelectedId: newValue.email,
-                }),
-                phone: getOfficialSelected({
-                    isMulti: true,
-                    options: phoneOptions as SelectOption[],
-                    tempOptions: newPropertyItem.phoneOptions,
-                    tempSelectedId: newValue.phone,
-                }),
-                location: getOfficialSelected({
-                    isMulti: true,
-                    options: locationOptions as SelectOption[],
-                    tempOptions: newPropertyItem.locationOptions,
-                    tempSelectedId: newValue.location,
-                }),
-            });
+            await setValue(
+                {
+                    id: newProperty.id,
+                    type: newProperty.type,
+                    value: {
+                        email: getOfficialSelected({
+                            isMulti: true,
+                            options: emailOptions as SelectOption[],
+                            tempOptions: newPropertyItem.emailOptions,
+                            tempSelectedId: newValue.email,
+                        }),
+                        phone: getOfficialSelected({
+                            isMulti: true,
+                            options: phoneOptions as SelectOption[],
+                            tempOptions: newPropertyItem.phoneOptions,
+                            tempSelectedId: newValue.phone,
+                        }),
+                        location: getOfficialSelected({
+                            isMulti: true,
+                            options: locationOptions as SelectOption[],
+                            tempOptions: newPropertyItem.locationOptions,
+                            tempSelectedId: newValue.location,
+                        }),
+                    },
+                } as InformationValue,
+                recastBlock.id
+            );
         } else {
-            await setPendant(property, newValue);
+            await setValue(
+                {
+                    id: property.id,
+                    type: property.type,
+                    value: newValue,
+                } as TextValue | DateValue,
+                recastBlock.id
+            );
         }
 
         if (fieldName !== property.name) {

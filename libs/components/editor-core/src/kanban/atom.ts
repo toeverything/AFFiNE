@@ -6,10 +6,15 @@ import {
     PropertyType,
     RecastBlockValue,
     RecastMetaProperty,
-    RecastPropertyId,
 } from '../recast-block/types';
 import type { DefaultGroup, KanbanGroup } from './types';
 import { DEFAULT_GROUP_ID } from './types';
+import {
+    generateInitialOptions,
+    generateRandomFieldName,
+    getPendantIconsConfigByName,
+} from '../block-pendant/utils';
+import { SelectOption } from '../recast-block';
 
 /**
  * - If the `groupBy` is `SelectProperty` or `MultiSelectProperty`, return `(Multi)SelectProperty.options`.
@@ -23,6 +28,7 @@ export const getGroupOptions = async (
         return [];
     }
     switch (groupBy.type) {
+        case PropertyType.Status:
         case PropertyType.Select:
         case PropertyType.MultiSelect: {
             return groupBy.options.map(option => ({
@@ -51,12 +57,15 @@ const isValueBelongOption = (
     option: KanbanGroup
 ) => {
     switch (propertyValue.type) {
-        case PropertyType.Select: {
+        case PropertyType.Select || PropertyType.Status: {
             return propertyValue.value === option.id;
         }
         case PropertyType.MultiSelect: {
             return propertyValue.value.some(i => i === option.id);
         }
+        // case PropertyType.Status: {
+        //     return propertyValue.value === option.id;
+        // }
         // case PropertyType.Text: {
         // TOTODO:DO support this type
         // }
@@ -96,40 +105,67 @@ export const calcCardGroup = (
 /**
  * Set group value for the card block
  */
-export const moveCardToGroup = async (
-    groupById: RecastPropertyId,
-    cardBlock: RecastItem,
-    group: KanbanGroup
-) => {
+export const moveCardToGroup = async ({
+    groupBy,
+    cardBlock,
+    group,
+    recastBlock,
+}: {
+    groupBy: RecastMetaProperty;
+    cardBlock: RecastItem;
+    group: KanbanGroup;
+    recastBlock: RecastBlock;
+}) => {
     const { setValue, removeValue } = getRecastItemValue(cardBlock);
     let success = false;
     if (group.id === DEFAULT_GROUP_ID) {
-        success = await removeValue(groupById);
+        success = await removeValue(groupBy.id);
         return false;
     }
+
     switch (group.type) {
         case PropertyType.Select: {
-            success = await setValue({
-                id: groupById,
-                type: group.type,
-                value: group.id,
-            });
+            success = await setValue(
+                {
+                    id: groupBy.id,
+                    type: group.type,
+                    value: group.id,
+                },
+                recastBlock.id
+            );
+            break;
+        }
+        case PropertyType.Status: {
+            success = await setValue(
+                {
+                    id: groupBy.id,
+                    type: group.type,
+                    value: group.id,
+                },
+                recastBlock.id
+            );
             break;
         }
         case PropertyType.MultiSelect: {
-            success = await setValue({
-                id: groupById,
-                type: group.type,
-                value: [group.id],
-            });
+            success = await setValue(
+                {
+                    id: groupBy.id,
+                    type: group.type,
+                    value: [group.id],
+                },
+                recastBlock.id
+            );
             break;
         }
         case PropertyType.Text: {
-            success = await setValue({
-                id: groupById,
-                type: group.type,
-                value: group.id,
-            });
+            success = await setValue(
+                {
+                    id: groupBy.id,
+                    type: group.type,
+                    value: group.id,
+                },
+                recastBlock.id
+            );
             break;
         }
         default:
@@ -194,14 +230,18 @@ export const genDefaultGroup = (groupBy: RecastMetaProperty): DefaultGroup => ({
     items: [],
 });
 
-export const DEFAULT_GROUP_BY_PROPERTY = {
-    name: 'Status',
-    options: [
-        { name: 'No Started', color: '#E53535', background: '#FFCECE' },
-        { name: 'In Progress', color: '#A77F1A', background: '#FFF5AB' },
-        { name: 'Complete', color: '#3C8867', background: '#C5FBE0' },
-    ],
-};
+export const generateDefaultGroupByProperty = (): {
+    name: string;
+    options: Omit<SelectOption, 'id'>[];
+    type: PropertyType.Status;
+} => ({
+    name: generateRandomFieldName(PropertyType.Status),
+    type: PropertyType.Status,
+    options: generateInitialOptions(
+        PropertyType.Status,
+        getPendantIconsConfigByName(PropertyType.Status)
+    ),
+});
 
 /**
  * Unwrap blocks from the grid recursively.

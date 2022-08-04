@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { nanoid } from 'nanoid';
 import { Input, Option, Select, Tooltip } from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 import { AsyncBlock } from '../../editor';
@@ -15,12 +14,12 @@ import {
     StyledPopoverSubTitle,
     StyledPopoverWrapper,
 } from '../StyledComponent';
-import { genInitialOptions, getPendantConfigByType } from '../utils';
+import {
+    generateRandomFieldName,
+    generateInitialOptions,
+    getPendantConfigByType,
+} from '../utils';
 import { useOnCreateSure } from './hooks';
-
-const upperFirst = (str: string) => {
-    return `${str[0].toUpperCase()}${str.slice(1)}`;
-};
 
 export const CreatePendantPanel = ({
     block,
@@ -35,7 +34,7 @@ export const CreatePendantPanel = ({
 
     useEffect(() => {
         selectedOption &&
-            setFieldName(upperFirst(`${selectedOption.type}#${nanoid(4)}`));
+            setFieldName(generateRandomFieldName(selectedOption.type));
     }, [selectedOption]);
 
     return (
@@ -45,7 +44,7 @@ export const CreatePendantPanel = ({
             <Select
                 width={284}
                 placeholder="Search for a field type"
-                value={selectedOption}
+                value={selectedOption ?? null}
                 onChange={(selectedValue: PendantOptions) => {
                     setSelectedOption(selectedValue);
                 }}
@@ -93,7 +92,7 @@ export const CreatePendantPanel = ({
                     <PendantModifyPanel
                         type={selectedOption.type}
                         // Select, MultiSelect, Status use this props as initial property
-                        initialOptions={genInitialOptions(
+                        initialOptions={generateInitialOptions(
                             selectedOption.type,
                             getPendantConfigByType(selectedOption.type)
                         )}
