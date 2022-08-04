@@ -135,7 +135,7 @@ const LazyIframe = ({
             >
                 <iframe src={src} onLoad={onLoad} />
             </div>
-            {show ? '' : fallback}
+            {!show && fallback}
         </>
     );
 };
