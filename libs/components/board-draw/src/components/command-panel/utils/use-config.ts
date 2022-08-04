@@ -7,6 +7,7 @@ interface Config {
     type:
         | 'stroke'
         | 'fill'
+        | 'frameFill'
         | 'font'
         | 'group'
         | 'ungroup'
@@ -20,6 +21,10 @@ const _createInitConfig = (): Record<Config['type'], Config> => {
     return {
         fill: {
             type: 'fill',
+            selectedShapes: [],
+        },
+        frameFill: {
+            type: 'frameFill',
             selectedShapes: [],
         },
         stroke: {
@@ -64,6 +69,7 @@ const _isSupportStroke = (shape: TDShape): boolean => {
         TDShapeType.Pencil,
         TDShapeType.Laser,
         TDShapeType.Highlight,
+        TDShapeType.Draw,
         TDShapeType.Arrow,
         TDShapeType.Line,
     ].some(type => type === shape.type);
@@ -91,6 +97,10 @@ const _isSupportFont = (shape: TDShape): boolean => {
     ].some(type => type === shape.type);
 };
 
+const _isSupportFrameFill = (shape: TDShape): boolean => {
+    return shape.type === TDShapeType.Frame;
+};
+
 export const useConfig = (app: TldrawApp): Record<Config['type'], Config> => {
     const state = app.useStore();
     const selectedShapes = TLDR.get_selected_shapes(state, app.currentPageId);
@@ -104,6 +114,9 @@ export const useConfig = (app: TldrawApp): Record<Config['type'], Config> => {
             }
             if (_isSupportFont(cur)) {
                 acc.font.selectedShapes.push(cur);
+            }
+            if (_isSupportFrameFill(cur)) {
+                acc.frameFill.selectedShapes.push(cur);
             }
             return acc;
         },

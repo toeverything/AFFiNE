@@ -1,1 +1,1 @@
-export * from './frame-util';
+export * from './FrameUtil';
