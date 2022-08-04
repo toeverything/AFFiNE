@@ -44,9 +44,14 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 ![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
 
+# How to use
+
+If you have experience in front-end development, please [refer to here](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine); if you want to experience our latest version, please wait a moment, we will launch a web version in the near future
+
 # Table of contents
 
 -   [Stay Up-to-Date](#stay-up-to-date)
+-   [How to Use](#how-to-use)
 -   [Table of contents](#table-of-contents)
     -   [Shape your page](#shape-your-page)
     -   [Plan your task](#plan-your-task)
@@ -145,7 +150,7 @@ We would also like to give thanks to open-source projects that make affine possi
 -   [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
 -   [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
 -   [slatejs](https://github.com/ianstormtaylor/slate) -- Customizable rich-text editor.
--   [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend. 
+-   [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend.
 -   [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
 -   [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
 -   Other [dependancies](https://github.com/toeverything/AFFiNE/network/dependencies)
