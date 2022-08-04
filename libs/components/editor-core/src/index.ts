@@ -15,7 +15,4 @@ export * from './kanban/types';
 
 export * from './utils';
 
-export * from './drag-drop-wrapper';
-export * from './block-content-wrapper';
-
 export * from './editor';
