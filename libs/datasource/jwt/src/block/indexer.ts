@@ -94,18 +94,18 @@ export class BlockIndexer<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > {
-    readonly #adapter: A;
-    readonly #idb: BlockIdbInstance;
+    readonly _adapter: A;
+    readonly _idb: BlockIdbInstance;
 
-    readonly #block_indexer: DocumentIndexer<IndexMetadata>;
-    readonly #block_metadata: LRUCache<string, QueryMetadata>;
-    readonly #event_bus: BlockEventBus;
+    readonly _blockIndexer: DocumentIndexer<IndexMetadata>;
+    readonly _blockMetadata: LRUCache<string, QueryMetadata>;
+    readonly _eventBus: BlockEventBus;
 
-    readonly #block_builder: (
+    readonly _blockBuilder: (
         block: BlockInstance<C>
     ) => Promise<BaseBlock<B, C>>;
 
-    readonly #delay_index: { documents: Map<string, BaseBlock<B, C>> };
+    readonly _delayIndex: { documents: Map<string, BaseBlock<B, C>> };
 
     constructor(
         adapter: A,
@@ -113,10 +113,10 @@ export class BlockIndexer<
         block_builder: (block: BlockInstance<C>) => Promise<BaseBlock<B, C>>,
         event_bus: BlockEventBus
     ) {
-        this.#adapter = adapter;
-        this.#idb = initIndexIdb(workspace);
+        this._adapter = adapter;
+        this._idb = initIndexIdb(workspace);
 
-        this.#block_indexer = new DocumentIndexer({
+        this._blockIndexer = new DocumentIndexer({
             document: {
                 id: 'id',
                 index: ['content', 'reference'],
@@ -126,23 +126,23 @@ export class BlockIndexer<
             tokenize: 'forward',
             context: true,
         });
-        this.#block_metadata = new LRUCache({
+        this._blockMetadata = new LRUCache({
             max: 10240,
             ttl: 1000 * 60 * 30,
         });
 
-        this.#block_builder = block_builder;
-        this.#event_bus = event_bus;
+        this._blockBuilder = block_builder;
+        this._eventBus = event_bus;
 
-        this.#delay_index = { documents: new Map() };
+        this._delayIndex = { documents: new Map() };
 
-        this.#event_bus
+        this._eventBus
             .topic('reindex')
             .on('reindex', this.content_reindex.bind(this), {
                 debounce: { wait: 1000, maxWait: 1000 * 10 },
             });
 
-        this.#event_bus
+        this._eventBus
             .topic('save_index')
             .on('save_index', this.save_index.bind(this), {
                 debounce: { wait: 1000 * 10, maxWait: 1000 * 20 },
@@ -152,8 +152,8 @@ export class BlockIndexer<
     private async content_reindex() {
         const paddings: Record<string, BlockIndexedContent> = {};
 
-        this.#delay_index.documents = produce(
-            this.#delay_index.documents,
+        this._delayIndex.documents = produce(
+            this._delayIndex.documents,
             draft => {
                 for (const [k, block] of draft) {
                     paddings[k] = {
@@ -166,11 +166,11 @@ export class BlockIndexer<
         );
         for (const [key, { index, query }] of Object.entries(paddings)) {
             if (index.content) {
-                await this.#block_indexer.addAsync(key, index);
-                this.#block_metadata.set(key, query);
+                await this._blockIndexer.addAsync(key, index);
+                this._blockMetadata.set(key, query);
             }
         }
-        this.#event_bus.topic('save_index').emit();
+        this._eventBus.topic('save_index').emit();
     }
 
     private async refresh_index(block: BaseBlock<B, C>) {
@@ -185,14 +185,14 @@ export class BlockIndexer<
             BlockFlavors.reference,
         ];
         if (filter.includes(block.flavor)) {
-            this.#delay_index.documents = produce(
-                this.#delay_index.documents,
+            this._delayIndex.documents = produce(
+                this._delayIndex.documents,
                 draft => {
                     draft.set(block.id, block);
                 }
             );
 
-            this.#event_bus.topic('reindex').emit();
+            this._eventBus.topic('reindex').emit();
             return true;
         }
         logger_debug(`skip index ${block.flavor}: ${block.id}`);
@@ -202,19 +202,19 @@ export class BlockIndexer<
     async refreshIndex(id: string, state: ChangedState) {
         JWT_DEV && logger(`refreshArticleIndex: ${id}`);
         if (state === 'delete') {
-            this.#delay_index.documents = produce(
-                this.#delay_index.documents,
+            this._delayIndex.documents = produce(
+                this._delayIndex.documents,
                 draft => {
-                    this.#block_indexer.remove(id);
-                    this.#block_metadata.delete(id);
+                    this._blockIndexer.remove(id);
+                    this._blockMetadata.delete(id);
                     draft.delete(id);
                 }
             );
             return;
         }
-        const block = await this.#adapter.getBlock(id);
+        const block = await this._adapter.getBlock(id);
         if (block?.id === id) {
-            if (await this.refresh_index(await this.#block_builder(block))) {
+            if (await this.refresh_index(await this._blockBuilder(block))) {
                 JWT_DEV &&
                     logger(
                         state
@@ -230,43 +230,43 @@ export class BlockIndexer<
     }
 
     async loadIndex() {
-        for (const key of await this.#idb.index.keys()) {
-            const content = await this.#idb.index.get(key);
+        for (const key of await this._idb.index.keys()) {
+            const content = await this._idb.index.get(key);
             if (content) {
                 const decoded = strFromU8(inflateSync(new Uint8Array(content)));
                 try {
-                    await this.#block_indexer.import(key, decoded as any);
+                    await this._blockIndexer.import(key, decoded as any);
                 } catch (e) {
                     console.error(`Failed to load index ${key}`, e);
                 }
             }
         }
-        for (const key of await this.#idb.metadata.keys()) {
-            const content = await this.#idb.metadata.get(key);
+        for (const key of await this._idb.metadata.keys()) {
+            const content = await this._idb.metadata.get(key);
             if (content) {
                 const decoded = strFromU8(inflateSync(new Uint8Array(content)));
                 try {
-                    await this.#block_indexer.import(key, JSON.parse(decoded));
+                    await this._blockIndexer.import(key, JSON.parse(decoded));
                 } catch (e) {
                     console.error(`Failed to load index ${key}`, e);
                 }
             }
         }
-        return Array.from(this.#block_metadata.keys());
+        return Array.from(this._blockMetadata.keys());
     }
 
     private async save_index() {
-        const idb = this.#idb;
+        const idb = this._idb;
         await idb.index
             .keys()
             .then(keys => Promise.all(keys.map(key => idb.index.delete(key))));
-        await this.#block_indexer.export((key, data) => {
+        await this._blockIndexer.export((key, data) => {
             return idb.index.set(
                 String(key),
                 deflateSync(strToU8(data as any))
             );
         });
-        const metadata = this.#block_metadata;
+        const metadata = this._blockMetadata;
         await idb.metadata
             .keys()
             .then(keys =>
@@ -286,7 +286,7 @@ export class BlockIndexer<
 
     public async inspectIndex() {
         const index: Record<string | number, any> = {};
-        await this.#block_indexer.export((key, data) => {
+        await this._blockIndexer.export((key, data) => {
             index[key] = data;
         });
     }
@@ -296,13 +296,13 @@ export class BlockIndexer<
             | string
             | Partial<DocumentSearchOptions<boolean>>
     ) {
-        return this.#block_indexer.search(part_of_title_or_content as string);
+        return this._blockIndexer.search(part_of_title_or_content as string);
     }
 
     public query(query: QueryIndexMetadata) {
         const matches: string[] = [];
         const filter = sift<QueryMetadata>(query);
-        this.#block_metadata.forEach((value, key) => {
+        this._blockMetadata.forEach((value, key) => {
             if (filter(value)) matches.push(key);
         });
         return matches;
@@ -310,7 +310,7 @@ export class BlockIndexer<
 
     public getMetadata(ids: string[]): Array<BlockMetadata> {
         return ids
-            .filter(id => this.#block_metadata.has(id))
-            .map(id => ({ ...this.#block_metadata.get(id)!, id }));
+            .filter(id => this._blockMetadata.has(id))
+            .map(id => ({ ...this._blockMetadata.get(id)!, id }));
     }
 }

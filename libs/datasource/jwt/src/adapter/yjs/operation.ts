@@ -52,18 +52,18 @@ function auto_set(root: ContentOperation, key: string, data: BaseTypes): void {
 }
 
 export class YjsContentOperation implements ContentOperation {
-    readonly #content: YAbstractType<unknown>;
+    readonly _content: YAbstractType<unknown>;
 
     constructor(content: YAbstractType<any>) {
-        this.#content = content;
+        this._content = content;
     }
 
     get length(): number {
-        if (this.#content instanceof YMap) {
-            return this.#content.size;
+        if (this._content instanceof YMap) {
+            return this._content.size;
         }
-        if (this.#content instanceof YArray || this.#content instanceof YText) {
-            return this.#content.length;
+        if (this._content instanceof YArray || this._content instanceof YText) {
+            return this._content.length;
         }
         return 0;
     }
@@ -83,8 +83,8 @@ export class YjsContentOperation implements ContentOperation {
     }
 
     asText(): YjsTextOperation | undefined {
-        if (this.#content instanceof YText) {
-            return new YjsTextOperation(this.#content);
+        if (this._content instanceof YText) {
+            return new YjsTextOperation(this._content);
         }
         return undefined;
     }
@@ -92,8 +92,8 @@ export class YjsContentOperation implements ContentOperation {
     asArray<T extends ContentTypes = ContentOperation>():
         | YjsArrayOperation<T>
         | undefined {
-        if (this.#content instanceof YArray) {
-            return new YjsArrayOperation(this.#content);
+        if (this._content instanceof YArray) {
+            return new YjsArrayOperation(this._content);
         }
         return undefined;
     }
@@ -101,8 +101,8 @@ export class YjsContentOperation implements ContentOperation {
     asMap<T extends ContentTypes = ContentOperation>():
         | YjsMapOperation<T>
         | undefined {
-        if (this.#content instanceof YMap) {
-            return new YjsMapOperation(this.#content);
+        if (this._content instanceof YMap) {
+            return new YjsMapOperation(this._content);
         }
         return undefined;
     }
@@ -184,24 +184,24 @@ export class YjsContentOperation implements ContentOperation {
     }
 
     [INTO_INNER](): YAbstractType<unknown> | undefined {
-        if (this.#content instanceof YAbstractType) {
-            return this.#content;
+        if (this._content instanceof YAbstractType) {
+            return this._content;
         }
         return undefined;
     }
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
     private toJSON() {
-        return this.#content.toJSON();
+        return this._content.toJSON();
     }
 }
 
 class YjsTextOperation extends YjsContentOperation implements TextOperation {
-    readonly #content: YText;
+    readonly _textContent: YText;
 
     constructor(content: YText) {
         super(content);
-        this.#content = content;
+        this._textContent = content;
     }
 
     insert(
@@ -209,7 +209,7 @@ class YjsTextOperation extends YjsContentOperation implements TextOperation {
         content: string,
         format?: Record<string, string>
     ): void {
-        this.#content.insert(index, content, format);
+        this._textContent.insert(index, content, format);
     }
 
     format(
@@ -217,23 +217,23 @@ class YjsTextOperation extends YjsContentOperation implements TextOperation {
         length: number,
         format: Record<string, string>
     ): void {
-        this.#content.format(index, length, format);
+        this._textContent.format(index, length, format);
     }
 
     delete(index: number, length: number): void {
-        this.#content.delete(index, length);
+        this._textContent.delete(index, length);
     }
 
     setAttribute(name: string, value: BaseTypes) {
-        this.#content.setAttribute(name, value);
+        this._textContent.setAttribute(name, value);
     }
 
     getAttribute<T extends BaseTypes = string>(name: string): T | undefined {
-        return this.#content.getAttribute(name);
+        return this._textContent.getAttribute(name);
     }
 
     override toString(): TextToken[] {
-        return this.#content.toDelta();
+        return this._textContent.toDelta();
     }
 }
 
@@ -241,67 +241,69 @@ class YjsArrayOperation<T extends ContentTypes>
     extends YjsContentOperation
     implements ArrayOperation<T>
 {
-    readonly #content: YArray<T>;
-    readonly #listeners: Map<string, BlockListener>;
+    readonly _arrayContent: YArray<T>;
+    readonly _listeners: Map<string, BlockListener>;
 
     constructor(content: YArray<T>) {
         super(content);
-        this.#content = content;
-        this.#listeners = new Map();
+        this._arrayContent = content;
+        this._listeners = new Map();
 
-        this.#content.observe(event =>
-            ChildrenListenerHandler(this.#listeners, event)
+        this._arrayContent.observe(event =>
+            ChildrenListenerHandler(this._listeners, event)
         );
     }
 
     on(name: string, listener: BlockListener) {
-        this.#listeners.set(name, listener);
+        this._listeners.set(name, listener);
     }
 
     off(name: string) {
-        this.#listeners.delete(name);
+        this._listeners.delete(name);
     }
 
     insert(index: number, content: Array<Operable<T>>): void {
-        this.#content.insert(
+        this._arrayContent.insert(
             index,
             content.map(v => this.into_inner(v))
         );
     }
 
     delete(index: number, length: number): void {
-        this.#content.delete(index, length);
+        this._arrayContent.delete(index, length);
     }
 
     push(content: Array<Operable<T>>): void {
-        this.#content.push(content.map(v => this.into_inner(v)));
+        this._arrayContent.push(content.map(v => this.into_inner(v)));
     }
 
     unshift(content: Array<Operable<T>>): void {
-        this.#content.unshift(content.map(v => this.into_inner(v)));
+        this._arrayContent.unshift(content.map(v => this.into_inner(v)));
     }
 
     get(index: number): Operable<T> | undefined {
-        const content = this.#content.get(index);
+        const content = this._arrayContent.get(index);
         if (content) return this.to_operable(content);
         return undefined;
     }
 
     private get_internal(index: number): T {
-        return this.#content.get(index);
+        return this._arrayContent.get(index);
     }
 
     slice(start?: number, end?: number): Operable<T>[] {
-        return this.#content.slice(start, end).map(v => this.to_operable(v));
+        return this._arrayContent
+            .slice(start, end)
+            .map(v => this.to_operable(v));
     }
 
     map<R = unknown>(callback: (value: T, index: number) => R): R[] {
-        return this.#content.map((value, index) => callback(value, index));
+        return this._arrayContent.map((value, index) => callback(value, index));
     }
 
     // Traverse, if callback returns false, stop traversing
     forEach(callback: (value: T, index: number) => boolean) {
-        for (let i = 0; i < this.#content.length; i++) {
+        for (let i = 0; i < this._arrayContent.length; i++) {
             const ret = callback(this.get_internal(i), i);
             if (ret === false) {
                 break;
@@ -342,47 +344,47 @@ class YjsMapOperation<T extends ContentTypes>
     extends YjsContentOperation
     implements MapOperation<T>
 {
-    readonly #content: YMap<T>;
-    readonly #listeners: Map<string, BlockListener>;
+    readonly _mapContent: YMap<T>;
+    readonly _listeners: Map<string, BlockListener>;
 
     constructor(content: YMap<T>) {
         super(content);
-        this.#content = content;
-        this.#listeners = new Map();
+        this._mapContent = content;
+        this._listeners = new Map();
 
         content?.observeDeep(events =>
-            ContentListenerHandler(this.#listeners, events)
+            ContentListenerHandler(this._listeners, events)
         );
     }
 
     on(name: string, listener: BlockListener) {
-        this.#listeners.set(name, listener);
+        this._listeners.set(name, listener);
     }
 
     off(name: string) {
-        this.#listeners.delete(name);
+        this._listeners.delete(name);
     }
 
     set(key: string, value: Operable<T>): void {
         if (value instanceof YjsContentOperation) {
             const content = value[INTO_INNER]();
-            if (content) this.#content.set(key, content as unknown as T);
+            if (content) this._mapContent.set(key, content as unknown as T);
         } else {
-            this.#content.set(key, value as T);
+            this._mapContent.set(key, value as T);
         }
     }
 
     get(key: string): Operable<T> | undefined {
-        const content = this.#content.get(key);
+        const content = this._mapContent.get(key);
         if (content) return this.to_operable(content);
         return undefined;
     }
 
     delete(key: string): void {
-        this.#content.delete(key);
+        this._mapContent.delete(key);
     }
 
     has(key: string): boolean {
-        return this.#content.has(key);
+        return this._mapContent.has(key);
     }
 }

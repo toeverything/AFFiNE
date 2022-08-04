@@ -5,34 +5,34 @@ import { HistoryCallback, HistoryManager } from '../../adapter';
 type StackItem = UndoManager['undoStack'][0];
 
 export class YjsHistoryManager implements HistoryManager {
-    readonly #blocks: YMap<any>;
-    readonly #history_manager: UndoManager;
-    readonly #push_listeners: Map<string, HistoryCallback<any>>;
-    readonly #pop_listeners: Map<string, HistoryCallback<any>>;
+    readonly _blocks: YMap<any>;
+    readonly _historyManager: UndoManager;
+    readonly _pushListeners: Map<string, HistoryCallback<any>>;
+    readonly _popListeners: Map<string, HistoryCallback<any>>;
 
     constructor(scope: YMap<any>, tracker?: any[]) {
-        this.#blocks = scope;
-        this.#history_manager = new UndoManager(scope, {
+        this._blocks = scope;
+        this._historyManager = new UndoManager(scope, {
             trackedOrigins: tracker ? new Set(tracker) : undefined,
         });
 
-        this.#push_listeners = new Map();
-        this.#history_manager.on(
+        this._pushListeners = new Map();
+        this._historyManager.on(
             'stack-item-added',
             (event: { stackItem: StackItem }) => {
                 const meta = event.stackItem.meta;
-                for (const listener of this.#push_listeners.values()) {
+                for (const listener of this._pushListeners.values()) {
                     listener(meta);
                 }
             }
         );
 
-        this.#pop_listeners = new Map();
-        this.#history_manager.on(
+        this._popListeners = new Map();
+        this._historyManager.on(
             'stack-item-popped',
             (event: { stackItem: StackItem }) => {
                 const meta = event.stackItem.meta;
-                for (const listener of this.#pop_listeners.values()) {
+                for (const listener of this._popListeners.values()) {
                     listener(new Map(meta));
                 }
             }
@@ -40,19 +40,19 @@ export class YjsHistoryManager implements HistoryManager {
     }
 
     onPush<T = unknown>(name: string, callback: HistoryCallback<T>): void {
-        this.#push_listeners.set(name, callback);
+        this._pushListeners.set(name, callback);
     }
 
     offPush(name: string): boolean {
-        return this.#push_listeners.delete(name);
+        return this._pushListeners.delete(name);
     }
 
     onPop<T = unknown>(name: string, callback: HistoryCallback<T>): void {
-        this.#pop_listeners.set(name, callback);
+        this._popListeners.set(name, callback);
     }
 
     offPop(name: string): boolean {
-        return this.#pop_listeners.delete(name);
+        return this._popListeners.delete(name);
     }
 
     break(): void {
@@ -60,14 +60,14 @@ export class YjsHistoryManager implements HistoryManager {
     }
 
     undo<T = unknown>(): Map<string, T> | undefined {
-        return this.#history_manager.undo()?.meta;
+        return this._historyManager.undo()?.meta;
     }
 
     redo<T = unknown>(): Map<string, T> | undefined {
-        return this.#history_manager.redo()?.meta;
+        return this._historyManager.redo()?.meta;
     }
 
     clear(): void {
-        return this.#history_manager.clear();
+        return this._historyManager.clear();
     }
 }
