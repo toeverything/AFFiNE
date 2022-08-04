@@ -5,6 +5,7 @@ import {
     useRefPage,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
+import { useFlag } from '@toeverything/datasource/feature-flags';
 
 const CardContent = styled('div')({
     margin: '20px',
@@ -63,12 +64,13 @@ export const CardItem = ({
 }) => {
     const { addSubItem } = useKanban();
     const { openSubPage } = useRefPage();
+    const showKanbanRefPageFlag = useFlag('ShowKanbanRefPage', false);
     const onAddItem = async () => {
         await addSubItem(block);
     };
 
     const onClickCard = async () => {
-        openSubPage(id);
+        showKanbanRefPageFlag && openSubPage(id);
     };
 
     return (
