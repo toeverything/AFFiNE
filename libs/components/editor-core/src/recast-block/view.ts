@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { useCallback } from 'react';
+import { MutableRefObject, useCallback, useEffect, useState } from 'react';
 import { useRecastBlock } from './Context';
 import {
     KanbanView,
@@ -50,7 +50,33 @@ export const useCurrentView = () => {
     );
     return [currentView, setCurrentView] as const;
 };
+export const useLazyIframe = (
+    link: string,
+    timers: number,
+    container: MutableRefObject<HTMLElement>
+) => {
+    const [iframeShow, setIframeShow] = useState(false);
+    useEffect(() => {
+        const iframe = document.createElement('iframe');
+        iframe.src = link;
+        iframe.onload = () => {
+            setTimeout(() => {
+                // Prevent iframe from scrolling parent container
+                //  TODO W3C https://github.com/w3c/csswg-drafts/issues/7134
+                // https://forum.figma.com/t/prevent-figmas-embed-code-from-automatically-scrolling-to-it-on-page-load/26029/6
+                setIframeShow(true);
+            }, timers);
+        };
+        if (container?.current) {
+            container.current.appendChild(iframe);
+        }
+        return () => {
+            iframe.remove();
+        };
+    }, [link, container]);
 
+    return iframeShow;
+};
 export const useRecastView = () => {
     const recastBlock = useRecastBlock();
     const recastViews =
