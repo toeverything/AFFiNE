@@ -99,7 +99,7 @@ export const TextView: FC<CreateTextView> = ({
             if (!parentBlock) {
                 return false;
             }
-            let preParent = await parentBlock.previousSibling();
+            const preParent = await parentBlock.previousSibling();
             if (Protocol.Block.Type.group === parentBlock.type) {
                 const children = await block.children();
                 const preNode = await block.physicallyPerviousSibling();
@@ -130,8 +130,12 @@ export const TextView: FC<CreateTextView> = ({
                         );
                         if (block.blockProvider.isEmpty()) {
                             await block.remove();
-                            let parentChild = await parentBlock.children();
-                            if (!parentChild.length) {
+                            const parentChild = await parentBlock.children();
+                            if (
+                                parentBlock.type ===
+                                    Protocol.Block.Type.group &&
+                                !parentChild.length
+                            ) {
                                 await editor.selectionManager.setSelectedNodesIds(
                                     [preParent.id]
                                 );
