@@ -46,7 +46,9 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 # How to use
 
-If you have experience in front-end development, please [refer to here](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine); if you want to experience our latest version, please wait a moment, we will launch a web version in the near future
+If you have experience in front-end development, please [refer to here](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine); if you want to experience our latest version, please wait a moment, we will launch a web version in the near future.
+And, thanks to Lee who [made a desktop build with Tauri](https://github.com/m1911star/affine-client) for you to try out.
+Please notice that AFFiNE is still under Alpha stage and is not ready for production use.
 
 # Table of contents
 
