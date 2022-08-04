@@ -305,6 +305,18 @@ export class BlockClient<
         return this._blockIndexer.query(query);
     }
 
+    public queryBlocks(query: QueryIndexMetadata): Promise<BlockSearchItem[]> {
+        const ids = this.query(query);
+        return Promise.all(
+            this._blockIndexer.getMetadata(ids).map(async page => ({
+                content: this.get_decoded_content(
+                    await this._adapter.getBlock(page.id)
+                ),
+                ...page,
+            }))
+        );
+    }
+
     /**
      * Get a fixed name, which has the same UUID in each workspace, and is automatically created when it does not exist
      * Generally used to store workspace-level global configuration
