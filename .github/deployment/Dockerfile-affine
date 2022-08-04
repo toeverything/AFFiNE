@@ -11,9 +11,9 @@ COPY --from=builder /app/.github/deployment/Caddyfile-lisa ./
 RUN rm ./dist/*.txt
 
 # =============
-# lisa image
+# AFFiNE image
 # =============
-FROM caddy:2.4.6-alpine as lisa
+FROM caddy:2.4.6-alpine as AFFiNE
 WORKDIR /app
 COPY --from=relocate /app .
 
