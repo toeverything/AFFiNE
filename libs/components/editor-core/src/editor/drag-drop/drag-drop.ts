@@ -12,6 +12,7 @@ enum DragType {
 }
 
 const DRAG_STATE_CHANGE_EVENT_KEY = 'dragStateChange';
+const MAX_GRID_BLOCK_FLOOR = 3;
 export class DragDropManager {
     private _editor: Editor;
     private _enabled: boolean;
@@ -230,6 +231,17 @@ export class DragDropManager {
         }
         if (!(await this._canBeDrop(event))) {
             direction = BlockDropPlacement.none;
+        }
+        if (
+            direction === BlockDropPlacement.left ||
+            direction === BlockDropPlacement.right
+        ) {
+            const path = await this._editor.getBlockPath(blockId);
+            const gridBlocks = path.filter(block => block.type === 'grid');
+            // limit grid block floor counts
+            if (gridBlocks.length >= MAX_GRID_BLOCK_FLOOR) {
+                direction = BlockDropPlacement.none;
+            }
         }
         this._setBlockDragDirection(direction);
         return direction;

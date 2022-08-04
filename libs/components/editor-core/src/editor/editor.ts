@@ -340,7 +340,20 @@ export class Editor implements Virgo {
         const rootBlockId = this.getRootBlockId();
         const rootBlock = await this.getBlockById(rootBlockId);
         const blockList: Array<AsyncBlock> = rootBlock ? [rootBlock] : [];
-        const children = (await rootBlock?.children()) || [];
+        return [...blockList, ...(await this.getOffspring(rootBlockId))];
+    }
+
+    /**
+     *
+     * get all offspring of block
+     * @param {string} id
+     * @return {*}
+     * @memberof Editor
+     */
+    async getOffspring(id: string) {
+        const block = await this.getBlockById(id);
+        const blockList: Array<AsyncBlock> = [];
+        const children = (await block?.children()) || [];
         for (const block of children) {
             if (!block) {
                 continue;
@@ -377,6 +390,20 @@ export class Editor implements Virgo {
             children = (await lastBlock?.children()) || [];
         }
         return lastBlock;
+    }
+
+    async getBlockPath(id: string) {
+        const block = await this.getBlockById(id);
+        if (!block) {
+            return [];
+        }
+        const path = [block];
+        let parent = await block.parent();
+        while (parent) {
+            path.unshift(parent);
+            parent = await parent.parent();
+        }
+        return path;
     }
 
     async getBlockByPoint(point: Point) {

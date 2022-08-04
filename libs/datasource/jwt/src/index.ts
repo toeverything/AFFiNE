@@ -541,6 +541,10 @@ export class BlockClient<
                 this.set_page(abstract_block);
             });
             this.#block_caches.set(abstract_block.id, abstract_block);
+
+            if (root && abstract_block.flavor === BlockFlavors.page) {
+                root.insertChildren(abstract_block);
+            }
             return abstract_block;
         }
     }

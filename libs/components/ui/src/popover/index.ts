@@ -1,3 +1,3 @@
 export * from './Popover';
 export * from './interface';
-export { PopoverContainer } from './container';
+export { PopoverContainer } from './Container';

@@ -1,5 +1,5 @@
 {
-    "projectName": "Ligo-Virgo",
+    "projectName": "toeverything",
     "projectOwner": "toeverything",
     "repoType": "github",
     "repoHost": "https://github.com",
@@ -25,7 +25,7 @@
             "login": "tzhangchi",
             "name": "Chi Zhang",
             "avatar_url": "https://avatars.githubusercontent.com/u/5910926?v=4",
-            "profile": "https://zhangchi.blog.csdn.net/",
+            "profile": "http://zhangchi.page/",
             "contributions": [
                 "code",
                 "doc"
@@ -33,7 +33,7 @@
         },
         {
             "login": "alt1o",
-            "name": "alt1o",
+            "name": "wang xinglong",
             "avatar_url": "https://avatars.githubusercontent.com/u/21084335?v=4",
             "profile": "https://github.com/alt1o",
             "contributions": [
@@ -43,7 +43,7 @@
         },
         {
             "login": "DiamondThree",
-            "name": "Diamond",
+            "name": "DiamondThree",
             "avatar_url": "https://avatars.githubusercontent.com/u/24630517?v=4",
             "profile": "https://github.com/DiamondThree",
             "contributions": [
@@ -63,7 +63,7 @@
         },
         {
             "login": "zuoxiaodong0815",
-            "name": "zuoxiaodong0815",
+            "name": "xiaodong zuo",
             "avatar_url": "https://avatars.githubusercontent.com/u/53252747?v=4",
             "profile": "https://github.com/zuoxiaodong0815",
             "contributions": [
@@ -73,7 +73,7 @@
         },
         {
             "login": "SaikaSakura",
-            "name": "SaikaSakura",
+            "name": "MingLIang Wang",
             "avatar_url": "https://avatars.githubusercontent.com/u/11530942?v=4",
             "profile": "https://github.com/SaikaSakura",
             "contributions": [
@@ -92,10 +92,10 @@
             ]
         },
         {
-            "login": "tuluffy",
-            "name": "tuluffy",
-            "avatar_url": "https://avatars.githubusercontent.com/u/26808339?v=4",
-            "profile": "https://tuluffy.github.io/angular.github.io/",
+            "login": "mitsuhatu",
+            "name": "mitsuhatu",
+            "avatar_url": "https://avatars.githubusercontent.com/u/110213079?v=4",
+            "profile": "https://github.com/mitsuhatu",
             "contributions": [
                 "code",
                 "doc"

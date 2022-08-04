@@ -31,7 +31,7 @@ import { WorkspaceName } from './workspace-name';
 import { CollapsiblePageTree } from './collapsible-page-tree';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { type BlockEditor } from '@toeverything/components/editor-core';
-
+import { Tabs } from './components/tabs';
 type PageProps = {
     workspace: string;
 };
@@ -80,7 +80,9 @@ export function Page(props: PageProps) {
                     onMouseLeave={() => setSpaceSidebarVisible(false)}
                 >
                     <WorkspaceName />
-                    <Divider light={true} sx={{ my: 1, margin: '6px 0px' }} />
+
+                    <Tabs />
+
                     <WorkspaceSidebarContent>
                         <div>
                             {dailyNotesFlag && (
@@ -219,4 +221,5 @@ const WorkspaceSidebar = styled('div')(({ hidden }) => ({
 const WorkspaceSidebarContent = styled('div')({
     flex: 'auto',
     overflow: 'hidden auto',
+    marginTop: '18px',
 });
