@@ -29,6 +29,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorFallback } from './components/error-fallback';
 import { ZoomBar } from './components/zoom-bar';
 import { CommandPanel } from './components/command-panel';
+import { usePageClientWidth } from '@toeverything/datasource/state';
 
 export interface TldrawProps extends TldrawAppCtorProps {
     /**
@@ -132,6 +133,9 @@ export function Tldraw({
     tools,
 }: TldrawProps) {
     const [sId, set_sid] = React.useState(id);
+    const { pageClientWidth } = usePageClientWidth();
+    // page padding left and right total 300px
+    const editorShapeInitSize = pageClientWidth - 300;
 
     // Create a new app when the component mounts.
     const [app, setApp] = React.useState(() => {
@@ -140,6 +144,7 @@ export function Tldraw({
             callbacks,
             commands,
             getSession,
+            editorShapeInitSize,
             tools,
         });
         return app;

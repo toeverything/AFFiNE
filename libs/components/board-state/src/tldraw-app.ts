@@ -73,6 +73,7 @@ import { StateManager } from './manager/state-manager';
 import { getClipboard, setClipboard } from './idb-clipboard';
 import type { Commands } from './types/commands';
 import type { BaseTool } from './types/tool';
+import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 
 const uuid = Utils.uniqueId();
 
@@ -178,6 +179,7 @@ export interface TldrawAppCtorProps {
     getSession: (type: SessionType) => {
         new (app: TldrawApp, ...args: any[]): BaseSessionType;
     };
+    editorShapeInitSize?: number;
     commands: Commands;
     tools: Record<string, { new (app: TldrawApp): BaseTool }>;
 }
@@ -222,6 +224,8 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     editingStartTime = -1;
 
     fileSystemHandle: FileSystemHandle | null = null;
+
+    editorShapeInitSize = MIN_PAGE_WIDTH;
 
     viewport = Utils.getBoundsFromPoints([
         [0, 0],
@@ -285,6 +289,10 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             return acc;
         }, {} as Record<string, BaseTool>);
         this.currentTool = this.tools['select'];
+
+        if (props.editorShapeInitSize) {
+            this.editorShapeInitSize = props.editorShapeInitSize;
+        }
     }
 
     /* -------------------- Internal -------------------- */
