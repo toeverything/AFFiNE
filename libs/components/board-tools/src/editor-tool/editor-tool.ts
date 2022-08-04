@@ -18,6 +18,7 @@ export class EditorTool extends BaseTool {
         const {
             currentPoint,
             currentGrid,
+            editorShapeInitSize,
             settings: { showGrid },
             appState: { currentPageId, currentStyle },
             document: { id: workspace },
@@ -47,6 +48,7 @@ export class EditorTool extends BaseTool {
                     ? Vec.snap(currentPoint, currentGrid)
                     : currentPoint,
                 style: { ...currentStyle },
+                size: [editorShapeInitSize, 200],
                 workspace,
             });
             // In order to make the cursor just positioned at the beginning of the first line, it needs to be adjusted according to the padding            newShape.point = Vec.sub(newShape.point, [50, 30]);
