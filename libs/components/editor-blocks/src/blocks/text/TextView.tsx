@@ -8,7 +8,7 @@ import {
     supportChildren,
     unwrapGroup,
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { Protocol } from '@toeverything/datasource/db-service';
@@ -231,7 +231,7 @@ export const TextView: FC<CreateTextView> = ({
             selected={isSelect}
             className={containerClassName}
         >
-            <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+            <BlockPendantProvider block={block}>
                 <TextBlock
                     block={block}
                     type={block.type}
@@ -242,7 +242,7 @@ export const TextView: FC<CreateTextView> = ({
                     handleConvert={handleConvert}
                     handleTab={onTab}
                 />
-            </WrapperWithPendantAndDragDrop>
+            </BlockPendantProvider>
             <IndentWrapper>
                 <RenderBlockChildren block={block} />
             </IndentWrapper>

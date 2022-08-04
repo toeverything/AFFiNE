@@ -1,7 +1,7 @@
 import {
     useCurrentView,
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
@@ -158,7 +158,7 @@ export const ImageView: FC<ImageView> = ({ block, editor }) => {
     };
 
     return (
-        <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+        <BlockPendantProvider block={block}>
             <ImageBlock>
                 <div ref={resize_box}>
                     {imgUrl ? (
@@ -229,6 +229,6 @@ export const ImageView: FC<ImageView> = ({ block, editor }) => {
                 </div> */}
                 </div>
             </ImageBlock>
-        </WrapperWithPendantAndDragDrop>
+        </BlockPendantProvider>
     );
 };

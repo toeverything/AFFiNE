@@ -20,6 +20,7 @@
         "@types/flexsearch": "^0.7.3",
         "buffer": "^6.0.3",
         "debug": "^4.3.4",
+        "fast-sort": "^3.2.0",
         "fflate": "^0.7.3",
         "idb-keyval": "^6.2.0",
         "immer": "^9.0.15",

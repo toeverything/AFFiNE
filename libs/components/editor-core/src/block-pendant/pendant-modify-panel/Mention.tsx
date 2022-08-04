@@ -18,7 +18,9 @@ export default ({
         user: { username, nickname, photo },
     } = useUserAndSpaces();
 
-    const [selectedValue, setSelectedValue] = useState(initialValue?.value);
+    const [selectedValue, setSelectedValue] = useState(
+        initialValue?.value || ''
+    );
     const [focus, setFocus] = useState(false);
     const theme = useTheme();
     return (

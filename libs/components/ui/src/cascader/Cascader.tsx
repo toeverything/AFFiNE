@@ -133,7 +133,7 @@ export function Cascader(props: CascaderProps) {
 const MenuPaper = styled('div')(({ theme }) => ({
     fontFamily: 'PingFang SC',
     background: '#FFF',
-    boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+    boxShadow: theme.affine.shadows.shadow1,
     borderRadius: '10px 0px 10px 10px',
     color: '#4C6275',
     fontWeight: '400',

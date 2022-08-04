@@ -60,7 +60,7 @@ const GroupContainer = styled('div')<{ isSelect?: boolean }>(
     ({ isSelect, theme }) => ({
         background: theme.affine.palette.white,
         border: '2px solid rgba(236,241,251,.5)',
-        padding: '15px 12px',
+        padding: `15px 16px 0 16px`,
         borderRadius: '10px',
         ...(isSelect
             ? {
@@ -69,7 +69,7 @@ const GroupContainer = styled('div')<{ isSelect?: boolean }>(
               }
             : {
                   '&:hover': {
-                      boxShadow: '0px 1px 10px rgb(152 172 189 / 60%)',
+                      boxShadow: theme.affine.shadows.shadow1,
                   },
               }),
     })

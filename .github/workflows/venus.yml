@@ -5,6 +5,7 @@ on:
         branches: [master]
         paths:
             - 'apps/venus/**'
+            - '.github/deployment'
             - '.github/workflows/venus.yml'
     pull_request:
         branches: [master]
@@ -59,7 +60,7 @@ jobs:
               uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
               with:
                   context: .
-                  file: ./Dockerfile-venus
+                  file: ./.github/deployment/Dockerfile-venus
                   push: ${{ github.ref == 'refs/heads/master' && true || false }}
                   tags: ${{ steps.meta_venus.outputs.tags }}
                   labels: ${{ steps.meta_venus.outputs.labels }}

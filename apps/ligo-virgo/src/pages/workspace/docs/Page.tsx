@@ -1,16 +1,9 @@
 /* eslint-disable filename-rules/match */
-import {
-    useEffect,
-    useRef,
-    type UIEvent,
-    useState,
-    useLayoutEffect,
-} from 'react';
+import { useEffect, useRef, type UIEvent, useState } from 'react';
 import { useParams } from 'react-router';
 import {
     MuiBox as Box,
     MuiCircularProgress as CircularProgress,
-    MuiDivider as Divider,
     styled,
 } from '@toeverything/components/ui';
 import { AffineEditor } from '@toeverything/components/affine-editor';
@@ -31,7 +24,7 @@ import { WorkspaceName } from './workspace-name';
 import { CollapsiblePageTree } from './collapsible-page-tree';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { type BlockEditor } from '@toeverything/components/editor-core';
-
+import { Tabs } from './components/tabs';
 type PageProps = {
     workspace: string;
 };
@@ -54,11 +47,11 @@ export function Page(props: PageProps) {
                 }
             );
 
-            // await services.api.userConfig.addRecentPage(
-            //     props.workspace,
-            //     user.id,
-            //     page_id
-            // );
+            await services.api.userConfig.addRecentPage(
+                props.workspace,
+                user.id,
+                page_id
+            );
             await services.api.editorBlock.clearUndoRedo(props.workspace);
         };
         updateRecentPages();
@@ -80,7 +73,9 @@ export function Page(props: PageProps) {
                     onMouseLeave={() => setSpaceSidebarVisible(false)}
                 >
                     <WorkspaceName />
-                    <Divider light={true} sx={{ my: 1, margin: '6px 0px' }} />
+
+                    <Tabs />
+
                     <WorkspaceSidebarContent>
                         <div>
                             {dailyNotesFlag && (
@@ -92,14 +87,14 @@ export function Page(props: PageProps) {
                             )}
                             <div>
                                 <CollapsibleTitle
-                                    title="Activities"
+                                    title="ACTIVITIES"
                                     initialOpen={false}
                                 >
                                     <Activities />
                                 </CollapsibleTitle>
                             </div>
                             <div>
-                                <CollapsiblePageTree title="Page Tree">
+                                <CollapsiblePageTree title="PAGES">
                                     {page_id ? <PageTree /> : null}
                                 </CollapsiblePageTree>
                             </div>
@@ -146,7 +141,7 @@ const EditorContainer = ({
             obv.observe(scrollContainerRef.current);
             return () => obv.disconnect();
         }
-    });
+    }, [setPageClientWidth]);
 
     return (
         <StyledEditorContainer
@@ -198,7 +193,7 @@ const LigoLeftContainer = styled('div')({
     position: 'relative',
 });
 
-const WorkspaceSidebar = styled('div')(({ hidden }) => ({
+const WorkspaceSidebar = styled('div')(({ theme }) => ({
     position: 'absolute',
     bottom: '48px',
     top: '12px',
@@ -208,7 +203,7 @@ const WorkspaceSidebar = styled('div')(({ hidden }) => ({
     width: 300,
     minWidth: 300,
     borderRadius: '0px 10px 10px 0px',
-    boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+    boxShadow: theme.affine.shadows.shadow1,
     backgroundColor: '#FFFFFF',
     transitionProperty: 'left',
     transitionDuration: '0.35s',
@@ -219,4 +214,5 @@ const WorkspaceSidebar = styled('div')(({ hidden }) => ({
 const WorkspaceSidebarContent = styled('div')({
     flex: 'auto',
     overflow: 'hidden auto',
+    marginTop: '18px',
 });

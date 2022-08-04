@@ -4,11 +4,11 @@ import { HelpCenterIcon } from '@toeverything/components/icons';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import type { AsyncBlock } from '../../editor';
 import {
+    getRecastItemValue,
     type RecastBlockValue,
     type RecastMetaProperty,
 } from '../../recast-block';
 import { getPendantConfigByType } from '../utils';
-import { usePendant } from '../use-pendant';
 import {
     StyledPopoverWrapper,
     StyledOperationLabel,
@@ -42,7 +42,8 @@ export const UpdatePendantPanel = ({
 }: Props) => {
     const pendantOption = pendantOptions.find(v => v.type === property.type);
     const iconConfig = getPendantConfigByType(property.type);
-    const { removePendant } = usePendant(block);
+    const { removeValue } = getRecastItemValue(block);
+
     const Icon = IconMap[iconConfig.iconName];
     const [fieldName, setFieldName] = useState(property.name);
     const onUpdateSure = useOnUpdateSure({ block, property });
@@ -108,7 +109,7 @@ export const UpdatePendantPanel = ({
                 onDelete={
                     hasDelete
                         ? async () => {
-                              await removePendant(property);
+                              await removeValue(property.id);
                           }
                         : null
                 }

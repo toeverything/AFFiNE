@@ -15,6 +15,7 @@ import {
     SelectProperty,
     TABLE_VALUES_KEY,
 } from './types';
+import { getHistory, removeHistory, setHistory } from './history';
 
 /**
  * Generate a unique id for a property
@@ -240,7 +241,13 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
         return props[id];
     };
 
-    const setValue = (newValue: RecastBlockValue) => {
+    const setValue = (newValue: RecastBlockValue, recastBlockId: string) => {
+        setHistory({
+            recastBlockId: recastBlockId,
+            blockId: block.id,
+            propertyId: newValue.id,
+        });
+
         return recastItem.setProperty(TABLE_VALUES_KEY, {
             ...props,
             [newValue.id]: newValue,
@@ -249,22 +256,30 @@ export const getRecastItemValue = (block: RecastItem | AsyncBlock) => {
 
     const removeValue = (propertyId: RecastPropertyId) => {
         const { [propertyId]: omitted, ...restProps } = props;
+
+        removeHistory({
+            recastBlockId: block.id,
+            propertyId: propertyId,
+            blockId: block.id,
+        });
+
         return recastItem.setProperty(TABLE_VALUES_KEY, restProps);
     };
-    return { getAllValue, getValue, setValue, removeValue };
+
+    const getValueHistory = getHistory;
+
+    return { getAllValue, getValue, setValue, removeValue, getValueHistory };
 };
 
 const isSelectLikeProperty = (
     metaProperty?: RecastMetaProperty
-): metaProperty is SelectProperty | MultiSelectProperty => {
-    if (
-        !metaProperty ||
-        (metaProperty.type !== PropertyType.Select &&
-            metaProperty.type !== PropertyType.MultiSelect)
-    ) {
-        return false;
-    }
-    return true;
+): metaProperty is SelectProperty | MultiSelectProperty | StatusProperty => {
+    return (
+        metaProperty &&
+        (metaProperty.type === PropertyType.Status ||
+            metaProperty.type === PropertyType.Select ||
+            metaProperty.type === PropertyType.MultiSelect)
+    );
 };
 
 /**
@@ -312,7 +327,7 @@ export const useSelectProperty = () => {
     };
 
     const updateSelect = (
-        selectProperty: SelectProperty | MultiSelectProperty
+        selectProperty: StatusProperty | SelectProperty | MultiSelectProperty
     ) => {
         // if (typeof selectProperty === 'string') {
         //     const maybeSelectProperty = getProperty(selectProperty);

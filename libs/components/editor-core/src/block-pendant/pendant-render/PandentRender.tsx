@@ -1,5 +1,5 @@
 import {
-    MuiZoom,
+    MuiFade,
     Popover,
     PopperHandler,
     styled,
@@ -100,16 +100,15 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                 );
             })}
             {hasAddBtn ? (
-                <MuiZoom in={showAddBtn}>
+                <MuiFade in={showAddBtn}>
                     <div>
                         <AddPendantPopover
                             block={block}
                             iconStyle={{ marginTop: 4 }}
                             container={blockRenderContainerRef.current}
-                            trigger="click"
                         />
                     </div>
-                </MuiZoom>
+                </MuiFade>
             ) : null}
         </BlockPendantContainer>
     );

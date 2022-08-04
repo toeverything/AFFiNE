@@ -6,11 +6,13 @@ on:
         branches: [master]
         paths:
             - 'apps/keck/**'
+            - '.github/deployment'
             - '.github/workflows/keck.yml'
     pull_request:
         branches: [master]
         paths:
             - 'apps/keck/**'
+            - '.github/deployment'
             - '.github/workflows/keck.yml'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
@@ -60,7 +62,7 @@ jobs:
               uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
               with:
                   context: .
-                  file: ./Dockerfile-keck
+                  file: ./.github/deployment/Dockerfile-keck
                   push: ${{ github.ref == 'refs/heads/field' && true || false }}
                   tags: ${{ steps.meta_keck.outputs.tags }}
                   labels: ${{ steps.meta_keck.outputs.labels }}

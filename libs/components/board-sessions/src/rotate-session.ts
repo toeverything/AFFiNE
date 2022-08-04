@@ -6,6 +6,7 @@ import {
     TldrawPatch,
     TDShape,
     TDStatus,
+    TDShapeType,
 } from '@toeverything/components/board-types';
 import { TLDR } from '@toeverything/components/board-state';
 import { BaseSession } from './base-session';
@@ -75,6 +76,10 @@ export class RotateSession extends BaseSession {
             app: { currentPageId, currentPoint, shiftKey },
         } = this;
 
+        const filteredShapes = initialShapes.filter(
+            shape => shape.shape.type !== TDShapeType.Editor
+        );
+
         const shapes: Record<string, Partial<TDShape>> = {};
 
         let directionDelta =
@@ -85,7 +90,7 @@ export class RotateSession extends BaseSession {
         }
 
         // Update the shapes
-        initialShapes.forEach(({ center, shape }) => {
+        filteredShapes.forEach(({ center, shape }) => {
             const { rotation = 0 } = shape;
             let shapeDelta = 0;
 

@@ -21,7 +21,7 @@ import {
 } from '@toeverything/components/ui';
 import { HighLightIconInput } from './IconInput';
 import { PendantConfig, IconNames, OptionIdType, OptionType } from '../types';
-import { genBasicOption } from '../utils';
+import { generateBasicOption } from '../utils';
 
 type OptionItemType = {
     option: OptionType;
@@ -66,7 +66,7 @@ export const BasicSelect = ({
     const [selectIds, setSelectIds] = useState<OptionIdType[]>(initialValue);
 
     const insertOption = (insertId: OptionIdType) => {
-        const newOption = genBasicOption({
+        const newOption = generateBasicOption({
             index: options.length + 1,
             iconConfig,
         });

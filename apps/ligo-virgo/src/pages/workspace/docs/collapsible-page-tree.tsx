@@ -1,34 +1,34 @@
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import clsx from 'clsx';
-import style9 from 'style9';
 import {
     MuiBox as Box,
     MuiButton as Button,
     MuiCollapse as Collapse,
     MuiIconButton as IconButton,
+    styled,
 } from '@toeverything/components/ui';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-
+import {
+    ArrowDropDownIcon,
+    ArrowRightIcon,
+} from '@toeverything/components/icons';
 import { services } from '@toeverything/datasource/db-service';
-import { NewpageIcon } from '@toeverything/components/common';
 import {
     usePageTree,
     useCalendarHeatmap,
 } from '@toeverything/components/layout';
+import { AddIcon } from '@toeverything/components/icons';
 
-const styles = style9.create({
-    ligoButton: {
-        textTransform: 'none',
-    },
-    newPage: {
-        color: '#B6C7D3',
-        width: '26px',
-        fontSize: '18px',
-        textAlign: 'center',
-        cursor: 'pointer',
-    },
+const StyledContainer = styled('div')({
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+});
+
+const StyledBtn = styled('div')({
+    color: '#98ACBD',
+    textTransform: 'none',
+    fontSize: '12px',
+    fontWeight: '600',
 });
 
 export type CollapsiblePageTreeProps = {
@@ -73,31 +73,35 @@ export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     paddingRight: 1,
+                    '&:hover': {
+                        background: '#f5f7f8',
+                        borderRadius: '5px',
+                    },
                 }}
                 onMouseEnter={() => setNewPageBtnVisible(true)}
                 onMouseLeave={() => setNewPageBtnVisible(false)}
             >
-                <Button
-                    startIcon={
-                        open ? <ArrowDropDownIcon /> : <ArrowRightIcon />
-                    }
-                    onClick={() => setOpen(prev => !prev)}
-                    sx={{ color: '#566B7D', textTransform: 'none' }}
-                    className={clsx(styles('ligoButton'), className)}
-                    style={style}
-                    disableElevation
-                    disableRipple
-                >
-                    {title}
-                </Button>
+                <StyledContainer>
+                    {open ? (
+                        <ArrowDropDownIcon sx={{ color: '#566B7D' }} />
+                    ) : (
+                        <ArrowRightIcon sx={{ color: '#566B7D' }} />
+                    )}
+                    <StyledBtn onClick={() => setOpen(prev => !prev)}>
+                        {title}
+                    </StyledBtn>
+                </StyledContainer>
 
                 {newPageBtnVisible && (
-                    <div
+                    <AddIcon
+                        style={{
+                            width: '20px',
+                            height: '20px',
+                            color: '#98ACBD',
+                            cursor: 'pointer',
+                        }}
                         onClick={create_page}
-                        className={clsx(styles('newPage'), className)}
-                    >
-                        +
-                    </div>
+                    />
                 )}
             </Box>
             {children ? (
