@@ -24,6 +24,7 @@ const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
             style={{
                 display: 'flex',
                 flexDirection: 'column',
+                background: 'rgba(58, 76, 92, 0.4)',
                 zIndex: theme.affine.zIndex.popover,
             }}
             onClick={closeSubPage}
