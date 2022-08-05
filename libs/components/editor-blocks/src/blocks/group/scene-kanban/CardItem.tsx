@@ -80,7 +80,7 @@ export const CardItem = ({
             </CardContent>
             <CardActions onClick={onAddItem}>
                 <PlusIcon />
-                <span>Add item</span>
+                <span>Add a sub-block</span>
             </CardActions>
         </CardContainer>
     );
