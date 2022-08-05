@@ -52,7 +52,7 @@ Please notice that AFFiNE is still under Alpha stage and is not ready for produc
 
 # Table of contents
 
--   [Stay Up-to-Date](#stay-up-to-date)
+-   [Stay Up-to-Date and Support Us](#stay-up-to-date-and-support-us)
 -   [How to Use](#how-to-use)
 -   [Table of contents](#table-of-contents)
     -   [Shape your page](#shape-your-page)
