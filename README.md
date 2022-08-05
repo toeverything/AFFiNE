@@ -123,7 +123,7 @@ It is all perfect... If there are not so many waste operations and redundant inf
 That's why we are making AFFiNE. Some of the most important features are:
 
 -   Transformable
-    -   Every block can be transformed equally as a database
+    -   Every block can be transformed equally well as a database
         -   e.g. you can now set up a to-do with MarkDown in text view and edit it in kanban view.
     -   Every doc can be turned into a whiteboard
         -   An always good-to-read, structured docs-form page is the best for your notes, but a boundless doodle surface is better for collaboration and creativity.
