@@ -185,6 +185,22 @@ export const splitGroup = async (
     return newGroupBlock;
 };
 
+export const appendNewGroup = async (
+    editor: BlockEditor,
+    parentBlock: AsyncBlock,
+    active = false
+) => {
+    const newGroupBlock = await createGroupWithEmptyText(editor);
+    await parentBlock.append(newGroupBlock);
+    if (active) {
+        // Active text block
+        await editor.selectionManager.activeNodeByNodeId(
+            newGroupBlock.childrenIds[0]
+        );
+    }
+    return newGroupBlock;
+};
+
 export const addNewGroup = async (
     editor: BlockEditor,
     previousBlock: AsyncBlock,

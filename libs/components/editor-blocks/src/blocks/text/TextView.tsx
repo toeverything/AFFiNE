@@ -137,7 +137,7 @@ export const TextView: FC<CreateTextView> = ({
                                 !parentChild.length
                             ) {
                                 await editor.selectionManager.setSelectedNodesIds(
-                                    [preParent.id]
+                                    [preParent?.id ?? editor.getRootBlockId()]
                                 );
                             }
                         }
