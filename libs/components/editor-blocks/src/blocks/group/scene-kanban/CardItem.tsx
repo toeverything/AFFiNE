@@ -4,8 +4,14 @@ import {
     useKanban,
     useRefPage,
 } from '@toeverything/components/editor-core';
-import { styled } from '@toeverything/components/ui';
+import { PenIcon } from '@toeverything/components/icons';
+import {
+    IconButton,
+    MuiClickAwayListener,
+    styled,
+} from '@toeverything/components/ui';
 import { useFlag } from '@toeverything/datasource/feature-flags';
+import { useState } from 'react';
 
 const CardContent = styled('div')({
     margin: '20px',
@@ -23,6 +29,7 @@ const CardActions = styled('div')({
     fontWeight: '300',
     color: '#98ACBD',
     transition: 'all ease-in 0.2s',
+    zIndex: 1,
 
     ':hover': {
         background: '#F5F7F8',
@@ -39,11 +46,13 @@ const PlusIcon = styled('div')({
 });
 
 const CardContainer = styled('div')({
+    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     backgroundColor: '#fff',
     border: '1px solid #E2E7ED',
     borderRadius: '5px',
+    overflow: 'hidden',
 
     [CardActions.toString()]: {
         opacity: '0',
@@ -52,6 +61,23 @@ const CardContainer = styled('div')({
         [CardActions.toString()]: {
             opacity: '1',
         },
+    },
+});
+
+const Overlay = styled('div')({
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    background: 'transparent',
+
+    '& > *': {
+        visibility: 'hidden',
+        position: 'absolute',
+        right: '24px',
+        top: '16px',
+    },
+    '&:hover > *': {
+        visibility: 'visible',
     },
 });
 
@@ -64,8 +90,11 @@ export const CardItem = ({
 }) => {
     const { addSubItem } = useKanban();
     const { openSubPage } = useRefPage();
+    const [editable, setEditable] = useState(false);
     const showKanbanRefPageFlag = useFlag('ShowKanbanRefPage', false);
+
     const onAddItem = async () => {
+        setEditable(true);
         await addSubItem(block);
     };
 
@@ -74,14 +103,28 @@ export const CardItem = ({
     };
 
     return (
-        <CardContainer onClick={onClickCard}>
-            <CardContent>
-                <RenderBlock blockId={id} />
-            </CardContent>
-            <CardActions onClick={onAddItem}>
-                <PlusIcon />
-                <span>Add a sub-block</span>
-            </CardActions>
-        </CardContainer>
+        <MuiClickAwayListener onClickAway={() => setEditable(false)}>
+            <CardContainer>
+                <CardContent>
+                    <RenderBlock blockId={id} />
+                </CardContent>
+                {!editable && (
+                    <Overlay onClick={onClickCard}>
+                        <IconButton
+                            onClick={e => {
+                                e.stopPropagation();
+                                setEditable(true);
+                            }}
+                        >
+                            <PenIcon />
+                        </IconButton>
+                    </Overlay>
+                )}
+                <CardActions onClick={onAddItem}>
+                    <PlusIcon />
+                    <span>Add a sub-block</span>
+                </CardActions>
+            </CardContainer>
+        </MuiClickAwayListener>
     );
 };
