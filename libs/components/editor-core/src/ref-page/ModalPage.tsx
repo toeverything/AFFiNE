@@ -1,7 +1,6 @@
 import { MuiBackdrop, styled, useTheme } from '@toeverything/components/ui';
 import { createContext, ReactNode, useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useEditor } from '../Contexts';
 import { RenderBlock } from '../render-block';
 
 const Dialog = styled('div')({
@@ -44,8 +43,6 @@ const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
 };
 
 const ModalPage = ({ blockId }: { blockId: string | null }) => {
-    const { editor } = useEditor();
-
     return (
         <Modal open={!!blockId}>
             {blockId && <RenderBlock blockId={blockId} />}
