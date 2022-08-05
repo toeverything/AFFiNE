@@ -12,6 +12,7 @@ const Dialog = styled('div')({
     boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
     borderRadius: '10px',
     padding: '72px 120px',
+    overflow: 'scroll',
 });
 
 const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
