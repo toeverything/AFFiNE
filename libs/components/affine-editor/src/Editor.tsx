@@ -18,6 +18,12 @@ interface AffineEditorProps {
     scrollBlank?: boolean;
 
     isWhiteboard?: boolean;
+
+    scrollContainer?: HTMLElement;
+    scrollController?: {
+        lockScroll: () => void;
+        unLockScroll: () => void;
+    };
 }
 
 function _useConstantWithDispose(
@@ -53,12 +59,31 @@ function _useConstantWithDispose(
 }
 
 export const AffineEditor = forwardRef<BlockEditor, AffineEditorProps>(
-    ({ workspace, rootBlockId, scrollBlank = true, isWhiteboard }, ref) => {
+    (
+        {
+            workspace,
+            rootBlockId,
+            scrollBlank = true,
+            isWhiteboard,
+            scrollController,
+            scrollContainer,
+        },
+        ref
+    ) => {
         const editor = _useConstantWithDispose(
             workspace,
             rootBlockId,
             isWhiteboard
         );
+
+        useEffect(() => {
+            if (scrollContainer) {
+                editor.scrollManager.scrollContainer = scrollContainer;
+            }
+            if (scrollController) {
+                editor.scrollManager.scrollController = scrollController;
+            }
+        }, [editor, scrollContainer, scrollController]);
 
         useImperativeHandle(ref, () => editor);
 

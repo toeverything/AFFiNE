@@ -93,38 +93,29 @@ const EditorContainer = ({
     workspace: string;
 }) => {
     const [lockScroll, setLockScroll] = useState(false);
-    const scrollContainerRef = useRef<HTMLDivElement>();
+    const [scrollContainer, setScrollContainer] = useState<HTMLElement>();
     const editorRef = useRef<BlockEditor>();
+
     const onScroll = (event: UIEvent) => {
         editorRef.current.getHooks().onRootNodeScroll(event);
         editorRef.current.scrollManager.emitScrollEvent(event);
     };
 
-    useEffect(() => {
-        editorRef.current.scrollManager.scrollContainer =
-            scrollContainerRef.current;
-
-        editorRef.current.scrollManager.scrollController = {
-            lockScroll: () => setLockScroll(true),
-            unLockScroll: () => setLockScroll(false),
-        };
-    }, []);
-
     const { setPageClientWidth } = usePageClientWidth();
     useEffect(() => {
-        if (scrollContainerRef.current) {
+        if (scrollContainer) {
             const obv = new ResizeObserver(e => {
                 setPageClientWidth(e[0].contentRect.width);
             });
-            obv.observe(scrollContainerRef.current);
+            obv.observe(scrollContainer);
             return () => obv.disconnect();
         }
-    }, [setPageClientWidth]);
+    }, [setPageClientWidth, scrollContainer]);
 
     return (
         <StyledEditorContainer
             lockScroll={lockScroll}
-            ref={scrollContainerRef}
+            ref={ref => setScrollContainer(ref)}
             onScroll={onScroll}
         >
             {pageId ? (
@@ -132,6 +123,11 @@ const EditorContainer = ({
                     workspace={workspace}
                     rootBlockId={pageId}
                     ref={editorRef}
+                    scrollContainer={scrollContainer}
+                    scrollController={{
+                        lockScroll: () => setLockScroll(true),
+                        unLockScroll: () => setLockScroll(false),
+                    }}
                 />
             ) : (
                 <Box
