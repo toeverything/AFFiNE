@@ -1,3 +1,4 @@
+export { ColumnsContext, RootContext } from './contexts';
 export { RenderRoot, MIN_PAGE_WIDTH } from './RenderRoot';
 export * from './render-block';
 export * from './hooks';
@@ -15,5 +16,3 @@ export * from './kanban/types';
 export * from './utils';
 
 export * from './editor';
-
-export { RefPageProvider, useRefPage } from './ref-page';

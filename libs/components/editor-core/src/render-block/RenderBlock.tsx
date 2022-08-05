@@ -1,8 +1,8 @@
-import { styled } from '@toeverything/components/ui';
-import { FC, useLayoutEffect, useMemo, useRef } from 'react';
+import { styled, Theme } from '@toeverything/components/ui';
+import { FC, useContext, useLayoutEffect, useMemo, useRef } from 'react';
 
 // import { RenderChildren } from './RenderChildren';
-import { useEditor } from '../Contexts';
+import { RootContext } from '../contexts';
 import { useBlock } from '../hooks';
 
 interface RenderBlockProps {
@@ -14,7 +14,7 @@ export const RenderBlock: FC<RenderBlockProps> = ({
     blockId,
     hasContainer = true,
 }) => {
-    const { editor, editorElement } = useEditor();
+    const { editor, editorElement } = useContext(RootContext);
     const { block } = useBlock(blockId);
     const blockRef = useRef<HTMLDivElement>(null);
 

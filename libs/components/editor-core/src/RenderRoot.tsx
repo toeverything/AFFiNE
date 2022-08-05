@@ -2,7 +2,7 @@ import type { BlockEditor } from './editor';
 import { styled, usePatchNodes } from '@toeverything/components/ui';
 import type { FC, PropsWithChildren } from 'react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { EditorProvider } from './Contexts';
+import { RootContext } from './contexts';
 import { SelectionRect, SelectionRef } from './Selection';
 import {
     Protocol,
@@ -151,7 +151,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     };
 
     return (
-        <EditorProvider value={{ editor, editorElement }}>
+        <RootContext.Provider value={{ editor, editorElement }}>
             <Container
                 isWhiteboard={editor.isWhiteboard}
                 ref={ref => {
@@ -183,7 +183,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 {editor.isWhiteboard ? null : <ScrollBlank editor={editor} />}
                 {patchedNodes}
             </Container>
-        </EditorProvider>
+        </RootContext.Provider>
     );
 };
 

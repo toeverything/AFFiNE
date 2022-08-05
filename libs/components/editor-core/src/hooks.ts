@@ -1,6 +1,3 @@
-import { noop, Point } from '@toeverything/utils';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useEditor } from './Contexts';
 import {
     AsyncBlock,
     BlockEditor,
@@ -8,6 +5,9 @@ import {
     SelectionInfo,
     SelectionSettingsMap,
 } from './editor';
+import { noop, Point } from '@toeverything/utils';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { RootContext } from './contexts';
 
 function useRequestReRender() {
     const [, setUpdateCounter] = useState(0);
@@ -56,7 +56,7 @@ function useRequestReRender() {
 export const useBlock = (blockId: string) => {
     const [block, setBlock] = useState<AsyncBlock>();
     const requestReRender = useRequestReRender();
-    const { editor } = useEditor();
+    const { editor } = useContext(RootContext);
     useEffect(() => {
         if (!blockId) {
             return undefined;
@@ -95,7 +95,7 @@ export const useOnSelect = (
     blockId: string,
     cb: (isSelect: boolean) => void
 ) => {
-    const { editor } = useEditor();
+    const { editor } = useContext(RootContext);
     useEffect(() => {
         editor.selectionManager.observe(blockId, SelectEventTypes.onSelect, cb);
         return () => {
@@ -117,7 +117,7 @@ export const useOnSelectActive = (
     blockId: string,
     cb: (position: Point | undefined) => void
 ) => {
-    const { editor } = useEditor();
+    const { editor } = useContext(RootContext);
     useEffect(() => {
         editor.selectionManager.observe(blockId, SelectEventTypes.active, cb);
         return () => {
@@ -139,7 +139,7 @@ export const useOnSelectSetSelection = <T extends keyof SelectionSettingsMap>(
     blockId: string,
     cb: (args: SelectionSettingsMap[T]) => void
 ) => {
-    const { editor } = useEditor();
+    const { editor } = useContext(RootContext);
     useEffect(() => {
         editor.selectionManager.observe(
             blockId,
@@ -162,7 +162,7 @@ export const useOnSelectSetSelection = <T extends keyof SelectionSettingsMap>(
  * @export
  */
 export const useOnSelectChange = (cb: (info: SelectionInfo) => void) => {
-    const { editor } = useEditor();
+    const { editor } = useContext(RootContext);
     useEffect(() => {
         editor.selectionManager.onSelectionChange(cb);
         return () => {
@@ -177,7 +177,7 @@ export const useOnSelectChange = (cb: (info: SelectionInfo) => void) => {
  * @export
  */
 export const useOnSelectEnd = (cb: (info: SelectionInfo) => void) => {
-    const { editor } = useEditor();
+    const { editor } = useContext(RootContext);
     useEffect(() => {
         editor.selectionManager.onSelectEnd(cb);
         return () => {
@@ -195,7 +195,7 @@ export const useOnSelectStartWith = (
     blockId: string,
     cb: (args: MouseEvent) => void
 ) => {
-    const { editor } = useEditor();
+    const { editor } = useContext(RootContext);
     useEffect(() => {
         editor.mouseManager.onSelectStartWith(blockId, cb);
         return () => {

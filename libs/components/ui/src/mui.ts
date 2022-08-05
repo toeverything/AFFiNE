@@ -13,7 +13,6 @@ import type {
 } from '@mui/material';
 import {
     Avatar,
-    Backdrop,
     Box,
     Button,
     Checkbox,
@@ -244,7 +243,3 @@ export const MuiFade = Fade;
  * @deprecated It is not recommended to use Mui directly, because the design will not refer to Mui's interaction logic.
  */
 export const MuiRadio = Radio;
-/**
- * @deprecated It is not recommended to use Mui directly, because the design will not refer to Mui's interaction logic.
- */
-export const MuiBackdrop = Backdrop;
