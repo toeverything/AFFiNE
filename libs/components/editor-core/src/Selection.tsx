@@ -187,7 +187,6 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
                             )
                         )
                     );
-
                     const scrollDirections = getScrollDirections(
                         endPointRef.current,
                         scrollManager.verticalScrollTriggerDistance,
@@ -204,6 +203,7 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
             mouseType.current = 'up';
             startPointBlock.current = null;
             setShow(false);
+            setRect(Rect.fromLTRB(0, 0, 0, 0));
             scrollManager.stopAutoScroll();
         };
 

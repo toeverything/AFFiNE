@@ -124,7 +124,12 @@ const EditorContainer = ({
     return (
         <StyledEditorContainer
             lockScroll={lockScroll}
-            ref={scrollContainerRef}
+            ref={ref => {
+                scrollContainerRef.current = ref;
+                if (editorRef.current?.scrollManager) {
+                    editorRef.current.scrollManager.scrollContainer = ref;
+                }
+            }}
             onScroll={onScroll}
         >
             {pageId ? (

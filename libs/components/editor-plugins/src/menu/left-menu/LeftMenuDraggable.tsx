@@ -52,7 +52,6 @@ function Line(props: { lineInfo: LineInfo; rootRect: DOMRect }) {
         return null;
     }
     const { direction, blockInfo } = lineInfo;
-    const finalDirection = direction;
     const lineStyle = {
         zIndex: 2,
         position: 'absolute' as const,
@@ -91,14 +90,14 @@ function Line(props: { lineInfo: LineInfo; rootRect: DOMRect }) {
         left: intersectionRect.right + 10 - rootRect.x,
     };
     const styleMap = {
-        left: leftLineStyle,
-        right: rightLineStyle,
-        top: topLineStyle,
-        bottom: bottomLineStyle,
+        [BlockDropPlacement.left]: leftLineStyle,
+        [BlockDropPlacement.right]: rightLineStyle,
+        [BlockDropPlacement.top]: topLineStyle,
+        [BlockDropPlacement.bottom]: bottomLineStyle,
+        [BlockDropPlacement.outerLeft]: leftLineStyle,
+        [BlockDropPlacement.outerRight]: rightLineStyle,
     };
-    return (
-        <div className="editor-menu-line" style={styleMap[finalDirection]} />
-    );
+    return <div className="editor-menu-line" style={styleMap[direction]} />;
 }
 
 function DragComponent(props: {

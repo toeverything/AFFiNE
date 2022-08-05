@@ -110,7 +110,6 @@ export class ScrollManager {
     }
 
     public emitScrollEvent(event: UIEvent) {
-        this.scrollContainer = event.target as HTMLElement;
         this._scrollDirection = this._getScrollDirection();
         this._scrollMoveOffset = Math.abs(
             this.scrollContainer.scrollTop - this._scrollRecord[0]

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { domToRect, Point } from '@toeverything/utils';
 import { AsyncBlock } from '../..';
 import { GridDropType } from '../commands/types';
@@ -5,6 +6,7 @@ import { Editor } from '../editor';
 import { BlockDropPlacement, GroupDirection } from '../types';
 // TODO: Evaluate implementing custom events with Rxjs
 import EventEmitter from 'eventemitter3';
+import { Protocol } from '@toeverything/datasource/db-service';
 
 enum DragType {
     dragBlock = 'dragBlock',
@@ -86,6 +88,7 @@ export class DragDropManager {
         while (curr !== this._editor.getRootBlockId()) {
             if (curr === blockId) return false;
             const block = await this._editor.getBlockById(curr);
+            if (!block) return false;
             curr = block.parentId;
         }
         return true;
@@ -113,6 +116,48 @@ export class DragDropManager {
                         ? GridDropType.left
                         : GridDropType.right
                 );
+            }
+            if (
+                [
+                    BlockDropPlacement.outerLeft,
+                    BlockDropPlacement.outerRight,
+                ].includes(this._blockDragDirection)
+            ) {
+                const targetBlock = await this._editor.getBlockById(
+                    this._blockDragTargetId
+                );
+                if (targetBlock.type !== Protocol.Block.Type.grid) {
+                    await this._editor.commands.blockCommands.createLayoutBlock(
+                        blockId,
+                        this._blockDragTargetId,
+                        this._blockDragDirection ===
+                            BlockDropPlacement.outerLeft
+                            ? GridDropType.left
+                            : GridDropType.right
+                    );
+                }
+                if (targetBlock.type === Protocol.Block.Type.grid) {
+                    const gridItems = await targetBlock.children();
+                    if (
+                        BlockDropPlacement.outerRight ===
+                        this._blockDragDirection
+                    ) {
+                        await this._editor.commands.blockCommands.moveInNewGridItem(
+                            blockId,
+                            gridItems[gridItems.length - 1].id
+                        );
+                    }
+                    if (
+                        BlockDropPlacement.outerLeft ===
+                        this._blockDragDirection
+                    ) {
+                        await this._editor.commands.blockCommands.moveInNewGridItem(
+                            blockId,
+                            gridItems[0].id,
+                            true
+                        );
+                    }
+                }
             }
         }
     }
@@ -209,6 +254,93 @@ export class DragDropManager {
         );
     }
 
+    /**
+     *
+     * check if drag block is out of blocks and return direction
+     * @param {React.DragEvent<Element>} event
+     * @return {
+     *      direction: BlockDropPlacement.none, // none, outerLeft, outerRight
+     *      block: undefined, // the block in the same clientY
+     *      isOuter: false, // if is drag over outer
+     * }
+     *
+     * @memberof DragDropManager
+     */
+    public async checkOuterBlockDragTypes(event: React.DragEvent<Element>) {
+        const { clientX, clientY } = event;
+        const mousePoint = new Point(clientX, clientY);
+        const rootBlock = await this._editor.getBlockById(
+            this._editor.getRootBlockId()
+        );
+        let direction = BlockDropPlacement.none;
+        const rootBlockRect = domToRect(rootBlock.dom);
+        let targetBlock: AsyncBlock | undefined;
+        let typesInfo = {
+            direction: BlockDropPlacement.none,
+            block: undefined,
+            isOuter: false,
+        } as {
+            direction: BlockDropPlacement;
+            block: AsyncBlock | undefined;
+            isOuter: boolean;
+        };
+        if (rootBlockRect.isPointLeft(mousePoint)) {
+            direction = BlockDropPlacement.outerLeft;
+            typesInfo.isOuter = true;
+        }
+        if (rootBlockRect.isPointRight(mousePoint)) {
+            direction = BlockDropPlacement.outerRight;
+            typesInfo.isOuter = true;
+        }
+        if (direction !== BlockDropPlacement.none) {
+            const blockList = await this._editor.getBlockListByLevelOrder();
+            targetBlock = blockList.find(block => {
+                const domRect = domToRect(block.dom);
+                const pointChecker =
+                    direction === BlockDropPlacement.outerLeft
+                        ? domRect.isPointLeft.bind(domRect)
+                        : domRect.isPointRight.bind(domRect);
+                return (
+                    block.type !== Protocol.Block.Type.page &&
+                    block.type !== Protocol.Block.Type.group &&
+                    pointChecker(mousePoint)
+                );
+            });
+            if (targetBlock) {
+                if (targetBlock.type !== Protocol.Block.Type.grid) {
+                    this._setBlockDragDirection(direction);
+                    this._setBlockDragTargetId(targetBlock.id);
+                    typesInfo = {
+                        direction,
+                        block: targetBlock,
+                        isOuter: true,
+                    };
+                }
+                if (targetBlock.type === Protocol.Block.Type.grid) {
+                    const children = await targetBlock.children();
+                    if (
+                        children.length <
+                        this._editor.configManager.grid.maxGridItemCount
+                    ) {
+                        typesInfo = {
+                            direction,
+                            block: targetBlock,
+                            isOuter: true,
+                        };
+                    }
+                }
+            }
+        }
+        if (
+            typesInfo.direction !== BlockDropPlacement.none &&
+            typesInfo.block
+        ) {
+            this._setBlockDragTargetId(targetBlock.id);
+        }
+        this._setBlockDragDirection(typesInfo.direction);
+        return typesInfo;
+    }
+
     public async checkBlockDragTypes(
         event: React.DragEvent<Element>,
         blockDom: HTMLElement,
@@ -216,10 +348,25 @@ export class DragDropManager {
     ) {
         const { clientX, clientY } = event;
         this._setBlockDragTargetId(blockId);
-
+        const path = await this._editor.getBlockPath(blockId);
         const mousePoint = new Point(clientX, clientY);
         const rect = domToRect(blockDom);
+        /**
+         * IMP: compute the level of the target block
+         * future feature drag drop has level support do not delete
+         * const levelUnderGrid = Array.from(path)
+                .reverse()
+                .findIndex(block => block.type === Protocol.Block.Type.gridItem);
+            const levelUnderGroup = Array.from(path)
+                .reverse()
+                .findIndex(block => block.type === Protocol.Block.Type.group);
+            const blockLevel =
+                levelUnderGrid > 0 ? levelUnderGrid : levelUnderGroup;
+            console.log({ blockLevel, levelUnderGrid, levelUnderGroup });
+         *
+         */
         let direction = BlockDropPlacement.bottom;
+
         if (mousePoint.x - rect.left <= this._dragBlockHotDistance) {
             direction = BlockDropPlacement.left;
         }
@@ -236,9 +383,10 @@ export class DragDropManager {
             direction === BlockDropPlacement.left ||
             direction === BlockDropPlacement.right
         ) {
-            const path = await this._editor.getBlockPath(blockId);
-            const gridBlocks = path.filter(block => block.type === 'grid');
-            // limit grid block floor counts
+            const gridBlocks = path.filter(
+                block => block.type === Protocol.Block.Type.grid
+            );
+            // limit grid block floor counts, when drag block to init grid
             if (gridBlocks.length >= MAX_GRID_BLOCK_FLOOR) {
                 direction = BlockDropPlacement.none;
             }

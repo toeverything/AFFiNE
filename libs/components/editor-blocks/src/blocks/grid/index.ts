@@ -3,7 +3,7 @@ import { Protocol } from '@toeverything/datasource/db-service';
 import { AsyncBlock, BaseView } from '@toeverything/framework/virgo';
 import { GridItem } from '../grid-item/GridItem';
 import { GridRender } from './GridRender';
-export { GRID_ITEM_MIN_WIDTH, GRID_PROPERTY_KEY, removePercent } from './Grid';
+export { GRID_PROPERTY_KEY, removePercent } from './Grid';
 
 export class GridBlock extends BaseView {
     public override selectable = false;

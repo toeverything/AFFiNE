@@ -159,6 +159,33 @@ export class BlockCommands {
         return [];
     }
 
+    public async moveInNewGridItem(
+        blockId: string,
+        gridItemId: string,
+        isBefore = false
+    ) {
+        const block = await this._editor.getBlockById(blockId);
+        if (block) {
+            const gridItemBlock = await this._editor.createBlock(
+                Protocol.Block.Type.gridItem
+            );
+            const targetGridItemBlock = await this._editor.getBlockById(
+                gridItemId
+            );
+            await block.remove();
+            await gridItemBlock.append(block);
+            if (targetGridItemBlock && gridItemBlock) {
+                if (isBefore) {
+                    await targetGridItemBlock.before(gridItemBlock);
+                } else {
+                    await targetGridItemBlock.after(gridItemBlock);
+                }
+            }
+            return gridItemBlock;
+        }
+        return undefined;
+    }
+
     public async splitGroupFromBlock(blockId: string) {
         const block = await this._editor.getBlockById(blockId);
         await splitGroup(this._editor, block);
