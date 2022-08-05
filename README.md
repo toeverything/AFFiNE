@@ -40,7 +40,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 <p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/21084335/182552060-972cac0e-6258-4ccb-85bd-3bb466c30ccd.png"><p/>
 
-# Stay Up-to-Date
+# Stay Up-to-Date and Support Us
 
 ![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
 
