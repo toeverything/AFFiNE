@@ -32,19 +32,21 @@ type YjsBlockInstanceProps = {
 };
 
 export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
-    readonly _id: string;
-    readonly _block: YMap<unknown>;
-    readonly _binary?: YArray<ArrayBuffer>;
-    readonly _children: YArray<string>;
-    readonly _setBlock: (
+    private readonly _id: string;
+    private readonly _block: YMap<unknown>;
+    private readonly _binary?: YArray<ArrayBuffer>;
+    private readonly _children: YArray<string>;
+    private readonly _setBlock: (
         id: string,
         block: BlockItem<YjsContentOperation>
     ) => Promise<void>;
-    readonly _getUpdated: (id: string) => number | undefined;
-    readonly _getCreator: (id: string) => string | undefined;
-    readonly _getBlockInstance: (id: string) => YjsBlockInstance | undefined;
-    readonly _childrenListeners: Map<string, BlockListener>;
-    readonly _contentListeners: Map<string, BlockListener>;
+    private readonly _getUpdated: (id: string) => number | undefined;
+    private readonly _getCreator: (id: string) => string | undefined;
+    private readonly _getBlockInstance: (
+        id: string
+    ) => YjsBlockInstance | undefined;
+    private readonly _childrenListeners: Map<string, BlockListener>;
+    private readonly _contentListeners: Map<string, BlockListener>;
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
     _childrenMap: Map<string, number>;

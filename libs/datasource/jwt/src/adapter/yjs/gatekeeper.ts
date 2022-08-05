@@ -1,10 +1,9 @@
 import { Map as YMap } from 'yjs';
 
 export class GateKeeper {
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    _userId: string;
-    _creators: YMap<string>;
-    _common: YMap<string>;
+    private readonly _userId: string;
+    private readonly _creators: YMap<string>;
+    private readonly _common: YMap<string>;
 
     constructor(userId: string, creators: YMap<string>, common: YMap<string>) {
         this._userId = userId;

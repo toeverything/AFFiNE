@@ -7,9 +7,9 @@ declare const JWT_DEV: boolean;
 const logger = getLogger('BlockDB:event_bus');
 
 export class BlockEventBus {
-    readonly _eventBus: EventTarget;
-    readonly _eventCallbackCache: Map<string, any>;
-    readonly _scopedCache: Map<string, BlockScopedEventBus<any>>;
+    private readonly _eventBus: EventTarget;
+    private readonly _eventCallbackCache: Map<string, any>;
+    private readonly _scopedCache: Map<string, BlockScopedEventBus<any>>;
 
     constructor(event_bus?: EventTarget) {
         this._eventBus = event_bus || new EventTarget();
@@ -68,7 +68,7 @@ type ListenerOptions = {
 };
 
 class BlockScopedEventBus<T> extends BlockEventBus {
-    readonly _topic: string;
+    private readonly _topic: string;
 
     constructor(topic: string, event_bus?: EventTarget) {
         super(event_bus);

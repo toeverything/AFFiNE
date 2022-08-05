@@ -143,13 +143,13 @@ export const ImageView: FC<ImageView> = ({ block, editor }) => {
             type: 'link',
         });
     };
-    const handle_click = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handle_click = async (e: React.MouseEvent<HTMLDivElement>) => {
         //TODO clear active selection
         // document.getElementsByTagName('body')[0].click();
         e.stopPropagation();
         e.nativeEvent.stopPropagation();
-        editor.selectionManager.setSelectedNodesIds([block.id]);
-        editor.selectionManager.activeNodeByNodeId(block.id);
+        await editor.selectionManager.setSelectedNodesIds([block.id]);
+        await editor.selectionManager.activeNodeByNodeId(block.id, 'end');
     };
     const down_file = () => {
         if (down_ref) {

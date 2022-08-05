@@ -242,25 +242,29 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             onKeyUpCapture={handleKeyup}
             ref={commandMenuContentRef}
         >
-            <MuiClickAwayListener onClickAway={handleClickAway}>
-                <div>
-                    <CommandMenuContainer
-                        editor={editor}
-                        hooks={hooks}
-                        style={{
-                            ...commandMenuPosition,
-                            ...style,
-                        }}
-                        isShow={show}
-                        blockId={blockId}
-                        onSelected={handleSelected}
-                        onclose={handleClose}
-                        searchBlocks={searchBlocks}
-                        types={types}
-                        categories={categories}
-                    />
-                </div>
-            </MuiClickAwayListener>
+            {show ? (
+                <MuiClickAwayListener onClickAway={handleClickAway}>
+                    <div>
+                        <CommandMenuContainer
+                            editor={editor}
+                            hooks={hooks}
+                            style={{
+                                ...commandMenuPosition,
+                                ...style,
+                            }}
+                            isShow={show}
+                            blockId={blockId}
+                            onSelected={handleSelected}
+                            onclose={handleClose}
+                            searchBlocks={searchBlocks}
+                            types={types}
+                            categories={categories}
+                        />
+                    </div>
+                </MuiClickAwayListener>
+            ) : (
+                <></>
+            )}
         </div>
     );
 };

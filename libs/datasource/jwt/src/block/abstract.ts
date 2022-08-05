@@ -26,11 +26,11 @@ export class AbstractBlock<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > {
-    readonly _id: string;
+    private readonly _id: string;
     readonly #block: BlockInstance<C>;
-    readonly _history: HistoryManager;
-    readonly _root?: AbstractBlock<B, C>;
-    readonly _parentListener: Map<string, BlockListener>;
+    private readonly _history: HistoryManager;
+    private readonly _root?: AbstractBlock<B, C>;
+    private readonly _parentListener: Map<string, BlockListener>;
 
     _parent?: AbstractBlock<B, C>;
 

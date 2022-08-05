@@ -51,19 +51,19 @@ export class BaseBlock<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > extends AbstractBlock<B, C> {
-    readonly _exporters?: Exporters;
-    readonly _contentExportersGetter: () => Map<
+    private readonly _exporters?: Exporters;
+    private readonly _contentExportersGetter: () => Map<
         string,
         ReadableContentExporter<string, any>
     >;
-    readonly _metadataExportersGetter: () => Map<
+    private readonly _metadataExportersGetter: () => Map<
         string,
         ReadableContentExporter<
             Array<[string, number | string | string[]]>,
             any
         >
     >;
-    readonly _tagExportersGetter: () => Map<
+    private readonly _tagExportersGetter: () => Map<
         string,
         ReadableContentExporter<string[], any>
     >;

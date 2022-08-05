@@ -367,15 +367,6 @@ export class Editor implements Virgo {
         return blockList;
     }
 
-    async getRootLastChildrenBlock(rootBlockId = this.getRootBlockId()) {
-        const rootBlock = await this.getBlockById(rootBlockId);
-        if (!rootBlock) {
-            throw new Error('root block is not found');
-        }
-        const lastChildren = await rootBlock.lastChild();
-        return lastChildren ?? rootBlock;
-    }
-
     async getLastBlock(rootBlockId = this.getRootBlockId()) {
         const rootBlock = await this.getBlockById(rootBlockId);
         if (!rootBlock) {

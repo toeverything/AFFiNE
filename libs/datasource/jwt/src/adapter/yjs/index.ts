@@ -178,22 +178,22 @@ export type YjsInitOptions = {
 };
 
 export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
-    readonly _provider: YjsProviders;
-    readonly _doc: Doc; // doc instance
-    readonly _awareness: Awareness; // lightweight state synchronization
-    readonly _gatekeeper: GateKeeper; // Simple access control
-    readonly _history: YjsHistoryManager;
+    private readonly _provider: YjsProviders;
+    private readonly _doc: Doc; // doc instance
+    private readonly _awareness: Awareness; // lightweight state synchronization
+    private readonly _gatekeeper: GateKeeper; // Simple access control
+    private readonly _history: YjsHistoryManager;
 
     // Block Collection
     // key is a randomly generated global id
-    readonly _blocks: YMap<YMap<unknown>>;
-    readonly _blockUpdated: YMap<number>;
+    private readonly _blocks: YMap<YMap<unknown>>;
+    private readonly _blockUpdated: YMap<number>;
     // Maximum cache Block 1024, ttl 10 minutes
-    readonly _blockCaches: LRUCache<string, YjsBlockInstance>;
+    private readonly _blockCaches: LRUCache<string, YjsBlockInstance>;
 
-    readonly _binaries: YjsRemoteBinaries;
+    private readonly _binaries: YjsRemoteBinaries;
 
-    readonly _listener: Map<string, BlockListener<any>>;
+    private readonly _listener: Map<string, BlockListener<any>>;
 
     static async init(
         workspace: string,

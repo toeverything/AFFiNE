@@ -40,17 +40,19 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 <p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/21084335/182552060-972cac0e-6258-4ccb-85bd-3bb466c30ccd.png"><p/>
 
-# Stay Up-to-Date
+# Stay Up-to-Date and Support Us
 
 ![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
 
 # How to use
 
-If you have experience in front-end development, please [refer to here](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine); if you want to experience our latest version, please wait a moment, we will launch a web version in the near future
+If you have experience in front-end development, please [refer to here](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine); if you want to experience our latest version, please wait a moment, we will launch a web version in the near future.
+And, thanks to Lee who [made a desktop build with Tauri](https://github.com/m1911star/affine-client) for you to try out.
+Please notice that AFFiNE is still under Alpha stage and is not ready for production use.
 
 # Table of contents
 
--   [Stay Up-to-Date](#stay-up-to-date)
+-   [Stay Up-to-Date and Support Us](#stay-up-to-date-and-support-us)
 -   [How to Use](#how-to-use)
 -   [Table of contents](#table-of-contents)
     -   [Shape your page](#shape-your-page)
@@ -89,7 +91,7 @@ Affine is fully built with web technologies so that consistency and accessibilit
 
 # Documentation
 
-Please view the [documentation](https://affine.gitbook.io/affine/)
+AFFiNE is not yet ready for production use. To install, you may check how to build or depoly the AFFiNE in [quick-start](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine/quick-start). For the full documentation, please view it [here](https://affine.gitbook.io/affine/).
 
 ## Getting Started with development
 
@@ -121,7 +123,7 @@ It is all perfect... If there are not so many waste operations and redundant inf
 That's why we are making AFFiNE. Some of the most important features are:
 
 -   Transformable
-    -   Every block can be transformed equally as a database
+    -   Every block can be transformed equally well as a database
         -   e.g. you can now set up a to-do with MarkDown in text view and edit it in kanban view.
     -   Every doc can be turned into a whiteboard
         -   An always good-to-read, structured docs-form page is the best for your notes, but a boundless doodle surface is better for collaboration and creativity.

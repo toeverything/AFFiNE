@@ -9,7 +9,7 @@ import {
     importWorkspace,
     exportWorkspace,
     useWorkspaceAndPageId,
-    useReadingMode,
+    // useReadingMode,
     clearWorkspace,
 } from './util';
 
@@ -63,20 +63,20 @@ export const useSettings = (): SettingItem[] => {
     const { workspaceId, pageId } = useWorkspaceAndPageId();
     const navigate = useNavigate();
     const settingFlags = useSettingFlags();
-    const { toggleReadingMode, readingMode } = useReadingMode();
+    // const { toggleReadingMode, readingMode } = useReadingMode();
 
     const settings: SettingItem[] = [
-        {
-            type: 'switch',
-            name: 'Reading Mode',
-            value: readingMode,
-            onChange: () => {
-                toggleReadingMode();
-            },
-        },
-        {
-            type: 'separator',
-        },
+        // {
+        //     type: 'switch',
+        //     name: 'Reading Mode',
+        //     value: readingMode,
+        //     onChange: () => {
+        //         toggleReadingMode();
+        //     },
+        // },
+        // {
+        //     type: 'separator',
+        // },
         {
             type: 'button',
             name: 'Duplicate Page',
