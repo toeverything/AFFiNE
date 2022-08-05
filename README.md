@@ -91,7 +91,7 @@ Affine is fully built with web technologies so that consistency and accessibilit
 
 # Documentation
 
-Please view the [documentation](https://affine.gitbook.io/affine/)
+AFFiNE is not yet ready for production use. To install, you may check how to build or depoly the AFFiNE in [quick-start](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine/quick-start). For the full documentation, please view it [here](https://affine.gitbook.io/affine/).
 
 ## Getting Started with development
 
