@@ -1,5 +1,5 @@
 import type { BlockClientInstance } from '@toeverything/datasource/jwt';
-import { PAGE_TREE } from '../../utils';
+import { PAGE_TREE as pageTreeName } from '../../utils';
 import type { ReturnUnobserve } from '../database/observer';
 import { ServiceBaseClass } from '../base';
 import { TreeItem } from './types';
@@ -9,20 +9,20 @@ export type ObserveCallback = () => void;
 export class PageTree extends ServiceBaseClass {
     private async fetchPageTree<TreeItem>(workspace: string) {
         const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
-        const PAGE_TREEConfig =
-            workspaceDbBlock.getDecoration<TreeItem[]>(PAGE_TREE);
-        return PAGE_TREEConfig;
+        const pageTreeConfig =
+            workspaceDbBlock.getDecoration<TreeItem[]>(pageTreeName);
+        return pageTreeConfig;
     }
 
     async getPageTree<TreeItem>(workspace: string): Promise<TreeItem[]> {
         try {
-            const PAGE_TREE = await this.fetchPageTree(workspace);
-            if (PAGE_TREE && PAGE_TREE.length) {
+            const pageTree = await this.fetchPageTree(workspace);
+            if (pageTree && pageTree.length) {
                 const db = await this.database.getDatabase(workspace);
 
                 const pages = await updateTreeItemsTitle(
                     db,
-                    PAGE_TREE as [],
+                    pageTree as [],
                     {}
                 );
                 return pages;
@@ -37,7 +37,7 @@ export class PageTree extends ServiceBaseClass {
     /** @deprecated should implement more fine-grained crud methods instead of replacing each time with a new array */
     async setPageTree<TreeItem>(workspace: string, treeData: TreeItem[]) {
         const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
-        workspaceDbBlock.setDecoration(PAGE_TREE, treeData);
+        workspaceDbBlock.setDecoration(pageTreeName, treeData);
     }
 
     async addPage<TreeItem>(workspace: string, treeData: TreeItem[] | string) {
