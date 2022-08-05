@@ -32,7 +32,7 @@ export const mergeGroup = async (...groups: AsyncBlock[]) => {
         );
     }
 
-    await mergeGroupProperties(...(groups as RecastBlock[]));
+    await mergeGroupProperties(...(groups as unknown as RecastBlock[]));
 
     const [headGroup, ...restGroups] = groups;
     // Add all children to the head group
@@ -174,7 +174,7 @@ export const splitGroup = async (
     }
 
     splitGroupProperties(
-        group as RecastBlock,
+        group as unknown as RecastBlock,
         newGroupBlock as unknown as RecastBlock
     );
     await group.after(newGroupBlock);
