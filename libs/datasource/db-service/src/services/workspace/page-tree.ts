@@ -7,22 +7,22 @@ import { TreeItem } from './types';
 export type ObserveCallback = () => void;
 
 export class PageTree extends ServiceBaseClass {
-    private async fetch_page_tree<TreeItem>(workspace: string) {
-        const workspace_db_block = await this.getWorkspaceDbBlock(workspace);
-        const page_tree_config =
-            workspace_db_block.getDecoration<TreeItem[]>(PAGE_TREE);
-        return page_tree_config;
+    private async fetchPageTree<TreeItem>(workspace: string) {
+        const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
+        const PAGE_TREEConfig =
+            workspaceDbBlock.getDecoration<TreeItem[]>(PAGE_TREE);
+        return PAGE_TREEConfig;
     }
 
     async getPageTree<TreeItem>(workspace: string): Promise<TreeItem[]> {
         try {
-            const page_tree = await this.fetch_page_tree(workspace);
-            if (page_tree && page_tree.length) {
+            const PAGE_TREE = await this.fetchPageTree(workspace);
+            if (PAGE_TREE && PAGE_TREE.length) {
                 const db = await this.database.getDatabase(workspace);
 
-                const pages = await update_tree_items_title(
+                const pages = await updateTreeItemsTitle(
                     db,
-                    page_tree as [],
+                    PAGE_TREE as [],
                     {}
                 );
                 return pages;
@@ -36,8 +36,8 @@ export class PageTree extends ServiceBaseClass {
 
     /** @deprecated should implement more fine-grained crud methods instead of replacing each time with a new array */
     async setPageTree<TreeItem>(workspace: string, treeData: TreeItem[]) {
-        const workspace_db_block = await this.getWorkspaceDbBlock(workspace);
-        workspace_db_block.setDecoration(PAGE_TREE, treeData);
+        const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
+        workspaceDbBlock.setDecoration(PAGE_TREE, treeData);
     }
 
     async addPage<TreeItem>(workspace: string, treeData: TreeItem[] | string) {
@@ -52,109 +52,109 @@ export class PageTree extends ServiceBaseClass {
     }
 
     async addPageToWorkspacee(
-        target_workspace_id: string,
-        new_page_id: string
+        targetWorkspaceId: string,
+        newPageId: string
     ) {
-        const items = await this.getPageTree<TreeItem>(target_workspace_id);
-        await this.setPageTree(target_workspace_id, [
-            { id: new_page_id, children: [] },
+        const items = await this.getPageTree<TreeItem>(targetWorkspaceId);
+        await this.setPageTree(targetWorkspaceId, [
+            { id: newPageId, children: [] },
             ...items,
         ]);
     }
 
     async addChildPageToWorkspace(
-        target_workspace_id: string,
-        parent_page_id: string,
-        new_page_id: string
+        targetWorkspaceId: string,
+        parentPageId: string,
+        newPageId: string
     ) {
-        const pages = await this.getPageTree<TreeItem>(target_workspace_id);
-        this.build_items_for_child_page(parent_page_id, new_page_id, pages);
+        const pages = await this.getPageTree<TreeItem>(targetWorkspaceId);
+        this.buildItemsForChildPage(parentPageId, newPageId, pages);
 
-        await this.setPageTree<TreeItem>(target_workspace_id, [...pages]);
+        await this.setPageTree<TreeItem>(targetWorkspaceId, [...pages]);
     }
     async addPrevPageToWorkspace(
-        target_workspace_id: string,
-        parent_page_id: string,
-        new_page_id: string
+        targetWorkspaceId: string,
+        parentPageId: string,
+        newPageId: string
     ) {
-        const pages = await this.getPageTree<TreeItem>(target_workspace_id);
-        this.build_items_for_prev_page(parent_page_id, new_page_id, pages);
-        await this.setPageTree<TreeItem>(target_workspace_id, [...pages]);
+        const pages = await this.getPageTree<TreeItem>(targetWorkspaceId);
+        this.buildItemsForPrevPage(parentPageId, newPageId, pages);
+        await this.setPageTree<TreeItem>(targetWorkspaceId, [...pages]);
     }
     async addNextPageToWorkspace(
-        target_workspace_id: string,
-        parent_page_id: string,
-        new_page_id: string
+        targetWorkspaceId: string,
+        parentPageId: string,
+        newPageId: string
     ) {
-        const pages = await this.getPageTree<TreeItem>(target_workspace_id);
-        this.build_items_for_next_page(parent_page_id, new_page_id, pages);
-        await this.setPageTree<TreeItem>(target_workspace_id, [...pages]);
+        const pages = await this.getPageTree<TreeItem>(targetWorkspaceId);
+        this.buildItemsForNextPage(parentPageId, newPageId, pages);
+        await this.setPageTree<TreeItem>(targetWorkspaceId, [...pages]);
     }
-    private build_items_for_next_page(
-        parent_page_id: string,
-        new_page_id: string,
+    private buildItemsForNextPage(
+        parentPageId: string,
+        newPageId: string,
         children: TreeItem[]
     ) {
         for (let i = 0; i < children.length; i++) {
-            const child_page = children[i];
-            if (child_page.id === parent_page_id) {
-                const new_page = {
-                    id: new_page_id,
+            const childPage = children[i];
+            if (childPage.id === parentPageId) {
+                const newPage = {
+                    id: newPageId,
                     title: 'Untitled',
                     children: [] as TreeItem[],
                 };
-                children = children.splice(i + 1, 0, new_page);
-            } else if (child_page.children && child_page.children.length) {
-                this.build_items_for_next_page(
-                    parent_page_id,
-                    new_page_id,
-                    child_page.children
+                children = children.splice(i + 1, 0, newPage);
+            } else if (childPage.children && childPage.children.length) {
+                this.buildItemsForNextPage(
+                    parentPageId,
+                    newPageId,
+                    childPage.children
                 );
             }
         }
     }
-    private build_items_for_prev_page(
-        parent_page_id: string,
-        new_page_id: string,
+    private buildItemsForPrevPage(
+        parentPageId: string,
+        newPageId: string,
         children: TreeItem[]
     ) {
         for (let i = 0; i < children.length; i++) {
-            const child_page = children[i];
-            if (child_page.id === parent_page_id) {
-                const new_page = {
-                    id: new_page_id,
+            const childPage = children[i];
+            if (childPage.id === parentPageId) {
+                const newPage = {
+                    id: newPageId,
                     title: 'Untitled',
                     children: [] as TreeItem[],
                 };
-                children = children.splice(i - 1, 0, new_page);
-            } else if (child_page.children && child_page.children.length) {
-                this.build_items_for_prev_page(
-                    parent_page_id,
-                    new_page_id,
-                    child_page.children
+                children = children.splice(i - 1, 0, newPage);
+            } else if (childPage.children && childPage.children.length) {
+                this.buildItemsForPrevPage(
+                    parentPageId,
+                    newPageId,
+                    childPage.children
                 );
             }
         }
     }
-    private build_items_for_child_page(
-        parent_page_id: string,
-        new_page_id: string,
+    private buildItemsForChildPage(
+        parentPageId: string,
+        newPageId: string,
         children: TreeItem[]
     ) {
         for (let i = 0; i < children.length; i++) {
-            const child_page = children[i];
-            if (child_page.id === parent_page_id) {
-                child_page.children = child_page.children || [];
-                child_page.children.push({
-                    id: new_page_id,
+            const childPage = children[i];
+            if (childPage.id === parentPageId) {
+                childPage.children = childPage.children || [];
+                childPage.children.push({
+                    id: newPageId,
                     title: 'Untitled',
                     children: [],
                 });
-            } else if (child_page.children && child_page.children.length) {
-                this.build_items_for_child_page(
-                    parent_page_id,
-                    new_page_id,
-                    child_page.children
+            } else if (childPage.children && childPage.children.length) {
+                this.buildItemsForChildPage(
+                    parentPageId,
+                    newPageId,
+                    childPage.children
                 );
             }
         }
@@ -164,10 +164,10 @@ export class PageTree extends ServiceBaseClass {
         { workspace, page }: { workspace: string; page: string },
         callback: ObserveCallback
     ): Promise<ReturnUnobserve> {
-        const workspace_db_block = await this.getWorkspaceDbBlock(workspace);
+        const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
         const unobserveWorkspace = await this._observe(
             workspace,
-            workspace_db_block.id,
+            workspaceDbBlock.id,
             (states, block) => {
                 callback();
             }
@@ -187,12 +187,12 @@ export class PageTree extends ServiceBaseClass {
     }
 
     async unobserve({ workspace }: { workspace: string }) {
-        const workspace_db_block = await this.getWorkspaceDbBlock(workspace);
-        await this._unobserve(workspace, workspace_db_block.id);
+        const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
+        await this._unobserve(workspace, workspaceDbBlock.id);
     }
 }
 
-async function update_tree_items_title<
+async function updateTreeItemsTitle<
     TreeItem extends { id: string; title: string; children: TreeItem[] }
 >(
     db: BlockClientInstance,
@@ -213,7 +213,7 @@ async function update_tree_items_title<
         }
 
         if (item.children.length) {
-            item.children = await update_tree_items_title(
+            item.children = await updateTreeItemsTitle(
                 db,
                 item.children,
                 cache
