@@ -105,6 +105,9 @@
     text-overflow: ellipsis;
     overflow: hidden;
     cursor: pointer;
+    appearance: none;
+    color: unset;
+    text-decoration: none;
 }
 
 .Count {
