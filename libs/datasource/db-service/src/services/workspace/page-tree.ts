@@ -7,7 +7,7 @@ import { TreeItem } from './types';
 export type ObserveCallback = () => void;
 
 export class PageTree extends ServiceBaseClass {
-    private async fetchPageTree<TreeItem>(workspace: string) {
+    private async _fetchPageTree<TreeItem>(workspace: string) {
         const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
         const pageTreeConfig =
             workspaceDbBlock.getDecoration<TreeItem[]>(pageTreeName);
@@ -16,11 +16,11 @@ export class PageTree extends ServiceBaseClass {
 
     async getPageTree<TreeItem>(workspace: string): Promise<TreeItem[]> {
         try {
-            const pageTree = await this.fetchPageTree(workspace);
+            const pageTree = await this._fetchPageTree(workspace);
             if (pageTree && pageTree.length) {
                 const db = await this.database.getDatabase(workspace);
 
-                const pages = await updateTreeItemsTitle(
+                const pages = await _updateTreeItemsTitle(
                     db,
                     pageTree as [],
                     {}
@@ -51,10 +51,7 @@ export class PageTree extends ServiceBaseClass {
         await dbBlock?.remove();
     }
 
-    async addPageToWorkspacee(
-        targetWorkspaceId: string,
-        newPageId: string
-    ) {
+    async addPageToWorkspacee(targetWorkspaceId: string, newPageId: string) {
         const items = await this.getPageTree<TreeItem>(targetWorkspaceId);
         await this.setPageTree(targetWorkspaceId, [
             { id: newPageId, children: [] },
@@ -68,7 +65,7 @@ export class PageTree extends ServiceBaseClass {
         newPageId: string
     ) {
         const pages = await this.getPageTree<TreeItem>(targetWorkspaceId);
-        this.buildItemsForChildPage(parentPageId, newPageId, pages);
+        this._buildItemsForChildPage(parentPageId, newPageId, pages);
 
         await this.setPageTree<TreeItem>(targetWorkspaceId, [...pages]);
     }
@@ -78,7 +75,7 @@ export class PageTree extends ServiceBaseClass {
         newPageId: string
     ) {
         const pages = await this.getPageTree<TreeItem>(targetWorkspaceId);
-        this.buildItemsForPrevPage(parentPageId, newPageId, pages);
+        this._buildItemsForPrevPage(parentPageId, newPageId, pages);
         await this.setPageTree<TreeItem>(targetWorkspaceId, [...pages]);
     }
     async addNextPageToWorkspace(
@@ -87,10 +84,10 @@ export class PageTree extends ServiceBaseClass {
         newPageId: string
     ) {
         const pages = await this.getPageTree<TreeItem>(targetWorkspaceId);
-        this.buildItemsForNextPage(parentPageId, newPageId, pages);
+        this._buildItemsForNextPage(parentPageId, newPageId, pages);
         await this.setPageTree<TreeItem>(targetWorkspaceId, [...pages]);
     }
-    private buildItemsForNextPage(
+    private _buildItemsForNextPage(
         parentPageId: string,
         newPageId: string,
         children: TreeItem[]
@@ -105,7 +102,7 @@ export class PageTree extends ServiceBaseClass {
                 };
                 children = children.splice(i + 1, 0, newPage);
             } else if (childPage.children && childPage.children.length) {
-                this.buildItemsForNextPage(
+                this._buildItemsForNextPage(
                     parentPageId,
                     newPageId,
                     childPage.children
@@ -113,7 +110,7 @@ export class PageTree extends ServiceBaseClass {
             }
         }
     }
-    private buildItemsForPrevPage(
+    private _buildItemsForPrevPage(
         parentPageId: string,
         newPageId: string,
         children: TreeItem[]
@@ -128,7 +125,7 @@ export class PageTree extends ServiceBaseClass {
                 };
                 children = children.splice(i - 1, 0, newPage);
             } else if (childPage.children && childPage.children.length) {
-                this.buildItemsForPrevPage(
+                this._buildItemsForPrevPage(
                     parentPageId,
                     newPageId,
                     childPage.children
@@ -136,7 +133,7 @@ export class PageTree extends ServiceBaseClass {
             }
         }
     }
-    private buildItemsForChildPage(
+    private _buildItemsForChildPage(
         parentPageId: string,
         newPageId: string,
         children: TreeItem[]
@@ -151,7 +148,7 @@ export class PageTree extends ServiceBaseClass {
                     children: [],
                 });
             } else if (childPage.children && childPage.children.length) {
-                this.buildItemsForChildPage(
+                this._buildItemsForChildPage(
                     parentPageId,
                     newPageId,
                     childPage.children
@@ -192,7 +189,7 @@ export class PageTree extends ServiceBaseClass {
     }
 }
 
-async function updateTreeItemsTitle<
+async function _updateTreeItemsTitle<
     TreeItem extends { id: string; title: string; children: TreeItem[] }
 >(
     db: BlockClientInstance,
@@ -213,7 +210,7 @@ async function updateTreeItemsTitle<
         }
 
         if (item.children.length) {
-            item.children = await updateTreeItemsTitle(
+            item.children = await _updateTreeItemsTitle(
                 db,
                 item.children,
                 cache
