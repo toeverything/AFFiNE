@@ -1,12 +1,12 @@
-import {
-    BlockDomInfo,
-    HookType,
-    BlockDropPlacement,
-} from '@toeverything/framework/virgo';
+import { HookType, BlockDropPlacement } from '@toeverything/framework/virgo';
 import { StrictMode } from 'react';
 import { BasePlugin } from '../../base-plugin';
 import { ignoreBlockTypes } from './menu-config';
-import { LineInfoSubject, LeftMenuDraggable } from './LeftMenuDraggable';
+import {
+    LineInfoSubject,
+    LeftMenuDraggable,
+    BlockDomInfo,
+} from './LeftMenuDraggable';
 import { PluginRenderRoot } from '../../utils';
 import { Subject, throttleTime } from 'rxjs';
 import { domToRect, last, Point } from '@toeverything/utils';
@@ -81,11 +81,8 @@ export class LeftMenuPlugin extends BasePlugin {
                 this._lineInfo.next({
                     direction,
                     blockInfo: {
-                        blockId: block.id,
-                        dom: block.dom,
-                        type: block.type,
+                        block,
                         rect: block.dom.getBoundingClientRect(),
-                        properties: block.getProperties(),
                     },
                 });
             } else if (!isOuter) {
@@ -116,11 +113,8 @@ export class LeftMenuPlugin extends BasePlugin {
         this._lineInfo.next({
             direction,
             blockInfo: {
-                blockId: block.id,
-                dom: block.dom,
+                block,
                 rect: block.dom.getBoundingClientRect(),
-                type: block.type,
-                properties: block.getProperties(),
             },
         });
     };
@@ -169,11 +163,8 @@ export class LeftMenuPlugin extends BasePlugin {
             }
         }
         this._blockInfo.next({
-            blockId: node.id,
-            dom: node.dom,
+            block: node,
             rect: node.dom.getBoundingClientRect(),
-            type: node.type,
-            properties: node.getProperties(),
         });
     };
 

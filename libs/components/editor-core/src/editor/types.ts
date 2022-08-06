@@ -183,14 +183,6 @@ export enum HookType {
     ON_ROOTNODE_SCROLL = 'onRootNodeScroll',
 }
 
-export interface BlockDomInfo {
-    blockId: string;
-    dom: HTMLElement;
-    type: BlockFlavorKeys;
-    rect: DOMRect;
-    properties: Record<string, unknown>;
-}
-
 // Editor's various callbacks, used in Editor
 export interface HooksRunner {
     init: () => void;

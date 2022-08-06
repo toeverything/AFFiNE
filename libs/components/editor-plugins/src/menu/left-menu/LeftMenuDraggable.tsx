@@ -6,14 +6,15 @@ import {
     type DragEvent,
     type ReactNode,
     type CSSProperties,
+    useCallback,
 } from 'react';
 
 import {
     Virgo,
-    BlockDomInfo,
     PluginHooks,
     BlockDropPlacement,
     LINE_GAP,
+    AsyncBlock,
 } from '@toeverything/framework/virgo';
 import { Button } from '@toeverything/components/common';
 import { styled } from '@toeverything/components/ui';
@@ -24,6 +25,11 @@ import { HandleChildIcon } from '@toeverything/components/icons';
 import { MENU_WIDTH } from './menu-config';
 
 const MENU_BUTTON_OFFSET = 4;
+
+export interface BlockDomInfo {
+    block: AsyncBlock;
+    rect: DOMRect;
+}
 
 export type LineInfoSubject = Subject<
     | {
@@ -138,11 +144,11 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
         if (block == null) return;
         setRootRect(editor.container.getBoundingClientRect());
         const dragImage = await editor.blockHelper.getBlockDragImg(
-            block.blockId
+            block.block.id
         );
         if (dragImage) {
             event.dataTransfer.setDragImage(dragImage, -50, -10);
-            editor.dragDropManager.setDragBlockInfo(event, block.blockId);
+            editor.dragDropManager.setDragBlockInfo(event, block.block.id);
         }
     };
 
@@ -154,16 +160,18 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
     const onClick = (event: MouseEvent<Element>) => {
         if (block == null) return;
         const currentTarget = event.currentTarget;
-        editor.selection.setSelectedNodesIds([block.blockId]);
+        editor.selection.setSelectedNodesIds([block.block.id]);
         setVisible(true);
         setAnchorEl(currentTarget);
     };
+
+    const onClose = useCallback(() => setAnchorEl(undefined), [setAnchorEl]);
 
     useEffect(() => {
         const sub = blockInfo
             .pipe(
                 distinctUntilChanged(
-                    (prev, curr) => prev?.blockId === curr?.blockId
+                    (prev, curr) => prev?.block.id === curr?.block.id
                 )
             )
             .subscribe(block => {
@@ -185,7 +193,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
                 setRootRect(editor.container.getBoundingClientRect());
                 setLine(prev => {
                     if (
-                        prev?.blockInfo.blockId !== blockInfo.blockId ||
+                        prev?.blockInfo.block.id !== blockInfo.block.id ||
                         prev?.direction !== direction
                     ) {
                         return {
@@ -224,8 +232,8 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
                             anchorEl={anchorEl}
                             editor={props.editor}
                             hooks={props.hooks}
-                            onClose={() => setAnchorEl(undefined)}
-                            blockId={block.blockId}
+                            onClose={onClose}
+                            blockId={block.block.id}
                         >
                             <Draggable onClick={onClick}>
                                 <HandleChildIcon />
