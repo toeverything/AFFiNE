@@ -105,7 +105,7 @@ const langs: Record<string, any> = {
     // clike: () => StreamLanguage.define(clike),
     // clike: () => clike({ }),
 };
-
+const DEFAULT_LANG = 'javascript';
 const CodeBlock = styled('div')(({ theme }) => ({
     backgroundColor: '#F2F5F9',
     padding: '8px 24px',
@@ -132,8 +132,7 @@ const CodeBlock = styled('div')(({ theme }) => ({
 }));
 export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
     const initValue: string = block.getProperty('text')?.value?.[0]?.text;
-    const langType: string = block.getProperty('lang')?.value?.[0]?.text;
-    const [mode, setMode] = useState('javascript');
+    const langType: string = block.getProperty('lang');
     const [extensions, setExtensions] = useState<Extension[]>();
     const codeMirror = useRef();
     useOnSelect(block.id, (is_select: boolean) => {
@@ -147,14 +146,14 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
             value: [{ text: value }],
         });
     };
-    useEffect(() => {
-        handleLangChange(langType ? langType : 'javascript');
-    }, []);
     function handleLangChange(lang: string) {
         block.setProperty('lang', lang);
-        setMode(lang);
         setExtensions([langs[lang]()]);
     }
+    useEffect(() => {
+        handleLangChange(langType ? langType : DEFAULT_LANG);
+    }, []);
+
     const copyCode = () => {
         copyToClipboard(initValue);
     };
@@ -182,7 +181,7 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
                         <Select
                             width={128}
                             placeholder="Search for a field type"
-                            value={mode}
+                            value={langType || DEFAULT_LANG}
                             listboxStyle={{ maxHeight: '400px' }}
                             onChange={(selectedValue: string) => {
                                 // setSelectedOption(selectedValue);
