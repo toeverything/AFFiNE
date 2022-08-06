@@ -58,7 +58,7 @@ const HOST = process.env.HOST || 'localhost';
 const PORT = process.env.PORT || 3000;
 
 const _tokens = new LRUCache<string, string>({
-    max: 10240,
+    max: 1024 * 10,
     ttl: 1000 * 60 * 5,
 });
 
