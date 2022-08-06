@@ -161,32 +161,33 @@ module.exports = function (webpackConfig) {
             JWT_DEV: !isProd,
             global: {},
         }),
-        isProd &&
-            new HtmlWebpackPlugin({
-                title: 'AFFiNE - All In One Workos',
-                favicon: path.resolve(
-                    __dirname,
-                    './src/assets/images/favicon.ico'
-                ), //favicon path
-                template: path.resolve(__dirname, './src/template.html'),
-                publicPath: '/',
-            }),
         new Style9Plugin(),
-        isProd && new MiniCssExtractPlugin(),
-        isProd &&
-            new CompressionPlugin({
-                test: /\.(js|css|html|svg|ttf|woff)$/,
-                algorithm: 'brotliCompress',
-                filename: '[path][base].br',
-                compressionOptions: {
-                    params: {
-                        [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
-                    },
-                },
-            }),
-        isProd &&
-            enableBundleAnalyzer &&
-            new BundleAnalyzerPlugin({ analyzerMode: 'static' }),
+        ...(isProd
+            ? [
+                  new HtmlWebpackPlugin({
+                      title: 'AFFiNE - All In One Workos',
+                      favicon: path.resolve(
+                          __dirname,
+                          './src/assets/images/favicon.ico'
+                      ), //favicon path
+                      template: path.resolve(__dirname, './src/template.html'),
+                      publicPath: '/',
+                  }),
+                  new MiniCssExtractPlugin(),
+                  new CompressionPlugin({
+                      test: /\.(js|css|html|svg|ttf|woff)$/,
+                      algorithm: 'brotliCompress',
+                      filename: '[path][base].br',
+                      compressionOptions: {
+                          params: {
+                              [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+                          },
+                      },
+                  }),
+                  enableBundleAnalyzer &&
+                      new BundleAnalyzerPlugin({ analyzerMode: 'static' }),
+              ]
+            : []),
     ].filter(Boolean);
 
     // Workaround for webpack infinite recompile errors
