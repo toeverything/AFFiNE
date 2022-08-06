@@ -10,16 +10,13 @@ export function WorkspaceHome() {
 
     useEffect(() => {
         const navigate_to_user_initial_page = async () => {
-            const recent_pages = await services.api.userConfig.getRecentPages(
-                workspace_id,
-                user.id
-            );
-
-            const user_initial_page_id =
-                await services.api.userConfig.getUserInitialPage(
+            const [recent_pages, user_initial_page_id] = await Promise.all([
+                services.api.userConfig.getRecentPages(workspace_id, user.id),
+                services.api.userConfig.getUserInitialPage(
                     workspace_id,
                     user.id
-                );
+                ),
+            ]);
             if (recent_pages.length === 0) {
                 await services.api.editorBlock.copyTemplateToPage(
                     workspace_id,
