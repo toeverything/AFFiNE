@@ -32,6 +32,7 @@ import { powerShell } from '@codemirror/legacy-modes/mode/powershell';
 import { brainfuck } from '@codemirror/legacy-modes/mode/brainfuck';
 import { stylus } from '@codemirror/legacy-modes/mode/stylus';
 import { erlang } from '@codemirror/legacy-modes/mode/erlang';
+import { elixir } from 'codemirror-lang-elixir';
 import { nginx } from '@codemirror/legacy-modes/mode/nginx';
 import { perl } from '@codemirror/legacy-modes/mode/perl';
 import { pascal } from '@codemirror/legacy-modes/mode/pascal';
@@ -87,6 +88,7 @@ const langs: Record<string, any> = {
     brainfuck: () => StreamLanguage.define(brainfuck),
     stylus: () => StreamLanguage.define(stylus),
     erlang: () => StreamLanguage.define(erlang),
+    elixir: () => StreamLanguage.define(elixir),
     nginx: () => StreamLanguage.define(nginx),
     perl: () => StreamLanguage.define(perl),
     ruby: () => StreamLanguage.define(ruby),

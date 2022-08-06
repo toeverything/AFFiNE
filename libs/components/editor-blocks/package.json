@@ -31,6 +31,7 @@
         "@mui/system": "^5.8.6",
         "code-example": "^3.3.6",
         "codemirror": "6.0.1",
+        "codemirror-lang-elixir": "^3.0.0",
         "keymap": "link:@codemirror/next/keymap",
         "nanoid": "^4.0.0",
         "react-resizable": "^3.0.4",
