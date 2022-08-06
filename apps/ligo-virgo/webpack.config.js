@@ -187,7 +187,9 @@ module.exports = function (webpackConfig) {
                   enableBundleAnalyzer &&
                       new BundleAnalyzerPlugin({ analyzerMode: 'static' }),
               ]
-            : []),
+            : [
+                  // development ou another environment
+              ]),
     ].filter(Boolean);
 
     // Workaround for webpack infinite recompile errors
