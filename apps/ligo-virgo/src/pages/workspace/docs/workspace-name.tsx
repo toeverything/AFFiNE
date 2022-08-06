@@ -95,15 +95,11 @@ export const WorkspaceName = () => {
         if (!currentSpaceId) {
             return;
         }
-
-        const name = await services.api.userConfig.getWorkspaceName(
-            currentSpaceId
-        );
+        const [name, workspaceId] = await Promise.all([
+            services.api.userConfig.getWorkspaceName(currentSpaceId),
+            services.api.userConfig.getWorkspaceId(currentSpaceId),
+        ]);
         setWorkspaceName(name);
-
-        const workspaceId = await services.api.userConfig.getWorkspaceId(
-            currentSpaceId
-        );
         setWorkspaceId(workspaceId);
     }, [currentSpaceId]);
 
