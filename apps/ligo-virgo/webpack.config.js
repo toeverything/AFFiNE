@@ -34,11 +34,6 @@ module.exports = function (webpackConfig) {
 
     if (isProd) {
         config.module.rules.unshift(style9);
-    } else {
-        config.module.rules.push(style9);
-    }
-
-    if (isProd) {
         config.entry = {
             main: [...config.entry.main, ...config.entry.polyfills],
         };
@@ -133,6 +128,7 @@ module.exports = function (webpackConfig) {
         });
         config.module.rules.splice(6);
     } else {
+        config.module.rules.push(style9);
         config.output = {
             ...config.output,
             publicPath: '/',
