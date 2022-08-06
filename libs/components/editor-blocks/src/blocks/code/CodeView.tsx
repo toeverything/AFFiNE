@@ -1,10 +1,9 @@
-import { FC, useState, useMemo, useRef, useEffect } from 'react';
+import { FC, useState, useRef, useEffect } from 'react';
 import { StyleWithAtRules } from 'style9';
 
 import { CreateView } from '@toeverything/framework/virgo';
-import CodeMirror from './CodeMirror';
+import CodeMirror, { ReactCodeMirrorRef } from './CodeMirror';
 import { styled } from '@toeverything/components/ui';
-import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
 
 import { javascript } from '@codemirror/lang-javascript';
 import { html } from '@codemirror/lang-html';
@@ -46,7 +45,6 @@ import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile';
 import { julia } from '@codemirror/legacy-modes/mode/julia';
 import { r } from '@codemirror/legacy-modes/mode/r';
 import { Extension } from '@codemirror/state';
-// import { Select } from '../../components/select';
 import { Option, Select } from '@toeverything/components/ui';
 
 import {
@@ -102,8 +100,6 @@ const langs: Record<string, any> = {
     julia: () => StreamLanguage.define(julia),
     dockerfile: () => StreamLanguage.define(dockerFile),
     r: () => StreamLanguage.define(r),
-    // clike: () => StreamLanguage.define(clike),
-    // clike: () => clike({ }),
 };
 const DEFAULT_LANG = 'javascript';
 const CodeBlock = styled('div')(({ theme }) => ({
@@ -120,7 +116,7 @@ const CodeBlock = styled('div')(({ theme }) => ({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
     },
-    '.delete-block': {
+    '.copy-block': {
         padding: '6px 10px',
         backgroundColor: '#fff',
         borderRadius: theme.affine.shape.borderRadius,
@@ -134,22 +130,21 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
     const initValue: string = block.getProperty('text')?.value?.[0]?.text;
     const langType: string = block.getProperty('lang');
     const [extensions, setExtensions] = useState<Extension[]>();
-    const codeMirror = useRef();
-    useOnSelect(block.id, (is_select: boolean) => {
+    const codeMirror = useRef<ReactCodeMirrorRef>();
+    useOnSelect(block.id, (_is_select: boolean) => {
         if (codeMirror.current) {
-            //@ts-ignore
             codeMirror?.current?.view?.focus();
         }
     });
-    const onChange = (value: any, codeEditor: any) => {
+    const onChange = (value: string) => {
         block.setProperty('text', {
             value: [{ text: value }],
         });
     };
-    function handleLangChange(lang: string) {
+    const handleLangChange = (lang: string) => {
         block.setProperty('lang', lang);
         setExtensions([langs[lang]()]);
-    }
+    };
     useEffect(() => {
         handleLangChange(langType ? langType : DEFAULT_LANG);
     }, []);
@@ -172,19 +167,12 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
             >
                 <div className="operation">
                     <div className="select">
-                        {/* <Select
-                            label="Lang"
-                            options={Object.keys(langs)}
-                            value={mode}
-                            onChange={evn => handleLangChange(evn.target.value)}
-                        /> */}
                         <Select
                             width={128}
                             placeholder="Search for a field type"
                             value={langType || DEFAULT_LANG}
                             listboxStyle={{ maxHeight: '400px' }}
                             onChange={(selectedValue: string) => {
-                                // setSelectedOption(selectedValue);
                                 handleLangChange(selectedValue);
                             }}
                         >
@@ -198,17 +186,8 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
                         </Select>
                     </div>
                     <div>
-                        <div className="delete-block" onClick={copyCode}>
+                        <div className="copy-block" onClick={copyCode}>
                             Copy
-                            {/* <DeleteSweepOutlinedIcon
-                                className="delete-icon"
-                                fontSize="small"
-                                sx={{
-                                    color: 'rgba(0,0,0,.5)',
-                                    cursor: 'pointer',
-                                    '&:hover': { color: 'rgba(0,0,0,.9)' },
-                                }}
-                            /> */}
                         </div>
                     </div>
                 </div>
