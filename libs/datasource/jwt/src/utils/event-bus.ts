@@ -7,14 +7,14 @@ declare const JWT_DEV: boolean;
 const logger = getLogger('BlockDB:event_bus');
 
 export class BlockEventBus {
-    readonly #event_bus: EventTarget;
-    readonly #event_callback_cache: Map<string, any>;
-    readonly #scoped_cache: Map<string, BlockScopedEventBus<any>>;
+    private readonly _eventBus: EventTarget;
+    private readonly _eventCallbackCache: Map<string, any>;
+    private readonly _scopedCache: Map<string, BlockScopedEventBus<any>>;
 
     constructor(event_bus?: EventTarget) {
-        this.#event_bus = event_bus || new EventTarget();
-        this.#event_callback_cache = new Map();
-        this.#scoped_cache = new Map();
+        this._eventBus = event_bus || new EventTarget();
+        this._eventCallbackCache = new Map();
+        this._scopedCache = new Map();
     }
 
     protected on_listener(
@@ -23,9 +23,9 @@ export class BlockEventBus {
         listener: (e: Event) => void
     ) {
         const handler_name = `${topic}/${name}`;
-        if (!this.#event_callback_cache.has(handler_name)) {
-            this.#event_bus.addEventListener(topic, listener);
-            this.#event_callback_cache.set(handler_name, listener);
+        if (!this._eventCallbackCache.has(handler_name)) {
+            this._eventBus.addEventListener(topic, listener);
+            this._eventCallbackCache.set(handler_name, listener);
         } else {
             JWT_DEV && logger(`event handler ${handler_name} is existing`);
         }
@@ -33,27 +33,27 @@ export class BlockEventBus {
 
     protected off_listener(topic: string, name: string) {
         const handler_name = `${topic}/${name}`;
-        const listener = this.#event_callback_cache.get(handler_name);
+        const listener = this._eventCallbackCache.get(handler_name);
         if (listener) {
-            this.#event_bus.removeEventListener(topic, listener);
-            this.#event_callback_cache.delete(handler_name);
+            this._eventBus.removeEventListener(topic, listener);
+            this._eventCallbackCache.delete(handler_name);
         } else {
             JWT_DEV && logger(`event handler ${handler_name} is not existing`);
         }
     }
 
     protected has_listener(topic: string, name: string) {
-        return this.#event_callback_cache.has(`${topic}/${name}`);
+        return this._eventCallbackCache.has(`${topic}/${name}`);
     }
 
     protected emit_event<T>(topic: string, detail?: T) {
-        this.#event_bus.dispatchEvent(new CustomEvent(topic, { detail }));
+        this._eventBus.dispatchEvent(new CustomEvent(topic, { detail }));
     }
 
     topic<T = unknown>(topic: string): BlockScopedEventBus<T> {
         return (
-            this.#scoped_cache.get(topic) ||
-            new BlockScopedEventBus<T>(topic, this.#event_bus)
+            this._scopedCache.get(topic) ||
+            new BlockScopedEventBus<T>(topic, this._eventBus)
         );
     }
 }
@@ -68,11 +68,11 @@ type ListenerOptions = {
 };
 
 class BlockScopedEventBus<T> extends BlockEventBus {
-    readonly #topic: string;
+    private readonly _topic: string;
 
     constructor(topic: string, event_bus?: EventTarget) {
         super(event_bus);
-        this.#topic = topic;
+        this._topic = topic;
     }
 
     on(
@@ -83,25 +83,25 @@ class BlockScopedEventBus<T> extends BlockEventBus {
         if (options?.debounce) {
             const { wait, maxWait } = options.debounce;
             const debounced = debounce(listener, wait, { maxWait });
-            this.on_listener(this.#topic, name, e => {
+            this.on_listener(this._topic, name, e => {
                 debounced((e as CustomEvent)?.detail);
             });
         } else {
-            this.on_listener(this.#topic, name, e => {
+            this.on_listener(this._topic, name, e => {
                 listener((e as CustomEvent)?.detail);
             });
         }
     }
 
     off(name: string) {
-        this.off_listener(this.#topic, name);
+        this.off_listener(this._topic, name);
     }
 
     has(name: string) {
-        return this.has_listener(this.#topic, name);
+        return this.has_listener(this._topic, name);
     }
 
     emit(detail?: T) {
-        this.emit_event(this.#topic, detail);
+        this.emit_event(this._topic, detail);
     }
 }

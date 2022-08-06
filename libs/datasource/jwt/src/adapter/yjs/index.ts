@@ -178,22 +178,22 @@ export type YjsInitOptions = {
 };
 
 export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
-    readonly #provider: YjsProviders;
-    readonly #doc: Doc; // doc instance
-    readonly #awareness: Awareness; // lightweight state synchronization
-    readonly #gatekeeper: GateKeeper; // Simple access control
-    readonly #history: YjsHistoryManager;
+    private readonly _provider: YjsProviders;
+    private readonly _doc: Doc; // doc instance
+    private readonly _awareness: Awareness; // lightweight state synchronization
+    private readonly _gatekeeper: GateKeeper; // Simple access control
+    private readonly _history: YjsHistoryManager;
 
     // Block Collection
     // key is a randomly generated global id
-    readonly #blocks: YMap<YMap<unknown>>;
-    readonly #block_updated: YMap<number>;
+    private readonly _blocks: YMap<YMap<unknown>>;
+    private readonly _blockUpdated: YMap<number>;
     // Maximum cache Block 1024, ttl 10 minutes
-    readonly #block_caches: LRUCache<string, YjsBlockInstance>;
+    private readonly _blockCaches: LRUCache<string, YjsBlockInstance>;
 
-    readonly #binaries: YjsRemoteBinaries;
+    private readonly _binaries: YjsRemoteBinaries;
 
-    readonly #listener: Map<string, BlockListener<any>>;
+    private readonly _listener: Map<string, BlockListener<any>>;
 
     static async init(
         workspace: string,
@@ -209,30 +209,30 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
     }
 
     private constructor(providers: YjsProviders) {
-        this.#provider = providers;
-        this.#doc = providers.idb.doc;
-        this.#awareness = providers.awareness;
-        this.#gatekeeper = providers.gatekeeper;
+        this._provider = providers;
+        this._doc = providers.idb.doc;
+        this._awareness = providers.awareness;
+        this._gatekeeper = providers.gatekeeper;
 
-        const blocks = this.#doc.getMap<YMap<any>>('blocks');
-        this.#blocks =
+        const blocks = this._doc.getMap<YMap<any>>('blocks');
+        this._blocks =
             blocks.get('content') || blocks.set('content', new YMap());
-        this.#block_updated =
+        this._blockUpdated =
             blocks.get('updated') || blocks.set('updated', new YMap());
-        this.#block_caches = new LRUCache({ max: 1024, ttl: 1000 * 60 * 10 });
-        this.#binaries = new YjsRemoteBinaries(
+        this._blockCaches = new LRUCache({ max: 1024, ttl: 1000 * 60 * 10 });
+        this._binaries = new YjsRemoteBinaries(
             providers.binariesIdb.doc.getMap(),
             providers.remoteToken
         );
-        this.#history = new YjsHistoryManager(this.#blocks);
+        this._history = new YjsHistoryManager(this._blocks);
 
-        this.#listener = new Map();
+        this._listener = new Map();
 
         const ws = providers.ws as any;
         if (ws) {
             const workspace = providers.idb.name;
             const emitState = (connectivity: Connectivity) => {
-                this.#listener.get('connectivity')?.(
+                this._listener.get('connectivity')?.(
                     new Map([[workspace, connectivity]])
                 );
             };
@@ -244,9 +244,9 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         const debounced_editing_notifier = debounce(
             () => {
                 const listener: BlockListener<Set<string>> | undefined =
-                    this.#listener.get('editing');
+                    this._listener.get('editing');
                 if (listener) {
-                    const mapping = this.#awareness.getStates();
+                    const mapping = this._awareness.getStates();
                     const editing_mapping: Record<string, string[]> = {};
                     for (const {
                         userId,
@@ -280,11 +280,11 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
             { maxWait: 1000 }
         );
 
-        this.#awareness.setLocalStateField('userId', providers.userId);
+        this._awareness.setLocalStateField('userId', providers.userId);
 
-        this.#awareness.on('update', debounced_editing_notifier);
+        this._awareness.on('update', debounced_editing_notifier);
 
-        this.#blocks.observeDeep(events => {
+        this._blocks.observeDeep(events => {
             const now = Date.now();
 
             const keys = events.flatMap(e => {
@@ -300,14 +300,14 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 }
             });
 
-            EmitEvents(keys, this.#listener.get('updated'));
+            EmitEvents(keys, this._listener.get('updated'));
 
-            transact(this.#doc, () => {
+            transact(this._doc, () => {
                 for (const [key, action] of keys) {
                     if (action === 'delete') {
-                        this.#block_updated.delete(key);
+                        this._blockUpdated.delete(key);
                     } else {
-                        this.#block_updated.set(key, now);
+                        this._blockUpdated.set(key, now);
                     }
                 }
             });
@@ -315,7 +315,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
     }
 
     getUserId(): string {
-        return this.#provider.userId;
+        return this._provider.userId;
     }
 
     inspector() {
@@ -333,7 +333,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
 
         return {
             save: () => {
-                const binary = encodeStateAsUpdate(this.#doc);
+                const binary = encodeStateAsUpdate(this._doc);
                 saveAs(
                     new Blob([binary]),
                     `affine_workspace_${new Date().toDateString()}.apk`
@@ -353,7 +353,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 });
                 const [file] = (await fromEvent(handles)) as File[];
                 const binary = await file.arrayBuffer();
-                await this.#provider.idb.clearData();
+                await this._provider.idb.clearData();
                 const doc = new Doc({ autoLoad: true, shouldLoad: true });
                 let updated = 0;
                 let isUpdated = false;
@@ -374,21 +374,21 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                     };
                     check();
                 });
-                await new IndexeddbPersistence(this.#provider.idb.name, doc)
+                await new IndexeddbPersistence(this._provider.idb.name, doc)
                     .whenSynced;
                 applyUpdate(doc, new Uint8Array(binary));
                 await update_check;
                 console.log('load success');
             },
-            parse: () => this.#doc.toJSON(),
+            parse: () => this._doc.toJSON(),
             // eslint-disable-next-line @typescript-eslint/naming-convention
             parse_page: (page_id: string) => {
-                const blocks = this.#blocks.toJSON();
+                const blocks = this._blocks.toJSON();
                 return resolve_block(blocks, page_id);
             },
             // eslint-disable-next-line @typescript-eslint/naming-convention
             parse_pages: (resolve = false) => {
-                const blocks = this.#blocks.toJSON();
+                const blocks = this._blocks.toJSON();
                 return Object.fromEntries(
                     Object.entries(blocks)
                         .filter(([, block]) => block.flavor === 'page')
@@ -402,21 +402,21 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 );
             },
             clear: () => {
-                this.#blocks.clear();
-                this.#block_updated.clear();
-                this.#gatekeeper.clear();
-                this.#doc.getMap('blocks').clear();
-                this.#doc.getMap('gatekeeper').clear();
+                this._blocks.clear();
+                this._blockUpdated.clear();
+                this._gatekeeper.clear();
+                this._doc.getMap('blocks').clear();
+                this._doc.getMap('gatekeeper').clear();
             },
             // eslint-disable-next-line @typescript-eslint/naming-convention
             clear_old: () => {
-                this.#doc.getMap('block_updated').clear();
-                this.#doc.getMap('blocks').clear();
-                this.#doc.getMap('common').clear();
-                this.#doc.getMap('creators').clear();
+                this._doc.getMap('block_updated').clear();
+                this._doc.getMap('blocks').clear();
+                this._doc.getMap('common').clear();
+                this._doc.getMap('creators').clear();
             },
             snapshot: () => {
-                return snapshot(this.#doc);
+                return snapshot(this._doc);
             },
         };
     }
@@ -459,15 +459,15 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
     }
 
     private get_updated(id: string) {
-        return this.#block_updated.get(id);
+        return this._blockUpdated.get(id);
     }
 
     private get_creator(id: string) {
-        return this.#gatekeeper.getCreator(id);
+        return this._gatekeeper.getCreator(id);
     }
 
     private get_block_sync(id: string): YjsBlockInstance | undefined {
-        const cached = this.#block_caches.get(id);
+        const cached = this._blockCaches.get(id);
         if (cached) {
             // Synchronous read cannot read binary
             if (cached.type === BlockTypes.block) {
@@ -476,7 +476,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
             return undefined;
         }
 
-        const block = this.#blocks.get(id);
+        const block = this._blocks.get(id);
 
         // Synchronous read cannot read binary
         if (block && block.get('type') === BlockTypes.block) {
@@ -496,9 +496,9 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
     async getBlock(id: string): Promise<YjsBlockInstance | undefined> {
         const block_instance = this.get_block_sync(id);
         if (block_instance) return block_instance;
-        const block = this.#blocks.get(id);
+        const block = this._blocks.get(id);
         if (block && block.get('type') === BlockTypes.binary) {
-            const binary = await this.#binaries.get(
+            const binary = await this._binaries.get(
                 block.get('hash') as string
             );
             if (binary) {
@@ -520,7 +520,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         flavor: BlockItem<YjsContentOperation>['flavor']
     ): Promise<string[]> {
         const keys: string[] = [];
-        this.#blocks.forEach((doc, key) => {
+        this._blocks.forEach((doc, key) => {
             if (doc.get('flavor') === flavor) {
                 keys.push(key);
             }
@@ -533,7 +533,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         type: BlockItem<YjsContentOperation>['type']
     ): Promise<string[]> {
         const keys: string[] = [];
-        this.#blocks.forEach((doc, key) => {
+        this._blocks.forEach((doc, key) => {
             if (doc.get('type') === type) {
                 keys.push(key);
             }
@@ -547,8 +547,8 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         item: BlockItem<YjsContentOperation> & { hash?: string }
     ): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            const block = this.#blocks.get(key) || new YMap();
-            transact(this.#doc, () => {
+            const block = this._blocks.get(key) || new YMap();
+            transact(this._doc, () => {
                 // Insert only if the block doesn't exist yet
                 // Other modification operations are done in the block instance
                 let uploaded: Promise<void> | undefined;
@@ -568,8 +568,8 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                     } else if (item.type === BlockTypes.binary && item.hash) {
                         if (content instanceof YArray) {
                             block.set('hash', item.hash);
-                            if (!this.#binaries.has(item.hash)) {
-                                uploaded = this.#binaries.set(
+                            if (!this._binaries.has(item.hash)) {
+                                uploaded = this._binaries.set(
                                     item.hash,
                                     content
                                 );
@@ -583,18 +583,18 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                         throw new Error('invalid block type: ' + item.type);
                     }
 
-                    this.#blocks.set(key, block);
+                    this._blocks.set(key, block);
                 }
 
                 if (item.flavor === 'page') {
-                    this.#awareness.setLocalStateField('editing', key);
-                    this.#awareness.setLocalStateField('updated', Date.now());
+                    this._awareness.setLocalStateField('editing', key);
+                    this._awareness.setLocalStateField('updated', Date.now());
                 }
                 // References do not add delete restrictions
                 if (item.flavor === 'reference') {
-                    this.#gatekeeper.setCommon(key);
+                    this._gatekeeper.setCommon(key);
                 } else {
-                    this.#gatekeeper.setCreator(key);
+                    this._gatekeeper.setCreator(key);
                 }
 
                 if (uploaded) {
@@ -613,15 +613,15 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
 
     async checkBlocks(keys: string[]): Promise<boolean> {
         return (
-            keys.filter(key => !!this.#blocks.get(key)).length === keys.length
+            keys.filter(key => !!this._blocks.get(key)).length === keys.length
         );
     }
 
     async deleteBlocks(keys: string[]): Promise<string[]> {
-        const [success, fail] = this.#gatekeeper.checkDeleteLists(keys);
-        transact(this.#doc, () => {
+        const [success, fail] = this._gatekeeper.checkDeleteLists(keys);
+        transact(this._doc, () => {
             for (const key of success) {
-                this.#blocks.delete(key);
+                this._blocks.delete(key);
             }
         });
         return fail;
@@ -631,7 +631,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         key: 'editing' | 'updated' | 'connectivity',
         listener: BlockListener<S, R>
     ): void {
-        this.#listener.set(key, listener);
+        this._listener.set(key, listener);
     }
 
     suspend(suspend: boolean) {
@@ -639,6 +639,6 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
     }
 
     public history(): HistoryManager {
-        return this.#history;
+        return this._history;
     }
 }

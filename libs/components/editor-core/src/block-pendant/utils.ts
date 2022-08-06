@@ -1,84 +1,7 @@
-import {
-    PropertyType,
-    RecastBlockValue,
-    RecastPropertyId,
-    SelectOption,
-} from '../recast-block';
-import { OptionIdType, OptionType } from './types';
+import { PropertyType, SelectOption } from '../recast-block';
+import { OptionIdType, OptionType, PendantConfig, PendantTypes } from './types';
 import { pendantConfig } from './config';
-import { PendantConfig, PendantTypes } from './types';
-type Props = {
-    recastBlockId: string;
-    blockId: string;
-    propertyId: RecastPropertyId;
-};
-
-type StorageMap = {
-    [recastBlockId: string]: {
-        [propertyId: RecastPropertyId]: string;
-    };
-};
-
-const LOCAL_STORAGE_NAME = 'TEMPORARY_PENDANT_DATA';
-
-const ensureLocalStorage = () => {
-    const data = localStorage.getItem(LOCAL_STORAGE_NAME);
-    if (!data) {
-        localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify({}));
-    }
-};
-
-export const setPendantHistory = ({
-    recastBlockId,
-    blockId,
-    propertyId,
-}: Props) => {
-    ensureLocalStorage();
-    const data: StorageMap = JSON.parse(
-        localStorage.getItem(LOCAL_STORAGE_NAME) as string
-    );
-
-    if (!data[recastBlockId]) {
-        data[recastBlockId] = {};
-    }
-    const propertyValueRecord = data[recastBlockId];
-    propertyValueRecord[propertyId] = blockId;
-
-    localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(data));
-};
-
-export const getPendantHistory = ({
-    recastBlockId,
-}: {
-    recastBlockId: string;
-}) => {
-    ensureLocalStorage();
-    const data: StorageMap = JSON.parse(
-        localStorage.getItem(LOCAL_STORAGE_NAME) as string
-    );
-
-    return data[recastBlockId] ?? {};
-};
-
-export const removePropertyValueRecord = ({
-    recastBlockId,
-    propertyId,
-}: {
-    recastBlockId: string;
-    propertyId: RecastPropertyId;
-}) => {
-    ensureLocalStorage();
-    const data: StorageMap = JSON.parse(
-        localStorage.getItem(LOCAL_STORAGE_NAME) as string
-    );
-    if (!data[recastBlockId]) {
-        return;
-    }
-
-    delete data[recastBlockId][propertyId];
-
-    localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(data));
-};
+import { nanoid } from 'nanoid';
 
 /**
  * In select pendant panel, use mock options instead of use `createSelect` when add or delete option
@@ -107,7 +30,7 @@ export const getOfficialSelected = ({
             .map(id => {
                 return tempOptions.findIndex((o: OptionType) => o.id === id);
             })
-            .filter(index => index != -1);
+            .filter(index => index !== -1);
         selectedId = selectedIndex.map((index: number) => {
             return options[index].id;
         });
@@ -130,7 +53,7 @@ export const getPendantIconsConfigByName = (
     return pendantConfig[pendantName];
 };
 
-export const genBasicOption = ({
+export const generateBasicOption = ({
     index,
     iconConfig,
     name = '',
@@ -159,22 +82,22 @@ export const genBasicOption = ({
 /**
  * Status Pendant is a Select Pendant built-in some options
  * **/
-export const genInitialOptions = (
+export const generateInitialOptions = (
     type: PendantTypes,
     iconConfig: PendantConfig
 ) => {
     if (type === PendantTypes.Status) {
         return [
-            genBasicOption({ index: 0, iconConfig, name: 'No Started' }),
-            genBasicOption({
+            generateBasicOption({ index: 0, iconConfig, name: 'No Started' }),
+            generateBasicOption({
                 index: 1,
                 iconConfig,
                 name: 'In Progress',
             }),
-            genBasicOption({ index: 2, iconConfig, name: 'Complete' }),
+            generateBasicOption({ index: 2, iconConfig, name: 'Complete' }),
         ];
     }
-    return [genBasicOption({ index: 0, iconConfig })];
+    return [generateBasicOption({ index: 0, iconConfig })];
 };
 
 export const checkPendantForm = (
@@ -222,3 +145,10 @@ export const checkPendantForm = (
 
     return { passed: true, message: 'Check passed !' };
 };
+
+const upperFirst = (str: string) => {
+    return `${str[0].toUpperCase()}${str.slice(1)}`;
+};
+
+export const generateRandomFieldName = (type: PendantTypes) =>
+    upperFirst(`${type}#${nanoid(4)}`);

@@ -117,7 +117,7 @@ const StyledListbox = styled('ul')(({ theme }) => ({
     background: '#fff',
     borderRadius: '10px',
     overflow: 'auto',
-    boxShadow: theme.affine.shadows.shadowSxDownLg,
+    boxShadow: theme.affine.shadows.shadow1,
 }));
 
 const StyledPopper = styled(PopperUnstyled)`

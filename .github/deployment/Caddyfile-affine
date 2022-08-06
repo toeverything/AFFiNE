@@ -1,0 +1,28 @@
+:3000 {
+        root /* ./dist
+
+        file_server {
+                precompressed br
+        }
+
+        encode {
+                zstd
+                gzip 9
+        }
+
+        @notStatic {
+                not path /*.css
+                not path /*.js
+                not path /*.png
+                not path /*.jpg
+                not path /*.svg
+                not path /*.ttf
+                not path /*.eot
+                not path /*.woff
+                not path /*.woff2
+        }
+
+        handle @notStatic {
+                try_files {path} /index.html
+        }
+}

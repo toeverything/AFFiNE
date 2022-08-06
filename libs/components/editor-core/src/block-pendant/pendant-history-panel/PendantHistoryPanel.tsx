@@ -1,5 +1,4 @@
 import React, { ReactNode, useRef, useEffect, useState } from 'react';
-import { getPendantHistory } from '../utils';
 import {
     getRecastItemValue,
     RecastMetaProperty,
@@ -30,22 +29,22 @@ export const PendantHistoryPanel = ({
 
     const [history, setHistory] = useState<RecastBlockValue[]>([]);
     const popoverHandlerRef = useRef<{ [key: string]: PopperHandler }>({});
+    const { getValueHistory } = getRecastItemValue(block);
 
     useEffect(() => {
         const init = async () => {
             const currentBlockValues = getRecastItemValue(block).getAllValue();
-            const allProperties = getProperties();
-            const missProperties = allProperties.filter(
+            const missValues = getProperties().filter(
                 property => !currentBlockValues.find(v => v.id === property.id)
             );
-            const pendantHistory = getPendantHistory({
+            const valueHistory = getValueHistory({
                 recastBlockId: recastBlock.id,
             });
-            const historyMap = missProperties.reduce<{
-                [key: RecastPropertyId]: string;
+            const historyMap = missValues.reduce<{
+                [key: RecastPropertyId]: string[];
             }>((history, property) => {
-                if (pendantHistory[property.id]) {
-                    history[property.id] = pendantHistory[property.id];
+                if (valueHistory[property.id]) {
+                    history[property.id] = valueHistory[property.id];
                 }
 
                 return history;
@@ -54,18 +53,30 @@ export const PendantHistoryPanel = ({
             const blockHistory = (
                 await Promise.all(
                     Object.entries(historyMap).map(
-                        async ([propertyId, blockId]) => {
-                            const latestValueBlock = (
-                                await groupBlock.children()
-                            ).find((block: AsyncBlock) => block.id === blockId);
+                        async ([propertyId, blockIds]) => {
+                            const blocks = await groupBlock.children();
+                            const latestChangeBlock = blockIds
+                                .reverse()
+                                .reduce<AsyncBlock>((block, id) => {
+                                    if (!block) {
+                                        return blocks.find(
+                                            block => block.id === id
+                                        );
+                                    }
+                                    return block;
+                                }, null);
 
-                            return getRecastItemValue(
-                                latestValueBlock
-                            ).getValue(propertyId as RecastPropertyId);
+                            if (latestChangeBlock) {
+                                return getRecastItemValue(
+                                    latestChangeBlock
+                                ).getValue(propertyId as RecastPropertyId);
+                            }
+                            return null;
                         }
                     )
                 )
             ).filter(v => v);
+
             setHistory(blockHistory);
         };
 

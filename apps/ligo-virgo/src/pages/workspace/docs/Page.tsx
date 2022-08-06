@@ -1,16 +1,9 @@
 /* eslint-disable filename-rules/match */
-import {
-    useEffect,
-    useRef,
-    type UIEvent,
-    useState,
-    useLayoutEffect,
-} from 'react';
+import { useEffect, useRef, type UIEvent, useState } from 'react';
 import { useParams } from 'react-router';
 import {
     MuiBox as Box,
     MuiCircularProgress as CircularProgress,
-    MuiDivider as Divider,
     styled,
 } from '@toeverything/components/ui';
 import { AffineEditor } from '@toeverything/components/affine-editor';
@@ -31,7 +24,7 @@ import { WorkspaceName } from './workspace-name';
 import { CollapsiblePageTree } from './collapsible-page-tree';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { type BlockEditor } from '@toeverything/components/editor-core';
-
+import { Tabs } from './components/tabs';
 type PageProps = {
     workspace: string;
 };
@@ -40,29 +33,7 @@ export function Page(props: PageProps) {
     const { page_id } = useParams();
     const { showSpaceSidebar, fixedDisplay, setSpaceSidebarVisible } =
         useShowSpaceSidebar();
-    const { user } = useUserAndSpaces();
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
-
-    useEffect(() => {
-        if (!user?.id || !page_id) return;
-        const updateRecentPages = async () => {
-            // TODO: deal with it temporarily
-            await services.api.editorBlock.getWorkspaceDbBlock(
-                props.workspace,
-                {
-                    userId: user.id,
-                }
-            );
-
-            // await services.api.userConfig.addRecentPage(
-            //     props.workspace,
-            //     user.id,
-            //     page_id
-            // );
-            await services.api.editorBlock.clearUndoRedo(props.workspace);
-        };
-        updateRecentPages();
-    }, [user, props.workspace, page_id]);
 
     return (
         <LigoApp>
@@ -80,7 +51,9 @@ export function Page(props: PageProps) {
                     onMouseLeave={() => setSpaceSidebarVisible(false)}
                 >
                     <WorkspaceName />
-                    <Divider light={true} sx={{ my: 1, margin: '6px 0px' }} />
+
+                    <Tabs />
+
                     <WorkspaceSidebarContent>
                         <div>
                             {dailyNotesFlag && (
@@ -92,14 +65,14 @@ export function Page(props: PageProps) {
                             )}
                             <div>
                                 <CollapsibleTitle
-                                    title="Activities"
+                                    title="ACTIVITIES"
                                     initialOpen={false}
                                 >
                                     <Activities />
                                 </CollapsibleTitle>
                             </div>
                             <div>
-                                <CollapsiblePageTree title="Page Tree">
+                                <CollapsiblePageTree title="PAGES">
                                     {page_id ? <PageTree /> : null}
                                 </CollapsiblePageTree>
                             </div>
@@ -120,38 +93,29 @@ const EditorContainer = ({
     workspace: string;
 }) => {
     const [lockScroll, setLockScroll] = useState(false);
-    const scrollContainerRef = useRef<HTMLDivElement>();
+    const [scrollContainer, setScrollContainer] = useState<HTMLElement>();
     const editorRef = useRef<BlockEditor>();
+
     const onScroll = (event: UIEvent) => {
         editorRef.current.getHooks().onRootNodeScroll(event);
         editorRef.current.scrollManager.emitScrollEvent(event);
     };
 
-    useEffect(() => {
-        editorRef.current.scrollManager.scrollContainer =
-            scrollContainerRef.current;
-
-        editorRef.current.scrollManager.scrollController = {
-            lockScroll: () => setLockScroll(true),
-            unLockScroll: () => setLockScroll(false),
-        };
-    }, []);
-
     const { setPageClientWidth } = usePageClientWidth();
     useEffect(() => {
-        if (scrollContainerRef.current) {
+        if (scrollContainer) {
             const obv = new ResizeObserver(e => {
                 setPageClientWidth(e[0].contentRect.width);
             });
-            obv.observe(scrollContainerRef.current);
+            obv.observe(scrollContainer);
             return () => obv.disconnect();
         }
-    });
+    }, [setPageClientWidth, scrollContainer]);
 
     return (
         <StyledEditorContainer
             lockScroll={lockScroll}
-            ref={scrollContainerRef}
+            ref={ref => setScrollContainer(ref)}
             onScroll={onScroll}
         >
             {pageId ? (
@@ -159,6 +123,11 @@ const EditorContainer = ({
                     workspace={workspace}
                     rootBlockId={pageId}
                     ref={editorRef}
+                    scrollContainer={scrollContainer}
+                    scrollController={{
+                        lockScroll: () => setLockScroll(true),
+                        unLockScroll: () => setLockScroll(false),
+                    }}
                 />
             ) : (
                 <Box
@@ -198,7 +167,7 @@ const LigoLeftContainer = styled('div')({
     position: 'relative',
 });
 
-const WorkspaceSidebar = styled('div')(({ hidden }) => ({
+const WorkspaceSidebar = styled('div')(({ theme }) => ({
     position: 'absolute',
     bottom: '48px',
     top: '12px',
@@ -208,7 +177,7 @@ const WorkspaceSidebar = styled('div')(({ hidden }) => ({
     width: 300,
     minWidth: 300,
     borderRadius: '0px 10px 10px 0px',
-    boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+    boxShadow: theme.affine.shadows.shadow1,
     backgroundColor: '#FFFFFF',
     transitionProperty: 'left',
     transitionDuration: '0.35s',
@@ -219,4 +188,5 @@ const WorkspaceSidebar = styled('div')(({ hidden }) => ({
 const WorkspaceSidebarContent = styled('div')({
     flex: 'auto',
     overflow: 'hidden auto',
+    marginTop: '18px',
 });

@@ -26,47 +26,47 @@ export class AbstractBlock<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > {
-    readonly #id: string;
+    private readonly _id: string;
     readonly #block: BlockInstance<C>;
-    readonly #history: HistoryManager;
-    readonly #root?: AbstractBlock<B, C>;
-    readonly #parent_listener: Map<string, BlockListener>;
+    private readonly _history: HistoryManager;
+    private readonly _root?: AbstractBlock<B, C>;
+    private readonly _parentListener: Map<string, BlockListener>;
 
-    #parent?: AbstractBlock<B, C>;
+    _parent?: AbstractBlock<B, C>;
 
     constructor(
         block: B,
         root?: AbstractBlock<B, C>,
         parent?: AbstractBlock<B, C>
     ) {
-        this.#id = block.id;
+        this._id = block.id;
         this.#block = block;
-        this.#history = this.#block.scopedHistory([this.#id]);
+        this._history = this.#block.scopedHistory([this._id]);
 
-        this.#root = root;
-        this.#parent_listener = new Map();
-        this.#parent = parent;
-        JWT_DEV && logger_debug(`init: exists ${this.#id}`);
+        this._root = root;
+        this._parentListener = new Map();
+        this._parent = parent;
+        JWT_DEV && logger_debug(`init: exists ${this._id}`);
     }
 
     public get root() {
-        return this.#root;
+        return this._root;
     }
 
     protected get parent_node() {
-        return this.#parent;
+        return this._parent;
     }
 
     protected _getParentPage(warning = true): string | undefined {
         if (this.flavor === 'page') {
             return this.#block.id;
-        } else if (!this.#parent) {
+        } else if (!this._parent) {
             if (warning && this.flavor !== 'workspace') {
                 console.warn('parent not found');
             }
             return undefined;
         } else {
-            return this.#parent.parent_page;
+            return this._parent.parent_page;
         }
     }
 
@@ -80,7 +80,7 @@ export class AbstractBlock<
         callback: BlockListener
     ) {
         if (event === 'parent') {
-            this.#parent_listener.set(name, callback);
+            this._parentListener.set(name, callback);
         } else {
             this.#block.on(event, name, callback);
         }
@@ -88,7 +88,7 @@ export class AbstractBlock<
 
     public off(event: 'content' | 'children' | 'parent', name: string) {
         if (event === 'parent') {
-            this.#parent_listener.delete(name);
+            this._parentListener.delete(name);
         } else {
             this.#block.off(event, name);
         }
@@ -117,7 +117,7 @@ export class AbstractBlock<
             return this.#block.content.asMap() as MapOperation<T>;
         }
         throw new Error(
-            `this block not a structured block: ${this.#id}, ${
+            `this block not a structured block: ${this._id}, ${
                 this.#block.type
             }`
         );
@@ -181,9 +181,9 @@ export class AbstractBlock<
     }
 
     [SET_PARENT](parent: AbstractBlock<B, C>) {
-        this.#parent = parent;
+        this._parent = parent;
         const states: Map<string, 'update'> = new Map([[parent.id, 'update']]);
-        for (const listener of this.#parent_listener.values()) {
+        for (const listener of this._parentListener.values()) {
             listener(states);
         }
     }
@@ -196,7 +196,7 @@ export class AbstractBlock<
         const updated = this.last_updated_date;
 
         return [
-            `id:${this.#id}`,
+            `id:${this._id}`,
             `type:${this.type}`,
             `type:${this.flavor}`,
             this.flavor === BlockFlavors.page && `type:doc`, // normal documentation
@@ -211,7 +211,7 @@ export class AbstractBlock<
      * current document instance id
      */
     public get id(): string {
-        return this.#id;
+        return this._id;
     }
 
     /**
@@ -249,7 +249,7 @@ export class AbstractBlock<
     ) {
         JWT_DEV && logger(`insertChildren: start`);
 
-        if (block.id === this.#id) return; // avoid self-reference
+        if (block.id === this._id) return; // avoid self-reference
         if (
             this.type !== BlockTypes.block || // binary cannot insert subblocks
             (block.type !== BlockTypes.block &&
@@ -367,6 +367,6 @@ export class AbstractBlock<
      * TODO: scoped history
      */
     public get history(): HistoryManager {
-        return this.#history;
+        return this._history;
     }
 }

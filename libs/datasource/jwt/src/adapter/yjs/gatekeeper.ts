@@ -1,36 +1,35 @@
 import { Map as YMap } from 'yjs';
 
 export class GateKeeper {
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    #user_id: string;
-    #creators: YMap<string>;
-    #common: YMap<string>;
+    private readonly _userId: string;
+    private readonly _creators: YMap<string>;
+    private readonly _common: YMap<string>;
 
     constructor(userId: string, creators: YMap<string>, common: YMap<string>) {
-        this.#user_id = userId;
-        this.#creators = creators;
-        this.#common = common;
+        this._userId = userId;
+        this._creators = creators;
+        this._common = common;
     }
 
     getCreator(block_id: string): string | undefined {
-        return this.#creators.get(block_id) || this.#common.get(block_id);
+        return this._creators.get(block_id) || this._common.get(block_id);
     }
 
     setCreator(block_id: string) {
-        if (!this.#creators.get(block_id)) {
-            this.#creators.set(block_id, this.#user_id);
+        if (!this._creators.get(block_id)) {
+            this._creators.set(block_id, this._userId);
         }
     }
 
     setCommon(block_id: string) {
-        if (!this.#creators.get(block_id) && !this.#common.get(block_id)) {
-            this.#common.set(block_id, this.#user_id);
+        if (!this._creators.get(block_id) && !this._common.get(block_id)) {
+            this._common.set(block_id, this._userId);
         }
     }
 
     private check_delete(block_id: string): boolean {
-        const creator = this.#creators.get(block_id);
-        return creator === this.#user_id || !!this.#common.get(block_id);
+        const creator = this._creators.get(block_id);
+        return creator === this._userId || !!this._common.get(block_id);
     }
 
     checkDeleteLists(block_ids: string[]) {
@@ -47,7 +46,7 @@ export class GateKeeper {
     }
 
     clear() {
-        this.#creators.clear();
-        this.#common.clear();
+        this._creators.clear();
+        this._common.clear();
     }
 }

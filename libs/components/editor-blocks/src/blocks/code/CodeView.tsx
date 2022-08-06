@@ -50,7 +50,7 @@ import { Option, Select } from '@toeverything/components/ui';
 
 import {
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { copyToClipboard } from '@toeverything/utils';
 interface CreateCodeView extends CreateView {
@@ -163,7 +163,7 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
         editor.selectionManager.activePreviousNode(block.id, 'start');
     };
     return (
-        <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+        <BlockPendantProvider block={block}>
             <CodeBlock
                 onKeyDown={e => {
                     e.stopPropagation();
@@ -222,6 +222,6 @@ export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
                     handleKeyArrowUp={handleKeyArrowUp}
                 />
             </CodeBlock>
-        </WrapperWithPendantAndDragDrop>
+        </BlockPendantProvider>
     );
 };

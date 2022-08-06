@@ -1,5 +1,5 @@
 import { BlockDomInfo, HookType } from '@toeverything/framework/virgo';
-import React, { StrictMode } from 'react';
+import { StrictMode } from 'react';
 import { BasePlugin } from '../../base-plugin';
 import { ignoreBlockTypes } from './menu-config';
 import { LineInfoSubject, LeftMenuDraggable } from './LeftMenuDraggable';
@@ -37,7 +37,7 @@ export class LeftMenuPlugin extends BasePlugin {
         );
         this.sub.add(
             this.hooks
-                .get(HookType.AFTER_ON_NODE_DRAG_OVER)
+                .get(HookType.ON_ROOTNODE_DRAG_OVER)
                 .subscribe(this._handleDragOverBlockNode)
         );
         this.sub.add(
@@ -65,24 +65,30 @@ export class LeftMenuPlugin extends BasePlugin {
     private _onDrop = () => {
         this._lineInfo.next(undefined);
     };
-    private _handleDragOverBlockNode = async ([event, blockInfo]: [
-        React.DragEvent<Element>,
-        BlockDomInfo
-    ]) => {
-        const { type, dom, blockId } = blockInfo;
+    private _handleDragOverBlockNode = async (
+        event: React.DragEvent<Element>
+    ) => {
         event.preventDefault();
-        if (this.editor.dragDropManager.isDragBlock(event)) {
-            if (ignoreBlockTypes.includes(type)) {
-                return;
-            }
-            const direction =
-                await this.editor.dragDropManager.checkBlockDragTypes(
-                    event,
-                    dom,
-                    blockId
-                );
-            this._lineInfo.next({ direction, blockInfo });
-        }
+        if (!this.editor.dragDropManager.isDragBlock(event)) return;
+        const block = await this.editor.getBlockByPoint(
+            new Point(event.clientX, event.clientY)
+        );
+        if (block == null || ignoreBlockTypes.includes(block.type)) return;
+        const direction = await this.editor.dragDropManager.checkBlockDragTypes(
+            event,
+            block.dom,
+            block.id
+        );
+        this._lineInfo.next({
+            direction,
+            blockInfo: {
+                blockId: block.id,
+                dom: block.dom,
+                rect: block.dom.getBoundingClientRect(),
+                type: block.type,
+                properties: block.getProperties(),
+            },
+        });
     };
 
     private _handleMouseMove = async (

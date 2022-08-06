@@ -69,14 +69,14 @@ export class BlockClient<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > {
-    readonly #adapter: A;
-    readonly #workspace: string;
+    private readonly _adapter: A;
+    private readonly _workspace: string;
 
     // Maximum cache Block 8192, ttl 30 minutes
-    readonly #block_caches: LRUCache<string, BaseBlock<B, C>>;
-    readonly #block_indexer: BlockIndexer<A, B, C>;
+    private readonly _blockCaches: LRUCache<string, BaseBlock<B, C>>;
+    private readonly _blockIndexer: BlockIndexer<A, B, C>;
 
-    readonly #exporters: {
+    private readonly _exporters: {
         readonly content: BlockExporters<string>;
         readonly metadata: BlockExporters<
             Array<[string, number | string | string[]]>
@@ -84,84 +84,83 @@ export class BlockClient<
         readonly tag: BlockExporters<string[]>;
     };
 
-    readonly #event_bus: BlockEventBus;
+    private readonly _eventBus: BlockEventBus;
 
-    readonly #parent_mapping: Map<string, string[]>;
-    readonly #page_mapping: Map<string, string>;
+    private readonly _parentMapping: Map<string, string[]>;
+    private readonly _pageMapping: Map<string, string>;
 
-    readonly #root: { node?: BaseBlock<B, C> };
+    private readonly _root: { node?: BaseBlock<B, C> };
 
     private constructor(
         adapter: A,
         workspace: string,
         options?: BlockClientOptions
     ) {
-        this.#adapter = adapter;
-        this.#workspace = workspace;
+        this._adapter = adapter;
+        this._workspace = workspace;
 
-        this.#block_caches = new LRUCache({ max: 8192, ttl: 1000 * 60 * 30 });
+        this._blockCaches = new LRUCache({ max: 8192, ttl: 1000 * 60 * 30 });
 
-        this.#exporters = {
+        this._exporters = {
             content: options?.content || new Map(),
             metadata: options?.metadata || new Map(),
             tag: options?.tagger || new Map(),
         };
 
-        this.#event_bus = new BlockEventBus();
+        this._eventBus = new BlockEventBus();
 
-        this.#block_indexer = new BlockIndexer(
-            this.#adapter,
-            this.#workspace,
+        this._blockIndexer = new BlockIndexer(
+            this._adapter,
+            this._workspace,
             this.block_builder.bind(this),
-            this.#event_bus.topic('indexer')
+            this._eventBus.topic('indexer')
         );
 
-        this.#parent_mapping = new Map();
-        this.#page_mapping = new Map();
-        this.#adapter.on('editing', (states: ChangedStates) =>
-            this.#event_bus.topic('editing').emit(states)
+        this._parentMapping = new Map();
+        this._pageMapping = new Map();
+        this._adapter.on('editing', (states: ChangedStates) =>
+            this._eventBus.topic('editing').emit(states)
         );
-        this.#adapter.on('updated', (states: ChangedStates) =>
-            this.#event_bus.topic('updated').emit(states)
+        this._adapter.on('updated', (states: ChangedStates) =>
+            this._eventBus.topic('updated').emit(states)
         );
 
-        this.#adapter.on(
+        this._adapter.on(
             'connectivity',
             (states: ChangedStates<Connectivity>) =>
-                this.#event_bus.topic('connectivity').emit(states)
+                this._eventBus.topic('connectivity').emit(states)
         );
 
-        this.#event_bus
+        this._eventBus
             .topic<string[]>('rebuild_index')
             .on('rebuild_index', this.rebuild_index.bind(this), {
                 debounce: { wait: 1000, maxWait: 1000 },
             });
 
-        this.#root = {};
+        this._root = {};
     }
 
     public addBlockListener(tag: string, listener: BlockListener) {
-        const bus = this.#event_bus.topic<ChangedStates>('updated');
+        const bus = this._eventBus.topic<ChangedStates>('updated');
         if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
         else console.error(`block listener ${tag} is reserved or exists`);
     }
 
     public removeBlockListener(tag: string) {
-        this.#event_bus.topic('updated').off(tag);
+        this._eventBus.topic('updated').off(tag);
     }
 
     public addEditingListener(
         tag: string,
         listener: BlockListener<Set<string>>
     ) {
-        const bus =
-            this.#event_bus.topic<ChangedStates<Set<string>>>('editing');
+        const bus = this._eventBus.topic<ChangedStates<Set<string>>>('editing');
         if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
         else console.error(`editing listener ${tag} is reserved or exists`);
     }
 
     public removeEditingListener(tag: string) {
-        this.#event_bus.topic('editing').off(tag);
+        this._eventBus.topic('editing').off(tag);
     }
 
     public addConnectivityListener(
@@ -169,31 +168,31 @@ export class BlockClient<
         listener: BlockListener<Connectivity>
     ) {
         const bus =
-            this.#event_bus.topic<ChangedStates<Connectivity>>('connectivity');
+            this._eventBus.topic<ChangedStates<Connectivity>>('connectivity');
         if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
         else
             console.error(`connectivity listener ${tag} is reserved or exists`);
     }
 
     public removeConnectivityListener(tag: string) {
-        this.#event_bus.topic('connectivity').off(tag);
+        this._eventBus.topic('connectivity').off(tag);
     }
 
     private inspector() {
         return {
-            ...this.#adapter.inspector(),
-            indexed: () => this.#block_indexer.inspectIndex(),
+            ...this._adapter.inspector(),
+            indexed: () => this._blockIndexer.inspectIndex(),
         };
     }
 
     private async rebuild_index(exists_ids?: string[]) {
         JWT_DEV && logger(`rebuild index`);
-        const blocks = await this.#adapter.getBlockByType(BlockTypes.block);
+        const blocks = await this._adapter.getBlockByType(BlockTypes.block);
         const excluded = exists_ids || [];
         await Promise.all(
             blocks
                 .filter(id => !excluded.includes(id))
-                .map(id => this.#block_indexer.refreshIndex(id, 'add'))
+                .map(id => this._blockIndexer.refreshIndex(id, 'add'))
         );
     }
 
@@ -201,13 +200,13 @@ export class BlockClient<
         JWT_DEV && logger(`buildIndex: start`);
         // Skip the block index that exists in the metadata, assuming that the index of the block existing in the metadata is the latest, and modify this part if there is a problem
         // Although there may be cases where the index is refreshed but the metadata is not refreshed, re-indexing will be automatically triggered after the block is changed
-        const exists_ids = await this.#block_indexer.loadIndex();
+        const exists_ids = await this._blockIndexer.loadIndex();
         await this.rebuild_index(exists_ids);
         this.addBlockListener('index', async states => {
             await Promise.allSettled(
                 Array.from(states.entries()).map(([id, state]) => {
-                    if (state === 'delete') this.#block_caches.delete(id);
-                    return this.#block_indexer.refreshIndex(id, state);
+                    if (state === 'delete') this._blockCaches.delete(id);
+                    return this._blockIndexer.refreshIndex(id, state);
                 })
             );
         });
@@ -223,10 +222,10 @@ export class BlockClient<
     ): Promise<Map<string, BaseBlock<B, C>>> {
         JWT_DEV && logger(`getByType: ${block_type}`);
         const ids = [
-            ...this.#block_indexer.query({
+            ...this._blockIndexer.query({
                 type: BlockTypes[block_type as BlockTypeKeys],
             }),
-            ...this.#block_indexer.query({
+            ...this._blockIndexer.query({
                 flavor: BlockFlavors[block_type as BlockFlavorKeys],
             }),
         ];
@@ -256,7 +255,7 @@ export class BlockClient<
             | string
             | Partial<DocumentSearchOptions<boolean>>
     ) {
-        return this.#block_indexer.search(part_of_title_or_content);
+        return this._blockIndexer.search(part_of_title_or_content);
     }
 
     /**
@@ -278,7 +277,7 @@ export class BlockClient<
         const promised_pages = await Promise.all(
             this.search(part_of_title_or_content).flatMap(({ result }) =>
                 result.map(async id => {
-                    const page = this.#page_mapping.get(id as string);
+                    const page = this._pageMapping.get(id as string);
                     if (page) return page;
                     const block = await this.get(id as BlockTypeKeys);
                     return this.set_page(block);
@@ -289,9 +288,9 @@ export class BlockClient<
             ...new Set(promised_pages.filter((v): v is string => !!v)),
         ];
         return Promise.all(
-            this.#block_indexer.getMetadata(pages).map(async page => ({
+            this._blockIndexer.getMetadata(pages).map(async page => ({
                 content: this.get_decoded_content(
-                    await this.#adapter.getBlock(page.id)
+                    await this._adapter.getBlock(page.id)
                 ),
                 ...page,
             }))
@@ -303,7 +302,19 @@ export class BlockClient<
      * @returns array of search results
      */
     public query(query: QueryIndexMetadata): string[] {
-        return this.#block_indexer.query(query);
+        return this._blockIndexer.query(query);
+    }
+
+    public queryBlocks(query: QueryIndexMetadata): Promise<BlockSearchItem[]> {
+        const ids = this.query(query);
+        return Promise.all(
+            this._blockIndexer.getMetadata(ids).map(async page => ({
+                content: this.get_decoded_content(
+                    await this._adapter.getBlock(page.id)
+                ),
+                ...page,
+            }))
+        );
     }
 
     /**
@@ -330,12 +341,12 @@ export class BlockClient<
      * @returns block instance
      */
     public async getWorkspace() {
-        if (!this.#root.node) {
-            this.#root.node = await this.get_named_block(this.#workspace, {
+        if (!this._root.node) {
+            this._root.node = await this.get_named_block(this._workspace, {
                 workspace: true,
             });
         }
-        return this.#root.node;
+        return this._root.node;
     }
 
     /**
@@ -348,38 +359,38 @@ export class BlockClient<
     }
 
     private async get_parent(id: string) {
-        const parents = this.#parent_mapping.get(id);
+        const parents = this._parentMapping.get(id);
         if (parents) {
             const parent_block_id = parents[0];
-            if (!this.#block_caches.has(parent_block_id)) {
-                this.#block_caches.set(
+            if (!this._blockCaches.has(parent_block_id)) {
+                this._blockCaches.set(
                     parent_block_id,
                     await this.get(parent_block_id as BlockTypeKeys)
                 );
             }
-            return this.#block_caches.get(parent_block_id);
+            return this._blockCaches.get(parent_block_id);
         }
         return undefined;
     }
 
     private set_parent(parent: string, child: string) {
-        const parents = this.#parent_mapping.get(child);
+        const parents = this._parentMapping.get(child);
         if (parents?.length) {
             if (!parents.includes(parent)) {
                 console.error('parent already exists', child, parents);
-                this.#parent_mapping.set(child, [...parents, parent]);
+                this._parentMapping.set(child, [...parents, parent]);
             }
         } else {
-            this.#parent_mapping.set(child, [parent]);
+            this._parentMapping.set(child, [parent]);
         }
     }
 
     private set_page(block: BaseBlock<B, C>) {
-        const page = this.#page_mapping.get(block.id);
+        const page = this._pageMapping.get(block.id);
         if (page) return page;
         const parent_page = block.parent_page;
         if (parent_page) {
-            this.#page_mapping.set(block.id, parent_page);
+            this._pageMapping.set(block.id, parent_page);
             return parent_page;
         }
         return undefined;
@@ -390,13 +401,13 @@ export class BlockClient<
         matcher: BlockMatcher,
         exporter: ReadableContentExporter<string, T>
     ) {
-        this.#exporters.content.set(name, [matcher, exporter]);
-        this.#event_bus.topic('rebuild_index').emit(); // // rebuild the index every time the content exporter is registered
+        this._exporters.content.set(name, [matcher, exporter]);
+        this._eventBus.topic('rebuild_index').emit(); // // rebuild the index every time the content exporter is registered
     }
 
     unregisterContentExporter(name: string) {
-        this.#exporters.content.delete(name);
-        this.#event_bus.topic('rebuild_index').emit(); // Rebuild indexes every time content exporter logs out
+        this._exporters.content.delete(name);
+        this._eventBus.topic('rebuild_index').emit(); // Rebuild indexes every time content exporter logs out
     }
 
     registerMetadataExporter<T extends ContentTypes>(
@@ -407,13 +418,13 @@ export class BlockClient<
             T
         >
     ) {
-        this.#exporters.metadata.set(name, [matcher, exporter]);
-        this.#event_bus.topic('rebuild_index').emit(); // // rebuild the index every time the content exporter is registered
+        this._exporters.metadata.set(name, [matcher, exporter]);
+        this._eventBus.topic('rebuild_index').emit(); // // rebuild the index every time the content exporter is registered
     }
 
     unregisterMetadataExporter(name: string) {
-        this.#exporters.metadata.delete(name);
-        this.#event_bus.topic('rebuild_index').emit(); // Rebuild indexes every time content exporter logs out
+        this._exporters.metadata.delete(name);
+        this._eventBus.topic('rebuild_index').emit(); // Rebuild indexes every time content exporter logs out
     }
 
     registerTagExporter<T extends ContentTypes>(
@@ -421,13 +432,13 @@ export class BlockClient<
         matcher: BlockMatcher,
         exporter: ReadableContentExporter<string[], T>
     ) {
-        this.#exporters.tag.set(name, [matcher, exporter]);
-        this.#event_bus.topic('rebuild_index').emit(); // Reindex every tag exporter registration
+        this._exporters.tag.set(name, [matcher, exporter]);
+        this._eventBus.topic('rebuild_index').emit(); // Reindex every tag exporter registration
     }
 
     unregisterTagExporter(name: string) {
-        this.#exporters.tag.delete(name);
-        this.#event_bus.topic('rebuild_index').emit(); // Reindex every time tag exporter logs out
+        this._exporters.tag.delete(name);
+        this._eventBus.topic('rebuild_index').emit(); // Reindex every time tag exporter logs out
     }
 
     private get_exporters<R>(
@@ -453,7 +464,7 @@ export class BlockClient<
     private get_decoded_content(block?: BlockInstance<C>) {
         if (block) {
             const [exporter] = this.get_exporters(
-                this.#exporters.content,
+                this._exporters.content,
                 block
             );
             if (exporter) {
@@ -474,10 +485,10 @@ export class BlockClient<
             (await this.get_parent(block.id)) || root,
             {
                 content: block =>
-                    this.get_exporters(this.#exporters.content, block),
+                    this.get_exporters(this._exporters.content, block),
                 metadata: block =>
-                    this.get_exporters(this.#exporters.metadata, block),
-                tag: block => this.get_exporters(this.#exporters.tag, block),
+                    this.get_exporters(this._exporters.metadata, block),
+                tag: block => this.get_exporters(this._exporters.tag, block),
             }
         );
     }
@@ -506,13 +517,13 @@ export class BlockClient<
             binary,
             [namedUuid]: is_named_uuid,
         } = options || {};
-        if (block_id_or_type && this.#block_caches.has(block_id_or_type)) {
-            return this.#block_caches.get(block_id_or_type) as BaseBlock<B, C>;
+        if (block_id_or_type && this._blockCaches.has(block_id_or_type)) {
+            return this._blockCaches.get(block_id_or_type) as BaseBlock<B, C>;
         } else {
             const block =
                 (block_id_or_type &&
-                    (await this.#adapter.getBlock(block_id_or_type))) ||
-                (await this.#adapter.createBlock({
+                    (await this._adapter.getBlock(block_id_or_type))) ||
+                (await this._adapter.createBlock({
                     uuid: is_named_uuid ? block_id_or_type : undefined,
                     binary,
                     type:
@@ -540,7 +551,11 @@ export class BlockClient<
                 this.set_parent(parent, abstract_block.id);
                 this.set_page(abstract_block);
             });
-            this.#block_caches.set(abstract_block.id, abstract_block);
+            this._blockCaches.set(abstract_block.id, abstract_block);
+
+            if (root && abstract_block.flavor === BlockFlavors.page) {
+                root.insertChildren(abstract_block);
+            }
             return abstract_block;
         }
     }
@@ -548,15 +563,15 @@ export class BlockClient<
     public async getBlockByFlavor(
         flavor: BlockItem<C>['flavor']
     ): Promise<string[]> {
-        return await this.#adapter.getBlockByFlavor(flavor);
+        return await this._adapter.getBlockByFlavor(flavor);
     }
 
     public getUserId(): string {
-        return this.#adapter.getUserId();
+        return this._adapter.getUserId();
     }
 
     public has(block_ids: string[]): Promise<boolean> {
-        return this.#adapter.checkBlocks(block_ids);
+        return this._adapter.checkBlocks(block_ids);
     }
 
     /**
@@ -564,11 +579,11 @@ export class BlockClient<
      * @param suspend true: suspend monitoring, false: resume monitoring
      */
     suspend(suspend: boolean) {
-        this.#adapter.suspend(suspend);
+        this._adapter.suspend(suspend);
     }
 
     public get history(): HistoryManager {
-        return this.#adapter.history();
+        return this._adapter.history();
     }
 
     public static async init(

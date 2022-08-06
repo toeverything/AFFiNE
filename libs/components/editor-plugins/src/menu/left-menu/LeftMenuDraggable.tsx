@@ -1,10 +1,19 @@
-import { useState, useEffect, FC } from 'react';
+import {
+    useState,
+    useEffect,
+    FC,
+    type MouseEvent,
+    type DragEvent,
+    type ReactNode,
+    type CSSProperties,
+} from 'react';
 
 import {
     Virgo,
     BlockDomInfo,
     PluginHooks,
     BlockDropPlacement,
+    LINE_GAP,
 } from '@toeverything/framework/virgo';
 import { Button } from '@toeverything/components/common';
 import { styled } from '@toeverything/components/ui';
@@ -14,7 +23,7 @@ import { distinctUntilChanged, Subject } from 'rxjs';
 import { HandleChildIcon } from '@toeverything/components/icons';
 import { MENU_WIDTH } from './menu-config';
 
-const MENU_BUTTON_OFFSET = 12;
+const MENU_BUTTON_OFFSET = 4;
 
 export type LineInfoSubject = Subject<
     | {
@@ -64,13 +73,13 @@ function Line(props: { lineInfo: LineInfo; rootRect: DOMRect }) {
     };
     const bottomLineStyle = {
         ...horizontalLineStyle,
-        top: intersectionRect.bottom + 1 - rootRect.y,
+        top: intersectionRect.bottom + 1 - rootRect.y - LINE_GAP,
     };
 
     const verticalLineStyle = {
         ...lineStyle,
         width: 2,
-        height: intersectionRect.height,
+        height: intersectionRect.height - LINE_GAP,
         top: intersectionRect.y - rootRect.y,
     };
     const leftLineStyle = {
@@ -93,10 +102,10 @@ function Line(props: { lineInfo: LineInfo; rootRect: DOMRect }) {
 }
 
 function DragComponent(props: {
-    children: React.ReactNode;
-    style: React.CSSProperties;
-    onDragStart: (event: React.DragEvent<Element>) => void;
-    onDragEnd: (event: React.DragEvent<Element>) => void;
+    children: ReactNode;
+    style: CSSProperties;
+    onDragStart: (event: DragEvent<Element>) => void;
+    onDragEnd: (event: DragEvent<Element>) => void;
 }) {
     const { style, children, onDragStart, onDragEnd } = props;
     return (
@@ -122,7 +131,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
     const [block, setBlock] = useState<BlockDomInfo | undefined>();
     const [line, setLine] = useState<LineInfo | undefined>(undefined);
 
-    const handleDragStart = async (event: React.DragEvent<Element>) => {
+    const handleDragStart = async (event: DragEvent<Element>) => {
         event.stopPropagation();
         setVisible(false);
 
@@ -138,12 +147,12 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
         }
     };
 
-    const handleDragEnd = (event: React.DragEvent<Element>) => {
+    const handleDragEnd = (event: DragEvent<Element>) => {
         event.preventDefault();
         setLine(undefined);
     };
 
-    const onClick = (event: React.MouseEvent) => {
+    const onClick = (event: MouseEvent<Element>) => {
         if (block == null) return;
         const currentTarget = event.currentTarget;
         editor.selection.setSelectedNodesIds([block.blockId]);
@@ -200,11 +209,10 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
                     style={{
                         position: 'absolute',
                         left:
-                            Math.min(
-                                block.rect.left -
-                                    MENU_WIDTH -
-                                    MENU_BUTTON_OFFSET
-                            ) - rootRect.left,
+                            block.rect.left -
+                            MENU_WIDTH -
+                            MENU_BUTTON_OFFSET -
+                            rootRect.left,
                         top: block.rect.top - rootRect.top,
                         opacity: visible ? 1 : 0,
                         zIndex: 1,
@@ -239,15 +247,19 @@ const Draggable = styled(Button)({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    width: '24px',
-    height: '24px',
+    width: '16px',
+    height: '22px',
+    '& svg': {
+        fontSize: '20px',
+        marginLeft: '-2px',
+    },
     ':hover': {
-        backgroundColor: '#edeef0',
+        backgroundColor: '#F5F7F8',
         borderRadius: '4px',
     },
 });
 
 const LigoLeftMenu = styled('div')({
     backgroundColor: 'transparent',
-    marginRight: '4px',
+    // marginRight: '4px',
 });

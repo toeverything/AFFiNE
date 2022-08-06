@@ -101,9 +101,6 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                                 <ArrowDropDownIcon />
                             ))}
                     </Action>
-                    {/*<Action>*/}
-                    {/*    <DocumentIcon />*/}
-                    {/*</Action>*/}
 
                     <div className={styles['ItemContent']}>
                         <span
@@ -161,7 +158,6 @@ export function Action({
             style={
                 {
                     ...style,
-                    // cursor,
                     '--fill': active?.fill,
                     '--background': active?.background,
                 } as CSSProperties

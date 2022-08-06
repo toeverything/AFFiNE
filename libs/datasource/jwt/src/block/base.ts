@@ -51,24 +51,24 @@ export class BaseBlock<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > extends AbstractBlock<B, C> {
-    readonly #exporters?: Exporters;
-    readonly #content_exporters_getter: () => Map<
+    private readonly _exporters?: Exporters;
+    private readonly _contentExportersGetter: () => Map<
         string,
         ReadableContentExporter<string, any>
     >;
-    readonly #metadata_exporters_getter: () => Map<
+    private readonly _metadataExportersGetter: () => Map<
         string,
         ReadableContentExporter<
             Array<[string, number | string | string[]]>,
             any
         >
     >;
-    readonly #tag_exporters_getter: () => Map<
+    private readonly _tagExportersGetter: () => Map<
         string,
         ReadableContentExporter<string[], any>
     >;
 
-    #validators: Map<string, Validator> = new Map();
+    validators: Map<string, Validator> = new Map();
 
     constructor(
         block: B,
@@ -78,12 +78,11 @@ export class BaseBlock<
     ) {
         super(block, root, parent);
 
-        this.#exporters = exporters;
-        this.#content_exporters_getter = () =>
-            new Map(exporters?.content(block));
-        this.#metadata_exporters_getter = () =>
+        this._exporters = exporters;
+        this._contentExportersGetter = () => new Map(exporters?.content(block));
+        this._metadataExportersGetter = () =>
             new Map(exporters?.metadata(block));
-        this.#tag_exporters_getter = () => new Map(exporters?.tag(block));
+        this._tagExportersGetter = () => new Map(exporters?.tag(block));
     }
 
     get parent() {
@@ -158,14 +157,14 @@ export class BaseBlock<
 
     setValidator(key: string, validator?: Validator) {
         if (validator) {
-            this.#validators.set(key, validator);
+            this.validators.set(key, validator);
         } else {
-            this.#validators.delete(key);
+            this.validators.delete(key);
         }
     }
 
     private validate(key: string, value: unknown): boolean {
-        const validate = this.#validators.get(key);
+        const validate = this.validators.get(key);
         if (validate) {
             return validate(value) === false ? false : true;
         }
@@ -185,13 +184,13 @@ export class BaseBlock<
      */
     private get_children_instance(blockId?: string): BaseBlock<B, C>[] {
         return this.get_children(blockId).map(
-            block => new BaseBlock(block, this.root, this, this.#exporters)
+            block => new BaseBlock(block, this.root, this, this._exporters)
         );
     }
 
     private get_indexable_metadata() {
         const metadata: Record<string, number | string | string[]> = {};
-        for (const [name, exporter] of this.#metadata_exporters_getter()) {
+        for (const [name, exporter] of this._metadataExportersGetter()) {
             try {
                 for (const [key, val] of exporter(this.getContent())) {
                     metadata[key] = val;
@@ -226,7 +225,7 @@ export class BaseBlock<
 
     private get_indexable_content(): string | undefined {
         const contents = [];
-        for (const [name, exporter] of this.#content_exporters_getter()) {
+        for (const [name, exporter] of this._contentExportersGetter()) {
             try {
                 const content = exporter(this.getContent());
                 if (content) contents.push(content);
@@ -246,7 +245,7 @@ export class BaseBlock<
 
     private get_indexable_tags(): string[] {
         const tags: string[] = [];
-        for (const [name, exporter] of this.#tag_exporters_getter()) {
+        for (const [name, exporter] of this._tagExportersGetter()) {
             try {
                 tags.push(...exporter(this.getContent()));
             } catch (err) {

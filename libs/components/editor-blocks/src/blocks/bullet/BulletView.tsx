@@ -17,7 +17,7 @@ import {
     supportChildren,
     RenderBlockChildren,
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { List } from '../../components/style-container';
 import { getChildrenType, BulletIcon, NumberType } from './data';
@@ -188,7 +188,7 @@ export const BulletView: FC<CreateView> = ({ block, editor }) => {
 
     return (
         <BlockContainer editor={editor} block={block} selected={isSelect}>
-            <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+            <BlockPendantProvider block={block}>
                 <List>
                     <BulletLeft>
                         <BulletIcon numberType={properties.numberType} />
@@ -206,7 +206,7 @@ export const BulletView: FC<CreateView> = ({ block, editor }) => {
                         />
                     </div>
                 </List>
-            </WrapperWithPendantAndDragDrop>
+            </BlockPendantProvider>
             <IndentWrapper>
                 <RenderBlockChildren block={block} />
             </IndentWrapper>

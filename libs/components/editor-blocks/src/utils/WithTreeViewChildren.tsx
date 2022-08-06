@@ -3,7 +3,7 @@ import {
     RenderBlock,
     useCurrentView,
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import type {
@@ -13,7 +13,6 @@ import type {
     ReactElement,
 } from 'react';
 import { forwardRef, useState } from 'react';
-import style9 from 'style9';
 import { SCENE_CONFIG } from '../blocks/group/config';
 import { BlockContainer } from '../components/BlockContainer';
 
@@ -30,29 +29,15 @@ const TreeView = forwardRef<
     { lastItem?: boolean } & ComponentPropsWithRef<'div'>
 >(({ lastItem, children, onClick, ...restProps }, ref) => {
     return (
-        <div ref={ref} className={treeStyles('treeWrapper')} {...restProps}>
-            <div className={treeStyles('treeView')}>
-                <div
-                    className={treeStyles({
-                        line: true,
-                        verticalLine: true,
-                        lastItemVerticalLine: lastItem,
-                    })}
-                    onClick={onClick}
-                />
-                <div
-                    className={treeStyles({
-                        line: true,
-                        horizontalLine: true,
-                        lastItemHorizontalLine: lastItem,
-                    })}
-                    onClick={onClick}
-                />
-                {lastItem && <div className={treeStyles('lastItemRadius')} />}
-            </div>
+        <TreeWrapper ref={ref} {...restProps}>
+            <StyledTreeView>
+                <VerticalLine last={lastItem} onClick={onClick} />
+                <HorizontalLine last={lastItem} onClick={onClick} />
+                {lastItem && <LastItemRadius />}
+            </StyledTreeView>
             {/* maybe need a child wrapper */}
             {children}
-        </div>
+        </TreeWrapper>
     );
 });
 
@@ -71,10 +56,7 @@ const ChildrenView = ({
     const isKanbanScene = currentView.type === SCENE_CONFIG.KANBAN;
 
     return (
-        <div
-            className={styles('children')}
-            style={{ ...(!isKanbanScene && { marginLeft: indent }) }}
-        >
+        <Children style={{ ...(!isKanbanScene && { marginLeft: indent }) }}>
             {childrenIds.map((childId, idx) => {
                 if (isKanbanScene) {
                     return (
@@ -94,7 +76,7 @@ const ChildrenView = ({
                     </TreeView>
                 );
             })}
-        </div>
+        </Children>
     );
 };
 
@@ -104,9 +86,7 @@ const CollapsedNode = forwardRef<
 >((props, ref) => {
     return (
         <TreeView ref={ref} lastItem={true} {...props}>
-            <div className={treeStyles('collapsed')} onClick={props.onClick}>
-                ···
-            </div>
+            <Collapsed onClick={props.onClick}>···</Collapsed>
         </TreeView>
     );
 });
@@ -146,11 +126,11 @@ export const withTreeViewChildren = (
                 editor={props.editor}
                 block={block}
                 selected={isSelect}
-                className={styles('wrapper')}
+                className={Wrapper.toString()}
             >
-                <WrapperWithPendantAndDragDrop editor={editor} block={block}>
-                    <div className={styles('node')}>{creator(props)}</div>
-                </WrapperWithPendantAndDragDrop>
+                <BlockPendantProvider block={block}>
+                    <div>{creator(props)}</div>
+                </BlockPendantProvider>
 
                 {collapsed && (
                     <CollapsedNode
@@ -170,93 +150,79 @@ export const withTreeViewChildren = (
     };
 };
 
-const styles = style9.create({
-    wrapper: {
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    node: {},
+const Wrapper = styled('div')({ display: 'flex', flexDirection: 'column' });
 
-    children: {
-        display: 'flex',
-        flexDirection: 'column',
-    },
+const Children = Wrapper;
+
+const TREE_COLOR = '#D5DFE6';
+// TODO determine the position of the horizontal line by the type of the item
+const ITEM_POINT_HEIGHT = '12.5px'; // '50%'
+
+const TreeWrapper = styled('div')({
+    position: 'relative',
 });
 
-const treeColor = '#D5DFE6';
-// TODO determine the position of the horizontal line by the type of the item
-const itemPointHeight = '12.5px'; // '50%'
+const StyledTreeView = styled('div')({
+    position: 'absolute',
+    left: '-21px',
+    height: '100%',
+});
 
-const treeStyles = style9.create({
-    treeWrapper: {
-        position: 'relative',
-    },
+const Line = styled('div')({
+    position: 'absolute',
+    cursor: 'pointer',
+    backgroundColor: TREE_COLOR,
+    // somehow tldraw would override this
+    boxSizing: 'content-box!important' as any,
+    // See [Can I add background color only for padding?](https://stackoverflow.com/questions/14628601/can-i-add-background-color-only-for-padding)
+    backgroundClip: 'content-box',
+    backgroundOrigin: 'content-box',
+    // Increase click hot spot
+    padding: '10px',
+});
 
-    treeView: {
-        position: 'absolute',
-        left: '-21px',
-        height: '100%',
-    },
-    line: {
-        position: 'absolute',
-        cursor: 'pointer',
-        backgroundColor: treeColor,
-        boxSizing: 'content-box',
-        // See [Can I add background color only for padding?](https://stackoverflow.com/questions/14628601/can-i-add-background-color-only-for-padding)
-        backgroundClip: 'content-box',
-        backgroundOrigin: 'content-box',
-        // Increase click hot spot
-        padding: '10px',
-    },
-    verticalLine: {
-        width: '1px',
-        height: '100%',
-        paddingTop: 0,
-        paddingBottom: 0,
-        transform: 'translate(-50%, 0)',
-    },
-    horizontalLine: {
-        width: '16px',
-        height: '1px',
-        paddingLeft: 0,
-        paddingRight: 0,
-        top: itemPointHeight,
-        transform: 'translate(0, -50%)',
-    },
-    noItemHorizontalLine: {
-        display: 'none',
-    },
+const VerticalLine = styled(Line)<{ last: boolean }>(({ last }) => ({
+    width: '1px',
+    height: last ? ITEM_POINT_HEIGHT : '100%',
+    paddingTop: 0,
+    paddingBottom: 0,
+    transform: 'translate(-50%, 0)',
 
-    lastItemHorizontalLine: {
-        opacity: 0,
-    },
-    lastItemVerticalLine: {
-        height: itemPointHeight,
-        opacity: 0,
-    },
-    lastItemRadius: {
-        boxSizing: 'content-box',
-        position: 'absolute',
-        left: '-0.5px',
-        top: 0,
-        height: itemPointHeight,
-        bottom: '50%',
-        width: '16px',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderLeftColor: treeColor,
-        borderBottomColor: treeColor,
-        borderTop: 'none',
-        borderRight: 'none',
-        borderRadius: '0 0 0 3px',
-        pointerEvents: 'none',
-    },
+    opacity: last ? 0 : 'unset',
+}));
 
-    collapsed: {
-        cursor: 'pointer',
-        display: 'inline-block',
-        color: '#B9CAD5',
-    },
+const HorizontalLine = styled(Line)<{ last: boolean }>(({ last }) => ({
+    width: '16px',
+    height: '1px',
+    paddingLeft: 0,
+    paddingRight: 0,
+    top: ITEM_POINT_HEIGHT,
+    transform: 'translate(0, -50%)',
+    opacity: last ? 0 : 'unset',
+}));
+
+const Collapsed = styled('div')({
+    cursor: 'pointer',
+    display: 'inline-block',
+    color: '#B9CAD5',
+});
+
+const LastItemRadius = styled('div')({
+    boxSizing: 'content-box',
+    position: 'absolute',
+    left: '-0.5px',
+    top: 0,
+    height: ITEM_POINT_HEIGHT,
+    bottom: '50%',
+    width: '16px',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderLeftColor: TREE_COLOR,
+    borderBottomColor: TREE_COLOR,
+    borderTop: 'none',
+    borderRight: 'none',
+    borderRadius: '0 0 0 3px',
+    pointerEvents: 'none',
 });
 
 const StyledBorder = styled('div')({

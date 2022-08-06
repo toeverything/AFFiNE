@@ -32,49 +32,51 @@ type YjsBlockInstanceProps = {
 };
 
 export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
-    readonly #id: string;
-    readonly #block: YMap<unknown>;
-    readonly #binary?: YArray<ArrayBuffer>;
-    readonly #children: YArray<string>;
-    readonly #set_block: (
+    private readonly _id: string;
+    private readonly _block: YMap<unknown>;
+    private readonly _binary?: YArray<ArrayBuffer>;
+    private readonly _children: YArray<string>;
+    private readonly _setBlock: (
         id: string,
         block: BlockItem<YjsContentOperation>
     ) => Promise<void>;
-    readonly #get_updated: (id: string) => number | undefined;
-    readonly #get_creator: (id: string) => string | undefined;
-    readonly #get_block_instance: (id: string) => YjsBlockInstance | undefined;
-    readonly #children_listeners: Map<string, BlockListener>;
-    readonly #content_listeners: Map<string, BlockListener>;
+    private readonly _getUpdated: (id: string) => number | undefined;
+    private readonly _getCreator: (id: string) => string | undefined;
+    private readonly _getBlockInstance: (
+        id: string
+    ) => YjsBlockInstance | undefined;
+    private readonly _childrenListeners: Map<string, BlockListener>;
+    private readonly _contentListeners: Map<string, BlockListener>;
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
-    #children_map: Map<string, number>;
+    _childrenMap: Map<string, number>;
 
     constructor(props: YjsBlockInstanceProps) {
-        this.#id = props.id;
-        this.#block = props.block;
-        this.#binary = props.binary;
+        this._id = props.id;
+        this._block = props.block;
+        this._binary = props.binary;
 
-        this.#children = props.block.get('children') as YArray<string>;
-        this.#children_map = getMapFromYArray(this.#children);
-        this.#set_block = props.setBlock;
-        this.#get_updated = props.getUpdated;
-        this.#get_creator = props.getCreator;
-        this.#get_block_instance = props.getBlockInstance;
+        this._children = props.block.get('children') as YArray<string>;
+        this._childrenMap = getMapFromYArray(this._children);
+        this._setBlock = props.setBlock;
+        this._getUpdated = props.getUpdated;
+        this._getCreator = props.getCreator;
+        this._getBlockInstance = props.getBlockInstance;
 
-        this.#children_listeners = new Map();
-        this.#content_listeners = new Map();
+        this._childrenListeners = new Map();
+        this._contentListeners = new Map();
 
-        const content = this.#block.get('content') as YMap<unknown>;
+        const content = this._block.get('content') as YMap<unknown>;
 
-        this.#children.observe(event =>
-            ChildrenListenerHandler(this.#children_listeners, event)
+        this._children.observe(event =>
+            ChildrenListenerHandler(this._childrenListeners, event)
         );
         content?.observeDeep(events =>
-            ContentListenerHandler(this.#content_listeners, events)
+            ContentListenerHandler(this._contentListeners, events)
         );
         // TODO: flavor needs optimization
-        this.#block.observeDeep(events =>
-            ContentListenerHandler(this.#content_listeners, events)
+        this._block.observeDeep(events =>
+            ContentListenerHandler(this._contentListeners, events)
         );
     }
 
@@ -99,85 +101,85 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
     }
 
     addChildrenListener(name: string, listener: BlockListener): void {
-        this.#children_listeners.set(name, listener);
+        this._childrenListeners.set(name, listener);
     }
 
     removeChildrenListener(name: string): void {
-        this.#children_listeners.delete(name);
+        this._childrenListeners.delete(name);
     }
 
     addContentListener(name: string, listener: BlockListener): void {
-        this.#content_listeners.set(name, listener);
+        this._contentListeners.set(name, listener);
     }
 
     removeContentListener(name: string): void {
-        this.#content_listeners.delete(name);
+        this._contentListeners.delete(name);
     }
 
     get id() {
-        return this.#id;
+        return this._id;
     }
 
     get content(): YjsContentOperation {
         if (this.type === BlockTypes.block) {
-            const content = this.#block.get('content');
+            const content = this._block.get('content');
             if (content instanceof YAbstractType) {
                 return new YjsContentOperation(content);
             } else {
                 throw new Error(`Invalid content type: ${typeof content}`);
             }
-        } else if (this.type === BlockTypes.binary && this.#binary) {
-            return new YjsContentOperation(this.#binary);
+        } else if (this.type === BlockTypes.binary && this._binary) {
+            return new YjsContentOperation(this._binary);
         }
         throw new Error(
-            `Invalid content type: ${this.type}, ${this.#block.get(
+            `Invalid content type: ${this.type}, ${this._block.get(
                 'content'
-            )}, ${this.#binary}`
+            )}, ${this._binary}`
         );
     }
 
     get type(): BlockItem<YjsContentOperation>['type'] {
-        return this.#block.get(
+        return this._block.get(
             'type'
         ) as BlockItem<YjsContentOperation>['type'];
     }
 
     get flavor(): BlockItem<YjsContentOperation>['flavor'] {
-        return this.#block.get(
+        return this._block.get(
             'flavor'
         ) as BlockItem<YjsContentOperation>['flavor'];
     }
 
     // TODO: bad case. Need to optimize.
     setFlavor(flavor: BlockItem<YjsContentOperation>['flavor']) {
-        this.#block.set('flavor', flavor);
+        this._block.set('flavor', flavor);
     }
 
     get created(): BlockItem<YjsContentOperation>['created'] {
-        return this.#block.get(
+        return this._block.get(
             'created'
         ) as BlockItem<YjsContentOperation>['created'];
     }
 
     get updated(): number {
-        return this.#get_updated(this.#id) || this.created;
+        return this._getUpdated(this._id) || this.created;
     }
 
     get creator(): string | undefined {
-        return this.#get_creator(this.#id);
+        return this._getCreator(this._id);
     }
 
     get children(): string[] {
-        return this.#children.toArray();
+        return this._children.toArray();
     }
 
     getChildren(ids?: (string | undefined)[]): YjsBlockInstance[] {
         const query_ids = ids?.filter((id): id is string => !!id) || [];
-        const exists_ids = this.#children.map(id => id);
+        const exists_ids = this._children.map(id => id);
         const filter_ids = query_ids.length ? query_ids : exists_ids;
         return exists_ids
             .filter(id => filter_ids.includes(id))
-            .map(id => this.#get_block_instance(id))
+            .map(id => this._getBlockInstance(id))
             .filter((v): v is YjsBlockInstance => !!v);
     }
 
@@ -196,7 +198,7 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
                 return pos;
             }
         } else if (before) {
-            const current_pos = this.#children_map.get(before || '');
+            const current_pos = this._childrenMap.get(before || '');
             if (
                 typeof current_pos === 'number' &&
                 Number.isInteger(current_pos)
@@ -207,7 +209,7 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
                 }
             }
         } else if (after) {
-            const current_pos = this.#children_map.get(after || '');
+            const current_pos = this._childrenMap.get(after || '');
             if (
                 typeof current_pos === 'number' &&
                 Number.isInteger(current_pos)
@@ -227,44 +229,44 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
     ): Promise<void> {
         const content = block[GET_BLOCK_ITEM]();
         if (content) {
-            const lastIndex = this.#children_map.get(block.id);
+            const lastIndex = this._childrenMap.get(block.id);
             if (typeof lastIndex === 'number') {
-                this.#children.delete(lastIndex);
-                this.#children_map = getMapFromYArray(this.#children);
+                this._children.delete(lastIndex);
+                this._childrenMap = getMapFromYArray(this._children);
             }
 
             const position = this.position_calculator(
-                this.#children_map.size,
+                this._childrenMap.size,
                 pos
             );
             if (typeof position === 'number') {
-                this.#children.insert(position, [block.id]);
+                this._children.insert(position, [block.id]);
             } else {
-                this.#children.push([block.id]);
+                this._children.push([block.id]);
             }
-            await this.#set_block(block.id, content);
-            this.#children_map = getMapFromYArray(this.#children);
+            await this._setBlock(block.id, content);
+            this._childrenMap = getMapFromYArray(this._children);
         }
     }
 
     removeChildren(ids: (string | undefined)[]): Promise<string[]> {
         return new Promise(resolve => {
-            if (this.#children.doc) {
-                transact(this.#children.doc, () => {
+            if (this._children.doc) {
+                transact(this._children.doc, () => {
                     const failed = [];
                     for (const id of ids) {
                         let idx = -1;
-                        for (const block_id of this.#children) {
+                        for (const block_id of this._children) {
                             idx += 1;
                             if (block_id === id) {
-                                this.#children.delete(idx);
+                                this._children.delete(idx);
                                 break;
                             }
                         }
                         if (id) failed.push(id);
                     }
 
-                    this.#children_map = getMapFromYArray(this.#children);
+                    this._childrenMap = getMapFromYArray(this._children);
                     resolve(failed);
                 });
             } else {
@@ -274,7 +276,7 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
     }
 
     public scopedHistory(scope: any[]): HistoryManager {
-        return new YjsHistoryManager(this.#block, scope);
+        return new YjsHistoryManager(this._block, scope);
     }
 
     [GET_BLOCK_ITEM]() {
@@ -283,7 +285,7 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
             return {
                 type: this.type,
                 flavor: this.flavor,
-                children: this.#children.slice(),
+                children: this._children.slice(),
                 created: this.created,
                 content: this.content,
             };

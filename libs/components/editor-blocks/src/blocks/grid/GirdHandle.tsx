@@ -12,6 +12,8 @@ type GridHandleProps = {
     blockId: string;
     enabledAddItem: boolean;
     draggable: boolean;
+    alertHandleId: string;
+    onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
 };
 
 export const GridHandle: FC<GridHandleProps> = function ({
@@ -21,6 +23,8 @@ export const GridHandle: FC<GridHandleProps> = function ({
     onDrag,
     onMouseDown,
     draggable,
+    alertHandleId,
+    onMouseEnter,
 }) {
     const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
     const handleMouseDown: React.MouseEventHandler<HTMLDivElement> = e => {
@@ -44,16 +48,17 @@ export const GridHandle: FC<GridHandleProps> = function ({
             editor.selectionManager.setActivatedNodeId(textBlock.id);
         }
     };
+
+    const handleMouseEnter: React.MouseEventHandler<HTMLDivElement> = e => {
+        onMouseEnter && onMouseEnter(e);
+    };
+
     return (
         <GridHandleContainer
-            style={
-                isMouseDown
-                    ? {
-                          backgroundColor: '#3E6FDB',
-                      }
-                    : {}
-            }
+            isMouseDown={isMouseDown}
             onMouseDown={handleMouseDown}
+            onMouseEnter={handleMouseEnter}
+            isAlert={alertHandleId === blockId}
         >
             {enabledAddItem ? (
                 <AddGridHandle
@@ -67,7 +72,10 @@ export const GridHandle: FC<GridHandleProps> = function ({
     );
 };
 
-const GridHandleContainer = styled('div')(({ theme }) => ({
+const GridHandleContainer = styled('div')<{
+    isMouseDown: boolean;
+    isAlert: boolean;
+}>(({ theme, isMouseDown, isAlert }) => ({
     position: 'relative',
     width: '10px',
     flexGrow: '0',
@@ -78,11 +86,15 @@ const GridHandleContainer = styled('div')(({ theme }) => ({
     borderRadius: '1px',
     backgroundClip: 'content-box',
     ' &:hover': {
-        backgroundColor: theme.affine.palette.primary,
+        backgroundColor: isAlert ? 'red' : theme.affine.palette.primary,
         [`.${GRID_ADD_HANDLE_NAME}`]: {
             display: 'block',
         },
     },
+    ...(isMouseDown &&
+        (isAlert
+            ? { backgroundColor: 'red' }
+            : { backgroundColor: theme.affine.palette.primary })),
 }));
 
 const AddGridHandle = styled('div')(({ theme }) => ({

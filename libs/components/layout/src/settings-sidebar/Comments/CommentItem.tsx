@@ -94,7 +94,7 @@ const StyledContainerForCommentItem = styled('div', {
         transition: 'left 150ms ease-in-out',
         backgroundColor: theme.affine.palette.white,
         '&:hover': {
-            boxShadow: theme.affine.shadows.shadowSxDownLg,
+            boxShadow: theme.affine.shadows.shadow1,
         },
     };
 });

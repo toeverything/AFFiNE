@@ -25,7 +25,7 @@ const AddCard = ({ group }: { group: KanbanGroup }) => {
     const { addCard } = useKanban();
     const handleClick = useCallback(async () => {
         await addCard(group);
-    }, [addCard]);
+    }, [addCard, group]);
     return <AddCardWrapper onClick={handleClick}>+</AddCardWrapper>;
 };
 

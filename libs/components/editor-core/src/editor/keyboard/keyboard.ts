@@ -35,20 +35,6 @@ export class KeyboardManager {
         }
         this.handler_map = {};
 
-        // WARNING: Remove the filter of hotkeys, the input event of input/select/textarea will be filtered out by default
-        // When there is a problem with the input of the text component, you need to pay attention to this
-        const old_filter = HotKeys.filter;
-        HotKeys.filter = event => {
-            let parent = (event.target as Element).parentElement;
-            while (parent) {
-                if (parent === editor.container) {
-                    return old_filter(event);
-                }
-                parent = parent.parentElement;
-            }
-
-            return true;
-        };
         HotKeys.setScope('editor');
 
         // this.init_common_shortcut_cb();

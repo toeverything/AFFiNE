@@ -11,6 +11,7 @@ import { StrokeLineStyleConfig } from './stroke-line-style-config';
 import { Group, UnGroup } from './GroupOperation';
 import { DeleteShapes } from './DeleteOperation';
 import { Lock, Unlock } from './LockOperation';
+import { FrameFillColorConfig } from './FrameFillColorConfig';
 
 export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
     const state = app.useStore();
@@ -49,6 +50,13 @@ export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
                 key="fill"
                 app={app}
                 shapes={config.fill.selectedShapes}
+            />
+        ) : null,
+        frameFill: config.frameFill.selectedShapes.length ? (
+            <FrameFillColorConfig
+                key="fill"
+                app={app}
+                shapes={config.frameFill.selectedShapes}
             />
         ) : null,
         font: config.font.selectedShapes.length ? (

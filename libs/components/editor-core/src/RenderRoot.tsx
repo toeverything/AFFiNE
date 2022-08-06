@@ -2,14 +2,14 @@ import type { BlockEditor } from './editor';
 import { styled, usePatchNodes } from '@toeverything/components/ui';
 import type { FC, PropsWithChildren } from 'react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { RootContext } from './contexts';
+import { EditorProvider } from './Contexts';
 import { SelectionRect, SelectionRef } from './Selection';
 import {
     Protocol,
     services,
     type ReturnUnobserve,
 } from '@toeverything/datasource/db-service';
-import { addNewGroup } from './recast-block';
+import { addNewGroup, appendNewGroup } from './recast-block';
 import { useIsOnDrag } from './hooks';
 
 interface RenderRootProps {
@@ -151,7 +151,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     };
 
     return (
-        <RootContext.Provider value={{ editor, editorElement }}>
+        <EditorProvider value={{ editor, editorElement }}>
             <Container
                 isWhiteboard={editor.isWhiteboard}
                 ref={ref => {
@@ -183,7 +183,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 {editor.isWhiteboard ? null : <ScrollBlank editor={editor} />}
                 {patchedNodes}
             </Container>
-        </RootContext.Provider>
+        </EditorProvider>
     );
 };
 
@@ -199,24 +199,32 @@ function ScrollBlank({ editor }: { editor: BlockEditor }) {
                 mouseMoved.current = false;
                 return;
             }
-            const lastBlock = await editor.getRootLastChildrenBlock();
+            const rootBlock = await editor.getBlockById(
+                editor.getRootBlockId()
+            );
+            if (!rootBlock) {
+                throw new Error('root block is not found');
+            }
 
-            const lastGroupBlock = await editor.getRootLastChildrenBlock();
+            const lastRootChildren = await rootBlock.lastChild();
             // If last block is not a group
             // create a group with a empty text
-            if (lastGroupBlock.type !== 'group') {
-                addNewGroup(editor, lastBlock, true);
+            if (lastRootChildren == null) {
+                appendNewGroup(editor, rootBlock, true);
                 return;
             }
 
-            if (lastGroupBlock.childrenIds.length > 1) {
-                addNewGroup(editor, lastBlock, true);
+            if (
+                lastRootChildren.type !== Protocol.Block.Type.group ||
+                lastRootChildren.childrenIds.length > 1
+            ) {
+                addNewGroup(editor, lastRootChildren, true);
                 return;
             }
 
             // If the **only** block in the group is text and is empty
             // active the text block
-            const theGroupChildBlock = await lastGroupBlock.firstChild();
+            const theGroupChildBlock = await lastRootChildren.firstChild();
 
             if (
                 theGroupChildBlock &&
@@ -229,7 +237,7 @@ function ScrollBlank({ editor }: { editor: BlockEditor }) {
                 return;
             }
             // else create a new group
-            addNewGroup(editor, lastBlock, true);
+            addNewGroup(editor, lastRootChildren, true);
         },
         [editor]
     );
