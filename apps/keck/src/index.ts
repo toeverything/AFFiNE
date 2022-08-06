@@ -34,27 +34,24 @@ const _checkAuth = async (
     response: http.ServerResponse,
     callback: (response: http.OutgoingMessage, workspace: string) => boolean
 ) => {
+    const url = new URL(request.url, `http://${request.headers.host}`);
+    const workspace = _getWorkspace(url.pathname);
     if (process.env.NODE_ENV === 'development') {
-        const url = new URL(request.url, `http://${request.headers.host}`);
-        const workspace = _getWorkspace(url.pathname);
         if (workspace) return callback(response, workspace);
         return false;
-    } else {
-        try {
-            const decodedToken = await firebaseAuth
-                .getAuth()
-                .verifyIdToken(request.headers.token as string);
-            const allowWorkspace = [AFFINE_COMMON_WORKSPACE, decodedToken.uid];
-            const url = new URL(request.url, `http://${request.headers.host}`);
-            const workspace = _getWorkspace(url.pathname);
-            if (allowWorkspace.includes(workspace)) {
-                return callback(response, workspace);
-            }
-        } catch (error) {
-            console.log(error);
-        }
-        return false;
     }
+    try {
+        const decodedToken = await firebaseAuth
+            .getAuth()
+            .verifyIdToken(request.headers.token as string);
+        const allowWorkspace = [AFFINE_COMMON_WORKSPACE, decodedToken.uid];
+        if (allowWorkspace.includes(workspace)) {
+            return callback(response, workspace);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+    return false;
 };
 
 const HOST = process.env.HOST || 'localhost';
