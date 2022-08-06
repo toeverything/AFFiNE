@@ -204,6 +204,10 @@ const GitHub = (props: { center?: boolean; flat?: boolean }) => {
             {...{
                 sx: {
                     margin: 'auto 1em',
+                    fontSize: '24px',
+                    '@media (max-width: 768px)': {
+                        fontSize: '16px',
+                    },
                     ...(props.flat
                         ? {
                               padding: matches ? '0' : '0 0.5em',
@@ -256,6 +260,10 @@ export function App() {
                             sx={{
                                 padding: matches ? '0' : '0 0.5em',
                                 ':hover': { backgroundColor: 'unset' },
+                                fontSize: '24px',
+                                '@media (max-width: 768px)': {
+                                    fontSize: '16px',
+                                },
                             }}
                         >
                             AFFiNE
@@ -276,6 +284,10 @@ export function App() {
                             sx={{
                                 padding: matches ? '0' : '0 0.5em',
                                 ':hover': { backgroundColor: 'unset' },
+                                fontSize: '24px',
+                                '@media (max-width: 768px)': {
+                                    fontSize: '16px',
+                                },
                             }}
                             size="lg"
                         >
