@@ -401,6 +401,7 @@ importers:
       '@types/react-window': ^1.8.5
       code-example: ^3.3.6
       codemirror: 6.0.1
+      codemirror-lang-elixir: ^3.0.0
       keymap: link:@codemirror/next/keymap
       nanoid: ^4.0.0
       react-resizable: ^3.0.4
@@ -437,6 +438,7 @@ importers:
       '@mui/system': 5.8.7_d6menda4vqwq6peqnkbe7mkj4i
       code-example: 3.3.6
       codemirror: 6.0.1
+      codemirror-lang-elixir: 3.0.0_@codemirror+language@6.2.0
       keymap: link:@codemirror/next/keymap
       nanoid: 4.0.0
       react-resizable: 3.0.4
@@ -4578,8 +4580,8 @@ packages:
     dependencies:
       '@babel/runtime': 7.18.6
       '@emotion/cache': 11.9.3
-      '@emotion/react': 11.9.3
-      '@emotion/styled': 11.9.3_@emotion+react@11.9.3
+      '@emotion/react': 11.9.3_@babel+core@7.18.6
+      '@emotion/styled': 11.9.3_dc5dh2wp562rsjxvguwi2i3yzq
       csstype: 3.1.0
       prop-types: 15.8.1
     dev: false
@@ -8517,6 +8519,14 @@ packages:
     resolution: {integrity: sha512-RpAVKQA5T63xEj6/giIbUEtZwJ4UFIc3ZtvEkiaUERylqe8xb5IvqcgOurZLahv93CLKfxcw5YI+DZcUBRyLXA==}
     engines: {node: '>=0.10.0'}
     dev: true
+
+  /codemirror-lang-elixir/3.0.0_@codemirror+language@6.2.0:
+    resolution: {integrity: sha512-Liy5MDxf+xw7aFqNfhLfntSK6vsRkI0lSlyytw23P1hWSrb0Bw5WunEB3iKJ49iUu8Kj2dx+vvMqD8I5ms7rSQ==}
+    peerDependencies:
+      '@codemirror/language': ^6.2.1
+    dependencies:
+      '@codemirror/language': 6.2.0
+    dev: false
 
   /codemirror/6.0.1:
     resolution: {integrity: sha512-J8j+nZ+CdWmIeFIGXEFbFPtpiYacFMDR8GlHK3IyHQJMCaVRfGx9NT+Hxivv1ckLWPvNdZqndbr/7lVhrf/Svg==}
