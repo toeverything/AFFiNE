@@ -116,7 +116,7 @@ export const ReferenceMenu = ({ editor, hooks, style }: ReferenceMenuProps) => {
     };
 
     const handle_close = () => {
-        editor.blockHelper.removeSearchSlash(block_id);
+        block_id && editor.blockHelper.removeSearchSlash(block_id);
     };
 
     return (
