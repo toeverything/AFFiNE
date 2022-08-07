@@ -73,6 +73,7 @@ export interface Virgo {
     getBlockById(blockId: string): Promise<AsyncBlock | null>;
     setHotKeysScope(scope?: string): void;
     getBlockList: () => Promise<AsyncBlock[]>;
+    getBlockListByLevelOrder: () => Promise<AsyncBlock[]>;
     // removeBlocks: () => void;
     storageManager: StorageManager | undefined;
     selection: VirgoSelection;

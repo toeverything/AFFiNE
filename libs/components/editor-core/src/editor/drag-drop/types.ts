@@ -3,6 +3,8 @@ export enum BlockDropPlacement {
     right = 'right',
     top = 'top',
     bottom = 'bottom',
+    outerLeft = 'outer-left',
+    outerRight = 'outer-right',
     none = 'none',
 }
 

@@ -12,10 +12,8 @@ import { debounce, domToRect, Point } from '@toeverything/utils';
 import clsx from 'clsx';
 import { Protocol } from '@toeverything/datasource/db-service';
 
-const MAX_ITEM_COUNT = 6;
 const DB_UPDATE_DELAY = 50;
 const GRID_ON_DRAG_CLASS = 'grid-layout-on-drag';
-export const GRID_ITEM_MIN_WIDTH = 100 / MAX_ITEM_COUNT;
 export const GRID_PROPERTY_KEY = 'gridItemWidth';
 
 export function removePercent(str: string) {
@@ -24,13 +22,14 @@ export function removePercent(str: string) {
 
 export const Grid: FC<CreateView> = function (props) {
     const { block, editor } = props;
+    const gridItemMinWidth = editor.configManager.grid.gridItemMinWidth;
     const [isOnDrag, setIsOnDrag] = useState<boolean>(false);
     const isSetMouseUp = useRef<boolean>(false);
     const gridContainerRef = useRef<HTMLDivElement>();
     const mouseStartPoint = useRef<Point>();
     const gridItemCountRef = useRef<number>();
-    const originalLeftWidth = useRef<number>(GRID_ITEM_MIN_WIDTH);
-    const originalRightWidth = useRef<number>(GRID_ITEM_MIN_WIDTH);
+    const originalLeftWidth = useRef<number>(gridItemMinWidth);
+    const originalRightWidth = useRef<number>(gridItemMinWidth);
     const [alertHandleId, setAlertHandleId] = useState<string>(null);
 
     const getLeftRightGridItemDomByIndex = (index: number) => {
@@ -126,8 +125,8 @@ export const Grid: FC<CreateView> = function (props) {
             editor.mouseManager.onMouseupEventOnce(() => {
                 setIsOnDrag(false);
                 isSetMouseUp.current = false;
-                originalLeftWidth.current = GRID_ITEM_MIN_WIDTH;
-                originalRightWidth.current = GRID_ITEM_MIN_WIDTH;
+                originalLeftWidth.current = gridItemMinWidth;
+                originalRightWidth.current = gridItemMinWidth;
                 mouseStartPoint.current = null;
             });
         } else {
@@ -153,12 +152,12 @@ export const Grid: FC<CreateView> = function (props) {
                 const newLeftWidth = originalLeftWidth.current - xDistance;
                 let newLeftPercent = (newLeftWidth / containerWidth) * 100;
                 let newRightPercent = Number(totalWidth) - newLeftPercent;
-                if (newLeftPercent < GRID_ITEM_MIN_WIDTH) {
-                    newLeftPercent = GRID_ITEM_MIN_WIDTH;
-                    newRightPercent = totalWidth - GRID_ITEM_MIN_WIDTH;
-                } else if (newRightPercent < GRID_ITEM_MIN_WIDTH) {
-                    newRightPercent = GRID_ITEM_MIN_WIDTH;
-                    newLeftPercent = totalWidth - GRID_ITEM_MIN_WIDTH;
+                if (newLeftPercent < gridItemMinWidth) {
+                    newLeftPercent = gridItemMinWidth;
+                    newRightPercent = totalWidth - gridItemMinWidth;
+                } else if (newRightPercent < gridItemMinWidth) {
+                    newRightPercent = gridItemMinWidth;
+                    newLeftPercent = totalWidth - gridItemMinWidth;
                 }
                 //XXX first change dom style is for animation speed, maybe not a good idea
                 const newLeft = `${newLeftPercent}%`;
@@ -213,6 +212,7 @@ export const Grid: FC<CreateView> = function (props) {
             <GridContainer
                 className={clsx({ [GRID_ON_DRAG_CLASS]: isOnDrag })}
                 ref={gridContainerRef}
+                gridItemMinWidth={gridItemMinWidth}
                 isOnDrag={isOnDrag}
             >
                 {block.childrenIds.map((id, i) => {
@@ -233,7 +233,8 @@ export const Grid: FC<CreateView> = function (props) {
                                 onMouseDown={event => handleMouseDown(event, i)}
                                 blockId={id}
                                 enabledAddItem={
-                                    block.childrenIds.length < MAX_ITEM_COUNT
+                                    block.childrenIds.length <
+                                    editor.configManager.grid.maxGridItemCount
                                 }
                                 onMouseEnter={event =>
                                     handleHandleMouseEnter(event, i)
@@ -252,24 +253,25 @@ export const Grid: FC<CreateView> = function (props) {
     );
 };
 
-const GridContainer = styled('div')<{ isOnDrag: boolean }>(
-    ({ isOnDrag, theme }) => ({
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'stretch',
-        borderRadius: '10px',
-        border: '1px solid #FFF',
-        minWidth: `${GRID_ITEM_MIN_WIDTH}%`,
-        [`&:hover .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
+const GridContainer = styled('div')<{
+    isOnDrag: boolean;
+    gridItemMinWidth: number;
+}>(({ isOnDrag, theme, gridItemMinWidth }) => ({
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'stretch',
+    borderRadius: '10px',
+    border: '1px solid #FFF',
+    minWidth: `${gridItemMinWidth}%`,
+    [`&:hover .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
+        borderColor: theme.affine.palette.borderColor,
+    },
+    ...(isOnDrag && {
+        [`& .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
             borderColor: theme.affine.palette.borderColor,
         },
-        ...(isOnDrag && {
-            [`& .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
-                borderColor: theme.affine.palette.borderColor,
-            },
-        }),
-    })
-);
+    }),
+}));
 
 const GridMask = styled('div')({
     position: 'fixed',

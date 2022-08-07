@@ -5,8 +5,9 @@ import { ignoreBlockTypes } from './menu-config';
 import { LineInfoSubject, LeftMenuDraggable } from './LeftMenuDraggable';
 import { PluginRenderRoot } from '../../utils';
 import { Subject } from 'rxjs';
-import { domToRect, last, Point } from '@toeverything/utils';
-
+import { domToRect, last, Point, throttle } from '@toeverything/utils';
+import { BlockDropPlacement } from '@toeverything/framework/virgo';
+const DRAG_THROTTLE_DELAY = 150;
 export class LeftMenuPlugin extends BasePlugin {
     private _mousedown?: boolean;
     private _root?: PluginRenderRoot;
@@ -35,11 +36,7 @@ export class LeftMenuPlugin extends BasePlugin {
                 .get(HookType.ON_ROOTNODE_MOUSE_UP)
                 .subscribe(this._handleMouseUp)
         );
-        this.sub.add(
-            this.hooks
-                .get(HookType.ON_ROOTNODE_DRAG_OVER)
-                .subscribe(this._handleDragOverBlockNode)
-        );
+
         this.sub.add(
             this.hooks.get(HookType.ON_ROOTNODE_MOUSE_LEAVE).subscribe(() => {
                 this._hideLeftMenu();
@@ -60,7 +57,46 @@ export class LeftMenuPlugin extends BasePlugin {
         this.sub.add(
             this.hooks.get(HookType.ON_ROOTNODE_DROP).subscribe(this._onDrop)
         );
+        this.sub.add(
+            this.hooks.get(HookType.ON_ROOTNODE_DRAG_OVER).subscribe(
+                throttle(
+                    this._handleRootNodeDragover.bind(this),
+                    DRAG_THROTTLE_DELAY,
+                    {
+                        leading: true,
+                    }
+                )
+            )
+        );
     }
+
+    private _handleRootNodeDragover = async (
+        event: React.DragEvent<Element>
+    ) => {
+        event.preventDefault();
+        if (this.editor.dragDropManager.isDragBlock(event)) {
+            const { direction, block, isOuter } =
+                await this.editor.dragDropManager.checkOuterBlockDragTypes(
+                    event
+                );
+            if (direction !== BlockDropPlacement.none && block && block.dom) {
+                this._lineInfo.next({
+                    direction,
+                    blockInfo: {
+                        blockId: block.id,
+                        dom: block.dom,
+                        type: block.type,
+                        rect: block.dom.getBoundingClientRect(),
+                        properties: block.getProperties(),
+                    },
+                });
+            } else if (!isOuter) {
+                this._handleDragOverBlockNode(event);
+            } else {
+                this._lineInfo.next(undefined);
+            }
+        }
+    };
 
     private _onDrop = () => {
         this._lineInfo.next(undefined);
