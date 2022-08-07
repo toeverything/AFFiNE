@@ -7,11 +7,11 @@ on:
             - 'apps/venus/**'
             - '.github/deployment'
             - '.github/workflows/venus.yml'
-    pull_request:
-        branches: [master]
-        paths:
-            - 'apps/venus/**'
-            - '.github/workflows/venus.yml'
+    # pull_request:
+    #     branches: [master]
+    #     paths:
+    #         - 'apps/venus/**'
+    #         - '.github/workflows/venus.yml'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency

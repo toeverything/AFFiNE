@@ -8,12 +8,12 @@ on:
             - 'apps/keck/**'
             - '.github/deployment'
             - '.github/workflows/keck.yml'
-    pull_request:
-        branches: [master]
-        paths:
-            - 'apps/keck/**'
-            - '.github/deployment'
-            - '.github/workflows/keck.yml'
+    # pull_request:
+    #     branches: [master]
+    #     paths:
+    #         - 'apps/keck/**'
+    #         - '.github/deployment'
+    #         - '.github/workflows/keck.yml'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
