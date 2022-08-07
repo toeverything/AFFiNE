@@ -16,6 +16,7 @@ module.exports = function (webpackConfig) {
     const config = getNxWebpackConfig(webpackConfig);
 
     const isProd = config.mode === 'production';
+    const isE2E = process.env.NX_E2E;
 
     const style9 = {
         test: /\.(tsx|ts|js|mjs|jsx)$/,
@@ -158,6 +159,7 @@ module.exports = function (webpackConfig) {
             global: {},
         }),
         isProd &&
+            !isE2E &&
             new HtmlWebpackPlugin({
                 title: 'AFFiNE - All In One Workos',
                 favicon: path.resolve(
