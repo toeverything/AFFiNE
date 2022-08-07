@@ -91,7 +91,7 @@ Affine is fully built with web technologies so that consistency and accessibilit
 
 # Documentation
 
-AFFiNE is not yet ready for production use. To install, you may check how to build or depoly the AFFiNE in [quick-start](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine/quick-start). For the full documentation, please view it [here](https://affine.gitbook.io/affine/).
+AFFiNE is not yet ready for production use. To install, you may check how to build or deploy the AFFiNE in [quick-start](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine/quick-start). For the full documentation, please view it [here](https://affine.gitbook.io/affine/).
 
 ## Getting Started with development
 
@@ -130,7 +130,7 @@ That's why we are making AFFiNE. Some of the most important features are:
 -   Atomic
     -   The basic element of affine are blocks, not pages.
         -   Blocks can be directly reuse and synced between pages.
-    -   Pages and blocks are searched and organized on the basis of connected graphs, not tree-like paths.
+    -   Pages and blocks are searched and organized based on connected graphs, not tree-like paths.
     -   Dual-link and semantic search are fully supported.
 -   Collaborative and privacy-first
     -   Data is always stored locally by default
@@ -142,7 +142,7 @@ With AFFiNE, every block group has infinite views, for you to keep your single s
 We would like to give special thanks to the innovators and pioneers who greatly inspired us:
 
 -   Quip & Notion -- that docs can be organized as blocks
--   Taskade & Monday -- brillant multi-demensional tables
+-   Taskade & Monday -- brilliant multi-dimensional tables
 -   Height & Linear -- beautiful task management tool
 
 We would also like to give thanks to open-source projects that make affine possible:
@@ -155,7 +155,7 @@ We would also like to give thanks to open-source projects that make affine possi
 -   [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend.
 -   [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
 -   [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
--   Other [dependancies](https://github.com/toeverything/AFFiNE/network/dependencies)
+-   Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies)
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 
