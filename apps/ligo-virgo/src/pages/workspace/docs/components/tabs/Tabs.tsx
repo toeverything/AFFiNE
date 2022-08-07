@@ -11,15 +11,15 @@ const StyledTabs = styled('div')({
     cursor: 'pointer',
 });
 
-const StyledDivider = styled(Divider)<{ isActive?: boolean }>(
-    ({ isActive }) => {
-        return {
-            flex: 1,
-            backgroundColor: isActive ? '#3E6FDB' : '#ECF1FB',
-            borderWidth: '2px',
-        };
-    }
-);
+const StyledDivider = styled(Divider, {
+    shouldForwardProp: (prop: string) => !['isActive'].includes(prop),
+})<{ isActive?: boolean }>(({ isActive }) => {
+    return {
+        flex: 1,
+        backgroundColor: isActive ? '#3E6FDB' : '#ECF1FB',
+        borderWidth: '2px',
+    };
+});
 
 const TAB_TITLE = {
     PAGES: 'pages',
