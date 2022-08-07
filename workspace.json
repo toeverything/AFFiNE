@@ -28,6 +28,7 @@
         "framework-virgo": "libs/framework/virgo",
         "keck": "apps/keck",
         "ligo-virgo": "apps/ligo-virgo",
+        "ligo-virgo-e2e": "apps/ligo-virgo-e2e",
         "utils": "libs/utils",
         "venus": "apps/venus"
     }

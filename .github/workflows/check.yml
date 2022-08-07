@@ -21,8 +21,9 @@ jobs:
             parallel-commands: |
                 pnpm exec nx-cloud record -- pnpm exec nx format:check
             parallel-commands-on-agents: |
-                pnpm exec nx affected --target=lint --parallel=3 --exclude=components-common,keck,theme
-                pnpm exec nx affected --target=build --parallel=3
+                pnpm exec nx affected --target=lint --parallel=2 --exclude=components-common,keck,theme
+                pnpm exec nx affected --target=build --parallel=2
+                pnpm e2e:ci
 
     agents:
         name: Nx Cloud - Agents
