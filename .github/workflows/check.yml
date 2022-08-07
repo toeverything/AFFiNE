@@ -2,9 +2,13 @@ name: standard check
 
 on:
     push:
-        branches: [master]
+        branches: [develop]
     pull_request:
-        branches: [master]
+        branches: [develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
     main:
@@ -12,8 +16,8 @@ jobs:
         uses: nrwl/ci/.github/workflows/nx-cloud-main.yml@v0.6
         secrets: inherit
         with:
-            main-branch-name: master
-            number-of-agents: 3
+            main-branch-name: develop
+            number-of-agents: 2
             parallel-commands: |
                 pnpm exec nx-cloud record -- pnpm exec nx format:check
             parallel-commands-on-agents: |
@@ -23,6 +27,5 @@ jobs:
     agents:
         name: Nx Cloud - Agents
         uses: nrwl/ci/.github/workflows/nx-cloud-agents.yml@v0.6
-        secrets: inherit
         with:
-            number-of-agents: 3
+            number-of-agents: 2
