@@ -52,7 +52,7 @@ const Alternatives = styled(Box)<{ width: string }>(({ width }) => ({
     height: '128px',
     transform: 'translateY(-8px)',
     overflowY: 'hidden',
-    '@media (max-width: 1020px)': {
+    '@media (max-width: 1024px)': {
         width,
         height: '48px',
         transform: 'translateY(0)',
@@ -64,7 +64,7 @@ const Alternatives = styled(Box)<{ width: string }>(({ width }) => ({
         left: '0%',
         top: '0%',
         lineHeight: '96px',
-        '@media (max-width: 1020px)': {
+        '@media (max-width: 1024px)': {
             lineHeight: '32px',
         },
     },
@@ -109,7 +109,7 @@ const Product = () => {
     );
     const maxWidth = useMemo(() => _alternativesSize[idx], [idx]);
     const [active, setActive] = useState(false);
-    const matches = useMediaQuery('(max-width: 1020px)');
+    const matches = useMediaQuery('(max-width: 1024px)');
 
     useEffect(() => {
         const handle = setInterval(() => {
@@ -132,7 +132,7 @@ const Product = () => {
                 margin: 'auto',
                 marginRight: '1em',
                 transition: 'width .5s',
-                '@media (max-width: 1020px)': {
+                '@media (max-width: 1024px)': {
                     width: '8em',
                 },
             }}
@@ -151,7 +151,7 @@ const Product = () => {
                         color: '#06449d',
                         textAlign: 'right',
                         overflow: 'hidden',
-                        '@media (max-width: 1020px)': {
+                        '@media (max-width: 1024px)': {
                             fontSize: '32px',
                         },
                     }}
@@ -169,7 +169,7 @@ const Product = () => {
                     marginTop: '96px',
                     textAlign: 'right',
                     overflow: 'hidden',
-                    '@media (max-width: 1020px)': {
+                    '@media (max-width: 1024px)': {
                         marginTop: '48px',
                     },
                 }}
@@ -180,7 +180,7 @@ const Product = () => {
                     sx={{
                         color: '#06449d',
                         overflow: 'hidden',
-                        '@media (max-width: 1020px)': {
+                        '@media (max-width: 1024px)': {
                             fontSize: '32px',
                         },
                     }}
@@ -198,7 +198,7 @@ const AffineImage = styled('img')({
 });
 
 const GitHub = (props: { center?: boolean; flat?: boolean }) => {
-    const matches = useMediaQuery('(max-width: 1020px)');
+    const matches = useMediaQuery('(max-width: 1024px)');
 
     return (
         <Button
@@ -212,7 +212,7 @@ const GitHub = (props: { center?: boolean; flat?: boolean }) => {
                 sx: {
                     margin: 'auto 1em',
                     fontSize: '24px',
-                    '@media (max-width: 1020px)': {
+                    '@media (max-width: 1024px)': {
                         fontSize: '16px',
                     },
                     ...(props.flat
@@ -242,7 +242,7 @@ const GitHub = (props: { center?: boolean; flat?: boolean }) => {
 };
 
 export function App() {
-    const matches = useMediaQuery('(max-width: 1020px)');
+    const matches = useMediaQuery('(max-width: 1024px)');
 
     return (
         <CssVarsProvider>
@@ -268,7 +268,7 @@ export function App() {
                                 padding: matches ? '0' : '0 0.5em',
                                 ':hover': { backgroundColor: 'unset' },
                                 fontSize: '24px',
-                                '@media (max-width: 1020px)': {
+                                '@media (max-width: 1024px)': {
                                     fontSize: '16px',
                                 },
                             }}
@@ -292,7 +292,7 @@ export function App() {
                                 padding: matches ? '0' : '0 0.5em',
                                 ':hover': { backgroundColor: 'unset' },
                                 fontSize: '24px',
-                                '@media (max-width: 1020px)': {
+                                '@media (max-width: 1024px)': {
                                     fontSize: '16px',
                                 },
                             }}
@@ -321,7 +321,7 @@ export function App() {
                             fontWeight={900}
                             sx={{
                                 marginRight: '0.25em',
-                                '@media (max-width: 1020px)': {
+                                '@media (max-width: 1024px)': {
                                     fontSize: '32px',
                                     marginRight: 0,
                                 },
@@ -333,7 +333,7 @@ export function App() {
                             fontSize="96px"
                             fontWeight={900}
                             sx={{
-                                '@media (max-width: 1020px)': {
+                                '@media (max-width: 1024px)': {
                                     fontSize: '32px',
                                 },
                             }}
@@ -366,10 +366,9 @@ export function App() {
                             sx={{
                                 color: '#06449d',
                                 margin: 'auto',
-                                '@media (max-width: 1020px)': {
+                                '@media (max-width: 1024px)': {
                                     fontSize: '32px',
                                 },
-                                '@media (max-width: 420px)': {},
                             }}
                         >
                             Alternative
