@@ -12,7 +12,7 @@ concurrency:
 
 env:
     NX_CLOUD_AUTH_TOKEN: ${{ secrets.NX_CLOUD_AUTH_TOKEN }}
-    CYPRESS_CMD: '--record --key ${{ env.CYPRESS_RECORD_KEY }}'
+    CYPRESS_CMD: '--record --key ${{ secrets.NX_CYPRESS_KEY }}'
 
 jobs:
     main:
