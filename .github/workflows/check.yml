@@ -10,14 +10,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 
-env:
-    NX_CLOUD_AUTH_TOKEN: ${{ secrets.NX_CLOUD_AUTH_TOKEN }}
-    CYPRESS_RECORD_KEY: ${{ secrets.NX_CYPRESS_KEY }}
-
 jobs:
     main:
         name: Nx Cloud - Main Job
-        uses: nrwl/ci/.github/workflows/nx-cloud-main.yml@v0.6
+        uses: ./.github/workflows/nx-cloud-main.yml
         secrets: inherit
         with:
             main-branch-name: develop
