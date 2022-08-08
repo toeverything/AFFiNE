@@ -126,7 +126,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
 
         // block = await editor.commands.blockCommands.createNextBlock(block.id,)
         const on_text_view_active = useCallback(
-            (point: CursorTypes, rang_form?: 'up' | 'down') => {
+            (point: CursorTypes) => {
                 // TODO code to be optimized
                 if (textRef.current) {
                     const end_selection = textRef.current.getEndSelection();
@@ -146,7 +146,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                                 .getElementsByClassName('text-paragraph')[0]
                                 .getBoundingClientRect();
 
-                            if (rang_form === 'up') {
+                            if (blockTop > blockDomStyle.top) {
                                 blockTop = blockDomStyle.bottom - 5;
                             } else {
                                 blockTop = blockDomStyle.top + 5;
@@ -319,7 +319,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 if (nowPosition.top === startPosition.top) {
                     editor.selectionManager.activePreviousNode(
                         block.id,
-                        new Point(nowPosition.left, nowPosition.top - 20)
+                        new Point(nowPosition.left, nowPosition.top)
                     );
 
                     return true;
@@ -357,17 +357,14 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                     // The specific amount of TODO needs to be determined after subsequent padding
                     editor.selectionManager.activeNextNode(
                         block.id,
-                        new Point(nowPosition.left, nowPosition.bottom + 20)
+                        new Point(nowPosition.left, nowPosition.bottom)
                     );
                     return true;
                 } else {
                     if (prePosition?.bottom === endPosition.bottom) {
                         editor.selectionManager.activeNextNode(
                             block.id,
-                            new Point(
-                                prePosition.left,
-                                prePosition?.bottom + 20
-                            )
+                            new Point(prePosition.left, prePosition?.bottom)
                         );
                         return true;
                     } else {
