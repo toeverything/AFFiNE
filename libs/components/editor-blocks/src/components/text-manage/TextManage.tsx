@@ -126,7 +126,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
 
         // block = await editor.commands.blockCommands.createNextBlock(block.id,)
         const on_text_view_active = useCallback(
-            (point: CursorTypes, rang_form?: 'up' | 'down') => {
+            (point: CursorTypes) => {
                 // TODO code to be optimized
                 if (textRef.current) {
                     const end_selection = textRef.current.getEndSelection();
