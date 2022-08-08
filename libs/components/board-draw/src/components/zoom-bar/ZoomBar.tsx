@@ -21,9 +21,7 @@ export const ZoomBar: FC = () => {
     const zoom = app.useStore(zoomSelector);
 
     return (
-        <div
-            style={{ position: 'absolute', right: 10, bottom: 10, zIndex: 200 }}
-        >
+        <ZoomBarContainer>
             <MiniMapContainer>
                 <MiniMap />
             </MiniMapContainer>
@@ -52,9 +50,17 @@ export const ZoomBar: FC = () => {
                     <UnfoldMoreIcon style={{ transform: 'rotateZ(90deg)' }} />
                 </IconButton>
             </div>
-        </div>
+        </ZoomBarContainer>
     );
 };
+
+const ZoomBarContainer = styled('div')({
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    zIndex: 200,
+    userSelect: 'none',
+});
 
 const MiniMapContainer = styled('div')({
     display: 'flex',

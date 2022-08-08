@@ -133,6 +133,7 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                 <HTMLContainer ref={ref} {...events}>
                     <Container
                         ref={containerRef}
+                        editing={isEditing}
                         onPointerDown={stopPropagation}
                         onMouseEnter={activateIfEditing}
                         onDragEnter={activateIfEditing}
@@ -248,15 +249,15 @@ export class EditorUtil extends TDShapeUtil<T, E> {
 const PADDING = 16;
 // const MIN_CONTAINER_HEIGHT = 200;
 
-const Container = styled('div')({
+const Container = styled('div')<{ editing: boolean }>(({ editing }) => ({
     pointerEvents: 'all',
     position: 'relative',
     width: '100%',
-});
+    userSelect: editing ? 'unset' : 'none',
+}));
 
 const Mask = styled('div')({
     position: 'absolute',
-    userSelect: 'none',
     top: 0,
     left: 0,
     bottom: 0,
