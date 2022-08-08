@@ -1,6 +1,7 @@
 import { defineConfig } from 'cypress';
 
 module.exports = defineConfig({
+    projectId: 'r1wrqr',
     e2e: {
         supportFile: './src/support/index.ts',
         specPattern: './src/integration',
