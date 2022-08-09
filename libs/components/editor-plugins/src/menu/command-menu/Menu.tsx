@@ -82,6 +82,11 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     const checkIfShowCommandMenu = useCallback(
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
             const { type, anchorNode } = editor.selection.currentSelectInfo;
+            // console.log(await editor.getBlockById(anchorNode.id));
+            let activeBlock = await editor.getBlockById(anchorNode.id);
+            if (activeBlock.type === Protocol.Block.Type.page) {
+                return;
+            }
             if (event.key === '/' && type === 'Range') {
                 if (anchorNode) {
                     const text = editor.blockHelper.getBlockTextBeforeSelection(

@@ -86,8 +86,9 @@ export const PageView: FC<CreateView> = ({ block, editor }) => {
                     alwaysShowPlaceholder
                     ref={textRef}
                     className={'title'}
-                    supportMarkdown={true}
+                    supportMarkdown={false}
                     handleEnter={onTextEnter}
+                    handleConvert={() => {}}
                     placeholder={'Untitled'}
                     block={block}
                     editor={editor}
