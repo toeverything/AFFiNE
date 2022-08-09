@@ -1057,13 +1057,10 @@ export class SelectionManager implements VirgoSelection {
      * @memberof SelectionManager
      */
     public moveCursor(index: number, blockId: string): void {
-        const now_range = window.getSelection().getRangeAt(0);
+        const nowRange = window.getSelection().getRangeAt(0);
         let preRang = document.createRange();
-        preRang.setStart(
-            now_range.startContainer,
-            now_range.startOffset + index
-        );
-        preRang.setEnd(now_range.endContainer, now_range.endOffset + index);
+        preRang.setStart(nowRange.startContainer, nowRange.startOffset + index);
+        preRang.setEnd(nowRange.endContainer, nowRange.endOffset + index);
         let prePosition = preRang.getClientRects().item(0);
         this.activeNodeByNodeId(
             blockId,
