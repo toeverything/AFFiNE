@@ -136,7 +136,7 @@ That's why we are making AFFiNE. Some of the most important features are:
     -   Data is always stored locally by default
     -   CRDTs are applied so that peer-to-peer collaboration is possible.
 
-We appreciate the ideas of Monday, Airtable and Notion databases. They have inspired us and shaped our product, helping us get it right when it comes to task management. But we also do things differently. We don't like doing things again and again. It's easy to set a todo with Markdown, but then why do you need to repeat and recreate data for a kanban or other databases. This is the power of AFFiNE. With AFFiNE, every block group has infinite views, for you to keep your single source of data, a signle source of truth.
+We appreciate the ideas of Monday, Airtable, and Notion databases. They have inspired us and shaped our product, helping us get it right when it comes to task management. But we also do things differently. We don't like doing things again and again. It's easy to set a todo with Markdown, but then why do you need to repeat and recreate data for a kanban or other databases. This is the power of AFFiNE. With AFFiNE, every block group has infinite views, for you to keep your single source of data, a signle source of truth.
 
 We would like to give special thanks to the innovators and pioneers who greatly inspired us:
 
