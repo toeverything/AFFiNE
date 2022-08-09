@@ -33,9 +33,9 @@ export const LayoutHeader = () => {
 
                         <IconButton onClick={toggleInfoSidebar} size="large">
                             {showSettingsSidebar ? (
-                                <SideBarViewIcon />
-                            ) : (
                                 <SideBarViewCloseIcon />
+                            ) : (
+                                <SideBarViewIcon />
                             )}
                         </IconButton>
                     </StyledHelper>

@@ -16,7 +16,6 @@ const StyledContainerForSettingsPanel = styled('div')(({ theme }) => {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        paddingTop: 44,
         paddingBottom: 44,
         height: '100%',
     };

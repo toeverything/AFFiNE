@@ -2,7 +2,8 @@
     box-sizing: border-box;
     padding-left: var(--spacing);
     list-style: none;
-    padding: 6px 0;
+    padding-top: 6px;
+    padding-bottom: 6px;
     font-size: 14px;
     &:hover {
         background: #f5f7f8;
