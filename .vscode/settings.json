@@ -12,6 +12,7 @@
         "cssmodule",
         "datasource",
         "fflate",
+        "fstore",
         "groq",
         "howpublished",
         "immer",

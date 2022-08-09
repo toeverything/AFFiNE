@@ -148,6 +148,12 @@ module.exports = function (webpackConfig) {
         }
     }
 
+    config.module.rules.unshift({
+        test: /\.wasm$/,
+        type: 'asset/resource',
+    });
+    config.resolve.fallback = { crypto: false, fs: false, path: false };
+
     addEmotionBabelPlugin(config);
 
     config.plugins = [
