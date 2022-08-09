@@ -179,6 +179,7 @@ export const TextLink = styled(Link)<{ active?: boolean }>`
     cursor: pointer;
     appearance: none;
     text-decoration: none;
+    user-select: none;
     color: ${({ theme, active }) =>
         active ? theme.affine.palette.primary : 'unset'};
 `;
