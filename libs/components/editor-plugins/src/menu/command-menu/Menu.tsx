@@ -18,6 +18,7 @@ import {
     menuItemsMap,
 } from './config';
 import { QueryResult } from '../../search';
+import { getBlockIdByNode } from '@toeverything/utils';
 
 export type CommandMenuProps = {
     editor: Virgo;

@@ -162,7 +162,7 @@ export class BlockCommands {
     public async moveInNewGridItem(
         blockId: string,
         gridItemId: string,
-        isBefore = false
+        type = GridDropType.left
     ) {
         const block = await this._editor.getBlockById(blockId);
         if (block) {
@@ -175,7 +175,7 @@ export class BlockCommands {
             await block.remove();
             await gridItemBlock.append(block);
             if (targetGridItemBlock && gridItemBlock) {
-                if (isBefore) {
+                if (type === GridDropType.left) {
                     await targetGridItemBlock.before(gridItemBlock);
                 } else {
                     await targetGridItemBlock.after(gridItemBlock);
