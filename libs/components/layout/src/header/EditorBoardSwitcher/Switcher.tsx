@@ -35,7 +35,7 @@ export const Switcher = () => {
                 active={pageViewMode === DocMode.doc}
                 onClick={() => switchToPageView(DocMode.doc)}
             >
-                Doc
+                Paper
             </StatusText>
             <StatusTrack
                 mode={pageViewMode}
@@ -51,7 +51,7 @@ export const Switcher = () => {
                 active={pageViewMode === DocMode.board}
                 onClick={() => switchToPageView(DocMode.board)}
             >
-                Board
+                Edgeless
             </StatusText>
         </StyledContainerForSwitcher>
     );

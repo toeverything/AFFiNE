@@ -4,6 +4,10 @@
     list-style: none;
     padding: 6px 0;
     font-size: 14px;
+    &:hover {
+        background: #f5f7f8;
+        border-radius: 5px;
+    }
 
     &.clone {
         display: inline-block;
@@ -43,7 +47,6 @@
                     height: 12px;
                     border-radius: 50%;
                     border: 1px solid #2389ff;
-                    background-color: #ffffff;
                 }
 
                 > * {
@@ -69,7 +72,6 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    background-color: #fff;
     color: #4c6275;
 }
 
@@ -81,7 +83,6 @@
     display: flex;
     align-items: center;
     justify-content: space-around;
-    background-color: #fff;
     color: #4c6275;
     padding-right: 0.5rem;
     overflow: hidden;
@@ -96,11 +97,6 @@
             display: block;
         }
     }
-
-    &:hover {
-        background: #f5f7f8;
-        border-radius: 5px;
-    }
 }
 
 .Text {
@@ -109,6 +105,9 @@
     text-overflow: ellipsis;
     overflow: hidden;
     cursor: pointer;
+    appearance: none;
+    color: unset;
+    text-decoration: none;
 }
 
 .Count {
@@ -166,14 +165,6 @@
     appearance: none;
     background-color: transparent;
     -webkit-tap-highlight-color: transparent;
-
-    &:hover {
-        background-color: var(--action-background, rgba(0, 0, 0, 0.05));
-
-        svg {
-            fill: #6f7b88;
-        }
-    }
 
     svg {
         flex: 0 0 auto;

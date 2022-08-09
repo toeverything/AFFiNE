@@ -7,6 +7,7 @@ export const useKanbanGroup = (groupBy: RecastMetaProperty) => {
     const { updateSelect } = useSelectProperty();
 
     switch (groupBy.type) {
+        case PropertyType.Status:
         case PropertyType.MultiSelect:
         case PropertyType.Select: {
             const {

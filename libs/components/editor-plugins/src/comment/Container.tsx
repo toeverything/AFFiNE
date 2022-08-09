@@ -64,7 +64,7 @@ const StyledContainerForAddCommentContainer = styled('div')(({ theme }) => {
         zIndex: 1,
         display: 'flex',
         borderRadius: theme.affine.shape.borderRadius,
-        boxShadow: theme.affine.shadows.shadowSxDownLg,
+        boxShadow: theme.affine.shadows.shadow1,
         backgroundColor: theme.affine.palette.white,
     };
 });

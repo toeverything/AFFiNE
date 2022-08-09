@@ -1,16 +1,21 @@
 import { useState } from 'react';
-import clsx from 'clsx';
-import style9 from 'style9';
 import {
     MuiButton as Button,
     MuiCollapse as Collapse,
+    styled,
 } from '@toeverything/components/ui';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import {
+    ArrowDropDownIcon,
+    ArrowRightIcon,
+} from '@toeverything/components/icons';
 
-const styles = style9.create({
-    ligoButton: {
-        textTransform: 'none',
+const StyledContainer = styled('div')({
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    '&:hover': {
+        background: '#f5f7f8',
+        borderRadius: '5px',
     },
 });
 
@@ -24,29 +29,32 @@ export type CollapsibleTitleProps = {
 };
 
 export function CollapsibleTitle(props: CollapsibleTitleProps) {
-    const { className, style, children, title, initialOpen = true } = props;
+    const { children, title, initialOpen = true } = props;
 
     const [open, setOpen] = useState(initialOpen);
 
     return (
         <>
-            <Button
-                startIcon={
-                    open ? (
-                        <ArrowDropDownIcon sx={{ color: '#566B7D' }} />
-                    ) : (
-                        <ArrowRightIcon sx={{ color: '#566B7D' }} />
-                    )
-                }
-                onClick={() => setOpen(prev => !prev)}
-                sx={{ color: '#566B7D', textTransform: 'none' }}
-                className={clsx(styles('ligoButton'), className)}
-                style={style}
-                disableElevation
-                disableRipple
-            >
-                {title}
-            </Button>
+            <StyledContainer onClick={() => setOpen(prev => !prev)}>
+                {open ? (
+                    <ArrowDropDownIcon sx={{ color: '#566B7D' }} />
+                ) : (
+                    <ArrowRightIcon sx={{ color: '#566B7D' }} />
+                )}
+                <div
+                    style={{
+                        color: '#98ACBD',
+                        textTransform: 'none',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}
+                >
+                    {title}
+                </div>
+            </StyledContainer>
             {children ? (
                 <Collapse in={open} timeout="auto" unmountOnExit>
                     {children}

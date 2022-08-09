@@ -70,7 +70,7 @@ interface Typography {
 
 interface Shadows {
     none: 'none';
-    shadowSxDownLg: string;
+    shadow1: string;
 }
 
 type StringWithNone = [
@@ -225,7 +225,7 @@ export const Theme = {
     },
     shadows: {
         none: 'none',
-        shadowSxDownLg: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+        shadow1: '0px 1px 5px rgba(152, 172, 189, 0.2)',
     },
     border: ['none'],
     spacing: {

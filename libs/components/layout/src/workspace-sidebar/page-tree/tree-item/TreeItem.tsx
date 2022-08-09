@@ -3,9 +3,9 @@ import React, {
     type CSSProperties,
     type HTMLAttributes,
 } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import cx from 'clsx';
-import { CloseIcon, DocumentIcon } from '@toeverything/components/common';
+import { CloseIcon } from '@toeverything/components/common';
 import {
     ArrowDropDownIcon,
     ArrowRightIcon,
@@ -62,7 +62,6 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         ref
     ) => {
         const { workspace_id } = useParams();
-        const navigate = useNavigate();
         const BooleanPageTreeItemMoreActions = useFlag(
             'BooleanPageTreeItemMoreActions',
             true
@@ -101,20 +100,15 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                                 <ArrowDropDownIcon />
                             ))}
                     </Action>
-                    {/*<Action>*/}
-                    {/*    <DocumentIcon />*/}
-                    {/*</Action>*/}
 
                     <div className={styles['ItemContent']}>
-                        <span
+                        <Link
                             className={styles['Text']}
                             {...handleProps}
-                            onClick={() => {
-                                navigate(`/${workspace_id}/${pageId}`);
-                            }}
+                            to={`/${workspace_id}/${pageId}`}
                         >
                             {value}
-                        </span>
+                        </Link>
                         {BooleanPageTreeItemMoreActions && (
                             <MoreActions
                                 workspaceId={workspace_id}
@@ -161,7 +155,6 @@ export function Action({
             style={
                 {
                     ...style,
-                    // cursor,
                     '--fill': active?.fill,
                     '--background': active?.background,
                 } as CSSProperties

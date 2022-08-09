@@ -4,8 +4,8 @@
     "license": "MIT",
     "author": "DarkSky <darksky2048@gmail.com>",
     "dependencies": {
-        "lib0": "^0.2.51",
-        "yjs": "^13.5.39",
+        "lib0": "^0.2.52",
+        "yjs": "^13.5.41",
         "y-protocols": "^1.0.5"
     }
 }

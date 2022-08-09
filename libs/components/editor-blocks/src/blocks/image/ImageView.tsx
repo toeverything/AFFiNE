@@ -1,7 +1,7 @@
 import {
     useCurrentView,
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
@@ -143,13 +143,13 @@ export const ImageView: FC<ImageView> = ({ block, editor }) => {
             type: 'link',
         });
     };
-    const handle_click = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handle_click = async (e: React.MouseEvent<HTMLDivElement>) => {
         //TODO clear active selection
         // document.getElementsByTagName('body')[0].click();
         e.stopPropagation();
         e.nativeEvent.stopPropagation();
-        editor.selectionManager.setSelectedNodesIds([block.id]);
-        editor.selectionManager.activeNodeByNodeId(block.id);
+        await editor.selectionManager.setSelectedNodesIds([block.id]);
+        await editor.selectionManager.activeNodeByNodeId(block.id, 'end');
     };
     const down_file = () => {
         if (down_ref) {
@@ -158,7 +158,7 @@ export const ImageView: FC<ImageView> = ({ block, editor }) => {
     };
 
     return (
-        <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+        <BlockPendantProvider block={block}>
             <ImageBlock>
                 <div ref={resize_box}>
                     {imgUrl ? (
@@ -229,6 +229,6 @@ export const ImageView: FC<ImageView> = ({ block, editor }) => {
                 </div> */}
                 </div>
             </ImageBlock>
-        </WrapperWithPendantAndDragDrop>
+        </BlockPendantProvider>
     );
 };

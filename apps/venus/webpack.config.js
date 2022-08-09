@@ -7,6 +7,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
+const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const Style9Plugin = require('style9/webpack');
 
@@ -34,11 +35,6 @@ module.exports = function (webpackConfig) {
 
     if (isProd) {
         config.module.rules.unshift(style9);
-    } else {
-        config.module.rules.push(style9);
-    }
-
-    if (isProd) {
         config.entry = {
             main: [...config.entry.main, ...config.entry.polyfills],
         };
@@ -61,6 +57,14 @@ module.exports = function (webpackConfig) {
                     parallel: true,
                 }),
                 new CssMinimizerPlugin(),
+                new ImageMinimizerPlugin({
+                    minimizer: {
+                        implementation: ImageMinimizerPlugin.imageminMinify,
+                        options: {
+                            plugins: [['optipng', { optimizationLevel: 5 }]],
+                        },
+                    },
+                }),
             ],
             splitChunks: {
                 chunks: 'all',
@@ -115,6 +119,7 @@ module.exports = function (webpackConfig) {
         });
         config.module.rules.splice(6);
     } else {
+        config.module.rules.push(style9);
         config.output = {
             ...config.output,
             publicPath: '/',

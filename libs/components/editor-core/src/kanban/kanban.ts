@@ -1,6 +1,6 @@
 import { Protocol } from '@toeverything/datasource/db-service';
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { useEditor } from '../contexts';
+import { useEditor } from '../Contexts';
 import { AsyncBlock } from '../editor';
 import { useRecastView } from '../recast-block';
 import { useRecastBlock } from '../recast-block/Context';
@@ -18,8 +18,8 @@ import {
 import { supportChildren } from '../utils';
 import {
     calcCardGroup,
-    DEFAULT_GROUP_BY_PROPERTY,
     genDefaultGroup,
+    generateDefaultGroupByProperty,
     getCardGroup,
     getGroupOptions,
     moveCardToAfter,
@@ -48,6 +48,7 @@ export const useRecastKanbanGroupBy = () => {
     // Add other type groupBy support
     const supportedGroupBy = getProperties().filter(
         prop =>
+            prop.type === PropertyType.Status ||
             prop.type === PropertyType.Select ||
             prop.type === PropertyType.MultiSelect
     );
@@ -88,7 +89,8 @@ export const useRecastKanbanGroupBy = () => {
     // TODO: support other property type
     if (
         groupByProperty.type !== PropertyType.Select &&
-        groupByProperty.type !== PropertyType.MultiSelect
+        groupByProperty.type !== PropertyType.MultiSelect &&
+        groupByProperty.type !== PropertyType.Status
     ) {
         console.warn('Not support groupBy type', groupByProperty);
 
@@ -134,7 +136,7 @@ export const useInitKanbanEffect = ():
             }
             // 3. no group by, no properties
             // create a new property and set it as group by
-            const prop = await createSelect(DEFAULT_GROUP_BY_PROPERTY);
+            const prop = await createSelect(generateDefaultGroupByProperty());
             await setGroupBy(prop.id);
         };
 
@@ -197,7 +199,12 @@ export const useRecastKanban = () => {
                         beforeBlock: string | null,
                         afterBlock: string | null
                     ) => {
-                        await moveCardToGroup(groupBy.id, child, kanbanMap[id]);
+                        await moveCardToGroup({
+                            groupBy,
+                            cardBlock: child,
+                            group: kanbanMap[id],
+                            recastBlock,
+                        });
                         if (beforeBlock) {
                             const block = await editor.getBlockById(
                                 beforeBlock
@@ -286,7 +293,12 @@ export const useKanban = () => {
             );
             if (isChangedGroup) {
                 // 1.2 Move to the target group
-                await moveCardToGroup(groupBy.id, targetCard, targetGroup);
+                await moveCardToGroup({
+                    groupBy,
+                    cardBlock: targetCard,
+                    group: targetGroup,
+                    recastBlock,
+                });
             }
 
             // 2. Reorder the card
@@ -324,7 +336,12 @@ export const useKanban = () => {
             }
             recastBlock.append(newBlock);
             const newCard = newBlock as unknown as RecastItem;
-            await moveCardToGroup(groupBy.id, newCard, group);
+            await moveCardToGroup({
+                groupBy,
+                cardBlock: newCard,
+                group,
+                recastBlock,
+            });
         },
         [editor, groupBy.id, recastBlock]
     );

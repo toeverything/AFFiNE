@@ -30,7 +30,6 @@ export class ScrollManager {
 
     constructor(editor: BlockEditor) {
         this._editor = editor;
-        (window as any).scrollManager = this;
     }
 
     private _updateScrollInfo(left: number, top: number) {

@@ -1,12 +1,16 @@
-import { BlockDomInfo, HookType } from '@toeverything/framework/virgo';
+import { HookType, BlockDropPlacement } from '@toeverything/framework/virgo';
 import { StrictMode } from 'react';
 import { BasePlugin } from '../../base-plugin';
 import { ignoreBlockTypes } from './menu-config';
-import { LineInfoSubject, LeftMenuDraggable } from './LeftMenuDraggable';
+import {
+    LineInfoSubject,
+    LeftMenuDraggable,
+    BlockDomInfo,
+} from './LeftMenuDraggable';
 import { PluginRenderRoot } from '../../utils';
-import { Subject } from 'rxjs';
+import { Subject, throttleTime } from 'rxjs';
 import { domToRect, last, Point } from '@toeverything/utils';
-
+const DRAG_THROTTLE_DELAY = 150;
 export class LeftMenuPlugin extends BasePlugin {
     private _mousedown?: boolean;
     private _root?: PluginRenderRoot;
@@ -35,11 +39,7 @@ export class LeftMenuPlugin extends BasePlugin {
                 .get(HookType.ON_ROOTNODE_MOUSE_UP)
                 .subscribe(this._handleMouseUp)
         );
-        this.sub.add(
-            this.hooks
-                .get(HookType.AFTER_ON_NODE_DRAG_OVER)
-                .subscribe(this._handleDragOverBlockNode)
-        );
+
         this.sub.add(
             this.hooks.get(HookType.ON_ROOTNODE_MOUSE_LEAVE).subscribe(() => {
                 this._hideLeftMenu();
@@ -60,29 +60,63 @@ export class LeftMenuPlugin extends BasePlugin {
         this.sub.add(
             this.hooks.get(HookType.ON_ROOTNODE_DROP).subscribe(this._onDrop)
         );
+        this.sub.add(
+            this.hooks
+                .get(HookType.ON_ROOTNODE_DRAG_OVER)
+                .pipe(throttleTime(DRAG_THROTTLE_DELAY))
+                .subscribe(this._handleRootNodeDragover)
+        );
     }
+
+    private _handleRootNodeDragover = async (
+        event: React.DragEvent<Element>
+    ) => {
+        event.preventDefault();
+        if (this.editor.dragDropManager.isDragBlock(event)) {
+            const { direction, block, isOuter } =
+                await this.editor.dragDropManager.checkOuterBlockDragTypes(
+                    event
+                );
+            if (direction !== BlockDropPlacement.none && block && block.dom) {
+                this._lineInfo.next({
+                    direction,
+                    blockInfo: {
+                        block,
+                        rect: block.dom.getBoundingClientRect(),
+                    },
+                });
+            } else if (!isOuter) {
+                this._handleDragOverBlockNode(event);
+            } else {
+                this._lineInfo.next(undefined);
+            }
+        }
+    };
 
     private _onDrop = () => {
         this._lineInfo.next(undefined);
     };
-    private _handleDragOverBlockNode = async ([event, blockInfo]: [
-        React.DragEvent<Element>,
-        BlockDomInfo
-    ]) => {
-        const { type, dom, blockId } = blockInfo;
+    private _handleDragOverBlockNode = async (
+        event: React.DragEvent<Element>
+    ) => {
         event.preventDefault();
-        if (this.editor.dragDropManager.isDragBlock(event)) {
-            if (ignoreBlockTypes.includes(type)) {
-                return;
-            }
-            const direction =
-                await this.editor.dragDropManager.checkBlockDragTypes(
-                    event,
-                    dom,
-                    blockId
-                );
-            this._lineInfo.next({ direction, blockInfo });
-        }
+        if (!this.editor.dragDropManager.isDragBlock(event)) return;
+        const block = await this.editor.getBlockByPoint(
+            new Point(event.clientX, event.clientY)
+        );
+        if (block == null || ignoreBlockTypes.includes(block.type)) return;
+        const direction = await this.editor.dragDropManager.checkBlockDragTypes(
+            event,
+            block.dom,
+            block.id
+        );
+        this._lineInfo.next({
+            direction,
+            blockInfo: {
+                block,
+                rect: block.dom.getBoundingClientRect(),
+            },
+        });
     };
 
     private _handleMouseMove = async (
@@ -129,11 +163,8 @@ export class LeftMenuPlugin extends BasePlugin {
             }
         }
         this._blockInfo.next({
-            blockId: node.id,
-            dom: node.dom,
+            block: node,
             rect: node.dom.getBoundingClientRect(),
-            type: node.type,
-            properties: node.getProperties(),
         });
     };
 

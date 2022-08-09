@@ -35,6 +35,7 @@ import { BrowserClipboard } from './clipboard/browser-clipboard';
 import { ClipboardPopulator } from './clipboard/clipboard-populator';
 import { BlockHelper } from './block/block-helper';
 import { DragDropManager } from './drag-drop';
+import { EditorConfig } from './config';
 
 export interface EditorCtorProps {
     workspace: string;
@@ -56,6 +57,7 @@ export class Editor implements Virgo {
     public dragDropManager = new DragDropManager(this);
     public commands = new EditorCommands(this);
     public blockHelper = new BlockHelper(this);
+    public configManager = new EditorConfig(this);
     public bdCommands: Commands;
     public ui_container?: HTMLDivElement;
     public version = '0.0.1';
@@ -343,6 +345,23 @@ export class Editor implements Virgo {
         return [...blockList, ...(await this.getOffspring(rootBlockId))];
     }
 
+    async getBlockListByLevelOrder() {
+        const rootBlockId = this.getRootBlockId();
+        const rootBlock = await this.getBlockById(rootBlockId);
+        const blockList: Array<AsyncBlock> = [];
+        let nextToVisit: Array<AsyncBlock> = rootBlock ? [rootBlock] : [];
+        while (nextToVisit.length) {
+            let next: Array<AsyncBlock> = [];
+            for (const block of nextToVisit) {
+                const children = await block.children();
+                blockList.push(block);
+                next = next.concat(children);
+            }
+            nextToVisit = next;
+        }
+        return blockList;
+    }
+
     /**
      *
      * get all offspring of block
@@ -365,15 +384,6 @@ export class Editor implements Virgo {
             }
         }
         return blockList;
-    }
-
-    async getRootLastChildrenBlock(rootBlockId = this.getRootBlockId()) {
-        const rootBlock = await this.getBlockById(rootBlockId);
-        if (!rootBlock) {
-            throw new Error('root block is not found');
-        }
-        const lastChildren = await rootBlock.lastChild();
-        return lastChildren ?? rootBlock;
     }
 
     async getLastBlock(rootBlockId = this.getRootBlockId()) {

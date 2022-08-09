@@ -1,0 +1,300 @@
+name: Nx Cloud Main
+
+on:
+  workflow_call:
+    secrets:
+      NX_CLOUD_ACCESS_TOKEN:
+        required: false
+      NX_CLOUD_AUTH_TOKEN:
+        required: false
+      NX_CYPRESS_KEY:
+        required: false
+    inputs:
+      number-of-agents:
+        required: false
+        type: number
+      environment-variables:
+        required: false
+        type: string
+      init-commands:
+        required: false
+        type: string
+      final-commands:
+        required: false
+        type: string
+      parallel-commands:
+        required: false
+        type: string
+      parallel-commands-on-agents:
+        required: false
+        type: string
+      node-version:
+        required: false
+        type: string
+      yarn-version:
+        required: false
+        type: string
+      npm-version:
+        required: false
+        type: string
+      pnpm-version:
+        required: false
+        type: string
+      install-commands:
+        required: false
+        type: string
+      main-branch-name:
+        required: false
+        type: string
+        default: main
+      runs-on:
+        required: false
+        type: string
+        default: ubuntu-latest
+      # We needed this input in order to be able to configure out integration tests for this repo, it is not documented
+      # so as to not cause confusion/add noise, but technically any consumer of the workflow can use it if they want to.
+      working-directory:
+        required: false
+        type: string
+
+env:
+  NX_CLOUD_DISTRIBUTED_EXECUTION: true
+  NX_CLOUD_DISTRIBUTED_EXECUTION_AGENT_COUNT: ${{ inputs.number-of-agents }}
+  NX_BRANCH: ${{ github.event.number || github.ref_name }}
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  NX_CLOUD_AUTH_TOKEN: ${{ secrets.NX_CLOUD_AUTH_TOKEN }}
+  CYPRESS_RECORD_KEY: ${{ secrets.NX_CYPRESS_KEY }}
+
+jobs:
+  main:
+    runs-on: ${{ inputs.runs-on }}
+    # The name of the job which will invoke this one is expected to be "Nx Cloud - Main Job", and whatever we call this will be appended
+    # to that one after a forward slash, so we keep this one intentionally short to produce "Nx Cloud - Main Job / Run" in the Github UI
+    name: Run
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory || github.workspace }}
+        # Specify shell to help normalize across different operating systems
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout [Pull Request]
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          # By default, PRs will be checked-out based on the Merge Commit, but we want the actual branch HEAD.
+          ref: ${{ github.event.pull_request.head.sha }}
+          # We need to fetch all branches and commits so that Nx affected has a base to compare against.
+          fetch-depth: 0
+
+      - uses: actions/checkout@v2
+        name: Checkout [Default Branch]
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          # We need to fetch all branches and commits so that Nx affected has a base to compare against.
+          fetch-depth: 0
+
+      - name: Derive appropriate SHAs for base and head for `nx affected` commands
+        uses: nrwl/nx-set-shas@v2
+        with:
+          main-branch-name: ${{ inputs.main-branch-name }}
+
+      - name: Detect package manager
+        id: package_manager
+        shell: bash
+        run: |
+          echo "::set-output name=name::$([[ -f ./yarn.lock ]] && echo "yarn" || ([[ -f ./pnpm-lock.yaml ]] && echo "pnpm") || echo "npm")"
+      # Set node/npm/yarn versions using volta, with optional overrides provided by the consumer
+      - uses: volta-cli/action@fdf4cf319494429a105efaa71d0e5ec67f338c6e
+        with:
+          node-version: "${{ inputs.node-version }}"
+          npm-version: "${{ inputs.npm-version }}"
+          yarn-version: "${{ inputs.yarn-version }}"
+
+      # Install pnpm with exact version provided by consumer or fallback to latest
+      - name: Install PNPM
+        if: steps.package_manager.outputs.name == 'pnpm'
+        uses: pnpm/action-setup@v2.2.1
+        with:
+          version: ${{ inputs.pnpm-version || 'latest' }}
+
+      - name: Print node/npm/yarn versions
+        id: versions
+        run: |
+          node_ver=$( node --version )
+          yarn_ver=$( yarn --version || true )
+          pnpm_ver=$( pnpm --version || true )
+          echo "Node: ${node_ver:1}"
+          echo "NPM: $( npm --version )"
+          if [[ $yarn_ver != '' ]]; then echo "Yarn: $yarn_ver"; fi
+          if [[ $pnpm_ver != '' ]]; then echo "PNPM: $pnpm_ver"; fi
+          echo "::set-output name=node_version::${node_ver:1}"
+      - name: Use the node_modules cache if available [npm]
+        if: steps.package_manager.outputs.name == 'npm'
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ steps.versions.outputs.node_version }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ steps.versions.outputs.node_version }}-
+      - name: Use the node_modules cache if available [pnpm]
+        if: steps.package_manager.outputs.name == 'pnpm'
+        uses: actions/cache@v2
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-node-${{ steps.versions.outputs.node_version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ steps.versions.outputs.node_version }}-
+      - name: Get yarn cache directory path
+        if: steps.package_manager.outputs.name == 'yarn'
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Use the node_modules cache if available [yarn]
+        if: steps.package_manager.outputs.name == 'yarn'
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ steps.versions.outputs.node_version }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ steps.versions.outputs.node_version }}-yarn-
+      - name: Process environment-variables
+        if: ${{ inputs.environment-variables != '' }}
+        uses: actions/github-script@v6
+        env:
+          ENV_VARS: ${{ inputs.environment-variables }}
+        with:
+          script: |
+            const { appendFileSync } = require('fs');
+            // trim spaces and escape quotes
+            const cleanStr = str => str
+              .trim()
+              .replaceAll(/`/g, "\`");
+            // parse variable to correct type
+            const parseStr = str =>
+              str === 'true' || str === 'TRUE'
+                ? true
+                : str === 'false' || str === 'FALSE'
+                  ? false
+                  : isNaN(str)
+                    ? str
+                    : parseFloat(str);
+            const varsStr = process.env.ENV_VARS || '';
+            const vars = varsStr
+              .split('\n')
+              .map(variable => variable.trim())
+              .filter(variable => variable.indexOf('=') > 0)
+              .map(variable => ({
+                name: cleanStr(variable.split('=')[0]),
+                value: cleanStr(variable.slice(variable.indexOf('=') + 1))
+              }));
+            for (const v of vars) {
+              console.log(`Appending environment variable \`${v.name}\` with value \`${v.value}\` to ${process.env.GITHUB_ENV}`);
+              appendFileSync(process.env.GITHUB_ENV, `${v.name}=${parseStr(v.value)}\n`);
+            }
+      - name: Run any configured install-commands
+        if: ${{ inputs.install-commands != '' }}
+        run: |
+          ${{ inputs.install-commands }}
+      - name: Install dependencies
+        if: ${{ inputs.install-commands == '' }}
+        run: |
+          if [ "${{ steps.package_manager.outputs.name == 'yarn' }}" == "true" ]; then
+            echo "Running yarn install --frozen-lockfile"
+            yarn install --frozen-lockfile
+          elif [ "${{ steps.package_manager.outputs.name == 'pnpm' }}" == "true" ]; then
+            echo "Running pnpm install --frozen-lockfile"
+            pnpm install --frozen-lockfile
+          else
+            echo "Running npm ci"
+            npm ci
+          fi
+      # An unfortunate side-effect of the way reusable workflows work is that by the time they are pulled into the "caller"
+      # repo, they are effectively completely embedded in that context. This means that we cannot reference any files which
+      # are local to this repo which defines the workflow, and we therefore need to work around this by embedding the contents
+      # of the shell utilities for executing commands into the workflow directly.
+      - name: Create command utils
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { writeFileSync } = require('fs');
+            const runCommandsInParallelScript = `
+              # Extract the provided commands from the stringified JSON array.
+              IFS=$'\n' read -d '' -a userCommands < <((jq -c -r '.[]') <<<"$1")
+              # Invoke the provided commands in parallel and collect their exit codes.
+              pids=()
+              for userCommand in "\${userCommands[@]}"; do
+                eval "$userCommand" & pids+=($!)
+              done
+              # If any one of the invoked commands exited with a non-zero exit code, exit the whole thing with code 1.
+              for pid in \${pids[*]}; do
+                if ! wait $pid; then
+                  exit 1
+                fi
+              done
+              # All the invoked commands must have exited with code zero.
+              exit 0
+            `;
+            writeFileSync('./.github/workflows/run-commands-in-parallel.sh', runCommandsInParallelScript);
+      - name: Prepare command utils
+        # We need to escape the workspace path to be consistent cross-platform: https://github.com/actions/runner/issues/1066
+        run: chmod +x ${GITHUB_WORKSPACE//\\//}/.github/workflows/run-commands-in-parallel.sh
+
+      - name: Initialize the Nx Cloud distributed CI run
+        run: npx nx-cloud start-ci-run
+
+      # The good thing about the multi-line string input for sequential commands is that we can simply forward it on as is to the bash shell and it will behave
+      # how we want it to in terms of quote escaping, variable assignment etc
+      - name: Run any configured init-commands sequentially
+        if: ${{ inputs.init-commands != '' }}
+        run: |
+          ${{ inputs.init-commands }}
+      - name: Process parallel commands configuration
+        uses: actions/github-script@v6
+        id: parallel_commands_config
+        env:
+          PARALLEL_COMMANDS: ${{ inputs.parallel-commands }}
+          PARALLEL_COMMANDS_ON_AGENTS: ${{ inputs.parallel-commands-on-agents }}
+        with:
+          # For the ones configured for main, explicitly set NX_CLOUD_DISTRIBUTED_EXECUTION to false, taking into account commands chained with &&
+          # within the strings. In order to properly escape single quotes we need to do some manual replacing and escaping so that the commands
+          # are forwarded onto the run-commands-in-parallel.sh script appropriately.
+          script: |
+            const parallelCommandsOnMainStr = process.env.PARALLEL_COMMANDS || '';
+            const parallelCommandsOnAgentsStr = process.env.PARALLEL_COMMANDS_ON_AGENTS || '';
+            const parallelCommandsOnMain = parallelCommandsOnMainStr
+              .split('\n')
+              .map(command => command.trim())
+              .filter(command => command.length > 0)
+              .map(s => s.replace(/'/g, '%27'));
+            const parallelCommandsOnAgents = parallelCommandsOnAgentsStr
+              .split('\n')
+              .map(command => command.trim())
+              .filter(command => command.length > 0)
+              .map(s => s.replace(/'/g, '%27'));
+            const formattedArrayOfCommands = [
+              ...parallelCommandsOnMain.map(s => s
+                .split(' && ')
+                .map(s => `NX_CLOUD_DISTRIBUTED_EXECUTION=false ${s}`)
+                .join(' && ')
+              ),
+              ...parallelCommandsOnAgents,
+            ];
+            const stringifiedEncodedArrayOfCommands = JSON.stringify(formattedArrayOfCommands)
+              .replace(/%27/g, "'\\''");
+            return stringifiedEncodedArrayOfCommands
+          result-encoding: string
+
+      - name: Run any configured parallel commands on main and agent jobs
+        # We need to escape the workspace path to be consistent cross-platform: https://github.com/actions/runner/issues/1066
+        run: ${GITHUB_WORKSPACE//\\//}/.github/workflows/run-commands-in-parallel.sh '${{ steps.parallel_commands_config.outputs.result }}'
+
+      # The good thing about the multi-line string input for sequential commands is that we can simply forward it on as is to the bash shell and it will behave
+      # how we want it to in terms of quote escaping, variable assignment etc
+      - name: Run any configured final-commands sequentially
+        if: ${{ inputs.final-commands != '' }}
+        run: |
+          ${{ inputs.final-commands }}
+      - name: Stop all running agents for this CI run
+        # It's important that we always run this step, otherwise in the case of any failures in preceding non-Nx steps, the agents will keep running and waste billable minutes
+        if: ${{ always() }}
+        run: npx nx-cloud stop-all-agents

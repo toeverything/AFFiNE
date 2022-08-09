@@ -2,7 +2,15 @@
 
 ## Usage
 
--   set provider
+-   Set token at environment variable
+    -   The key can be obtained from the [Feature Flag Portal](https://portal.featureflag.co/account-settings/projects)
+
+```shell
+# .env.local
+AFFINE_FEATURE_FLAG_TOKEN=XXXXXXX
+```
+
+-   Set provider
 
 ```tsx
 import { FeatureFlagsProvider } from '@toeverything/datasource/feature-flags';
@@ -42,7 +50,8 @@ const App = () => {
 
 **When entering development mode feature flag will NOT be updated in real time**
 
--   `activateFfcDevMode()` play with feature flags locally
+-   `activateFfcDevMode(PASSWORD)` play with feature flags locally
+    -   The `devModePassword` can be obtained from `src/config.ts`
 -   `quitFfcDevMode()` quit dev mode
 
 ## Running unit tests

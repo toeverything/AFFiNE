@@ -7,6 +7,7 @@ import {
     TransitionsModal,
     MuiBox as Box,
     MuiBox,
+    styled,
 } from '@toeverything/components/ui';
 import { Virgo, BlockEditor } from '@toeverything/framework/virgo';
 import { throttle } from '@toeverything/utils';
@@ -20,26 +21,6 @@ const styles = style9.create({
         width: '50vw',
         display: 'flex',
         flexDirection: 'column',
-    },
-    search: {
-        margin: '0.5em',
-        backgroundColor: 'white',
-        boxShadow: '0px 1px 10px rgb(152 172 189 / 60%)',
-        padding: '16px 32px',
-        borderRadius: '10px',
-    },
-    result: {
-        margin: '0.5em',
-        backgroundColor: 'white',
-        boxShadow: '0px 1px 10px rgb(152 172 189 / 60%)',
-        padding: '16px 32px',
-        borderRadius: '10px',
-        transitionProperty: 'max-height',
-        transitionDuration: '300ms',
-        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        transitionDelay: '0ms',
-        overflowX: 'hidden',
-        overflowY: 'hidden',
     },
     resultItem: {
         width: '100%',
@@ -96,15 +77,14 @@ export const Search = (props: SearchProps) => {
             }}
         >
             <Box className={styles('wrapper')}>
-                <input
-                    className={styles('search')}
+                <SearchInput
                     autoFocus
                     value={search}
                     onChange={e => set_search(e.target.value)}
                 />
-                <MuiBox
+                <ResultContainer
                     sx={{ maxHeight: `${result.length * 28 + 32 + 20}px` }}
-                    className={styles('result', {
+                    className={styles({
                         resultHide: !result.length,
                     })}
                 >
@@ -119,8 +99,30 @@ export const Search = (props: SearchProps) => {
                             }}
                         />
                     ))}
-                </MuiBox>
+                </ResultContainer>
             </Box>
         </TransitionsModal>
     );
 };
+
+const SearchInput = styled('input')(({ theme }) => ({
+    margin: '0.5em',
+    backgroundColor: 'white',
+    boxShadow: theme.affine.shadows.shadow1,
+    padding: '16px 32px',
+    borderRadius: '10px',
+}));
+
+const ResultContainer = styled(MuiBox)(({ theme }) => ({
+    margin: '0.5em',
+    backgroundColor: 'white',
+    boxShadow: theme.affine.shadows.shadow1,
+    padding: '16px 32px',
+    borderRadius: '10px',
+    transitionProperty: 'max-height',
+    transitionDuration: '300ms',
+    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    transitionDelay: '0ms',
+    overflowX: 'hidden',
+    overflowY: 'hidden',
+}));

@@ -12,7 +12,7 @@ const border_radius_map: Record<PopoverContainerProps['direction'], string> = {
 export const PopoverContainer = styled('div')<
     Pick<PopoverContainerProps, 'direction'>
 >(({ theme, direction, style }) => {
-    const shadow = theme.affine.shadows.shadowSxDownLg;
+    const shadow = theme.affine.shadows.shadow1;
     const white = theme.affine.palette.white;
 
     const borderRadius =

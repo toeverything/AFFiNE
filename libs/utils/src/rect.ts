@@ -121,20 +121,20 @@ export class Rect {
         }
     }
 
-    isPointDown({ y }: Point) {
-        return this.bottom < y;
+    isPointDown({ x, y }: Point) {
+        return this.bottom < y && this.left <= x && this.right >= x;
     }
 
-    isPointUp({ y }: Point) {
-        return y < this.top;
+    isPointUp({ x, y }: Point) {
+        return y < this.top && this.left <= x && this.right >= x;
     }
 
-    isPointLeft({ x }: Point) {
-        return x < this.left;
+    isPointLeft({ x, y }: Point) {
+        return x < this.left && this.top <= y && this.bottom >= y;
     }
 
-    isPointRight({ x }: Point) {
-        return x > this.right;
+    isPointRight({ x, y }: Point) {
+        return x > this.right && this.top <= y && this.bottom >= y;
     }
 
     fromNewLeft(left: number) {

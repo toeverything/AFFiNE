@@ -8,7 +8,7 @@ import {
     supportChildren,
     unwrapGroup,
     useOnSelect,
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { Protocol } from '@toeverything/datasource/db-service';
@@ -99,7 +99,7 @@ export const TextView: FC<CreateTextView> = ({
             if (!parentBlock) {
                 return false;
             }
-
+            const preParent = await parentBlock.previousSibling();
             if (Protocol.Block.Type.group === parentBlock.type) {
                 const children = await block.children();
                 const preNode = await block.physicallyPerviousSibling();
@@ -129,34 +129,19 @@ export const TextView: FC<CreateTextView> = ({
                             'start'
                         );
                         if (block.blockProvider.isEmpty()) {
-                            block.remove();
-                        }
-                    }
-                    return true;
-                } else {
-                    // TODO remove timing problem
-                    const prevGroupBlock = await parentBlock.previousSibling();
-
-                    if (!prevGroupBlock) {
-                        const childrenBlock = await parentBlock.children();
-                        if (childrenBlock.length) {
-                            if (children.length) {
-                                await parentBlock.append(...children);
-                            }
                             await block.remove();
-                            return true;
+                            const parentChild = await parentBlock.children();
+                            if (
+                                parentBlock.type ===
+                                    Protocol.Block.Type.group &&
+                                !parentChild.length
+                            ) {
+                                await editor.selectionManager.setSelectedNodesIds(
+                                    [preParent?.id ?? editor.getRootBlockId()]
+                                );
+                            }
                         }
-
-                        parentBlock.remove();
-                        return true;
                     }
-                    if (prevGroupBlock.type !== Protocol.Block.Type.group) {
-                        unwrapGroup(parentBlock);
-                        return true;
-                    }
-
-                    mergeGroup(prevGroupBlock, parentBlock);
-
                     return true;
                 }
             }
@@ -231,7 +216,7 @@ export const TextView: FC<CreateTextView> = ({
             selected={isSelect}
             className={containerClassName}
         >
-            <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+            <BlockPendantProvider block={block}>
                 <TextBlock
                     block={block}
                     type={block.type}
@@ -242,7 +227,7 @@ export const TextView: FC<CreateTextView> = ({
                     handleConvert={handleConvert}
                     handleTab={onTab}
                 />
-            </WrapperWithPendantAndDragDrop>
+            </BlockPendantProvider>
             <IndentWrapper>
                 <RenderBlockChildren block={block} />
             </IndentWrapper>

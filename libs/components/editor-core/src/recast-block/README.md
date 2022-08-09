@@ -49,22 +49,3 @@ const SomeBlock = () => {
     return <div>...</div>;
 };
 ```
-
-## Scene
-
-**Notice: The scene API will refactor at next version.**
-
-```tsx
-const SomeBlock = () => {
-    const { scene, setScene, setPage, setTable, setKanban } =
-        useRecastBlockScene();
-
-    return (
-        <>
-            <div>Scene: {scene}</div>
-            <button onClick={setPage}>list</button>
-            <button onClick={setKanban}>kanban</button>
-        </>
-    );
-};
-```

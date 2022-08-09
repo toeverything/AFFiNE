@@ -1,0 +1,28 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "apps/ligo-virgo-e2e/src",
+    "projectType": "application",
+    "targets": {
+        "e2e": {
+            "executor": "@nrwl/cypress:cypress",
+            "options": {
+                "cypressConfig": "apps/ligo-virgo-e2e/cypress.config.ts",
+                "devServerTarget": "ligo-virgo:serve"
+            },
+            "configurations": {
+                "production": {
+                    "devServerTarget": "ligo-virgo:serve:production"
+                }
+            }
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": ["apps/ligo-virgo-e2e/**/*.{js,ts}"]
+            }
+        }
+    },
+    "tags": [],
+    "implicitDependencies": ["ligo-virgo"]
+}

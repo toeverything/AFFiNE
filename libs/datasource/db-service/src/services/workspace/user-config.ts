@@ -3,6 +3,7 @@ import { ServiceBaseClass } from '../base';
 import { ObserveCallback, ReturnUnobserve } from '../database';
 import { PageTree } from './page-tree';
 import { PageConfigItem } from './types';
+import type { QueryIndexMetadata } from '@toeverything/datasource/jwt';
 
 /** Operate the user configuration at the workspace level */
 export class UserConfig extends ServiceBaseClass {
@@ -121,5 +122,21 @@ export class UserConfig extends ServiceBaseClass {
     async setWorkspaceName(workspace: string, workspaceName: string) {
         const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
         workspaceDbBlock.setDecoration(WORKSPACE_CONFIG, workspaceName);
+    }
+
+    async getRecentEditedPages(workspace: string) {
+        const db = await this.database.getDatabase(workspace);
+        const recentEditedPages =
+            (await db.queryBlocks({
+                $sort: 'lastUpdated',
+                $desc: false /* sort rule: true(default)(ASC), or false(DESC) */,
+                $limit: 4,
+                flavor: 'page',
+            } as QueryIndexMetadata)) || [];
+
+        return recentEditedPages.map(item => {
+            item['title'] = item.content || 'Untitled';
+            return item;
+        });
     }
 }

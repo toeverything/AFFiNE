@@ -14,6 +14,9 @@
     },
     "devDependencies": {
         "mini-css-extract-plugin": "^2.6.1",
-        "webpack": "^5.73.0"
+        "image-minimizer-webpack-plugin": "^3.2.3",
+        "imagemin": "^8.0.1",
+        "imagemin-optipng": "^8.0.0",
+        "webpack": "^5.74.0"
     }
 }

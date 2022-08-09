@@ -48,7 +48,8 @@
             "configurations": {
                 "production": {
                     "buildTarget": "ligo-virgo:build:production",
-                    "hmr": false
+                    "hmr": false,
+                    "open": false
                 }
             }
         },

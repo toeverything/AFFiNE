@@ -41,6 +41,7 @@ const getKanbanColor = (
         return DEFAULT_COLOR;
     }
     if (
+        group.type === PropertyType.Status ||
         group.type === PropertyType.Select ||
         group.type === PropertyType.MultiSelect ||
         group.type === DEFAULT_GROUP_ID

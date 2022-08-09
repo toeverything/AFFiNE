@@ -32,7 +32,7 @@ export const mergeGroup = async (...groups: AsyncBlock[]) => {
         );
     }
 
-    await mergeGroupProperties(...(groups as RecastBlock[]));
+    await mergeGroupProperties(...(groups as unknown as RecastBlock[]));
 
     const [headGroup, ...restGroups] = groups;
     // Add all children to the head group
@@ -174,7 +174,7 @@ export const splitGroup = async (
     }
 
     splitGroupProperties(
-        group as RecastBlock,
+        group as unknown as RecastBlock,
         newGroupBlock as unknown as RecastBlock
     );
     await group.after(newGroupBlock);
@@ -182,6 +182,22 @@ export const splitGroup = async (
     setTimeout(() => {
         editor.selectionManager.activeNodeByNodeId(newGroupFirstlyBlock[0].id);
     }, 100);
+    return newGroupBlock;
+};
+
+export const appendNewGroup = async (
+    editor: BlockEditor,
+    parentBlock: AsyncBlock,
+    active = false
+) => {
+    const newGroupBlock = await createGroupWithEmptyText(editor);
+    await parentBlock.append(newGroupBlock);
+    if (active) {
+        // Active text block
+        await editor.selectionManager.activeNodeByNodeId(
+            newGroupBlock.childrenIds[0]
+        );
+    }
     return newGroupBlock;
 };
 

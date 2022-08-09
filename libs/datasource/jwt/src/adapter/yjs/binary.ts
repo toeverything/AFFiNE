@@ -3,8 +3,8 @@ import { Array as YArray, Map as YMap } from 'yjs';
 import { RemoteKvService } from '@toeverything/datasource/remote-kv';
 
 export class YjsRemoteBinaries {
-    readonly _binaries: YMap<YArray<ArrayBuffer>>; // binary instance
-    readonly _remoteStorage?: RemoteKvService;
+    private readonly _binaries: YMap<YArray<ArrayBuffer>>; // binary instance
+    private readonly _remoteStorage?: RemoteKvService;
 
     constructor(binaries: YMap<YArray<ArrayBuffer>>, remote_token?: string) {
         this._binaries = binaries;

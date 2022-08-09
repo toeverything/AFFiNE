@@ -1,7 +1,7 @@
 import { FC, useState } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import {
-    WrapperWithPendantAndDragDrop,
+    BlockPendantProvider,
     useOnSelect,
 } from '@toeverything/components/editor-core';
 import { Upload } from '../../components/upload/upload';
@@ -33,7 +33,7 @@ export const EmbedLinkView: FC<EmbedLinkView> = props => {
     };
 
     return (
-        <WrapperWithPendantAndDragDrop editor={editor} block={block}>
+        <BlockPendantProvider block={block}>
             <LinkContainer>
                 {embedLinkUrl ? (
                     <SourceView
@@ -53,6 +53,6 @@ export const EmbedLinkView: FC<EmbedLinkView> = props => {
                     />
                 )}
             </LinkContainer>
-        </WrapperWithPendantAndDragDrop>
+        </BlockPendantProvider>
     );
 };

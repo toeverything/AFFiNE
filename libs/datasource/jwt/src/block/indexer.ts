@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+import { createNewSortInstance } from 'fast-sort';
 import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
 import { Document as DocumentIndexer, DocumentSearchOptions } from 'flexsearch';
 import { get, set, keys, del, createStore } from 'idb-keyval';
@@ -20,6 +22,13 @@ declare const JWT_DEV: boolean;
 
 const logger = getLogger('BlockDB:indexing');
 const logger_debug = getLogger('debug:BlockDB:indexing');
+
+const naturalSort = createNewSortInstance({
+    comparer: new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: 'base',
+    }).compare,
+});
 
 type ChangedState = ChangedStates extends Map<unknown, infer R> ? R : never;
 
@@ -87,25 +96,29 @@ type BlockIndexedContent = {
     query: QueryMetadata;
 };
 
-export type QueryIndexMetadata = Query<QueryMetadata>;
+export type QueryIndexMetadata = Query<QueryMetadata> & {
+    $sort?: string;
+    $desc?: boolean;
+    $limit?: number;
+};
 
 export class BlockIndexer<
     A extends AsyncDatabaseAdapter<C>,
     B extends BlockInstance<C>,
     C extends ContentOperation
 > {
-    readonly _adapter: A;
-    readonly _idb: BlockIdbInstance;
+    private readonly _adapter: A;
+    private readonly _idb: BlockIdbInstance;
 
-    readonly _blockIndexer: DocumentIndexer<IndexMetadata>;
-    readonly _blockMetadata: LRUCache<string, QueryMetadata>;
-    readonly _eventBus: BlockEventBus;
+    private readonly _blockIndexer: DocumentIndexer<IndexMetadata>;
+    private readonly _blockMetadata: LRUCache<string, QueryMetadata>;
+    private readonly _eventBus: BlockEventBus;
 
-    readonly _blockBuilder: (
+    private readonly _blockBuilder: (
         block: BlockInstance<C>
     ) => Promise<BaseBlock<B, C>>;
 
-    readonly _delayIndex: { documents: Map<string, BaseBlock<B, C>> };
+    private readonly _delayIndex: { documents: Map<string, BaseBlock<B, C>> };
 
     constructor(
         adapter: A,
@@ -299,13 +312,44 @@ export class BlockIndexer<
         return this._blockIndexer.search(part_of_title_or_content as string);
     }
 
+    private _testMetaKey(key: string) {
+        try {
+            const metadata = this._blockMetadata.values().next().value;
+            if (!metadata || typeof metadata !== 'object') return false;
+            return !!(key in metadata);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    private _getSortedMetadata(sort: string, desc?: boolean) {
+        const sorter = naturalSort(Array.from(this._blockMetadata.entries()));
+        if (desc) return sorter.desc(([, m]) => m[sort]);
+        else return sorter.asc(([, m]) => m[sort]);
+    }
+
     public query(query: QueryIndexMetadata) {
         const matches: string[] = [];
-        const filter = sift<QueryMetadata>(query);
-        this._blockMetadata.forEach((value, key) => {
-            if (filter(value)) matches.push(key);
-        });
-        return matches;
+        const { $sort, $desc, $limit, ...condition } = query;
+        const filter = sift<QueryMetadata>(condition);
+        const limit = $limit || this._blockMetadata.size;
+
+        if ($sort && this._testMetaKey($sort)) {
+            const metadata = this._getSortedMetadata($sort, $desc);
+            metadata.forEach(([key, value]) => {
+                if (matches.length > limit) return;
+                if (filter(value)) matches.push(key);
+            });
+
+            return matches;
+        } else {
+            this._blockMetadata.forEach((value, key) => {
+                if (matches.length > limit) return;
+                if (filter(value)) matches.push(key);
+            });
+
+            return matches;
+        }
     }
 
     public getMetadata(ids: string[]): Array<BlockMetadata> {

@@ -1,6 +1,5 @@
-import { DragEvent } from 'react';
 import { Observable, Subject } from 'rxjs';
-import { HooksRunner, HookType, BlockDomInfo, PluginHooks } from '../types';
+import { HooksRunner, HookType, PluginHooks } from '../types';
 
 export class Hooks implements HooksRunner, PluginHooks {
     private _subject: Record<string, Subject<unknown>> = {};
@@ -111,13 +110,6 @@ export class Hooks implements HooksRunner, PluginHooks {
 
     public onRootNodeDragOverCapture(e: React.DragEvent<Element>): void {
         this._runHook(HookType.ON_ROOTNODE_DRAG_OVER_CAPTURE, e);
-    }
-
-    public afterOnNodeDragOver(
-        e: React.DragEvent<Element>,
-        node: BlockDomInfo
-    ): void {
-        this._runHook(HookType.AFTER_ON_NODE_DRAG_OVER, e, node);
     }
 
     public onSearch(): void {

@@ -52,7 +52,7 @@ function auto_set(root: ContentOperation, key: string, data: BaseTypes): void {
 }
 
 export class YjsContentOperation implements ContentOperation {
-    readonly _content: YAbstractType<unknown>;
+    private readonly _content: YAbstractType<unknown>;
 
     constructor(content: YAbstractType<any>) {
         this._content = content;
@@ -197,7 +197,7 @@ export class YjsContentOperation implements ContentOperation {
 }
 
 class YjsTextOperation extends YjsContentOperation implements TextOperation {
-    readonly _textContent: YText;
+    private readonly _textContent: YText;
 
     constructor(content: YText) {
         super(content);
@@ -241,8 +241,8 @@ class YjsArrayOperation<T extends ContentTypes>
     extends YjsContentOperation
     implements ArrayOperation<T>
 {
-    readonly _arrayContent: YArray<T>;
-    readonly _listeners: Map<string, BlockListener>;
+    private readonly _arrayContent: YArray<T>;
+    private readonly _listeners: Map<string, BlockListener>;
 
     constructor(content: YArray<T>) {
         super(content);
@@ -344,8 +344,8 @@ class YjsMapOperation<T extends ContentTypes>
     extends YjsContentOperation
     implements MapOperation<T>
 {
-    readonly _mapContent: YMap<T>;
-    readonly _listeners: Map<string, BlockListener>;
+    private readonly _mapContent: YMap<T>;
+    private readonly _listeners: Map<string, BlockListener>;
 
     constructor(content: YMap<T>) {
         super(content);

@@ -3,8 +3,8 @@ name: Build Lisa
 on:
     push:
         branches: [master]
-    pull_request:
-        branches: [master]
+    # pull_request:
+    #     branches: [master]
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
@@ -53,6 +53,7 @@ jobs:
               uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
               with:
                   context: .
+                  file: ./.github/deployment/Dockerfile-lisa
                   push: ${{ github.ref == 'refs/heads/master' && true || false }}
                   tags: ${{ steps.meta_lisa.outputs.tags }}
                   labels: ${{ steps.meta_lisa.outputs.labels }}

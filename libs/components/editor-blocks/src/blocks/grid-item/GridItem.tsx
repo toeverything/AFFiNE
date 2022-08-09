@@ -2,13 +2,13 @@ import { FC, useEffect, useLayoutEffect, useRef } from 'react';
 import { ChildrenView } from '@toeverything/framework/virgo';
 import { styled } from '@toeverything/components/ui';
 import { sleep } from '@toeverything/utils';
-import { GRID_ITEM_MIN_WIDTH, GRID_PROPERTY_KEY, removePercent } from '../grid';
+import { GRID_PROPERTY_KEY, removePercent } from '../grid';
 
 export const GRID_ITEM_CLASS_NAME = 'grid-item';
 export const GRID_ITEM_CONTENT_CLASS_NAME = `${GRID_ITEM_CLASS_NAME}-content`;
 
 export const GridItem: FC<ChildrenView> = function (props) {
-    const { children, block } = props;
+    const { children, block, editor } = props;
     const RENDER_DELAY_TIME = 100;
     const ref = useRef<HTMLDivElement>();
 
@@ -25,6 +25,7 @@ export const GridItem: FC<ChildrenView> = function (props) {
 
     const checkAndRefreshWidth = async () => {
         const currentWidth = block.getProperty(GRID_PROPERTY_KEY);
+        const gridItemMinWidth = editor.configManager.grid.gridItemMinWidth;
         if (currentWidth) {
             setWidth(currentWidth);
         } else if (!block.dom?.style.width) {
@@ -64,26 +65,23 @@ export const GridItem: FC<ChildrenView> = function (props) {
                                 if new width less then min width,
                                 set min width and next block will be fix width
                             */
-                            if (newWidth < GRID_ITEM_MIN_WIDTH) {
-                                needFixWidth += GRID_ITEM_MIN_WIDTH - newWidth;
-                                newWidth = GRID_ITEM_MIN_WIDTH;
+                            if (newWidth < gridItemMinWidth) {
+                                needFixWidth += gridItemMinWidth - newWidth;
+                                newWidth = gridItemMinWidth;
                             }
                             // if can fix width, fix width
-                            if (
-                                newWidth > GRID_ITEM_MIN_WIDTH &&
-                                needFixWidth
-                            ) {
+                            if (newWidth > gridItemMinWidth && needFixWidth) {
                                 if (
                                     newWidth - needFixWidth >=
-                                    GRID_ITEM_MIN_WIDTH
+                                    gridItemMinWidth
                                 ) {
                                     newWidth = newWidth - needFixWidth;
                                     needFixWidth = 0;
                                 } else {
                                     needFixWidth =
                                         needFixWidth -
-                                        (newWidth - GRID_ITEM_MIN_WIDTH);
-                                    newWidth = GRID_ITEM_MIN_WIDTH;
+                                        (newWidth - gridItemMinWidth);
+                                    newWidth = gridItemMinWidth;
                                 }
                             }
                             if (index === children.length - 2) {

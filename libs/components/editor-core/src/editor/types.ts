@@ -73,6 +73,7 @@ export interface Virgo {
     getBlockById(blockId: string): Promise<AsyncBlock | null>;
     setHotKeysScope(scope?: string): void;
     getBlockList: () => Promise<AsyncBlock[]>;
+    getBlockListByLevelOrder: () => Promise<AsyncBlock[]>;
     // removeBlocks: () => void;
     storageManager: StorageManager | undefined;
     selection: VirgoSelection;
@@ -177,18 +178,9 @@ export enum HookType {
     ON_ROOTNODE_DRAG_END = 'onRootNodeDragEnd',
     ON_ROOTNODE_DRAG_OVER_CAPTURE = 'onRootNodeDragOverCapture',
     ON_ROOTNODE_DROP = 'onRootNodeDrop',
-    AFTER_ON_NODE_DRAG_OVER = 'afterOnNodeDragOver',
     BEFORE_COPY = 'beforeCopy',
     BEFORE_CUT = 'beforeCut',
     ON_ROOTNODE_SCROLL = 'onRootNodeScroll',
-}
-
-export interface BlockDomInfo {
-    blockId: string;
-    dom: HTMLElement;
-    type: BlockFlavorKeys;
-    rect: DOMRect;
-    properties: Record<string, unknown>;
 }
 
 // Editor's various callbacks, used in Editor
@@ -219,10 +211,6 @@ export interface HooksRunner {
     onRootNodeDragEnd: (e: React.DragEvent<Element>) => void;
     onRootNodeDragLeave: (e: React.DragEvent<Element>) => void;
     onRootNodeDrop: (e: React.DragEvent<Element>) => void;
-    afterOnNodeDragOver: (
-        e: React.DragEvent<Element>,
-        node: BlockDomInfo
-    ) => void;
     beforeCopy: (e: ClipboardEvent) => void;
     beforeCut: (e: ClipboardEvent) => void;
     onRootNodeScroll: (e: React.UIEvent) => void;

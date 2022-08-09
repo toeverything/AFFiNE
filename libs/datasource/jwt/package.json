@@ -11,15 +11,16 @@
         "file-saver": "^2.0.5",
         "file-selector": "^0.6.0",
         "flexsearch": "^0.7.21",
-        "lib0": "^0.2.51",
-        "lru-cache": "^7.12.0",
+        "lib0": "^0.2.52",
+        "lru-cache": "^7.13.2",
         "ts-debounce": "^4.0.0",
-        "y-indexeddb": "^9.0.8"
+        "y-indexeddb": "^9.0.9"
     },
     "dependencies": {
         "@types/flexsearch": "^0.7.3",
         "buffer": "^6.0.3",
         "debug": "^4.3.4",
+        "fast-sort": "^3.2.0",
         "fflate": "^0.7.3",
         "idb-keyval": "^6.2.0",
         "immer": "^9.0.15",
@@ -28,6 +29,6 @@
         "sift": "^16.0.0",
         "uuid": "^8.3.2",
         "y-protocols": "^1.0.5",
-        "yjs": "^13.5.39"
+        "yjs": "^13.5.41"
     }
 }
