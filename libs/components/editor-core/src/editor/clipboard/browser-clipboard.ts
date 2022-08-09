@@ -16,10 +16,11 @@ import {
 import { MarkdownParser } from './markdown-parse';
 
 // todo needs to be a switch
-const support_markdown_paste = true;
-const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
+const SUPPORT_MARKDOWN_PASTE = true;
 
 const shouldHandlerContinue = (event: Event, editor: Editor) => {
+    const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
+
     if (event.defaultPrevented) {
         return false;
     }
@@ -36,96 +37,94 @@ enum ClipboardAction {
     PASTE = 'paste',
 }
 class BrowserClipboard {
-    private event_target: Element;
-    private hooks: HooksRunner;
-    private editor: Editor;
-    private clipboard_parse: ClipboardParse;
-    private markdown_parse: MarkdownParser;
+    private _eventTarget: Element;
+    private _hooks: HooksRunner;
+    private _editor: Editor;
+    private _clipboardParse: ClipboardParse;
+    private _markdownParse: MarkdownParser;
 
-    private static optimal_mime_type: string[] = [
+    private static _optimalMimeType: string[] = [
         OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED,
         OFFICE_CLIPBOARD_MIMETYPE.HTML,
         OFFICE_CLIPBOARD_MIMETYPE.TEXT,
     ];
 
     constructor(eventTarget: Element, hooks: HooksRunner, editor: Editor) {
-        this.event_target = eventTarget;
-        this.hooks = hooks;
-        this.editor = editor;
-        this.clipboard_parse = new ClipboardParse(editor);
-        this.markdown_parse = new MarkdownParser();
-        this.initialize();
+        this._eventTarget = eventTarget;
+        this._hooks = hooks;
+        this._editor = editor;
+        this._clipboardParse = new ClipboardParse(editor);
+        this._markdownParse = new MarkdownParser();
+        this._initialize();
     }
 
     public getClipboardParse() {
-        return this.clipboard_parse;
+        return this._clipboardParse;
     }
 
-    private initialize() {
-        this.handle_copy = this.handle_copy.bind(this);
-        this.handle_cut = this.handle_cut.bind(this);
-        this.handle_paste = this.handle_paste.bind(this);
+    private _initialize() {
+        this._handleCopy = this._handleCopy.bind(this);
+        this._handleCut = this._handleCut.bind(this);
+        this._handlePaste = this._handlePaste.bind(this);
 
-        document.addEventListener(ClipboardAction.COPY, this.handle_copy);
-        document.addEventListener(ClipboardAction.CUT, this.handle_cut);
-        document.addEventListener(ClipboardAction.PASTE, this.handle_paste);
-        this.event_target.addEventListener(
+        document.addEventListener(ClipboardAction.COPY, this._handleCopy);
+        document.addEventListener(ClipboardAction.CUT, this._handleCut);
+        document.addEventListener(ClipboardAction.PASTE, this._handlePaste);
+        this._eventTarget.addEventListener(
             ClipboardAction.COPY,
-            this.handle_copy
+            this._handleCopy
         );
-        this.event_target.addEventListener(
+        this._eventTarget.addEventListener(
             ClipboardAction.CUT,
-            this.handle_cut
+            this._handleCut
         );
-        this.event_target.addEventListener(
+        this._eventTarget.addEventListener(
             ClipboardAction.PASTE,
-            this.handle_paste
+            this._handlePaste
         );
     }
 
-    private handle_copy(e: Event) {
-        if (!shouldHandlerContinue(e, this.editor)) {
+    private _handleCopy(e: Event) {
+        if (!shouldHandlerContinue(e, this._editor)) {
             return;
         }
 
-        this.dispatch_clipboard_event(
-            ClipboardAction.COPY,
-            e as ClipboardEvent
-        );
+        this._dispatchClipboardEvent(ClipboardAction.COPY, e as ClipboardEvent);
     }
 
-    private handle_cut(e: Event) {
-        if (!shouldHandlerContinue(e, this.editor)) {
+    private _handleCut(e: Event) {
+        if (!shouldHandlerContinue(e, this._editor)) {
             return;
         }
 
-        this.dispatch_clipboard_event(ClipboardAction.CUT, e as ClipboardEvent);
+        this._dispatchClipboardEvent(ClipboardAction.CUT, e as ClipboardEvent);
     }
 
-    private handle_paste(e: Event) {
-        if (!shouldHandlerContinue(e, this.editor)) {
+    private _handlePaste(e: Event) {
+        if (!shouldHandlerContinue(e, this._editor)) {
             return;
         }
         e.stopPropagation();
 
         const clipboardData = (e as ClipboardEvent).clipboardData;
 
-        const isPureFile = this.is_pure_file_in_clipboard(clipboardData);
+        const isPureFile = this._isPureFileInClipboard(clipboardData);
 
         if (isPureFile) {
-            this.paste_file(clipboardData);
+            this._pasteFile(clipboardData);
         } else {
-            this.paste_content(clipboardData);
+            this._pasteContent(clipboardData);
         }
-        // this.editor.selectionManager
+        // this._editor.selectionManager
         //     .getSelectInfo()
         //     .then(selectionInfo => console.log(selectionInfo));
     }
 
-    private paste_content(clipboardData: any) {
+    private _pasteContent(clipboardData: any) {
         const originClip: { data: any; type: any } = this.getOptimalClip(
             clipboardData
         ) as { data: any; type: any };
+
         const originTextClipData = clipboardData.getData(
             OFFICE_CLIPBOARD_MIMETYPE.TEXT
         );
@@ -133,19 +132,19 @@ class BrowserClipboard {
         let clipData = originClip['data'];
 
         if (originClip['type'] === OFFICE_CLIPBOARD_MIMETYPE.TEXT) {
-            clipData = this.excape_html(clipData);
+            clipData = this._excapeHtml(clipData);
         }
 
         switch (originClip['type']) {
             /** Protocol paste */
             case OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED:
-                this.fire_paste_edit_action(clipData);
+                this._firePasteEditAction(clipData);
                 break;
             case OFFICE_CLIPBOARD_MIMETYPE.HTML:
-                this.paste_html(clipData, originTextClipData);
+                this._pasteHtml(clipData, originTextClipData);
                 break;
             case OFFICE_CLIPBOARD_MIMETYPE.TEXT:
-                this.paste_text(clipData, originTextClipData);
+                this._pasteText(clipData, originTextClipData);
                 break;
 
             default:
@@ -153,14 +152,14 @@ class BrowserClipboard {
         }
     }
 
-    private paste_html(clipData: any, originTextClipData: any) {
-        if (support_markdown_paste) {
-            const has_markdown =
-                this.markdown_parse.checkIfTextContainsMd(originTextClipData);
-            if (has_markdown) {
+    private _pasteHtml(clipData: any, originTextClipData: any) {
+        if (SUPPORT_MARKDOWN_PASTE) {
+            const hasMarkdown =
+                this._markdownParse.checkIfTextContainsMd(originTextClipData);
+            if (hasMarkdown) {
                 try {
                     const convertedDataObj =
-                        this.markdown_parse.md2Html(originTextClipData);
+                        this._markdownParse.md2Html(originTextClipData);
                     if (convertedDataObj.isConverted) {
                         clipData = convertedDataObj.text;
                     }
@@ -171,23 +170,23 @@ class BrowserClipboard {
             }
         }
 
-        const blocks = this.clipboard_parse.html2blocks(clipData);
+        const blocks = this._clipboardParse.html2blocks(clipData);
         this.insert_blocks(blocks);
     }
 
-    private paste_text(clipData: any, originTextClipData: any) {
-        const blocks = this.clipboard_parse.text2blocks(clipData);
+    private _pasteText(clipData: any, originTextClipData: any) {
+        const blocks = this._clipboardParse.text2blocks(clipData);
         this.insert_blocks(blocks);
     }
 
-    private async paste_file(clipboardData: any) {
-        const file = this.get_image_file(clipboardData);
+    private async _pasteFile(clipboardData: any) {
+        const file = this._getImageFile(clipboardData);
         if (file) {
             const result = await services.api.file.create({
-                workspace: this.editor.workspace,
+                workspace: this._editor.workspace,
                 file: file,
             });
-            const block_info: ClipBlockInfo = {
+            const blockInfo: ClipBlockInfo = {
                 type: 'image',
                 properties: {
                     image: {
@@ -199,11 +198,11 @@ class BrowserClipboard {
                 },
                 children: [] as ClipBlockInfo[],
             };
-            this.insert_blocks([block_info]);
+            this.insert_blocks([blockInfo]);
         }
     }
 
-    private get_image_file(clipboardData: any) {
+    private _getImageFile(clipboardData: any) {
         const files = clipboardData.files;
         if (files && files[0] && files[0].type.indexOf('image') > -1) {
             return files[0];
@@ -211,7 +210,7 @@ class BrowserClipboard {
         return;
     }
 
-    private excape_html(data: any, onlySpace?: any) {
+    private _excapeHtml(data: any, onlySpace?: any) {
         if (!onlySpace) {
             // TODO:
             // data = string.htmlEscape(data);
@@ -224,7 +223,7 @@ class BrowserClipboard {
     }
 
     public getOptimalClip(clipboardData: any) {
-        const mimeTypeArr = BrowserClipboard.optimal_mime_type;
+        const mimeTypeArr = BrowserClipboard._optimalMimeType;
 
         for (let i = 0; i < mimeTypeArr.length; i++) {
             const data =
@@ -242,24 +241,23 @@ class BrowserClipboard {
         return '';
     }
 
-    private is_pure_file_in_clipboard(clipboardData: DataTransfer) {
+    private _isPureFileInClipboard(clipboardData: DataTransfer) {
         const types = clipboardData.types;
 
-        const res =
+        return (
             (types.length === 1 && types[0] === 'Files') ||
             (types.length === 2 &&
                 (types.includes('text/plain') || types.includes('text/html')) &&
-                types.includes('Files'));
-
-        return res;
+                types.includes('Files'))
+        );
     }
 
-    private async fire_paste_edit_action(clipboardData: any) {
-        const clip_info: InnerClipInfo = JSON.parse(clipboardData);
-        clip_info && this.insert_blocks(clip_info.data, clip_info.select);
+    private async _firePasteEditAction(clipboardData: any) {
+        const clipInfo: InnerClipInfo = JSON.parse(clipboardData);
+        clipInfo && this.insert_blocks(clipInfo.data, clipInfo.select);
     }
 
-    private can_edit_text(type: BlockFlavorKeys) {
+    private _canEditText(type: BlockFlavorKeys) {
         return (
             type === Protocol.Block.Type.page ||
             type === Protocol.Block.Type.text ||
@@ -282,144 +280,142 @@ class BrowserClipboard {
         }
 
         const cur_select_info =
-            await this.editor.selectionManager.getSelectInfo();
+            await this._editor.selectionManager.getSelectInfo();
         if (cur_select_info.blocks.length === 0) {
             return;
         }
 
-        let begin_index = 0;
-        const cur_node_id =
+        let beginIndex = 0;
+        const curNodeId =
             cur_select_info.blocks[cur_select_info.blocks.length - 1].blockId;
-        let cur_block = await this.editor.getBlockById(cur_node_id);
-        const block_view = this.editor.getView(cur_block.type);
+        let curBlock = await this._editor.getBlockById(curNodeId);
+        const blockView = this._editor.getView(curBlock.type);
         if (
             cur_select_info.type === 'Range' &&
-            cur_block.type === 'text' &&
-            block_view.isEmpty(cur_block)
+            curBlock.type === 'text' &&
+            blockView.isEmpty(curBlock)
         ) {
-            cur_block.setType(blocks[0].type);
-            cur_block.setProperties(blocks[0].properties);
-            this.paste_children(cur_block, blocks[0].children);
-            begin_index = 1;
+            await curBlock.setType(blocks[0].type);
+            curBlock.setProperties(blocks[0].properties);
+            await this._pasteChildren(curBlock, blocks[0].children);
+            beginIndex = 1;
         } else if (
             select?.type === 'Range' &&
             cur_select_info.type === 'Range' &&
-            this.can_edit_text(cur_block.type) &&
-            this.can_edit_text(blocks[0].type)
+            this._canEditText(curBlock.type) &&
+            this._canEditText(blocks[0].type)
         ) {
             if (
                 cur_select_info.blocks.length > 0 &&
                 cur_select_info.blocks[0].startInfo
             ) {
-                const start_info = cur_select_info.blocks[0].startInfo;
-                const end_info = cur_select_info.blocks[0].endInfo;
-                const cur_text_value = cur_block.getProperty('text').value;
-                const pre_cur_text_value = cur_text_value.slice(
+                const startInfo = cur_select_info.blocks[0].startInfo;
+                const endInfo = cur_select_info.blocks[0].endInfo;
+                const curTextValue = curBlock.getProperty('text').value;
+                const pre_curTextValue = curTextValue.slice(
                     0,
-                    start_info.arrayIndex
+                    startInfo.arrayIndex
                 );
-                const last_cur_text_value = cur_text_value.slice(
-                    end_info.arrayIndex + 1
+                const lastCurTextValue = curTextValue.slice(
+                    endInfo.arrayIndex + 1
                 );
-                const pre_text = cur_text_value[
-                    start_info.arrayIndex
-                ].text.substring(0, start_info.offset);
-                const last_text = cur_text_value[
-                    end_info.arrayIndex
-                ].text.substring(end_info.offset);
+                const preText = curTextValue[
+                    startInfo.arrayIndex
+                ].text.substring(0, startInfo.offset);
+                const lastText = curTextValue[
+                    endInfo.arrayIndex
+                ].text.substring(endInfo.offset);
 
-                let last_block: ClipBlockInfo = blocks[blocks.length - 1];
-                if (!this.can_edit_text(last_block.type)) {
-                    last_block = { type: 'text', children: [] };
-                    blocks.push(last_block);
+                let lastBlock: ClipBlockInfo = blocks[blocks.length - 1];
+                if (!this._canEditText(lastBlock.type)) {
+                    lastBlock = { type: 'text', children: [] };
+                    blocks.push(lastBlock);
                 }
-                const last_values = last_block.properties?.text?.value;
-                last_text && last_values.push({ text: last_text });
-                last_values.push(...last_cur_text_value);
-                last_block.properties = {
-                    text: { value: last_values },
+                const lastValues = lastBlock.properties?.text?.value;
+                lastText && lastValues.push({ text: lastText });
+                lastValues.push(...lastCurTextValue);
+                lastBlock.properties = {
+                    text: { value: lastValues },
                 };
 
-                const insert_info = blocks[0].properties.text;
-                pre_text && pre_cur_text_value.push({ text: pre_text });
-                pre_cur_text_value.push(...insert_info.value);
-                this.editor.blockHelper.setBlockBlur(cur_node_id);
+                const insertInfo = blocks[0].properties.text;
+                preText && pre_curTextValue.push({ text: preText });
+                pre_curTextValue.push(...insertInfo.value);
+                this._editor.blockHelper.setBlockBlur(curNodeId);
                 setTimeout(async () => {
-                    const cur_block = await this.editor.getBlockById(
-                        cur_node_id
-                    );
-                    cur_block.setProperties({
-                        text: { value: pre_cur_text_value },
+                    const curBlock = await this._editor.getBlockById(curNodeId);
+                    curBlock.setProperties({
+                        text: { value: pre_curTextValue },
                     });
-                    this.paste_children(cur_block, blocks[0].children);
+                    await this._pasteChildren(curBlock, blocks[0].children);
                 }, 0);
-                begin_index = 1;
+                beginIndex = 1;
             }
         }
 
-        for (let i = begin_index; i < blocks.length; i++) {
-            const next_block = await this.editor.createBlock(blocks[i].type);
-            next_block.setProperties(blocks[i].properties);
-            if (cur_block.type === 'page') {
-                cur_block.prepend(next_block);
+        for (let i = beginIndex; i < blocks.length; i++) {
+            const nextBlock = await this._editor.createBlock(blocks[i].type);
+            nextBlock.setProperties(blocks[i].properties);
+            if (curBlock.type === 'page') {
+                curBlock.prepend(nextBlock);
             } else {
-                cur_block.after(next_block);
+                curBlock.after(nextBlock);
             }
 
-            this.paste_children(next_block, blocks[i].children);
-            cur_block = next_block;
+            await this._pasteChildren(nextBlock, blocks[i].children);
+            curBlock = nextBlock;
         }
     }
 
-    private async paste_children(parent: AsyncBlock, children: any[]) {
+    private async _pasteChildren(parent: AsyncBlock, children: any[]) {
         for (let i = 0; i < children.length; i++) {
-            const next_block = await this.editor.createBlock(children[i].type);
-            next_block.setProperties(children[i].properties);
-            parent.append(next_block);
-            await this.paste_children(next_block, children[i].children);
+            const nextBlock = await this._editor.createBlock(children[i].type);
+            nextBlock.setProperties(children[i].properties);
+            await parent.append(nextBlock);
+            await this._pasteChildren(nextBlock, children[i].children);
         }
     }
 
-    private pre_copy_cut(action: ClipboardAction, e: ClipboardEvent) {
+    private _preCopyCut(action: ClipboardAction, e: ClipboardEvent) {
         switch (action) {
             case ClipboardAction.COPY:
-                this.hooks.beforeCopy(e);
+                this._hooks.beforeCopy(e);
                 break;
 
             case ClipboardAction.CUT:
-                this.hooks.beforeCut(e);
+                this._hooks.beforeCut(e);
                 break;
         }
     }
 
-    private dispatch_clipboard_event(
+    private _dispatchClipboardEvent(
         action: ClipboardAction,
         e: ClipboardEvent
     ) {
-        this.pre_copy_cut(action, e);
+        this._preCopyCut(action, e);
     }
 
     dispose() {
-        document.removeEventListener(ClipboardAction.COPY, this.handle_copy);
-        document.removeEventListener(ClipboardAction.CUT, this.handle_cut);
-        document.removeEventListener(ClipboardAction.PASTE, this.handle_paste);
-        this.event_target.removeEventListener(
+        document.removeEventListener(ClipboardAction.COPY, this._handleCopy);
+        document.removeEventListener(ClipboardAction.CUT, this._handleCut);
+        document.removeEventListener(ClipboardAction.PASTE, this._handlePaste);
+        this._eventTarget.removeEventListener(
             ClipboardAction.COPY,
-            this.handle_copy
+            this._handleCopy
         );
-        this.event_target.removeEventListener(
+        this._eventTarget.removeEventListener(
             ClipboardAction.CUT,
-            this.handle_cut
+            this._handleCut
         );
-        this.event_target.removeEventListener(
+        this._eventTarget.removeEventListener(
             ClipboardAction.PASTE,
-            this.handle_paste
+            this._handlePaste
         );
-        this.clipboard_parse.dispose();
-        this.clipboard_parse = null;
-        this.event_target = null;
-        this.hooks = null;
-        this.editor = null;
+        this._clipboardParse.dispose();
+        this._clipboardParse = null;
+        this._eventTarget = null;
+        this._hooks = null;
+        this._editor = null;
     }
 }
 
