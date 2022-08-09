@@ -13,8 +13,8 @@
         "@mui/icons-material": "^5.8.4"
     },
     "devDependencies": {
-        "firebase": "^9.8.4",
+        "firebase": "^9.9.2",
         "mini-css-extract-plugin": "^2.6.1",
-        "webpack": "^5.73.0"
+        "webpack": "^5.74.0"
     }
 }

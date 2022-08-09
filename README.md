@@ -91,11 +91,11 @@ Affine is fully built with web technologies so that consistency and accessibilit
 
 # Documentation
 
-AFFiNE is not yet ready for production use. To install, you may check how to build or depoly the AFFiNE in [quick-start](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine/quick-start). For the full documentation, please view it [here](https://affine.gitbook.io/affine/).
+AFFiNE is not yet ready for production use. To install, you may check how to build or deploy the AFFiNE in [quick-start](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine/quick-start). For the full documentation, please view it [here](https://affine.gitbook.io/affine/).
 
 ## Getting Started with development
 
-Please view the path Contribute-to-AFFiNE/Software-Contributions/Quick-Start in documentation.
+Please view the path Contribute-to-AFFiNE/Software-Contributions/Quick-Start in the documentation.
 
 # Roadmap
 
@@ -129,25 +129,25 @@ That's why we are making AFFiNE. Some of the most important features are:
         -   An always good-to-read, structured docs-form page is the best for your notes, but a boundless doodle surface is better for collaboration and creativity.
 -   Atomic
     -   The basic element of affine are blocks, not pages.
-        -   Blocks can be directly reuse and synced between pages.
-    -   Pages and blocks are searched and organized on the basis of connected graphs, not tree-like paths.
+        -   Blocks can be directly reused and synced between pages.
+    -   Pages and blocks are searched and organized based on connected graphs, not tree-like paths.
     -   Dual-link and semantic search are fully supported.
 -   Collaborative and privacy-first
     -   Data is always stored locally by default
     -   CRDTs are applied so that peer-to-peer collaboration is possible.
 
-We really appreciate the idea of Monday, airtable and notion database. They inspired what we think is right for task management. But we don't like the repeated works -- we don't want to set a todo easily with markdown but end up re-write it again in kanban or other databases.
+We really appreciate the idea of Monday, Airtable and Notion databases. They inspired what we think is right for task management. But we don't like the repeated works -- we don't want to set a todo easily with markdown but end up re-write it again in kanban or other databases.
 With AFFiNE, every block group has infinite views, for you to keep your single source of truth.
 
 We would like to give special thanks to the innovators and pioneers who greatly inspired us:
 
 -   Quip & Notion -- that docs can be organized as blocks
--   Taskade & Monday -- brillant multi-demensional tables
+-   Taskade & Monday -- brilliant multi-dimensional tables
 -   Height & Linear -- beautiful task management tool
 
 We would also like to give thanks to open-source projects that make affine possible:
 
--   [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implements on state management and data sync.
+-   [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
 -   [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
 -   [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
 -   [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
@@ -155,7 +155,7 @@ We would also like to give thanks to open-source projects that make affine possi
 -   [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend.
 -   [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
 -   [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
--   Other [dependancies](https://github.com/toeverything/AFFiNE/network/dependencies)
+-   Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies)
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 

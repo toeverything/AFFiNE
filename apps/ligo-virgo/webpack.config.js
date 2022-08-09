@@ -16,6 +16,7 @@ module.exports = function (webpackConfig) {
     const config = getNxWebpackConfig(webpackConfig);
 
     const isProd = config.mode === 'production';
+    const isE2E = process.env.NX_E2E;
 
     const style9 = {
         test: /\.(tsx|ts|js|mjs|jsx)$/,
@@ -147,6 +148,12 @@ module.exports = function (webpackConfig) {
         }
     }
 
+    config.module.rules.unshift({
+        test: /\.wasm$/,
+        type: 'asset/resource',
+    });
+    config.resolve.fallback = { crypto: false, fs: false, path: false };
+
     addEmotionBabelPlugin(config);
 
     config.plugins = [
@@ -158,6 +165,7 @@ module.exports = function (webpackConfig) {
             global: {},
         }),
         isProd &&
+            !isE2E &&
             new HtmlWebpackPlugin({
                 title: 'AFFiNE - All In One Workos',
                 favicon: path.resolve(

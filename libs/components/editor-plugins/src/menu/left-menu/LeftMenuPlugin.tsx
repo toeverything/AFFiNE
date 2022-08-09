@@ -1,12 +1,15 @@
-import { BlockDomInfo, HookType } from '@toeverything/framework/virgo';
+import { HookType, BlockDropPlacement } from '@toeverything/framework/virgo';
 import { StrictMode } from 'react';
 import { BasePlugin } from '../../base-plugin';
 import { ignoreBlockTypes } from './menu-config';
-import { LineInfoSubject, LeftMenuDraggable } from './LeftMenuDraggable';
+import {
+    LineInfoSubject,
+    LeftMenuDraggable,
+    BlockDomInfo,
+} from './LeftMenuDraggable';
 import { PluginRenderRoot } from '../../utils';
-import { Subject } from 'rxjs';
-import { domToRect, last, Point, throttle } from '@toeverything/utils';
-import { BlockDropPlacement } from '@toeverything/framework/virgo';
+import { Subject, throttleTime } from 'rxjs';
+import { domToRect, last, Point } from '@toeverything/utils';
 const DRAG_THROTTLE_DELAY = 150;
 export class LeftMenuPlugin extends BasePlugin {
     private _mousedown?: boolean;
@@ -58,15 +61,10 @@ export class LeftMenuPlugin extends BasePlugin {
             this.hooks.get(HookType.ON_ROOTNODE_DROP).subscribe(this._onDrop)
         );
         this.sub.add(
-            this.hooks.get(HookType.ON_ROOTNODE_DRAG_OVER).subscribe(
-                throttle(
-                    this._handleRootNodeDragover.bind(this),
-                    DRAG_THROTTLE_DELAY,
-                    {
-                        leading: true,
-                    }
-                )
-            )
+            this.hooks
+                .get(HookType.ON_ROOTNODE_DRAG_OVER)
+                .pipe(throttleTime(DRAG_THROTTLE_DELAY))
+                .subscribe(this._handleRootNodeDragover)
         );
     }
 
@@ -83,11 +81,8 @@ export class LeftMenuPlugin extends BasePlugin {
                 this._lineInfo.next({
                     direction,
                     blockInfo: {
-                        blockId: block.id,
-                        dom: block.dom,
-                        type: block.type,
+                        block,
                         rect: block.dom.getBoundingClientRect(),
-                        properties: block.getProperties(),
                     },
                 });
             } else if (!isOuter) {
@@ -118,11 +113,8 @@ export class LeftMenuPlugin extends BasePlugin {
         this._lineInfo.next({
             direction,
             blockInfo: {
-                blockId: block.id,
-                dom: block.dom,
+                block,
                 rect: block.dom.getBoundingClientRect(),
-                type: block.type,
-                properties: block.getProperties(),
             },
         });
     };
@@ -171,11 +163,8 @@ export class LeftMenuPlugin extends BasePlugin {
             }
         }
         this._blockInfo.next({
-            blockId: node.id,
-            dom: node.dom,
+            block: node,
             rect: node.dom.getBoundingClientRect(),
-            type: node.type,
-            properties: node.getProperties(),
         });
     };
 

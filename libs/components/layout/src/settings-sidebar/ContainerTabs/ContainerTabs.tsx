@@ -100,10 +100,10 @@ export const ContainerTabs = () => {
 
 const StyledTabsTitlesContainer = styled('div')(({ theme }) => {
     return {
+        height: '60px',
         display: 'flex',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: 24,
-        marginBottom: 24,
         marginLeft: theme.affine.spacing.smSpacing,
         marginRight: theme.affine.spacing.smSpacing,
     };

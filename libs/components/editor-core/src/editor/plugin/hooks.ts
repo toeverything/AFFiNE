@@ -1,6 +1,5 @@
-import { DragEvent } from 'react';
 import { Observable, Subject } from 'rxjs';
-import { HooksRunner, HookType, BlockDomInfo, PluginHooks } from '../types';
+import { HooksRunner, HookType, PluginHooks } from '../types';
 
 export class Hooks implements HooksRunner, PluginHooks {
     private _subject: Record<string, Subject<unknown>> = {};

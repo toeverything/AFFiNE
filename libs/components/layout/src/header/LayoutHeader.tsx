@@ -33,9 +33,9 @@ export const LayoutHeader = () => {
 
                         <IconButton onClick={toggleInfoSidebar} size="large">
                             {showSettingsSidebar ? (
-                                <SideBarViewIcon />
-                            ) : (
                                 <SideBarViewCloseIcon />
+                            ) : (
+                                <SideBarViewIcon />
                             )}
                         </IconButton>
                     </StyledHelper>
@@ -44,9 +44,36 @@ export const LayoutHeader = () => {
                     <EditorBoardSwitcher />
                 </StyledContainerForEditorBoardSwitcher>
             </StyledHeaderRoot>
+            <StyledUnstableTips>
+                <StyledUnstableTipsText>
+                    AFFiNE now under active development, the version is
+                    UNSTABLE, please DO NOT store important data in this version
+                </StyledUnstableTipsText>
+            </StyledUnstableTips>
         </StyledContainerForHeaderRoot>
     );
 };
+
+const StyledUnstableTips = styled('div')(({ theme }) => {
+    return {
+        width: '100%',
+        height: '2em',
+        display: 'flex',
+        zIndex: theme.affine.zIndex.header,
+        backgroundColor: '#fff8c5',
+        borderWidth: '1px 0',
+        borderColor: '#e4e49588',
+        borderStyle: 'solid',
+    };
+});
+
+const StyledUnstableTipsText = styled('span')(({ theme }) => {
+    return {
+        margin: 'auto 36px',
+        width: '100%',
+        textAlign: 'center',
+    };
+});
 
 const StyledContainerForHeaderRoot = styled('div')(({ theme }) => {
     return {
@@ -114,7 +141,9 @@ const StyledLogoIcon = styled(LogoIcon)(({ theme }) => {
 
 const StyledContainerForEditorBoardSwitcher = styled('div')(({ theme }) => {
     return {
+        width: '100%',
         position: 'absolute',
-        left: '50%',
+        display: 'flex',
+        justifyContent: 'center',
     };
 });

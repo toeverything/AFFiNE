@@ -19,8 +19,8 @@ declare const JWT_DEV: boolean;
 const logger = getLogger('BlockDB:block');
 const logger_debug = getLogger('debug:BlockDB:block');
 
-const GET_BLOCK = Symbol('GET_BLOCK');
-const SET_PARENT = Symbol('SET_PARENT');
+const _GET_BLOCK = Symbol('GET_BLOCK');
+const _SET_PARENT = Symbol('SET_PARENT');
 
 export class AbstractBlock<
     B extends BlockInstance<C>,
@@ -47,6 +47,13 @@ export class AbstractBlock<
         this._parentListener = new Map();
         this._parent = parent;
         JWT_DEV && logger_debug(`init: exists ${this._id}`);
+        if (parent) {
+            parent.addChildrenListener(this._id, states => {
+                if (states.get(this._id) === 'delete') {
+                    this._emitParent(parent._id, 'delete');
+                }
+            });
+        }
     }
 
     public get root() {
@@ -176,16 +183,25 @@ export class AbstractBlock<
         return this.#block.creator;
     }
 
-    [GET_BLOCK]() {
+    [_GET_BLOCK]() {
         return this.#block;
     }
 
-    [SET_PARENT](parent: AbstractBlock<B, C>) {
-        this._parent = parent;
-        const states: Map<string, 'update'> = new Map([[parent.id, 'update']]);
+    private _emitParent(
+        parentId: string,
+        type: 'update' | 'delete' = 'update'
+    ) {
+        const states: Map<string, 'update' | 'delete'> = new Map([
+            [parentId, type],
+        ]);
         for (const listener of this._parentListener.values()) {
             listener(states);
         }
+    }
+
+    [_SET_PARENT](parent: AbstractBlock<B, C>) {
+        this._parent = parent;
+        this._emitParent(parent.id);
     }
 
     /**
@@ -258,8 +274,8 @@ export class AbstractBlock<
             throw new Error('insertChildren: binary not allow insert children');
         }
 
-        this.#block.insertChildren(block[GET_BLOCK](), position);
-        block[SET_PARENT](this);
+        this.#block.insertChildren(block[_GET_BLOCK](), position);
+        block[_SET_PARENT](this);
     }
 
     public hasChildren(id: string): boolean {

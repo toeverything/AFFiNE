@@ -3,9 +3,9 @@ import React, {
     type CSSProperties,
     type HTMLAttributes,
 } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import cx from 'clsx';
-import { CloseIcon, DocumentIcon } from '@toeverything/components/common';
+import { CloseIcon } from '@toeverything/components/common';
 import {
     ArrowDropDownIcon,
     ArrowRightIcon,
@@ -15,6 +15,7 @@ import styles from './tree-item.module.scss';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 
 import MoreActions from './MoreActions';
+import { useTheme } from '@toeverything/components/ui';
 export type TreeItemProps = {
     /** The main text to display on this line */
     value: string;
@@ -61,12 +62,13 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         },
         ref
     ) => {
-        const { workspace_id } = useParams();
-        const navigate = useNavigate();
+        const { workspace_id, page_id } = useParams();
         const BooleanPageTreeItemMoreActions = useFlag(
             'BooleanPageTreeItemMoreActions',
             true
         );
+        const theme = useTheme();
+
         return (
             <li
                 ref={wrapperRef}
@@ -103,15 +105,18 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                     </Action>
 
                     <div className={styles['ItemContent']}>
-                        <span
+                        <Link
                             className={styles['Text']}
                             {...handleProps}
-                            onClick={() => {
-                                navigate(`/${workspace_id}/${pageId}`);
+                            to={`/${workspace_id}/${pageId}`}
+                            style={{
+                                ...(pageId === page_id && {
+                                    color: theme.affine.palette.primary,
+                                }),
                             }}
                         >
                             {value}
-                        </span>
+                        </Link>
                         {BooleanPageTreeItemMoreActions && (
                             <MoreActions
                                 workspaceId={workspace_id}

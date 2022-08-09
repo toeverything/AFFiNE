@@ -11,10 +11,9 @@
         "file-saver": "^2.0.5",
         "file-selector": "^0.6.0",
         "flexsearch": "^0.7.21",
-        "lib0": "^0.2.51",
-        "lru-cache": "^7.12.0",
-        "ts-debounce": "^4.0.0",
-        "y-indexeddb": "^9.0.8"
+        "lib0": "^0.2.52",
+        "lru-cache": "^7.13.2",
+        "ts-debounce": "^4.0.0"
     },
     "dependencies": {
         "@types/flexsearch": "^0.7.3",
@@ -29,6 +28,6 @@
         "sift": "^16.0.0",
         "uuid": "^8.3.2",
         "y-protocols": "^1.0.5",
-        "yjs": "^13.5.39"
+        "yjs": "^13.5.41"
     }
 }

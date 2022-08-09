@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useMemo } from 'react';
 import { Virgo, PluginHooks } from '@toeverything/framework/virgo';
 import { Cascader, CascaderItemProps } from '@toeverything/components/ui';
 import { TurnIntoMenu } from './TurnIntoMenu';
@@ -18,42 +18,43 @@ interface LeftMenuProps {
 }
 
 export function LeftMenu(props: LeftMenuProps) {
-    const { editor, anchorEl, hooks, blockId } = props;
-    const menu: CascaderItemProps[] = [
-        {
-            title: 'Delete',
-            callback: () => {
-                editor.commands.blockCommands.removeBlock(blockId);
+    const { editor, anchorEl, hooks, blockId, onClose } = props;
+    const menu: CascaderItemProps[] = useMemo(
+        () => [
+            {
+                title: 'Delete',
+                callback: () => {
+                    editor.commands.blockCommands.removeBlock(blockId);
+                },
+                shortcut: 'Del',
+                icon: <DeleteCashBinIcon />,
             },
-            shortcut: 'Del',
-            icon: <DeleteCashBinIcon />,
-        },
-        {
-            title: 'Turn into',
-            subItems: [],
-            children: (
-                <TurnIntoMenu
-                    editor={editor}
-                    hooks={hooks}
-                    blockId={blockId}
-                    onClose={() => {
-                        props.onClose();
-                        editor.selection.setSelectedNodesIds([]);
-                    }}
-                />
-            ),
-            icon: <TurnIntoIcon />,
-        },
-        {
-            title: 'Divide Here As A New Group',
-            icon: <UngroupIcon />,
-            callback: () => {
-                editor.commands.blockCommands.splitGroupFromBlock(blockId);
+            {
+                title: 'Turn into',
+                subItems: [],
+                children: (
+                    <TurnIntoMenu
+                        editor={editor}
+                        hooks={hooks}
+                        blockId={blockId}
+                        onClose={() => {
+                            onClose();
+                            editor.selection.setSelectedNodesIds([]);
+                        }}
+                    />
+                ),
+                icon: <TurnIntoIcon />,
             },
-        },
-    ].filter(v => v);
-
-    const [menuList, setMenuList] = useState<CascaderItemProps[]>(menu);
+            {
+                title: 'Divide Here As A New Group',
+                icon: <UngroupIcon />,
+                callback: () => {
+                    editor.commands.blockCommands.splitGroupFromBlock(blockId);
+                },
+            },
+        ],
+        [editor, hooks, blockId, onClose]
+    );
 
     // const filterItems = (
     //     value: string,
@@ -90,7 +91,7 @@ export function LeftMenu(props: LeftMenuProps) {
         <>
             {props.children}
             <Cascader
-                items={menuList}
+                items={menu}
                 anchorEl={anchorEl}
                 placement="bottom-start"
                 open={Boolean(anchorEl)}
