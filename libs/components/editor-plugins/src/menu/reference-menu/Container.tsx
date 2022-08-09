@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import style9 from 'style9';
 
 import { Virgo, PluginHooks, HookType } from '@toeverything/framework/virgo';
 import {
