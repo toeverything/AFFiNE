@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Protocol } from '@toeverything/datasource/db-service';
 import {
     MuiClickAwayListener as ClickAwayListener,
     MuiGrow as Grow,
@@ -22,8 +23,14 @@ export const InlineMenuContainer = ({ editor }: InlineMenuContainerProps) => {
 
     useEffect(() => {
         // const unsubscribe = editor.selection.onSelectionChange(info => {
-        const unsubscribe = editor.selection.onSelectEnd(info => {
+        const unsubscribe = editor.selection.onSelectEnd(async info => {
             const { type, browserSelection, anchorNode } = info;
+            if (anchorNode) {
+                const activeBlock = await editor.getBlockById(anchorNode.id);
+                if (activeBlock.type === Protocol.Block.Type.page) {
+                    return;
+                }
+            }
             if (
                 type === 'None' ||
                 !anchorNode ||
