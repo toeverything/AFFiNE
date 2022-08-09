@@ -85,9 +85,7 @@ Please notice that AFFiNE is still under Alpha stage and is not ready for produc
 
 ## Create your story
 
-We want your data always to be yours, and we don't want to make any sacrifice to your accessibility. Your data is always local-stored first, yet we support real-time collaboration on a peer-to-peer basis. We don't think "privacy-first" is a good excuse for not supporting modern web features.
-Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators.
-Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows and Linux. The local file system support will be available when version 0.0.1beta is released.
+We want your data always to be yours, and we don't want to make any sacrifice to your accessibility. Your data is always local-stored first, yet we support real-time collaboration on a peer-to-peer basis. We don't think "privacy-first" is a good excuse for not supporting modern web features. Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators. Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows, and Linux. The local file system support will be available when version 0.0.1beta is released.
 
 # Documentation
 
@@ -117,9 +115,9 @@ Latest news and technology sharing on [Twitter](https://twitter.com/AffineOffici
 
 # The Philosophy of AFFiNE
 
-Timothy Berners-Lee once taught us about the idea of the semantic web, where all the data can be interpreted in any form while the "truth" is kept. This gives our best image of an ideal knowledge base by far, that sorting of information, planning of project and goals as well as creating of knowledge can be all together.
-We have witnessed waves of paradigm shift so many times. At first, everything was noted on office-like apps or DSL like LaTeX, then we found todo-list apps and WYSIWYG markdown editors better for writing and planning. Finally, here comes Notion and Miro, who take advantage of the idea of blocks to further liberate our creativity.
-It is all perfect... If there are not so many waste operations and redundant information. And, we insist that privacy first should always be given by default.
+Timothy Berners-Lee once taught us about the idea of the semantic web, where all the data can be interpreted in any form while the "truth" is kept. This gives our best image of an ideal knowledge base by far, that sorting of information, planning of project and goals as well as creating of knowledge can be all together. 
+We have witnessed waves of paradigm shift so many times. At first, everything was noted on office-like apps or DSL like LaTeX, then we found todo-list apps and WYSIWYG markdown editors better for writing and planning. Finally, here comes Notion and Miro, who take advantage of the idea of blocks to further liberate our creativity. It is all perfect... 
+If there are not so many waste operations and redundant information. And, we insist that privacy first should always be given by default. 
 That's why we are making AFFiNE. Some of the most important features are:
 
 -   Transformable
@@ -136,7 +134,7 @@ That's why we are making AFFiNE. Some of the most important features are:
     -   Data is always stored locally by default
     -   CRDTs are applied so that peer-to-peer collaboration is possible.
 
-We really appreciate the idea of Monday, Airtable and Notion databases. They inspired what we think is right for task management. But we don't like the repeated works -- we don't want to set a todo easily with markdown but end up re-write it again in kanban or other databases.
+We appreciate the idea of Monday, Airtable, and Notion databases. They inspired what we think is right for task management. But we don't like the repeated works -- we don't want to set a todo easily with markdown but end up re-write it again in kanban or other databases. 
 With AFFiNE, every block group has infinite views, for you to keep your single source of truth.
 
 We would like to give special thanks to the innovators and pioneers who greatly inspired us:
