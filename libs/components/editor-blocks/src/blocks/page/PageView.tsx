@@ -88,7 +88,6 @@ export const PageView: FC<CreateView> = ({ block, editor }) => {
                     className={'title'}
                     supportMarkdown={false}
                     handleEnter={onTextEnter}
-                    handleConvert={() => {}}
                     placeholder={'Untitled'}
                     block={block}
                     editor={editor}
