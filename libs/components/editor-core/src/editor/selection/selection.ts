@@ -30,6 +30,7 @@ import {
 } from './types';
 import { isLikeBlockListIds } from './utils';
 import { Protocol } from '@toeverything/datasource/db-service';
+import { Editor } from 'slate';
 // IMP: maybe merge active and select into single function
 
 export type SelectionInfo = InstanceType<
@@ -321,16 +322,16 @@ export class SelectionManager implements VirgoSelection {
             if (selectionRect.isIntersect(domToRect(block.dom))) {
                 const childrenBlocks = await block.children();
                 // should check directly in structured block
-                const structuredChildrenBlocks: Array<AsyncBlock> =
-                    childrenBlocks.filter(childBlock => {
+                const structuredChildrenBlocks: Array<AsyncBlock> = childrenBlocks.filter(
+                    childBlock => {
                         return this._editor.getView(childBlock.type).layoutOnly;
-                    });
+                    }
+                );
                 for await (const childBlock of structuredChildrenBlocks) {
-                    const childSelectedNodes =
-                        await this.calcRenderBlockIntersect(
-                            selectionRect,
-                            childBlock
-                        );
+                    const childSelectedNodes = await this.calcRenderBlockIntersect(
+                        selectionRect,
+                        childBlock
+                    );
                     selectedNodes.push(...childSelectedNodes);
                 }
                 const selectableChildren = childrenBlocks.filter(childBlock => {
@@ -347,11 +348,10 @@ export class SelectionManager implements VirgoSelection {
                 }
                 // if just only has one selected maybe select the children
                 if (selectedNodes.length === 1) {
-                    const childrenSelectedNodes: Array<AsyncBlock> =
-                        await this.calcRenderBlockIntersect(
-                            selectionRect,
-                            selectedNodes[0]
-                        );
+                    const childrenSelectedNodes: Array<AsyncBlock> = await this.calcRenderBlockIntersect(
+                        selectionRect,
+                        selectedNodes[0]
+                    );
                     if (childrenSelectedNodes.length)
                         return childrenSelectedNodes;
                 }
@@ -584,8 +584,7 @@ export class SelectionManager implements VirgoSelection {
                 } else {
                     const new_node = await this._editor.getBlockById(newNodeId);
                     if (new_node) {
-                        const new_node_children_ids =
-                            await new_node.childrenIds;
+                        const new_node_children_ids = await new_node.childrenIds;
                         let select_ids_new = this._selectedNodesIds;
                         if (
                             new_node_children_ids &&
@@ -1048,6 +1047,26 @@ export class SelectionManager implements VirgoSelection {
         document.removeEventListener(
             'selectionchange',
             this._windowSelectionChangeHandler
+        );
+    }
+    /**
+     *
+     * move active selection to the new position
+     * @param index:number
+     * @memberof SelectionManager
+     */
+    public moveCursor(index: number, blockId: string): void {
+        const now_range = window.getSelection().getRangeAt(0);
+        let preRang = document.createRange();
+        preRang.setStart(
+            now_range.startContainer,
+            now_range.startOffset + index
+        );
+        preRang.setEnd(now_range.endContainer, now_range.endOffset + index);
+        let prePosition = preRang.getClientRects().item(0);
+        this.activeNodeByNodeId(
+            blockId,
+            new Point(prePosition.left, prePosition.bottom)
         );
     }
 }
