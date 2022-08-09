@@ -4,6 +4,7 @@
     "editor.formatOnSaveMode": "file",
     "prettier.prettierPath": "./node_modules/prettier",
     "cSpell.words": [
+        "AUTOINCREMENT",
         "Backlinks",
         "blockdb",
         "booktitle",

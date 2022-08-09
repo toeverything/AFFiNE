@@ -102,6 +102,8 @@ async function _initYjsDatabase(
         params: YjsInitOptions['params'];
         userId: string;
         token?: string;
+        importData?: Uint8Array;
+        exportData?: (binary: Uint8Array) => void;
     }
 ): Promise<YjsProviders> {
     if (_asyncInitLoading.has(workspace)) {
@@ -122,7 +124,9 @@ async function _initYjsDatabase(
     const doc = new Doc({ autoLoad: true, shouldLoad: true });
 
     const idbp = new IndexedDBProvider(workspace, doc).whenSynced;
-    const fsp: SQLiteProvider | undefined = undefined; // new SQLiteProvider(workspace, doc).whenSynced;
+
+    const fs = new SQLiteProvider(workspace, doc, options.importData);
+    if (options.exportData) fs.registerExporter(options.exportData);
 
     const wsp = _initWebsocketProvider(
         backend,
@@ -132,7 +136,11 @@ async function _initYjsDatabase(
         params
     );
 
-    const [idb, [awareness, ws], fstore] = await Promise.all([idbp, wsp, fsp]);
+    const [idb, [awareness, ws], fstore] = await Promise.all([
+        idbp,
+        wsp,
+        fs.whenSynced,
+    ]);
 
     const binaries = new Doc({ autoLoad: true, shouldLoad: true });
     const binariesIdb = await new IndexedDBProvider(
@@ -166,6 +174,7 @@ async function _initYjsDatabase(
         awareness,
         idb,
         binariesIdb,
+        fstore,
         ws,
         backend,
         gatekeeper,
@@ -182,6 +191,8 @@ export type YjsInitOptions = {
     params?: Record<string, string>;
     userId?: string;
     token?: string;
+    importData?: Uint8Array;
+    exportData?: (binary: Uint8Array) => void;
 };
 
 export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
@@ -206,11 +217,20 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         workspace: string,
         options: YjsInitOptions
     ): Promise<YjsAdapter> {
-        const { backend, params = {}, userId = 'default', token } = options;
+        const {
+            backend,
+            params = {},
+            userId = 'default',
+            token,
+            importData,
+            exportData,
+        } = options;
         const providers = await _initYjsDatabase(backend, workspace, {
             params,
             userId,
             token,
+            importData,
+            exportData,
         });
         return new YjsAdapter(providers);
     }
