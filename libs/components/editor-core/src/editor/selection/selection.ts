@@ -1052,7 +1052,8 @@ export class SelectionManager implements VirgoSelection {
     /**
      *
      * move active selection to the new position
-     * @param index:number
+     * @param {number} index
+     * @param {string} blockId
      * @memberof SelectionManager
      */
     public moveCursor(index: number, blockId: string): void {
