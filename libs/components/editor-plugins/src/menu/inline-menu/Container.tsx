@@ -26,7 +26,7 @@ export const InlineMenuContainer = ({ editor }: InlineMenuContainerProps) => {
         const unsubscribe = editor.selection.onSelectEnd(async info => {
             const { type, browserSelection, anchorNode } = info;
             if (anchorNode) {
-                let activeBlock = await editor.getBlockById(anchorNode.id);
+                const activeBlock = await editor.getBlockById(anchorNode.id);
                 if (activeBlock.type === Protocol.Block.Type.page) {
                     return;
                 }
