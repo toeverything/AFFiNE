@@ -15,6 +15,7 @@ import styles from './tree-item.module.scss';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 
 import MoreActions from './MoreActions';
+import { useTheme } from '@toeverything/components/ui';
 export type TreeItemProps = {
     /** The main text to display on this line */
     value: string;
@@ -61,11 +62,13 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         },
         ref
     ) => {
-        const { workspace_id } = useParams();
+        const { workspace_id, page_id } = useParams();
         const BooleanPageTreeItemMoreActions = useFlag(
             'BooleanPageTreeItemMoreActions',
             true
         );
+        const theme = useTheme();
+
         return (
             <li
                 ref={wrapperRef}
@@ -106,6 +109,11 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                             className={styles['Text']}
                             {...handleProps}
                             to={`/${workspace_id}/${pageId}`}
+                            style={{
+                                ...(pageId === page_id && {
+                                    color: theme.affine.palette.primary,
+                                }),
+                            }}
                         >
                             {value}
                         </Link>
