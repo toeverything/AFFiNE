@@ -13,9 +13,10 @@ const StyledTabs = styled('div')(({ theme }) => {
     };
 });
 
-const StyledTabTitle = styled('div', {
-    shouldForwardProp: (prop: string) => !['isActive'].includes(prop),
-})<{ isActive?: boolean; isDisabled?: boolean }>`
+const StyledTabTitle = styled('div')<{
+    isActive?: boolean;
+    isDisabled?: boolean;
+}>`
     flex: 1;
     display: flex;
     align-items: center;
