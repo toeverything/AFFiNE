@@ -15,7 +15,11 @@ import {
     ContentTypes,
     Connectivity,
 } from './adapter';
-import { YjsBlockInstance } from './adapter/yjs';
+import {
+    getYjsProviders,
+    YjsBlockInstance,
+    YjsProviderOptions,
+} from './adapter/yjs';
 import {
     BaseBlock,
     BlockIndexer,
@@ -27,11 +31,11 @@ import {
     BlockTypes,
     BlockTypeKeys,
     BlockFlavors,
-    BucketBackend,
     UUID,
     BlockFlavorKeys,
     BlockItem,
     ExcludeFunction,
+    BucketBackend,
 } from './types';
 import { BlockEventBus, genUUID, getLogger } from './utils';
 
@@ -588,10 +592,16 @@ export class BlockClient<
 
     public static async init(
         workspace: string,
-        options: Partial<YjsInitOptions & BlockClientOptions> = {}
+        options: Partial<
+            YjsInitOptions & YjsProviderOptions & BlockClientOptions
+        > = {}
     ): Promise<BlockClientInstance> {
         const instance = await YjsAdapter.init(workspace, {
-            backend: BucketBackend.YjsWebSocketAffine,
+            provider: getYjsProviders({
+                backend: BucketBackend.YjsWebSocketAffine,
+                exportData: console.log.bind(console),
+                ...options,
+            }),
             ...options,
         });
         return new BlockClient(instance, workspace, options);

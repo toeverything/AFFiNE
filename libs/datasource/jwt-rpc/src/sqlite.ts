@@ -41,6 +41,7 @@ const initSQLiteInstance = async () => {
     _sqliteProcessing = true;
     _sqliteInstance = await sqlite({
         locateFile: () =>
+            // @ts-ignore
             new URL('sql.js/dist/sql-wasm.wasm', import.meta.url).href,
     });
     _sqliteProcessing = false;

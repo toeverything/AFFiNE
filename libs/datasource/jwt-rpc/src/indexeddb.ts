@@ -134,7 +134,7 @@ export class IndexedDBProvider extends Observable<string> {
     }
 
     /**
-     * Destroys this instance and removes all data from SQLite.
+     * Destroys this instance and removes all data from indexeddb.
      *
      * @return {Promise<void>}
      */
