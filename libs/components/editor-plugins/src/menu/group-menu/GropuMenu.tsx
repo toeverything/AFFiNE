@@ -168,6 +168,12 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
 
     useEffect(() => {
         setShowMenu(false);
+
+        if (groupBlock) {
+            const unobserve = groupBlock.onUpdate(() => setGroupBlock(null));
+            return unobserve;
+        }
+        return undefined;
     }, [groupBlock]);
 
     return (
