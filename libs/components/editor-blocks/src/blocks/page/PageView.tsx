@@ -109,12 +109,15 @@ export const PageView: FC<CreateView> = ({ block, editor }) => {
     );
 };
 
-const PageTitleBlock = styled('div')({
-    '.title': {
-        fontSize: Theme.typography.page.fontSize,
-        lineHeight: Theme.typography.page.lineHeight,
-    },
-    '.content': {
-        outline: 'none',
-    },
+const PageTitleBlock = styled('div')(({ theme }) => {
+    return {
+        '.title': {
+            fontSize: theme.affine.typography.page.fontSize,
+            lineHeight: theme.affine.typography.page.lineHeight,
+            fontWeight: theme.affine.typography.page.fontWeight,
+        },
+        '.content': {
+            outline: 'none',
+        },
+    };
 });
