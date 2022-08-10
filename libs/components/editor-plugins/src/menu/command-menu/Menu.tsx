@@ -123,17 +123,13 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
 
                             const COMMAND_MENU_HEIGHT =
                                 window.innerHeight * 0.4;
-                            const { top, left } =
+                            const { top, left, bottom } =
                                 editor.container.getBoundingClientRect();
                             if (clientHeight - rectTop <= COMMAND_MENU_HEIGHT) {
                                 setCommandMenuPosition({
                                     left: rect.left - left,
-                                    top:
-                                        rectTop -
-                                        top -
-                                        COMMAND_MENU_HEIGHT +
-                                        20,
-                                    bottom: 'initial',
+                                    bottom: bottom - rect.bottom + 24,
+                                    top: 'initial',
                                 });
                             } else {
                                 setCommandMenuPosition({
