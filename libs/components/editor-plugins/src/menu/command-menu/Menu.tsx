@@ -129,8 +129,12 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                             if (clientHeight - rectTop <= COMMAND_MENU_HEIGHT) {
                                 setCommandMenuPosition({
                                     left: rect.left - left,
-                                    bottom: rectTop - top + 10,
-                                    top: 'initial',
+                                    top:
+                                        rectTop -
+                                        top -
+                                        COMMAND_MENU_HEIGHT +
+                                        20,
+                                    bottom: 'initial',
                                 });
                             } else {
                                 setCommandMenuPosition({
