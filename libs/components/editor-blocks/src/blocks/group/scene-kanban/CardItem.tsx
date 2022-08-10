@@ -1,9 +1,5 @@
 import type { KanbanCard } from '@toeverything/components/editor-core';
-import {
-    RenderBlock,
-    useKanban,
-    useRefPage,
-} from '@toeverything/components/editor-core';
+import { RenderBlock, useKanban } from '@toeverything/components/editor-core';
 import { PenIcon } from '@toeverything/components/icons';
 import {
     IconButton,
@@ -12,6 +8,7 @@ import {
 } from '@toeverything/components/ui';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { useState } from 'react';
+import { useRefPage } from './RefPage';
 
 const CardContent = styled('div')({
     margin: '20px',

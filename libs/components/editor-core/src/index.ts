@@ -16,4 +16,4 @@ export * from './utils';
 
 export * from './editor';
 
-export { RefPageProvider, useRefPage } from './ref-page';
+export { useEditor } from './Contexts';
