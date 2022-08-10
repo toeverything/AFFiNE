@@ -156,7 +156,13 @@ export const CardContainer = (props: CardContainerProps) => {
     const { kanban } = useKanban();
     const { containerIds, items: dataSource, activeId } = props;
     return (
-        <KanbanContainer>
+        <KanbanContainer
+            onMouseDown={e => {
+                // Fix https://github.com/toeverything/AFFiNE/issues/29
+                // Prevent active selection when dragging kanban card
+                e.stopPropagation();
+            }}
+        >
             {containerIds.map((containerId, idx) => {
                 const items = dataSource[containerId];
 

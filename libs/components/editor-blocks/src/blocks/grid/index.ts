@@ -36,6 +36,9 @@ export class GridBlock extends BaseView {
             }
             return block.remove();
         }
+        if (block.childrenIds.length === 0) {
+            return block.remove();
+        }
         return true;
     }
 }
