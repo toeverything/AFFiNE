@@ -79,7 +79,7 @@ Once you submit your PR, a Docs team member will review your proposal. We may as
 
 ### Your PR is merged!
 
-Congratulations :tada::tada: The GitHub team thanks you :sparkles:. 
+Congratulations :tada::tada: The AFFiNE team thanks you :sparkles:. 
 
 Once your PR is merged, your contributions will be publicly visible on the our GitHub. 
 
