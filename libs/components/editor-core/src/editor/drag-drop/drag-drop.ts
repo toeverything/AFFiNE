@@ -95,6 +95,9 @@ export class DragDropManager {
     }
 
     private async _handleDropBlock(event: React.DragEvent<Element>) {
+        const targetBlock = await this._editor.getBlockById(
+            this._blockDragTargetId
+        );
         if (this._blockDragDirection !== BlockDropPlacement.none) {
             const blockId = event.dataTransfer.getData(this._blockIdKey);
             if (!(await this._canBeDrop(event))) return;
@@ -109,13 +112,24 @@ export class DragDropManager {
                     this._blockDragDirection
                 )
             ) {
-                await this._editor.commands.blockCommands.createLayoutBlock(
-                    blockId,
-                    this._blockDragTargetId,
+                const dropType =
                     this._blockDragDirection === BlockDropPlacement.left
                         ? GridDropType.left
-                        : GridDropType.right
-                );
+                        : GridDropType.right;
+                // if target is a grid item create grid item
+                if (targetBlock.type !== Protocol.Block.Type.gridItem) {
+                    await this._editor.commands.blockCommands.createLayoutBlock(
+                        blockId,
+                        this._blockDragTargetId,
+                        dropType
+                    );
+                } else {
+                    await this._editor.commands.blockCommands.moveInNewGridItem(
+                        blockId,
+                        this._blockDragTargetId,
+                        dropType
+                    );
+                }
             }
             if (
                 [
@@ -123,9 +137,6 @@ export class DragDropManager {
                     BlockDropPlacement.outerRight,
                 ].includes(this._blockDragDirection)
             ) {
-                const targetBlock = await this._editor.getBlockById(
-                    this._blockDragTargetId
-                );
                 if (targetBlock.type !== Protocol.Block.Type.grid) {
                     await this._editor.commands.blockCommands.createLayoutBlock(
                         blockId,
@@ -154,7 +165,7 @@ export class DragDropManager {
                         await this._editor.commands.blockCommands.moveInNewGridItem(
                             blockId,
                             gridItems[0].id,
-                            true
+                            GridDropType.right
                         );
                     }
                 }
@@ -347,10 +358,10 @@ export class DragDropManager {
         blockId: string
     ) {
         const { clientX, clientY } = event;
-        this._setBlockDragTargetId(blockId);
         const path = await this._editor.getBlockPath(blockId);
         const mousePoint = new Point(clientX, clientY);
         const rect = domToRect(blockDom);
+        let targetBlock: AsyncBlock = path[path.length - 1];
         /**
          * IMP: compute the level of the target block
          * future feature drag drop has level support do not delete
@@ -386,13 +397,30 @@ export class DragDropManager {
             const gridBlocks = path.filter(
                 block => block.type === Protocol.Block.Type.grid
             );
-            // limit grid block floor counts, when drag block to init grid
-            if (gridBlocks.length >= MAX_GRID_BLOCK_FLOOR) {
+            const parentBlock = path[path.length - 2];
+            // a new grid should not be grid item`s child
+            if (
+                parentBlock &&
+                parentBlock.type === Protocol.Block.Type.gridItem
+            ) {
+                targetBlock = parentBlock;
+                // gridItem`s parent must be grid block
+                const gridItemCounts = (await path[path.length - 3].children())
+                    .length;
+                if (
+                    gridItemCounts >=
+                    this._editor.configManager.grid.maxGridItemCount
+                ) {
+                    direction = BlockDropPlacement.none;
+                }
+                // limit grid block floor counts, when drag block to init grid
+            } else if (gridBlocks.length >= MAX_GRID_BLOCK_FLOOR) {
                 direction = BlockDropPlacement.none;
             }
         }
+        this._setBlockDragTargetId(targetBlock.id);
         this._setBlockDragDirection(direction);
-        return direction;
+        return { direction, block: targetBlock };
     }
 
     public handlerEditorDrop(event: React.DragEvent<Element>) {

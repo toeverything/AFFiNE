@@ -105,16 +105,17 @@ export class LeftMenuPlugin extends BasePlugin {
             new Point(event.clientX, event.clientY)
         );
         if (block == null || ignoreBlockTypes.includes(block.type)) return;
-        const direction = await this.editor.dragDropManager.checkBlockDragTypes(
-            event,
-            block.dom,
-            block.id
-        );
+        const { direction, block: targetBlock } =
+            await this.editor.dragDropManager.checkBlockDragTypes(
+                event,
+                block.dom,
+                block.id
+            );
         this._lineInfo.next({
             direction,
             blockInfo: {
-                block,
-                rect: block.dom.getBoundingClientRect(),
+                block: targetBlock,
+                rect: targetBlock.dom.getBoundingClientRect(),
             },
         });
     };

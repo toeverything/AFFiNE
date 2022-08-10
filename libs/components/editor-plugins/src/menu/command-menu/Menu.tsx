@@ -18,7 +18,6 @@ import {
     menuItemsMap,
 } from './config';
 import { QueryResult } from '../../search';
-
 export type CommandMenuProps = {
     editor: Virgo;
     hooks: PluginHooks;
