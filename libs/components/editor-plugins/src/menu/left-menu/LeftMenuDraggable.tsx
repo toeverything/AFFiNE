@@ -185,6 +185,14 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
     }, [blockInfo, editor]);
 
     useEffect(() => {
+        if (block?.block != null) {
+            const unobserve = block.block.onUpdate(() => setBlock(undefined));
+            return unobserve;
+        }
+        return undefined;
+    }, [block?.block]);
+
+    useEffect(() => {
         const sub = lineInfo.subscribe(data => {
             if (data == null) {
                 setLine(undefined);
