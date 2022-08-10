@@ -7,7 +7,6 @@ import { fromEvent } from 'file-selector';
 import LRUCache from 'lru-cache';
 import { debounce } from 'ts-debounce';
 import { nanoid } from 'nanoid';
-import { IndexeddbPersistence } from 'y-indexeddb';
 import { Awareness } from 'y-protocols/awareness.js';
 import {
     Doc,
@@ -19,7 +18,11 @@ import {
     snapshot,
 } from 'yjs';
 
-import { WebsocketProvider } from '@toeverything/datasource/jwt-rpc';
+import {
+    IndexedDBProvider,
+    SQLiteProvider,
+    WebsocketProvider,
+} from '@toeverything/datasource/jwt-rpc';
 
 import {
     AsyncDatabaseAdapter,
@@ -46,8 +49,9 @@ const logger = getLogger('BlockDB:yjs');
 
 type YjsProviders = {
     awareness: Awareness;
-    idb: IndexeddbPersistence;
-    binariesIdb: IndexeddbPersistence;
+    idb: IndexedDBProvider;
+    binariesIdb: IndexedDBProvider;
+    fstore?: SQLiteProvider;
     ws?: WebsocketProvider;
     backend: string;
     gatekeeper: GateKeeper;
@@ -98,6 +102,8 @@ async function _initYjsDatabase(
         params: YjsInitOptions['params'];
         userId: string;
         token?: string;
+        importData?: Uint8Array;
+        exportData?: (binary: Uint8Array) => void;
     }
 ): Promise<YjsProviders> {
     if (_asyncInitLoading.has(workspace)) {
@@ -117,7 +123,11 @@ async function _initYjsDatabase(
 
     const doc = new Doc({ autoLoad: true, shouldLoad: true });
 
-    const idbp = new IndexeddbPersistence(workspace, doc).whenSynced;
+    const idbp = new IndexedDBProvider(workspace, doc).whenSynced;
+
+    const fs = new SQLiteProvider(workspace, doc, options.importData);
+    if (options.exportData) fs.registerExporter(options.exportData);
+
     const wsp = _initWebsocketProvider(
         backend,
         workspace,
@@ -126,10 +136,14 @@ async function _initYjsDatabase(
         params
     );
 
-    const [idb, [awareness, ws]] = await Promise.all([idbp, wsp]);
+    const [idb, [awareness, ws], fstore] = await Promise.all([
+        idbp,
+        wsp,
+        fs.whenSynced,
+    ]);
 
     const binaries = new Doc({ autoLoad: true, shouldLoad: true });
-    const binariesIdb = await new IndexeddbPersistence(
+    const binariesIdb = await new IndexedDBProvider(
         `${workspace}_binaries`,
         binaries
     ).whenSynced;
@@ -147,6 +161,7 @@ async function _initYjsDatabase(
         awareness,
         idb,
         binariesIdb,
+        fstore,
         ws,
         backend,
         gatekeeper,
@@ -159,6 +174,7 @@ async function _initYjsDatabase(
         awareness,
         idb,
         binariesIdb,
+        fstore,
         ws,
         backend,
         gatekeeper,
@@ -175,6 +191,8 @@ export type YjsInitOptions = {
     params?: Record<string, string>;
     userId?: string;
     token?: string;
+    importData?: Uint8Array;
+    exportData?: (binary: Uint8Array) => void;
 };
 
 export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
@@ -199,11 +217,20 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         workspace: string,
         options: YjsInitOptions
     ): Promise<YjsAdapter> {
-        const { backend, params = {}, userId = 'default', token } = options;
+        const {
+            backend,
+            params = {},
+            userId = 'default',
+            token,
+            importData,
+            exportData,
+        } = options;
         const providers = await _initYjsDatabase(backend, workspace, {
             params,
             userId,
             token,
+            importData,
+            exportData,
         });
         return new YjsAdapter(providers);
     }
@@ -374,7 +401,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                     };
                     check();
                 });
-                await new IndexeddbPersistence(this._provider.idb.name, doc)
+                await new IndexedDBProvider(this._provider.idb.name, doc)
                     .whenSynced;
                 applyUpdate(doc, new Uint8Array(binary));
                 await update_check;

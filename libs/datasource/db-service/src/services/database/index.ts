@@ -78,7 +78,10 @@ export class Database {
     }
 
     async getDatabase(workspace: string, options?: BlockInitOptions) {
-        const db = await _getBlockDatabase(workspace, options);
+        const db = await _getBlockDatabase(workspace, {
+            ...this.#options,
+            ...options,
+        });
         return db;
     }
 
@@ -87,7 +90,7 @@ export class Database {
         name: string,
         listener: (connectivity: Connectivity) => void
     ) {
-        const db = await _getBlockDatabase(workspace);
+        const db = await _getBlockDatabase(workspace, this.#options);
         return db.addConnectivityListener(name, state => {
             const connectivity = state.get(name);
             if (connectivity) listener(connectivity);

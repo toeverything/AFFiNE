@@ -1,34 +1,32 @@
-import React, { useCallback, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import {
-    MuiBox as Box,
-    MuiButton as Button,
-    MuiCollapse as Collapse,
-    MuiIconButton as IconButton,
-    styled,
-} from '@toeverything/components/ui';
-import {
+    AddIcon,
     ArrowDropDownIcon,
     ArrowRightIcon,
 } from '@toeverything/components/icons';
-import { services } from '@toeverything/datasource/db-service';
 import {
-    usePageTree,
     useCalendarHeatmap,
+    usePageTree,
 } from '@toeverything/components/layout';
-import { AddIcon } from '@toeverything/components/icons';
+import {
+    MuiBox as Box,
+    MuiCollapse as Collapse,
+    styled,
+} from '@toeverything/components/ui';
+import { services } from '@toeverything/datasource/db-service';
+import React, { useCallback, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
-const StyledContainer = styled('div')({
+const StyledBtn = styled('div')({
     height: '32px',
     display: 'flex',
     alignItems: 'center',
-});
-
-const StyledBtn = styled('div')({
     color: '#98ACBD',
     textTransform: 'none',
     fontSize: '12px',
     fontWeight: '600',
+    cursor: 'pointer',
+    userSelect: 'none',
+    flex: 1,
 });
 
 export type CollapsiblePageTreeProps = {
@@ -81,16 +79,14 @@ export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {
                 onMouseEnter={() => setNewPageBtnVisible(true)}
                 onMouseLeave={() => setNewPageBtnVisible(false)}
             >
-                <StyledContainer>
+                <StyledBtn onClick={() => setOpen(prev => !prev)}>
                     {open ? (
                         <ArrowDropDownIcon sx={{ color: '#566B7D' }} />
                     ) : (
                         <ArrowRightIcon sx={{ color: '#566B7D' }} />
                     )}
-                    <StyledBtn onClick={() => setOpen(prev => !prev)}>
-                        {title}
-                    </StyledBtn>
-                </StyledContainer>
+                    {title}
+                </StyledBtn>
 
                 {newPageBtnVisible && (
                     <AddIcon
