@@ -83,6 +83,9 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
             const { type, anchorNode } = editor.selection.currentSelectInfo;
             // console.log(await editor.getBlockById(anchorNode.id));
+            if (!anchorNode?.id) {
+                return;
+            }
             const activeBlock = await editor.getBlockById(anchorNode.id);
             if (activeBlock.type === Protocol.Block.Type.page) {
                 return;
