@@ -189,7 +189,6 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
         },
         []
     );
-
     useEffect(() => {
         const sub = hooks
             .get(HookType.ON_ROOT_NODE_KEYUP)
