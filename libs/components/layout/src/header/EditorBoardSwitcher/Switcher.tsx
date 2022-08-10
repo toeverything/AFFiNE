@@ -32,6 +32,7 @@ export const Switcher = () => {
     return (
         <StyledContainerForSwitcher>
             <StatusText
+                width={'44px'}
                 active={pageViewMode === DocMode.doc}
                 onClick={() => switchToPageView(DocMode.doc)}
             >
@@ -48,6 +49,7 @@ export const Switcher = () => {
                 }}
             />
             <StatusText
+                width={'56px'}
                 active={pageViewMode === DocMode.board}
                 onClick={() => switchToPageView(DocMode.board)}
             >
