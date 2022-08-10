@@ -38,6 +38,7 @@ const GroupActionWrapper = styled('div')(({ theme }) => ({
     visibility: 'hidden',
     fontSize: theme.affine.typography.xs.fontSize,
     color: theme.affine.palette.icons,
+    opacity: 0.6,
     '.line': {
         flex: 1,
         height: '15px',
