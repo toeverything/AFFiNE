@@ -14,6 +14,8 @@ import {
     HistoryManager,
     ContentTypes,
     Connectivity,
+    DataExporter,
+    getDataExporter,
 } from './adapter';
 import {
     getYjsProviders,
@@ -66,6 +68,10 @@ type BlockClientOptions = {
     content?: BlockExporters<string>;
     metadata?: BlockExporters<Array<[string, number | string | string[]]>>;
     tagger?: BlockExporters<string[]>;
+    installExporter: (
+        initialData: Uint8Array,
+        exporter: DataExporter
+    ) => Promise<void>;
 };
 
 export class BlockClient<
@@ -95,10 +101,15 @@ export class BlockClient<
 
     private readonly _root: { node?: BaseBlock<B, C> };
 
+    private readonly _installExporter: (
+        initialData: Uint8Array,
+        exporter: DataExporter
+    ) => Promise<void>;
+
     private constructor(
         adapter: A,
         workspace: string,
-        options?: BlockClientOptions
+        options: BlockClientOptions
     ) {
         this._adapter = adapter;
         this._workspace = workspace;
@@ -142,6 +153,7 @@ export class BlockClient<
             });
 
         this._root = {};
+        this._installExporter = options.installExporter;
     }
 
     public addBlockListener(tag: string, listener: BlockListener) {
@@ -590,21 +602,34 @@ export class BlockClient<
         return this._adapter.history();
     }
 
+    public async setupDataExporter(initialData: Uint8Array, cb: DataExporter) {
+        await this._installExporter(initialData, cb);
+        this._adapter.reload();
+    }
+
     public static async init(
         workspace: string,
         options: Partial<
             YjsInitOptions & YjsProviderOptions & BlockClientOptions
         > = {}
     ): Promise<BlockClientInstance> {
+        const { importData, exportData, hasExporter, installExporter } =
+            getDataExporter();
+
         const instance = await YjsAdapter.init(workspace, {
             provider: getYjsProviders({
                 backend: BucketBackend.YjsWebSocketAffine,
-                exportData: console.log.bind(console),
+                importData,
+                exportData,
+                hasExporter,
                 ...options,
             }),
             ...options,
         });
-        return new BlockClient(instance, workspace, options);
+        return new BlockClient(instance, workspace, {
+            ...options,
+            installExporter,
+        });
     }
 }
 

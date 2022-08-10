@@ -153,18 +153,20 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
     private readonly _doc: Doc; // doc instance
     private readonly _awareness: Awareness; // lightweight state synchronization
     private readonly _gatekeeper: GateKeeper; // Simple access control
-    private readonly _history: YjsHistoryManager;
+    private readonly _history!: YjsHistoryManager;
 
     // Block Collection
     // key is a randomly generated global id
-    private readonly _blocks: YMap<YMap<unknown>>;
-    private readonly _blockUpdated: YMap<number>;
+    private readonly _blocks!: YMap<YMap<unknown>>;
+    private readonly _blockUpdated!: YMap<number>;
     // Maximum cache Block 1024, ttl 10 minutes
-    private readonly _blockCaches: LRUCache<string, YjsBlockInstance>;
+    private readonly _blockCaches!: LRUCache<string, YjsBlockInstance>;
 
-    private readonly _binaries: YjsRemoteBinaries;
+    private readonly _binaries!: YjsRemoteBinaries;
 
     private readonly _listener: Map<string, BlockListener<any>>;
+
+    private readonly _reload: () => void;
 
     static async init(
         workspace: string,
@@ -184,18 +186,28 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         this._doc = providers.idb.doc;
         this._awareness = providers.awareness;
         this._gatekeeper = providers.gatekeeper;
-
-        const blocks = this._doc.getMap<YMap<any>>('blocks');
-        this._blocks =
-            blocks.get('content') || blocks.set('content', new YMap());
-        this._blockUpdated =
-            blocks.get('updated') || blocks.set('updated', new YMap());
-        this._blockCaches = new LRUCache({ max: 1024, ttl: 1000 * 60 * 10 });
-        this._binaries = new YjsRemoteBinaries(
-            providers.binariesIdb.doc.getMap(),
-            providers.remoteToken
-        );
-        this._history = new YjsHistoryManager(this._blocks);
+        this._reload = () => {
+            const blocks = this._doc.getMap<YMap<any>>('blocks');
+            // @ts-ignore
+            this._blocks =
+                blocks.get('content') || blocks.set('content', new YMap());
+            // @ts-ignore
+            this._blockUpdated =
+                blocks.get('updated') || blocks.set('updated', new YMap());
+            // @ts-ignore
+            this._blockCaches = new LRUCache({
+                max: 1024,
+                ttl: 1000 * 60 * 10,
+            });
+            // @ts-ignore
+            this._binaries = new YjsRemoteBinaries(
+                providers.binariesIdb.doc.getMap(),
+                providers.remoteToken
+            );
+            // @ts-ignore
+            this._history = new YjsHistoryManager(this._blocks);
+        };
+        this._reload();
 
         this._listener = new Map();
 
@@ -279,6 +291,10 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 }
             });
         });
+    }
+
+    reload() {
+        this._reload();
     }
 
     getUserId(): string {

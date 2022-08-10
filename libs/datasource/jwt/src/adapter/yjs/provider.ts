@@ -22,8 +22,9 @@ export type YjsProvider = (instances: YjsDefaultInstances) => Promise<void>;
 export type YjsProviderOptions = {
     backend: typeof BucketBackend[keyof typeof BucketBackend];
     params?: Record<string, string>;
-    importData?: Uint8Array;
-    exportData?: (binary: Uint8Array) => void;
+    importData?: () => Promise<Uint8Array> | Uint8Array | undefined;
+    exportData?: (binary: Uint8Array) => Promise<void> | undefined;
+    hasExporter?: () => boolean;
 };
 
 export const getYjsProviders = (
@@ -31,13 +32,20 @@ export const getYjsProviders = (
 ): Record<string, YjsProvider> => {
     return {
         sqlite: async (instances: YjsDefaultInstances) => {
-            const fs = new SQLiteProvider(
-                instances.workspace,
-                instances.doc,
-                options.importData
-            );
-            if (options.exportData) fs.registerExporter(options.exportData);
-            await fs.whenSynced;
+            const fsHandle = setInterval(async () => {
+                if (options.hasExporter?.()) {
+                    clearInterval(fsHandle);
+                    const fs = new SQLiteProvider(
+                        instances.workspace,
+                        instances.doc,
+                        await options.importData?.()
+                    );
+                    if (options.exportData) {
+                        fs.registerExporter(options.exportData);
+                    }
+                    await fs.whenSynced;
+                }
+            }, 500);
         },
         ws: async (instances: YjsDefaultInstances) => {
             if (instances.token) {

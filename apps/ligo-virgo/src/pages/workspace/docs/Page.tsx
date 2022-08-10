@@ -1,11 +1,7 @@
 /* eslint-disable filename-rules/match */
 import { useEffect, useRef, type UIEvent, useState } from 'react';
 import { useParams } from 'react-router';
-import {
-    MuiBox as Box,
-    MuiCircularProgress as CircularProgress,
-    styled,
-} from '@toeverything/components/ui';
+
 import { AffineEditor } from '@toeverything/components/affine-editor';
 import {
     CalendarHeatmap,
@@ -15,10 +11,13 @@ import {
 import { CollapsibleTitle } from '@toeverything/components/common';
 import {
     useShowSpaceSidebar,
-    useUserAndSpaces,
     usePageClientWidth,
 } from '@toeverything/datasource/state';
-import { services } from '@toeverything/datasource/db-service';
+import {
+    MuiBox as Box,
+    MuiCircularProgress as CircularProgress,
+    styled,
+} from '@toeverything/components/ui';
 
 import { WorkspaceName } from './workspace-name';
 import { CollapsiblePageTree } from './collapsible-page-tree';

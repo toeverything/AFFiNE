@@ -6,6 +6,7 @@ import {
     SideBarViewCloseIcon,
 } from '@toeverything/components/icons';
 import { useShowSettingsSidebar } from '@toeverything/datasource/state';
+
 import { CurrentPageTitle } from './Title';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 
