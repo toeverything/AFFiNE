@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Option, Select, Tooltip } from '@toeverything/components/ui';
+import {
+    Input,
+    message,
+    Option,
+    Select,
+    Tooltip,
+} from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 import { AsyncBlock } from '../../editor';
 
@@ -18,6 +24,7 @@ import {
     generateRandomFieldName,
     generateInitialOptions,
     getPendantConfigByType,
+    checkPendantForm,
 } from '../utils';
 import { useOnCreateSure } from './hooks';
 
@@ -98,6 +105,17 @@ export const CreatePendantPanel = ({
                         )}
                         iconConfig={getPendantConfigByType(selectedOption.type)}
                         onSure={async (type, newPropertyItem, newValue) => {
+                            const checkResult = checkPendantForm(
+                                type,
+                                fieldName,
+                                newPropertyItem,
+                                newValue
+                            );
+
+                            if (!checkResult.passed) {
+                                await message.error(checkResult.message);
+                                return;
+                            }
                             await onCreateSure({
                                 type,
                                 newPropertyItem,
