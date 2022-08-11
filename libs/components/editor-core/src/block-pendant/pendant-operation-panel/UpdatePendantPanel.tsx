@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Input, Tooltip } from '@toeverything/components/ui';
+import { Input, message, Tooltip } from '@toeverything/components/ui';
 import { HelpCenterIcon } from '@toeverything/components/icons';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import type { AsyncBlock } from '../../editor';
@@ -8,7 +8,7 @@ import {
     type RecastBlockValue,
     type RecastMetaProperty,
 } from '../../recast-block';
-import { getPendantConfigByType } from '../utils';
+import { checkPendantForm, getPendantConfigByType } from '../utils';
 import {
     StyledPopoverWrapper,
     StyledOperationLabel,
@@ -70,7 +70,7 @@ export const UpdatePendantPanel = ({
                         setFieldName(e.target.value);
                     }}
                     endAdornment={
-                        <Tooltip content="Help info here">
+                        <Tooltip content="Help info here" placement="top">
                             <StyledInputEndAdornment>
                                 <HelpCenterIcon />
                             </StyledInputEndAdornment>
@@ -98,6 +98,17 @@ export const UpdatePendantPanel = ({
                 property={property}
                 type={property.type}
                 onSure={async (type, newPropertyItem, newValue) => {
+                    const checkResult = checkPendantForm(
+                        type,
+                        fieldName,
+                        newPropertyItem,
+                        newValue
+                    );
+
+                    if (!checkResult.passed) {
+                        await message.error(checkResult.message);
+                        return;
+                    }
                     await onUpdateSure({
                         type,
                         newPropertyItem,
