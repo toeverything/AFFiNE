@@ -1,4 +1,4 @@
-import { IconButton, styled } from '@toeverything/components/ui';
+import { IconButton, styled, MuiButton } from '@toeverything/components/ui';
 import {
     LogoIcon,
     SideBarViewIcon,
@@ -6,6 +6,7 @@ import {
     SideBarViewCloseIcon,
 } from '@toeverything/components/icons';
 import { useShowSettingsSidebar } from '@toeverything/datasource/state';
+
 import { CurrentPageTitle } from './Title';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 
@@ -24,9 +25,14 @@ export const LayoutHeader = () => {
                 </FlexContainer>
                 <FlexContainer>
                     <StyledHelper>
-                        <StyledShare>Share</StyledShare>
+                        <StyledShare disabled={true}>Share</StyledShare>
                         <div style={{ margin: '0px 12px' }}>
-                            <IconButton size="large">
+                            <IconButton
+                                size="large"
+                                hoverColor={'transparent'}
+                                disabled={true}
+                                style={{ cursor: 'not-allowed' }}
+                            >
                                 <SearchIcon />
                             </IconButton>
                         </div>
@@ -119,17 +125,19 @@ const StyledHelper = styled('div')({
     alignItems: 'center',
 });
 
-const StyledShare = styled('div')({
+const StyledShare = styled('div')<{ disabled?: boolean }>({
     padding: '10px 12px',
     fontWeight: 600,
     fontSize: '14px',
-    color: '#3E6FDB',
-    cursor: 'pointer',
-
-    '&:hover': {
-        background: '#F5F7F8',
-        borderRadius: '5px',
-    },
+    cursor: 'not-allowed',
+    color: '#98ACBD',
+    textTransform: 'none',
+    /* disabled for current time */
+    // color: '#3E6FDB',
+    // '&:hover': {
+    //     background: '#F5F7F8',
+    //     borderRadius: '5px',
+    // },
 });
 
 const StyledLogoIcon = styled(LogoIcon)(({ theme }) => {
@@ -141,9 +149,7 @@ const StyledLogoIcon = styled(LogoIcon)(({ theme }) => {
 
 const StyledContainerForEditorBoardSwitcher = styled('div')(({ theme }) => {
     return {
-        width: '100%',
         position: 'absolute',
-        display: 'flex',
-        justifyContent: 'center',
+        left: '50%',
     };
 });

@@ -1,0 +1,1 @@
+export { DotIcon } from './DotIcon';

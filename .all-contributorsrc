@@ -1,12 +1,12 @@
 {
-    "projectName": "toeverything",
+    "projectName": "AFFiNE",
     "projectOwner": "toeverything",
     "repoType": "github",
     "repoHost": "https://github.com",
     "files": [
         "README.md"
     ],
-    "imageSize": 100,
+    "imageSize": 50,
     "commit": false,
     "commitConvention": "angular",
     "contributorsPerLine": 7,
@@ -115,9 +115,118 @@
             "login": "uptonking",
             "name": "Jin Yao",
             "avatar_url": "https://avatars.githubusercontent.com/u/11391549?v=4",
-            "profile": "https://github.com/uptonking?tab=repositories&type=source",
+            "profile": "https://github.com/uptonking",
             "contributions": [
                 "code",
+                "doc"
+            ]
+        },
+        {
+            "login": "HeJiachen-PM",
+            "name": "HeJiachen-PM",
+            "avatar_url": "https://avatars.githubusercontent.com/u/79301703?v=4",
+            "profile": "https://github.com/HeJiachen-PM",
+            "contributions": [
+                "doc"
+            ]
+        },
+        {
+            "login": "Yipei-Operation",
+            "name": "Yipei Wei",
+            "avatar_url": "https://avatars.githubusercontent.com/u/79373028?v=4",
+            "profile": "https://github.com/Yipei-Operation",
+            "contributions": [
+                "doc"
+            ]
+        },
+        {
+            "login": "fanjing22",
+            "name": "fanjing22",
+            "avatar_url": "https://avatars.githubusercontent.com/u/109729699?v=4",
+            "profile": "https://github.com/fanjing22",
+            "contributions": [
+                "design"
+            ]
+        },
+        {
+            "login": "Svaney-ssman",
+            "name": "Svaney",
+            "avatar_url": "https://avatars.githubusercontent.com/u/110808979?v=4",
+            "profile": "https://github.com/Svaney-ssman",
+            "contributions": [
+                "design"
+            ]
+        },
+        {
+            "login": "xell",
+            "name": "Guozhu Liu",
+            "avatar_url": "https://avatars.githubusercontent.com/u/132558?v=4",
+            "profile": "http://xell.me/",
+            "contributions": [
+                "design"
+            ]
+        },
+        {
+            "login": "fyZheng07",
+            "name": "fyZheng07",
+            "avatar_url": "https://avatars.githubusercontent.com/u/63830919?v=4",
+            "profile": "https://github.com/fyZheng07",
+            "contributions": [
+                "eventOrganizing",
+                "userTesting"
+            ]
+        },
+        {
+            "login": "CJSS",
+            "name": "CJSS",
+            "avatar_url": "https://avatars.githubusercontent.com/u/4605025?v=4",
+            "profile": "https://github.com/CJSS",
+            "contributions": [
+                "doc"
+            ]
+        },
+        {
+            "login": "CarlosZoft",
+            "name": "Carlos Rafael ",
+            "avatar_url": "https://avatars.githubusercontent.com/u/62192072?v=4",
+            "profile": "https://github.com/clean-software",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "caleboleary",
+            "name": "Caleb OLeary",
+            "avatar_url": "https://avatars.githubusercontent.com/u/12816579?v=4",
+            "profile": "https://github.com/caleboleary",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "JimmFly",
+            "name": "JimmFly",
+            "avatar_url": "https://avatars.githubusercontent.com/u/102217452?v=4",
+            "profile": "https://github.com/JimmFly",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "westongraham",
+            "name": "Weston Graham",
+            "avatar_url": "https://avatars.githubusercontent.com/u/89493023?v=4",
+            "profile": "https://github.com/westongraham",
+            "contributions": [
+                "doc"
+            ]
+        },
+        {
+            "login": "pointmax",
+            "name": "pointmax",
+            "avatar_url": "https://avatars.githubusercontent.com/u/49361135?v=4",
+            "profile": "https://github.com/pointmax",
+            "contributions": [
                 "doc"
             ]
         }

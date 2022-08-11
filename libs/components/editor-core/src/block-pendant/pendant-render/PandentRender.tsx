@@ -105,6 +105,8 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                         <AddPendantPopover
                             block={block}
                             iconStyle={{ marginTop: 4 }}
+                            trigger="click"
+                            // trigger={isKanbanView ? 'hover' : 'click'}
                             container={blockRenderContainerRef.current}
                         />
                     </div>

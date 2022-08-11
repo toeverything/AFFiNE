@@ -17,15 +17,19 @@ export const StatusIcon = ({ mode }: StatusIconProps) => {
 const IconWrapper = styled('div')<Pick<StatusIconProps, 'mode'>>(
     ({ theme, mode }) => {
         return {
-            width: '20px',
-            height: '20px',
+            width: '24px',
+            height: '24px',
             borderRadius: '5px',
             boxShadow: theme.affine.shadows.shadow1,
             color: theme.affine.palette.primary,
             cursor: 'pointer',
             backgroundColor: theme.affine.palette.white,
-            transform: `translateX(${mode === DocMode.doc ? 0 : 20}px)`,
+            transform: `translateX(${mode === DocMode.doc ? 0 : 30}px)`,
             transition: 'transform 300ms ease',
+
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
 
             '& > svg': {
                 fontSize: '20px',

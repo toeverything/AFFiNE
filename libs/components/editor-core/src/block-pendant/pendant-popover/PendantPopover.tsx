@@ -26,6 +26,7 @@ export const PendantPopover: FC<
                     block={block}
                     endElement={
                         <AddPendantPopover
+                            container={popoverProps.container}
                             block={block}
                             onSure={() => {
                                 popoverHandlerRef.current?.setVisible(false);

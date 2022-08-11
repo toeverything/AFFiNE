@@ -219,8 +219,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     isPointing = false;
 
-    isForcePanning = false;
-
     editingStartTime = -1;
 
     fileSystemHandle: FileSystemHandle | null = null;
@@ -262,7 +260,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     constructor(props: TldrawAppCtorProps) {
         super(
-            TldrawApp.default_state,
+            TldrawApp.defaultState,
             props.id,
             TldrawApp.version,
             (prev, next, prevVersion) => {
@@ -326,9 +324,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             );
 
             this.patchState({
-                ...TldrawApp.default_state,
+                ...TldrawApp.defaultState,
                 appState: {
-                    ...TldrawApp.default_state.appState,
+                    ...TldrawApp.defaultState.appState,
                     status: TDStatus.Idle,
                 },
             });
@@ -1473,13 +1471,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
         this.replace_state(
             {
-                ...TldrawApp.default_state,
+                ...TldrawApp.defaultState,
                 settings: {
                     ...this.state.settings,
                 },
                 document: migrate(document, TldrawApp.version),
                 appState: {
-                    ...TldrawApp.default_state.appState,
+                    ...TldrawApp.defaultState.appState,
                     ...this.state.appState,
                     currentPageId: Object.keys(document.pages)[0],
                     disableAssets: this.disableAssets,
@@ -3913,7 +3911,11 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 break;
             }
             case ' ': {
-                this.isForcePanning = true;
+                this.patchState({
+                    settings: {
+                        forcePanning: true,
+                    },
+                });
                 this.spaceKey = true;
                 break;
             }
@@ -3976,7 +3978,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 break;
             }
             case ' ': {
-                this.isForcePanning = false;
+                this.patchState({
+                    settings: {
+                        forcePanning:
+                            this.currentTool.type === TDShapeType.HandDraw,
+                    },
+                });
                 this.spaceKey = false;
                 break;
             }
@@ -4069,13 +4076,18 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         this.pan(delta);
 
         // When panning, we also want to call onPointerMove, except when "force panning" via spacebar / middle wheel button (it's called elsewhere in that case)
-        if (!this.isForcePanning)
+        if (!this.useStore.getState().settings.forcePanning)
             this.onPointerMove(info, e as unknown as React.PointerEvent);
     };
 
     onZoom: TLWheelEventHandler = (info, e) => {
         if (this.state.appState.status !== TDStatus.Idle) return;
-        const delta = info.delta[2] / 50;
+        // Normalize zoom scroll
+        // Fix https://github.com/toeverything/AFFiNE/issues/135
+        const delta =
+            Math.abs(info.delta[2]) > 10
+                ? 0.2 * Math.sign(info.delta[2])
+                : info.delta[2] / 50;
         this.zoomBy(delta, info.point);
         this.onPointerMove(info, e as unknown as React.PointerEvent);
     };
@@ -4093,7 +4105,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     onPointerMove: TLPointerEventHandler = (info, e) => {
         this.previousPoint = this.currentPoint;
         this.updateInputs(info, e);
-        if (this.isForcePanning && this.isPointing) {
+        if (this.useStore.getState().settings.forcePanning && this.isPointing) {
             this.onPan?.(
                 { ...info, delta: Vec.neg(info.delta) },
                 e as unknown as WheelEvent
@@ -4117,20 +4129,23 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     onPointerDown: TLPointerEventHandler = (info, e) => {
         if (e.buttons === 4) {
-            this.isForcePanning = true;
+            this.patchState({
+                settings: {
+                    forcePanning: true,
+                },
+            });
         } else if (this.isPointing) {
             return;
         }
         this.isPointing = true;
         this.originPoint = this.getPagePoint(info.point).concat(info.pressure);
         this.updateInputs(info, e);
-        if (this.isForcePanning) return;
+        if (this.useStore.getState().settings.forcePanning) return;
         this.currentTool.onPointerDown?.(info, e);
     };
 
     onPointerUp: TLPointerEventHandler = (info, e) => {
         this.isPointing = false;
-        if (!this.shiftKey) this.isForcePanning = false;
         this.updateInputs(info, e);
         this.currentTool.onPointerUp?.(info, e);
     };
@@ -4517,7 +4532,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         assets: {},
     };
 
-    static default_state: TDSnapshot = {
+    static defaultState: TDSnapshot = {
         settings: {
             isCadSelectMode: false,
             isPenMode: false,
@@ -4527,6 +4542,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             isSnapping: false,
             isDebugMode: false,
             isReadonlyMode: false,
+            forcePanning: false,
             keepStyleMenuOpen: false,
             nudgeDistanceLarge: 16,
             nudgeDistanceSmall: 1,

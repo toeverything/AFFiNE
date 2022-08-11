@@ -18,11 +18,14 @@ export const StatusTrack: FC<StatusTrackProps> = ({ mode, onClick }) => {
 
 const Container = styled('div')(({ theme }) => {
     return {
-        backgroundColor: theme.affine.palette.textHover,
-        borderRadius: '5px',
-        height: '30px',
-        width: '50px',
+        width: '64px',
+        height: '32px',
+        border: '1px solid #ECF1FB',
+        borderRadius: '8px',
         cursor: 'pointer',
-        padding: '5px',
+        margin: '0 8px',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 4px',
     };
 });

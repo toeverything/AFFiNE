@@ -150,6 +150,7 @@ const TodoBlock = styled('div')({
     display: 'flex',
     '.checkBoxContainer': {
         marginRight: '4px',
+        padding: '0 4px',
         height: '22px',
     },
     '.textContainer': {

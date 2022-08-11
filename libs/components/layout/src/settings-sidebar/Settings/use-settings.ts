@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { message } from '@toeverything/components/ui';
 import { useSettingFlags, type SettingFlags } from './use-setting-flags';
 import { copyToClipboard } from '@toeverything/utils';
 import {
@@ -91,7 +92,10 @@ export const useSettings = (): SettingItem[] => {
         {
             type: 'button',
             name: 'Copy Page Link',
-            onClick: () => copyToClipboard(window.location.href),
+            onClick: () => {
+                copyToClipboard(window.location.href);
+                message.success('Page link copied successfully');
+            },
         },
         {
             type: 'separator',

@@ -192,4 +192,13 @@ export class Database {
             }
         }
     }
+
+    async setupDataExporter(
+        workspace: string,
+        initialData: Uint8Array,
+        callback: (binary: Uint8Array) => Promise<void>
+    ) {
+        const db = await this.getDatabase(workspace);
+        await db.setupDataExporter(initialData, callback);
+    }
 }

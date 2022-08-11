@@ -12,6 +12,7 @@ import SelectUnstyled, {
 } from '@mui/base/SelectUnstyled';
 /* eslint-disable no-restricted-imports */
 import PopperUnstyled from '@mui/base/PopperUnstyled';
+import { ArrowDropDownIcon } from '@toeverything/components/icons';
 import { styled } from '../styled';
 
 type ExtendSelectProps = {
@@ -41,20 +42,29 @@ export const Select = forwardRef(function CustomSelect<TValue>(
     const { width = '100%', style, listboxStyle, placeholder } = props;
     const components: SelectUnstyledProps<TValue>['components'] = {
         // Root: generateStyledRoot({ width, ...style }),
-        Root: forwardRef((rootProps, rootRef) => (
-            <StyledRoot
-                ref={rootRef}
-                {...rootProps}
-                style={{
-                    width,
-                    ...style,
-                }}
-            >
-                {rootProps.children || (
-                    <StyledPlaceholder>{placeholder}</StyledPlaceholder>
-                )}
-            </StyledRoot>
-        )),
+        Root: forwardRef((rootProps, rootRef) => {
+            const {
+                ownerState: { open },
+            } = rootProps;
+
+            return (
+                <StyledRoot
+                    ref={rootRef}
+                    {...rootProps}
+                    style={{
+                        width,
+                        ...style,
+                    }}
+                >
+                    {rootProps.children || (
+                        <StyledPlaceholder>{placeholder}</StyledPlaceholder>
+                    )}
+                    <StyledSelectedArrowWrapper open={open}>
+                        <ArrowDropDownIcon />
+                    </StyledSelectedArrowWrapper>
+                </StyledRoot>
+            );
+        }),
         Listbox: forwardRef((listboxProps, listboxRef) => (
             <StyledListbox
                 ref={listboxRef}
@@ -72,6 +82,20 @@ export const Select = forwardRef(function CustomSelect<TValue>(
         SelectUnstyledProps<TValue> &
         RefAttributes<HTMLUListElement>
 ) => JSX.Element;
+
+const StyledSelectedArrowWrapper = styled('div')<{ open: boolean }>(
+    ({ open }) => ({
+        position: 'absolute',
+        top: '0',
+        bottom: '0',
+        right: '12px',
+        margin: 'auto',
+        lineHeight: '32px',
+        display: 'flex',
+        alignItems: 'center',
+        transform: `rotate(${open ? '180deg' : '0'})`,
+    })
+);
 
 const StyledRoot = styled('div')(({ theme }) => ({
     height: '32px',
@@ -95,18 +119,6 @@ const StyledRoot = styled('div')(({ theme }) => ({
 
     [`&.${selectUnstyledClasses.expanded}`]: {
         borderColor: `${theme.affine.palette.primary}`,
-        '&::after': {
-            content: '"▴"',
-        },
-    },
-    '&::after': {
-        content: '"▾"',
-        position: ' absolute',
-        top: '0',
-        bottom: '0',
-        right: '12px',
-        margin: 'auto',
-        lineHeight: '32px',
     },
 }));
 

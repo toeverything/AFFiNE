@@ -55,28 +55,39 @@ const _useUserAndSpace = () => {
 
     const currentSpaceId: string | undefined = useMemo(() => user?.id, [user]);
 
-    return {
-        user,
-        currentSpaceId,
-        loading,
-    };
+    return { user, currentSpaceId, loading };
 };
 
+const BRAND_ID = 'AFFiNE';
+
+const _localTrigger = atom<boolean>(false);
 const _useUserAndSpacesForFreeLogin = () => {
+    const [user, setUser] = useAtom(_userAtom);
     const [loading, setLoading] = useAtom(_loadingAtom);
+    const [localTrigger] = useAtom(_localTrigger);
 
     useEffect(() => setLoading(false), []);
-    const BRAND_ID = 'AFFiNE';
-    return {
-        user: {
-            photo: '',
-            id: BRAND_ID,
-            nickname: BRAND_ID,
-            email: '',
-        } as UserInfo,
-        currentSpaceId: BRAND_ID,
-        loading,
-    };
+
+    useEffect(() => {
+        if (localTrigger) {
+            setUser({
+                photo: '',
+                id: BRAND_ID,
+                username: BRAND_ID,
+                nickname: BRAND_ID,
+                email: '',
+            });
+        }
+    }, [localTrigger, setLoading, setUser]);
+
+    const currentSpaceId: string | undefined = useMemo(() => user?.id, [user]);
+
+    return { user, currentSpaceId, loading };
+};
+
+export const useLocalTrigger = () => {
+    const [, setTrigger] = useAtom(_localTrigger);
+    return () => setTrigger(true);
 };
 
 export const useUserAndSpaces = process.env['NX_LOCAL']

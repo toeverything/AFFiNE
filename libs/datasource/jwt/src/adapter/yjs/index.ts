@@ -18,11 +18,7 @@ import {
     snapshot,
 } from 'yjs';
 
-import {
-    IndexedDBProvider,
-    SQLiteProvider,
-    WebsocketProvider,
-} from '@toeverything/datasource/jwt-rpc';
+import { IndexedDBProvider } from '@toeverything/datasource/jwt-rpc';
 
 import {
     AsyncDatabaseAdapter,
@@ -31,7 +27,7 @@ import {
     Connectivity,
     HistoryManager,
 } from '../../adapter';
-import { BucketBackend, BlockItem, BlockTypes } from '../../types';
+import { BlockItem, BlockTypes } from '../../types';
 import { getLogger, sha3, sleep } from '../../utils';
 
 import { YjsRemoteBinaries } from './binary';
@@ -43,50 +39,25 @@ import {
 } from './operation';
 import { EmitEvents, Suspend } from './listener';
 import { YjsHistoryManager } from './history';
+import { YjsProvider } from './provider';
 
 declare const JWT_DEV: boolean;
 const logger = getLogger('BlockDB:yjs');
 
+type ConnectivityListener = (
+    workspace: string,
+    connectivity: Connectivity
+) => void;
 type YjsProviders = {
     awareness: Awareness;
     idb: IndexedDBProvider;
     binariesIdb: IndexedDBProvider;
-    fstore?: SQLiteProvider;
-    ws?: WebsocketProvider;
-    backend: string;
     gatekeeper: GateKeeper;
+    connListener: { listeners?: ConnectivityListener };
     userId: string;
     remoteToken?: string; // remote storage token
 };
 const _yjsDatabaseInstance = new Map<string, YjsProviders>();
-
-async function _initWebsocketProvider(
-    url: string,
-    room: string,
-    doc: Doc,
-    token?: string,
-    params?: YjsInitOptions['params']
-): Promise<[Awareness, WebsocketProvider | undefined]> {
-    const awareness = new Awareness(doc);
-
-    if (token) {
-        const ws = new WebsocketProvider(token, url, room, doc, {
-            awareness,
-            params,
-        }) as any; // TODO: type is erased after cascading references
-
-        // Wait for ws synchronization to complete, otherwise the data will be modified in reverse, which can be optimized later
-        return new Promise((resolve, reject) => {
-            // TODO: synced will also be triggered on reconnection after losing sync
-            // There needs to be an event mechanism to emit the synchronization state to the upper layer
-            ws.once('synced', () => resolve([awareness, ws]));
-            ws.once('lost-connection', () => resolve([awareness, ws]));
-            ws.once('connection-error', () => reject());
-        });
-    } else {
-        return [awareness, undefined];
-    }
-}
 
 const _asyncInitLoading = new Set<string>();
 const _waitLoading = async (workspace: string) => {
@@ -96,14 +67,11 @@ const _waitLoading = async (workspace: string) => {
 };
 
 async function _initYjsDatabase(
-    backend: string,
     workspace: string,
     options: {
-        params: YjsInitOptions['params'];
         userId: string;
         token?: string;
-        importData?: Uint8Array;
-        exportData?: (binary: Uint8Array) => void;
+        provider?: Record<string, YjsProvider>;
     }
 ): Promise<YjsProviders> {
     if (_asyncInitLoading.has(workspace)) {
@@ -119,34 +87,18 @@ async function _initYjsDatabase(
     }
     // if (instance) return instance;
     _asyncInitLoading.add(workspace);
-    const { params, userId, token: remoteToken } = options;
+    const { userId, token } = options;
 
     const doc = new Doc({ autoLoad: true, shouldLoad: true });
-
-    const idbp = new IndexedDBProvider(workspace, doc).whenSynced;
-
-    const fs = new SQLiteProvider(workspace, doc, options.importData);
-    if (options.exportData) fs.registerExporter(options.exportData);
-
-    const wsp = _initWebsocketProvider(
-        backend,
-        workspace,
-        doc,
-        remoteToken,
-        params
-    );
-
-    const [idb, [awareness, ws], fstore] = await Promise.all([
-        idbp,
-        wsp,
-        fs.whenSynced,
-    ]);
+    const idb = await new IndexedDBProvider(workspace, doc).whenSynced;
 
     const binaries = new Doc({ autoLoad: true, shouldLoad: true });
     const binariesIdb = await new IndexedDBProvider(
         `${workspace}_binaries`,
         binaries
     ).whenSynced;
+
+    const awareness = new Awareness(doc);
 
     const gateKeeperData = doc.getMap<YMap<string>>('gatekeeper');
 
@@ -157,80 +109,74 @@ async function _initYjsDatabase(
         gateKeeperData.get('common') || gateKeeperData.set('common', new YMap())
     );
 
-    _yjsDatabaseInstance.set(workspace, {
+    const connListener: { listeners?: ConnectivityListener } = {};
+    if (options.provider) {
+        const emitState = (c: Connectivity) =>
+            connListener.listeners?.(workspace, c);
+        await Promise.all(
+            Object.entries(options.provider).map(async ([, p]) =>
+                p({ awareness, doc, token, workspace, emitState })
+            )
+        );
+    }
+    const newInstance = {
         awareness,
         idb,
         binariesIdb,
-        fstore,
-        ws,
-        backend,
         gatekeeper,
+        connListener,
         userId,
-        remoteToken,
-    });
+        remoteToken: token,
+    };
+
+    _yjsDatabaseInstance.set(workspace, newInstance);
+
     _asyncInitLoading.delete(workspace);
 
-    return {
-        awareness,
-        idb,
-        binariesIdb,
-        fstore,
-        ws,
-        backend,
-        gatekeeper,
-        userId,
-        remoteToken,
-    };
+    return newInstance;
 }
 
 export type { YjsBlockInstance } from './block';
 export type { YjsContentOperation } from './operation';
 
 export type YjsInitOptions = {
-    backend: typeof BucketBackend[keyof typeof BucketBackend];
-    params?: Record<string, string>;
     userId?: string;
     token?: string;
-    importData?: Uint8Array;
-    exportData?: (binary: Uint8Array) => void;
+    provider?: Record<string, YjsProvider>;
 };
+
+export { getYjsProviders } from './provider';
+export type { YjsProviderOptions } from './provider';
 
 export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
     private readonly _provider: YjsProviders;
     private readonly _doc: Doc; // doc instance
     private readonly _awareness: Awareness; // lightweight state synchronization
     private readonly _gatekeeper: GateKeeper; // Simple access control
-    private readonly _history: YjsHistoryManager;
+    private readonly _history!: YjsHistoryManager;
 
     // Block Collection
     // key is a randomly generated global id
-    private readonly _blocks: YMap<YMap<unknown>>;
-    private readonly _blockUpdated: YMap<number>;
+    private readonly _blocks!: YMap<YMap<unknown>>;
+    private readonly _blockUpdated!: YMap<number>;
     // Maximum cache Block 1024, ttl 10 minutes
-    private readonly _blockCaches: LRUCache<string, YjsBlockInstance>;
+    private readonly _blockCaches!: LRUCache<string, YjsBlockInstance>;
 
-    private readonly _binaries: YjsRemoteBinaries;
+    private readonly _binaries!: YjsRemoteBinaries;
 
     private readonly _listener: Map<string, BlockListener<any>>;
+
+    private readonly _reload: () => void;
 
     static async init(
         workspace: string,
         options: YjsInitOptions
     ): Promise<YjsAdapter> {
-        const {
-            backend,
-            params = {},
-            userId = 'default',
-            token,
-            importData,
-            exportData,
-        } = options;
-        const providers = await _initYjsDatabase(backend, workspace, {
-            params,
+        const { userId = 'default', token, provider } = options;
+        const providers = await _initYjsDatabase(workspace, {
             userId,
             token,
-            importData,
-            exportData,
+            provider,
         });
         return new YjsAdapter(providers);
     }
@@ -240,33 +186,39 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
         this._doc = providers.idb.doc;
         this._awareness = providers.awareness;
         this._gatekeeper = providers.gatekeeper;
-
-        const blocks = this._doc.getMap<YMap<any>>('blocks');
-        this._blocks =
-            blocks.get('content') || blocks.set('content', new YMap());
-        this._blockUpdated =
-            blocks.get('updated') || blocks.set('updated', new YMap());
-        this._blockCaches = new LRUCache({ max: 1024, ttl: 1000 * 60 * 10 });
-        this._binaries = new YjsRemoteBinaries(
-            providers.binariesIdb.doc.getMap(),
-            providers.remoteToken
-        );
-        this._history = new YjsHistoryManager(this._blocks);
+        this._reload = () => {
+            const blocks = this._doc.getMap<YMap<any>>('blocks');
+            // @ts-ignore
+            this._blocks =
+                blocks.get('content') || blocks.set('content', new YMap());
+            // @ts-ignore
+            this._blockUpdated =
+                blocks.get('updated') || blocks.set('updated', new YMap());
+            // @ts-ignore
+            this._blockCaches = new LRUCache({
+                max: 1024,
+                ttl: 1000 * 60 * 10,
+            });
+            // @ts-ignore
+            this._binaries = new YjsRemoteBinaries(
+                providers.binariesIdb.doc.getMap(),
+                providers.remoteToken
+            );
+            // @ts-ignore
+            this._history = new YjsHistoryManager(this._blocks);
+        };
+        this._reload();
 
         this._listener = new Map();
 
-        const ws = providers.ws as any;
-        if (ws) {
-            const workspace = providers.idb.name;
-            const emitState = (connectivity: Connectivity) => {
-                this._listener.get('connectivity')?.(
-                    new Map([[workspace, connectivity]])
-                );
-            };
-            ws.on('synced', () => emitState('connected'));
-            ws.on('lost-connection', () => emitState('retry'));
-            ws.on('connection-error', () => emitState('retry'));
-        }
+        providers.connListener.listeners = (
+            workspace: string,
+            connectivity: Connectivity
+        ) => {
+            this._listener.get('connectivity')?.(
+                new Map([[workspace, connectivity]])
+            );
+        };
 
         const debounced_editing_notifier = debounce(
             () => {
@@ -339,6 +291,10 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 }
             });
         });
+    }
+
+    reload() {
+        this._reload();
     }
 
     getUserId(): string {

@@ -15,6 +15,7 @@ import {
     BlockDropPlacement,
     LINE_GAP,
     AsyncBlock,
+    TAG_GAP,
 } from '@toeverything/framework/virgo';
 import { Button } from '@toeverything/components/common';
 import { styled } from '@toeverything/components/ui';
@@ -78,13 +79,13 @@ function Line(props: { lineInfo: LineInfo; rootRect: DOMRect }) {
     };
     const bottomLineStyle = {
         ...horizontalLineStyle,
-        top: intersectionRect.bottom + 1 - rootRect.y - LINE_GAP,
+        top: intersectionRect.bottom + 1 - rootRect.y - LINE_GAP + TAG_GAP,
     };
 
     const verticalLineStyle = {
         ...lineStyle,
         width: 2,
-        height: intersectionRect.height - LINE_GAP,
+        height: intersectionRect.height - LINE_GAP + TAG_GAP,
         top: intersectionRect.y - rootRect.y,
     };
     const leftLineStyle = {
@@ -185,6 +186,14 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
     }, [blockInfo, editor]);
 
     useEffect(() => {
+        if (block?.block != null) {
+            const unobserve = block.block.onUpdate(() => setBlock(undefined));
+            return unobserve;
+        }
+        return undefined;
+    }, [block?.block]);
+
+    useEffect(() => {
         const sub = lineInfo.subscribe(data => {
             if (data == null) {
                 setLine(undefined);
@@ -220,7 +229,7 @@ export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
                             MENU_WIDTH -
                             MENU_BUTTON_OFFSET -
                             rootRect.left,
-                        top: block.rect.top - rootRect.top,
+                        top: block.rect.top - rootRect.top + TAG_GAP * 2,
                         opacity: visible ? 1 : 0,
                         zIndex: 1,
                     }}

@@ -23,12 +23,7 @@ import {
     PendantTypes,
     type TempInformationType,
 } from '../types';
-import {
-    checkPendantForm,
-    getOfficialSelected,
-    getPendantConfigByType,
-} from '../utils';
-import { message } from '@toeverything/components/ui';
+import { getOfficialSelected, getPendantConfigByType } from '../utils';
 
 type SelectPropertyType = MultiSelectProperty | SelectProperty;
 type SureParams = {
@@ -56,18 +51,6 @@ export const useOnCreateSure = ({ block }: { block: AsyncBlock }) => {
         newPropertyItem,
         newValue,
     }: SureParams) => {
-        const checkResult = checkPendantForm(
-            type,
-            fieldName,
-            newPropertyItem,
-            newValue
-        );
-
-        if (!checkResult.passed) {
-            await message.error(checkResult.message);
-            return;
-        }
-
         if (
             type === PendantTypes.MultiSelect ||
             type === PendantTypes.Select ||
@@ -181,18 +164,6 @@ export const useOnUpdateSure = ({
         newPropertyItem,
         newValue,
     }: SureParams) => {
-        const checkResult = checkPendantForm(
-            type,
-            fieldName,
-            newPropertyItem,
-            newValue
-        );
-
-        if (!checkResult.passed) {
-            await message.error(checkResult.message);
-            return;
-        }
-
         if (
             type === PendantTypes.MultiSelect ||
             type === PendantTypes.Select ||

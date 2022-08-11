@@ -46,6 +46,7 @@ const TextBlock = styled(TextManage)<{ type: string }>(({ theme, type }) => {
         return {
             fontSize: textStyleMap.text.fontSize,
             lineHeight: textStyleMap.text.lineHeight,
+            fontWeight: textStyleMap.text.fontWeight,
         };
     }
 });

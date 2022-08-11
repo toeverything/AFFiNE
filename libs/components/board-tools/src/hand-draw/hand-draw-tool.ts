@@ -18,34 +18,19 @@ export class HandDrawTool extends BaseTool {
 
     /* ----------------- Event Handlers ----------------- */
 
-    override onPointerDown: TLPointerEventHandler = () => {
-        if (this.app.readOnly) return;
-        if (this.status !== Status.Idle) return;
-
-        this.set_status(Status.Pointing);
+    override onEnter = () => {
+        this.app.patchState({
+            settings: {
+                forcePanning: true,
+            },
+        });
     };
 
-    override onPointerMove: TLPointerEventHandler = (info, e) => {
-        if (this.app.readOnly) return;
-        const delta = Vec.div(info.delta, this.app.camera.zoom);
-        const prev = this.app.camera.point;
-        const next = Vec.sub(prev, delta);
-        if (Vec.isEqual(next, prev)) return;
-
-        switch (this.status) {
-            case Status.Pointing: {
-                this.app.pan(Vec.neg(delta));
-
-                break;
-            }
-        }
-    };
-
-    override onPointerUp: TLPointerEventHandler = () => {
-        this.set_status(Status.Idle);
-    };
-
-    override onCancel = () => {
-        this.set_status(Status.Idle);
+    override onExit = () => {
+        this.app.patchState({
+            settings: {
+                forcePanning: false,
+            },
+        });
     };
 }
