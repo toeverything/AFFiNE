@@ -5,7 +5,11 @@
     "author": "DarkSky <darksky2048@gmail.com>",
     "dependencies": {
         "lib0": "^0.2.52",
+        "sql.js": "^1.7.0",
         "yjs": "^13.5.41",
         "y-protocols": "^1.0.5"
+    },
+    "devDependencies": {
+        "@types/sql.js": "^1.4.3"
     }
 }

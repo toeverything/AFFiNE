@@ -1,5 +1,13 @@
 /* eslint-disable max-lines */
-import * as React from 'react';
+import {
+    memo,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useMemo,
+    useState,
+    type RefObject,
+} from 'react';
 import { Renderer } from '@tldraw/core';
 import { styled } from '@toeverything/components/ui';
 import {
@@ -132,13 +140,13 @@ export function Tldraw({
     getSession,
     tools,
 }: TldrawProps) {
-    const [sId, set_sid] = React.useState(id);
+    const [sId, setSid] = useState(id);
     const { pageClientWidth } = usePageClientWidth();
     // page padding left and right total 300px
     const editorShapeInitSize = pageClientWidth - 300;
 
     // Create a new app when the component mounts.
-    const [app, setApp] = React.useState(() => {
+    const [app, setApp] = useState(() => {
         const app = new TldrawApp({
             id,
             callbacks,
@@ -151,7 +159,7 @@ export function Tldraw({
     });
 
     // Create a new app if the `id` prop changes.
-    React.useLayoutEffect(() => {
+    useLayoutEffect(() => {
         if (id === sId) return;
         const newApp = new TldrawApp({
             id,
@@ -161,14 +169,14 @@ export function Tldraw({
             tools,
         });
 
-        set_sid(id);
+        setSid(id);
 
         setApp(newApp);
     }, [sId, id]);
 
     // Update the document if the `document` prop changes but the ids,
     // are the same, or else load a new document if the ids are different.
-    React.useEffect(() => {
+    useEffect(() => {
         if (!document) return;
 
         if (document.id === app.document.id) {
@@ -179,34 +187,34 @@ export function Tldraw({
     }, [document, app]);
 
     // Disable assets when the `disableAssets` prop changes.
-    React.useEffect(() => {
+    useEffect(() => {
         app.setDisableAssets(disableAssets);
     }, [app, disableAssets]);
 
     // Change the page when the `currentPageId` prop changes.
-    React.useEffect(() => {
+    useEffect(() => {
         if (!currentPageId) return;
         app.changePage(currentPageId);
     }, [currentPageId, app]);
 
     // Toggle the app's readOnly mode when the `readOnly` prop changes.
-    React.useEffect(() => {
+    useEffect(() => {
         app.readOnly = readOnly;
     }, [app, readOnly]);
 
     // Toggle the app's darkMode when the `darkMode` prop changes.
-    React.useEffect(() => {
+    useEffect(() => {
         if (darkMode !== app.settings.isDarkMode) {
             app.toggleDarkMode();
         }
     }, [app, darkMode]);
 
     // Update the app's callbacks when any callback changes.
-    React.useEffect(() => {
+    useEffect(() => {
         app.callbacks = callbacks || {};
     }, [app, callbacks]);
 
-    React.useLayoutEffect(() => {
+    useLayoutEffect(() => {
         if (typeof window === 'undefined') return;
         if (!window.document?.fonts) return;
 
@@ -260,7 +268,7 @@ interface InnerTldrawProps {
     showSponsorLink?: boolean;
 }
 
-const InnerTldraw = React.memo(function InnerTldraw({
+const InnerTldraw = memo(function InnerTldraw({
     id,
     autofocus,
     showPages,
@@ -276,7 +284,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
 }: InnerTldrawProps) {
     const app = useTldrawApp();
 
-    const rWrapper = React.useRef<HTMLDivElement>(null);
+    const rWrapper = useRef<HTMLDivElement>(null);
 
     const state = app.useStore();
 
@@ -299,7 +307,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
         TLDR.get_shape_util(page.shapes[selectedIds[0]].type).hideResizeHandles;
 
     // Custom rendering meta, with dark mode for shapes
-    const meta: TDMeta = React.useMemo(() => {
+    const meta: TDMeta = useMemo(() => {
         return { isDarkMode: settings.isDarkMode, app };
     }, [settings.isDarkMode, app]);
 
@@ -308,7 +316,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
         : appState.selectByContain;
 
     // Custom theme, based on darkmode
-    const theme = React.useMemo(() => {
+    const theme = useMemo(() => {
         const { selectByContain } = appState;
         const { isDarkMode, isCadSelectMode } = settings;
 
@@ -373,9 +381,11 @@ const InnerTldraw = React.memo(function InnerTldraw({
         !isSelecting ||
         !settings.showCloneHandles ||
         pageState.camera.zoom < 0.2;
+
     return (
         <StyledLayout
             ref={rWrapper}
+            panning={settings.forcePanning}
             tabIndex={-0}
             penColor={app?.appState?.currentStyle?.stroke}
         >
@@ -477,17 +487,17 @@ const InnerTldraw = React.memo(function InnerTldraw({
     );
 });
 
-const OneOff = React.memo(function OneOff({
+const OneOff = memo(function OneOff({
     focusableRef,
     autofocus,
 }: {
     autofocus?: boolean;
-    focusableRef: React.RefObject<HTMLDivElement>;
+    focusableRef: RefObject<HTMLDivElement>;
 }) {
     useKeyboardShortcuts(focusableRef);
     useStylesheet();
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (autofocus) {
             focusableRef.current?.focus();
         }
@@ -496,8 +506,8 @@ const OneOff = React.memo(function OneOff({
     return null;
 });
 
-const StyledLayout = styled('div')<{ penColor: string }>(
-    ({ theme, penColor }) => {
+const StyledLayout = styled('div')<{ penColor: string; panning: boolean }>(
+    ({ theme, panning, penColor }) => {
         return {
             position: 'relative',
             height: '100%',
@@ -509,6 +519,7 @@ const StyledLayout = styled('div')<{ penColor: string }>(
             overflow: 'hidden',
             boxSizing: 'border-box',
             outline: 'none',
+            cursor: panning ? 'grab' : 'unset',
 
             '& .tl-container': {
                 position: 'absolute',

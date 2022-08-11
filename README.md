@@ -18,7 +18,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
@@ -46,8 +46,8 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 # How to use
 
-If you have experience in front-end development, please [refer to here](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine); if you want to experience our latest version, please wait a moment, we will launch a web version in the near future.
-And, thanks to Lee who [made a desktop build with Tauri](https://github.com/m1911star/affine-client) for you to try out.
+If you have experience in front-end development, you may wish to refer to our [documentation](https://docs.affine.pro/affine/basic-documentation/contribute-to-affine) to learn more about deploying your own version or contributing further to development. For those intersting in trying our latest version, please bear with us as we are planning to launch a web version soon.
+Also, thanks to Lee who has made a [desktop build with Tauri](https://github.com/m1911star/affine-client) for you to try out.
 Please notice that AFFiNE is still under Alpha stage and is not ready for production use.
 
 # Table of contents
@@ -85,13 +85,13 @@ Please notice that AFFiNE is still under Alpha stage and is not ready for produc
 
 ## Create your story
 
-We want your data always to be yours, and we don't want to make any sacrifice to your accessibility. Your data is always local-stored first, yet we support real-time collaboration on a peer-to-peer basis. We don't think "privacy-first" is a good excuse for not supporting modern web features.
-Collaboration isn't only necessary for teams -- you may take and insert pics on your phone, then edit them on your desktop, and share them with your collaborators.
-Affine is fully built with web technologies so that consistency and accessibility are always guaranteed on Mac, Windows and Linux. The local file system support will be available when version 0.0.1beta is released.
+We want your data always to be yours, without any sacrifice to your accessibility. Your data is always stored local first, yet we support real-time collaboration on a peer-to-peer basis. We don't think "privacy-first" is a good excuse for not supporting modern web features.
+And when it comes to collaboration, these features are not just necessarily for teams -- you can take and insert pictures on your phone, edit them from your desktop, and then share them with your collaborators.
+Affine is fully built with web technologies to ensure consistency and accessibility on Mac, Windows and Linux. The local file system support will be available when version 0.0.1beta is released.
 
 # Documentation
 
-AFFiNE is not yet ready for production use. To install, you may check how to build or deploy the AFFiNE in [quick-start](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine/quick-start). For the full documentation, please view it [here](https://affine.gitbook.io/affine/).
+AFFiNE is not yet ready for production use. For installation, you may check how to build or deploy AFFiNE from our [quick-start](https://docs.affine.pro/affine/basic-documentation/contribute-to-affine/quick-start) guide. Alternatively, you can view our [full documentation](https://docs.affine.pro/affine/).
 
 ## Getting Started with development
 
@@ -107,28 +107,28 @@ Get our latest [release notes](https://github.com/toeverything/AFFiNE/wiki) from
 
 # Feature requests
 
-Please go to [Feature request](https://github.com/toeverything/AFFiNE/issues).
+Please go to [feature requests](https://github.com/toeverything/AFFiNE/issues).
 
 # FAQ
 
-Get quick help on [Telegram](https://t.me/affineworkos) and [Discord](https://discord.gg/yz6tGVsf5p) along with other developers and contributors.
+Get quick help on [Telegram](https://t.me/affineworkos) or [Discord](https://discord.gg/yz6tGVsf5p) and join our community of developers and contributors.
 
-Latest news and technology sharing on [Twitter](https://twitter.com/AffineOfficial), [Medium](https://medium.com/@affineworkos) and [AFFiNE Blog](https://blog.affine.pro/).
+Our latest news can be found on [Twitter](https://twitter.com/AffineOfficial), [Medium](https://medium.com/@affineworkos) and the [AFFiNE Blog](https://blog.affine.pro/).
 
 # The Philosophy of AFFiNE
 
 Timothy Berners-Lee once taught us about the idea of the semantic web, where all the data can be interpreted in any form while the "truth" is kept. This gives our best image of an ideal knowledge base by far, that sorting of information, planning of project and goals as well as creating of knowledge can be all together.
 We have witnessed waves of paradigm shift so many times. At first, everything was noted on office-like apps or DSL like LaTeX, then we found todo-list apps and WYSIWYG markdown editors better for writing and planning. Finally, here comes Notion and Miro, who take advantage of the idea of blocks to further liberate our creativity.
-It is all perfect... If there are not so many waste operations and redundant information. And, we insist that privacy first should always be given by default.
+It is all perfect... without waste operations and redundant information. And, we insist that privacy first should always be given by default.
 That's why we are making AFFiNE. Some of the most important features are:
 
 -   Transformable
-    -   Every block can be transformed equally well as a database
-        -   e.g. you can now set up a to-do with MarkDown in text view and edit it in kanban view.
-    -   Every doc can be turned into a whiteboard
+    -   Every block can be transformed equally
+        -   e.g. you can create a todo in Markdown in the text view and then later edit it in the kanban view.
+    -   Every document can be turned into a whiteboard
         -   An always good-to-read, structured docs-form page is the best for your notes, but a boundless doodle surface is better for collaboration and creativity.
 -   Atomic
-    -   The basic element of affine are blocks, not pages.
+    -   The basic elements of AFFiNE are blocks, not pages.
         -   Blocks can be directly reused and synced between pages.
     -   Pages and blocks are searched and organized based on connected graphs, not tree-like paths.
     -   Dual-link and semantic search are fully supported.
@@ -136,8 +136,7 @@ That's why we are making AFFiNE. Some of the most important features are:
     -   Data is always stored locally by default
     -   CRDTs are applied so that peer-to-peer collaboration is possible.
 
-We really appreciate the idea of Monday, Airtable and Notion databases. They inspired what we think is right for task management. But we don't like the repeated works -- we don't want to set a todo easily with markdown but end up re-write it again in kanban or other databases.
-With AFFiNE, every block group has infinite views, for you to keep your single source of truth.
+We appreciate the ideas of Monday, Airtable, and Notion databases. They have inspired us and shaped our product, helping us get it right when it comes to task management. But we also do things differently. We don't like doing things again and again. It's easy to set a todo with Markdown, but then why do you need to repeat and recreate data for a kanban or other databases. This is the power of AFFiNE. With AFFiNE, every block group has infinite views, for you to keep your single source of data, a signle source of truth.
 
 We would like to give special thanks to the innovators and pioneers who greatly inspired us:
 
@@ -172,19 +171,35 @@ For help, discussion about best practices, or any other conversation that would 
 <!-- markdownlint-disable -->
 <table>
   <tr>
-    <td align="center"><a href="https://darksky.eu.org/"><img src="https://avatars.githubusercontent.com/u/25152247?v=4?s=100" width="100px;" alt=""/><br /><sub><b>DarkSky</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=darkskygit" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=darkskygit" title="Documentation">📖</a></td>
-    <td align="center"><a href="http://zhangchi.page/"><img src="https://avatars.githubusercontent.com/u/5910926?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Chi Zhang</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=tzhangchi" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=tzhangchi" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/alt1o"><img src="https://avatars.githubusercontent.com/u/21084335?v=4?s=100" width="100px;" alt=""/><br /><sub><b>wang xinglong</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=alt1o" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=alt1o" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/DiamondThree"><img src="https://avatars.githubusercontent.com/u/24630517?v=4?s=100" width="100px;" alt=""/><br /><sub><b>DiamondThree</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=DiamondThree" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=DiamondThree" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://lawvs.github.io/profile/"><img src="https://avatars.githubusercontent.com/u/18554747?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Whitewater</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=lawvs" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=lawvs" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/zuoxiaodong0815"><img src="https://avatars.githubusercontent.com/u/53252747?v=4?s=100" width="100px;" alt=""/><br /><sub><b>xiaodong zuo</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=zuoxiaodong0815" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=zuoxiaodong0815" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/SaikaSakura"><img src="https://avatars.githubusercontent.com/u/11530942?v=4?s=100" width="100px;" alt=""/><br /><sub><b>MingLIang Wang</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=SaikaSakura" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=SaikaSakura" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://darksky.eu.org/"><img src="https://avatars.githubusercontent.com/u/25152247?v=4?s=50" width="50px;" alt=""/><br /><sub><b>DarkSky</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=darkskygit" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=darkskygit" title="Documentation">📖</a></td>
+    <td align="center"><a href="http://zhangchi.page/"><img src="https://avatars.githubusercontent.com/u/5910926?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Chi Zhang</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=tzhangchi" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=tzhangchi" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/alt1o"><img src="https://avatars.githubusercontent.com/u/21084335?v=4?s=50" width="50px;" alt=""/><br /><sub><b>wang xinglong</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=alt1o" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=alt1o" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/DiamondThree"><img src="https://avatars.githubusercontent.com/u/24630517?v=4?s=50" width="50px;" alt=""/><br /><sub><b>DiamondThree</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=DiamondThree" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=DiamondThree" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://lawvs.github.io/profile/"><img src="https://avatars.githubusercontent.com/u/18554747?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Whitewater</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=lawvs" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=lawvs" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/zuoxiaodong0815"><img src="https://avatars.githubusercontent.com/u/53252747?v=4?s=50" width="50px;" alt=""/><br /><sub><b>xiaodong zuo</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=zuoxiaodong0815" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=zuoxiaodong0815" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/SaikaSakura"><img src="https://avatars.githubusercontent.com/u/11530942?v=4?s=50" width="50px;" alt=""/><br /><sub><b>MingLIang Wang</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=SaikaSakura" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=SaikaSakura" title="Documentation">📖</a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/QiShaoXuan"><img src="https://avatars.githubusercontent.com/u/22772830?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Qi</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=QiShaoXuan" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=QiShaoXuan" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/mitsuhatu"><img src="https://avatars.githubusercontent.com/u/110213079?v=4?s=100" width="100px;" alt=""/><br /><sub><b>mitsuhatu</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=mitsuhatu" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=mitsuhatu" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://shockwave.me/"><img src="https://avatars.githubusercontent.com/u/15013925?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Austaras</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Austaras" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=Austaras" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/uptonking?tab=repositories&type=source"><img src="https://avatars.githubusercontent.com/u/11391549?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jin Yao</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=uptonking" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=uptonking" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/QiShaoXuan"><img src="https://avatars.githubusercontent.com/u/22772830?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Qi</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=QiShaoXuan" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=QiShaoXuan" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/mitsuhatu"><img src="https://avatars.githubusercontent.com/u/110213079?v=4?s=50" width="50px;" alt=""/><br /><sub><b>mitsuhatu</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=mitsuhatu" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=mitsuhatu" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://shockwave.me/"><img src="https://avatars.githubusercontent.com/u/15013925?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Austaras</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Austaras" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=Austaras" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/uptonking"><img src="https://avatars.githubusercontent.com/u/11391549?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Jin Yao</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=uptonking" title="Code">💻</a> <a href="https://github.com/toeverything/AFFiNE/commits?author=uptonking" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/HeJiachen-PM"><img src="https://avatars.githubusercontent.com/u/79301703?v=4?s=50" width="50px;" alt=""/><br /><sub><b>HeJiachen-PM</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=HeJiachen-PM" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/Yipei-Operation"><img src="https://avatars.githubusercontent.com/u/79373028?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Yipei Wei</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Yipei-Operation" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/fanjing22"><img src="https://avatars.githubusercontent.com/u/109729699?v=4?s=50" width="50px;" alt=""/><br /><sub><b>fanjing22</b></sub></a><br /><a href="#design-fanjing22" title="Design">🎨</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/Svaney-ssman"><img src="https://avatars.githubusercontent.com/u/110808979?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Svaney</b></sub></a><br /><a href="#design-Svaney-ssman" title="Design">🎨</a></td>
+    <td align="center"><a href="http://xell.me/"><img src="https://avatars.githubusercontent.com/u/132558?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Guozhu Liu</b></sub></a><br /><a href="#design-xell" title="Design">🎨</a></td>
+    <td align="center"><a href="https://github.com/fyZheng07"><img src="https://avatars.githubusercontent.com/u/63830919?v=4?s=50" width="50px;" alt=""/><br /><sub><b>fyZheng07</b></sub></a><br /><a href="#eventOrganizing-fyZheng07" title="Event Organizing">📋</a> <a href="#userTesting-fyZheng07" title="User Testing">📓</a></td>
+    <td align="center"><a href="https://github.com/CJSS"><img src="https://avatars.githubusercontent.com/u/4605025?v=4?s=50" width="50px;" alt=""/><br /><sub><b>CJSS</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=CJSS" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/clean-software"><img src="https://avatars.githubusercontent.com/u/62192072?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Carlos Rafael </b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=CarlosZoft" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/caleboleary"><img src="https://avatars.githubusercontent.com/u/12816579?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Caleb OLeary</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=caleboleary" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/JimmFly"><img src="https://avatars.githubusercontent.com/u/102217452?v=4?s=50" width="50px;" alt=""/><br /><sub><b>JimmFly</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=JimmFly" title="Code">💻</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/westongraham"><img src="https://avatars.githubusercontent.com/u/89493023?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Weston Graham</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=westongraham" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/pointmax"><img src="https://avatars.githubusercontent.com/u/49361135?v=4?s=50" width="50px;" alt=""/><br /><sub><b>pointmax</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=pointmax" title="Documentation">📖</a></td>
   </tr>
 </table>
 

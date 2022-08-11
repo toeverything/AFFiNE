@@ -1,4 +1,4 @@
-import { IconButton, styled } from '@toeverything/components/ui';
+import { IconButton, styled, MuiButton } from '@toeverything/components/ui';
 import {
     LogoIcon,
     SideBarViewIcon,
@@ -6,6 +6,7 @@ import {
     SideBarViewCloseIcon,
 } from '@toeverything/components/icons';
 import { useShowSettingsSidebar } from '@toeverything/datasource/state';
+
 import { CurrentPageTitle } from './Title';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 
@@ -24,18 +25,23 @@ export const LayoutHeader = () => {
                 </FlexContainer>
                 <FlexContainer>
                     <StyledHelper>
-                        <StyledShare>Share</StyledShare>
+                        <StyledShare disabled={true}>Share</StyledShare>
                         <div style={{ margin: '0px 12px' }}>
-                            <IconButton size="large">
+                            <IconButton
+                                size="large"
+                                hoverColor={'transparent'}
+                                disabled={true}
+                                style={{ cursor: 'not-allowed' }}
+                            >
                                 <SearchIcon />
                             </IconButton>
                         </div>
 
                         <IconButton onClick={toggleInfoSidebar} size="large">
                             {showSettingsSidebar ? (
-                                <SideBarViewIcon />
-                            ) : (
                                 <SideBarViewCloseIcon />
+                            ) : (
+                                <SideBarViewIcon />
                             )}
                         </IconButton>
                     </StyledHelper>
@@ -44,9 +50,36 @@ export const LayoutHeader = () => {
                     <EditorBoardSwitcher />
                 </StyledContainerForEditorBoardSwitcher>
             </StyledHeaderRoot>
+            <StyledUnstableTips>
+                <StyledUnstableTipsText>
+                    AFFiNE now under active development, the version is
+                    UNSTABLE, please DO NOT store important data in this version
+                </StyledUnstableTipsText>
+            </StyledUnstableTips>
         </StyledContainerForHeaderRoot>
     );
 };
+
+const StyledUnstableTips = styled('div')(({ theme }) => {
+    return {
+        width: '100%',
+        height: '2em',
+        display: 'flex',
+        zIndex: theme.affine.zIndex.header,
+        backgroundColor: '#fff8c5',
+        borderWidth: '1px 0',
+        borderColor: '#e4e49588',
+        borderStyle: 'solid',
+    };
+});
+
+const StyledUnstableTipsText = styled('span')(({ theme }) => {
+    return {
+        margin: 'auto 36px',
+        width: '100%',
+        textAlign: 'center',
+    };
+});
 
 const StyledContainerForHeaderRoot = styled('div')(({ theme }) => {
     return {
@@ -92,17 +125,19 @@ const StyledHelper = styled('div')({
     alignItems: 'center',
 });
 
-const StyledShare = styled('div')({
+const StyledShare = styled('div')<{ disabled?: boolean }>({
     padding: '10px 12px',
     fontWeight: 600,
     fontSize: '14px',
-    color: '#3E6FDB',
-    cursor: 'pointer',
-
-    '&:hover': {
-        background: '#F5F7F8',
-        borderRadius: '5px',
-    },
+    cursor: 'not-allowed',
+    color: '#98ACBD',
+    textTransform: 'none',
+    /* disabled for current time */
+    // color: '#3E6FDB',
+    // '&:hover': {
+    //     background: '#F5F7F8',
+    //     borderRadius: '5px',
+    // },
 });
 
 const StyledLogoIcon = styled(LogoIcon)(({ theme }) => {
@@ -112,9 +147,10 @@ const StyledLogoIcon = styled(LogoIcon)(({ theme }) => {
     };
 });
 
-const StyledContainerForEditorBoardSwitcher = styled('div')(({ theme }) => {
-    return {
-        position: 'absolute',
-        left: '50%',
-    };
+const StyledContainerForEditorBoardSwitcher = styled('div')({
+    width: '100%',
+    position: 'absolute',
+    display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'none',
 });

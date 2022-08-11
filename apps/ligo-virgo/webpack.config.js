@@ -91,9 +91,9 @@ module.exports = function (webpackConfig) {
                         priority: -9,
                         chunks: 'all',
                     },
-                    vender: {
+                    vendor: {
                         test: /([\\/]node_modules[\\/]|polyfills|@nrwl)/,
-                        name: 'vender',
+                        name: 'vendor',
                         priority: -10,
                         chunks: 'all',
                     },
@@ -147,6 +147,12 @@ module.exports = function (webpackConfig) {
             ];
         }
     }
+
+    config.module.rules.unshift({
+        test: /\.wasm$/,
+        type: 'asset/resource',
+    });
+    config.resolve.fallback = { crypto: false, fs: false, path: false };
 
     addEmotionBabelPlugin(config);
 

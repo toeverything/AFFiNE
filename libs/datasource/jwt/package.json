@@ -13,8 +13,7 @@
         "flexsearch": "^0.7.21",
         "lib0": "^0.2.52",
         "lru-cache": "^7.13.2",
-        "ts-debounce": "^4.0.0",
-        "y-indexeddb": "^9.0.9"
+        "ts-debounce": "^4.0.0"
     },
     "dependencies": {
         "@types/flexsearch": "^0.7.3",

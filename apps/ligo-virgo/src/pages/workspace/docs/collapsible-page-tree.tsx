@@ -1,34 +1,34 @@
-import React, { useCallback, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import {
-    MuiBox as Box,
-    MuiButton as Button,
-    MuiCollapse as Collapse,
-    MuiIconButton as IconButton,
-    styled,
-} from '@toeverything/components/ui';
-import {
+    AddIcon,
     ArrowDropDownIcon,
     ArrowRightIcon,
 } from '@toeverything/components/icons';
-import { services } from '@toeverything/datasource/db-service';
 import {
-    usePageTree,
     useCalendarHeatmap,
+    usePageTree,
 } from '@toeverything/components/layout';
-import { AddIcon } from '@toeverything/components/icons';
+import {
+    IconButton,
+    MuiBox as Box,
+    MuiCollapse as Collapse,
+    styled,
+} from '@toeverything/components/ui';
+import { services } from '@toeverything/datasource/db-service';
+import React, { useCallback, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
-const StyledContainer = styled('div')({
+const StyledBtn = styled('div')({
     height: '32px',
     display: 'flex',
     alignItems: 'center',
-});
-
-const StyledBtn = styled('div')({
     color: '#98ACBD',
     textTransform: 'none',
     fontSize: '12px',
     fontWeight: '600',
+    cursor: 'pointer',
+    userSelect: 'none',
+    flex: 1,
+    marginLeft: '12px',
 });
 
 export type CollapsiblePageTreeProps = {
@@ -72,7 +72,7 @@ export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    paddingRight: 1,
+                    paddingRight: '12px',
                     '&:hover': {
                         background: '#f5f7f8',
                         borderRadius: '5px',
@@ -81,27 +81,18 @@ export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {
                 onMouseEnter={() => setNewPageBtnVisible(true)}
                 onMouseLeave={() => setNewPageBtnVisible(false)}
             >
-                <StyledContainer>
-                    {open ? (
-                        <ArrowDropDownIcon sx={{ color: '#566B7D' }} />
-                    ) : (
-                        <ArrowRightIcon sx={{ color: '#566B7D' }} />
-                    )}
-                    <StyledBtn onClick={() => setOpen(prev => !prev)}>
-                        {title}
-                    </StyledBtn>
-                </StyledContainer>
+                <StyledBtn onClick={() => setOpen(prev => !prev)}>
+                    {title}
+                </StyledBtn>
 
                 {newPageBtnVisible && (
-                    <AddIcon
-                        style={{
-                            width: '20px',
-                            height: '20px',
-                            color: '#98ACBD',
-                            cursor: 'pointer',
-                        }}
+                    <IconButton
+                        size="small"
+                        hoverColor="#E0E6EB"
                         onClick={create_page}
-                    />
+                    >
+                        <AddIcon />
+                    </IconButton>
                 )}
             </Box>
             {children ? (

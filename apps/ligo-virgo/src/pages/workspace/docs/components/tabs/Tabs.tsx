@@ -1,25 +1,60 @@
 import { useState } from 'react';
-import { MuiDivider as Divider, styled } from '@toeverything/components/ui';
+import { styled } from '@toeverything/components/ui';
 import type { ValueOf } from '@toeverything/utils';
 
-const StyledTabs = styled('div')({
-    width: '100%',
-    height: '12px',
-    marginTop: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer',
-});
-
-const StyledDivider = styled(Divider, {
-    shouldForwardProp: (prop: string) => !['isActive'].includes(prop),
-})<{ isActive?: boolean }>(({ isActive }) => {
+const StyledTabs = styled('div')(({ theme }) => {
     return {
-        flex: 1,
-        backgroundColor: isActive ? '#3E6FDB' : '#ECF1FB',
-        borderWidth: '2px',
+        width: '100%',
+        height: '30px',
+        marginTop: '12px',
+        display: 'flex',
+        fontSize: '12px',
+        fontWeight: '600',
     };
 });
+
+const StyledTabTitle = styled('div')<{
+    isActive?: boolean;
+    isDisabled?: boolean;
+}>`
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    line-height: 18px;
+    padding-top: 4px;
+    border-top: 2px solid #ecf1fb;
+    position: relative;
+    cursor: pointer;
+    color: ${({ theme, isActive }) =>
+        isActive ? theme.affine.palette.primary : 'rgba(62, 111, 219, 0.6)'};
+
+    &::after {
+        content: '';
+        width: 0;
+        height: 2px;
+        background-color: ${({ isActive, theme }) =>
+            isActive
+                ? theme.affine.palette.primary
+                : 'rgba(62, 111, 219, 0.6)'};
+        position: absolute;
+        left: 100%;
+        top: -2px;
+        transition: all 0.2s;
+    }
+
+    &.active {
+        &::after {
+            width: 100%;
+            left: 0;
+            transition-delay: 0.1s;
+        }
+        & ~ div::after {
+            left: 0;
+        }
+    }
+`;
 
 const TAB_TITLE = {
     PAGES: 'pages',
@@ -27,17 +62,17 @@ const TAB_TITLE = {
     TOC: 'toc',
 } as const;
 
-const TabMap = new Map<TabKey, TabValue>([
-    ['PAGES', 'pages'],
-    ['GALLERY', 'gallery'],
-    ['TOC', 'toc'],
+const TabMap = new Map<TabKey, { value: TabValue; disabled?: boolean }>([
+    ['PAGES', { value: 'pages' }],
+    ['GALLERY', { value: 'gallery', disabled: true }],
+    ['TOC', { value: 'toc' }],
 ]);
 
 type TabKey = keyof typeof TAB_TITLE;
 type TabValue = ValueOf<typeof TAB_TITLE>;
 
 const Tabs = () => {
-    const [activeTab, setActiveTab] = useState<TabValue>(TAB_TITLE.PAGES);
+    const [activeValue, setActiveTab] = useState<TabValue>(TAB_TITLE.PAGES);
 
     const onClick = (v: TabValue) => {
         setActiveTab(v);
@@ -45,13 +80,19 @@ const Tabs = () => {
 
     return (
         <StyledTabs>
-            {[...TabMap.entries()].map(([k, v]) => {
+            {[...TabMap.entries()].map(([k, { value, disabled = false }]) => {
+                const isActive = activeValue === value;
+
                 return (
-                    <StyledDivider
-                        key={v}
-                        isActive={v === activeTab}
-                        onClick={() => onClick(v)}
-                    />
+                    <StyledTabTitle
+                        key={value}
+                        className={isActive ? 'active' : ''}
+                        isActive={isActive}
+                        isDisabled={disabled}
+                        onClick={() => onClick(value)}
+                    >
+                        {k}
+                    </StyledTabTitle>
                 );
             })}
         </StyledTabs>

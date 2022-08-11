@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import style9 from 'style9';
 
-import { MuiClickAwayListener } from '@toeverything/components/ui';
+import { MuiClickAwayListener, styled } from '@toeverything/components/ui';
 import { Virgo, HookType, PluginHooks } from '@toeverything/framework/virgo';
 import { Point } from '@toeverything/utils';
 
@@ -120,8 +119,7 @@ export const ReferenceMenu = ({ editor, hooks, style }: ReferenceMenuProps) => {
     };
 
     return (
-        <div
-            className={styles('referenceMenu')}
+        <ReferenceMenuWrapper
             style={{ top: position.y, left: position.x }}
             onKeyUp={handle_keyup}
         >
@@ -140,13 +138,11 @@ export const ReferenceMenu = ({ editor, hooks, style }: ReferenceMenuProps) => {
                     />
                 </div>
             </MuiClickAwayListener>
-        </div>
+        </ReferenceMenuWrapper>
     );
 };
 
-const styles = style9.create({
-    referenceMenu: {
-        position: 'absolute',
-        zIndex: 1,
-    },
+const ReferenceMenuWrapper = styled('div')({
+    position: 'absolute',
+    zIndex: 1,
 });

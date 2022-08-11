@@ -136,6 +136,7 @@ interface BlockInstance<C extends ContentOperation> {
 
 interface AsyncDatabaseAdapter<C extends ContentOperation> {
     inspector(): Record<string, any>;
+    reload(): void;
     createBlock(
         options: Pick<BlockItem<C>, 'type' | 'flavor'> & {
             binary?: ArrayBuffer;
@@ -155,6 +156,33 @@ interface AsyncDatabaseAdapter<C extends ContentOperation> {
     history(): HistoryManager;
     getUserId(): string;
 }
+
+export type DataExporter = (binary: Uint8Array) => Promise<void>;
+
+export const getDataExporter = () => {
+    let exporter: DataExporter | undefined = undefined;
+    let importer: (() => Uint8Array | undefined) | undefined = undefined;
+
+    const importData = () => importer?.();
+    const exportData = (binary: Uint8Array) => exporter?.(binary);
+    const hasExporter = () => !!exporter;
+
+    const installExporter = (
+        initialData: Uint8Array | undefined,
+        cb: DataExporter
+    ) => {
+        return new Promise<void>(resolve => {
+            importer = () => initialData;
+            exporter = async (data: Uint8Array) => {
+                exporter = cb;
+                await cb(data);
+                resolve();
+            };
+        });
+    };
+
+    return { importData, exportData, hasExporter, installExporter };
+};
 
 export type {
     AsyncDatabaseAdapter,

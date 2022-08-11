@@ -1,33 +1,34 @@
 import { StrictMode } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
 
 import { BasePlugin } from '../../base-plugin';
+import { PluginRenderRoot } from '../../utils';
 import { ReferenceMenu } from './ReferenceMenu';
 
 const PLUGIN_NAME = 'reference-menu';
 
 export class ReferenceMenuPlugin extends BasePlugin {
-    private root?: Root;
+    private _root?: PluginRenderRoot;
 
     public static override get pluginName(): string {
         return PLUGIN_NAME;
     }
 
     protected override _onRender(): void {
-        const container = document.createElement('div');
-        // TODO: remove
-        container.classList.add(`id-${PLUGIN_NAME}`);
-        // this.editor.attachElement(this.menu_container);
-        window.document.body.appendChild(container);
-        this.root = createRoot(container);
-        this.render_reference_menu();
-    }
+        this._root = new PluginRenderRoot({
+            name: PLUGIN_NAME,
+            render: this.editor.reactRenderRoot.render,
+        });
+        this._root.mount();
 
-    private render_reference_menu(): void {
-        this.root?.render(
+        this._root?.render(
             <StrictMode>
                 <ReferenceMenu editor={this.editor} hooks={this.hooks} />
             </StrictMode>
         );
+    }
+
+    public override dispose() {
+        this._root?.unmount();
+        super.dispose();
     }
 }

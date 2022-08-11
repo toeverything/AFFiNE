@@ -81,9 +81,9 @@ module.exports = function (webpackConfig) {
                         priority: -9,
                         chunks: 'all',
                     },
-                    vender: {
+                    vendor: {
                         test: /([\\/]node_modules[\\/]|polyfills|@nrwl)/,
-                        name: 'vender',
+                        name: 'vendor',
                         priority: -10,
                         chunks: 'all',
                     },

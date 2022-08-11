@@ -18,7 +18,6 @@ import {
     menuItemsMap,
 } from './config';
 import { QueryResult } from '../../search';
-
 export type CommandMenuProps = {
     editor: Virgo;
     hooks: PluginHooks;
@@ -82,6 +81,13 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     const checkIfShowCommandMenu = useCallback(
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
             const { type, anchorNode } = editor.selection.currentSelectInfo;
+            if (!anchorNode?.id) {
+                return;
+            }
+            const activeBlock = await editor.getBlockById(anchorNode.id);
+            if (activeBlock.type === Protocol.Block.Type.page) {
+                return;
+            }
             if (event.key === '/' && type === 'Range') {
                 if (anchorNode) {
                     const text = editor.blockHelper.getBlockTextBeforeSelection(
@@ -119,12 +125,12 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
 
                             const COMMAND_MENU_HEIGHT =
                                 window.innerHeight * 0.4;
-                            const { top, left } =
+                            const { top, left, bottom } =
                                 editor.container.getBoundingClientRect();
                             if (clientHeight - rectTop <= COMMAND_MENU_HEIGHT) {
                                 setCommandMenuPosition({
                                     left: rect.left - left,
-                                    bottom: rectTop - top + 10,
+                                    bottom: bottom - rect.bottom + 24,
                                     top: 'initial',
                                 });
                             } else {

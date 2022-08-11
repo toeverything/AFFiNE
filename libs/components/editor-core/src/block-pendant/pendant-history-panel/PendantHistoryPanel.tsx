@@ -29,6 +29,7 @@ export const PendantHistoryPanel = ({
 
     const [history, setHistory] = useState<RecastBlockValue[]>([]);
     const popoverHandlerRef = useRef<{ [key: string]: PopperHandler }>({});
+    const historyPanelRef = useRef<HTMLDivElement>();
     const { getValueHistory } = getRecastItemValue(block);
 
     useEffect(() => {
@@ -84,7 +85,7 @@ export const PendantHistoryPanel = ({
     }, [block, getProperties, groupBlock, recastBlock]);
 
     return (
-        <StyledPendantHistoryPanel>
+        <StyledPendantHistoryPanel ref={historyPanelRef}>
             {history.map(item => {
                 const property = getProperty(item.id);
                 return (
@@ -116,6 +117,7 @@ export const PendantHistoryPanel = ({
                             />
                         }
                         trigger="click"
+                        container={historyPanelRef.current}
                     >
                         <PendantTag
                             style={{
