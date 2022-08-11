@@ -76,6 +76,7 @@ export const FileSystem = () => {
                             onSelected();
                         } catch (e) {
                             setError(true);
+                            onSelected();
                             setTimeout(() => setError(false), 3000);
                         }
                     }}

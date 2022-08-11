@@ -27,5 +27,6 @@ export const BlockContainer: FC<BlockContainerProps> = function ({
 export const Container = styled('div')<{ selected: boolean }>(
     ({ selected, theme }) => ({
         backgroundColor: selected ? theme.affine.palette.textSelected : '',
+        marginBottom: '2px',
     })
 );
