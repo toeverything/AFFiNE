@@ -46,7 +46,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 # How to use
 
-If you have experience in front-end development, you may wish to refer to our [documentation](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine) to learn more about deploying your own version or contributing further to development. For those intersting in trying our latest version, please bear with us as we are planning to launch a web version soon.
+If you have experience in front-end development, you may wish to refer to our [documentation](https://docs.affine.pro/affine/basic-documentation/contribute-to-affine) to learn more about deploying your own version or contributing further to development. For those intersting in trying our latest version, please bear with us as we are planning to launch a web version soon.
 Also, thanks to Lee who has made a [desktop build with Tauri](https://github.com/m1911star/affine-client) for you to try out.
 Please notice that AFFiNE is still under Alpha stage and is not ready for production use.
 
@@ -91,7 +91,7 @@ Affine is fully built with web technologies to ensure consistency and accessibil
 
 # Documentation
 
-AFFiNE is not yet ready for production use. For installation, you may check how to build or deploy AFFiNE from our [quick-start](https://affine.gitbook.io/affine/basic-documentation/contribute-to-affine/quick-start) guide. Alternatively, you can view our [full documentation](https://affine.gitbook.io/affine/).
+AFFiNE is not yet ready for production use. For installation, you may check how to build or deploy AFFiNE from our [quick-start](https://docs.affine.pro/affine/basic-documentation/contribute-to-affine/quick-start) guide. Alternatively, you can view our [full documentation](https://docs.affine.pro/affine/).
 
 ## Getting Started with development
 

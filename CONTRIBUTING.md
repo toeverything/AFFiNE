@@ -85,4 +85,4 @@ Congratulations :tada::tada: The AFFiNE team thanks you :sparkles:.
 
 Once your PR is merged, your contributions will be publicly visible on the our GitHub.
 
-Now that you are part of the AFFiNE community, see how else you can join and help over at [Gitbook](https://affine.gitbook.io/affine/)
+Now that you are part of the AFFiNE community, see how else you can join and help over at [Gitbook](https://docs.affine.pro/affine/)
