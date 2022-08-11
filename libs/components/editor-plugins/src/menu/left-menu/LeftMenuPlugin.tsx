@@ -10,7 +10,7 @@ import {
 import { PluginRenderRoot } from '../../utils';
 import { Subject, throttleTime } from 'rxjs';
 import { domToRect, last, Point } from '@toeverything/utils';
-const DRAG_THROTTLE_DELAY = 150;
+const DRAG_THROTTLE_DELAY = 60;
 export class LeftMenuPlugin extends BasePlugin {
     private _mousedown?: boolean;
     private _root?: PluginRenderRoot;
