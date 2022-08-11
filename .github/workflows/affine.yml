@@ -59,7 +59,7 @@ jobs:
                   context: .
                   load: true
                   file: ./.github/deployment/Dockerfile-affine
-                  tags: ghcr.io/toeverything/affine:relocate
+                  tags: relocate
                   target: AFFiNE
 
             - name: Build and push Docker image (AFFINE-Local)
