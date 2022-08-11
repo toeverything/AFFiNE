@@ -20,7 +20,6 @@ const Container = styled('div')(({ theme }) => {
     return {
         width: '64px',
         height: '32px',
-        backgroundColor: theme.affine.palette.textHover,
         border: '1px solid #ECF1FB',
         borderRadius: '8px',
         cursor: 'pointer',

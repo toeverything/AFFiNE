@@ -8,6 +8,7 @@ import { useParams } from 'react-router-dom';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 
 import MoreActions from './MoreActions';
+import { DotIcon } from '../../dot-icon';
 import {
     ActionButton,
     Counter,
@@ -76,24 +77,25 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                 ghost={ghost}
                 disableSelection={disableSelection}
                 disableInteraction={disableInteraction}
-                spacing={`${indentationWidth * depth}px`}
+                spacing={`${indentationWidth * depth + 12}px`}
+                active={pageId === page_id}
                 {...props}
             >
                 <TreeItemContainer ref={ref} style={style} title={value}>
                     <ActionButton tabIndex={0} onClick={onCollapse}>
-                        {childCount !== 0 &&
-                            (collapsed ? (
+                        {childCount !== 0 ? (
+                            collapsed ? (
                                 <ArrowRightIcon />
                             ) : (
                                 <ArrowDropDownIcon />
-                            ))}
+                            )
+                        ) : (
+                            <DotIcon />
+                        )}
                     </ActionButton>
 
                     <TreeItemContent {...handleProps}>
-                        <TextLink
-                            to={`/${workspace_id}/${pageId}`}
-                            active={pageId === page_id}
-                        >
+                        <TextLink to={`/${workspace_id}/${pageId}`}>
                             {value}
                         </TextLink>
                         {BooleanPageTreeItemMoreActions && (

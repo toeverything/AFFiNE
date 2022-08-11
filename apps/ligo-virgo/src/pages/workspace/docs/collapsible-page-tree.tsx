@@ -8,6 +8,7 @@ import {
     usePageTree,
 } from '@toeverything/components/layout';
 import {
+    IconButton,
     MuiBox as Box,
     MuiCollapse as Collapse,
     styled,
@@ -27,6 +28,7 @@ const StyledBtn = styled('div')({
     cursor: 'pointer',
     userSelect: 'none',
     flex: 1,
+    marginLeft: '12px',
 });
 
 export type CollapsiblePageTreeProps = {
@@ -70,7 +72,7 @@ export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    paddingRight: 1,
+                    paddingRight: '12px',
                     '&:hover': {
                         background: '#f5f7f8',
                         borderRadius: '5px',
@@ -80,24 +82,17 @@ export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {
                 onMouseLeave={() => setNewPageBtnVisible(false)}
             >
                 <StyledBtn onClick={() => setOpen(prev => !prev)}>
-                    {open ? (
-                        <ArrowDropDownIcon sx={{ color: '#566B7D' }} />
-                    ) : (
-                        <ArrowRightIcon sx={{ color: '#566B7D' }} />
-                    )}
                     {title}
                 </StyledBtn>
 
                 {newPageBtnVisible && (
-                    <AddIcon
-                        style={{
-                            width: '20px',
-                            height: '20px',
-                            color: '#98ACBD',
-                            cursor: 'pointer',
-                        }}
+                    <IconButton
+                        size="small"
+                        hoverColor="#E0E6EB"
                         onClick={create_page}
-                    />
+                    >
+                        <AddIcon />
+                    </IconButton>
                 )}
             </Box>
             {children ? (

@@ -1,13 +1,16 @@
-import {
-    styled,
-    MuiOutlinedInput as OutlinedInput,
-} from '@toeverything/components/ui';
+import { styled, Input } from '@toeverything/components/ui';
 import { PinIcon } from '@toeverything/components/icons';
 import {
     useUserAndSpaces,
     useShowSpaceSidebar,
 } from '@toeverything/datasource/state';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {
+    ChangeEvent,
+    KeyboardEvent,
+    useCallback,
+    useEffect,
+    useState,
+} from 'react';
 import { services } from '@toeverything/datasource/db-service';
 import { Logo } from './components/logo/Logo';
 
@@ -124,24 +127,24 @@ export const WorkspaceName = () => {
         };
     }, [currentSpaceId, fetchWorkspaceName]);
 
-    const handleKeyDown = useCallback(
-        (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-            if (e.key === 'Enter') {
-                e.stopPropagation();
-                e.preventDefault();
-                setInRename(false);
-            }
-        },
-        []
-    );
+    const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.stopPropagation();
+            e.preventDefault();
+            setInRename(false);
+        }
+    }, []);
     const handleChange = useCallback(
-        (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-            services.api.userConfig.setWorkspaceName(
+        async (e: ChangeEvent<HTMLInputElement>) => {
+            const name = e.target.value;
+
+            await setWorkspaceName(name);
+            await services.api.userConfig.setWorkspaceName(
                 currentSpaceId,
-                e.currentTarget.value
+                name
             );
         },
-        []
+        [currentSpaceId]
     );
 
     return (
@@ -165,7 +168,8 @@ export const WorkspaceName = () => {
                 <StyledWorkspace>
                     {inRename ? (
                         <WorkspaceReNameContainer>
-                            <OutlinedInput
+                            <Input
+                                autoFocus
                                 style={{ width: '140px', height: '28px' }}
                                 value={workspaceName}
                                 onChange={handleChange}
