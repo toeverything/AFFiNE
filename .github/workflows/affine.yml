@@ -19,6 +19,7 @@ env:
     NAMESPACE: toeverything
     AFFINE_IMAGE_NAME: AFFiNE
     IMAGE_TAG_LATEST: nightly-latest
+    LOCAL_CACHE: localhost:5000/toeverything/relocate:latest
 
 jobs:
     ligo-virgo:
@@ -27,6 +28,12 @@ jobs:
         permissions:
             contents: read
             packages: write
+
+        services:
+          registry:
+            image: registry:2
+            ports:
+              - 5000:5000
 
         steps:
             - name: Checkout
@@ -57,9 +64,9 @@ jobs:
               uses: docker/build-push-action@v3
               with:
                   context: .
-                  load: true
+                  push: true
                   file: ./.github/deployment/Dockerfile-affine
-                  tags: relocate
+                  tags: ${{ env.LOCAL_CACHE }}
                   target: AFFiNE
 
             - name: Build and push Docker image (AFFINE-Local)
@@ -72,3 +79,5 @@ jobs:
                   tags: ${{ steps.meta_affine.outputs.tags }}
                   labels: ${{ steps.meta_affine.outputs.labels }}
                   target: AFFiNE
+                  build-args: |
+                    BASE_IMAGE=${{ env.LOCAL_CACHE }}

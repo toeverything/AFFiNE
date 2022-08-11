@@ -1,4 +1,6 @@
-FROM relocate as relocate
+ARG BASE_IMAGE=localhost:5000/toeverything/relocate:latest
+
+FROM ${BASE_IMAGE} as relocate
 
 # =============
 # AFFiNE image
