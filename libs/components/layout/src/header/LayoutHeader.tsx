@@ -147,9 +147,10 @@ const StyledLogoIcon = styled(LogoIcon)(({ theme }) => {
     };
 });
 
-const StyledContainerForEditorBoardSwitcher = styled('div')(({ theme }) => {
-    return {
-        position: 'absolute',
-        left: '50%',
-    };
+const StyledContainerForEditorBoardSwitcher = styled('div')({
+    width: '100%',
+    position: 'absolute',
+    display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'none',
 });

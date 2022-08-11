@@ -62,4 +62,5 @@ export const Switcher = () => {
 const StyledContainerForSwitcher = styled('div')({
     display: 'flex',
     alignItems: 'center',
+    pointerEvents: 'all',
 });
