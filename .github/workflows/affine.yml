@@ -52,6 +52,8 @@ jobs:
             - name: Set up Docker Buildx
               id: buildx
               uses: docker/setup-buildx-action@v1
+              with:
+                driver-opts: network=host
 
             - name: Extract metadata (tags, labels) for Docker (AFFiNE-Local)
               id: meta_affine
