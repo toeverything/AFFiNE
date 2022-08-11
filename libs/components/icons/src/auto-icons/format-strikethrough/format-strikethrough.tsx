@@ -1,15 +1,12 @@
 
-import { FC } from 'react';
 // eslint-disable-next-line no-restricted-imports
-import { SvgIcon } from '@mui/material';
-// eslint-disable-next-line no-restricted-imports
-import type { SvgIconProps } from '@mui/material';
+import { SvgIcon, SvgIconProps } from '@mui/material';
 
 export interface FormatStrikethroughIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const FormatStrikethroughIcon: FC<FormatStrikethroughIconProps> = ({ color, style, ...props}) => {
+export const FormatStrikethroughIcon = ({ color, style, ...props}: FormatStrikethroughIconProps) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

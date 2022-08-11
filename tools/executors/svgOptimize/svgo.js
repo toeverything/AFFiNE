@@ -4,10 +4,6 @@ const { readdir, readFile, writeFile, exists } = require('fs/promises');
 const { pascalCase, paramCase } = require('change-case');
 const svgr = require('@svgr/core');
 
-function isDuotone(name) {
-    return name.endsWith('Duotone');
-}
-
 async function optimizeSvg(folder) {
     try {
         const icons = await readdir(folder);

@@ -1,16 +1,13 @@
 
-import { FC } from 'react';
 // eslint-disable-next-line no-restricted-imports
-import { SvgIcon } from '@mui/material';
-// eslint-disable-next-line no-restricted-imports
-import type { SvgIconProps } from '@mui/material';
+import { SvgIcon, SvgIconProps } from '@mui/material';
 
 export interface BorderColorDuotoneIconProps extends Omit<SvgIconProps, 'color'> {
     color0?: string
     primaryColor?: string
 }
 
-export const BorderColorDuotoneIcon: FC<BorderColorDuotoneIconProps> = ({ color0, primaryColor, style, ...props}) => {
+export const BorderColorDuotoneIcon = ({ color0, primaryColor, style, ...props}: BorderColorDuotoneIconProps) => {
     const propsStyles = {"--color-0": color0 || primaryColor};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}
