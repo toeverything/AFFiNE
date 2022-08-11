@@ -1,5 +1,5 @@
 /* eslint-disable filename-rules/match */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { LogoImg } from '@toeverything/components/common';
 import {
@@ -46,6 +46,13 @@ const requestPermission = async (workspace: string) => {
 export const FileSystem = () => {
     const onSelected = useLocalTrigger();
     const [error, setError] = useState(false);
+
+    useEffect(() => {
+        if (process.env['NX_E2E']) {
+            onSelected();
+        }
+    }, []);
+
     return (
         <MuiGrid container>
             <MuiSnackbar
