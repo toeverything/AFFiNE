@@ -11,7 +11,7 @@ const INITIAL_LIST: MenuItem[] = [];
 const MESSAGES = {
     NO_HEADINGS_FOUND: 'No headings found',
 };
-export const TocView: FC<CreateView> = ({ block, editor }) => {
+export const TocView = ({ block, editor }: CreateView) => {
     const [list, setList] = useState(INITIAL_LIST);
     useEffect(() => {
         const sync_toc = async () => {

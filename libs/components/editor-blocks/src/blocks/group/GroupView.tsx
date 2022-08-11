@@ -78,7 +78,7 @@ const GroupContainer = styled('div')<{ isSelect?: boolean }>(
     })
 );
 
-export const GroupView: FC<CreateView> = props => {
+export const GroupView = (props: CreateView) => {
     const { block, editor } = props;
     const [currentView] = useCurrentView();
     const [groupIsSelect, setGroupIsSelect] = useState(false);

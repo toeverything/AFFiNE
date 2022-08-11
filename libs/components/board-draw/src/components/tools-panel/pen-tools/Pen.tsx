@@ -9,13 +9,13 @@ interface PenProps {
     onClick: () => void;
 }
 
-export const Pen: FC<PenProps> = ({
+export const Pen = ({
     name,
     icon,
     primaryColor,
     secondaryColor,
     onClick,
-}) => {
+}: PenProps) => {
     return (
         <Tooltip content={name}>
             <StyledIconButton

@@ -12,10 +12,10 @@ interface BlockTagProps {
     block: AsyncBlock;
 }
 
-export const BlockPendantProvider: FC<PropsWithChildren<BlockTagProps>> = ({
+export const BlockPendantProvider = ({
     block,
     children,
-}) => {
+}: PropsWithChildren<BlockTagProps>) => {
     const triggerRef = useRef<HTMLDivElement>();
     const { getProperties } = useRecastBlockMeta();
     const properties = getProperties();

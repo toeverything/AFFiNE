@@ -9,13 +9,13 @@ interface ListItemProps {
     style?: CSSProperties;
 }
 
-export const ListItem: FC<PropsWithChildren<ListItemProps>> = ({
+export const ListItem = ({
     active,
     children,
     onClick,
     className,
     style,
-}) => {
+}: PropsWithChildren<ListItemProps>) => {
     return (
         <Container
             active={active}

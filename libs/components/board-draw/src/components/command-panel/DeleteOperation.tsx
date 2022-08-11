@@ -10,7 +10,7 @@ interface DeleteShapesProps {
     shapes: TDShape[];
 }
 
-export const DeleteShapes: FC<DeleteShapesProps> = ({ app, shapes }) => {
+export const DeleteShapes = ({ app, shapes }: DeleteShapesProps) => {
     const deleteShapes = () => {
         app.delete(getShapeIds(shapes));
     };

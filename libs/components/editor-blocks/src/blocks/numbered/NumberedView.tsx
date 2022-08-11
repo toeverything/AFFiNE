@@ -40,7 +40,7 @@ const todoIsEmpty = (contentValue: ContentColumnValue): boolean => {
     );
 };
 
-export const NumberedView: FC<CreateView> = ({ block, editor }) => {
+export const NumberedView = ({ block, editor }: CreateView) => {
     // block.remove();
     const properties = { ...defaultTodoProps, ...block.getProperties() };
     const [number, set_number] = useState<number>(1);

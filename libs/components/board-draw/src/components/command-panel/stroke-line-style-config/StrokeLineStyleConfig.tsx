@@ -24,10 +24,10 @@ interface BorderColorConfigProps {
     shapes: TDShape[];
 }
 
-export const StrokeLineStyleConfig: FC<BorderColorConfigProps> = ({
+export const StrokeLineStyleConfig = ({
     app,
     shapes,
-}) => {
+}: BorderColorConfigProps) => {
     const strokeStyle = _getStrokeStyle(shapes);
     const strokeWidth = _getStrokeWidth(shapes);
     const setStrokeLineStyle = (style: DashStyle) => {

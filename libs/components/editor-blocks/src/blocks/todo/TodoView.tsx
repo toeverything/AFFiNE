@@ -33,7 +33,7 @@ const todoIsEmpty = (contentValue: ContentColumnValue): boolean => {
     );
 };
 
-export const TodoView: FC<CreateView> = ({ block, editor }) => {
+export const TodoView = ({ block, editor }: CreateView) => {
     const properties = { ...defaultTodoProps, ...block.getProperties() };
     const text_ref = useRef<ExtendedTextUtils>(null);
 

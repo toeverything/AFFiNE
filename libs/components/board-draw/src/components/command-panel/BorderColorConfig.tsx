@@ -34,10 +34,7 @@ const _getIconRenderColor = (shapes: TDShape[]) => {
     return max[0];
 };
 
-export const BorderColorConfig: FC<BorderColorConfigProps> = ({
-    app,
-    shapes,
-}) => {
+export const BorderColorConfig = ({ app, shapes }: BorderColorConfigProps) => {
     const setBorderColor = (color: string) => {
         app.style({ stroke: color }, getShapeIds(shapes));
     };

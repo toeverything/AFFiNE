@@ -71,7 +71,7 @@ const UploadBox = styled('div')<{ isSelected: boolean }>(
 );
 
 const button_styles: SxProps = { width: '60%', fontSize: '12px' };
-export const Upload: FC<Props> = props => {
+export const Upload = (props: Props) => {
     const {
         fileChange,
         size,

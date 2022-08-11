@@ -8,12 +8,12 @@ interface CheckBoxProps {
     onChange: (checked: boolean) => void;
 }
 
-export const CheckBox: FC<CheckBoxProps> = ({
+export const CheckBox = ({
     size = 16,
     height = 23,
     checked,
     onChange,
-}) => {
+}: CheckBoxProps) => {
     const dynamic_style = useMemo(
         () => ({
             height: {
