@@ -1,4 +1,4 @@
-FROM ghcr.io/toeverything/AFFiNE:relocate as relocate
+FROM ghcr.io/toeverything/affine:relocate as relocate
 
 # =============
 # AFFiNE image
