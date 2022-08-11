@@ -4075,7 +4075,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     onZoom: TLWheelEventHandler = (info, e) => {
         if (this.state.appState.status !== TDStatus.Idle) return;
-        const delta = info.delta[2] / 50;
+        // Normalize zoom scroll
+        // Fix https://github.com/toeverything/AFFiNE/issues/135
+        const delta =
+            Math.abs(info.delta[2]) > 10
+                ? 0.2 * Math.sign(info.delta[2])
+                : info.delta[2] / 50;
         this.zoomBy(delta, info.point);
         this.onPointerMove(info, e as unknown as React.PointerEvent);
     };
