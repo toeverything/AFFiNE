@@ -60,6 +60,9 @@ export const CardContext = (props: Props) => {
 
 const StyledCardContainer = styled('div')`
     cursor: pointer;
+    &:hover {
+        z-index: 1;
+    }
     &:focus-within {
         z-index: 1;
     }
