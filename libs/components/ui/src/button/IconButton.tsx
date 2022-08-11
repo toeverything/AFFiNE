@@ -1,5 +1,4 @@
 import type {
-    FC,
     MouseEventHandler,
     CSSProperties,
     PropsWithChildren,
@@ -39,13 +38,13 @@ interface IconButtonProps {
     hoverColor?: string;
 }
 
-export const IconButton: FC<PropsWithChildren<IconButtonProps>> = ({
+export const IconButton = ({
     children,
     disabled,
     onClick,
     className,
     ...props
-}) => {
+}: PropsWithChildren<IconButtonProps>) => {
     return (
         <Container
             {...props}

@@ -5,7 +5,7 @@ import {
     Protocol,
 } from '@toeverything/datasource/db-service';
 import { type CreateView } from '@toeverything/framework/virgo';
-import { useEffect, useRef, useState, type FC } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
     TextManage,
@@ -43,7 +43,7 @@ const todoIsEmpty = (contentValue: ContentColumnValue): boolean => {
 const BulletLeft = styled('div')(() => ({
     height: '22px',
 }));
-export const BulletView: FC<CreateView> = ({ block, editor }) => {
+export const BulletView = ({ block, editor }: CreateView) => {
     // block.remove();
     const properties = { ...defaultBulletProps, ...block.getProperties() };
     const textRef = useRef<ExtendedTextUtils>(null);

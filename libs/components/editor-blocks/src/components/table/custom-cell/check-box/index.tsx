@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { Checkbox } from '@toeverything/components/ui';
 import type { BooleanColumnValue } from '@toeverything/datasource/db-service';
 import type { CellProps } from '../types';
@@ -6,10 +5,10 @@ import type { CellProps } from '../types';
 /**
  * @deprecated
  */
-export const CheckBoxCell: FC<CellProps<BooleanColumnValue>> = ({
+export const CheckBoxCell = ({
     value,
     onChange,
-}) => {
+}: CellProps<BooleanColumnValue>) => {
     return (
         <Checkbox
             checked={value?.value}

@@ -1,4 +1,4 @@
-import { useCallback, type FC, type MouseEvent } from 'react';
+import { useCallback, type MouseEvent, type ComponentType } from 'react';
 import {
     styled,
     Tooltip,
@@ -83,7 +83,7 @@ export const AddCommentActions = ({
 };
 
 type IconButtonWithTooltipProps = {
-    icon: FC<SvgIconProps>;
+    icon: ComponentType<SvgIconProps>;
     tooltip?: string;
 };
 

@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import {
     HeadingOneIcon,
     HeadingTwoIcon,
@@ -22,6 +21,7 @@ import { SvgIconProps } from '@toeverything/components/ui';
 import { Virgo } from '@toeverything/framework/virgo';
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
 import { without } from '@toeverything/utils';
+import { type ComponentType } from 'react';
 
 export enum CommandMenuCategories {
     pages = 'pages',
@@ -40,7 +40,7 @@ type ClickItemHandler = (
 export type CommandMenuDataType = {
     type: BlockFlavorKeys;
     text: string;
-    icon: FC<SvgIconProps>;
+    icon: ComponentType<SvgIconProps>;
 };
 
 export const commonCommandMenuHandler: ClickItemHandler = async (

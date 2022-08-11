@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import {
@@ -40,10 +39,10 @@ const _getIconRenderColor = (shapes: TDShape[]) => {
     return max[0];
 };
 
-export const FrameFillColorConfig: FC<BorderColorConfigProps> = ({
+export const FrameFillColorConfig = ({
     app,
     shapes,
-}) => {
+}: BorderColorConfigProps) => {
     const theme = useTheme();
     const setFillColor = (color: ColorType) => {
         app.style(

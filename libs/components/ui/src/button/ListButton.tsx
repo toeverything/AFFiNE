@@ -1,4 +1,4 @@
-import React from 'react';
+import { type ComponentType } from 'react';
 import clsx from 'clsx';
 import style9 from 'style9';
 
@@ -41,7 +41,7 @@ type ListButtonProps = {
     content?: string;
     children?: () => JSX.Element;
     hover?: boolean;
-    icon?: React.FC<SvgIconProps>;
+    icon?: ComponentType<SvgIconProps>;
 };
 
 export const ListButton = (props: ListButtonProps) => {

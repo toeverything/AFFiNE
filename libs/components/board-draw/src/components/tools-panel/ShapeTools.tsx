@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     ShapeIcon,
     RectangleIcon,
@@ -69,7 +69,7 @@ const shapes = [
 
 const activeToolSelector = (s: TDSnapshot) => s.appState.activeTool;
 
-export const ShapeTools: FC<{ app: TldrawApp }> = ({ app }) => {
+export const ShapeTools = ({ app }: { app: TldrawApp }) => {
     const activeTool = app.useStore(activeToolSelector);
 
     const [lastActiveTool, setLastActiveTool] = useState<ShapeTypes>(

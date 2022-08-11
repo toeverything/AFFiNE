@@ -1,4 +1,3 @@
-import React from 'react';
 import { Tag, type TagProps } from '@toeverything/components/ui';
 import {
     DateValue,

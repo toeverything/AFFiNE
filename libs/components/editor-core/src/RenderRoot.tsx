@@ -1,6 +1,6 @@
 import type { BlockEditor } from './editor';
 import { styled, usePatchNodes } from '@toeverything/components/ui';
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { EditorProvider } from './Contexts';
 import { SelectionRect, SelectionRef } from './Selection';
@@ -24,11 +24,11 @@ interface RenderRootProps {
 const MAX_PAGE_WIDTH = 5000;
 export const MIN_PAGE_WIDTH = 1480;
 
-export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
+export const RenderRoot = ({
     editor,
     editorElement,
     children,
-}) => {
+}: PropsWithChildren<RenderRootProps>) => {
     const selectionRef = useRef<SelectionRef>(null);
     const triggeredBySelect = useRef(false);
     const [pageWidth, setPageWidth] = useState<number>(MIN_PAGE_WIDTH);

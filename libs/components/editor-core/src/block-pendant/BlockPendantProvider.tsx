@@ -1,4 +1,4 @@
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { styled } from '@toeverything/components/ui';
 import type { AsyncBlock } from '../editor';
 import { PendantPopover } from './pendant-popover';
@@ -12,10 +12,10 @@ interface BlockTagProps {
     block: AsyncBlock;
 }
 
-export const BlockPendantProvider: FC<PropsWithChildren<BlockTagProps>> = ({
+export const BlockPendantProvider = ({
     block,
     children,
-}) => {
+}: PropsWithChildren<BlockTagProps>) => {
     const triggerRef = useRef<HTMLDivElement>();
     const { getProperties } = useRecastBlockMeta();
     const properties = getProperties();

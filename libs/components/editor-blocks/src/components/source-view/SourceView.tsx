@@ -4,14 +4,7 @@ import {
     useLazyIframe,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
-import {
-    FC,
-    ReactElement,
-    ReactNode,
-    useEffect,
-    useRef,
-    useState,
-} from 'react';
+import { ReactElement, ReactNode, useEffect, useRef, useState } from 'react';
 import { SCENE_CONFIG } from '../../blocks/group/config';
 import { BlockPreview } from './BlockView';
 import { formatUrl } from './format-url';
@@ -156,7 +149,7 @@ const LoadingContiner = () => {
     return <Loading>loading...</Loading>;
 };
 
-export const SourceView: FC<Props> = props => {
+export const SourceView = (props: Props) => {
     const { link, isSelected, block, editorElement } = props;
     const src = formatUrl(link);
     // let iframeShow = useLazyIframe(src, 3000, iframeContainer);

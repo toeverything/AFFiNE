@@ -1,4 +1,4 @@
-import type { FC, CSSProperties, PointerEventHandler } from 'react';
+import type { CSSProperties, PointerEventHandler } from 'react';
 import { useState, useRef } from 'react';
 import type { TLBounds } from '@tldraw/core';
 import Vec from '@tldraw/vec';
@@ -8,13 +8,13 @@ interface ViewportProps extends TLBounds {
     onPan?: (delta: [number, number]) => void;
 }
 
-export const Viewport: FC<ViewportProps> = ({
+export const Viewport = ({
     onPan,
     width,
     height,
     minX,
     minY,
-}) => {
+}: ViewportProps) => {
     const style: CSSProperties = {
         width: `${width}px`,
         height: `${height}px`,

@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { MoveToIcon } from '@toeverything/components/icons';
 import {
     ListItem,
@@ -21,7 +20,7 @@ const logout = () => {
     window.location.href = '/';
 };
 
-export const Logout: FC = () => {
+export const Logout = () => {
     return (
         <ListItem onClick={logout}>
             <StyledIcon />

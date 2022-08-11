@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import { Upload } from '../../components/upload/upload';
 import { SourceView } from '../../components/source-view';
@@ -10,7 +10,7 @@ const _messages = {
 };
 
 type YoutubeView = CreateView;
-export const YoutubeView: FC<YoutubeView> = ({ block }) => {
+export const YoutubeView = ({ block }: YoutubeView) => {
     const [youtubeUrl, setYoutubeUrl] = useState<string>(
         block.getProperty('embedLink')?.value
     );

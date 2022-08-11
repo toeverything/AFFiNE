@@ -1,5 +1,5 @@
 
-import { FC } from 'react';
+
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon } from '@mui/material';
 // eslint-disable-next-line no-restricted-imports
@@ -9,7 +9,13 @@ export interface LinkIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const LinkIcon: FC<LinkIconProps> = ({ color, style, ...props}) => {
+export const LinkIcon = (
+    {
+        color,
+        style,
+        ...props
+    }: LinkIconProps
+) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

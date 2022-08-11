@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { styled } from '../styled';
-import type { FC, CSSProperties, ChangeEvent } from 'react';
+import type { CSSProperties, ChangeEvent } from 'react';
 
 /**
  * WARNING: This component is about to be deprecated, use Select replace
@@ -17,12 +17,7 @@ interface Props {
     extraStyle?: CSSProperties;
 }
 
-export const OldSelect: FC<Props> = ({
-    value,
-    options,
-    onChange,
-    extraStyle,
-}: Props) => {
+export const OldSelect = ({ value, options, onChange, extraStyle }: Props) => {
     const onSelectChange = useCallback(
         (e: ChangeEvent<HTMLSelectElement>) => {
             onChange(e.target.value);

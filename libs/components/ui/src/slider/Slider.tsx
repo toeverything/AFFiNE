@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { SliderUnstyled, sliderUnstyledClasses } from '@mui/base';
 import type { SliderUnstyledProps } from '@mui/base';
 import { alpha } from '@mui/system';
@@ -14,7 +13,7 @@ interface SliderProps {
     onChange?: SliderUnstyledProps['onChange'];
 }
 
-export const Slider: FC<SliderProps> = props => {
+export const Slider = (props: SliderProps) => {
     return <StyledSlider {...props} />;
 };
 

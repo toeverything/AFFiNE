@@ -1,5 +1,5 @@
 
-import { FC } from 'react';
+
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon } from '@mui/material';
 // eslint-disable-next-line no-restricted-imports
@@ -9,7 +9,13 @@ export interface BulletedList_4IconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const BulletedList_4Icon: FC<BulletedList_4IconProps> = ({ color, style, ...props}) => {
+export const BulletedList_4Icon = (
+    {
+        color,
+        style,
+        ...props
+    }: BulletedList_4IconProps
+) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

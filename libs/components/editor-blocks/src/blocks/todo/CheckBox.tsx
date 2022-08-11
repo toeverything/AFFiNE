@@ -1,19 +1,19 @@
 import { styled } from '@toeverything/components/ui';
-import { FC, useMemo } from 'react';
+import { useMemo } from 'react';
 
 interface CheckBoxProps {
-    size?: number;
-    height?: number;
+    size?: string;
+    height?: string;
     checked?: boolean;
     onChange: (checked: boolean) => void;
 }
 
-export const CheckBox: FC<CheckBoxProps> = ({
+export const CheckBox = ({
     size = '16px',
     height = '23px',
     checked,
     onChange,
-}) => {
+}: CheckBoxProps) => {
     const dynamic_style = useMemo(
         () => ({
             height: {

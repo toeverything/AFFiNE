@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import { DashStyle, StrokeWidth } from '@toeverything/components/board-types';
 import type { TDShape } from '@toeverything/components/board-types';
@@ -24,10 +23,10 @@ interface BorderColorConfigProps {
     shapes: TDShape[];
 }
 
-export const StrokeLineStyleConfig: FC<BorderColorConfigProps> = ({
+export const StrokeLineStyleConfig = ({
     app,
     shapes,
-}) => {
+}: BorderColorConfigProps) => {
     const strokeStyle = _getStrokeStyle(shapes);
     const strokeWidth = _getStrokeWidth(shapes);
     const setStrokeLineStyle = (style: DashStyle) => {

@@ -1,5 +1,5 @@
 import { AsyncBlock } from '@toeverything/framework/virgo';
-import { FC } from 'react';
+
 import { ResizableBox } from 'react-resizable';
 import { styled } from '@toeverything/components/ui';
 
@@ -33,7 +33,7 @@ const ImageContainer = styled('div')<{ isSelected: boolean }>(
         };
     }
 );
-export const Image: FC<Props> = props => {
+export const Image = (props: Props) => {
     const { link, viewStyle, isSelected, block } = props;
     const on_resize_end = (e: any, data: any) => {
         block.setProperty('image_style', data.size);

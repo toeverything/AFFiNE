@@ -100,7 +100,7 @@ module.exports = async function generateReactIcon(name, svgCode, customStyles) {
     const colors = getColors(colorIdx);
 
     return `
-import { FC } from 'react';
+
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon } from '@mui/material';
 // eslint-disable-next-line no-restricted-imports
@@ -110,9 +110,9 @@ export interface ${name}IconProps extends Omit<SvgIconProps, 'color'> {
     ${getColorsInterfaceProps(colors)}
 }
 
-export const ${name}Icon: FC<${name}IconProps> = ({ ${getRestColors(
+export const ${name}Icon = ({ ${getRestColors(
         colors
-    )}, style, ...props}) => {
+    )}, style, ...props}: ${name}IconProps) => {
     const propsStyles = ${getPropNameToColorValue(colors)};
     const customStyles = ${JSON.stringify(customStyles || {})};
     const styles = {...propsStyles, ...customStyles, ...style}

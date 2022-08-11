@@ -6,7 +6,7 @@ import {
 import { styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
 import { CreateView } from '@toeverything/framework/virgo';
-import { FC, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image as SourceView } from '../../components/ImageView';
 import { Upload } from '../../components/upload/upload';
 import { SCENE_CONFIG } from '../group/config';
@@ -54,7 +54,7 @@ const KanbanImageContainer = styled('div')<{ isSelected: boolean }>(
         };
     }
 );
-export const ImageView: FC<ImageView> = ({ block, editor }) => {
+export const ImageView = ({ block, editor }: ImageView) => {
     const workspace = editor.workspace;
     const [imgUrl, set_image_url] = useState<string>();
     const [imgWidth, setImgWidth] = useState<number>(0);

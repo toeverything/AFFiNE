@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import { styled } from '@toeverything/components/ui';
 import { useOnSelect } from '@toeverything/components/editor-core';
@@ -18,7 +18,7 @@ const Line = styled('div')({
     backgroundColor: '#e2e8f0',
 });
 
-export const DividerView: FC<CreateView> = ({ block, editor }) => {
+export const DividerView = ({ block, editor }: CreateView) => {
     const [isSelected, setIsSelected] = useState(false);
 
     useOnSelect(block.id, (isSelect: boolean) => {

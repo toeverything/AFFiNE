@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import { IconButton, Tooltip } from '@toeverything/components/ui';
@@ -10,7 +9,7 @@ interface DeleteShapesProps {
     shapes: TDShape[];
 }
 
-export const DeleteShapes: FC<DeleteShapesProps> = ({ app, shapes }) => {
+export const DeleteShapes = ({ app, shapes }: DeleteShapesProps) => {
     const deleteShapes = () => {
         app.delete(getShapeIds(shapes));
     };

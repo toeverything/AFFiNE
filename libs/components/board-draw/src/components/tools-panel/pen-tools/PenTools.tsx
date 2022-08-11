@@ -1,4 +1,4 @@
-import { FC, ReactElement, type CSSProperties } from 'react';
+import { ReactElement, type CSSProperties } from 'react';
 import style9 from 'style9';
 import {
     MuiDivider as Divider,
@@ -105,7 +105,7 @@ const PENCIL_CONFIGS_MAP = PENCIL_CONFIGS.reduce<
     return acc;
 }, {} as Record<TDToolType, PencilConfig>);
 
-export const PenTools: FC<{ app: TldrawApp }> = ({ app }) => {
+export const PenTools = ({ app }: { app: TldrawApp }) => {
     const appCurrentTool = app.useStore(state => state.appState.activeTool);
     const chosenPen =
         PENCIL_CONFIGS.find(config => config.key === appCurrentTool) ||

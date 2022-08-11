@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Tooltip, styled, IconButton } from '@toeverything/components/ui';
 
 interface PenProps {
@@ -9,13 +9,13 @@ interface PenProps {
     onClick: () => void;
 }
 
-export const Pen: FC<PenProps> = ({
+export const Pen = ({
     name,
     icon,
     primaryColor,
     secondaryColor,
     onClick,
-}) => {
+}: PenProps) => {
     return (
         <Tooltip content={name}>
             <StyledIconButton

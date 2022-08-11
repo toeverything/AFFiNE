@@ -1,5 +1,5 @@
 
-import { FC } from 'react';
+
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon } from '@mui/material';
 // eslint-disable-next-line no-restricted-imports
@@ -12,7 +12,16 @@ export interface HighlighterDuotoneIconProps extends Omit<SvgIconProps, 'color'>
     secondaryColor?: string
 }
 
-export const HighlighterDuotoneIcon: FC<HighlighterDuotoneIconProps> = ({ color0, primaryColor, color1, secondaryColor, style, ...props}) => {
+export const HighlighterDuotoneIcon = (
+    {
+        color0,
+        primaryColor,
+        color1,
+        secondaryColor,
+        style,
+        ...props
+    }: HighlighterDuotoneIconProps
+) => {
     const propsStyles = {"--color-0": color0 || primaryColor, "--color-1": color1 || secondaryColor};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

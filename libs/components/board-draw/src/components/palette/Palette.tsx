@@ -1,4 +1,3 @@
-import type { FC, PropsWithChildren } from 'react';
 import { useMemo } from 'react';
 import { styled, Tooltip } from '@toeverything/components/ui';
 import { ShapeColorNoneIcon } from '@toeverything/components/icons';
@@ -26,11 +25,11 @@ const formatColors = (colors: ColorValue[]): ColorObject[] => {
     });
 };
 
-export const Palette: FC<PaletteProps> = ({
+export const Palette = ({
     colors: propColors,
     selected,
     onSelect,
-}) => {
+}: PaletteProps) => {
     const colorObjects = useMemo(() => formatColors(propColors), [propColors]);
     return (
         <Container>

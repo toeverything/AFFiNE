@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { Fragment } from 'react';
 import { Vec } from '@tldraw/vec';
 import { TldrawApp, TLDR } from '@toeverything/components/board-state';
@@ -13,7 +12,7 @@ import { DeleteShapes } from './DeleteOperation';
 import { Lock, Unlock } from './LockOperation';
 import { FrameFillColorConfig } from './FrameFillColorConfig';
 
-export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
+export const CommandPanel = ({ app }: { app: TldrawApp }) => {
     const state = app.useStore();
     const bounds = TLDR.get_selected_bounds(state);
     const camera = app.useStore(

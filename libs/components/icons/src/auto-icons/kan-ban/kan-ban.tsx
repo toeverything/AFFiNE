@@ -1,5 +1,5 @@
 
-import { FC } from 'react';
+
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon } from '@mui/material';
 // eslint-disable-next-line no-restricted-imports
@@ -9,7 +9,13 @@ export interface KanBanIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const KanBanIcon: FC<KanBanIconProps> = ({ color, style, ...props}) => {
+export const KanBanIcon = (
+    {
+        color,
+        style,
+        ...props
+    }: KanBanIconProps
+) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

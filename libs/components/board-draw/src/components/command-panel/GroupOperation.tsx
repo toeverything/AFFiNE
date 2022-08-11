@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import { IconButton, Tooltip } from '@toeverything/components/ui';
@@ -10,7 +9,7 @@ interface GroupAndUnGroupProps {
     shapes: TDShape[];
 }
 
-export const Group: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
+export const Group = ({ app, shapes }: GroupAndUnGroupProps) => {
     const group = () => {
         app.group(getShapeIds(shapes));
     };
@@ -23,7 +22,7 @@ export const Group: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
     );
 };
 
-export const UnGroup: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
+export const UnGroup = ({ app, shapes }: GroupAndUnGroupProps) => {
     const ungroup = () => {
         app.ungroup(getShapeIds(shapes));
     };

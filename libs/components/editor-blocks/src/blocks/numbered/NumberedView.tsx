@@ -5,7 +5,7 @@ import {
     Protocol,
 } from '@toeverything/datasource/db-service';
 import { type CreateView } from '@toeverything/framework/virgo';
-import { useEffect, useRef, useState, type FC } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     TextManage,
     type ExtendedTextUtils,
@@ -40,7 +40,7 @@ const todoIsEmpty = (contentValue: ContentColumnValue): boolean => {
     );
 };
 
-export const NumberedView: FC<CreateView> = ({ block, editor }) => {
+export const NumberedView = ({ block, editor }: CreateView) => {
     // block.remove();
     const properties = { ...defaultTodoProps, ...block.getProperties() };
     const [number, set_number] = useState<number>(1);

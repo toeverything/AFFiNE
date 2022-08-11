@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { styled } from '@toeverything/components/ui';
 import { AsyncBlock, BlockEditor } from '@toeverything/framework/virgo';
 
@@ -7,13 +6,13 @@ type BlockContainerProps = Parameters<typeof Container>[0] & {
     editor: BlockEditor;
 };
 
-export const BlockContainer: FC<BlockContainerProps> = function ({
+export const BlockContainer = function ({
     block,
     children,
     className,
     editor,
     ...restProps
-}) {
+}: BlockContainerProps) {
     return (
         <Container
             className={`${className || ''} block_container`}

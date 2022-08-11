@@ -24,10 +24,7 @@ interface ErrorBoundaryPropsWithComponent {
 
 declare function FallbackRender(
     props: FallbackProps
-): React.ReactElement<
-    unknown,
-    string | React.FunctionComponent | typeof React.Component
-> | null;
+): React.ReactElement<unknown, string | typeof React.Component> | null;
 
 interface ErrorBoundaryPropsWithRender {
     onResetKeysChange?: (
@@ -52,7 +49,7 @@ interface ErrorBoundaryPropsWithFallback {
     resetKeys?: Array<unknown>;
     fallback: React.ReactElement<
         unknown,
-        string | React.FunctionComponent | typeof React.Component
+        string | typeof React.Component
     > | null;
     FallbackComponent?: never;
     fallbackRender?: never;

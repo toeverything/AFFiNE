@@ -1,9 +1,8 @@
-import type { FC } from 'react';
 import { styled } from '@toeverything/components/ui';
 import { LastModified } from './LastModified';
 import { Logout } from './Logout';
 
-export const Footer: FC = () => {
+export const Footer = () => {
     return (
         <Container>
             <LastModified />

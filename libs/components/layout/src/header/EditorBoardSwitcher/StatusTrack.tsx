@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { DocMode } from './type';
 import { styled } from '@toeverything/components/ui';
 import { StatusIcon } from './StatusIcon';
@@ -8,7 +7,7 @@ interface StatusTrackProps {
     onClick: () => void;
 }
 
-export const StatusTrack: FC<StatusTrackProps> = ({ mode, onClick }) => {
+export const StatusTrack = ({ mode, onClick }: StatusTrackProps) => {
     return (
         <Container onClick={onClick}>
             <StatusIcon mode={mode} />

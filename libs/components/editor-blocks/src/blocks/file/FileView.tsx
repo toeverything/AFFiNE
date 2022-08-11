@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import { Upload } from '../../components/upload/upload';
 import { services, FileColumnValue } from '@toeverything/datasource/db-service';
@@ -48,7 +48,7 @@ const FileViewContainer = styled('div')<{ isSelected: boolean }>(
         };
     }
 );
-export const FileView: FC<FileView> = ({ block, editor }) => {
+export const FileView = ({ block, editor }: FileView) => {
     const [fileUrl, setFileUrl] = useState<string>();
     const fileInfo = block.getProperty('file') || ({} as FileColumnValue);
     const file_id = fileInfo.value;

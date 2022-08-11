@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import {
     BlockPendantProvider,
@@ -13,7 +13,7 @@ const MESSAGES = {
 };
 
 type EmbedLinkView = CreateView;
-export const EmbedLinkView: FC<EmbedLinkView> = props => {
+export const EmbedLinkView = (props: EmbedLinkView) => {
     const { block, editor } = props;
     const [isSelect, setIsSelect] = useState(false);
 

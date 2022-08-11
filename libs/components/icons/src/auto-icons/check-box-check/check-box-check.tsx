@@ -1,5 +1,5 @@
 
-import { FC } from 'react';
+
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon } from '@mui/material';
 // eslint-disable-next-line no-restricted-imports
@@ -9,7 +9,13 @@ export interface CheckBoxCheckIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const CheckBoxCheckIcon: FC<CheckBoxCheckIconProps> = ({ color, style, ...props}) => {
+export const CheckBoxCheckIcon = (
+    {
+        color,
+        style,
+        ...props
+    }: CheckBoxCheckIconProps
+) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

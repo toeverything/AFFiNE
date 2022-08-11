@@ -1,4 +1,4 @@
-import type { FC, PropsWithChildren, CSSProperties } from 'react';
+import type { PropsWithChildren, CSSProperties } from 'react';
 import { Clickable } from '../clickable';
 import { styled } from '../styled';
 
@@ -9,13 +9,13 @@ interface ListItemProps {
     style?: CSSProperties;
 }
 
-export const ListItem: FC<PropsWithChildren<ListItemProps>> = ({
+export const ListItem = ({
     active,
     children,
     onClick,
     className,
     style,
-}) => {
+}: PropsWithChildren<ListItemProps>) => {
     return (
         <Container
             active={active}

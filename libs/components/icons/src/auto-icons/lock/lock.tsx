@@ -1,5 +1,5 @@
 
-import { FC } from 'react';
+
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon } from '@mui/material';
 // eslint-disable-next-line no-restricted-imports
@@ -9,7 +9,13 @@ export interface LockIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const LockIcon: FC<LockIconProps> = ({ color, style, ...props}) => {
+export const LockIcon = (
+    {
+        color,
+        style,
+        ...props
+    }: LockIconProps
+) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

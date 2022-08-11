@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import { Popover, Tooltip, IconButton } from '@toeverything/components/ui';
@@ -34,10 +33,7 @@ const _getIconRenderColor = (shapes: TDShape[]) => {
     return max[0];
 };
 
-export const BorderColorConfig: FC<BorderColorConfigProps> = ({
-    app,
-    shapes,
-}) => {
+export const BorderColorConfig = ({ app, shapes }: BorderColorConfigProps) => {
     const setBorderColor = (color: string) => {
         app.style({ stroke: color }, getShapeIds(shapes));
     };

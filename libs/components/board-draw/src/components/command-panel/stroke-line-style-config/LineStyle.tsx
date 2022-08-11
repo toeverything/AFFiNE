@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { DashStyle, StrokeWidth } from '@toeverything/components/board-types';
 import {
     LineNoneIcon,
@@ -44,12 +43,12 @@ interface LineStyleProps {
     onStrokeWidthChange: (width: StrokeWidth) => void;
 }
 
-export const LineStyle: FC<LineStyleProps> = ({
+export const LineStyle = ({
     strokeStyle,
     onStrokeStyleChange,
     strokeWidth,
     onStrokeWidthChange,
-}) => {
+}: LineStyleProps) => {
     return (
         <Container>
             <Title>Stroke Style</Title>

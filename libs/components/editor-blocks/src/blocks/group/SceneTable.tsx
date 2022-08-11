@@ -1,11 +1,10 @@
-import type { FC } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import type { DefaultColumnsValue } from '@toeverything/datasource/db-service';
 import type { CreateView } from '@toeverything/framework/virgo';
 import type { TableColumn, TableRow } from '../../components/table';
 import { Table, CustomCell } from '../../components/table';
 
-export const SceneTable: FC<CreateView> = ({ block, columns, editor }) => {
+export const SceneTable = ({ block, columns, editor }: CreateView) => {
     const [rows, set_rows] = useState<TableRow[]>([]);
     const data_columns = useMemo<TableColumn[]>(() => {
         return (columns || [])

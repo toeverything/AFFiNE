@@ -1,7 +1,6 @@
 import {
     useState,
     useEffect,
-    FC,
     type MouseEvent,
     type DragEvent,
     type ReactNode,
@@ -128,7 +127,7 @@ function DragComponent(props: {
     );
 }
 
-export const LeftMenuDraggable: FC<LeftMenuProps> = props => {
+export const LeftMenuDraggable = (props: LeftMenuProps) => {
     const { editor, blockInfo, defaultVisible, lineInfo } = props;
     const [visible, setVisible] = useState(defaultVisible);
     const [anchorEl, setAnchorEl] = useState<Element>();

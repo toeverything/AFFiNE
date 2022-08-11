@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, type ComponentType } from 'react';
 import style9 from 'style9';
 import {
     Popover,
@@ -135,7 +135,7 @@ export const MenuDropdownItem = ({
     );
 };
 
-const withStylesForIcon = (FontIconComponent: React.FC<SvgIconProps>) =>
+const withStylesForIcon = (FontIconComponent: ComponentType<SvgIconProps>) =>
     styled(FontIconComponent, {
         shouldForwardProp: (prop: string) =>
             !['fontColor', 'fontBgColor'].includes(prop),

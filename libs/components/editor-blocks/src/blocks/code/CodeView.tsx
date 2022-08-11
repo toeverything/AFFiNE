@@ -1,4 +1,4 @@
-import { FC, useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { StyleWithAtRules } from 'style9';
 
 import { CreateView } from '@toeverything/framework/virgo';
@@ -126,7 +126,7 @@ const CodeBlock = styled('div')(({ theme }) => ({
         outline: 'none !important',
     },
 }));
-export const CodeView: FC<CreateCodeView> = ({ block, editor }) => {
+export const CodeView = ({ block, editor }: CreateCodeView) => {
     const initValue: string = block.getProperty('text')?.value?.[0]?.text;
     const langType: string = block.getProperty('lang');
     const [extensions, setExtensions] = useState<Extension[]>();

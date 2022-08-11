@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { useState } from 'react';
 
 import { CustomText, TextProps } from '@toeverything/components/common';
 import {
@@ -51,11 +51,11 @@ const TextBlock = styled(TextManage)<{ type: string }>(({ theme, type }) => {
     }
 });
 
-export const TextView: FC<CreateTextView> = ({
+export const TextView = ({
     block,
     editor,
     containerClassName,
-}) => {
+}: CreateTextView) => {
     const [isSelect, setIsSelect] = useState<boolean>();
     useOnSelect(block.id, (is_select: boolean) => {
         setIsSelect(is_select);

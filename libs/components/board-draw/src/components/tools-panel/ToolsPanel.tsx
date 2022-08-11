@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import style9 from 'style9';
 import {
     // MuiIconButton as IconButton,
@@ -26,6 +25,7 @@ import { TldrawApp } from '@toeverything/components/board-state';
 import { ShapeTools } from './ShapeTools';
 import { PenTools } from './pen-tools';
 import { LineTools } from './LineTools';
+import { type ComponentType } from 'react';
 
 const activeToolSelector = (s: TDSnapshot) => s.appState.activeTool;
 const toolLockedSelector = (s: TDSnapshot) => s.appState.isToolLocked;
@@ -34,8 +34,8 @@ const tools: Array<{
     type: string;
     label?: string;
     tooltip?: string;
-    icon?: FC;
-    component?: FC<{ app: TldrawApp }>;
+    icon?: ComponentType;
+    component?: ComponentType<{ app: TldrawApp }>;
 }> = [
     {
         type: 'select',
@@ -68,7 +68,7 @@ const tools: Array<{
     },
 ];
 
-export const ToolsPanel: FC<{ app: TldrawApp }> = ({ app }) => {
+export const ToolsPanel = ({ app }: { app: TldrawApp }) => {
     const activeTool = app.useStore(activeToolSelector);
 
     const isToolLocked = app.useStore(toolLockedSelector);

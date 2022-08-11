@@ -1,11 +1,11 @@
-import { FC, PropsWithChildren } from 'react';
+import { PropsWithChildren } from 'react';
 import { ChildrenView } from '@toeverything/framework/virgo';
 import { styled } from '@toeverything/components/ui';
 
 /**
  * Indent rendering child nodes
  */
-export const IndentWrapper: FC<PropsWithChildren> = props => {
+export const IndentWrapper = (props: PropsWithChildren) => {
     return <StyledIdentWrapper>{props.children}</StyledIdentWrapper>;
 };
 

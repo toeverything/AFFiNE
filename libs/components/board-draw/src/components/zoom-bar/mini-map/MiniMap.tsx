@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
 import { TLDR } from '@toeverything/components/board-state';
@@ -18,7 +17,7 @@ const getScaleToMap = (width: number, height: number) => {
     return scaleWidth > scaleHeight ? scaleWidth : scaleHeight;
 };
 
-export const MiniMap: FC = () => {
+export const MiniMap = () => {
     const app = useTldrawApp();
     const page = app.useStore(s => s.document.pages[s.appState.currentPageId]);
     const pageState = app.useStore(

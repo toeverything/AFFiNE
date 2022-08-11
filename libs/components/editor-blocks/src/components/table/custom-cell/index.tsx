@@ -1,5 +1,5 @@
-import type { FC } from 'react';
 import { ColumnType } from '@toeverything/datasource/db-service';
+import { type ComponentType } from 'react';
 import type { CustomCellProps as TableCustomCellProps } from '../basic-table';
 import { DEFAULT_RENDER_CELL } from '../basic-table';
 import { CheckBoxCell } from './check-box';
@@ -9,14 +9,14 @@ import type { CellProps } from './types';
 /**
  * @deprecated
  */
-const DefaultCell: FC<CellProps> = ({ onChange, ...props }) => {
+const DefaultCell = ({ onChange, ...props }: CellProps) => {
     return <DEFAULT_RENDER_CELL {...props} />;
 };
 
 /**
  * @deprecated
  */
-const cellMap: Record<ColumnType, FC<CellProps<any>>> = {
+const cellMap: Record<ColumnType, ComponentType<CellProps<any>>> = {
     [ColumnType.content]: DefaultCell,
     [ColumnType.number]: DefaultCell,
     [ColumnType.enum]: SelectCell,
@@ -33,7 +33,7 @@ interface CustomCellProps extends TableCustomCellProps<unknown> {
     onChange: (data: TableCustomCellProps<unknown>) => void;
 }
 
-export const CustomCell: FC<CustomCellProps> = props => {
+export const CustomCell = (props: CustomCellProps) => {
     const View =
         props.rowIndex === 0
             ? DefaultCell

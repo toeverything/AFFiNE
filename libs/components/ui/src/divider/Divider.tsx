@@ -1,4 +1,4 @@
-import type { FC, ReactNode, CSSProperties } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import { styled } from '../styled';
 import { MuiDivider } from '../mui';
 import type { MuiDividerProps } from '../mui';
@@ -20,11 +20,11 @@ const _textAlignMap: Record<
     end: 'right',
 };
 
-export const Divider: FC<DividerProps> = ({
+export const Divider = ({
     orientation = 'horizontal',
     textAlign = 'center',
     children,
-}) => {
+}: DividerProps) => {
     return (
         <StyledMuiDivider
             orientation={orientation}

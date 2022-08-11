@@ -1,9 +1,10 @@
 import { styled } from '@toeverything/components/ui';
-import type { FC } from 'react';
+
 import type { SvgIconProps } from '@toeverything/components/ui';
+import { type ComponentType } from 'react';
 
 interface Props {
-    Icon: FC<SvgIconProps>;
+    Icon: ComponentType<SvgIconProps>;
     text?: string;
     onClick: () => void;
 }

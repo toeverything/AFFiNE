@@ -1,4 +1,4 @@
-import { FC, useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 
 import { BackLink, TextProps } from '@toeverything/components/common';
@@ -15,7 +15,7 @@ import {
     type ExtendedTextUtils,
 } from '../../components/text-manage';
 
-export const PageView: FC<CreateView> = ({ block, editor }) => {
+export const PageView = ({ block, editor }: CreateView) => {
     const { workspace_id } = useParams();
     const textRef = useRef<ExtendedTextUtils>(null);
     const [backLinks, setBackLinks] =
