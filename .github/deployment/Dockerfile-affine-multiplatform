@@ -1,0 +1,11 @@
+FROM ghcr.io/toeverything/AFFiNE:relocate as relocate
+
+# =============
+# AFFiNE image
+# =============
+FROM caddy:2.4.6-alpine as AFFiNE
+WORKDIR /app
+COPY --from=relocate /app .
+
+EXPOSE 3000
+CMD ["caddy", "run"]

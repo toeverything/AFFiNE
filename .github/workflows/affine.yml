@@ -57,8 +57,16 @@ jobs:
               uses: docker/build-push-action@v3
               with:
                   context: .
-                  platforms: linux/amd64,linux/arm64/v8
                   file: ./.github/deployment/Dockerfile-affine
+                  tags: relocate
+                  target: AFFiNE
+
+            - name: Build and push Docker image (AFFINE-Local)
+              uses: docker/build-push-action@v3
+              with:
+                  context: .
+                  platforms: linux/amd64,linux/arm64/v8
+                  file: ./.github/deployment/Dockerfile-affine-multiplatform
                   push: ${{ github.ref == 'refs/heads/master' && true || false }}
                   tags: ${{ steps.meta_affine.outputs.tags }}
                   labels: ${{ steps.meta_affine.outputs.labels }}
