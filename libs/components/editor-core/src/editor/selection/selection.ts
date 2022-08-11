@@ -322,16 +322,16 @@ export class SelectionManager implements VirgoSelection {
             if (selectionRect.isIntersect(domToRect(block.dom))) {
                 const childrenBlocks = await block.children();
                 // should check directly in structured block
-                const structuredChildrenBlocks: Array<AsyncBlock> = childrenBlocks.filter(
-                    childBlock => {
+                const structuredChildrenBlocks: Array<AsyncBlock> =
+                    childrenBlocks.filter(childBlock => {
                         return this._editor.getView(childBlock.type).layoutOnly;
-                    }
-                );
+                    });
                 for await (const childBlock of structuredChildrenBlocks) {
-                    const childSelectedNodes = await this.calcRenderBlockIntersect(
-                        selectionRect,
-                        childBlock
-                    );
+                    const childSelectedNodes =
+                        await this.calcRenderBlockIntersect(
+                            selectionRect,
+                            childBlock
+                        );
                     selectedNodes.push(...childSelectedNodes);
                 }
                 const selectableChildren = childrenBlocks.filter(childBlock => {
@@ -348,10 +348,11 @@ export class SelectionManager implements VirgoSelection {
                 }
                 // if just only has one selected maybe select the children
                 if (selectedNodes.length === 1) {
-                    const childrenSelectedNodes: Array<AsyncBlock> = await this.calcRenderBlockIntersect(
-                        selectionRect,
-                        selectedNodes[0]
-                    );
+                    const childrenSelectedNodes: Array<AsyncBlock> =
+                        await this.calcRenderBlockIntersect(
+                            selectionRect,
+                            selectedNodes[0]
+                        );
                     if (childrenSelectedNodes.length)
                         return childrenSelectedNodes;
                 }
@@ -584,7 +585,8 @@ export class SelectionManager implements VirgoSelection {
                 } else {
                     const new_node = await this._editor.getBlockById(newNodeId);
                     if (new_node) {
-                        const new_node_children_ids = await new_node.childrenIds;
+                        const new_node_children_ids =
+                            await new_node.childrenIds;
                         let select_ids_new = this._selectedNodesIds;
                         if (
                             new_node_children_ids &&

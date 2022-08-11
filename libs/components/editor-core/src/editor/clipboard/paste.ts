@@ -1,4 +1,4 @@
-import { HooksRunner } from '../types';
+/* eslint-disable max-lines */
 import {
     OFFICE_CLIPBOARD_MIMETYPE,
     InnerClipInfo,
@@ -187,10 +187,15 @@ export class Paste {
                 const pureText = !shouldSplitBlock
                     ? blocks[0].properties.text.value
                     : [{ text: '' }];
-                this._editor.blockHelper.setBlockBlur(
-                    currentSelectInfo.blocks[0].blockId
+                this._editor.blockHelper.insertNodes(
+                    selectedBlock.id,
+                    pureText,
+                    { select: true }
                 );
+                return;
+                //TODO repair the following logics
 
+                /**
                 const { startInfo, endInfo } = currentSelectInfo.blocks[0];
 
                 // 选中的当前的可编辑block的文字信息
@@ -414,13 +419,13 @@ export class Paste {
                             },
                         });
 
-                        const pastedTextLength = pureText.reduce(
-                            (sumLength: number, textItem: TextValueItem) => {
-                                sumLength += textItem.text.length;
-                                return sumLength;
-                            },
-                            0
-                        );
+                        // const pastedTextLength = pureText.reduce(
+                        //     (sumLength: number, textItem: TextValueItem) => {
+                        //         sumLength += textItem.text.length;
+                        //         return sumLength;
+                        //     },
+                        //     0
+                        // );
 
                         // this._editor.selectionManager.moveCursor(
                         //     window.getSelection().getRangeAt(0),
@@ -429,6 +434,7 @@ export class Paste {
                         // );
                     }
                 }
+                */
             } else {
                 const pasteBlocks = await this._createBlocks(blocks);
                 pasteBlocks.forEach(block => {

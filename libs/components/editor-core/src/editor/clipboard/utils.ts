@@ -1,4 +1,4 @@
-import {Editor} from "../editor";
+import { Editor } from '../editor';
 
 export const shouldHandlerContinue = (event: Event, editor: Editor) => {
     const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
