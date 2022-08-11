@@ -163,8 +163,8 @@ export class SQLiteProvider extends Observable<string> {
         }
     }
 
-    private _waitUpdate(sync = false) {
-        if (sync) {
+    private _waitUpdate(updates: any[], sync = false) {
+        if (updates.length && sync) {
             return new Promise<void>((resolve, reject) => {
                 const final = (_: any, origin: any) => {
                     if (origin === this) {
@@ -180,8 +180,8 @@ export class SQLiteProvider extends Observable<string> {
 
     private async _fetchUpdates(sync = false) {
         if (this.db) {
-            const wait = this._waitUpdate(sync);
             const updates = getAllUpdates(this.db, this._ref);
+            const wait = this._waitUpdate(updates, sync);
 
             Y.transact(
                 this.doc,
