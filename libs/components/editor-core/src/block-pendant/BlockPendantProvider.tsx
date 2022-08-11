@@ -44,7 +44,7 @@ export const BlockPendantProvider: FC<PropsWithChildren<BlockTagProps>> = ({
 };
 
 export const LINE_GAP = 16;
-const TAG_GAP = 4;
+export const TAG_GAP = 4;
 
 const StyledTriggerLine = styled('div')({
     padding: `${TAG_GAP}px 0`,
@@ -90,7 +90,7 @@ const StyledPendantContainer = styled('div')({
 });
 const Container = styled('div')({
     position: 'relative',
-    paddingBottom: `${LINE_GAP - TAG_GAP * 2}px`,
+    padding: `${TAG_GAP * 2}px 0 ${LINE_GAP - TAG_GAP * 4}px 0`,
     '&:hover': {
         [`${StyledTriggerLine}`]: {
             '&::before': {

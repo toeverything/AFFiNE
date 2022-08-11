@@ -1,6 +1,8 @@
 import {
     addNewGroup,
+    LINE_GAP,
     RecastScene,
+    TAG_GAP,
     useCurrentView,
     useOnSelect,
 } from '@toeverything/components/editor-core';
@@ -61,7 +63,7 @@ const GroupContainer = styled('div')<{ isSelect?: boolean }>(
     ({ isSelect, theme }) => ({
         background: theme.affine.palette.white,
         border: '2px solid rgba(236,241,251,.5)',
-        padding: `15px 16px 0 16px`,
+        padding: `15px 16px ${LINE_GAP - TAG_GAP * 2}px 16px`,
         borderRadius: '10px',
         ...(isSelect
             ? {
