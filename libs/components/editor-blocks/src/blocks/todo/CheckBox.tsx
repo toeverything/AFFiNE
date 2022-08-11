@@ -9,19 +9,19 @@ interface CheckBoxProps {
 }
 
 export const CheckBox: FC<CheckBoxProps> = ({
-    size = '16px',
-    height = '23px',
+    size = 16,
+    height = 23,
     checked,
     onChange,
 }) => {
     const dynamic_style = useMemo(
         () => ({
             height: {
-                height,
+                height: `${height}px`,
             },
             size: {
-                width: size,
-                height: size,
+                width: `${size}px`,
+                height: `${size}px`,
             },
         }),
         [height, size]
