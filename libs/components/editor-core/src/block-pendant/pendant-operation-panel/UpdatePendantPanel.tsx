@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Input, message, Tooltip } from '@toeverything/components/ui';
-import { HelpCenterIcon } from '@toeverything/components/icons';
+import { message } from '@toeverything/components/ui';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import type { AsyncBlock } from '../../editor';
 import {
@@ -12,13 +11,12 @@ import { checkPendantForm, getPendantConfigByType } from '../utils';
 import {
     StyledPopoverWrapper,
     StyledOperationLabel,
-    StyledInputEndAdornment,
     StyledDivider,
     StyledPopoverContent,
     StyledPopoverSubTitle,
 } from '../StyledComponent';
 import { IconMap, pendantOptions } from '../config';
-
+import { FieldTitleInput } from './FieldTitleInput';
 import { useOnUpdateSure } from './hooks';
 
 type Props = {
@@ -63,19 +61,11 @@ export const UpdatePendantPanel = ({
             </StyledPopoverContent>
             <StyledOperationLabel>Field Title</StyledOperationLabel>
             {titleEditable ? (
-                <Input
+                <FieldTitleInput
                     value={fieldName}
-                    placeholder="Input your field name here"
                     onChange={e => {
                         setFieldName(e.target.value);
                     }}
-                    endAdornment={
-                        <Tooltip content="Help info here" placement="top">
-                            <StyledInputEndAdornment>
-                                <HelpCenterIcon />
-                            </StyledInputEndAdornment>
-                        </Tooltip>
-                    }
                 />
             ) : (
                 <StyledPopoverContent>{property.name}</StyledPopoverContent>
