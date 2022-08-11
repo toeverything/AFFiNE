@@ -57,6 +57,7 @@ jobs:
               uses: docker/build-push-action@v3
               with:
                   context: .
+                  load: true
                   file: ./.github/deployment/Dockerfile-affine
                   tags: ghcr.io/toeverything/affine:relocate
                   target: AFFiNE
