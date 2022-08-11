@@ -1,20 +1,22 @@
 /* eslint-disable filename-rules/match */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 
-import { LogoImg } from '@toeverything/components/common';
-import {
-    MuiButton,
-    MuiBox,
-    MuiGrid,
-    MuiSnackbar,
-} from '@toeverything/components/ui';
+import { LogoIcon } from '@toeverything/components/icons';
+import { MuiButton } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
 import { useLocalTrigger } from '@toeverything/datasource/state';
 
-import { Error } from './../error';
+const cleanupWorkspace = (workspace: string) =>
+    new Promise((resolve, reject) => {
+        const req = indexedDB.deleteDatabase(workspace);
+        req.addEventListener('error', e => reject(e));
+        req.addEventListener('blocked', e => reject(e));
+        req.addEventListener('upgradeneeded', e => reject(e));
+        req.addEventListener('success', e => resolve(e));
+    });
 
 const requestPermission = async (workspace: string) => {
-    indexedDB.deleteDatabase(workspace);
+    await cleanupWorkspace(workspace);
     const dirHandler = await window.showDirectoryPicker({
         id: 'AFFiNE_' + workspace,
         mode: 'readwrite',
@@ -43,9 +45,16 @@ const requestPermission = async (workspace: string) => {
     );
 };
 
-export const FileSystem = () => {
+export const FileSystem = (props: { onError: () => void }) => {
     const onSelected = useLocalTrigger();
-    const [error, setError] = useState(false);
+
+    const apiSupported = useMemo(() => {
+        try {
+            return 'showOpenFilePicker' in window;
+        } catch (e) {
+            return false;
+        }
+    }, []);
 
     useEffect(() => {
         if (process.env['NX_E2E']) {
@@ -54,54 +63,25 @@ export const FileSystem = () => {
     }, []);
 
     return (
-        <MuiGrid container>
-            <MuiSnackbar
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                open={error}
-                message="Login failed, please check if you have permission"
-            />
-            <MuiGrid item xs={8}>
-                <Error
-                    title="Welcome to AFFiNE"
-                    subTitle="blocks of knowledge to power your team"
-                    action1Text="Login &nbsp; or &nbsp; Register"
-                />
-            </MuiGrid>
-
-            <MuiGrid item xs={4}>
-                <MuiBox
-                    onClick={async () => {
-                        try {
-                            await requestPermission('AFFiNE');
-                            onSelected();
-                        } catch (e) {
-                            setError(true);
-                            onSelected();
-                            setTimeout(() => setError(false), 3000);
-                        }
-                    }}
-                    style={{
-                        textAlign: 'center',
-                        width: '300px',
-                        margin: '300px  auto 20px auto',
-                    }}
-                    sx={{ mt: 1 }}
-                >
-                    <LogoImg
-                        style={{
-                            width: '100px',
-                        }}
-                    />
-
-                    <MuiButton
-                        variant="outlined"
-                        fullWidth
-                        style={{ textTransform: 'none' }}
-                    >
-                        Sync to Disk
-                    </MuiButton>
-                </MuiBox>
-            </MuiGrid>
-        </MuiGrid>
+        <MuiButton
+            variant="outlined"
+            fullWidth
+            style={{ textTransform: 'none' }}
+            startIcon={<LogoIcon />}
+            onClick={async () => {
+                try {
+                    if (apiSupported) {
+                        await requestPermission('AFFiNE');
+                        onSelected();
+                    } else {
+                        onSelected();
+                    }
+                } catch (e) {
+                    props.onError();
+                }
+            }}
+        >
+            {apiSupported ? 'Sync to Disk' : 'Try Live Demo'}
+        </MuiButton>
     );
 };
