@@ -170,8 +170,8 @@ export class Paste {
         const currentSelectInfo =
             await this._editor.selectionManager.getSelectInfo();
 
-        // 当选区在某一个block中时
-        // select?.type === 'Range'
+        // When the selection is in one of the blocks, select?.type === 'Range'
+        // Currently the selection does not support cross-blocking, so this case is not considered
         if (currentSelectInfo.type === 'Range') {
             // 当 currentSelectInfo.type === 'Range' 时，光标选中的block必然只有一个
             const selectedBlock = await this._editor.getBlockById(
@@ -187,23 +187,15 @@ export class Paste {
                 const pureText = !shouldSplitBlock
                     ? blocks[0].properties.text.value
                     : [{ text: '' }];
-                this._editor.blockHelper.insertNodes(
-                    selectedBlock.id,
-                    pureText,
-                    { select: true }
-                );
-                return;
-                //TODO repair the following logics
-
-                /**
                 const { startInfo, endInfo } = currentSelectInfo.blocks[0];
 
-                // 选中的当前的可编辑block的文字信息
+                // Text content of the selected current editable block
                 const currentTextValue =
                     selectedBlock.getProperty('text').value;
-                // 当光标选区跨越不同样式文字时
+                // When the cursor selection spans different styles of text
                 if (startInfo?.arrayIndex !== endInfo?.arrayIndex) {
                     if (shouldSplitBlock) {
+                        // TODO: split block maybe should use slate method to support, like "this._editor.blockHelper.insertNodes"
                         const newTextValue = currentTextValue.reduce(
                             (
                                 newTextValue: TextValueItem[],
@@ -270,50 +262,17 @@ export class Paste {
                             pasteBlocks[pasteBlocks.length - 1].id
                         );
                     } else {
-                        const newTextValue = currentTextValue.reduce(
-                            (
-                                newTextValue: TextValueItem[],
-                                textStore: TextValueItem,
-                                i: number
-                            ) => {
-                                if (
-                                    i < startInfo?.arrayIndex ||
-                                    i > endInfo?.arrayIndex
-                                ) {
-                                    newTextValue.push(textStore);
-                                }
-                                const { text, ...props } = textStore;
-
-                                if (i === startInfo?.arrayIndex) {
-                                    newTextValue.push({
-                                        text: text.slice(0, startInfo?.offset),
-                                        ...props,
-                                    });
-                                } else if (i === endInfo?.arrayIndex) {
-                                    newTextValue.push({
-                                        text: text.slice(endInfo?.offset),
-                                        ...props,
-                                    });
-                                }
-                                return newTextValue;
-                            },
-                            []
+                        this._editor.blockHelper.insertNodes(
+                            selectedBlock.id,
+                            pureText,
+                            { select: true }
                         );
-                        newTextValue.splice(
-                            startInfo?.arrayIndex + 1,
-                            0,
-                            ...pureText
-                        );
-                        selectedBlock.setProperties({
-                            text: {
-                                value: newTextValue,
-                            },
-                        });
                     }
                 }
-                // 当光标选区没有跨越不同样式文字时
+                // When the cursor selection does not span different styles of text
                 if (startInfo?.arrayIndex === endInfo?.arrayIndex) {
                     if (shouldSplitBlock) {
+                        // TODO: split block maybe should use slate method to support, like "this._editor.blockHelper.insertNodes"
                         const newTextValue = currentTextValue.reduce(
                             (
                                 newTextValue: TextValueItem[],
@@ -383,58 +342,13 @@ export class Paste {
                             pasteBlocks[pasteBlocks.length - 1].id
                         );
                     } else {
-                        const newTextValue = currentTextValue.reduce(
-                            (
-                                newTextValue: TextValueItem[],
-                                textStore: TextValueItem,
-                                i: number
-                            ) => {
-                                if (i !== startInfo?.arrayIndex) {
-                                    newTextValue.push(textStore);
-                                }
-                                const { text, ...props } = textStore;
-
-                                if (i === startInfo?.arrayIndex) {
-                                    newTextValue.push({
-                                        text: `${text.slice(
-                                            0,
-                                            startInfo?.offset
-                                        )}`,
-                                        ...props,
-                                    });
-                                    newTextValue.push(...pureText);
-
-                                    newTextValue.push({
-                                        text: `${text.slice(endInfo?.offset)}`,
-                                        ...props,
-                                    });
-                                }
-                                return newTextValue;
-                            },
-                            []
+                        this._editor.blockHelper.insertNodes(
+                            selectedBlock.id,
+                            pureText,
+                            { select: true }
                         );
-                        selectedBlock.setProperties({
-                            text: {
-                                value: newTextValue,
-                            },
-                        });
-
-                        // const pastedTextLength = pureText.reduce(
-                        //     (sumLength: number, textItem: TextValueItem) => {
-                        //         sumLength += textItem.text.length;
-                        //         return sumLength;
-                        //     },
-                        //     0
-                        // );
-
-                        // this._editor.selectionManager.moveCursor(
-                        //     window.getSelection().getRangeAt(0),
-                        //     pastedTextLength,
-                        //     selectedBlock.id
-                        // );
                     }
                 }
-                */
             } else {
                 const pasteBlocks = await this._createBlocks(blocks);
                 pasteBlocks.forEach(block => {
