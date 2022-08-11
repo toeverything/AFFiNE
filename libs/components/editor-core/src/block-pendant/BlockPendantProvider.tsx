@@ -4,6 +4,7 @@ import type { AsyncBlock } from '../editor';
 import { PendantPopover } from './pendant-popover';
 import { PendantRender } from './pendant-render';
 import { useRef } from 'react';
+import { getRecastItemValue, useRecastBlockMeta } from '../recast-block';
 /**
  * @deprecated
  */
@@ -16,15 +17,26 @@ export const BlockPendantProvider: FC<PropsWithChildren<BlockTagProps>> = ({
     children,
 }) => {
     const triggerRef = useRef<HTMLDivElement>();
+    const { getProperties } = useRecastBlockMeta();
+    const properties = getProperties();
+    const { getValue } = getRecastItemValue(block);
+    const showTriggerLine =
+        properties.filter(property => getValue(property.id)).length === 0;
+
     return (
         <Container>
             {children}
 
-            <StyledPendantContainer ref={triggerRef}>
-                <PendantPopover block={block} container={triggerRef.current}>
-                    <StyledTriggerLine />
-                </PendantPopover>
-            </StyledPendantContainer>
+            {showTriggerLine ? (
+                <StyledPendantContainer ref={triggerRef}>
+                    <PendantPopover
+                        block={block}
+                        container={triggerRef.current}
+                    >
+                        <StyledTriggerLine />
+                    </PendantPopover>
+                </StyledPendantContainer>
+            ) : null}
 
             <PendantRender block={block} />
         </Container>

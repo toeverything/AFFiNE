@@ -81,7 +81,7 @@ export const CreatePendantPanel = ({
                     setFieldName(e.target.value);
                 }}
                 endAdornment={
-                    <Tooltip content="Help info here">
+                    <Tooltip content="Help info here" placement="top">
                         <StyledInputEndAdornment>
                             <HelpCenterIcon />
                         </StyledInputEndAdornment>
