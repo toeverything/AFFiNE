@@ -3,10 +3,8 @@ import { DndTree } from './DndTree';
 import { useDndTreeAutoUpdate } from './use-page-tree';
 
 const Root = styled('div')({
-    minWidth: 160,
-    maxWidth: 260,
-    marginLeft: 18,
-    marginRight: 6,
+    minWidth: '160px',
+    maxWidth: '276px',
 });
 
 export const PageTree = () => {

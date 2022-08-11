@@ -15,11 +15,14 @@ export const Wrapper = styled('li')<{
     indicator?: boolean;
     disableSelection?: boolean;
     disableInteraction?: boolean;
+    active?: boolean;
 }>`
     box-sizing: border-box;
     padding-left: ${({ spacing }) => spacing};
     list-style: none;
     font-size: 14px;
+    background-color: ${({ active }) => (active ? '#f5f7f8' : 'transparent')};
+    border-radius: 5px;
 
     ${({ clone, disableSelection }) =>
         (clone || disableSelection) &&
@@ -126,8 +129,6 @@ export const ActionButton = styled('button')<{
     fill?: string;
 }>`
     display: flex;
-    width: 12px;
-    padding: 0 15px;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
@@ -141,9 +142,10 @@ export const ActionButton = styled('button')<{
     -webkit-tap-highlight-color: transparent;
 
     svg {
+        width: 20px;
+        height: 20px;
         flex: 0 0 auto;
         margin: auto;
-        height: 100%;
         overflow: visible;
         fill: #919eab;
     }
@@ -182,8 +184,7 @@ export const TextLink = styled(Link, {
     appearance: none;
     text-decoration: none;
     user-select: none;
-    color: ${({ theme, active }) =>
-        active ? theme.affine.palette.primary : 'unset'};
+    color: #4c6275;
 `;
 
 export const TreeItemContent = styled('div')`
@@ -195,7 +196,7 @@ export const TreeItemContent = styled('div')`
     align-items: center;
     justify-content: space-around;
     color: #4c6275;
-    padding-right: 0.5rem;
+    padding-right: 12px;
     overflow: hidden;
 
     &:hover {

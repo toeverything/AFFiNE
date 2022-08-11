@@ -31,6 +31,7 @@ export const LayoutHeader = () => {
                                 size="large"
                                 hoverColor={'transparent'}
                                 disabled={true}
+                                style={{ cursor: 'not-allowed' }}
                             >
                                 <SearchIcon />
                             </IconButton>
@@ -124,11 +125,11 @@ const StyledHelper = styled('div')({
     alignItems: 'center',
 });
 
-const StyledShare = styled(MuiButton)<{ disabled?: boolean }>({
+const StyledShare = styled('div')<{ disabled?: boolean }>({
     padding: '10px 12px',
     fontWeight: 600,
     fontSize: '14px',
-    cursor: 'pointer',
+    cursor: 'not-allowed',
     color: '#98ACBD',
     textTransform: 'none',
     /* disabled for current time */
