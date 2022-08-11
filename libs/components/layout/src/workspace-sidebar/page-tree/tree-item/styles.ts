@@ -168,7 +168,9 @@ export const TreeItemMoreActions = styled('div')`
     visibility: hidden;
 `;
 
-export const TextLink = styled(Link)<{ active?: boolean }>`
+export const TextLink = styled(Link, {
+    shouldForwardProp: (prop: string) => !['active'].includes(prop),
+})<{ active?: boolean }>`
     display: flex;
     align-items: center;
     flex-grow: 1;
