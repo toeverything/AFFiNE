@@ -12,17 +12,8 @@ Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Fre
 
 <div align="center">
 
-<!--
-Make New Badge Pattern badges inline
-See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
--->
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square
-
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
-
-[![All Contributors][all-contributors-badge]](#contributors)
+[![stars](https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=deeppink&label=stars)](https://github.com/toeverything/AFFiNE)
+[![contributors](https://img.shields.io/github/contributors/toeverything/AFFiNE?color=%23fe7230)](https://github.com/toeverything/AFFiNE/graphs/contributors)
 [![Node](https://img.shields.io/badge/node->=16.0-success)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/TypeScript-4.7-3178c6)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18-61dafb)](https://reactjs.org/)
