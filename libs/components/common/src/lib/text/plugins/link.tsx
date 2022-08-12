@@ -25,7 +25,6 @@ import { ReactEditor } from 'slate-react';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
-import AttachmentIcon from '@mui/icons-material/Attachment';
 import {
     MuiTooltip as Tooltip,
     styled,
@@ -39,7 +38,7 @@ import {
 
 import { getRandomString } from '../utils';
 import { colors } from '../../colors';
-
+import { LinkIcon } from '@toeverything/components/icons';
 export type LinkElement = {
     type: 'link';
     url: string;
@@ -124,7 +123,7 @@ const LinkStyledTooltip = styled(({ className, ...props }: MuiTooltipProps) => (
 ))(({ theme }) => ({
     [`& .${muiTooltipClasses.tooltip}`]: {
         backgroundColor: '#fff',
-        color: '#4C6275',
+        color: '#3E6FDB',
         boxShadow: theme.affine.shadows.shadow1,
         fontSize: '14px',
     },
@@ -419,8 +418,8 @@ export const LinkModal = memo((props: LinkModalProps) => {
                     }}
                 >
                     <div className={styles('linkModalContainerIcon')}>
-                        <AttachmentIcon
-                            style={{ color: colors.Gray04, fontSize: 16 }}
+                        <LinkIcon
+                            style={{ fontSize: '16px', marginTop: '2px' }}
                         />
                     </div>
                     <input
@@ -505,6 +504,7 @@ const LinkModalContainer = styled('div')(({ theme }) => ({
 
 const styles = style9.create({
     linkModalContainerIcon: {
+        display: 'flex',
         width: '16px',
         margin: '0 16px 0 4px',
     },
@@ -517,6 +517,7 @@ const styles = style9.create({
         '::-webkit-input-placeholder': {
             color: '#98acbd',
         },
+        color: '#4C6275',
     },
     linkMask: {
         position: 'fixed',

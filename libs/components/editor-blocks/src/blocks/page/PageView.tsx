@@ -119,5 +119,8 @@ const PageTitleBlock = styled('div')(({ theme }) => {
         '.content': {
             outline: 'none',
         },
+        a: {
+            color: '#3e6fdb',
+        },
     };
 });
