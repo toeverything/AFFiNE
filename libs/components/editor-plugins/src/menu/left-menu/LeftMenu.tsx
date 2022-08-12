@@ -3,6 +3,7 @@ import { Virgo, PluginHooks } from '@toeverything/framework/virgo';
 import { Cascader, CascaderItemProps } from '@toeverything/components/ui';
 import { TurnIntoMenu } from './TurnIntoMenu';
 import {
+    AddViewIcon,
     DeleteCashBinIcon,
     TurnIntoIcon,
     UngroupIcon,
@@ -44,6 +45,22 @@ export function LeftMenu(props: LeftMenuProps) {
                     />
                 ),
                 icon: <TurnIntoIcon />,
+            },
+            {
+                title: 'Add A Below Block  ',
+                icon: <AddViewIcon />,
+                callback: async () => {
+                    const block = await editor.getBlockById(blockId);
+                    const belowType = ['numbered', 'todo', 'bullet'].includes(
+                        block.type
+                    )
+                        ? block.type
+                        : 'text';
+                    editor.commands.blockCommands.createNextBlock(
+                        blockId,
+                        belowType
+                    );
+                },
             },
             {
                 title: 'Divide Here As A New Group',
