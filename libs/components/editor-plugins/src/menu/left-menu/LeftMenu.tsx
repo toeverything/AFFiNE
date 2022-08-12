@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Virgo, PluginHooks } from '@toeverything/framework/virgo';
 import { Cascader, CascaderItemProps } from '@toeverything/components/ui';
+import { Protocol } from '@toeverything/datasource/db-service';
 import { TurnIntoMenu } from './TurnIntoMenu';
 import {
     AddViewIcon,
@@ -47,15 +48,17 @@ export function LeftMenu(props: LeftMenuProps) {
                 icon: <TurnIntoIcon />,
             },
             {
-                title: 'Add A Below Block  ',
+                title: 'Add A Below Block',
                 icon: <AddViewIcon />,
                 callback: async () => {
                     const block = await editor.getBlockById(blockId);
-                    const belowType = ['numbered', 'todo', 'bullet'].includes(
-                        block.type
-                    )
+                    const belowType = [
+                        Protocol.Block.Type.numbered,
+                        Protocol.Block.Type.bullet,
+                        Protocol.Block.Type.todo,
+                    ].some(type => type === block.type)
                         ? block.type
-                        : 'text';
+                        : Protocol.Block.Type.text;
                     editor.commands.blockCommands.createNextBlock(
                         blockId,
                         belowType
