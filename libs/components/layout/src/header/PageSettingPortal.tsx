@@ -1,4 +1,4 @@
-import { useState, MouseEvent, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, type ChangeEvent } from 'react';
 import { services } from '@toeverything/datasource/db-service';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -135,7 +135,7 @@ function PageSettingPortal() {
     };
 
     const handleFullWidthCheckedChange = async (
-        event: React.ChangeEvent<HTMLInputElement>
+        event: ChangeEvent<HTMLInputElement>
     ) => {
         const checked = event.target.checked;
         setPageBlock({

@@ -10,7 +10,7 @@ import {
 import { services, TemplateFactory } from '@toeverything/datasource/db-service';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { copyToClipboard } from '@toeverything/utils';
-import React from 'react';
+import { useState, MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TreeItemMoreActions } from './styles';
 
@@ -29,8 +29,8 @@ const StyledAction = styled('div')({
 });
 
 function DndTreeItemMoreActions(props: ActionsProps) {
-    const [alert_open, set_alert_open] = React.useState(false);
-    const [anchorEl, setAnchorEl] = React.useState<HTMLDivElement | null>(null);
+    const [alert_open, set_alert_open] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
 
     const navigate = useNavigate();
     const workspaceId = props.workspaceId;
@@ -44,7 +44,7 @@ function DndTreeItemMoreActions(props: ActionsProps) {
     const handle_alert_close = () => {
         set_alert_open(false);
     };
-    const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const handleClick = (event: MouseEvent<HTMLDivElement>) => {
         if (anchorEl) {
             setAnchorEl(null);
             return;

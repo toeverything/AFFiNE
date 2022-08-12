@@ -1,13 +1,14 @@
-import React, {
+import {
     useEffect,
     useMemo,
     useRef,
     useState,
     useCallback,
-    KeyboardEvent,
-    MouseEvent,
     memo,
+    type KeyboardEvent,
+    type MouseEvent,
 } from 'react';
+
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 
@@ -156,7 +157,7 @@ export const LinkComponent = ({
     );
 
     const handle_click_link_text = useCallback(
-        (event: React.MouseEvent<HTMLAnchorElement>) => {
+        (event: MouseEvent<HTMLAnchorElement>) => {
             // prevent route to href url
             event.preventDefault();
             event.stopPropagation();

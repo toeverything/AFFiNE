@@ -39,7 +39,7 @@ function CascaderItem(props: ItemProps) {
     const [open, setOpen] = useState(false);
 
     if (isDivide) {
-        return <Divider></Divider>;
+        return <Divider />;
     }
 
     const on_click_item = () => {

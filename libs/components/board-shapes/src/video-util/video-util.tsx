@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useRef, useLayoutEffect, useCallback } from 'react';
 import { Utils, HTMLContainer } from '@tldraw/core';
 import {
     TDShapeType,
@@ -63,12 +63,12 @@ export class VideoUtil extends TDShapeUtil<T, E> {
             },
             ref
         ) => {
-            const rVideo = React.useRef<HTMLVideoElement>(null);
-            const rWrapper = React.useRef<HTMLDivElement>(null);
+            const rVideo = useRef<HTMLVideoElement>(null);
+            const rWrapper = useRef<HTMLDivElement>(null);
 
             const { currentTime = 0, size, isPlaying, style } = shape;
 
-            React.useLayoutEffect(() => {
+            useLayoutEffect(() => {
                 const wrapper = rWrapper.current;
                 if (!wrapper) return;
                 const [width, height] = size;
@@ -76,7 +76,7 @@ export class VideoUtil extends TDShapeUtil<T, E> {
                 wrapper.style.height = `${height}px`;
             }, [size]);
 
-            React.useLayoutEffect(() => {
+            useLayoutEffect(() => {
                 const video = rVideo.current;
                 if (!video) return;
                 if (isPlaying) video.play();
@@ -84,7 +84,7 @@ export class VideoUtil extends TDShapeUtil<T, E> {
                 else video.pause();
             }, [isPlaying]);
 
-            React.useLayoutEffect(() => {
+            useLayoutEffect(() => {
                 const video = rVideo.current;
                 if (!video) return;
                 if (currentTime !== video.currentTime) {
@@ -92,15 +92,15 @@ export class VideoUtil extends TDShapeUtil<T, E> {
                 }
             }, [currentTime]);
 
-            const handlePlay = React.useCallback(() => {
+            const handlePlay = useCallback(() => {
                 onShapeChange?.({ id: shape.id, isPlaying: true });
             }, []);
 
-            const handlePause = React.useCallback(() => {
+            const handlePause = useCallback(() => {
                 onShapeChange?.({ id: shape.id, isPlaying: false });
             }, []);
 
-            const handleSetCurrentTime = React.useCallback(() => {
+            const handleSetCurrentTime = useCallback(() => {
                 const video = rVideo.current;
                 if (!video) return;
                 if (!isEditing) return;

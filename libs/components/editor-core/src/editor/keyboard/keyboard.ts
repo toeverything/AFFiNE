@@ -228,20 +228,20 @@ export class KeyboardManager {
                 );
             } else {
                 // suspend(true)
-                let textBlock = await this._editor.createBlock('text');
+                const textBlock = await this._editor.createBlock('text');
                 await selectedNode.after(textBlock);
                 this._editor.selectionManager.setActivatedNodeId(textBlock.id);
             }
         }
     };
     private mergeGroup = async (event: Event) => {
-        let selectedGroup = await this.getSelectedGroups();
+        const selectedGroup = await this.getSelectedGroups();
         this._editor.commands.blockCommands.mergeGroup(...selectedGroup);
     };
     private mergeGroupDown = async (event: Event) => {
-        let selectedGroup = await this.getSelectedGroups();
+        const selectedGroup = await this.getSelectedGroups();
         if (selectedGroup.length) {
-            let nextGroup = await selectedGroup[
+            const nextGroup = await selectedGroup[
                 selectedGroup.length - 1
             ].nextSibling();
             if (nextGroup?.type === Protocol.Block.Type.group) {
@@ -253,9 +253,9 @@ export class KeyboardManager {
         }
     };
     private mergeGroupUp = async (event: Event) => {
-        let selectedGroup = await this.getSelectedGroups();
+        const selectedGroup = await this.getSelectedGroups();
         if (selectedGroup.length) {
-            let preGroup = await selectedGroup[0].previousSibling();
+            const preGroup = await selectedGroup[0].previousSibling();
             if (preGroup?.type === Protocol.Block.Type.group) {
                 this._editor.commands.blockCommands.mergeGroup(
                     preGroup,

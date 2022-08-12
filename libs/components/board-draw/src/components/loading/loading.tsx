@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useTldrawApp } from '../../hooks';
 import { styled } from '@toeverything/components/ui';
 import type { TDSnapshot } from '@toeverything/components/board-types';

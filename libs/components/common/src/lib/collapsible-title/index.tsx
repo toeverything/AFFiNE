@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 import {
     MuiButton as Button,
     MuiCollapse as Collapse,
@@ -23,10 +23,10 @@ const StyledContainer = styled('div')({
 export type CollapsibleTitleProps = {
     title?: string;
     initialOpen?: boolean;
-    icon?: React.ReactNode;
-    children?: React.ReactNode;
+    icon?: ReactNode;
+    children?: ReactNode;
     className?: string;
-    style?: React.CSSProperties;
+    style?: CSSProperties;
 };
 
 export function CollapsibleTitle(props: CollapsibleTitleProps) {

@@ -4,6 +4,7 @@ import {
     TLPointerEventHandler,
     Utils,
 } from '@tldraw/core';
+import type { PointerEvent } from 'react';
 import type { TldrawApp } from '../tldraw-app';
 import {
     TDEventHandler,
@@ -83,7 +84,7 @@ export abstract class BaseTool<T extends string = any> extends TDEventHandler {
         if (this.status !== 'pinching') return;
         if (isNaN(info.delta[0]) || isNaN(info.delta[1])) return;
         this.app.pinchZoom(info.point, info.delta, info.delta[2]);
-        this.onPointerMove?.(info, e as unknown as React.PointerEvent);
+        this.onPointerMove?.(info, e as unknown as PointerEvent);
     };
 
     /* ---------------------- Keys ---------------------- */

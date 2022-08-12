@@ -1,11 +1,17 @@
-import { useCallback, ChangeEvent, KeyboardEvent } from 'react';
+import {
+    useCallback,
+    type ChangeEvent,
+    type KeyboardEvent,
+    type Dispatch,
+    type SetStateAction,
+} from 'react';
 import { styled } from '@toeverything/components/ui';
 import { useAddComment } from './use-add-comment';
 import { WithEditorSelectionType } from '../menu/inline-menu/types';
 
 type AddCommentInputProps = {
     comment: string;
-    setComment: React.Dispatch<React.SetStateAction<string>>;
+    setComment: Dispatch<SetStateAction<string>>;
     createComment: () => Promise<{ commentsId: string }>;
     handleSubmitCurrentComment: () => Promise<void>;
 };

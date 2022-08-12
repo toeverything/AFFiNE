@@ -161,10 +161,7 @@ export const SourceView = (props: Props) => {
                 <SourceViewContainer isSelected={isSelected} scene={type}>
                     <MouseMaskContainer />
 
-                    <LazyIframe
-                        src={src}
-                        fallback={LoadingContiner()}
-                    ></LazyIframe>
+                    <LazyIframe src={src} fallback={LoadingContiner()} />
                 </SourceViewContainer>
             </div>
         );

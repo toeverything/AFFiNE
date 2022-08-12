@@ -1,8 +1,10 @@
+import type { ChangeEvent, OptionHTMLAttributes } from 'react';
+
 interface SelectProps {
     label?: string;
     value?: string;
     options?: string[];
-    onChange?(evn: React.ChangeEvent<HTMLSelectElement>): void;
+    onChange?(evn: ChangeEvent<HTMLSelectElement>): void;
 }
 
 export const Select = ({
@@ -17,7 +19,7 @@ export const Select = ({
             <span>
                 <select value={value} onChange={onChange}>
                     {options.map((item, key) => {
-                        const optionProps: React.OptionHTMLAttributes<HTMLOptionElement> =
+                        const optionProps: OptionHTMLAttributes<HTMLOptionElement> =
                             {};
                         if (value === item) {
                             optionProps.value = item;

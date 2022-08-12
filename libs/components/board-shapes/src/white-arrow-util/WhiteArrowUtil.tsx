@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useCallback, useMemo } from 'react';
 import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
 import {
     WhiteArrowShape,
@@ -96,11 +96,11 @@ export class WhiteArrowUtil extends TDShapeUtil<T, E> {
                 style.dash === DashStyle.Draw
                     ? DrawWhiteArrow
                     : DashedWhiteArrow;
-            const handleLabelChange = React.useCallback(
+            const handleLabelChange = useCallback(
                 (label: string) => onShapeChange?.({ id, label }),
                 [onShapeChange]
             );
-            const offsetY = React.useMemo(() => {
+            const offsetY = useMemo(() => {
                 const center = Vec.div(size, 2);
                 const centroid = getWhiteArrowCentroid(size);
                 return (centroid[1] - center[1]) * 0.72;

@@ -1,4 +1,3 @@
-import React from 'react';
 import { styled } from '@toeverything/components/ui';
 
 export const IconButton = styled('button')`

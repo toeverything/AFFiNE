@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { Utils } from '@tldraw/core';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import { getShapeStyle } from '../../shared';
@@ -10,7 +10,7 @@ interface EllipseSvgProps {
     isDarkMode: boolean;
 }
 
-export const DashedEllipse = React.memo(function DashedEllipse({
+export const DashedEllipse = memo(function DashedEllipse({
     radius,
     style,
     isSelected,

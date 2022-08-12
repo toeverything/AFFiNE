@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { getShapeStyle } from '../../shared';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import {
@@ -14,7 +14,7 @@ interface HexagonSvgProps {
     isDarkMode: boolean;
 }
 
-export const DrawHexagon = React.memo(function DrawTriangle({
+export const DrawHexagon = memo(function DrawTriangle({
     id,
     size,
     style,

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { Virgo, PluginHooks } from '@toeverything/framework/virgo';
 import { Cascader, CascaderItemProps } from '@toeverything/components/ui';
 import { TurnIntoMenu } from './TurnIntoMenu';
@@ -10,7 +10,7 @@ import {
 
 interface LeftMenuProps {
     anchorEl?: Element;
-    children?: React.ReactElement;
+    children?: ReactElement;
     onClose: () => void;
     editor?: Virgo;
     hooks: PluginHooks;
@@ -73,7 +73,7 @@ export function LeftMenu(props: LeftMenuProps) {
     // };
 
     // const on_filter = (
-    //     e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
+    //     e: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
     // ) => {
     //     const value = e.currentTarget.value;
     //     if (!value) {

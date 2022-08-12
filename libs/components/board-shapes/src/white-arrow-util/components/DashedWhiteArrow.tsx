@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { Utils } from '@tldraw/core';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import { getShapeStyle } from '../../shared';
@@ -13,7 +13,7 @@ interface WhiteArrowSvgProps {
     isDarkMode: boolean;
 }
 
-export const DashedWhiteArrow = React.memo(function DashedWhiteArrow({
+export const DashedWhiteArrow = memo(function DashedWhiteArrow({
     id,
     size,
     style,

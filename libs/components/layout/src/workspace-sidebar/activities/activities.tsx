@@ -1,8 +1,8 @@
 import { services } from '@toeverything/datasource/db-service';
 import { useUserAndSpaces } from '@toeverything/datasource/state';
 import { useCallback, useEffect, useState } from 'react';
-import { styled } from '@toeverything/components/ui';
 import {
+    styled,
     MuiList as List,
     MuiListItem as ListItem,
     MuiListItemText as ListItemText,

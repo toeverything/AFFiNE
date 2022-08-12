@@ -1,4 +1,4 @@
-import React, { CSSProperties, useRef } from 'react';
+import { CSSProperties, useRef } from 'react';
 import { Add } from '@mui/icons-material';
 import {
     Popover,

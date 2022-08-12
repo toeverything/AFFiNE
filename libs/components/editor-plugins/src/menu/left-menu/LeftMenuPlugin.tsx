@@ -1,5 +1,9 @@
 import { HookType, BlockDropPlacement } from '@toeverything/framework/virgo';
-import { StrictMode } from 'react';
+import {
+    StrictMode,
+    type DragEvent,
+    type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { BasePlugin } from '../../base-plugin';
 import { ignoreBlockTypes } from './menu-config';
 import {
@@ -68,9 +72,7 @@ export class LeftMenuPlugin extends BasePlugin {
         );
     }
 
-    private _handleRootNodeDragover = async (
-        event: React.DragEvent<Element>
-    ) => {
+    private _handleRootNodeDragover = async (event: DragEvent<Element>) => {
         event.preventDefault();
         if (this.editor.dragDropManager.isDragBlock(event)) {
             const { direction, block, isOuter } =
@@ -93,12 +95,10 @@ export class LeftMenuPlugin extends BasePlugin {
         }
     };
 
-    private _onDrop = (e: React.DragEvent<Element>) => {
+    private _onDrop = (e: DragEvent<Element>) => {
         this._lineInfo.next(undefined);
     };
-    private _handleDragOverBlockNode = async (
-        event: React.DragEvent<Element>
-    ) => {
+    private _handleDragOverBlockNode = async (event: DragEvent<Element>) => {
         event.preventDefault();
         if (!this.editor.dragDropManager.isDragBlock(event)) return;
         const block = await this.editor.getBlockByPoint(
@@ -121,7 +121,7 @@ export class LeftMenuPlugin extends BasePlugin {
     };
 
     private _handleMouseMove = async (
-        event: React.MouseEvent<HTMLDivElement, MouseEvent>
+        event: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => {
         if (!this._hideTimer) {
             this._hideTimer = window.setTimeout(() => {

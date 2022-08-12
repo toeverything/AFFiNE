@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { message, Option, Select } from '@toeverything/components/ui';
 import { AsyncBlock } from '../../editor';
 

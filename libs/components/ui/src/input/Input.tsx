@@ -1,14 +1,15 @@
-import React, {
-    forwardRef,
-    type ForwardedRef,
-    type InputHTMLAttributes,
-    type CSSProperties,
+import type {
+    ForwardedRef,
+    InputHTMLAttributes,
+    CSSProperties,
+    ReactNode,
 } from 'react';
+import { forwardRef } from 'react';
 import { styled } from '../styled';
 
 export type InputProps = {
-    startAdornment?: React.ReactNode;
-    endAdornment?: React.ReactNode;
+    startAdornment?: ReactNode;
+    endAdornment?: ReactNode;
     style?: CSSProperties;
     noBorder?: boolean;
 } & InputHTMLAttributes<HTMLInputElement>;

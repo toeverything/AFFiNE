@@ -1,6 +1,11 @@
 import { RenderBlock } from '@toeverything/components/editor-core';
 import { CreateView } from '@toeverything/framework/virgo';
-import React, { useEffect, useRef, useState } from 'react';
+import {
+    useEffect,
+    useRef,
+    useState,
+    type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { GridHandle } from './GirdHandle';
 import { styled } from '@toeverything/components/ui';
 import ReactDOM from 'react-dom';
@@ -87,7 +92,7 @@ export const Grid = function (props: CreateView) {
     };
 
     const handleMouseDown = (
-        e: React.MouseEvent<HTMLDivElement>,
+        e: ReactMouseEvent<HTMLDivElement>,
         index: number
     ) => {
         mouseStartPoint.current = new Point(e.clientX, e.clientY);
@@ -193,7 +198,7 @@ export const Grid = function (props: CreateView) {
     };
 
     const handleHandleMouseEnter = (
-        e: React.MouseEvent<HTMLDivElement>,
+        e: ReactMouseEvent<HTMLDivElement>,
         index: number
     ) => {
         const leftBlockId = block.childrenIds[index];

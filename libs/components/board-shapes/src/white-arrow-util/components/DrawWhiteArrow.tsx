@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { getShapeStyle } from '../../shared';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import {
@@ -14,7 +14,7 @@ interface WhiteArrowSvgProps {
     isDarkMode: boolean;
 }
 
-export const DrawWhiteArrow = React.memo(function DrawTriangle({
+export const DrawWhiteArrow = memo(function DrawTriangle({
     id,
     size,
     style,

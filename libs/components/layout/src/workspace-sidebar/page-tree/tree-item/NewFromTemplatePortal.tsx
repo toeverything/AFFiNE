@@ -1,10 +1,4 @@
-import React, {
-    useState,
-    MouseEvent,
-    useCallback,
-    useEffect,
-    useRef,
-} from 'react';
+import { useState, MouseEvent, useRef } from 'react';
 import { services, TemplateFactory } from '@toeverything/datasource/db-service';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -58,7 +52,7 @@ interface NewFromTemplatePortalProps {
 }
 function NewFromTemplatePortal(props: NewFromTemplatePortalProps) {
     const [alertOpen, setAlertOpen] = useState(false);
-    const [anchorEl, setAnchorEl] = React.useState<HTMLDivElement | null>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
 
     const params = useParams();
     const navigate = useNavigate();
@@ -102,7 +96,7 @@ function NewFromTemplatePortal(props: NewFromTemplatePortalProps) {
         setAnchorEl(null);
     };
     const open = Boolean(anchorEl);
-    const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const handleClick = (event: MouseEvent<HTMLDivElement>) => {
         setAnchorEl(event.currentTarget);
     };
     const newFromTemplateRef = useRef();

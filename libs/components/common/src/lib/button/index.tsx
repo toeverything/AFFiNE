@@ -1,4 +1,10 @@
 import clsx from 'clsx';
+import type {
+    ReactNode,
+    MouseEventHandler,
+    CSSProperties,
+    MouseEvent as ReactMouseEvent,
+} from 'react';
 import style9 from 'style9';
 
 const styles = style9.create({
@@ -26,11 +32,11 @@ export type SizeType = 'small' | 'medium' | 'large';
 export type ButtonProps = {
     type?: ButtonType;
     size?: SizeType;
-    icon?: React.ReactNode;
+    icon?: ReactNode;
     className?: string;
-    children?: React.ReactNode;
-    onClick?: React.MouseEventHandler<HTMLElement>;
-    style?: React.CSSProperties;
+    children?: ReactNode;
+    onClick?: MouseEventHandler<HTMLElement>;
+    style?: CSSProperties;
 };
 
 export default function Button(props: ButtonProps) {
@@ -44,14 +50,12 @@ export default function Button(props: ButtonProps) {
         className
     );
     const handleClick = (
-        e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement, MouseEvent>
+        e: ReactMouseEvent<HTMLButtonElement | HTMLAnchorElement, MouseEvent>
     ) => {
         const { onClick } = props;
-        (
-            onClick as React.MouseEventHandler<
-                HTMLButtonElement | HTMLAnchorElement
-            >
-        )?.(e);
+        (onClick as MouseEventHandler<HTMLButtonElement | HTMLAnchorElement>)?.(
+            e
+        );
     };
     return (
         <button className={classes} style={style || {}} onClick={handleClick}>

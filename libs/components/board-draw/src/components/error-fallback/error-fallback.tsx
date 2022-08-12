@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { FallbackProps } from 'react-error-boundary';
 import { useTldrawApp } from '../../hooks';
 import { styled } from '@toeverything/components/ui';

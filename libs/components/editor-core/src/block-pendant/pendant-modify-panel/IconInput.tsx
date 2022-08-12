@@ -1,4 +1,4 @@
-import React, { forwardRef, type CSSProperties, useState } from 'react';
+import { forwardRef, ReactNode, useState, type CSSProperties } from 'react';
 import { Input, styled, InputProps } from '@toeverything/components/ui';
 import { StyledHighLightWrapper } from '../StyledComponent';
 import { IconNames } from '../types';
@@ -53,8 +53,8 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(
 );
 
 type HighLightIconInputProps = {
-    startElement?: React.ReactNode;
-    endElement?: React.ReactNode;
+    startElement?: ReactNode;
+    endElement?: ReactNode;
     tabIndex?: number;
 } & IconInputProps;
 

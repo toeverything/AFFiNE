@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { BINDING_DISTANCE } from '@toeverything/components/board-types';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import { getShapeStyle } from '../../shared';
@@ -11,7 +11,7 @@ interface RectangleSvgProps {
     isDarkMode: boolean;
 }
 
-export const Frame = React.memo(function DashedRectangle({
+export const Frame = memo(function DashedRectangle({
     id,
     style,
     size,

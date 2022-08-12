@@ -1,4 +1,3 @@
-import React from 'react';
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
 import { Virgo, PluginHooks } from '@toeverything/framework/virgo';
 import { CommandMenuContainer } from '../command-menu/Container';

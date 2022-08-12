@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useCallback } from 'react';
 import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
 import {
@@ -92,7 +92,7 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
             const ry = Math.max(0, radius[1] - sw / 2);
             const Component =
                 style.dash === DashStyle.Draw ? DrawEllipse : DashedEllipse;
-            const handleLabelChange = React.useCallback(
+            const handleLabelChange = useCallback(
                 (label: string) => onShapeChange?.({ id, label }),
                 [onShapeChange]
             );

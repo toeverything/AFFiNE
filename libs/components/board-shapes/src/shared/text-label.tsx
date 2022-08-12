@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { stopPropagation } from './stop-propagation';
 import {
     GHOSTED_OPACITY,
@@ -8,6 +7,17 @@ import { normalizeText } from './normalize-text';
 import { styled } from '@toeverything/components/ui';
 import { getTextLabelSize } from './get-text-size';
 import { TextAreaUtils } from './text-area-utils';
+import {
+    type KeyboardEvent,
+    type PointerEventHandler,
+    type FocusEvent,
+    type ChangeEvent,
+    memo,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+} from 'react';
 
 export interface TextLabelProps {
     font: string;
@@ -21,7 +31,7 @@ export interface TextLabelProps {
     isEditing?: boolean;
 }
 
-export const TextLabel = React.memo(function TextLabel({
+export const TextLabel = memo(function TextLabel({
     font,
     text,
     color,
@@ -32,17 +42,17 @@ export const TextLabel = React.memo(function TextLabel({
     onBlur,
     onChange,
 }: TextLabelProps) {
-    const rInput = React.useRef<HTMLTextAreaElement>(null);
-    const rIsMounted = React.useRef(false);
+    const rInput = useRef<HTMLTextAreaElement>(null);
+    const rIsMounted = useRef(false);
 
-    const handleChange = React.useCallback(
-        (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const handleChange = useCallback(
+        (e: ChangeEvent<HTMLTextAreaElement>) => {
             onChange(normalizeText(e.currentTarget.value));
         },
         [onChange]
     );
-    const handleKeyDown = React.useCallback(
-        (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = useCallback(
+        (e: KeyboardEvent<HTMLTextAreaElement>) => {
             if (e.key === 'Escape') return;
 
             if (e.key === 'Tab' && text.length === 0) {
@@ -77,16 +87,16 @@ export const TextLabel = React.memo(function TextLabel({
         [onChange]
     );
 
-    const handleBlur = React.useCallback(
-        (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    const handleBlur = useCallback(
+        (e: FocusEvent<HTMLTextAreaElement>) => {
             e.currentTarget.setSelectionRange(0, 0);
             onBlur?.();
         },
         [onBlur]
     );
 
-    const handleFocus = React.useCallback(
-        (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    const handleFocus = useCallback(
+        (e: FocusEvent<HTMLTextAreaElement>) => {
             if (!isEditing) return;
             if (!rIsMounted.current) return;
 
@@ -97,8 +107,8 @@ export const TextLabel = React.memo(function TextLabel({
         [isEditing]
     );
 
-    const handlePointerDown = React.useCallback<
-        React.PointerEventHandler<HTMLTextAreaElement>
+    const handlePointerDown = useCallback<
+        PointerEventHandler<HTMLTextAreaElement>
     >(
         e => {
             if (isEditing) {
@@ -108,7 +118,7 @@ export const TextLabel = React.memo(function TextLabel({
         [isEditing]
     );
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (isEditing) {
             requestAnimationFrame(() => {
                 rIsMounted.current = true;
@@ -123,9 +133,9 @@ export const TextLabel = React.memo(function TextLabel({
         }
     }, [isEditing, onBlur]);
 
-    const rInnerWrapper = React.useRef<HTMLDivElement>(null);
+    const rInnerWrapper = useRef<HTMLDivElement>(null);
 
-    React.useLayoutEffect(() => {
+    useLayoutEffect(() => {
         const elm = rInnerWrapper.current;
         if (!elm) return;
         const size = getTextLabelSize(text, font);

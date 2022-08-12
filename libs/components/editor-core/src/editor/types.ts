@@ -24,6 +24,12 @@ import { MouseManager } from './mouse';
 import { Observable } from 'rxjs';
 import { Point } from '@toeverything/utils';
 import { ScrollManager } from './scroll';
+import type {
+    KeyboardEvent,
+    MouseEvent as ReactMouseEvent,
+    DragEvent,
+    UIEvent,
+} from 'react';
 
 // import { BrowserClipboard } from './clipboard/browser-clipboard';
 
@@ -187,33 +193,31 @@ export enum HookType {
 export interface HooksRunner {
     init: () => void;
     render: () => void;
-    onRootNodeKeyUp: (e: React.KeyboardEvent<HTMLDivElement>) => void;
-    onRootNodeKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
-    onRootNodeKeyDownCapture: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+    onRootNodeKeyUp: (e: KeyboardEvent<HTMLDivElement>) => void;
+    onRootNodeKeyDown: (e: KeyboardEvent<HTMLDivElement>) => void;
+    onRootNodeKeyDownCapture: (e: KeyboardEvent<HTMLDivElement>) => void;
     onRootNodeMouseDown: (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>
+        e: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => void;
     onRootNodeMouseMove: (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>
+        e: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => void;
-    onRootNodeMouseUp: (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>
-    ) => void;
+    onRootNodeMouseUp: (e: ReactMouseEvent<HTMLDivElement, MouseEvent>) => void;
     onRootNodeMouseOut: (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>
+        e: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => void;
     onRootNodeMouseLeave: (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>
+        e: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => void;
     onSearch: () => void;
-    afterOnResize: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-    onRootNodeDragOver: (e: React.DragEvent<Element>) => void;
-    onRootNodeDragEnd: (e: React.DragEvent<Element>) => void;
-    onRootNodeDragLeave: (e: React.DragEvent<Element>) => void;
-    onRootNodeDrop: (e: React.DragEvent<Element>) => void;
+    afterOnResize: (e: ReactMouseEvent<HTMLDivElement, MouseEvent>) => void;
+    onRootNodeDragOver: (e: DragEvent<Element>) => void;
+    onRootNodeDragEnd: (e: DragEvent<Element>) => void;
+    onRootNodeDragLeave: (e: DragEvent<Element>) => void;
+    onRootNodeDrop: (e: DragEvent<Element>) => void;
     beforeCopy: (e: ClipboardEvent) => void;
     beforeCut: (e: ClipboardEvent) => void;
-    onRootNodeScroll: (e: React.UIEvent) => void;
+    onRootNodeScroll: (e: UIEvent) => void;
 }
 
 export type PayloadType<T extends Array<any>> = T extends []

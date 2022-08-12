@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+    type KeyboardEvent,
+} from 'react';
 
 import { MuiClickAwayListener, styled } from '@toeverything/components/ui';
 import { Virgo, HookType, PluginHooks } from '@toeverything/framework/virgo';
@@ -38,7 +44,7 @@ export const ReferenceMenu = ({ editor, hooks, style }: ReferenceMenuProps) => {
     );
 
     const handle_search = useCallback(
-        async (event: React.KeyboardEvent<HTMLDivElement>) => {
+        async (event: KeyboardEvent<HTMLDivElement>) => {
             const { type, anchorNode } = editor.selection.currentSelectInfo;
             if (
                 type === 'Range' &&
@@ -72,12 +78,12 @@ export const ReferenceMenu = ({ editor, hooks, style }: ReferenceMenuProps) => {
     );
 
     const handle_keyup = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => handle_search(event),
+        (event: KeyboardEvent<HTMLDivElement>) => handle_search(event),
         [handle_search]
     );
 
     const handle_key_down = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (event.code === 'Escape') {
                 set_is_show(false);
             }

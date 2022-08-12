@@ -1,9 +1,11 @@
-import React, {
+import {
     useEffect,
     useState,
     useMemo,
     useCallback,
     useRef,
+    type KeyboardEvent,
+    type CSSProperties,
 } from 'react';
 import style9 from 'style9';
 
@@ -46,7 +48,7 @@ const ContentContainer = styled('div')(({ theme }) => {
 export type CommandMenuContainerProps = {
     editor: Virgo;
     hooks: PluginHooks;
-    style?: React.CSSProperties;
+    style?: CSSProperties;
     isShow?: boolean;
     blockId: string;
     onSelected?: (item: BlockFlavorKeys | string) => void;
@@ -133,7 +135,7 @@ export const CommandMenuContainer = ({
     }, [isShow, types, currentItem]);
 
     const handleClickUp = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (isShow && types && event.code === 'ArrowUp') {
                 event.preventDefault();
                 if (!currentItem && types.length) {
@@ -152,7 +154,7 @@ export const CommandMenuContainer = ({
     );
 
     const handleClickDown = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (isShow && types && event.code === 'ArrowDown') {
                 event.preventDefault();
                 if (!currentItem && types.length) {
@@ -171,7 +173,7 @@ export const CommandMenuContainer = ({
     );
 
     const handleClickEnter = useCallback(
-        async (event: React.KeyboardEvent<HTMLDivElement>) => {
+        async (event: KeyboardEvent<HTMLDivElement>) => {
             if (isShow && event.code === 'Enter' && currentItem) {
                 event.preventDefault();
                 onSelected && onSelected(currentItem);
@@ -181,7 +183,7 @@ export const CommandMenuContainer = ({
     );
 
     const handleKeyDown = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             handleClickUp(event);
             handleClickDown(event);
             handleClickEnter(event);

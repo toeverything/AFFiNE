@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { Utils } from '@tldraw/core';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import { getShapeStyle } from '../../shared';
@@ -13,7 +13,7 @@ interface TriangleSvgProps {
     isDarkMode: boolean;
 }
 
-export const DashedTriangle = React.memo(function DashedTriangle({
+export const DashedTriangle = memo(function DashedTriangle({
     id,
     size,
     style,

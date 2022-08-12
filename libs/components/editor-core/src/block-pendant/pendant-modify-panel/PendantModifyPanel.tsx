@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PendantTypes } from '../types';
 import { ModifyPanelContentProps, ModifyPanelProps } from './types';
 import { MuiButton as Button, styled } from '@toeverything/components/ui';

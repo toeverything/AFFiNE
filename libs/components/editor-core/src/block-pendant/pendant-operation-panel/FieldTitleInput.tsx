@@ -1,4 +1,3 @@
-import React from 'react';
 import { Input, Tooltip, InputProps } from '@toeverything/components/ui';
 import { StyledInputEndAdornment } from '../StyledComponent';
 import { HelpCenterIcon } from '@toeverything/components/icons';

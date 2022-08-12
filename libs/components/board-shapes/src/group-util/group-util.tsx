@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { styled } from '@toeverything/components/ui';
 import { Utils, SVGContainer } from '@tldraw/core';
 import { defaultStyle } from '../shared/shape-styles';

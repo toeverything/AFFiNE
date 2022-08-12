@@ -6,7 +6,14 @@ import {
 } from '@toeverything/components/editor-core';
 import { Point } from '@toeverything/utils';
 import { GroupDirection } from '@toeverything/framework/virgo';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type MouseEvent as ReactMouseEvent,
+    type DragEvent,
+} from 'react';
 import { DragItem } from './DragItem';
 import { Line } from './Line';
 import { Menu } from './Menu';
@@ -27,7 +34,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
     const menuRef = useRef<HTMLUListElement>(null);
 
     const handleRootMouseMove = useCallback(
-        async (e: React.MouseEvent<HTMLDivElement>) => {
+        async (e: ReactMouseEvent<HTMLDivElement>) => {
             const groupBlockNew = await editor.getGroupBlockByPoint(
                 new Point(e.clientX, e.clientY)
             );
@@ -39,7 +46,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
     );
 
     const handleRootMouseDown = useCallback(
-        (e: React.MouseEvent<HTMLDivElement>) => {
+        (e: ReactMouseEvent<HTMLDivElement>) => {
             if (
                 menuRef.current &&
                 !menuRef.current.contains(e.target as Node)
@@ -51,7 +58,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
     );
 
     const handleRootDragOver = useCallback(
-        async (e: React.DragEvent<Element>) => {
+        async (e: DragEvent<Element>) => {
             e.preventDefault();
             let groupBlockOnDragOver = null;
             const mousePoint = new Point(e.clientX, e.clientY);
@@ -76,7 +83,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
     );
 
     const handleRootDrop = useCallback(
-        async (e: React.DragEvent<Element>) => {
+        async (e: DragEvent<Element>) => {
             let groupBlockOnDrop = null;
             if (editor.dragDropManager.isDragGroup(e)) {
                 groupBlockOnDrop = await editor.getGroupBlockByPoint(
@@ -149,7 +156,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
         setShowMenu(!showMenu);
     };
 
-    const handleDragStart = async (e: React.DragEvent<HTMLDivElement>) => {
+    const handleDragStart = async (e: DragEvent<HTMLDivElement>) => {
         editor.dragDropManager.isOnDrag = true;
         const dragImage = await editor.blockHelper.getBlockDragImg(
             groupBlock.id
@@ -162,7 +169,7 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
         e.dataTransfer.setData('text/plain', groupBlock.id);
     };
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
     };
 

@@ -1,5 +1,5 @@
 import type { MuiPopperPlacementType as PopperPlacementType } from '../mui';
-import React, { type PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { Popper } from '../popper';
 import { PopoverContainer } from './Container';
 import type { PopoverProps, PopoverDirection } from './interface';

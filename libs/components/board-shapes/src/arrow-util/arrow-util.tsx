@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo, useCallback } from 'react';
 import { Utils, TLBounds, SVGContainer } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
 import { defaultStyle } from '../shared/shape-styles';
@@ -125,7 +125,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
             const labelSize =
                 label || isEditing ? getTextLabelSize(label, font) : [0, 0];
             const bounds = this.getBounds(shape);
-            const dist = React.useMemo(() => {
+            const dist = useMemo(() => {
                 const { start, bend, end } = shape.handles;
                 if (isStraightLine) return Vec.dist(start.point, end.point);
                 const circle = getCtp(start.point, bend.point, end.point);
@@ -149,7 +149,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
                     )
                 )
             );
-            const offset = React.useMemo(() => {
+            const offset = useMemo(() => {
                 const bounds = this.getBounds(shape);
                 const offset = Vec.sub(
                     shape.handles.bend.point,
@@ -157,7 +157,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
                 );
                 return offset;
             }, [shape, scale]);
-            const handleLabelChange = React.useCallback(
+            const handleLabelChange = useCallback(
                 (label: string) => {
                     onShapeChange?.({ id, label });
                 },
@@ -247,7 +247,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
         const isStraightLine =
             Vec.dist(bend.point, Vec.toFixed(Vec.med(start.point, end.point))) <
             1;
-        const dist = React.useMemo(() => {
+        const dist = useMemo(() => {
             const { start, bend, end } = shape.handles;
             if (isStraightLine) return Vec.dist(start.point, end.point);
             const circle = getCtp(start.point, bend.point, end.point);
@@ -266,7 +266,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
                 )
             )
         );
-        const offset = React.useMemo(() => {
+        const offset = useMemo(() => {
             const bounds = this.getBounds(shape);
             const offset = Vec.sub(shape.handles.bend.point, [
                 bounds.width / 2,

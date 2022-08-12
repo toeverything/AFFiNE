@@ -5,9 +5,8 @@ import {
     autocompleteClasses,
     useAutocomplete,
 } from '@toeverything/components/ui';
-import type { MouseEvent } from 'react';
+import type { MouseEvent, SyntheticEvent } from 'react';
 import type { ValueOption } from './types';
-import * as React from 'react';
 
 const ListBox = styled('ul')`
     width: 300px;
@@ -154,7 +153,7 @@ const MultipleChipInput = (props: Props) => {
         options,
         value: initValue,
         getOptionLabel: option => (option as ValueOption).title,
-        onChange: (event: React.SyntheticEvent, data) => {
+        onChange: (event: SyntheticEvent, data) => {
             onChange(data as ValueOption[]);
         },
     });

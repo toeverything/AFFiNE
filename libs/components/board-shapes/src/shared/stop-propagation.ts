@@ -1,5 +1,5 @@
-import type React from 'react';
+import { SyntheticEvent } from 'react';
 
 export const stopPropagation = (
-    e: KeyboardEvent | React.SyntheticEvent<any, Event>
+    e: KeyboardEvent | SyntheticEvent<any, Event>
 ) => e.stopPropagation();

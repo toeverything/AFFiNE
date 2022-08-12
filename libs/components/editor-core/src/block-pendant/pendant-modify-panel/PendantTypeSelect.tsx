@@ -1,6 +1,5 @@
 import { PendantTypes } from '../types';
 import { MuiRadio as Radio, styled } from '@toeverything/components/ui';
-import React from 'react';
 
 export const PendantSelect = ({
     currentType,

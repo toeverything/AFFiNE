@@ -4,7 +4,7 @@ import {
     useUserAndSpaces,
     useShowSpaceSidebar,
 } from '@toeverything/datasource/state';
-import React, {
+import {
     ChangeEvent,
     KeyboardEvent,
     useCallback,

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { Utils } from '@tldraw/core';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import { getShapeStyle } from '../../shared';
@@ -13,7 +13,7 @@ interface HexagonSvgProps {
     isDarkMode: boolean;
 }
 
-export const DashedHexagon = React.memo(function DashedHexagon({
+export const DashedHexagon = memo(function DashedHexagon({
     id,
     size,
     style,

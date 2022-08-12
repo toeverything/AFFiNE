@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useLayoutEffect } from 'react';
 
 const styles = new Map<string, HTMLStyleElement>();
 
@@ -42,7 +42,7 @@ const CSS = `
 `;
 
 export function useStylesheet() {
-    React.useLayoutEffect(() => {
+    useLayoutEffect(() => {
         if (styles.get(UID)) return;
         const style = document.createElement('style');
         style.innerHTML = CSS;

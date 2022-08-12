@@ -1063,10 +1063,10 @@ export class SelectionManager implements VirgoSelection {
         index: number,
         blockId: string
     ): Promise<void> {
-        let preRang = document.createRange();
+        const preRang = document.createRange();
         preRang.setStart(nowRange.startContainer, index);
         preRang.setEnd(nowRange.endContainer, index);
-        let prePosition = preRang.getClientRects().item(0);
+        const prePosition = preRang.getClientRects().item(0);
         this.activeNodeByNodeId(
             blockId,
             new Point(prePosition.left, prePosition.bottom)

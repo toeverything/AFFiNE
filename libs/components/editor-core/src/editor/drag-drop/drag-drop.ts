@@ -7,6 +7,7 @@ import { BlockDropPlacement, GroupDirection } from '../types';
 // TODO: Evaluate implementing custom events with Rxjs
 import EventEmitter from 'eventemitter3';
 import { Protocol } from '@toeverything/datasource/db-service';
+import type { DragEvent } from 'react';
 
 enum DragType {
     dragBlock = 'dragBlock',
@@ -79,7 +80,7 @@ export class DragDropManager {
         this._blockDragTargetId = id;
     }
 
-    private async _canBeDrop(event: React.DragEvent<Element>) {
+    private async _canBeDrop(event: DragEvent<Element>) {
         const blockId = event.dataTransfer.getData(this._blockIdKey);
         if (blockId === undefined || this._blockDragTargetId === undefined) {
             return false;
@@ -94,7 +95,7 @@ export class DragDropManager {
         return true;
     }
 
-    private async _handleDropBlock(event: React.DragEvent<Element>) {
+    private async _handleDropBlock(event: DragEvent<Element>) {
         const targetBlock = await this._editor.getBlockById(
             this._blockDragTargetId
         );
@@ -170,7 +171,7 @@ export class DragDropManager {
         }
     }
 
-    private async _handleDropGroup(event: React.DragEvent<Element>) {
+    private async _handleDropGroup(event: DragEvent<Element>) {
         const blockId = event.dataTransfer.getData(this._blockIdKey);
         const toGroup = await this._editor.getGroupBlockByPoint(
             new Point(event.clientX, event.clientY)
@@ -208,7 +209,7 @@ export class DragDropManager {
         this._enabled = false;
     }
 
-    public setDragBlockInfo(event: React.DragEvent<Element>, blockId: string) {
+    public setDragBlockInfo(event: DragEvent<Element>, blockId: string) {
         this.dragType = this.dragActions.dragBlock;
         event.dataTransfer.setData(
             this._dragActions.dragBlock,
@@ -225,17 +226,17 @@ export class DragDropManager {
      *
      *  Drag data store's dragover event is Protected mode.
      * Drag over can not get dataTransfer value by event.dataTransfer.
-     * @param {React.DragEvent<Element>} [event]
+     * @param {DragEvent<Element>} [event]
      * @return {*}
      * @memberof DragDropManager
      */
-    public isDragBlock(event: React.DragEvent<Element>) {
+    public isDragBlock(event: DragEvent<Element>) {
         return event.dataTransfer.types.includes(
             this.dragActions.dragBlock.toLowerCase()
         );
     }
 
-    public setDragGroupInfo(event: React.DragEvent<Element>, blockId: string) {
+    public setDragGroupInfo(event: DragEvent<Element>, blockId: string) {
         this.dragType = this.dragActions.dragGroup;
         event.dataTransfer.setData(
             this._dragActions.dragGroup,
@@ -252,11 +253,11 @@ export class DragDropManager {
      *
      *  Drag data store's dragover event is Protected mode.
      * Drag over can not get dataTransfer value by event.dataTransfer.
-     * @param {React.DragEvent<Element>} [event]
+     * @param {DragEvent<Element>} [event]
      * @return {*}
      * @memberof DragDropManager
      */
-    public isDragGroup(event: React.DragEvent<Element>) {
+    public isDragGroup(event: DragEvent<Element>) {
         return event.dataTransfer.types.includes(
             this.dragActions.dragGroup.toLowerCase()
         );
@@ -265,7 +266,7 @@ export class DragDropManager {
     /**
      *
      * check if drag block is out of blocks and return direction
-     * @param {React.DragEvent<Element>} event
+     * @param {DragEvent<Element>} event
      * @return {
      *      direction: BlockDropPlacement.none, // none, outerLeft, outerRight
      *      block: undefined, // the block in the same clientY
@@ -274,7 +275,7 @@ export class DragDropManager {
      *
      * @memberof DragDropManager
      */
-    public async checkOuterBlockDragTypes(event: React.DragEvent<Element>) {
+    public async checkOuterBlockDragTypes(event: DragEvent<Element>) {
         const { clientX, clientY } = event;
         const mousePoint = new Point(clientX, clientY);
         const rootBlock = await this._editor.getBlockById(
@@ -350,7 +351,7 @@ export class DragDropManager {
     }
 
     public async checkBlockDragTypes(
-        event: React.DragEvent<Element>,
+        event: DragEvent<Element>,
         blockDom: HTMLElement,
         blockId: string
     ) {
@@ -420,7 +421,7 @@ export class DragDropManager {
         return { direction, block: targetBlock };
     }
 
-    public handlerEditorDrop(event: React.DragEvent<Element>) {
+    public handlerEditorDrop(event: DragEvent<Element>) {
         // IMP: can not use Decorators now may use decorators is right
         if (this.isEnabled()) {
             if (this.isDragBlock(event)) {
@@ -433,11 +434,11 @@ export class DragDropManager {
         this.dragType = undefined;
     }
 
-    public handlerEditorDragOver(event: React.DragEvent<Element>) {
+    public handlerEditorDragOver(event: DragEvent<Element>) {
         // IMP: can not use Decorators now
     }
 
-    public handlerEditorDragEnd(event: React.DragEvent<Element>) {
+    public handlerEditorDragEnd(event: DragEvent<Element>) {
         this._resetDragDropData();
         if (this.isOnDrag) {
             this.isOnDrag = false;

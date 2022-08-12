@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useRef, useLayoutEffect } from 'react';
 import { Utils, HTMLContainer } from '@tldraw/core';
 import {
     TDShapeType,
@@ -64,10 +64,10 @@ export class ImageUtil extends TDShapeUtil<T, E> {
         ) => {
             const { size, style } = shape;
 
-            const rImage = React.useRef<HTMLImageElement>(null);
-            const rWrapper = React.useRef<HTMLDivElement>(null);
+            const rImage = useRef<HTMLImageElement>(null);
+            const rWrapper = useRef<HTMLDivElement>(null);
 
-            React.useLayoutEffect(() => {
+            useLayoutEffect(() => {
                 const wrapper = rWrapper.current;
                 if (!wrapper) return;
                 const [width, height] = size;

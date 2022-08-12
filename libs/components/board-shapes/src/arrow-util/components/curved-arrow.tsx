@@ -1,6 +1,6 @@
 import { Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
-import * as React from 'react';
+import { memo } from 'react';
 import { EASINGS } from '@toeverything/components/board-types';
 import { getShapeStyle } from '../../shared';
 import type {
@@ -29,7 +29,7 @@ interface ArrowSvgProps {
     isDraw: boolean;
 }
 
-export const CurvedArrow = React.memo(function CurvedArrow({
+export const CurvedArrow = memo(function CurvedArrow({
     id,
     style,
     start,

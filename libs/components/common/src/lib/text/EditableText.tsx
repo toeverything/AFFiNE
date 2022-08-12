@@ -1,19 +1,20 @@
 /* eslint-disable max-lines */
-import React, {
-    KeyboardEvent,
-    KeyboardEventHandler,
+import {
     useCallback,
     useEffect,
     useMemo,
     useRef,
     useState,
     forwardRef,
-    MouseEventHandler,
     useLayoutEffect,
-    CSSProperties,
-    MouseEvent,
-    DragEvent,
+    type KeyboardEvent,
+    type KeyboardEventHandler,
+    type MouseEventHandler,
+    type CSSProperties,
+    type MouseEvent,
+    type DragEvent,
 } from 'react';
+
 import isHotkey from 'is-hotkey';
 import {
     createEditor,
@@ -735,7 +736,7 @@ const EditorElement = (props: any) => {
     } = props;
     const defaultElementStyles = {
         textAlign: element['textAlign'],
-    } as React.CSSProperties;
+    } as CSSProperties;
 
     switch (element.type) {
         case 'link': {
@@ -781,7 +782,7 @@ const EditorLeaf = ({ attributes, children, leaf }: any) => {
         if (leaf.fontBgColor) {
             styles.backgroundColor = leaf.fontBgColor as string;
         }
-        return styles as React.CSSProperties;
+        return styles as CSSProperties;
     }, [leaf.fontBgColor, leaf.fontColor]);
 
     const commentsIds = useMemo(

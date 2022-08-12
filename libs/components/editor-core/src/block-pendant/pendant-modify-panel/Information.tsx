@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ModifyPanelContentProps } from './types';
 import { StyledDivider, StyledPopoverSubTitle } from '../StyledComponent';

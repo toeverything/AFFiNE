@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback, type MouseEvent } from 'react';
 import style9 from 'style9';
 
 import type { IconItemType, WithEditorSelectionType } from '../types';
@@ -16,7 +16,7 @@ export const MenuIconItem = ({
     setShow,
 }: MenuIconItemProps) => {
     const handleToolbarItemClick = useCallback(
-        (event: React.MouseEvent<HTMLButtonElement>) => {
+        (event: MouseEvent<HTMLButtonElement>) => {
             if (onClick && selectionInfo?.anchorNode?.id) {
                 onClick({
                     editor,

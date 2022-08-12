@@ -1,4 +1,4 @@
-import React, { CSSProperties, useState } from 'react';
+import { CSSProperties, useState } from 'react';
 
 import { ModifyPanelContentProps } from './types';
 import { HighLightIconInput } from './IconInput';

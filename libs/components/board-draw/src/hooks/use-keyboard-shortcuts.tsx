@@ -1,13 +1,13 @@
-import * as React from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { AlignStyle, TDShapeType } from '@toeverything/components/board-types';
 import { useTldrawApp } from './use-tldraw-app';
 import { useFileSystemHandlers } from './use-file-system-handlers';
+import { type RefObject, useCallback, useEffect } from 'react';
 
-export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>) {
+export function useKeyboardShortcuts(ref: RefObject<HTMLDivElement>) {
     const app = useTldrawApp();
 
-    const canHandleEvent = React.useCallback(
+    const canHandleEvent = useCallback(
         (ignoreMenus = false) => {
             const elm = ref.current;
             if (
@@ -24,7 +24,7 @@ export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>) {
         [ref]
     );
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!app) return;
 
         const handleCut = (e: ClipboardEvent) => {

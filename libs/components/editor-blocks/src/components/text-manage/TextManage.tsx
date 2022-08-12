@@ -23,6 +23,7 @@ import {
     useEffect,
     useRef,
     type MutableRefObject,
+    type KeyboardEvent,
 } from 'react';
 import { Range } from 'slate';
 import { ReactEditor } from 'slate-react';
@@ -289,7 +290,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
             return { nowPosition: nowPosition, prePosition: prePosition };
         };
 
-        const onKeyboardUp = (event: React.KeyboardEvent<Element>) => {
+        const onKeyboardUp = (event: KeyboardEvent<Element>) => {
             // if default event is prevented do noting
             // if U want to disable up/down/enter use capture event for preventing
             if (!event.isDefaultPrevented()) {
@@ -328,7 +329,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
             return false;
         };
 
-        const onKeyboardDown = (event: React.KeyboardEvent<Element>) => {
+        const onKeyboardDown = (event: KeyboardEvent<Element>) => {
             // if default event is prevented do noting
             // if U want to disable up/down/enter use capture event for preventing
             // editor.selectionManager.activeNextNode(block.id, 'start');

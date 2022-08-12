@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type MouseEventHandler } from 'react';
 import { styled } from '@toeverything/components/ui';
 import { BlockEditor } from '@toeverything/framework/virgo';
 
@@ -7,12 +7,12 @@ const GRID_ADD_HANDLE_NAME = 'grid-add-handle';
 type GridHandleProps = {
     editor: BlockEditor;
     onDrag?: (e: MouseEvent) => void;
-    onMouseDown?: React.MouseEventHandler<HTMLDivElement>;
+    onMouseDown?: MouseEventHandler<HTMLDivElement>;
     blockId: string;
     enabledAddItem: boolean;
     draggable: boolean;
     alertHandleId: string;
-    onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
+    onMouseEnter?: MouseEventHandler<HTMLDivElement>;
 };
 
 export const GridHandle = function ({
@@ -26,7 +26,7 @@ export const GridHandle = function ({
     onMouseEnter,
 }: GridHandleProps) {
     const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
-    const handleMouseDown: React.MouseEventHandler<HTMLDivElement> = e => {
+    const handleMouseDown: MouseEventHandler<HTMLDivElement> = e => {
         if (draggable) {
             const cb = (e: MouseEvent) => {
                 onDrag && onDrag(e);
@@ -48,7 +48,7 @@ export const GridHandle = function ({
         }
     };
 
-    const handleMouseEnter: React.MouseEventHandler<HTMLDivElement> = e => {
+    const handleMouseEnter: MouseEventHandler<HTMLDivElement> = e => {
         onMouseEnter && onMouseEnter(e);
     };
 

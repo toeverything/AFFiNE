@@ -2,7 +2,7 @@ import { AsyncBlock, Virgo } from '@toeverything/components/editor-core';
 import { DeleteCashBinIcon } from '@toeverything/components/icons';
 import { Popover, styled } from '@toeverything/components/ui';
 import { Point } from '@toeverything/utils';
-import { PropsWithChildren } from 'react';
+import type { PropsWithChildren, RefObject } from 'react';
 import { ICON_WIDTH } from './DragItem';
 
 type MenuProps = {
@@ -12,7 +12,7 @@ type MenuProps = {
     position: Point;
     editor: Virgo;
     groupBlock: AsyncBlock;
-    menuRef: React.RefObject<HTMLUListElement>;
+    menuRef: RefObject<HTMLUListElement>;
 };
 
 export const Menu = ({

@@ -5,7 +5,7 @@ import {
 } from '@toeverything/components/editor-core';
 import { Rect } from '@toeverything/utils';
 import { styled } from '@toeverything/components/ui';
-import { useEffect, useState } from 'react';
+import { type CSSProperties, useEffect, useState } from 'react';
 
 type LineProps = {
     groupBlock: AsyncBlock | null;
@@ -34,7 +34,7 @@ export const Line = function ({ direction, editor, groupBlock }: LineProps) {
         }
     }, [groupBlock, editor.container]);
 
-    const computeLineStyle = (): React.CSSProperties => {
+    const computeLineStyle = (): CSSProperties => {
         if (!rect) {
             return {};
         }

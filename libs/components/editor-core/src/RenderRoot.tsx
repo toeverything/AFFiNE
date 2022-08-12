@@ -1,7 +1,15 @@
 import type { BlockEditor } from './editor';
 import { styled, usePatchNodes } from '@toeverything/components/ui';
 import type { PropsWithChildren } from 'react';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+    useEffect,
+    useRef,
+    useState,
+    useCallback,
+    type MouseEvent as ReactMouseEvent,
+    type KeyboardEventHandler,
+    type DragEvent,
+} from 'react';
 import { EditorProvider } from './Contexts';
 import { SelectionRect, SelectionRef } from './Selection';
 import {
@@ -71,60 +79,56 @@ export const RenderRoot = ({
     }, [rootId, editor, fetchPageBlockWidth]);
 
     const onMouseMove = async (
-        event: React.MouseEvent<HTMLDivElement, MouseEvent>
+        event: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => {
         selectionRef.current?.onMouseMove(event);
         editor.getHooks().onRootNodeMouseMove(event);
     };
 
     const onMouseDown = (
-        event: React.MouseEvent<HTMLDivElement, MouseEvent>
+        event: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => {
         triggeredBySelect.current = true;
         selectionRef.current?.onMouseDown(event);
         editor.getHooks().onRootNodeMouseDown(event);
     };
 
-    const onMouseUp = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const onMouseUp = (event: ReactMouseEvent<HTMLDivElement, MouseEvent>) => {
         selectionRef.current?.onMouseUp(event);
         editor.getHooks().onRootNodeMouseUp(event);
     };
 
-    const onMouseOut = (
-        event: React.MouseEvent<HTMLDivElement, MouseEvent>
-    ) => {
+    const onMouseOut = (event: ReactMouseEvent<HTMLDivElement, MouseEvent>) => {
         editor.getHooks().onRootNodeMouseOut(event);
     };
 
     const onMouseLeave = (
-        event: React.MouseEvent<HTMLDivElement, MouseEvent>
+        event: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => {
         editor.getHooks().onRootNodeMouseLeave(event);
     };
 
     const onContextmenu = (
-        event: React.MouseEvent<HTMLDivElement, MouseEvent>
+        event: ReactMouseEvent<HTMLDivElement, MouseEvent>
     ) => {
         selectionRef.current?.onContextmenu(event);
     };
 
-    const onKeyDown: React.KeyboardEventHandler<HTMLDivElement> = event => {
+    const onKeyDown: KeyboardEventHandler<HTMLDivElement> = event => {
         // IMP move into keyboard managers?
         editor.getHooks().onRootNodeKeyDown(event);
     };
 
-    const onKeyUp: React.KeyboardEventHandler<HTMLDivElement> = event => {
+    const onKeyUp: KeyboardEventHandler<HTMLDivElement> = event => {
         // IMP move into keyboard managers?
         editor.getHooks().onRootNodeKeyUp(event);
     };
 
-    const onKeyDownCapture: React.KeyboardEventHandler<
-        HTMLDivElement
-    > = event => {
+    const onKeyDownCapture: KeyboardEventHandler<HTMLDivElement> = event => {
         editor.getHooks().onRootNodeKeyDownCapture(event);
     };
 
-    const onDragOver = (event: React.DragEvent<Element>) => {
+    const onDragOver = (event: DragEvent<Element>) => {
         event.dataTransfer.dropEffect = 'move';
         event.preventDefault();
         editor.dragDropManager.handlerEditorDragOver(event);
@@ -133,25 +137,25 @@ export const RenderRoot = ({
         }
     };
 
-    const onDragLeave = (event: React.DragEvent<Element>) => {
+    const onDragLeave = (event: DragEvent<Element>) => {
         if (editor.dragDropManager.isEnabled()) {
             editor.getHooks().onRootNodeDragLeave(event);
         }
     };
 
-    const onDragOverCapture = (event: React.DragEvent<Element>) => {
+    const onDragOverCapture = (event: DragEvent<Element>) => {
         event.preventDefault();
         if (editor.dragDropManager.isEnabled()) {
             editor.getHooks().onRootNodeDragOver(event);
         }
     };
 
-    const onDragEnd = (event: React.DragEvent<Element>) => {
+    const onDragEnd = (event: DragEvent<Element>) => {
         editor.dragDropManager.handlerEditorDragEnd(event);
         editor.getHooks().onRootNodeDragEnd(event);
     };
 
-    const onDrop = (event: React.DragEvent<Element>) => {
+    const onDrop = (event: DragEvent<Element>) => {
         event.preventDefault();
         editor.dragDropManager.handlerEditorDrop(event);
         editor.getHooks().onRootNodeDrop(event);
@@ -202,7 +206,7 @@ function ScrollBlank({ editor }: { editor: BlockEditor }) {
     const onMouseDown = useCallback(() => (mouseMoved.current = false), []);
     const onMouseMove = useCallback(() => (mouseMoved.current = true), []);
     const onClick = useCallback(
-        async (e: React.MouseEvent) => {
+        async (e: ReactMouseEvent) => {
             if (mouseMoved.current) {
                 mouseMoved.current = false;
                 return;

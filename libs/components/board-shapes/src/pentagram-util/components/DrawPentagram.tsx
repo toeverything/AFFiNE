@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { getShapeStyle } from '../../shared';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import {
@@ -14,7 +14,7 @@ interface PentagramSvgProps {
     isDarkMode: boolean;
 }
 
-export const DrawPentagram = React.memo(function DrawTriangle({
+export const DrawPentagram = memo(function DrawTriangle({
     id,
     size,
     style,

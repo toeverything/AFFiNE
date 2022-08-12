@@ -6,7 +6,7 @@ import {
 import { styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
 import { CreateView } from '@toeverything/framework/virgo';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Image as SourceView } from '../../components/ImageView';
 import { Upload } from '../../components/upload/upload';
 import { SCENE_CONFIG } from '../group/config';
@@ -143,7 +143,7 @@ export const ImageView = ({ block, editor }: ImageView) => {
             type: 'link',
         });
     };
-    const handle_click = async (e: React.MouseEvent<HTMLDivElement>) => {
+    const handle_click = async (e: MouseEvent<HTMLDivElement>) => {
         //TODO clear active selection
         // document.getElementsByTagName('body')[0].click();
         e.stopPropagation();

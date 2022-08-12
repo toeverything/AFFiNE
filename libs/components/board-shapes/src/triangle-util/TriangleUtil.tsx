@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useCallback, useMemo } from 'react';
 import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
 import {
     TriangleShape,
@@ -91,11 +91,11 @@ export class TriangleUtil extends TDShapeUtil<T, E> {
             const styles = getShapeStyle(style, meta.isDarkMode);
             const Component =
                 style.dash === DashStyle.Draw ? DrawTriangle : DashedTriangle;
-            const handleLabelChange = React.useCallback(
+            const handleLabelChange = useCallback(
                 (label: string) => onShapeChange?.({ id, label }),
                 [onShapeChange]
             );
-            const offsetY = React.useMemo(() => {
+            const offsetY = useMemo(() => {
                 const center = Vec.div(size, 2);
                 const centroid = getTriangleCentroid(size);
                 return (centroid[1] - center[1]) * 0.72;

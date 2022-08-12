@@ -1,10 +1,11 @@
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
-import React, {
+import {
     useCallback,
     useEffect,
     useMemo,
     useRef,
     useState,
+    type KeyboardEvent,
 } from 'react';
 
 import { MuiClickAwayListener } from '@toeverything/components/ui';
@@ -79,7 +80,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     }, [searchBlocks, searchText]);
 
     const checkIfShowCommandMenu = useCallback(
-        async (event: React.KeyboardEvent<HTMLDivElement>) => {
+        async (event: KeyboardEvent<HTMLDivElement>) => {
             const { type, anchorNode } = editor.selection.currentSelectInfo;
             if (!anchorNode?.id) {
                 return;
@@ -119,7 +120,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                                 ?.getRangeAt(0)
                                 ?.getBoundingClientRect();
                         if (rect) {
-                            let rectTop = rect.top;
+                            const rectTop = rect.top;
                             const clientHeight =
                                 document.documentElement.clientHeight;
 
@@ -149,7 +150,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     );
 
     const handleClickOthers = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (show) {
                 const { anchorNode } = editor.selection.currentSelectInfo;
                 if (anchorNode.id !== blockId) {
@@ -175,7 +176,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     );
 
     const handleKeyup = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             checkIfShowCommandMenu(event);
             handleClickOthers(event);
         },
@@ -183,7 +184,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     );
 
     const handleKeyDown = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (event.code === 'Escape') {
                 hideMenu();
             }

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { getShapeStyle } from '../../shared';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import {
@@ -14,7 +14,7 @@ interface RectangleSvgProps {
     size: number[];
 }
 
-export const DrawRectangle = React.memo(function DrawRectangle({
+export const DrawRectangle = memo(function DrawRectangle({
     id,
     style,
     size,

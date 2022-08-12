@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
 import { defaultStyle, getShapeStyle } from '../shared/shape-styles';
@@ -62,11 +62,11 @@ export class DrawUtil extends TDShapeUtil<T, E> {
         ({ shape, meta, isSelected, isGhost, events }, ref) => {
             const { points, style, isComplete } = shape;
 
-            const polygon_path_td_snapshot = React.useMemo(() => {
+            const polygon_path_td_snapshot = useMemo(() => {
                 return getFillPath(shape);
             }, [points, style.strokeWidth]);
 
-            const path_td_snapshot = React.useMemo(() => {
+            const path_td_snapshot = useMemo(() => {
                 return style.dash === DashStyle.Draw
                     ? getDrawStrokePathTDSnapshot(shape)
                     : getSolidStrokePathTDSnapshot(shape);
@@ -200,7 +200,7 @@ export class DrawUtil extends TDShapeUtil<T, E> {
     Indicator = TDShapeUtil.Indicator<T>(({ shape }) => {
         const { points } = shape;
 
-        const path_td_snapshot = React.useMemo(() => {
+        const path_td_snapshot = useMemo(() => {
             return getSolidStrokePathTDSnapshot(shape);
         }, [points]);
 

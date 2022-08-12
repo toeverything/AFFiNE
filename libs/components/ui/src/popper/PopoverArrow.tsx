@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
 import { PopperArrowProps } from './interface';
 import { styled } from '../styled';
 

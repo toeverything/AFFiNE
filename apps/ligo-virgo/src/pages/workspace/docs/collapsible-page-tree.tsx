@@ -14,7 +14,12 @@ import {
     styled,
 } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
-import React, { useCallback, useState } from 'react';
+import {
+    type CSSProperties,
+    type ReactNode,
+    useCallback,
+    useState,
+} from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const StyledBtn = styled('div')({
@@ -34,9 +39,9 @@ const StyledBtn = styled('div')({
 export type CollapsiblePageTreeProps = {
     title?: string;
     initialOpen?: boolean;
-    children?: React.ReactNode;
+    children?: ReactNode;
     className?: string;
-    style?: React.CSSProperties;
+    style?: CSSProperties;
 };
 
 export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {

@@ -1,6 +1,6 @@
 import { Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
-import * as React from 'react';
+import { memo } from 'react';
 import { getShapeStyle } from '../../shared';
 import type {
     Decoration,
@@ -25,7 +25,7 @@ interface ArrowSvgProps {
     isDraw: boolean;
 }
 
-export const StraightArrow = React.memo(function StraightArrow({
+export const StraightArrow = memo(function StraightArrow({
     id,
     style,
     start,

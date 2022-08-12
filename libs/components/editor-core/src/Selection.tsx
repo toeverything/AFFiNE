@@ -1,9 +1,10 @@
-import React, {
+import {
     forwardRef,
     useImperativeHandle,
     useEffect,
     useRef,
     useState,
+    type MouseEvent as ReactMouseEvent,
 } from 'react';
 import { domToRect, Point, Rect } from '@toeverything/utils';
 // TODO: optimize
@@ -26,12 +27,10 @@ const DIRECTION_VALUE_MAP = {
 type VerticalTypes = 'up' | 'down' | null;
 type HorizontalTypes = 'left' | 'right' | null;
 export type SelectionRef = {
-    onMouseDown: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-    onMouseMove: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-    onMouseUp: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-    onContextmenu: (
-        event: React.MouseEvent<HTMLDivElement, MouseEvent>
-    ) => void;
+    onMouseDown: (event: ReactMouseEvent<HTMLDivElement, MouseEvent>) => void;
+    onMouseMove: (event: ReactMouseEvent<HTMLDivElement, MouseEvent>) => void;
+    onMouseUp: (event: ReactMouseEvent<HTMLDivElement, MouseEvent>) => void;
+    onContextmenu: (event: ReactMouseEvent<HTMLDivElement, MouseEvent>) => void;
 };
 
 const getFixedPoint = (
@@ -116,7 +115,7 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
         const scrollContainerRect = useRef<Rect>();
 
         const onMouseDown = async (
-            event: React.MouseEvent<HTMLDivElement, MouseEvent>
+            event: ReactMouseEvent<HTMLDivElement, MouseEvent>
         ) => {
             await selectionManager.setSelectedNodesIds([]);
             startPointRef.current = new Point(event.clientX, event.clientY);
@@ -133,7 +132,7 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
         };
 
         const onMouseMove = async (
-            event: React.MouseEvent<HTMLDivElement, MouseEvent>
+            event: ReactMouseEvent<HTMLDivElement, MouseEvent>
         ) => {
             if (mouseType.current === 'down') {
                 endPointRef.current = new Point(event.clientX, event.clientY);

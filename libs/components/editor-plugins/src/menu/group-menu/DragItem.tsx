@@ -3,6 +3,7 @@ import { AsyncBlock, Virgo } from '@toeverything/components/editor-core';
 import { HandleParentIcon } from '@toeverything/components/icons';
 import { styled } from '@toeverything/components/ui';
 import { Point } from '@toeverything/utils';
+import type { MutableRefObject, HTMLAttributes } from 'react';
 
 export const ICON_WIDTH = 16;
 
@@ -10,9 +11,9 @@ type DragItemProps = {
     isShow: boolean;
     groupBlock: AsyncBlock;
     editor: Virgo;
-    item: React.MutableRefObject<HTMLDivElement>;
+    item: MutableRefObject<HTMLDivElement>;
     onPositionChange?: (position: Point) => void;
-} & React.HTMLAttributes<HTMLDivElement>;
+} & HTMLAttributes<HTMLDivElement>;
 
 export const DragItem = function ({
     isShow,

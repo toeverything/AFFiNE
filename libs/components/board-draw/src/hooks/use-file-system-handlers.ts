@@ -1,43 +1,47 @@
-import * as React from 'react';
 import { useTldrawApp } from './use-tldraw-app';
+import {
+    type MouseEvent as ReactMouseEvent,
+    type KeyboardEvent as ReactKeyboardEvent,
+    useCallback,
+} from 'react';
 
 export function useFileSystemHandlers() {
     const app = useTldrawApp();
 
-    const onNewProject = React.useCallback(
-        async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    const onNewProject = useCallback(
+        async (e?: ReactMouseEvent | ReactKeyboardEvent | KeyboardEvent) => {
             if (e && app.callbacks.onOpenProject) e.preventDefault();
             app.callbacks.onNewProject?.(app);
         },
         [app]
     );
 
-    const onSaveProject = React.useCallback(
-        (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    const onSaveProject = useCallback(
+        (e?: ReactMouseEvent | ReactKeyboardEvent | KeyboardEvent) => {
             if (e && app.callbacks.onOpenProject) e.preventDefault();
             app.callbacks.onSaveProject?.(app);
         },
         [app]
     );
 
-    const onSaveProjectAs = React.useCallback(
-        (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    const onSaveProjectAs = useCallback(
+        (e?: ReactMouseEvent | ReactKeyboardEvent | KeyboardEvent) => {
             if (e && app.callbacks.onOpenProject) e.preventDefault();
             app.callbacks.onSaveProjectAs?.(app);
         },
         [app]
     );
 
-    const onOpenProject = React.useCallback(
-        async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    const onOpenProject = useCallback(
+        async (e?: ReactMouseEvent | ReactKeyboardEvent | KeyboardEvent) => {
             if (e && app.callbacks.onOpenProject) e.preventDefault();
             app.callbacks.onOpenProject?.(app);
         },
         [app]
     );
 
-    const onOpenMedia = React.useCallback(
-        async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    const onOpenMedia = useCallback(
+        async (e?: ReactMouseEvent | ReactKeyboardEvent | KeyboardEvent) => {
             if (e && app.callbacks.onOpenMedia) e.preventDefault();
             app.callbacks.onOpenMedia?.(app);
         },

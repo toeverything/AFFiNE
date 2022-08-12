@@ -1,4 +1,11 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import {
+    useEffect,
+    useState,
+    useCallback,
+    useRef,
+    type CSSProperties,
+    type KeyboardEvent,
+} from 'react';
 
 import { Virgo, PluginHooks, HookType } from '@toeverything/framework/virgo';
 import {
@@ -14,7 +21,7 @@ import { QueryResult } from '../../search';
 export type ReferenceMenuContainerProps = {
     editor: Virgo;
     hooks: PluginHooks;
-    style?: React.CSSProperties;
+    style?: CSSProperties;
     isShow?: boolean;
     blockId: string;
     onSelected?: (item: string) => void;
@@ -85,7 +92,7 @@ export const ReferenceMenuContainer = ({
     }, [isShow, types, current_item]);
 
     const handle_click_up = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (isShow && types && event.code === 'ArrowUp') {
                 event.preventDefault();
                 if (!current_item && types.length) {
@@ -104,7 +111,7 @@ export const ReferenceMenuContainer = ({
     );
 
     const handle_click_down = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (isShow && types && event.code === 'ArrowDown') {
                 event.preventDefault();
                 if (!current_item && types.length) {
@@ -123,7 +130,7 @@ export const ReferenceMenuContainer = ({
     );
 
     const handle_click_enter = useCallback(
-        async (event: React.KeyboardEvent<HTMLDivElement>) => {
+        async (event: KeyboardEvent<HTMLDivElement>) => {
             if (isShow && event.code === 'Enter' && current_item) {
                 event.preventDefault();
                 onSelected && onSelected(current_item);
@@ -133,7 +140,7 @@ export const ReferenceMenuContainer = ({
     );
 
     const handle_key_down = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             handle_click_up(event);
             handle_click_down(event);
             handle_click_enter(event);

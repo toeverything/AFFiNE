@@ -3,7 +3,7 @@ import { StyleWithAtRules } from 'style9';
 
 import { CreateView } from '@toeverything/framework/virgo';
 import CodeMirror, { ReactCodeMirrorRef } from './CodeMirror';
-import { styled } from '@toeverything/components/ui';
+import { styled, Option, Select } from '@toeverything/components/ui';
 
 import { javascript } from '@codemirror/lang-javascript';
 import { html } from '@codemirror/lang-html';
@@ -45,7 +45,6 @@ import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile';
 import { julia } from '@codemirror/legacy-modes/mode/julia';
 import { r } from '@codemirror/legacy-modes/mode/r';
 import { Extension } from '@codemirror/state';
-import { Option, Select } from '@toeverything/components/ui';
 
 import {
     useOnSelect,
@@ -200,7 +199,8 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
                     </div>
                     <div>
                         <div className="copy-block" onClick={copyCode}>
-                            <DuplicateIcon></DuplicateIcon>Copy
+                            <DuplicateIcon />
+                            Copy
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { getShapeStyle } from '../../shared';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import { getEllipseIndicatorPath, getEllipsePath } from '../ellipse-helpers';
@@ -11,7 +11,7 @@ interface EllipseSvgProps {
     isDarkMode: boolean;
 }
 
-export const DrawEllipse = React.memo(function DrawEllipse({
+export const DrawEllipse = memo(function DrawEllipse({
     id,
     radius,
     style,

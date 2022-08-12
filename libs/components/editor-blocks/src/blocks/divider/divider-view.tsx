@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import { styled } from '@toeverything/components/ui';
 import { useOnSelect } from '@toeverything/components/editor-core';
@@ -25,7 +25,7 @@ export const DividerView = ({ block, editor }: CreateView) => {
         setIsSelected(isSelect);
     });
 
-    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleClick = (e: MouseEvent<HTMLDivElement>) => {
         editor.selectionManager.setSelectedNodesIds([block.id]);
     };
 

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useCallback } from 'react';
 import { Utils, SVGContainer } from '@tldraw/core';
 import {
     RectangleShape,
@@ -83,7 +83,7 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
             const styles = getShapeStyle(style, meta.isDarkMode);
             const Component =
                 style.dash === DashStyle.Draw ? DrawRectangle : DashedRectangle;
-            const handleLabelChange = React.useCallback(
+            const handleLabelChange = useCallback(
                 (label: string) => onShapeChange?.({ id, label }),
                 [onShapeChange]
             );

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { memo } from 'react';
 import { Utils } from '@tldraw/core';
 import type { ShapeStyles } from '@toeverything/components/board-types';
 import { getShapeStyle } from '../../shared';
@@ -13,7 +13,7 @@ interface PentagramSvgProps {
     isDarkMode: boolean;
 }
 
-export const DashedPentagram = React.memo(function DashedPentagram({
+export const DashedPentagram = memo(function DashedPentagram({
     id,
     size,
     style,
