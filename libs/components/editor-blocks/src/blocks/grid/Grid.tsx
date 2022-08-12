@@ -261,7 +261,7 @@ const GridContainer = styled('div')<{
     display: 'flex',
     alignItems: 'stretch',
     borderRadius: '10px',
-    border: '1px solid #FFF',
+    border: '1px solid transparent',
     minWidth: `${gridItemMinWidth}%`,
     [`&:hover .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
         borderColor: theme.affine.palette.borderColor,

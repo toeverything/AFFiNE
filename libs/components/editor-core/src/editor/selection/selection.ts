@@ -77,9 +77,6 @@ export class SelectionManager implements VirgoSelection {
             type: 'None',
             info: null,
         };
-        // IMP: to delete
-        // @ts-ignore
-        window['selectionManager'] = this;
         this._initWindowSelectionChangeListen();
     }
 
