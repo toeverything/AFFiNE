@@ -177,10 +177,12 @@ export class Paste {
             const selectedBlock = await this._editor.getBlockById(
                 currentSelectInfo.blocks[0].blockId
             );
-            const isSelectedBlockEdit = Paste._isTextEditBlock(
+            const isSelectedBlockCanEdit = Paste._isTextEditBlock(
                 selectedBlock.type
             );
-            if (isSelectedBlockEdit) {
+            const blockView = this._editor.getView(selectedBlock.type);
+            const isSelectedBlockEmpty = blockView.isEmpty(selectedBlock);
+            if (isSelectedBlockCanEdit && !isSelectedBlockEmpty) {
                 const shouldSplitBlock =
                     blocks.length > 1 ||
                     !Paste._isTextEditBlock(blocks[0].type);
@@ -245,9 +247,10 @@ export class Paste {
                             },
                         });
                         const pasteBlocks = await this._createBlocks(blocks);
-                        pasteBlocks.forEach(block => {
-                            selectedBlock.after(block);
-                        });
+                        await Promise.all(
+                            pasteBlocks.map(block => selectedBlock.after(block))
+                        );
+
                         const nextBlock = await this._editor.createBlock(
                             selectedBlock?.type
                         );
@@ -351,9 +354,15 @@ export class Paste {
                 }
             } else {
                 const pasteBlocks = await this._createBlocks(blocks);
-                pasteBlocks.forEach(block => {
-                    selectedBlock.after(block);
-                });
+
+                await Promise.all(
+                    pasteBlocks.map(block => selectedBlock.after(block))
+                );
+
+                if (isSelectedBlockEmpty) {
+                    selectedBlock?.remove();
+                }
+
                 this._setEndSelectToBlock(
                     pasteBlocks[pasteBlocks.length - 1].id
                 );
@@ -373,20 +382,25 @@ export class Paste {
                 selectedBlock?.type === 'page'
             ) {
                 groupBlock = await this._editor.createBlock('group');
-                pasteBlocks.forEach(block => {
-                    groupBlock.append(block);
-                });
+                await Promise.all(
+                    pasteBlocks.map(block => groupBlock.append(block))
+                );
                 await selectedBlock.after(groupBlock);
             } else {
-                pasteBlocks.forEach(block => {
-                    selectedBlock.after(block);
-                });
+                await Promise.all(
+                    pasteBlocks.map(block => selectedBlock.after(block))
+                );
             }
             this._setEndSelectToBlock(pasteBlocks[pasteBlocks.length - 1].id);
         }
     }
 
-    private _setEndSelectToBlock(blockId: string) {
+    private async _setEndSelectToBlock(blockId: string) {
+        const block = await this._editor.getBlockById(blockId);
+        const isBlockCanEdit = Paste._isTextEditBlock(block.type);
+        if (!isBlockCanEdit) {
+            return;
+        }
         setTimeout(() => {
             this._editor.selectionManager.activeNodeByNodeId(blockId, 'end');
         }, 100);
