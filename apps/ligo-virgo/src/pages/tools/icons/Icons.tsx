@@ -1,6 +1,6 @@
-import { type ComponentType, useRef } from 'react';
 import * as uiIcons from '@toeverything/components/icons';
 import { message, styled } from '@toeverything/components/ui';
+import { useRef, type ComponentType } from 'react';
 import { copy } from './copy';
 
 const IconBooth = ({

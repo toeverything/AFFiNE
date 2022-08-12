@@ -1,4 +1,3 @@
-/* eslint-disable filename-rules/match */
 import { render } from '@testing-library/react';
 
 import { Page } from './index';

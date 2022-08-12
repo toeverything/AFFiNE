@@ -2,8 +2,8 @@ import { memo, useEffect } from 'react';
 import { useParams } from 'react-router';
 
 import { AffineBoard } from '@toeverything/components/affine-board';
-import { useUserAndSpaces } from '@toeverything/datasource/state';
 import { services } from '@toeverything/datasource/db-service';
+import { useUserAndSpaces } from '@toeverything/datasource/state';
 
 const MemoAffineBoard = memo(AffineBoard, (prev, next) => {
     return prev.rootBlockId === next.rootBlockId;

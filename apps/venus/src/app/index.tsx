@@ -1,20 +1,19 @@
 /* eslint-disable max-lines */
 /* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable filename-rules/match */
-import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
+import { useEffect, useMemo, useState } from 'react';
 
-import { CssVarsProvider, styled } from '@mui/joy/styles';
-import { Box, Button, Container, Grid, SvgIcon, Typography } from '@mui/joy';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import RedditIcon from '@mui/icons-material/Reddit';
 import TelegramIcon from '@mui/icons-material/Telegram';
+import { Box, Button, Container, Grid, SvgIcon, Typography } from '@mui/joy';
+import { CssVarsProvider, styled } from '@mui/joy/styles';
 import { LogoIcon } from '@toeverything/components/icons';
 // eslint-disable-next-line no-restricted-imports
 import { useMediaQuery } from '@mui/material';
 
-import LogoImage from './logo.png';
 import CollaborationImage from './collaboration.png';
+import LogoImage from './logo.png';
 import PageImage from './page.png';
 import ShapeImage from './shape.png';
 import TaskImage from './task.png';

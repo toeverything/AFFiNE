@@ -1,5 +1,4 @@
-/* eslint-disable filename-rules/match */
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { LogoIcon } from '@toeverything/components/icons';
 import { MuiButton } from '@toeverything/components/ui';

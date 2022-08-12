@@ -1,16 +1,12 @@
+import { Guard as AuthingGuard } from '@authing/react-ui-components';
+import { MuiBox as Box } from '@toeverything/components/ui';
+import type { User as AuthingUser } from 'authing-js-sdk';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import style9 from 'style9';
-import { MuiBox as Box } from '@toeverything/components/ui';
-import { Guard as AuthingGuard } from '@authing/react-ui-components';
-import type { User as AuthingUser } from 'authing-js-sdk';
 
-import {
-    AUTHING_APP_ID_US,
-    AUTHING_APP_ID_CN,
-    AUTHING_APP_HOST_US,
-} from '@toeverything/utils';
 import { useUserAndSpaces } from '@toeverything/datasource/state';
+import { AUTHING_APP_HOST_US, AUTHING_APP_ID_US } from '@toeverything/utils';
 
 import '@authing/react-ui-components/lib/index.min.css';
 

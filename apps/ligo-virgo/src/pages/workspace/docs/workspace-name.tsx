@@ -1,17 +1,17 @@
-import { styled, Input } from '@toeverything/components/ui';
 import { PinIcon } from '@toeverything/components/icons';
+import { Input, styled } from '@toeverything/components/ui';
+import { services } from '@toeverything/datasource/db-service';
 import {
-    useUserAndSpaces,
     useShowSpaceSidebar,
+    useUserAndSpaces,
 } from '@toeverything/datasource/state';
-import React, {
+import {
     ChangeEvent,
     KeyboardEvent,
     useCallback,
     useEffect,
     useState,
 } from 'react';
-import { services } from '@toeverything/datasource/db-service';
 import { Logo } from './components/logo/Logo';
 
 const WorkspaceContainer = styled('div')({

@@ -1,10 +1,9 @@
-/* eslint-disable filename-rules/match */
 import { useCallback, useMemo, useState } from 'react';
 
+import { CloseIcon } from '@toeverything/components/common';
 import { IconButton, MuiSnackbar, styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
 import { useLocalTrigger } from '@toeverything/datasource/state';
-import { CloseIcon } from '@toeverything/components/common';
 
 const cleanupWorkspace = (workspace: string) =>
     new Promise((resolve, reject) => {

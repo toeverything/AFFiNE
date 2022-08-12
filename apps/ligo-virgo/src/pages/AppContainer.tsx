@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 
+import { LayoutHeader, SettingsSidebar } from '@toeverything/components/layout';
 import { styled } from '@toeverything/components/ui';
-import { SettingsSidebar, LayoutHeader } from '@toeverything/components/layout';
 
 export function LigoVirgoRootContainer() {
     return (
