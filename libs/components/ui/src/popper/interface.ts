@@ -1,6 +1,9 @@
-import type { CSSProperties, ReactNode } from 'react';
-import type { MuiPopperPlacementType as PopperPlacementType } from '../mui';
-
+import type { CSSProperties, ReactNode, Ref } from 'react';
+/* eslint-disable no-restricted-imports */
+import {
+    type PopperUnstyledProps,
+    type PopperPlacementType,
+} from '@mui/base/PopperUnstyled';
 export type VirtualElement = {
     getBoundingClientRect: () => ClientRect | DOMRect;
     contextElement?: Element;
@@ -21,25 +24,11 @@ export type PopperProps = {
     // Popover trigger
     children?: ReactNode;
 
-    // Position of Popover
-    placement?: PopperPlacementType;
-
-    // The popover will pop up based on the anchor position
-    // And if this parameter is passed, children will not be rendered
-    anchor?: VirtualElement | (() => VirtualElement);
-
     // Whether the default is implicit
     defaultVisible?: boolean;
 
     // Used to manually control the visibility of the Popover
     visible?: boolean;
-
-    // A HTML element or function that returns one. The container will have the portal children appended to it.
-    // By default, it uses the body of the top-level document object, so it's simply document.body most of the time.
-    container?: HTMLElement;
-
-    // Always keep the children in the DOM. This prop can be useful in SEO situation or when you want to maximize the responsiveness of the Popper
-    keepMounted?: boolean;
 
     // TODO: support focus
     trigger?: 'hover' | 'click' | 'focus' | ('click' | 'hover' | 'focus')[];
@@ -66,9 +55,11 @@ export type PopperProps = {
     anchorClassName?: string;
 
     // Popover z-index
-    zIndex?: number;
+    zIndex?: CSSProperties['zIndex'];
 
     offset?: [number, number];
 
     showArrow?: boolean;
-};
+
+    popperHandlerRef?: Ref<PopperHandler>;
+} & Omit<PopperUnstyledProps, 'open' | 'ref'>;

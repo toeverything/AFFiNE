@@ -17,7 +17,7 @@ export const PendantPopover = (
     const popoverHandlerRef = useRef<PopperHandler>();
     return (
         <Popover
-            ref={popoverHandlerRef}
+            popperHandlerRef={popoverHandlerRef}
             pointerEnterDelay={300}
             pointerLeaveDelay={200}
             placement="bottom-start"
