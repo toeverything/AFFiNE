@@ -1,6 +1,6 @@
-import type { CSSProperties } from 'react';
 import type { TLBounds } from '@tldraw/core';
 import { styled } from '@toeverything/components/ui';
+import type { CSSProperties } from 'react';
 
 interface SimplifiedShapeProps extends TLBounds {
     onClick?: () => void;

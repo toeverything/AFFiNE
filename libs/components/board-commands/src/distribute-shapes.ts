@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Utils } from '@tldraw/core';
+import Vec from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import {
     DistributeType,
     TDShape,
-    TldrawCommand,
     TDShapeType,
+    TldrawCommand,
 } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
-import Vec from '@tldraw/vec';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export function distributeShapes(
     app: TldrawApp,

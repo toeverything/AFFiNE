@@ -1,43 +1,43 @@
 /* eslint-disable max-lines */
+import { Renderer } from '@tldraw/core';
+import { shapeUtils } from '@toeverything/components/board-shapes';
+import {
+    TLDR,
+    TldrawApp,
+    TldrawAppCtorProps,
+} from '@toeverything/components/board-state';
+import {
+    GRID_SIZE,
+    TDDocument,
+    TDMeta,
+    TDStatus,
+} from '@toeverything/components/board-types';
+import { styled } from '@toeverything/components/ui';
 import {
     memo,
     useEffect,
     useLayoutEffect,
-    useRef,
     useMemo,
+    useRef,
     useState,
     type RefObject,
 } from 'react';
-import { Renderer } from '@tldraw/core';
-import { styled } from '@toeverything/components/ui';
-import {
-    TDDocument,
-    TDStatus,
-    GRID_SIZE,
-    TDMeta,
-} from '@toeverything/components/board-types';
-import {
-    TldrawApp,
-    TldrawAppCtorProps,
-    TLDR,
-} from '@toeverything/components/board-state';
+import { ToolsPanel } from './components/tools-panel';
 import {
     TldrawContext,
-    useStylesheet,
     useKeyboardShortcuts,
+    useStylesheet,
     useTldrawApp,
 } from './hooks';
-import { shapeUtils } from '@toeverything/components/board-shapes';
-import { ToolsPanel } from './components/tools-panel';
 // import { TopPanel } from '~components/TopPanel';
 import { ContextMenu } from './components/context-menu';
 // import { FocusButton } from '~components/FocusButton';
-import { Loading } from './components/loading';
-import { ErrorBoundary } from 'react-error-boundary';
-import { ErrorFallback } from './components/error-fallback';
-import { ZoomBar } from './components/zoom-bar';
-import { CommandPanel } from './components/command-panel';
 import { usePageClientWidth } from '@toeverything/datasource/state';
+import { ErrorBoundary } from 'react-error-boundary';
+import { CommandPanel } from './components/command-panel';
+import { ErrorFallback } from './components/error-fallback';
+import { Loading } from './components/loading';
+import { ZoomBar } from './components/zoom-bar';
 
 export interface TldrawProps extends TldrawAppCtorProps {
     /**

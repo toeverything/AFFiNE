@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { Utils } from '@tldraw/core';
+import { Vec } from '@tldraw/vec';
+import { shapeUtils } from '@toeverything/components/board-shapes';
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { deepCopy, TLDR } from '@toeverything/components/board-state';
 import {
     ArrowBinding,
     ArrowShape,
-    TDShape,
-    TDBinding,
-    TDStatus,
     SessionType,
+    TDBinding,
+    TDShape,
     TDShapeType,
-    TldrawPatch,
+    TDStatus,
     TldrawCommand,
+    TldrawPatch,
 } from '@toeverything/components/board-types';
-import { Vec } from '@tldraw/vec';
-import { TLDR, deepCopy } from '@toeverything/components/board-state';
-import { shapeUtils } from '@toeverything/components/board-shapes';
 import { BaseSession } from './base-session';
-import type { TldrawApp } from '@toeverything/components/board-state';
-import { Utils } from '@tldraw/core';
 
 export class ArrowSession extends BaseSession {
     type = SessionType.Arrow;

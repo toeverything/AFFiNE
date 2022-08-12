@@ -1,12 +1,12 @@
+import type { TldrawApp } from '@toeverything/components/board-state';
 import { TLDR } from '@toeverything/components/board-state';
 import type {
-    Patch,
     GroupShape,
+    Patch,
     TDBinding,
     TDShape,
     TldrawCommand,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export function ungroupShapes(
     app: TldrawApp,

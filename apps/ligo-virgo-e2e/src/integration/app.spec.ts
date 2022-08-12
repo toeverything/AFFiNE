@@ -1,4 +1,4 @@
-import { getTitle, getBoard } from '../support/app.po';
+import { getBoard, getTitle } from '../support/app.po';
 
 describe('ligo-virgo', () => {
     beforeEach(() => cy.visit('/'));

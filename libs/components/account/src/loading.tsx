@@ -1,5 +1,5 @@
-import style9 from 'style9';
 import { MuiCircularProgress as CircularProgress } from '@toeverything/components/ui';
+import style9 from 'style9';
 
 const styles = style9.create({
     container: {

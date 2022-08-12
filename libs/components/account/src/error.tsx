@@ -1,10 +1,7 @@
-import { Link } from 'react-router-dom';
 import style9 from 'style9';
-import { getAuth, signOut } from 'firebase/auth';
 
-import { MuiBox as Box } from '@toeverything/components/ui';
 import { keyframes } from '@emotion/react';
-import { LOGOUT_LOCAL_STORAGE, LOGOUT_COOKIES } from '@toeverything/utils';
+import { MuiBox as Box } from '@toeverything/components/ui';
 
 const styles = style9.create({
     container: {

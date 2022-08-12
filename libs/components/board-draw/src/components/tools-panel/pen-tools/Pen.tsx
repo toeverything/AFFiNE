@@ -1,5 +1,5 @@
+import { IconButton, styled, Tooltip } from '@toeverything/components/ui';
 import type { ReactNode } from 'react';
-import { Tooltip, styled, IconButton } from '@toeverything/components/ui';
 
 interface PenProps {
     name: string;

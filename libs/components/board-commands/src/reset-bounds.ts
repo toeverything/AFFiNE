@@ -1,6 +1,6 @@
-import type { TldrawCommand } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
 import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
+import type { TldrawCommand } from '@toeverything/components/board-types';
 
 export function resetBounds(
     app: TldrawApp,

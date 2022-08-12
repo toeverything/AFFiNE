@@ -1,9 +1,9 @@
-import type {
-    TldrawCommand,
-    TDPage,
-} from '@toeverything/components/board-types';
-import { Utils, TLPageState } from '@tldraw/core';
+import { TLPageState, Utils } from '@tldraw/core';
 import type { TldrawApp } from '@toeverything/components/board-state';
+import type {
+    TDPage,
+    TldrawCommand,
+} from '@toeverything/components/board-types';
 
 export function createPage(
     app: TldrawApp,

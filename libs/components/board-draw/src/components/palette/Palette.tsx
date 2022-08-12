@@ -1,7 +1,6 @@
-import type { PropsWithChildren } from 'react';
-import { useMemo } from 'react';
-import { styled, Tooltip } from '@toeverything/components/ui';
 import { ShapeColorNoneIcon } from '@toeverything/components/icons';
+import { styled, Tooltip } from '@toeverything/components/ui';
+import { useMemo } from 'react';
 
 interface ColorObject {
     name?: string;

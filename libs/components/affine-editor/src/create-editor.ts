@@ -1,31 +1,31 @@
-import { BlockEditor } from '@toeverything/framework/virgo';
 import {
-    PageBlock,
-    RefLinkBlock,
-    TextBlock,
+    BulletBlock,
+    CalloutBlock,
+    CodeBlock,
+    DividerBlock,
+    EmbedLinkBlock,
+    FigmaBlock,
+    // TocBlock,
+    FileBlock,
+    GridBlock,
+    GridItemBlock,
+    GroupBlock,
+    GroupDividerBlock,
     Heading1Block,
     Heading2Block,
     Heading3Block,
-    QuoteBlock,
-    TodoBlock,
-    CodeBlock,
-    // TocBlock,
-    FileBlock,
     ImageBlock,
-    DividerBlock,
-    CalloutBlock,
-    YoutubeBlock,
-    FigmaBlock,
-    GroupBlock,
-    EmbedLinkBlock,
-    BulletBlock,
     NumberedBlock,
-    GridBlock,
-    GridItemBlock,
-    GroupDividerBlock,
+    PageBlock,
+    QuoteBlock,
+    RefLinkBlock,
+    TextBlock,
+    TodoBlock,
+    YoutubeBlock,
 } from '@toeverything/components/editor-blocks';
-import { Protocol } from '@toeverything/datasource/db-service';
 import { plugins } from '@toeverything/components/editor-plugins';
+import { Protocol } from '@toeverything/datasource/db-service';
+import { BlockEditor } from '@toeverything/framework/virgo';
 
 export const createEditor = (
     workspace: string,

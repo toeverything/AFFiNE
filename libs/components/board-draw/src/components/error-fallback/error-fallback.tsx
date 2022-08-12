@@ -1,7 +1,6 @@
-import * as React from 'react';
+import { styled } from '@toeverything/components/ui';
 import { FallbackProps } from 'react-error-boundary';
 import { useTldrawApp } from '../../hooks';
-import { styled } from '@toeverything/components/ui';
 
 export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
     const app = useTldrawApp();

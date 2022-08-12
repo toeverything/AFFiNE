@@ -2,14 +2,14 @@ import { ExceptFirst, SessionType } from '@toeverything/components/board-types';
 import { ArrowSession } from './arrow-session';
 import { BrushSession } from './brush-session';
 import { DrawSession } from './draw-session';
+import { EraseSession } from './erase-session';
+import { GridSession } from './grid-session';
 import { HandleSession } from './handle-session';
+import { LaserSession } from './laser-session';
 import { RotateSession } from './rotate-session';
 import { TransformSession } from './transform-session';
 import { TransformSingleSession } from './transform-single-session';
 import { TranslateSession } from './translate-session';
-import { EraseSession } from './erase-session';
-import { GridSession } from './grid-session';
-import { LaserSession } from './laser-session';
 
 export type TldrawSession =
     | ArrowSession

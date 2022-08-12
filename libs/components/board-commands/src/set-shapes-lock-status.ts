@@ -1,8 +1,8 @@
+import type { TldrawApp } from '@toeverything/components/board-state';
 import type {
     TDShape,
     TldrawCommand,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export function setShapesLockStatus<T extends TDShape>(
     app: TldrawApp,
