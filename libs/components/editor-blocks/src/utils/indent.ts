@@ -1,4 +1,7 @@
-import { supportChildren } from '@toeverything/components/editor-core';
+import {
+    type BlockEditor,
+    supportChildren,
+} from '@toeverything/components/editor-core';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { AsyncBlock } from '@toeverything/framework/virgo';
 import type { TodoAsyncBlock } from '../blocks/todo/types';
@@ -6,14 +9,19 @@ import type { TodoAsyncBlock } from '../blocks/todo/types';
 /**
  * Is the block in top level
  */
-export const isTopLevelBlock = (parentBlock: AsyncBlock): boolean => {
+export const isTopLevelBlock = (
+    editor: BlockEditor,
+    block: AsyncBlock
+): boolean => {
     return (
-        parentBlock.type === Protocol.Block.Type.group ||
-        parentBlock.type === Protocol.Block.Type.page
+        editor.getRootBlockId() === block.id ||
+        block.type === Protocol.Block.Type.group ||
+        block.type === Protocol.Block.Type.page
     );
 };
 
 /**
+ * Move down
  * @returns true if indent is success
  * @example
  * ```
@@ -31,7 +39,6 @@ export const isTopLevelBlock = (parentBlock: AsyncBlock): boolean => {
  * ```
  */
 const indentBlock = async (block: TodoAsyncBlock) => {
-    // Move down
     const previousBlock = await block.previousSibling();
 
     if (!previousBlock || !supportChildren(previousBlock)) {
@@ -57,6 +64,7 @@ const indentBlock = async (block: TodoAsyncBlock) => {
 };
 
 /**
+ * Move up
  * @returns true if dedent is success
  * @example
  * ```
@@ -73,13 +81,15 @@ const indentBlock = async (block: TodoAsyncBlock) => {
  *  └─ [ ]
  * ```
  */
-const dedentBlock = async (block: AsyncBlock) => {
-    // Move up
+const dedentBlock = async (editor: BlockEditor, block: AsyncBlock) => {
+    if (editor.getRootBlockId() === block.id) {
+        return false;
+    }
     let parentBlock = await block.parent();
     if (!parentBlock) {
         throw new Error('Failed to dedent block! Parent block not found!');
     }
-    if (isTopLevelBlock(parentBlock)) {
+    if (isTopLevelBlock(editor, parentBlock)) {
         // Top, do nothing
         return false;
     }
@@ -111,9 +121,13 @@ const dedentBlock = async (block: AsyncBlock) => {
     return true;
 };
 
-export const tabBlock = async (block: AsyncBlock, isShiftKey: boolean) => {
+export const tabBlock = async (
+    editor: BlockEditor,
+    block: AsyncBlock,
+    isShiftKey: boolean
+) => {
     if (isShiftKey) {
-        return await dedentBlock(block);
+        return await dedentBlock(editor, block);
     } else {
         return await indentBlock(block);
     }

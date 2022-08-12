@@ -100,7 +100,7 @@ export const TodoView = ({ block, editor }: CreateView) => {
     };
 
     const on_tab: TextProps['handleTab'] = async ({ isShiftKey }) => {
-        await tabBlock(block, isShiftKey);
+        await tabBlock(editor, block, isShiftKey);
         return true;
     };
 

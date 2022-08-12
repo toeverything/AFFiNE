@@ -173,7 +173,7 @@ export const BulletView = ({ block, editor }: CreateView) => {
             }
             return true;
         } else {
-            return tabBlock(block, isShiftKey);
+            return tabBlock(editor, block, isShiftKey);
         }
     };
 
