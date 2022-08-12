@@ -36,8 +36,23 @@ Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Fre
 ![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
 
 # How to use
+<h3 align="center">
+🥳🥳🥳 Our web live demo is out! 🥳🥳🥳
+</h3>
 
-If you have experience in front-end development, you may wish to refer to our [documentation](https://docs.affine.pro/affine/basic-documentation/contribute-to-affine) to learn more about deploying your own version or contributing further to development. For those intersting in trying our latest version, please bear with us as we are planning to launch a web version soon.
+<h3 align="center">
+Start to try out <a href="https://affine.pro"><b>AFFiNE web version</b></a> on our landing page:
+</h3>
+
+<p align="center"><a href="https://affine.pro">
+    <img 
+    src="https://user-images.githubusercontent.com/79301703/184340907-5aaa4e6e-7d37-4523-a06c-7d630e7864d1.jpeg" 
+    width="600px"
+    alt="check_live_demo" 
+    />
+</a></p>
+
+If you have experience in front-end development, you may wish to refer to our [documentation](https://docs.affine.pro/affine/basic-documentation/contribute-to-affine) to learn more about deploying your own version or contributing further to development. 
 Also, thanks to Lee who has made a [desktop build with Tauri](https://github.com/m1911star/affine-client) for you to try out.
 Please notice that AFFiNE is still under Alpha stage and is not ready for production use.
 
