@@ -9,6 +9,6 @@ describe('ligo-virgo', () => {
         cy.get('.block_container').contains('The Essentials');
 
         getBoard().click();
-        cy.get('.tl-inner-div').contains('Graduating');
+        cy.get('.tl-inner-div').contains('The Essentials');
     });
 });
