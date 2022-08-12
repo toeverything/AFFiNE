@@ -1,5 +1,4 @@
 import React, {
-    CSSProperties,
     useEffect,
     useImperativeHandle,
     useMemo,
@@ -16,7 +15,6 @@ import Grow from '@mui/material/Grow';
 import { styled } from '../styled';
 
 import { PopperProps, VirtualElement } from './interface';
-import { useTheme } from '../theme';
 import { PopperArrow } from './PopoverArrow';
 export const Popper = ({
     children,
@@ -174,7 +172,7 @@ const Container = styled('div')({
 });
 
 const BasicStyledPopper = styled(PopperUnstyled)<{
-    zIndex?: CSSProperties['zIndex'];
+    zIndex?: number;
 }>(({ zIndex, theme }) => {
     return {
         zIndex: zIndex || theme.affine.zIndex.popover,

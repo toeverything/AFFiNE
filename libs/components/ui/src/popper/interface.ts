@@ -55,7 +55,7 @@ export type PopperProps = {
     anchorClassName?: string;
 
     // Popover z-index
-    zIndex?: CSSProperties['zIndex'];
+    zIndex?: number;
 
     offset?: [number, number];
 
