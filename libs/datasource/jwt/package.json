@@ -3,6 +3,7 @@
     "version": "0.0.1",
     "license": "MIT",
     "author": "DarkSky <darksky2048@gmail.com>",
+    "main": "src/index.ts",
     "devDependencies": {
         "@types/debug": "^4.1.7",
         "@types/file-saver": "^2.0.5",

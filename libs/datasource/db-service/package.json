@@ -2,6 +2,7 @@
     "name": "@toeverything/datasource/db-service",
     "version": "0.0.1",
     "license": "MIT",
+    "main": "src/index.ts",
     "dependencies": {
         "diff": "^5.1.0",
         "nanoid": "^4.0.0"

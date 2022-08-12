@@ -2,6 +2,7 @@
     "name": "@toeverything/components/common",
     "version": "0.0.1",
     "license": "MIT",
+    "main": "src/index.ts",
     "dependencies": {
         "@emotion/react": "^11.9.3",
         "@emotion/styled": "^11.9.3",

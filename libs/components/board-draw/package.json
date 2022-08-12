@@ -2,6 +2,7 @@
     "name": "@toeverything/components/board-draw",
     "version": "0.0.1",
     "license": "MIT",
+    "main": "src/index.ts",
     "dependencies": {
         "@mui/icons-material": "^5.8.0",
         "@tldraw/core": "^1.12.0",

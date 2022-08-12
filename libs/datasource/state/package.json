@@ -2,6 +2,7 @@
     "name": "@toeverything/datasource/state",
     "version": "0.0.1",
     "license": "MIT",
+    "main": "src/index.ts",
     "dependencies": {
         "jotai": "^1.7.4"
     },

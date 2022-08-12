@@ -2,6 +2,7 @@
     "name": "@toeverything/components/editor-blocks",
     "version": "0.0.1",
     "license": "MIT",
+    "main": "src/index.ts",
     "dependencies": {
         "@codemirror/commands": "^6.0.1",
         "@codemirror/lang-cpp": "~6.0.1",

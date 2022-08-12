@@ -2,6 +2,7 @@
     "name": "@toeverything/components/editor-core",
     "version": "0.0.1",
     "license": "MIT",
+    "main": "src/index.ts",
     "dependencies": {
         "@mui/icons-material": "^5.8.4",
         "date-fns": "^2.28.0",

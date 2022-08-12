@@ -2,6 +2,7 @@
     "name": "@toeverything/components/layout",
     "version": "0.0.1",
     "license": "MIT",
+    "main": "src/index.ts",
     "dependencies": {
         "@date-io/date-fns": "^2.14.0",
         "@dnd-kit/core": "^6.0.5",

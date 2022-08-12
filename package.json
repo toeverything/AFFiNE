@@ -10,6 +10,7 @@
         "start:affine": "nx serve ligo-virgo",
         "start:keck": "nx serve keck",
         "start:venus": "nx serve venus",
+        "vite-start:affine": "cd apps/ligo-virgo && npx vite",
         "build": "nx build ligo-virgo",
         "build:local": "env-cmd -f .github/env/.env.local-dev nx build ligo-virgo",
         "build:keck": "nx build keck",

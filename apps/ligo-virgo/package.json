@@ -13,8 +13,10 @@
         "@mui/icons-material": "^5.8.4"
     },
     "devDependencies": {
+        "@vitejs/plugin-react": "^2.0.1",
         "firebase": "^9.9.2",
         "mini-css-extract-plugin": "^2.6.1",
+        "vite": "^3",
         "webpack": "^5.74.0"
     }
 }

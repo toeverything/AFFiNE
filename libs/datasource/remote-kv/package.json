@@ -2,6 +2,7 @@
     "name": "@toeverything/datasource/remote-kv",
     "version": "0.0.1",
     "license": "MIT",
+    "main": "src/index.ts",
     "dependencies": {
         "aws-sdk": "^2.1189.0",
         "file-saver": "^2.0.5",
