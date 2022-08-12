@@ -11,8 +11,8 @@
                     {
                         "id": "wusZ8Qht8rsmFD1s",
                         "name": "No Started",
-                        "color": "#05683D",
-                        "background": "#C5FBE0",
+                        "color": "#AF1212",
+                        "background": "#FFCECE",
                         "iconName": "status"
                     },
                     {
@@ -25,8 +25,8 @@
                     {
                         "id": "u0ZgY0sRCnqMkxzn",
                         "name": "Complete",
-                        "color": "#AF1212",
-                        "background": "#FFCECE",
+                        "color": "#05683D",
+                        "background": "#C5FBE0",
                         "iconName": "status"
                     }
                 ]
