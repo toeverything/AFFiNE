@@ -3,14 +3,24 @@ import blogTemplate from './blog.json';
 import emptyTemplate from './empty.json';
 import gridTemplate from './grid.json';
 import todoTemplate from './todo.json';
+import getStartedGroup0 from './get-started-group0.json';
+import getStartedGroup1 from './get-started-group1.json';
 
-export type GroupTemplateKeys = 'todolist' | 'blog' | 'empty' | 'grid';
-type GroupTemplateMap = Record<GroupTemplateKeys, GroupTemplate>;
+export type GroupTemplateKeys =
+    | 'todolist'
+    | 'blog'
+    | 'empty'
+    | 'grid'
+    | 'getStartedGroup0'
+    | 'getStartedGroup1';
+type GroupTemplateMap = Record<GroupTemplateKeys, any>;
 const groupTemplateMap = {
     empty: emptyTemplate,
     todolist: todoTemplate,
     blog: blogTemplate,
     grid: gridTemplate,
+    getStartedGroup0,
+    getStartedGroup1,
 } as GroupTemplateMap;
 
 const defaultTemplateList: Array<TemplateMeta> = [
