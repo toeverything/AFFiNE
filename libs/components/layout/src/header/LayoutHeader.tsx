@@ -23,7 +23,7 @@ export const LayoutHeader = () => {
 
     const warningTips = useMemo(() => {
         if (!fsApiSupported()) {
-            return 'Your browser does not support the local fs storage feature, please upgrade to the latest version of Chrome or Edge browser';
+            return 'You are in DEMO mode. Changes will NOT be saved, you can SYNC DATA TO DISK with the latest version of Chromium based browser like Chrome/Edge';
         } else if (!isLocalWorkspace) {
             return 'You are in DEMO mode. Changes will NOT be saved unless you SYNC TO DISK';
         } else {
