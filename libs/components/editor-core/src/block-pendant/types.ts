@@ -4,7 +4,6 @@ import {
     SelectOption,
     SelectOptionId,
 } from '../recast-block';
-import { FunctionComponent } from 'react';
 import { TextFontIcon } from '@toeverything/components/icons';
 
 export { PropertyType as PendantTypes } from '../recast-block';

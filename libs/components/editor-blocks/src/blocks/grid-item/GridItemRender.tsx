@@ -1,8 +1,9 @@
-import { FC } from 'react';
 import { RenderBlock } from '@toeverything/components/editor-core';
 import { ChildrenView, CreateView } from '@toeverything/framework/virgo';
 
-export const GridItemRender = function (creator: FC<ChildrenView>) {
+export const GridItemRender = function (
+    creator: (prop: ChildrenView) => JSX.Element
+) {
     const GridItem = function (props: CreateView) {
         const { block } = props;
         const children = (

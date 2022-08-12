@@ -1,4 +1,4 @@
-import type { FC, CSSProperties, PointerEventHandler } from 'react';
+import type { CSSProperties, PointerEventHandler } from 'react';
 import { useState, useRef } from 'react';
 import type { TLBounds } from '@tldraw/core';
 import Vec from '@tldraw/vec';

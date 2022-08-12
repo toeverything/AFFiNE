@@ -1,9 +1,9 @@
 import { styled } from '@toeverything/components/ui';
-import type { FC } from 'react';
+
 import type { SvgIconProps } from '@toeverything/components/ui';
 
 interface Props {
-    Icon: FC<SvgIconProps>;
+    Icon: (prop: SvgIconProps) => JSX.Element;
     text?: string;
     onClick: () => void;
 }

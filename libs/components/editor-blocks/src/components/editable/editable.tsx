@@ -1,4 +1,4 @@
-import { FC, useMemo } from 'react';
+import { useMemo } from 'react';
 import { createEditor } from 'slate';
 import { Slate, Editable as SlateEditable, withReact } from 'slate-react';
 import { ErrorBoundary } from '@toeverything/utils';

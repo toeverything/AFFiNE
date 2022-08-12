@@ -1,9 +1,15 @@
-import { type FC, useRef } from 'react';
+import { type ComponentType, useRef } from 'react';
 import * as uiIcons from '@toeverything/components/icons';
 import { message, styled } from '@toeverything/components/ui';
 import { copy } from './copy';
 
-const IconBooth = ({ name, Icon }: { name: string; Icon: FC<any> }) => {
+const IconBooth = ({
+    name,
+    Icon,
+}: {
+    name: string;
+    Icon: ComponentType<any>;
+}) => {
     const on_click = () => {
         copy(`<${name} />`);
         message.success('Copied ~');
@@ -36,7 +42,13 @@ export const Icons = () => {
             <hr />
             <IconsContainer>
                 {_icons.map(([key, icon]) => {
-                    return <IconBooth key={key} name={key} Icon={icon as FC} />;
+                    return (
+                        <IconBooth
+                            key={key}
+                            name={key}
+                            Icon={icon as ComponentType<any>}
+                        />
+                    );
                 })}
             </IconsContainer>
         </Container>

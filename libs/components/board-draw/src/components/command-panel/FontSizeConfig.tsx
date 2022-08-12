@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import { FontSizeStyle } from '@toeverything/components/board-types';

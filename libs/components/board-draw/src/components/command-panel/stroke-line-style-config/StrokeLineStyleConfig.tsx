@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import { DashStyle, StrokeWidth } from '@toeverything/components/board-types';
 import type { TDShape } from '@toeverything/components/board-types';

@@ -84,9 +84,8 @@ async function getJSXContent(name, svgCode) {
     }
     let matcher = svgrContent.match(/<svg ([^\>]+)>([\s\S]*?)<\/svg>/);
     return `
-import { FC } from 'react';
 import { SvgIcon, SvgIconProps } from '@mui/material';
-export const ${name}Icon: FC<SvgIconProps> = (props) => (
+export const ${name}Icon = (props: SvgIconProps) => (
     <SvgIcon  ${matcher[1]}>
     ${matcher[2]}
     </SvgIcon>

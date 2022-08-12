@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { Checkbox } from '@toeverything/components/ui';
 import type { BooleanColumnValue } from '@toeverything/datasource/db-service';
 import type { CellProps } from '../types';

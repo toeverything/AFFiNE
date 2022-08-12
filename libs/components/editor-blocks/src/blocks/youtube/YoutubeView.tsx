@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import { Upload } from '../../components/upload/upload';
 import { SourceView } from '../../components/source-view';

@@ -1,4 +1,4 @@
-import { FC, useRef } from 'react';
+import { useRef } from 'react';
 import { AsyncBlock } from '../../editor';
 import { PendantHistoryPanel } from '../pendant-history-panel';
 import {

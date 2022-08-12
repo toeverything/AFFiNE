@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import {
     HeadingOneIcon,
     HeadingTwoIcon,
@@ -40,7 +39,7 @@ type ClickItemHandler = (
 export type CommandMenuDataType = {
     type: BlockFlavorKeys;
     text: string;
-    icon: FC<SvgIconProps>;
+    icon: (prop: SvgIconProps) => JSX.Element;
 };
 
 export const commonCommandMenuHandler: ClickItemHandler = async (

@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { BasicTable } from './basic-table';
 import type { BasicTableProps } from './basic-table';
 

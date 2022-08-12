@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import {
     is_heading_child_type,

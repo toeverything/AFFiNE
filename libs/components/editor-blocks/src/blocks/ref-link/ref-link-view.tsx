@@ -1,4 +1,4 @@
-import { FC, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { InlineRefLink } from '@toeverything/components/common';
 import { CreateView } from '@toeverything/framework/virgo';

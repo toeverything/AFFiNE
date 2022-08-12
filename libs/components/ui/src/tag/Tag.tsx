@@ -1,5 +1,4 @@
 import type {
-    FC,
     ChangeEventHandler,
     PropsWithChildren,
     CSSProperties,

@@ -1,5 +1,4 @@
 import {
-    FC,
     useRef,
     ChangeEvent,
     ReactElement,

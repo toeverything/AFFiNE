@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { DashStyle, StrokeWidth } from '@toeverything/components/board-types';
 import {
     LineNoneIcon,
