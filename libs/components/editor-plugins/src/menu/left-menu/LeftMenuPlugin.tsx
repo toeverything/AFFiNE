@@ -93,7 +93,7 @@ export class LeftMenuPlugin extends BasePlugin {
         }
     };
 
-    private _onDrop = () => {
+    private _onDrop = (e: React.DragEvent<Element>) => {
         this._lineInfo.next(undefined);
     };
     private _handleDragOverBlockNode = async (

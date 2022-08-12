@@ -32,11 +32,11 @@ export class BlockCommands {
     ) {
         const block = await this._editor.getBlockById(blockId);
         if (block) {
-            const next_block = await this._editor.createBlock(type);
-            if (next_block) {
-                await block.after(next_block);
-                this._editor.selectionManager.activeNodeByNodeId(next_block.id);
-                return next_block;
+            const nextBlock = await this._editor.createBlock(type);
+            if (nextBlock) {
+                await block.after(nextBlock);
+                this._editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+                return nextBlock;
             }
         }
         return undefined;

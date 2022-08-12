@@ -1,6 +1,6 @@
 import type { BlockEditor } from './editor';
 import { styled, usePatchNodes } from '@toeverything/components/ui';
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { EditorProvider } from './Contexts';
 import { SelectionRect, SelectionRef } from './Selection';
@@ -152,6 +152,7 @@ export const RenderRoot = ({
     };
 
     const onDrop = (event: React.DragEvent<Element>) => {
+        event.preventDefault();
         editor.dragDropManager.handlerEditorDrop(event);
         editor.getHooks().onRootNodeDrop(event);
     };
