@@ -15,7 +15,6 @@ import {
     TextLink,
     TreeItemContainer,
     TreeItemContent,
-    Wrapper,
 } from './styles';
 
 export type TreeItemProps = {
@@ -33,13 +32,10 @@ export type TreeItemProps = {
     /** isDragging */
     ghost?: boolean;
     handleProps?: any;
-    indicator?: boolean;
     indentationWidth: number;
     onCollapse?(): void;
     onRemove?(): void;
-    /** The ref of the outermost container is often used as droppaHTMLAttributes<HTMLLIElement>ble-node; the ref of the inner dom is often used as draggable-node */
-    wrapperRef?(node: HTMLLIElement): void;
-} & HTMLAttributes<HTMLLIElement>;
+} & HTMLAttributes<HTMLDivElement>;
 
 export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
     (
@@ -52,13 +48,10 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
             ghost,
             handleProps,
             indentationWidth,
-            indicator,
             collapsed,
             onCollapse,
             onRemove,
-            style,
             value,
-            wrapperRef,
             pageId,
             ...props
         },
@@ -71,8 +64,8 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         );
 
         return (
-            <Wrapper
-                ref={wrapperRef}
+            <TreeItemContainer
+                ref={ref}
                 clone={clone}
                 ghost={ghost}
                 disableSelection={disableSelection}
@@ -81,38 +74,38 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                 active={pageId === page_id}
                 {...props}
             >
-                <TreeItemContainer ref={ref} style={style} title={value}>
-                    <ActionButton tabIndex={0} onClick={onCollapse}>
-                        {childCount !== 0 ? (
-                            collapsed ? (
-                                <ArrowRightIcon />
-                            ) : (
-                                <ArrowDropDownIcon />
-                            )
-                        ) : (
-                            <DotIcon />
-                        )}
-                    </ActionButton>
+                {childCount !== 0 ? (
+                    collapsed ? (
+                        <ActionButton tabIndex={0} onClick={onCollapse}>
+                            <ArrowRightIcon />
+                        </ActionButton>
+                    ) : (
+                        <ActionButton tabIndex={0} onClick={onCollapse}>
+                            <ArrowDropDownIcon />
+                        </ActionButton>
+                    )
+                ) : (
+                    <DotIcon />
+                )}
 
-                    <TreeItemContent {...handleProps}>
-                        <TextLink to={`/${workspace_id}/${pageId}`}>
-                            {value}
-                        </TextLink>
-                        {BooleanPageTreeItemMoreActions && (
-                            <MoreActions
-                                workspaceId={workspace_id}
-                                pageId={pageId}
-                                onRemove={onRemove}
-                            />
-                        )}
+                <TreeItemContent {...handleProps}>
+                    <TextLink to={`/${workspace_id}/${pageId}`}>
+                        {value}
+                    </TextLink>
+                    {BooleanPageTreeItemMoreActions && (
+                        <MoreActions
+                            workspaceId={workspace_id}
+                            pageId={pageId}
+                            onRemove={onRemove}
+                        />
+                    )}
 
-                        {/*{!clone && onRemove && <Remove onClick={onRemove} />}*/}
-                        {clone && childCount && childCount > 1 ? (
-                            <Counter>{childCount}</Counter>
-                        ) : null}
-                    </TreeItemContent>
-                </TreeItemContainer>
-            </Wrapper>
+                    {/*{!clone && onRemove && <Remove onClick={onRemove} />}*/}
+                    {clone && childCount && childCount > 1 ? (
+                        <Counter>{childCount}</Counter>
+                    ) : null}
+                </TreeItemContent>
+            </TreeItemContainer>
         );
     }
 );
