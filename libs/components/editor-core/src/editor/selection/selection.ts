@@ -690,7 +690,7 @@ export class SelectionManager implements VirgoSelection {
                 this.emit(nodeId, SelectEventTypes.active, this.lastPoint);
                 // TODO: Optimize the related logic after implementing the scroll bar
                 setTimeout(() => {
-                    // this._editor.scrollManager.keepBlockInView(node);
+                    this._editor.scrollManager.keepBlockInView(node);
                 }, this._scrollDelay);
             } else {
                 console.warn('Can not find node by this id');
