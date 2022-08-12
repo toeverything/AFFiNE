@@ -48,7 +48,7 @@ export class SelectionManager implements VirgoSelection {
     private _scrollDelay = 150;
     private _selectEndDelayTime = 500;
     private _hasEmitEndPending = false;
-
+    private _scrollTimer: number | null = null;
     /**
      *
      * the selection info before current
@@ -681,6 +681,9 @@ export class SelectionManager implements VirgoSelection {
      */
     public async activeNodeByNodeId(nodeId: string, position?: CursorTypes) {
         try {
+            if (this._scrollTimer) {
+                clearTimeout(this._scrollTimer);
+            }
             const node = await this._editor.getBlockById(nodeId);
             if (node) {
                 this._activatedNodeId = nodeId;
@@ -689,7 +692,7 @@ export class SelectionManager implements VirgoSelection {
                 }
                 this.emit(nodeId, SelectEventTypes.active, this.lastPoint);
                 // TODO: Optimize the related logic after implementing the scroll bar
-                setTimeout(() => {
+                this._scrollTimer = window.setTimeout(() => {
                     this._editor.scrollManager.keepBlockInView(node);
                 }, this._scrollDelay);
             } else {
