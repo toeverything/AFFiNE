@@ -114,11 +114,6 @@ export class UserConfig extends ServiceBaseClass {
         return workspaceName;
     }
 
-    async getWorkspaceId(workspace: string): Promise<string> {
-        const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
-        return workspaceDbBlock.id;
-    }
-
     async setWorkspaceName(workspace: string, workspaceName: string) {
         const workspaceDbBlock = await this.getWorkspaceDbBlock(workspace);
         workspaceDbBlock.setDecoration(WORKSPACE_CONFIG, workspaceName);

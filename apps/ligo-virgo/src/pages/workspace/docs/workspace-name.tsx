@@ -92,18 +92,16 @@ export const WorkspaceName = () => {
     const { fixedDisplay, toggleSpaceSidebar } = useShowSpaceSidebar();
     const [inRename, setInRename] = useState(false);
     const [workspaceName, setWorkspaceName] = useState('');
-    const [workspaceId, setWorkspaceId] = useState('');
 
     const fetchWorkspaceName = useCallback(async () => {
         if (!currentSpaceId) {
             return;
         }
-        const [name, workspaceId] = await Promise.all([
-            services.api.userConfig.getWorkspaceName(currentSpaceId),
-            services.api.userConfig.getWorkspaceId(currentSpaceId),
-        ]);
+        const name = await services.api.userConfig.getWorkspaceName(
+            currentSpaceId
+        );
+
         setWorkspaceName(name);
-        setWorkspaceId(workspaceId);
     }, [currentSpaceId]);
 
     useEffect(() => {
@@ -180,7 +178,7 @@ export const WorkspaceName = () => {
                     ) : (
                         <WorkspaceNameContainer>
                             <span onClick={() => setInRename(true)}>
-                                {workspaceName || workspaceId}
+                                {workspaceName || currentSpaceId}
                             </span>
                         </WorkspaceNameContainer>
                     )}

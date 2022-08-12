@@ -6,15 +6,6 @@ export function getUserDisplayName(user?: UserInfo) {
 }
 
 /**
- * Get workspace_id from URL
- * @returns workspace_id
- */
-export function getWorkspaceId() {
-    const path = window.location.pathname.match(/\/(\w+)\//);
-    return path ? path[1] : undefined;
-}
-
-/**
  * Get page_id from URL
  * @returns page_id
  */
