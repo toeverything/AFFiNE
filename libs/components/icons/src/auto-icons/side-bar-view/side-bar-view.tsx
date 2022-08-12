@@ -1,15 +1,12 @@
 
-import { FC } from 'react';
 // eslint-disable-next-line no-restricted-imports
-import { SvgIcon } from '@mui/material';
-// eslint-disable-next-line no-restricted-imports
-import type { SvgIconProps } from '@mui/material';
+import { SvgIcon, SvgIconProps } from '@mui/material';
 
 export interface SideBarViewIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const SideBarViewIcon: FC<SideBarViewIconProps> = ({ color, style, ...props}) => {
+export const SideBarViewIcon = ({ color, style, ...props}: SideBarViewIconProps) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

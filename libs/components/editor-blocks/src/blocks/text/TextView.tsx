@@ -46,15 +46,16 @@ const TextBlock = styled(TextManage)<{ type: string }>(({ theme, type }) => {
         return {
             fontSize: textStyleMap.text.fontSize,
             lineHeight: textStyleMap.text.lineHeight,
+            fontWeight: textStyleMap.text.fontWeight,
         };
     }
 });
 
-export const TextView: FC<CreateTextView> = ({
+export const TextView = ({
     block,
     editor,
     containerClassName,
-}) => {
+}: CreateTextView) => {
     const [isSelect, setIsSelect] = useState<boolean>();
     useOnSelect(block.id, (is_select: boolean) => {
         setIsSelect(is_select);
@@ -112,13 +113,18 @@ export const TextView: FC<CreateTextView> = ({
                             block.id,
                             'end'
                         );
-                        const value = [
-                            ...preNode.getProperty('text').value,
-                            ...block.getProperty('text').value,
-                        ];
-                        await preNode.setProperty('text', {
-                            value,
-                        });
+                        if (
+                            block.getProperty('text').value[0] &&
+                            block.getProperty('text').value[0]?.text !== ''
+                        ) {
+                            const value = [
+                                ...preNode.getProperty('text').value,
+                                ...block.getProperty('text').value,
+                            ];
+                            await preNode.setProperty('text', {
+                                value,
+                            });
+                        }
                         await preNode.append(...children);
                         await block.remove();
                         editor.suspend(false);

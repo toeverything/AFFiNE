@@ -154,6 +154,14 @@ export abstract class ServiceBaseClass {
         await this.database.unregisterTagExporter(workspace, name);
     }
 
+    async setupDataExporter(
+        workspace: string,
+        initialData: Uint8Array,
+        cb: (data: Uint8Array) => Promise<void>
+    ) {
+        await this.database.setupDataExporter(workspace, initialData, cb);
+    }
+
     protected async _observe(
         workspace: string,
         blockId: string,

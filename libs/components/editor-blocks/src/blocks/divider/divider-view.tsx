@@ -18,7 +18,7 @@ const Line = styled('div')({
     backgroundColor: '#e2e8f0',
 });
 
-export const DividerView: FC<CreateView> = ({ block, editor }) => {
+export const DividerView = ({ block, editor }: CreateView) => {
     const [isSelected, setIsSelected] = useState(false);
 
     useOnSelect(block.id, (isSelect: boolean) => {

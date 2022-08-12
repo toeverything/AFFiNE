@@ -5,7 +5,7 @@ import { CreateView } from '@toeverything/framework/virgo';
 
 type RefLinkView = CreateView;
 
-export const RefLinkView: FC<RefLinkView> = ({ block, editor }) => {
+export const RefLinkView = ({ block, editor }: RefLinkView) => {
     const page_id = useMemo(() => block.getProperty('reference'), [block]);
 
     const [block_content, set_block] =

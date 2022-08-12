@@ -4,8 +4,8 @@ import { Observable } from 'lib0/observable.js';
 
 const PREFERRED_TRIM_SIZE = 500;
 
-const STMTS = {
-    create: 'CREATE TABLE updates (key INTEGER PRIMARY KEY AUTOINCREMENT, value BLOB);',
+const _stmts = {
+    create: 'CREATE TABLE IF NOT EXISTS updates (key INTEGER PRIMARY KEY AUTOINCREMENT, value BLOB);',
     selectAll: 'SELECT * FROM updates where key >= $idx',
     selectCount: 'SELECT count(*) FROM updates',
     insert: 'INSERT INTO updates VALUES (null, $data);',
@@ -14,48 +14,19 @@ const STMTS = {
 };
 
 const countUpdates = (db: Database) => {
-    const [cnt] = db.exec(STMTS.selectCount);
+    const [cnt] = db.exec(_stmts.selectCount);
     return cnt.values[0]?.[0] as number;
 };
 
 const clearUpdates = (db: Database, idx: number) => {
-    db.exec(STMTS.delete, { $idx: idx });
+    db.exec(_stmts.delete, { $idx: idx });
 };
 
-const fetchUpdates = async (provider: SQLiteProvider) => {
-    const db = provider.db!;
-    const updates = db
-        .exec(STMTS.selectAll, { $idx: provider._dbref })
+const getAllUpdates = (db: Database, idx: number) => {
+    return db
+        .exec(_stmts.selectAll, { $idx: idx })
         .flatMap(val => val.values as [number, Uint8Array][])
         .sort(([a], [b]) => a - b);
-    Y.transact(
-        provider.doc,
-        () => {
-            updates.forEach(([, update]) =>
-                Y.applyUpdate(provider.doc, update)
-            );
-        },
-        provider,
-        false
-    );
-
-    const lastKey = Math.max(...updates.map(([idx]) => idx));
-    provider._dbref = lastKey + 1;
-    provider._dbsize = countUpdates(db);
-    return db;
-};
-
-const storeState = async (provider: SQLiteProvider, forceStore = true) => {
-    const db = await fetchUpdates(provider);
-
-    if (forceStore || provider._dbsize >= PREFERRED_TRIM_SIZE) {
-        db.exec(STMTS.insert, { $data: Y.encodeStateAsUpdate(provider.doc) });
-
-        clearUpdates(db, provider._dbref);
-
-        provider._dbsize = countUpdates(db);
-        console.log(db.export());
-    }
 };
 
 let _sqliteInstance: SqlJsStatic | undefined;
@@ -70,6 +41,7 @@ const initSQLiteInstance = async () => {
     _sqliteProcessing = true;
     _sqliteInstance = await sqlite({
         locateFile: () =>
+            // @ts-ignore
             new URL('sql.js/dist/sql-wasm.wasm', import.meta.url).href,
     });
     _sqliteProcessing = false;
@@ -79,77 +51,158 @@ const initSQLiteInstance = async () => {
 export class SQLiteProvider extends Observable<string> {
     doc: Y.Doc;
     name: string;
-    _dbref: number;
-    _dbsize: number;
-    private _destroyed: boolean;
-    whenSynced: Promise<SQLiteProvider>;
     db: Database | null;
-    private _db: Promise<Database>;
+    whenSynced: Promise<SQLiteProvider>;
     synced: boolean;
-    _storeTimeout: number;
-    _storeTimeoutId: NodeJS.Timeout | null;
-    _storeUpdate: (update: Uint8Array, origin: any) => void;
 
-    constructor(dbname: string, doc: Y.Doc) {
+    private _ref: number;
+    private _size: number;
+    private _destroyed: boolean;
+    private _db: Promise<Database>;
+    private _saver?: (binary: Uint8Array) => Promise<void> | undefined;
+    private _destroy: () => void;
+
+    constructor(name: string, doc: Y.Doc, origin?: Uint8Array) {
         super();
 
         this.doc = doc;
-        this.name = dbname;
+        this.name = name;
 
-        this._dbref = 0;
-        this._dbsize = 0;
+        this._ref = 0;
+        this._size = 0;
         this._destroyed = false;
         this.db = null;
         this.synced = false;
 
         this._db = initSQLiteInstance().then(db => {
-            const sqlite = new db.Database();
-            return sqlite.run(STMTS.create);
+            const sqlite = new db.Database(origin);
+            return sqlite.run(_stmts.create);
         });
 
         this.whenSynced = this._db.then(async db => {
             this.db = db;
             const currState = Y.encodeStateAsUpdate(doc);
-            await fetchUpdates(this);
-            db.exec(STMTS.insert, { $data: currState });
+            await this._fetchUpdates(true);
+            db.exec(_stmts.insert, { $data: currState });
+            this._storeState();
             if (this._destroyed) return this;
             this.emit('synced', [this]);
             this.synced = true;
             return this;
         });
 
-        // Timeout in ms untill data is merged and persisted in idb.
-        this._storeTimeout = 1000;
+        // Timeout in ms until data is merged and persisted in sqlite.
+        const storeTimeout = 500;
+        let storeTimeoutId: NodeJS.Timer | undefined = undefined;
+        let lastSize = 0;
 
-        this._storeTimeoutId = null;
+        const debouncedStoreState = (force = false) => {
+            // debounce store call
+            if (storeTimeoutId) clearTimeout(storeTimeoutId);
 
-        this._storeUpdate = (update: Uint8Array, origin: any) => {
-            if (this.db && origin !== this) {
-                this.db.exec(STMTS.insert, { $data: update });
+            if (force) {
+                if (lastSize !== this._size) {
+                    this._storeState();
+                    storeTimeoutId = undefined;
+                    lastSize = this._size;
+                }
+            } else {
+                storeTimeoutId = setTimeout(() => {
+                    this._storeState();
+                    storeTimeoutId = undefined;
+                }, storeTimeout);
+            }
+        };
+        const storeStateInterval = setInterval(
+            () => debouncedStoreState(true),
+            1000
+        );
 
-                if (++this._dbsize >= PREFERRED_TRIM_SIZE) {
-                    // debounce store call
-                    if (this._storeTimeoutId !== null) {
-                        clearTimeout(this._storeTimeoutId);
-                    }
-                    this._storeTimeoutId = setTimeout(() => {
-                        storeState(this, false);
-                        this._storeTimeoutId = null;
-                    }, this._storeTimeout);
+        const storeUpdate = (update: Uint8Array, origin: any) => {
+            if (this._saver && this.db && origin !== this) {
+                this.db.exec(_stmts.insert, { $data: update });
+
+                if (++this._size >= PREFERRED_TRIM_SIZE) {
+                    debouncedStoreState();
                 }
             }
         };
-        doc.on('update', this._storeUpdate);
+
+        doc.on('update', storeUpdate);
         this.destroy = this.destroy.bind(this);
         doc.on('destroy', this.destroy);
+
+        this._destroy = () => {
+            if (storeTimeoutId) clearTimeout(storeTimeoutId);
+            if (storeStateInterval) clearInterval(storeStateInterval);
+
+            this.doc.off('update', storeUpdate);
+            this.doc.off('destroy', this.destroy);
+        };
+    }
+
+    registerExporter(saver: (binary: Uint8Array) => Promise<void> | undefined) {
+        this._saver = saver;
+    }
+
+    private async _storeState(force?: boolean) {
+        await this._fetchUpdates();
+
+        if (this.db) {
+            if (force || this._size >= PREFERRED_TRIM_SIZE) {
+                this.db.exec(_stmts.insert, {
+                    $data: Y.encodeStateAsUpdate(this.doc),
+                });
+
+                clearUpdates(this.db, this._ref);
+
+                this._size = countUpdates(this.db);
+            }
+
+            await this._saver?.(this.db?.export());
+        }
+    }
+
+    private _waitUpdate(updates: any[], sync = false) {
+        if (updates.length && sync) {
+            return new Promise<void>((resolve, reject) => {
+                const final = (_: any, origin: any) => {
+                    if (origin === this) {
+                        this.doc.off('update', final);
+                        resolve();
+                    }
+                };
+                this.doc.on('update', final);
+            });
+        }
+        return undefined;
+    }
+
+    private async _fetchUpdates(sync = false) {
+        if (this.db) {
+            const updates = getAllUpdates(this.db, this._ref);
+            const wait = this._waitUpdate(updates, sync);
+
+            Y.transact(
+                this.doc,
+                () => {
+                    updates.forEach(([, update]) =>
+                        Y.applyUpdate(this.doc, update)
+                    );
+                },
+                this,
+                false
+            );
+
+            const lastKey = Math.max(...updates.map(([idx]) => idx));
+            this._ref = lastKey + 1;
+            this._size = countUpdates(this.db);
+            await wait;
+        }
     }
 
     override destroy(): Promise<void> {
-        if (this._storeTimeoutId) {
-            clearTimeout(this._storeTimeoutId);
-        }
-        this.doc.off('update', this._storeUpdate);
-        this.doc.off('destroy', this.destroy);
+        this._destroy();
         this._destroyed = true;
         return this._db.then(db => {
             db.close();
@@ -159,7 +212,7 @@ export class SQLiteProvider extends Observable<string> {
     // Destroys this instance and removes all data from SQLite.
     async clearData(): Promise<void> {
         return this._db.then(db => {
-            db.exec(STMTS.drop);
+            db.exec(_stmts.drop);
             return this.destroy();
         });
     }

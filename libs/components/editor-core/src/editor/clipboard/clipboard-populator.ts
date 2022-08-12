@@ -46,7 +46,7 @@ class ClipboardPopulator {
         }
 
         // TODO: is not compatible with safari
-        const success = this.copy_to_cliboard_from_pc(clips);
+        const success = this._copyToClipboardFromPc(clips);
         if (!success) {
             // This way, not compatible with firefox
             const clipboardData = e.clipboardData;
@@ -65,7 +65,7 @@ class ClipboardPopulator {
         }
     };
 
-    private copy_to_cliboard_from_pc(clips: any[]) {
+    private _copyToClipboardFromPc(clips: any[]) {
         let success = false;
         const tempElem = document.createElement('textarea');
         tempElem.value = 'temp';
@@ -96,56 +96,55 @@ class ClipboardPopulator {
         return success;
     }
 
-    private async get_clip_block_info(selBlock: SelectBlock) {
+    private async _getClipBlockInfo(selBlock: SelectBlock) {
         const block = await this._editor.getBlockById(selBlock.blockId);
-        const block_view = this._editor.getView(block.type);
-        assert(block_view);
-        const block_info: ClipBlockInfo = {
+        const blockView = this._editor.getView(block.type);
+        assert(blockView);
+        const blockInfo: ClipBlockInfo = {
             type: block.type,
-            properties: block_view.getSelProperties(block, selBlock),
+            properties: blockView.getSelProperties(block, selBlock),
             children: [] as any[],
         };
 
         for (let i = 0; i < selBlock.children.length; i++) {
-            const child_info = await this.get_clip_block_info(
+            const childInfo = await this._getClipBlockInfo(
                 selBlock.children[i]
             );
-            block_info.children.push(child_info);
+            blockInfo.children.push(childInfo);
         }
 
-        return block_info;
+        return blockInfo;
     }
 
-    private async get_inner_clip(): Promise<InnerClipInfo> {
+    private async _getInnerClip(): Promise<InnerClipInfo> {
         const clips: ClipBlockInfo[] = [];
-        const select_info: SelectInfo =
+        const selectInfo: SelectInfo =
             await this._selectionManager.getSelectInfo();
-        for (let i = 0; i < select_info.blocks.length; i++) {
-            const sel_block = select_info.blocks[i];
-            const clip_block_info = await this.get_clip_block_info(sel_block);
-            clips.push(clip_block_info);
+        for (let i = 0; i < selectInfo.blocks.length; i++) {
+            const selBlock = selectInfo.blocks[i];
+            const clipBlockInfo = await this._getClipBlockInfo(selBlock);
+            clips.push(clipBlockInfo);
         }
-        const clipInfo: InnerClipInfo = {
-            select: select_info,
+        return {
+            select: selectInfo,
             data: clips,
         };
-        return clipInfo;
     }
 
     async getClips() {
         const clips: any[] = [];
 
-        const inner_clip = await this.get_inner_clip();
+        const innerClip = await this._getInnerClip();
         clips.push(
             new Clip(
                 OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED,
-                JSON.stringify(inner_clip)
+                JSON.stringify(innerClip)
             )
         );
 
-        const html_clip = await this._clipboardParse.generateHtml();
-        html_clip &&
-            clips.push(new Clip(OFFICE_CLIPBOARD_MIMETYPE.HTML, html_clip));
+        const htmlClip = await this._clipboardParse.generateHtml();
+        htmlClip &&
+            clips.push(new Clip(OFFICE_CLIPBOARD_MIMETYPE.HTML, htmlClip));
 
         return clips;
     }

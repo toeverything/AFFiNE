@@ -8,13 +8,13 @@ interface ViewportProps extends TLBounds {
     onPan?: (delta: [number, number]) => void;
 }
 
-export const Viewport: FC<ViewportProps> = ({
+export const Viewport = ({
     onPan,
     width,
     height,
     minX,
     minY,
-}) => {
+}: ViewportProps) => {
     const style: CSSProperties = {
         width: `${width}px`,
         height: `${height}px`,

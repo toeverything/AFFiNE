@@ -29,6 +29,9 @@ export type SelectionRef = {
     onMouseDown: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
     onMouseMove: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
     onMouseUp: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+    onContextmenu: (
+        event: React.MouseEvent<HTMLDivElement, MouseEvent>
+    ) => void;
 };
 
 const getFixedPoint = (
@@ -207,10 +210,17 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
             scrollManager.stopAutoScroll();
         };
 
+        const onContextmenu = () => {
+            if (mouseType.current === 'down') {
+                onMouseUp();
+            }
+        };
+
         useImperativeHandle(ref, () => ({
             onMouseDown,
             onMouseMove,
             onMouseUp,
+            onContextmenu,
         }));
 
         useEffect(() => {
@@ -223,7 +233,8 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
                     startPointRef.current &&
                     endPointRef.current &&
                     scrollManager.scrollContainer &&
-                    scrollContainerRect.current
+                    scrollContainerRect.current &&
+                    mouseType.current === 'down'
                 ) {
                     const xSign = DIRECTION_VALUE_MAP[direction[0]] || 0;
                     const ySign = DIRECTION_VALUE_MAP[direction[1]] || 0;

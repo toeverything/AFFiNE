@@ -30,6 +30,7 @@ import {
 } from './types';
 import { isLikeBlockListIds } from './utils';
 import { Protocol } from '@toeverything/datasource/db-service';
+import { Editor } from 'slate';
 // IMP: maybe merge active and select into single function
 
 export type SelectionInfo = InstanceType<
@@ -77,9 +78,6 @@ export class SelectionManager implements VirgoSelection {
             type: 'None',
             info: null,
         };
-        // IMP: to delete
-        // @ts-ignore
-        window['selectionManager'] = this;
         this._initWindowSelectionChangeListen();
     }
 
@@ -692,7 +690,7 @@ export class SelectionManager implements VirgoSelection {
                 this.emit(nodeId, SelectEventTypes.active, this.lastPoint);
                 // TODO: Optimize the related logic after implementing the scroll bar
                 setTimeout(() => {
-                    // this._editor.scrollManager.keepBlockInView(node);
+                    this._editor.scrollManager.keepBlockInView(node);
                 }, this._scrollDelay);
             } else {
                 console.warn('Can not find node by this id');
@@ -1048,6 +1046,27 @@ export class SelectionManager implements VirgoSelection {
         document.removeEventListener(
             'selectionchange',
             this._windowSelectionChangeHandler
+        );
+    }
+    /**
+     *
+     * move active selection to the new position
+     * @param {number} index
+     * @param {string} blockId
+     * @memberof SelectionManager
+     */
+    public async moveCursor(
+        nowRange: any,
+        index: number,
+        blockId: string
+    ): Promise<void> {
+        let preRang = document.createRange();
+        preRang.setStart(nowRange.startContainer, index);
+        preRang.setEnd(nowRange.endContainer, index);
+        let prePosition = preRang.getClientRects().item(0);
+        this.activeNodeByNodeId(
+            blockId,
+            new Point(prePosition.left, prePosition.bottom)
         );
     }
 }

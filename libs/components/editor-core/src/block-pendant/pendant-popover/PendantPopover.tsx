@@ -8,11 +8,11 @@ import {
 } from '@toeverything/components/ui';
 import { AddPendantPopover } from '../AddPendantPopover';
 
-export const PendantPopover: FC<
-    {
+export const PendantPopover = (
+    props: {
         block: AsyncBlock;
     } & Omit<PopperProps, 'content'>
-> = props => {
+) => {
     const { block, ...popoverProps } = props;
     const popoverHandlerRef = useRef<PopperHandler>();
     return (
@@ -26,6 +26,7 @@ export const PendantPopover: FC<
                     block={block}
                     endElement={
                         <AddPendantPopover
+                            container={popoverProps.container}
                             block={block}
                             onSure={() => {
                                 popoverHandlerRef.current?.setVisible(false);

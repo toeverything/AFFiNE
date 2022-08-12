@@ -19,7 +19,7 @@ export interface TagProps {
     endElement?: ReactNode;
 }
 
-export const Tag: FC<PropsWithChildren<TagProps>> = ({
+export const Tag = ({
     onClick,
     style,
     children,
@@ -27,7 +27,7 @@ export const Tag: FC<PropsWithChildren<TagProps>> = ({
     onClose,
     startElement,
     endElement,
-}) => {
+}: PropsWithChildren<TagProps>) => {
     return (
         <StyledTag
             className={`affine-tag ${closeable ? 'affine-tag--closeable' : ''}`}

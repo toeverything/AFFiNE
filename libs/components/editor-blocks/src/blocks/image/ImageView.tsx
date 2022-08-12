@@ -54,7 +54,7 @@ const KanbanImageContainer = styled('div')<{ isSelected: boolean }>(
         };
     }
 );
-export const ImageView: FC<ImageView> = ({ block, editor }) => {
+export const ImageView = ({ block, editor }: ImageView) => {
     const workspace = editor.workspace;
     const [imgUrl, set_image_url] = useState<string>();
     const [imgWidth, setImgWidth] = useState<number>(0);

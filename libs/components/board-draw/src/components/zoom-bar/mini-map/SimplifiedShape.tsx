@@ -6,13 +6,13 @@ interface SimplifiedShapeProps extends TLBounds {
     onClick?: () => void;
 }
 
-export const SimplifiedShape: FC<SimplifiedShapeProps> = ({
+export const SimplifiedShape = ({
     onClick,
     width,
     height,
     minX,
     minY,
-}) => {
+}: SimplifiedShapeProps) => {
     const style: CSSProperties = {
         width: `${width}px`,
         height: `${height}px`,

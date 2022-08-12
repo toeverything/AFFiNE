@@ -6,7 +6,7 @@ interface RenderChildrenProps {
     block: AsyncBlock;
 }
 
-export const RenderBlockChildren: FC<RenderChildrenProps> = ({ block }) => {
+export const RenderBlockChildren = ({ block }: RenderChildrenProps) => {
     return block.childrenIds.length ? (
         <>
             {block.childrenIds.map(childId => {

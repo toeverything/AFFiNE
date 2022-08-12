@@ -173,26 +173,34 @@ export const Theme = {
         body1: {
             fontSize: '16px',
             lineHeight: '22px',
+            fontWeight: 400,
+            fontFamily: 'PingFang SC',
+            color: '#3A4C5C',
         },
         h1: {
             fontSize: '28px',
             lineHeight: '40px',
+            fontWeight: 600,
         },
         h2: {
             fontSize: '24px',
             lineHeight: '34px',
+            fontWeight: 600,
         },
         h3: {
             fontSize: '20px',
             lineHeight: '28px',
+            fontWeight: 600,
         },
         h4: {
             fontSize: '16px',
             lineHeight: '22px',
+            fontWeight: 600,
         },
         page: {
             fontSize: '36px',
             lineHeight: '44px',
+            fontWeight: 600,
         },
         callout: {
             fontSize: '36px',
@@ -221,6 +229,7 @@ export const Theme = {
         articleTitle: {
             fontSize: '36px',
             lineHeight: '54px',
+            fontWeight: 600,
         },
     },
     shadows: {

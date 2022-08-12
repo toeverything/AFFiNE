@@ -7,7 +7,7 @@ import { GRID_PROPERTY_KEY, removePercent } from '../grid';
 export const GRID_ITEM_CLASS_NAME = 'grid-item';
 export const GRID_ITEM_CONTENT_CLASS_NAME = `${GRID_ITEM_CLASS_NAME}-content`;
 
-export const GridItem: FC<ChildrenView> = function (props) {
+export const GridItem = function (props: ChildrenView) {
     const { children, block, editor } = props;
     const RENDER_DELAY_TIME = 100;
     const ref = useRef<HTMLDivElement>();

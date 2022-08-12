@@ -13,6 +13,7 @@ const StyledContainer = styled('div')({
     display: 'flex',
     alignItems: 'center',
     cursor: 'pointer',
+    paddingLeft: '12px',
     '&:hover': {
         background: '#f5f7f8',
         borderRadius: '5px',
@@ -36,11 +37,6 @@ export function CollapsibleTitle(props: CollapsibleTitleProps) {
     return (
         <>
             <StyledContainer onClick={() => setOpen(prev => !prev)}>
-                {open ? (
-                    <ArrowDropDownIcon sx={{ color: '#566B7D' }} />
-                ) : (
-                    <ArrowRightIcon sx={{ color: '#566B7D' }} />
-                )}
                 <div
                     style={{
                         color: '#98ACBD',

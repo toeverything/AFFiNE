@@ -3,7 +3,7 @@ import { RenderBlock } from '@toeverything/components/editor-core';
 import { ChildrenView, CreateView } from '@toeverything/framework/virgo';
 
 export const GridItemRender = function (creator: FC<ChildrenView>) {
-    const GridItem: FC<CreateView> = function (props) {
+    const GridItem = function (props: CreateView) {
         const { block } = props;
         const children = (
             <>

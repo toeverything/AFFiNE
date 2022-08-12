@@ -3,7 +3,13 @@ import type {
     SlateUtils,
     TextAlignOptions,
 } from '@toeverything/components/common';
-import { Point, Selection as SlateSelection } from 'slate';
+import {
+    BaseRange,
+    Node,
+    Path,
+    Point,
+    Selection as SlateSelection,
+} from 'slate';
 import { Editor } from '../editor';
 
 type TextUtilsFunctions =
@@ -28,7 +34,10 @@ type TextUtilsFunctions =
     | 'removeSelection'
     | 'insertReference'
     | 'isCollapsed'
-    | 'blur';
+    | 'blur'
+    | 'setSelection'
+    | 'insertNodes'
+    | 'getNodeByPath';
 
 type ExtendedTextUtils = SlateUtils & {
     setLinkModalVisible: (visible: boolean) => void;
@@ -191,6 +200,59 @@ export class BlockHelper {
         }
         console.warn('Could find the block text utils');
         return '';
+    }
+
+    /**
+     *
+     * set selection of a text input
+     * @param {string} blockId
+     * @param {BaseRange} selection
+     * @return {*}
+     * @memberof BlockHelper
+     */
+    public setSelection(blockId: string, selection: BaseRange) {
+        const text_utils = this._blockTextUtilsMap[blockId];
+        if (text_utils) {
+            return text_utils.setSelection(selection);
+        }
+        console.warn('Could find the block text utils');
+    }
+
+    /**
+     *
+     * insert nodes in text
+     * @param {string} blockId
+     * @param {Array<Node>} nodes
+     * @param {Parameters<TextUtils['insertNodes']>[1]} options
+     * @return {*}
+     * @memberof BlockHelper
+     */
+    public insertNodes(
+        blockId: string,
+        nodes: Array<Node>,
+        options?: Parameters<TextUtils['insertNodes']>[1]
+    ) {
+        const text_utils = this._blockTextUtilsMap[blockId];
+        if (text_utils) {
+            return text_utils.insertNodes(nodes, options);
+        }
+        console.warn('Could find the block text utils');
+    }
+
+    /**
+     *
+     * get text(slate node) by path
+     * @param {string} blockId
+     * @param {Path} path
+     * @return {*}
+     * @memberof BlockHelper
+     */
+    public getNodeByPath(blockId: string, path: Path) {
+        const text_utils = this._blockTextUtilsMap[blockId];
+        if (text_utils) {
+            return text_utils.getNodeByPath(path);
+        }
+        console.warn('Could find the block text utils');
     }
 
     public transformPoint(

@@ -44,12 +44,12 @@ interface LineStyleProps {
     onStrokeWidthChange: (width: StrokeWidth) => void;
 }
 
-export const LineStyle: FC<LineStyleProps> = ({
+export const LineStyle = ({
     strokeStyle,
     onStrokeStyleChange,
     strokeWidth,
     onStrokeWidthChange,
-}) => {
+}: LineStyleProps) => {
     return (
         <Container>
             <Title>Stroke Style</Title>

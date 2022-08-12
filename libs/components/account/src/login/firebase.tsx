@@ -1,5 +1,5 @@
 /* eslint-disable filename-rules/match */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
     GoogleAuthProvider,
@@ -8,15 +8,7 @@ import {
     browserLocalPersistence,
 } from 'firebase/auth';
 
-import { LogoImg } from '@toeverything/components/common';
-import {
-    MuiButton,
-    MuiBox,
-    MuiGrid,
-    MuiSnackbar,
-} from '@toeverything/components/ui';
-
-import { Error } from './../error';
+import { MuiButton } from '@toeverything/components/ui';
 
 const _firebaseConfig = {
     apiKey: 'AIzaSyD7A_VyGaKTXsPqtga9IbwrEsbWWc4rH3Y',
@@ -75,15 +67,13 @@ const GoogleIcon = () => (
     </svg>
 );
 
-export const Firebase = () => {
+export const Firebase = (props: { onError: () => void }) => {
     const [auth, provider] = useMemo(() => {
         const auth = getAuth(_app);
         auth.setPersistence(browserLocalPersistence);
         const provider = new GoogleAuthProvider();
         return [auth, provider];
     }, []);
-
-    const [error, setError] = useState(false);
 
     const handleAuth = useCallback(() => {
         signInWithPopup(auth, provider).catch(error => {
@@ -92,53 +82,19 @@ export const Firebase = () => {
             const email = error.customData.email;
             const credential = GoogleAuthProvider.credentialFromError(error);
             console.log(errorCode, errorMessage, email, credential);
-            setError(true);
-            setTimeout(() => setError(false), 3000);
+            props.onError();
         });
-    }, [auth, provider]);
+    }, [auth, props, provider]);
 
     return (
-        <MuiGrid container>
-            <MuiSnackbar
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                open={error}
-                message="Login failed, please check if you have permission"
-            />
-            <MuiGrid item xs={8}>
-                <Error
-                    title="Welcome to AFFiNE"
-                    subTitle="blocks of knowledge to power your team"
-                    action1Text="Login &nbsp; or &nbsp; Register"
-                />
-            </MuiGrid>
-
-            <MuiGrid item xs={4}>
-                <MuiBox
-                    onSubmit={handleAuth}
-                    onClick={handleAuth}
-                    style={{
-                        textAlign: 'center',
-                        width: '300px',
-                        margin: '300px  auto 20px auto',
-                    }}
-                    sx={{ mt: 1 }}
-                >
-                    <LogoImg
-                        style={{
-                            width: '100px',
-                        }}
-                    />
-
-                    <MuiButton
-                        variant="outlined"
-                        fullWidth
-                        style={{ textTransform: 'none' }}
-                        startIcon={<GoogleIcon />}
-                    >
-                        Continue with Google
-                    </MuiButton>
-                </MuiBox>
-            </MuiGrid>
-        </MuiGrid>
+        <MuiButton
+            variant="outlined"
+            fullWidth
+            style={{ textTransform: 'none' }}
+            startIcon={<GoogleIcon />}
+            onClick={handleAuth}
+        >
+            Continue with Google
+        </MuiButton>
     );
 };

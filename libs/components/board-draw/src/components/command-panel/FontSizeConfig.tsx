@@ -51,7 +51,7 @@ const _getFontSize = (shapes: TDShape[]): FontSizeStyle => {
     return max[0] as unknown as FontSizeStyle;
 };
 
-export const FontSizeConfig: FC<FontSizeConfigProps> = ({ app, shapes }) => {
+export const FontSizeConfig = ({ app, shapes }: FontSizeConfigProps) => {
     const setFontSize = (size: FontSizeStyle) => {
         app.style({ fontSize: size }, getShapeIds(shapes));
     };
