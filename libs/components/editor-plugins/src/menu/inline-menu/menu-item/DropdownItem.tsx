@@ -135,7 +135,9 @@ export const MenuDropdownItem = ({
     );
 };
 
-const withStylesForIcon = (FontIconComponent: React.FC<SvgIconProps>) =>
+const withStylesForIcon = (
+    FontIconComponent: (prop: SvgIconProps) => JSX.Element
+) =>
     styled(FontIconComponent, {
         shouldForwardProp: (prop: string) =>
             !['fontColor', 'fontBgColor'].includes(prop),

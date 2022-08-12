@@ -1,4 +1,4 @@
-import { FC, PropsWithChildren } from 'react';
+import { PropsWithChildren } from 'react';
 import { ChildrenView } from '@toeverything/framework/virgo';
 import { styled } from '@toeverything/components/ui';
 

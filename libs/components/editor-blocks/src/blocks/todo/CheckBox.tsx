@@ -1,5 +1,5 @@
 import { styled } from '@toeverything/components/ui';
-import { FC, useMemo } from 'react';
+import { useMemo } from 'react';
 
 interface CheckBoxProps {
     size?: number;

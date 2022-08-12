@@ -1,4 +1,4 @@
-import { FC, useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { ChildrenView } from '@toeverything/framework/virgo';
 import { styled } from '@toeverything/components/ui';
 import { sleep } from '@toeverything/utils';

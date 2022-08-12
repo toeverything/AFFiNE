@@ -8,7 +8,7 @@ import {
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import type { CreateView } from '@toeverything/framework/virgo';
-import type { ComponentType, FC } from 'react';
+import type { ComponentType } from 'react';
 import { useState } from 'react';
 import { GroupMenuWrapper } from './group-menu';
 import { SceneKanban } from './scene-kanban';

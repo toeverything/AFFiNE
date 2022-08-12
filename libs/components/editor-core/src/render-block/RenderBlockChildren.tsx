@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import type { AsyncBlock } from '../editor';
 import { RenderBlock } from './RenderBlock';
 

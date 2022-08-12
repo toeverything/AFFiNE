@@ -1,4 +1,4 @@
-import type { FC, PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 // eslint-disable-next-line no-restricted-imports
 import {
     createTheme,
@@ -30,8 +30,8 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
 export const useTheme = () => muiUseTheme();
 
 export const withTheme = <T,>(
-    Component: FC<T & { theme: MuiTheme }>
-): FC<T> => {
+    Component: (prop: T & { theme: MuiTheme }) => JSX.Element
+): ((prop: T) => JSX.Element) => {
     return props => {
         const theme = useTheme();
         return <Component {...props} theme={theme} />;

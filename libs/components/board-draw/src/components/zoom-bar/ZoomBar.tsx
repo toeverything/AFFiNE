@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import {
     MuiIconButton as IconButton,
     MuiButton as Button,

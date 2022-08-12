@@ -13,9 +13,9 @@ import {
 } from '@toeverything/framework/virgo';
 
 import { PageView } from './PageView';
-import { ComponentType, FC } from 'react';
 
-export const PageChildrenView: FC<ChildrenView> = props => props.children;
+export const PageChildrenView: (prop: ChildrenView) => JSX.Element = props =>
+    props.children;
 
 export class PageBlock extends BaseView {
     type = Protocol.Block.Type.page;

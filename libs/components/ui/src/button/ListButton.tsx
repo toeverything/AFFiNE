@@ -41,7 +41,7 @@ type ListButtonProps = {
     content?: string;
     children?: () => JSX.Element;
     hover?: boolean;
-    icon?: React.FC<SvgIconProps>;
+    icon?: (prop: SvgIconProps) => JSX.Element;
 };
 
 export const ListButton = (props: ListButtonProps) => {

@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import type { DefaultColumnsValue } from '@toeverything/datasource/db-service';
 import type { CreateView } from '@toeverything/framework/virgo';

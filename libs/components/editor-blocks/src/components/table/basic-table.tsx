@@ -6,7 +6,7 @@ import {
     useLayoutEffect,
     useCallback,
 } from 'react';
-import type { FC } from 'react';
+
 import { VariableSizeGrid, areEqual } from 'react-window';
 import type {
     GridChildComponentProps,
@@ -34,7 +34,7 @@ export interface CustomCellProps<T = unknown> {
     value: T;
     valueKey: string;
 }
-export type CustomCell<T = unknown> = FC<CustomCellProps<T>>;
+export type CustomCell<T = unknown> = (prop: CustomCellProps<T>) => JSX.Element;
 
 interface TableData {
     columns: readonly TableColumn[];

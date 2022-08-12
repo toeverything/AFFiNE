@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { Fragment } from 'react';
 import { Vec } from '@tldraw/vec';
 import { TldrawApp, TLDR } from '@toeverything/components/board-state';

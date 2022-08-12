@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { useMemo } from 'react';
 import { OldSelect } from '@toeverything/components/ui';
 import type { EnumColumnValue } from '@toeverything/datasource/db-service';

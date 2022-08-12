@@ -1,4 +1,4 @@
-import type { FC, ReactNode, CSSProperties } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import { styled } from '../styled';
 import { MuiDivider } from '../mui';
 import type { MuiDividerProps } from '../mui';

@@ -1,4 +1,4 @@
-import { FC, useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 
 import { BackLink, TextProps } from '@toeverything/components/common';

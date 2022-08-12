@@ -1,5 +1,5 @@
 import { AsyncBlock } from '@toeverything/framework/virgo';
-import { FC } from 'react';
+
 import { ResizableBox } from 'react-resizable';
 import { styled } from '@toeverything/components/ui';
 
