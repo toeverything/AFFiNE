@@ -37,6 +37,11 @@ async function _getCurrentToken() {
     return undefined;
 }
 
+const _enabled = {
+    demo: [],
+    AFFiNE: ['sqlite'],
+} as any;
+
 async function _getBlockDatabase(
     workspace: string,
     options?: BlockInitOptions
@@ -45,16 +50,10 @@ async function _getBlockDatabase(
         await waitLoading(workspace);
     }
 
-    // if (
-    //     options?.userId &&
-    //     workspaces[workspace]?.getUserId() !== options?.userId
-    // ) {
-    //     delete workspaces[workspace];
-    // }
-
     if (!workspaces[workspace]) {
         loading.add(workspace);
         workspaces[workspace] = await BlockClient.init(workspace, {
+            enabled: _enabled[workspace] || ['idb'],
             ...options,
             token: await _getCurrentToken(),
         });
