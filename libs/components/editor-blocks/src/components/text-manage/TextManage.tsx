@@ -42,6 +42,9 @@ const TextBlockContainer = styled(Text)(({ theme }) => ({
     fontFamily: theme.affine.typography.body1.fontFamily,
     color: theme.affine.typography.body1.color,
     letterSpacing: '0.1px',
+    a: {
+        color: '#3e6fdb',
+    },
 }));
 
 const findSlice = (arr: string[], p: string, q: string) => {
