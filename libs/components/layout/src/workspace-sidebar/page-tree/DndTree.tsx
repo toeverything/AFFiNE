@@ -36,19 +36,13 @@ export type DndTreeProps = {
     indentationWidth?: number;
     collapsible?: boolean;
     removable?: boolean;
-    showDragIndicator?: boolean;
 };
 
 /**
  * Currently does not support drag and drop using the keyboard.
  */
 export function DndTree(props: DndTreeProps) {
-    const {
-        indentationWidth = 12,
-        collapsible,
-        removable,
-        showDragIndicator,
-    } = props;
+    const { indentationWidth = 20, collapsible, removable } = props;
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -111,7 +105,6 @@ export function DndTree(props: DndTreeProps) {
                                         : depth
                                 }
                                 indentationWidth={indentationWidth}
-                                indicator={showDragIndicator}
                                 childCount={children.length}
                                 onCollapse={
                                     collapsible && children.length
@@ -129,7 +122,8 @@ export function DndTree(props: DndTreeProps) {
                 )}
                 <DragOverlay
                     dropAnimation={dropAnimation}
-                    style={{ marginTop: '-65px' }}
+                    // TODO fix drag offset when the position of the page tree changes
+                    style={{ marginTop: '-100px' }}
                 >
                     {activeId && activeItem ? (
                         <DndTreeItem

@@ -10,7 +10,7 @@ interface GroupAndUnGroupProps {
     shapes: TDShape[];
 }
 
-export const Group: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
+export const Group = ({ app, shapes }: GroupAndUnGroupProps) => {
     const group = () => {
         app.group(getShapeIds(shapes));
     };
@@ -23,7 +23,7 @@ export const Group: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
     );
 };
 
-export const UnGroup: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
+export const UnGroup = ({ app, shapes }: GroupAndUnGroupProps) => {
     const ungroup = () => {
         app.ungroup(getShapeIds(shapes));
     };

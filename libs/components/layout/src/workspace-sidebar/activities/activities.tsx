@@ -10,9 +10,10 @@ import {
 } from '@toeverything/components/ui';
 import { useNavigate } from 'react-router';
 import { formatDistanceToNow } from 'date-fns';
+import { DotIcon } from '../dot-icon';
 
 const StyledWrapper = styled('div')({
-    paddingLeft: '12px',
+    width: '100%',
     span: {
         textOverflow: 'ellipsis',
         overflow: 'hidden',
@@ -22,8 +23,8 @@ const StyledWrapper = styled('div')({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingRight: '20px',
         whiteSpace: 'nowrap',
+        paddingLeft: '12px',
         '&:hover': {
             background: '#f5f7f8',
             borderRadius: '5px',
@@ -106,6 +107,8 @@ export const Activities = () => {
                     const { id, title, updated } = item;
                     return (
                         <ListItem className="item" key={id}>
+                            <DotIcon />
+
                             <StyledItemContent
                                 onClick={() => {
                                     navigate(`/${currentSpaceId}/${id}`);

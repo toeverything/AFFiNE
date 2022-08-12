@@ -6,6 +6,7 @@ import {
     Tooltip,
     PopoverContainer,
     IconButton,
+    useTheme,
 } from '@toeverything/components/ui';
 import {
     FrameIcon,
@@ -67,10 +68,11 @@ const tools: Array<{
     },
 ];
 
-export const ToolsPanel: FC<{ app: TldrawApp }> = ({ app }) => {
+export const ToolsPanel = ({ app }: { app: TldrawApp }) => {
     const activeTool = app.useStore(activeToolSelector);
 
     const isToolLocked = app.useStore(toolLockedSelector);
+    const theme = useTheme();
 
     return (
         <PopoverContainer
@@ -105,7 +107,8 @@ export const ToolsPanel: FC<{ app: TldrawApp }> = ({ app }) => {
                                         style={{
                                             color:
                                                 activeTool === type
-                                                    ? 'blue'
+                                                    ? theme.affine.palette
+                                                          .primary
                                                     : '',
                                         }}
                                         onClick={() => {

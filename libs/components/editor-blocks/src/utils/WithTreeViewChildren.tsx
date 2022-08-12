@@ -27,7 +27,7 @@ const defaultConfig: WithChildrenConfig = {
 const TreeView = forwardRef<
     HTMLDivElement,
     { lastItem?: boolean } & ComponentPropsWithRef<'div'>
->(({ lastItem, children, onClick, ...restProps }, ref) => {
+>(({ lastItem = false, children, onClick, ...restProps }, ref) => {
     return (
         <TreeWrapper ref={ref} {...restProps}>
             <StyledTreeView>
@@ -155,8 +155,11 @@ const Wrapper = styled('div')({ display: 'flex', flexDirection: 'column' });
 const Children = Wrapper;
 
 const TREE_COLOR = '#D5DFE6';
-// TODO determine the position of the horizontal line by the type of the item
-const ITEM_POINT_HEIGHT = '12.5px'; // '50%'
+// adjust left and right margins of the the tree line
+const TREE_LINE_LEFT_OFFSET = '-16px';
+// determine the position of the horizontal line by the type of the item
+const TREE_LINE_TOP_OFFSET = '20px'; // '50%'
+const TREE_LINE_WIDTH = '12px';
 
 const TreeWrapper = styled('div')({
     position: 'relative',
@@ -164,7 +167,7 @@ const TreeWrapper = styled('div')({
 
 const StyledTreeView = styled('div')({
     position: 'absolute',
-    left: '-21px',
+    left: TREE_LINE_LEFT_OFFSET,
     height: '100%',
 });
 
@@ -183,7 +186,7 @@ const Line = styled('div')({
 
 const VerticalLine = styled(Line)<{ last: boolean }>(({ last }) => ({
     width: '1px',
-    height: last ? ITEM_POINT_HEIGHT : '100%',
+    height: last ? TREE_LINE_TOP_OFFSET : '100%',
     paddingTop: 0,
     paddingBottom: 0,
     transform: 'translate(-50%, 0)',
@@ -192,11 +195,11 @@ const VerticalLine = styled(Line)<{ last: boolean }>(({ last }) => ({
 }));
 
 const HorizontalLine = styled(Line)<{ last: boolean }>(({ last }) => ({
-    width: '16px',
+    width: TREE_LINE_WIDTH,
     height: '1px',
     paddingLeft: 0,
     paddingRight: 0,
-    top: ITEM_POINT_HEIGHT,
+    top: TREE_LINE_TOP_OFFSET,
     transform: 'translate(0, -50%)',
     opacity: last ? 0 : 'unset',
 }));
@@ -204,7 +207,8 @@ const HorizontalLine = styled(Line)<{ last: boolean }>(({ last }) => ({
 const Collapsed = styled('div')({
     cursor: 'pointer',
     display: 'inline-block',
-    color: '#B9CAD5',
+    color: '#98ACBD',
+    padding: '8px',
 });
 
 const LastItemRadius = styled('div')({
@@ -212,9 +216,9 @@ const LastItemRadius = styled('div')({
     position: 'absolute',
     left: '-0.5px',
     top: 0,
-    height: ITEM_POINT_HEIGHT,
+    height: TREE_LINE_TOP_OFFSET,
     bottom: '50%',
-    width: '16px',
+    width: TREE_LINE_WIDTH,
     borderWidth: '1px',
     borderStyle: 'solid',
     borderLeftColor: TREE_COLOR,

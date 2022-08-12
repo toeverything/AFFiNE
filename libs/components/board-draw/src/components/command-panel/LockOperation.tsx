@@ -10,7 +10,7 @@ interface GroupAndUnGroupProps {
     shapes: TDShape[];
 }
 
-export const Lock: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
+export const Lock = ({ app, shapes }: GroupAndUnGroupProps) => {
     const lock = () => {
         app.lock(getShapeIds(shapes));
     };
@@ -23,7 +23,7 @@ export const Lock: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
     );
 };
 
-export const Unlock: FC<GroupAndUnGroupProps> = ({ app, shapes }) => {
+export const Unlock = ({ app, shapes }: GroupAndUnGroupProps) => {
     const unlock = () => {
         app.unlock(getShapeIds(shapes));
     };

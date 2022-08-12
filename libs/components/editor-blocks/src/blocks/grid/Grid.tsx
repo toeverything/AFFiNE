@@ -20,7 +20,7 @@ export function removePercent(str: string) {
     return str.replace('%', '');
 }
 
-export const Grid: FC<CreateView> = function (props) {
+export const Grid = function (props: CreateView) {
     const { block, editor } = props;
     const gridItemMinWidth = editor.configManager.grid.gridItemMinWidth;
     const [isOnDrag, setIsOnDrag] = useState<boolean>(false);
@@ -261,7 +261,7 @@ const GridContainer = styled('div')<{
     display: 'flex',
     alignItems: 'stretch',
     borderRadius: '10px',
-    border: '1px solid #FFF',
+    border: '1px solid transparent',
     minWidth: `${gridItemMinWidth}%`,
     [`&:hover .${GRID_ITEM_CONTENT_CLASS_NAME}`]: {
         borderColor: theme.affine.palette.borderColor,

@@ -10,13 +10,13 @@ const StyledTabs = styled('div')(({ theme }) => {
         display: 'flex',
         fontSize: '12px',
         fontWeight: '600',
-        color: theme.affine.palette.primary,
     };
 });
 
-const StyledTabTitle = styled('div', {
-    shouldForwardProp: (prop: string) => !['isActive'].includes(prop),
-})<{ isActive?: boolean; isDisabled?: boolean }>`
+const StyledTabTitle = styled('div')<{
+    isActive?: boolean;
+    isDisabled?: boolean;
+}>`
     flex: 1;
     display: flex;
     align-items: center;
@@ -26,13 +26,18 @@ const StyledTabTitle = styled('div', {
     padding-top: 4px;
     border-top: 2px solid #ecf1fb;
     position: relative;
+    cursor: pointer;
+    color: ${({ theme, isActive }) =>
+        isActive ? theme.affine.palette.primary : 'rgba(62, 111, 219, 0.6)'};
 
     &::after {
         content: '';
         width: 0;
         height: 2px;
         background-color: ${({ isActive, theme }) =>
-            isActive ? theme.affine.palette.primary : ''};
+            isActive
+                ? theme.affine.palette.primary
+                : 'rgba(62, 111, 219, 0.6)'};
         position: absolute;
         left: 100%;
         top: -2px;

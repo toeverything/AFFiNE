@@ -88,7 +88,7 @@ export const generateInitialOptions = (
 ) => {
     if (type === PendantTypes.Status) {
         return [
-            generateBasicOption({ index: 0, iconConfig, name: 'No Started' }),
+            generateBasicOption({ index: 0, iconConfig, name: 'Not Started' }),
             generateBasicOption({
                 index: 1,
                 iconConfig,

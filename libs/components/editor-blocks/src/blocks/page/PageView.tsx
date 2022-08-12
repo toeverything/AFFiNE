@@ -15,7 +15,7 @@ import {
     type ExtendedTextUtils,
 } from '../../components/text-manage';
 
-export const PageView: FC<CreateView> = ({ block, editor }) => {
+export const PageView = ({ block, editor }: CreateView) => {
     const { workspace_id } = useParams();
     const textRef = useRef<ExtendedTextUtils>(null);
     const [backLinks, setBackLinks] =
@@ -109,12 +109,15 @@ export const PageView: FC<CreateView> = ({ block, editor }) => {
     );
 };
 
-const PageTitleBlock = styled('div')({
-    '.title': {
-        fontSize: Theme.typography.page.fontSize,
-        lineHeight: Theme.typography.page.lineHeight,
-    },
-    '.content': {
-        outline: 'none',
-    },
+const PageTitleBlock = styled('div')(({ theme }) => {
+    return {
+        '.title': {
+            fontSize: theme.affine.typography.page.fontSize,
+            lineHeight: theme.affine.typography.page.lineHeight,
+            fontWeight: theme.affine.typography.page.fontWeight,
+        },
+        '.content': {
+            outline: 'none',
+        },
+    };
 });

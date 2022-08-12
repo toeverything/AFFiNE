@@ -3,12 +3,14 @@ import { useParams } from 'react-router-dom';
 import { Typography, styled } from '@toeverything/components/ui';
 
 import { services } from '@toeverything/datasource/db-service';
+import { useUserAndSpaces } from '@toeverything/datasource/state';
 
 /* card.7: Demand changes, temporarily closed, see https://github.com/toeverything/AFFiNE/issues/522 */
 // import { usePageTree} from '@toeverything/components/layout';
 // import { pickPath } from './utils';
 
 export const CurrentPageTitle = () => {
+    const { user } = useUserAndSpaces();
     const params = useParams();
     const { workspace_id } = params;
     const [pageId, setPageId] = useState<string>('');
@@ -40,11 +42,11 @@ export const CurrentPageTitle = () => {
     }, [pageId, workspace_id]);
 
     useEffect(() => {
-        fetchPageTitle();
-    }, [fetchPageTitle]);
+        if (user) fetchPageTitle();
+    }, [fetchPageTitle, user]);
 
     useEffect(() => {
-        if (!workspace_id || !pageId || pageTitle === undefined)
+        if (!user || !workspace_id || !pageId || pageTitle === undefined)
             return () => {};
 
         let unobserve: () => void;
@@ -63,7 +65,7 @@ export const CurrentPageTitle = () => {
         return () => {
             // unobserve?.();
         };
-    }, [fetchPageTitle, pageId, pageTitle, workspace_id]);
+    }, [fetchPageTitle, pageId, pageTitle, user, workspace_id]);
 
     useEffect(() => {
         document.title = pageTitle || '';

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Option, Select, Tooltip } from '@toeverything/components/ui';
-import { HelpCenterIcon } from '@toeverything/components/icons';
+import { message, Option, Select } from '@toeverything/components/ui';
 import { AsyncBlock } from '../../editor';
 
 import { IconMap, pendantOptions } from '../config';
@@ -8,7 +7,6 @@ import { PendantOptions } from '../types';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import {
     StyledDivider,
-    StyledInputEndAdornment,
     StyledOperationLabel,
     StyledOperationTitle,
     StyledPopoverSubTitle,
@@ -18,15 +16,19 @@ import {
     generateRandomFieldName,
     generateInitialOptions,
     getPendantConfigByType,
+    checkPendantForm,
 } from '../utils';
+import { FieldTitleInput } from './FieldTitleInput';
 import { useOnCreateSure } from './hooks';
 
 export const CreatePendantPanel = ({
     block,
     onSure,
+    onTypeChange,
 }: {
     block: AsyncBlock;
     onSure?: () => void;
+    onTypeChange?: (option: PendantOptions) => void;
 }) => {
     const [selectedOption, setSelectedOption] = useState<PendantOptions>();
     const [fieldName, setFieldName] = useState<string>('');
@@ -36,6 +38,10 @@ export const CreatePendantPanel = ({
         selectedOption &&
             setFieldName(generateRandomFieldName(selectedOption.type));
     }, [selectedOption]);
+
+    useEffect(() => {
+        onTypeChange?.(selectedOption);
+    }, [selectedOption, onTypeChange]);
 
     return (
         <StyledPopoverWrapper>
@@ -67,19 +73,11 @@ export const CreatePendantPanel = ({
                 })}
             </Select>
             <StyledOperationLabel>Field Title</StyledOperationLabel>
-            <Input
+            <FieldTitleInput
                 value={fieldName}
-                placeholder="Input your field name here"
                 onChange={e => {
                     setFieldName(e.target.value);
                 }}
-                endAdornment={
-                    <Tooltip content="Help info here">
-                        <StyledInputEndAdornment>
-                            <HelpCenterIcon />
-                        </StyledInputEndAdornment>
-                    </Tooltip>
-                }
             />
             {selectedOption ? (
                 <>
@@ -98,6 +96,17 @@ export const CreatePendantPanel = ({
                         )}
                         iconConfig={getPendantConfigByType(selectedOption.type)}
                         onSure={async (type, newPropertyItem, newValue) => {
+                            const checkResult = checkPendantForm(
+                                type,
+                                fieldName,
+                                newPropertyItem,
+                                newValue
+                            );
+
+                            if (!checkResult.passed) {
+                                await message.error(checkResult.message);
+                                return;
+                            }
                             await onCreateSure({
                                 type,
                                 newPropertyItem,

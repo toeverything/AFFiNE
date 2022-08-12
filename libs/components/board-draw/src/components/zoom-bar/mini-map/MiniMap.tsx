@@ -18,7 +18,7 @@ const getScaleToMap = (width: number, height: number) => {
     return scaleWidth > scaleHeight ? scaleWidth : scaleHeight;
 };
 
-export const MiniMap: FC = () => {
+export const MiniMap = () => {
     const app = useTldrawApp();
     const page = app.useStore(s => s.document.pages[s.appState.currentPageId]);
     const pageState = app.useStore(

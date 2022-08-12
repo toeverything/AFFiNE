@@ -21,7 +21,7 @@ const logout = () => {
     window.location.href = '/';
 };
 
-export const Logout: FC = () => {
+export const Logout = () => {
     return (
         <ListItem onClick={logout}>
             <StyledIcon />

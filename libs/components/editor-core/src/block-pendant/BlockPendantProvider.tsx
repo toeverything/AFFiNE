@@ -3,6 +3,8 @@ import { styled } from '@toeverything/components/ui';
 import type { AsyncBlock } from '../editor';
 import { PendantPopover } from './pendant-popover';
 import { PendantRender } from './pendant-render';
+import { useRef } from 'react';
+import { getRecastItemValue, useRecastBlockMeta } from '../recast-block';
 /**
  * @deprecated
  */
@@ -10,17 +12,31 @@ interface BlockTagProps {
     block: AsyncBlock;
 }
 
-export const BlockPendantProvider: FC<PropsWithChildren<BlockTagProps>> = ({
+export const BlockPendantProvider = ({
     block,
     children,
-}) => {
+}: PropsWithChildren<BlockTagProps>) => {
+    const triggerRef = useRef<HTMLDivElement>();
+    const { getProperties } = useRecastBlockMeta();
+    const properties = getProperties();
+    const { getValue } = getRecastItemValue(block);
+    const showTriggerLine =
+        properties.filter(property => getValue(property.id)).length === 0;
+
     return (
         <Container>
             {children}
 
-            <PendantPopover block={block}>
-                <StyledTriggerLine />
-            </PendantPopover>
+            {showTriggerLine ? (
+                <StyledPendantContainer ref={triggerRef}>
+                    <PendantPopover
+                        block={block}
+                        container={triggerRef.current}
+                    >
+                        <StyledTriggerLine />
+                    </PendantPopover>
+                </StyledPendantContainer>
+            ) : null}
 
             <PendantRender block={block} />
         </Container>
@@ -28,7 +44,7 @@ export const BlockPendantProvider: FC<PropsWithChildren<BlockTagProps>> = ({
 };
 
 export const LINE_GAP = 16;
-const TAG_GAP = 4;
+export const TAG_GAP = 4;
 
 const StyledTriggerLine = styled('div')({
     padding: `${TAG_GAP}px 0`,
@@ -43,10 +59,12 @@ const StyledTriggerLine = styled('div')({
         width: '100%',
         height: '2px',
         background: '#dadada',
-        display: 'none',
+        display: 'flex',
         position: 'absolute',
         left: '0',
         top: '4px',
+        transition: 'opacity .2s',
+        opacity: '0',
     },
     '::after': {
         content: "''",
@@ -60,17 +78,23 @@ const StyledTriggerLine = styled('div')({
         transition: 'width .3s',
     },
 });
-
-const Container = styled('div')({
-    position: 'relative',
-    paddingBottom: `${LINE_GAP - TAG_GAP * 2}px`,
+const StyledPendantContainer = styled('div')({
+    width: '100px',
     '&:hover': {
-        [StyledTriggerLine.toString()]: {
-            '&::before': {
-                display: 'flex',
-            },
+        [`${StyledTriggerLine}`]: {
             '&::after': {
                 width: '100%',
+            },
+        },
+    },
+});
+const Container = styled('div')({
+    position: 'relative',
+    padding: `${TAG_GAP * 2}px 0 ${LINE_GAP - TAG_GAP * 4}px 0`,
+    '&:hover': {
+        [`${StyledTriggerLine}`]: {
+            '&::before': {
+                opacity: '1',
             },
         },
     },

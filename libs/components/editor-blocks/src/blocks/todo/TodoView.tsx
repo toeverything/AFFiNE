@@ -33,7 +33,7 @@ const todoIsEmpty = (contentValue: ContentColumnValue): boolean => {
     );
 };
 
-export const TodoView: FC<CreateView> = ({ block, editor }) => {
+export const TodoView = ({ block, editor }: CreateView) => {
     const properties = { ...defaultTodoProps, ...block.getProperties() };
     const text_ref = useRef<ExtendedTextUtils>(null);
 
@@ -150,6 +150,7 @@ const TodoBlock = styled('div')({
     display: 'flex',
     '.checkBoxContainer': {
         marginRight: '4px',
+        padding: '0 4px',
         height: '22px',
     },
     '.textContainer': {

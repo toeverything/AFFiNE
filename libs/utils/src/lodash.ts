@@ -12,7 +12,6 @@ export {
     isFunction,
     isString,
     isPlainObject,
-    noop,
     lowerFirst,
     last,
     first,

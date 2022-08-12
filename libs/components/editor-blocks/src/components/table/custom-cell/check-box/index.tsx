@@ -6,10 +6,10 @@ import type { CellProps } from '../types';
 /**
  * @deprecated
  */
-export const CheckBoxCell: FC<CellProps<BooleanColumnValue>> = ({
+export const CheckBoxCell = ({
     value,
     onChange,
-}) => {
+}: CellProps<BooleanColumnValue>) => {
     return (
         <Checkbox
             checked={value?.value}

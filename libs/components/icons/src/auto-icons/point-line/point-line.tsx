@@ -1,15 +1,12 @@
 
-import { FC } from 'react';
 // eslint-disable-next-line no-restricted-imports
-import { SvgIcon } from '@mui/material';
-// eslint-disable-next-line no-restricted-imports
-import type { SvgIconProps } from '@mui/material';
+import { SvgIcon, SvgIconProps } from '@mui/material';
 
 export interface PointLineIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const PointLineIcon: FC<PointLineIconProps> = ({ color, style, ...props}) => {
+export const PointLineIcon = ({ color, style, ...props}: PointLineIconProps) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

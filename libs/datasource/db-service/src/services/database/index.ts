@@ -37,6 +37,11 @@ async function _getCurrentToken() {
     return undefined;
 }
 
+const _enabled = {
+    demo: [],
+    AFFiNE: ['sqlite'],
+} as any;
+
 async function _getBlockDatabase(
     workspace: string,
     options?: BlockInitOptions
@@ -45,16 +50,10 @@ async function _getBlockDatabase(
         await waitLoading(workspace);
     }
 
-    // if (
-    //     options?.userId &&
-    //     workspaces[workspace]?.getUserId() !== options?.userId
-    // ) {
-    //     delete workspaces[workspace];
-    // }
-
     if (!workspaces[workspace]) {
         loading.add(workspace);
         workspaces[workspace] = await BlockClient.init(workspace, {
+            enabled: _enabled[workspace] || ['idb'],
             ...options,
             token: await _getCurrentToken(),
         });
@@ -78,7 +77,10 @@ export class Database {
     }
 
     async getDatabase(workspace: string, options?: BlockInitOptions) {
-        const db = await _getBlockDatabase(workspace, options);
+        const db = await _getBlockDatabase(workspace, {
+            ...this.#options,
+            ...options,
+        });
         return db;
     }
 
@@ -87,7 +89,7 @@ export class Database {
         name: string,
         listener: (connectivity: Connectivity) => void
     ) {
-        const db = await _getBlockDatabase(workspace);
+        const db = await _getBlockDatabase(workspace, this.#options);
         return db.addConnectivityListener(name, state => {
             const connectivity = state.get(name);
             if (connectivity) listener(connectivity);
@@ -188,5 +190,14 @@ export class Database {
                 block.off('parent', observer_name);
             }
         }
+    }
+
+    async setupDataExporter(
+        workspace: string,
+        initialData: Uint8Array,
+        callback: (binary: Uint8Array) => Promise<void>
+    ) {
+        const db = await this.getDatabase(workspace);
+        await db.setupDataExporter(initialData, callback);
     }
 }

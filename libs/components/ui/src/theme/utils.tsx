@@ -23,7 +23,7 @@ const theme = createTheme({
     affine: Theme,
 });
 
-export const ThemeProvider: FC<{ children?: ReactNode }> = ({ children }) => {
+export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     return <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>;
 };
 

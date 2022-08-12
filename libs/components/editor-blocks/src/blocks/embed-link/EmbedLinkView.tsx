@@ -13,7 +13,7 @@ const MESSAGES = {
 };
 
 type EmbedLinkView = CreateView;
-export const EmbedLinkView: FC<EmbedLinkView> = props => {
+export const EmbedLinkView = (props: EmbedLinkView) => {
     const { block, editor } = props;
     const [isSelect, setIsSelect] = useState(false);
 

@@ -67,8 +67,12 @@ export function ChildrenListenerHandler(
         const keys = Array.from(event.keys.entries()).map(
             ([key, { action }]) => [key, action] as [string, ChangedStateKeys]
         );
+        const deleted = Array.from(event.changes.deleted.values())
+            .flatMap(val => val.content.getContent() as string[])
+            .filter(v => v)
+            .map(k => [k, 'delete'] as [string, ChangedStateKeys]);
         for (const listener of listeners.values()) {
-            EmitEvents(keys, listener);
+            EmitEvents([...keys, ...deleted], listener);
         }
     }
 }

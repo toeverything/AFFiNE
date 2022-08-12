@@ -1,20 +1,18 @@
-import styles from './tree-item.module.scss';
+import { AddIcon, MoreIcon } from '@toeverything/components/icons';
 import {
-    MuiSnackbar as Snackbar,
     Cascader,
     CascaderItemProps,
-    MuiDivider as Divider,
-    MuiClickAwayListener as ClickAwayListener,
     IconButton,
+    MuiClickAwayListener as ClickAwayListener,
+    MuiSnackbar as Snackbar,
     styled,
 } from '@toeverything/components/ui';
-import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { copyToClipboard } from '@toeverything/utils';
 import { services, TemplateFactory } from '@toeverything/datasource/db-service';
-import { NewFromTemplatePortal } from './NewFromTemplatePortal';
 import { useFlag } from '@toeverything/datasource/feature-flags';
-import { MoreIcon, AddIcon } from '@toeverything/components/icons';
+import { copyToClipboard } from '@toeverything/utils';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { TreeItemMoreActions } from './styles';
 
 const MESSAGES = {
     COPY_LINK_SUCCESS: 'Copyed link to clipboard',
@@ -47,6 +45,10 @@ function DndTreeItemMoreActions(props: ActionsProps) {
         set_alert_open(false);
     };
     const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (anchorEl) {
+            setAnchorEl(null);
+            return;
+        }
         setAnchorEl(event.currentTarget);
     };
     const handleClose = () => {
@@ -246,10 +248,11 @@ function DndTreeItemMoreActions(props: ActionsProps) {
     return (
         <ClickAwayListener onClickAway={() => handleClose()}>
             <div>
-                <div className={styles['TreeItemMoreActions']}>
+                <TreeItemMoreActions>
                     <StyledAction>
                         <IconButton
                             size="small"
+                            hoverColor="#E0E6EB"
                             onClick={handle_new_child_page}
                         >
                             <AddIcon />
@@ -262,14 +265,15 @@ function DndTreeItemMoreActions(props: ActionsProps) {
                             <MoreIcon />
                         </IconButton>
                     </StyledAction>
-                </div>
+                </TreeItemMoreActions>
+
                 <Cascader
                     items={menuList}
                     anchorEl={anchorEl}
                     placement="right-start"
                     open={open}
                     onClose={handleClose}
-                ></Cascader>
+                />
                 <Snackbar
                     anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
                     open={alert_open}

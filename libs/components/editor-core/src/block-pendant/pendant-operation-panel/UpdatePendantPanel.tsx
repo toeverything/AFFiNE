@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Input, Tooltip } from '@toeverything/components/ui';
-import { HelpCenterIcon } from '@toeverything/components/icons';
+import { message } from '@toeverything/components/ui';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import type { AsyncBlock } from '../../editor';
 import {
@@ -8,17 +7,16 @@ import {
     type RecastBlockValue,
     type RecastMetaProperty,
 } from '../../recast-block';
-import { getPendantConfigByType } from '../utils';
+import { checkPendantForm, getPendantConfigByType } from '../utils';
 import {
     StyledPopoverWrapper,
     StyledOperationLabel,
-    StyledInputEndAdornment,
     StyledDivider,
     StyledPopoverContent,
     StyledPopoverSubTitle,
 } from '../StyledComponent';
 import { IconMap, pendantOptions } from '../config';
-
+import { FieldTitleInput } from './FieldTitleInput';
 import { useOnUpdateSure } from './hooks';
 
 type Props = {
@@ -63,19 +61,11 @@ export const UpdatePendantPanel = ({
             </StyledPopoverContent>
             <StyledOperationLabel>Field Title</StyledOperationLabel>
             {titleEditable ? (
-                <Input
+                <FieldTitleInput
                     value={fieldName}
-                    placeholder="Input your field name here"
                     onChange={e => {
                         setFieldName(e.target.value);
                     }}
-                    endAdornment={
-                        <Tooltip content="Help info here">
-                            <StyledInputEndAdornment>
-                                <HelpCenterIcon />
-                            </StyledInputEndAdornment>
-                        </Tooltip>
-                    }
                 />
             ) : (
                 <StyledPopoverContent>{property.name}</StyledPopoverContent>
@@ -98,6 +88,17 @@ export const UpdatePendantPanel = ({
                 property={property}
                 type={property.type}
                 onSure={async (type, newPropertyItem, newValue) => {
+                    const checkResult = checkPendantForm(
+                        type,
+                        fieldName,
+                        newPropertyItem,
+                        newValue
+                    );
+
+                    if (!checkResult.passed) {
+                        await message.error(checkResult.message);
+                        return;
+                    }
                     await onUpdateSure({
                         type,
                         newPropertyItem,

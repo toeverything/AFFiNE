@@ -1,6 +1,6 @@
 import type { BlockEditor } from './editor';
 import { styled, usePatchNodes } from '@toeverything/components/ui';
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { EditorProvider } from './Contexts';
 import { SelectionRect, SelectionRef } from './Selection';
@@ -24,11 +24,11 @@ interface RenderRootProps {
 const MAX_PAGE_WIDTH = 5000;
 export const MIN_PAGE_WIDTH = 1480;
 
-export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
+export const RenderRoot = ({
     editor,
     editorElement,
     children,
-}) => {
+}: PropsWithChildren<RenderRootProps>) => {
     const selectionRef = useRef<SelectionRef>(null);
     const triggeredBySelect = useRef(false);
     const [pageWidth, setPageWidth] = useState<number>(MIN_PAGE_WIDTH);
@@ -102,6 +102,12 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
         editor.getHooks().onRootNodeMouseLeave(event);
     };
 
+    const onContextmenu = (
+        event: React.MouseEvent<HTMLDivElement, MouseEvent>
+    ) => {
+        selectionRef.current?.onContextmenu(event);
+    };
+
     const onKeyDown: React.KeyboardEventHandler<HTMLDivElement> = event => {
         // IMP move into keyboard managers?
         editor.getHooks().onRootNodeKeyDown(event);
@@ -146,6 +152,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
     };
 
     const onDrop = (event: React.DragEvent<Element>) => {
+        event.preventDefault();
         editor.dragDropManager.handlerEditorDrop(event);
         editor.getHooks().onRootNodeDrop(event);
     };
@@ -165,6 +172,7 @@ export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
                 onMouseUp={onMouseUp}
                 onMouseLeave={onMouseLeave}
                 onMouseOut={onMouseOut}
+                onContextMenu={onContextmenu}
                 onKeyDown={onKeyDown}
                 onKeyDownCapture={onKeyDownCapture}
                 onKeyUp={onKeyUp}

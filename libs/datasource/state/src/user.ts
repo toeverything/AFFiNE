@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router';
 import {
     getAuth,
     onAuthStateChanged,
@@ -55,28 +56,53 @@ const _useUserAndSpace = () => {
 
     const currentSpaceId: string | undefined = useMemo(() => user?.id, [user]);
 
-    return {
-        user,
-        currentSpaceId,
-        loading,
-    };
+    return { user, currentSpaceId, loading };
 };
 
-const _useUserAndSpacesForFreeLogin = () => {
-    const [loading, setLoading] = useAtom(_loadingAtom);
+const BRAND_ID = 'AFFiNE';
 
-    useEffect(() => setLoading(false), []);
-    const BRAND_ID = 'AFFiNE';
-    return {
-        user: {
-            photo: '',
-            id: BRAND_ID,
-            nickname: BRAND_ID,
-            email: '',
-        } as UserInfo,
-        currentSpaceId: BRAND_ID,
-        loading,
-    };
+const _localTrigger = atom<boolean>(false);
+const _useUserAndSpacesForFreeLogin = () => {
+    const navigate = useNavigate();
+    const [user, setUser] = useAtom(_userAtom);
+    const [loading, setLoading] = useAtom(_loadingAtom);
+    const [localTrigger] = useAtom(_localTrigger);
+
+    useEffect(() => {
+        if (loading) {
+            navigate('/demo');
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (localTrigger) {
+            setUser({
+                photo: '',
+                id: BRAND_ID,
+                username: BRAND_ID,
+                nickname: BRAND_ID,
+                email: '',
+            });
+        } else {
+            setUser({
+                photo: '',
+                id: 'demo',
+                username: 'demo',
+                nickname: 'demo',
+                email: '',
+            });
+        }
+    }, [localTrigger, setLoading, setUser]);
+
+    const currentSpaceId: string | undefined = useMemo(() => user?.id, [user]);
+
+    return { user, currentSpaceId, loading };
+};
+
+export const useLocalTrigger = () => {
+    const [trigger, setTrigger] = useAtom(_localTrigger);
+    return [trigger, () => setTrigger(true)] as [boolean, () => void];
 };
 
 export const useUserAndSpaces = process.env['NX_LOCAL']

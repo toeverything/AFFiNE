@@ -16,7 +16,7 @@ type GridHandleProps = {
     onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
 };
 
-export const GridHandle: FC<GridHandleProps> = function ({
+export const GridHandle = function ({
     blockId,
     editor,
     enabledAddItem,
@@ -25,7 +25,7 @@ export const GridHandle: FC<GridHandleProps> = function ({
     draggable,
     alertHandleId,
     onMouseEnter,
-}) {
+}: GridHandleProps) {
     const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
     const handleMouseDown: React.MouseEventHandler<HTMLDivElement> = e => {
         if (draggable) {

@@ -1,9 +1,4 @@
-import React, {
-    FC,
-    FunctionComponent,
-    PropsWithChildren,
-    CSSProperties,
-} from 'react';
+import React from 'react';
 import { Tag, type TagProps } from '@toeverything/components/ui';
 import {
     DateValue,

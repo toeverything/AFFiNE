@@ -799,11 +799,11 @@ const EditorLeaf = ({ attributes, children, leaf }: any) => {
             <span {...attributes}>
                 <code
                     style={{
-                        backgroundColor: 'rgba(135,131,120,0.15)',
-                        borderRadius: '3px',
-                        color: '#EB5757',
-                        fontSize: '0.875em',
-                        padding: '0.25em 0.375em',
+                        backgroundColor: '#F2F5F9',
+                        borderRadius: '5px',
+                        color: '#3A4C5C',
+                        padding: '3px 8px',
+                        margin: '0 2px',
                     }}
                 >
                     {customChildren}

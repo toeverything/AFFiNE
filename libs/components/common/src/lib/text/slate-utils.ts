@@ -905,6 +905,19 @@ class SlateUtils {
         );
     }
 
+    public insertNodes(
+        nodes: SlateNode | Array<SlateNode>,
+        options?: Parameters<typeof Transforms.insertNodes>[2]
+    ) {
+        Transforms.insertNodes(this.editor, nodes, {
+            ...options,
+        });
+    }
+
+    public getNodeByPath(path: Path) {
+        Editor.node(this.editor, path);
+    }
+
     public getStartSelection() {
         return {
             anchor: this.getStart(),

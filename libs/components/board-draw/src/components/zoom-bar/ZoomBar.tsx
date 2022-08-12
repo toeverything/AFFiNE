@@ -16,7 +16,7 @@ import { MiniMap } from './mini-map';
 const zoomSelector = (s: TDSnapshot) =>
     s.document.pageStates[s.appState.currentPageId].camera.zoom;
 
-export const ZoomBar: FC = () => {
+export const ZoomBar = () => {
     const app = useTldrawApp();
     const zoom = app.useStore(zoomSelector);
 

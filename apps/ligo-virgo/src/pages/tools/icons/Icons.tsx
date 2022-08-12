@@ -3,7 +3,7 @@ import * as uiIcons from '@toeverything/components/icons';
 import { message, styled } from '@toeverything/components/ui';
 import { copy } from './copy';
 
-const IconBooth: FC<{ name: string; Icon: FC<any> }> = ({ name, Icon }) => {
+const IconBooth = ({ name, Icon }: { name: string; Icon: FC<any> }) => {
     const on_click = () => {
         copy(`<${name} />`);
         message.success('Copied ~');
@@ -18,7 +18,7 @@ const IconBooth: FC<{ name: string; Icon: FC<any> }> = ({ name, Icon }) => {
 
 const _icons = Object.entries(uiIcons).filter(([key]) => key !== 'timestamp');
 
-export const Icons: FC = () => {
+export const Icons = () => {
     const ref = useRef<HTMLHeadingElement>(null);
     return (
         <Container>

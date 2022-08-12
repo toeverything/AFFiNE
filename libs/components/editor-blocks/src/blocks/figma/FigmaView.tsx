@@ -16,7 +16,7 @@ const MESSAGES = {
 interface FigmaView extends CreateView {
     figmaUrl?: string;
 }
-export const FigmaView: FC<FigmaView> = ({ block, editor }) => {
+export const FigmaView = ({ block, editor }: FigmaView) => {
     const [figmaUrl, setFigmaUrl] = useState<string>(
         block.getProperty('embedLink')?.value
     );

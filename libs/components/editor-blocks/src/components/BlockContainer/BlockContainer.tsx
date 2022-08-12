@@ -7,13 +7,13 @@ type BlockContainerProps = Parameters<typeof Container>[0] & {
     editor: BlockEditor;
 };
 
-export const BlockContainer: FC<BlockContainerProps> = function ({
+export const BlockContainer = function ({
     block,
     children,
     className,
     editor,
     ...restProps
-}) {
+}: BlockContainerProps) {
     return (
         <Container
             className={`${className || ''} block_container`}
@@ -27,5 +27,6 @@ export const BlockContainer: FC<BlockContainerProps> = function ({
 export const Container = styled('div')<{ selected: boolean }>(
     ({ selected, theme }) => ({
         backgroundColor: selected ? theme.affine.palette.textSelected : '',
+        marginBottom: '2px',
     })
 );

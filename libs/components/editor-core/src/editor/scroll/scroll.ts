@@ -207,6 +207,7 @@ export class ScrollManager {
     }
 
     private _getKeepInViewParams(blockRect: Rect) {
+        if (this.scrollContainer == null) return 0;
         const { top, bottom } = domToRect(this._scrollContainer);
         if (blockRect.top <= top + blockRect.height * 3) {
             return -1;

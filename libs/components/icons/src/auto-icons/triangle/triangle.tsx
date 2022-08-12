@@ -1,15 +1,12 @@
 
-import { FC } from 'react';
 // eslint-disable-next-line no-restricted-imports
-import { SvgIcon } from '@mui/material';
-// eslint-disable-next-line no-restricted-imports
-import type { SvgIconProps } from '@mui/material';
+import { SvgIcon, SvgIconProps } from '@mui/material';
 
 export interface TriangleIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const TriangleIcon: FC<TriangleIconProps> = ({ color, style, ...props}) => {
+export const TriangleIcon = ({ color, style, ...props}: TriangleIconProps) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

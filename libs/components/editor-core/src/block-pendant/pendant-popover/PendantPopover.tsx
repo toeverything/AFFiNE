@@ -8,16 +8,16 @@ import {
 } from '@toeverything/components/ui';
 import { AddPendantPopover } from '../AddPendantPopover';
 
-export const PendantPopover: FC<
-    {
+export const PendantPopover = (
+    props: {
         block: AsyncBlock;
     } & Omit<PopperProps, 'content'>
-> = props => {
+) => {
     const { block, ...popoverProps } = props;
     const popoverHandlerRef = useRef<PopperHandler>();
     return (
         <Popover
-            ref={popoverHandlerRef}
+            popperHandlerRef={popoverHandlerRef}
             pointerEnterDelay={300}
             pointerLeaveDelay={200}
             placement="bottom-start"
@@ -32,6 +32,7 @@ export const PendantPopover: FC<
                             }}
                             offset={[0, -30]}
                             trigger="click"
+                            useAddIcon={false}
                         />
                     }
                     onClose={() => {

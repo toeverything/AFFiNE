@@ -10,7 +10,7 @@ import {
 import { PluginRenderRoot } from '../../utils';
 import { Subject, throttleTime } from 'rxjs';
 import { domToRect, last, Point } from '@toeverything/utils';
-const DRAG_THROTTLE_DELAY = 150;
+const DRAG_THROTTLE_DELAY = 60;
 export class LeftMenuPlugin extends BasePlugin {
     private _mousedown?: boolean;
     private _root?: PluginRenderRoot;
@@ -93,7 +93,7 @@ export class LeftMenuPlugin extends BasePlugin {
         }
     };
 
-    private _onDrop = () => {
+    private _onDrop = (e: React.DragEvent<Element>) => {
         this._lineInfo.next(undefined);
     };
     private _handleDragOverBlockNode = async (
@@ -105,16 +105,17 @@ export class LeftMenuPlugin extends BasePlugin {
             new Point(event.clientX, event.clientY)
         );
         if (block == null || ignoreBlockTypes.includes(block.type)) return;
-        const direction = await this.editor.dragDropManager.checkBlockDragTypes(
-            event,
-            block.dom,
-            block.id
-        );
+        const { direction, block: targetBlock } =
+            await this.editor.dragDropManager.checkBlockDragTypes(
+                event,
+                block.dom,
+                block.id
+            );
         this._lineInfo.next({
             direction,
             blockInfo: {
-                block,
-                rect: block.dom.getBoundingClientRect(),
+                block: targetBlock,
+                rect: targetBlock.dom.getBoundingClientRect(),
             },
         });
     };

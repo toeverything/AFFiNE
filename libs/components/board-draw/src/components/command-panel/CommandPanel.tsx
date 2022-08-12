@@ -13,7 +13,7 @@ import { DeleteShapes } from './DeleteOperation';
 import { Lock, Unlock } from './LockOperation';
 import { FrameFillColorConfig } from './FrameFillColorConfig';
 
-export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
+export const CommandPanel = ({ app }: { app: TldrawApp }) => {
     const state = app.useStore();
     const bounds = TLDR.get_selected_bounds(state);
     const camera = app.useStore(
@@ -23,7 +23,7 @@ export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
         ? app.getScreenPoint([bounds.minX, bounds.minY])
         : undefined;
 
-    const anchor = getAnchor({
+    const anchorEl = getAnchor({
         x: point?.[0] || 0,
         y: (point?.[1] || 0) + 40,
         width: bounds?.width ? bounds.width * camera.zoom : 0,
@@ -101,7 +101,7 @@ export const CommandPanel: FC<{ app: TldrawApp }> = ({ app }) => {
         <Popover
             trigger="click"
             visible={!!point}
-            anchor={anchor}
+            anchorEl={anchorEl}
             popoverDirection="none"
             content={
                 <PopoverContainer>
