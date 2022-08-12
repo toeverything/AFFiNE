@@ -115,10 +115,8 @@ export default class ClipboardParse {
             const block_utils = this.editor.getView(
                 ClipboardParse.block_types[i]
             );
-            const blocks =
-                block_utils &&
-                block_utils.html2block &&
-                block_utils.html2block(el, this.parse_dom);
+            const blocks = block_utils?.html2block?.(el, this.parse_dom);
+
             if (blocks) {
                 return blocks;
             }

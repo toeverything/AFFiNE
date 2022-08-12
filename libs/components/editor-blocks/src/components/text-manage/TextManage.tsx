@@ -45,13 +45,13 @@ const TextBlockContainer = styled(Text)(({ theme }) => ({
 }));
 
 const findSlice = (arr: string[], p: string, q: string) => {
-    let should_include = false;
+    let shouldInclude = false;
     return arr.filter(block => {
         if (block === p || block === q) {
-            should_include = !should_include;
+            shouldInclude = !shouldInclude;
             return true;
         } else {
-            return should_include;
+            return shouldInclude;
         }
     });
 };
@@ -115,11 +115,8 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
             (ref as MutableRefObject<ExtendedTextUtils>) || defaultRef;
 
         const properties = block.getProperties();
-        // const [is_select, set_is_select] = useState<boolean>();
-        // useOnSelect(block.id, (is_select: boolean) => {
-        //     set_is_select(is_select);
-        // });
-        const on_text_view_set_selection = (selection: Range | Point) => {
+
+        const onTextViewSetSelection = (selection: Range | Point) => {
             if (selection instanceof Point) {
                 //do some thing
             } else {
@@ -128,18 +125,18 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
         };
 
         // block = await editor.commands.blockCommands.createNextBlock(block.id,)
-        const on_text_view_active = useCallback(
+        const onTextViewActive = useCallback(
             (point: CursorTypes) => {
                 // TODO code to be optimized
                 if (textRef.current) {
-                    const end_selection = textRef.current.getEndSelection();
-                    const start_selection = textRef.current.getStartSelection();
+                    const endSelection = textRef.current.getEndSelection();
+                    const startSelection = textRef.current.getStartSelection();
                     if (point === 'start') {
-                        textRef.current.setSelection(start_selection);
+                        textRef.current.setSelection(startSelection);
                         return;
                     }
                     if (point === 'end') {
-                        textRef.current.setSelection(end_selection);
+                        textRef.current.setSelection(endSelection);
                         return;
                     }
                     try {
@@ -154,24 +151,24 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                             } else {
                                 blockTop = blockDomStyle.top + 5;
                             }
-                            const end_position = ReactEditor.toDOMRange(
+                            const endPosition = ReactEditor.toDOMRange(
                                 textRef.current.editor,
-                                end_selection
+                                endSelection
                             )
                                 .getClientRects()
                                 .item(0);
-                            const start_position = ReactEditor.toDOMRange(
+                            const startPosition = ReactEditor.toDOMRange(
                                 textRef.current.editor,
-                                start_selection
+                                startSelection
                             )
                                 .getClientRects()
                                 .item(0);
-                            if (end_position.left <= point.x) {
-                                textRef.current.setSelection(end_selection);
+                            if (endPosition.left <= point.x) {
+                                textRef.current.setSelection(endSelection);
                                 return;
                             }
-                            if (start_position.left >= point.x) {
-                                textRef.current.setSelection(start_selection);
+                            if (startPosition.left >= point.x) {
+                                textRef.current.setSelection(startSelection);
                                 return;
                             }
                             let range: globalThis.Range;
@@ -189,7 +186,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                                 range = document.createRange();
                                 range.setStart(caret.offsetNode, caret.offset);
                             }
-                            const slate_rang = ReactEditor.toSlateRange(
+                            const slateRang = ReactEditor.toSlateRange(
                                 textRef.current.editor,
                                 range,
                                 {
@@ -197,19 +194,19 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                                     suppressThrow: true,
                                 }
                             );
-                            textRef.current.setSelection(slate_rang);
+                            textRef.current.setSelection(slateRang);
                         }
                     } catch (e) {
                         console.log('e: ', e);
-                        textRef.current.setSelection(end_selection);
+                        textRef.current.setSelection(endSelection);
                     }
                 }
             },
             [textRef]
         );
 
-        useOnSelectActive(block.id, on_text_view_active);
-        useOnSelectSetSelection<'Range'>(block.id, on_text_view_set_selection);
+        useOnSelectActive(block.id, onTextViewActive);
+        useOnSelectSetSelection<'Range'>(block.id, onTextViewSetSelection);
 
         useEffect(() => {
             if (textRef.current) {
@@ -235,17 +232,17 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                         (block.id === lastSelectNodeId && type === 'Range') ||
                         (type === 'Range' && info)
                     ) {
-                        on_text_view_active('end');
+                        onTextViewActive('end');
                     } else {
-                        on_text_view_active('start');
+                        onTextViewActive('start');
                     }
                 }
             } catch (e) {
                 console.warn('error occured in set active in initialization');
             }
-        }, [block.id, editor.selectionManager, on_text_view_active, textRef]);
+        }, [block.id, editor.selectionManager, onTextViewActive, textRef]);
 
-        const on_text_change: TextProps['handleChange'] = async (
+        const onTextChange: TextProps['handleChange'] = async (
             value,
             textStyle
         ) => {
@@ -266,39 +263,34 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 });
             }
         };
-        const get_now_and_pre_rang_position = () => {
-            window.getSelection().getRangeAt(0);
-            // const now_range =
-            //     editor.selectionManager.currentSelectInfo?.browserSelection.getRangeAt(
-            //         0
-            //     );
-            const now_range = window.getSelection().getRangeAt(0);
-            let pre_position = null;
-            const now_position = now_range.getClientRects().item(0);
+        const getNowAndPreRangPosition = () => {
+            const nowRange = window.getSelection().getRangeAt(0);
+            let prePosition = null;
+            const nowPosition = nowRange.getClientRects().item(0);
             try {
-                if (now_range.startOffset !== 0) {
-                    const pre_rang = document.createRange();
-                    pre_rang.setStart(
-                        now_range.startContainer,
-                        now_range.startOffset + 1
+                if (nowRange.startOffset !== 0) {
+                    const preRang = document.createRange();
+                    preRang.setStart(
+                        nowRange.startContainer,
+                        nowRange.startOffset + 1
                     );
-                    pre_rang.setEnd(
-                        now_range.endContainer,
-                        now_range.endOffset + 1
+                    preRang.setEnd(
+                        nowRange.endContainer,
+                        nowRange.endOffset + 1
                     );
-                    pre_position = pre_rang.getClientRects().item(0);
+                    prePosition = preRang.getClientRects().item(0);
                 }
             } catch (e) {
                 // console.log(e);
             }
-            return { nowPosition: now_position, prePosition: pre_position };
+            return { nowPosition: nowPosition, prePosition: prePosition };
         };
 
         const onKeyboardUp = (event: React.KeyboardEvent<Element>) => {
             // if default event is prevented do noting
             // if U want to disable up/down/enter use capture event for preventing
             if (!event.isDefaultPrevented()) {
-                const positions = get_now_and_pre_rang_position();
+                const positions = getNowAndPreRangPosition();
                 const prePosition = positions.prePosition;
                 const nowPosition = positions.nowPosition;
                 if (prePosition) {
@@ -339,7 +331,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
             // editor.selectionManager.activeNextNode(block.id, 'start');
             // return;
             if (!event.isDefaultPrevented()) {
-                const positions = get_now_and_pre_rang_position();
+                const positions = getNowAndPreRangPosition();
                 const prePosition = positions.prePosition;
                 const nowPosition = positions.nowPosition;
                 // Create the last element range of slate_editor
@@ -395,7 +387,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 return false;
             }
         };
-        const on_select_all = () => {
+        const onSelectAll = () => {
             const isSelectAll =
                 textRef.current.isEmpty() || textRef.current.isSelectAll();
             if (isSelectAll) {
@@ -405,22 +397,20 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
             return false;
         };
 
-        const on_undo = () => {
+        const onUndo = () => {
             editor.undo();
         };
 
-        const on_redo = () => {
+        const onRedo = () => {
             editor.redo();
         };
 
-        const on_keyboard_esc = () => {
+        const onKeyboardEsc = () => {
             if (editor.selectionManager.getSelectedNodesIds().length === 0) {
-                const active_node_id =
+                const activeNodeId =
                     editor.selectionManager.getActivatedNodeId();
-                if (active_node_id) {
-                    editor.selectionManager.setSelectedNodesIds([
-                        active_node_id,
-                    ]);
+                if (activeNodeId) {
+                    editor.selectionManager.setSelectedNodesIds([activeNodeId]);
                     ReactEditor.blur(textRef.current.editor);
                 }
             } else {
@@ -428,7 +418,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
             }
         };
 
-        const on_shift_click = async (e: MouseEvent) => {
+        const onShiftClick = async (e: MouseEvent) => {
             if (e.shiftKey) {
                 const activeId = editor.selectionManager.getActivatedNodeId();
                 if (activeId === block.id) {
@@ -477,16 +467,16 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 className={`${otherOptions.className}`}
                 currentValue={properties.text.value}
                 textStyle={properties.textStyle}
-                handleChange={on_text_change}
+                handleChange={onTextChange}
                 handleUp={onKeyboardUp}
                 handleDown={onKeyboardDown}
                 handleLeft={onKeyboardLeft}
                 handleRight={onKeyboardRight}
-                handleSelectAll={on_select_all}
-                handleMouseDown={on_shift_click}
-                handleUndo={on_undo}
-                handleRedo={on_redo}
-                handleEsc={on_keyboard_esc}
+                handleSelectAll={onSelectAll}
+                handleMouseDown={onShiftClick}
+                handleUndo={onUndo}
+                handleRedo={onRedo}
+                handleEsc={onKeyboardEsc}
                 {...otherOptions}
             />
         );
