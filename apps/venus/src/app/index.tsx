@@ -9,6 +9,7 @@ import { Box, Button, Container, Grid, SvgIcon, Typography } from '@mui/joy';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import RedditIcon from '@mui/icons-material/Reddit';
 import TelegramIcon from '@mui/icons-material/Telegram';
+import { LogoIcon } from '@toeverything/components/icons';
 // eslint-disable-next-line no-restricted-imports
 import { useMediaQuery } from '@mui/material';
 
@@ -203,9 +204,7 @@ const GitHub = (props: { center?: boolean; flat?: boolean }) => {
     return (
         <Button
             onClick={() => {
-                window.location.replace(
-                    'https://github.com/toeverything/AFFiNE'
-                );
+                window.open('https://github.com/toeverything/AFFiNE');
             }}
             {...(props.flat ? { variant: 'plain' } : {})}
             {...{
@@ -236,7 +235,50 @@ const GitHub = (props: { center?: boolean; flat?: boolean }) => {
             startIcon={<GitHubIcon />}
             size="lg"
         >
-            GitHub
+            Check GitHub
+        </Button>
+    );
+};
+
+const AFFiNEOnline = (props: { center?: boolean; flat?: boolean }) => {
+    const matches = useMediaQuery('(max-width: 1024px)');
+
+    return (
+        <Button
+            onClick={() => {
+                window.open('https://livedemo.affine.pro/');
+            }}
+            {...(props.flat ? { variant: 'plain' } : {})}
+            {...{
+                sx: {
+                    margin: 'auto 1em',
+                    fontSize: '24px',
+                    '@media (max-width: 1024px)': {
+                        fontSize: '16px',
+                    },
+                    ...(props.flat
+                        ? {
+                              padding: matches ? '0' : '0 0.5em',
+                              ':hover': { backgroundColor: 'unset' },
+                          }
+                        : {}),
+                    ...(props.center
+                        ? {
+                              padding: '0.5em 1em',
+                              fontSize: '2em',
+                              backgroundColor: '#000',
+                              ':hover': {
+                                  backgroundColor: '#0c60d9',
+                                  boxShadow: '2px 2px 20px #08f4',
+                              },
+                          }
+                        : {}),
+                },
+            }}
+            startIcon={<LogoIcon />}
+            size="lg"
+        >
+            Try it Online
         </Button>
     );
 };
@@ -258,7 +300,10 @@ export function App() {
                 <Grid
                     container
                     spacing={2}
-                    sx={{ maxWidth: '1280px', margin: 'auto' }}
+                    sx={{
+                        maxWidth: '1280px',
+                        margin: 'auto',
+                    }}
                 >
                     <Grid xs={6}>
                         <Button
@@ -283,9 +328,7 @@ export function App() {
                         <GitHub flat />
                         <Button
                             onClick={() => {
-                                window.location.replace(
-                                    'https://blog.affine.pro'
-                                );
+                                window.open('https://blog.affine.pro');
                             }}
                             variant="plain"
                             sx={{
@@ -407,10 +450,8 @@ export function App() {
                             marginBottom: '12vh!important',
                         }}
                     >
-                        <Typography level="h2" sx={{ alignSelf: 'center' }}>
-                            Try it on
-                        </Typography>
                         <GitHub center />
+                        <AFFiNEOnline center />
                     </Box>
                 </Grid>
                 <Grid
@@ -447,7 +488,7 @@ export function App() {
                             level={matches ? 'h2' : 'h1'}
                             fontWeight={'bold'}
                         >
-                            It’s not just add-up of Docs, whiteboard, and
+                            It’s not just a collection of Docs, whiteboard, and
                             tables.
                         </Typography>
                     </Box>
@@ -465,11 +506,11 @@ export function App() {
                         }}
                     >
                         <Typography fontSize="1.2em">
-                            Transform any building blocks as you like.
+                            Transform any building block as you like.
                         </Typography>
                         <Typography fontSize="1.2em">
-                            Say goodbye to redundancy, and keep all your
-                            knowledge minimal, in your way.
+                            Say goodbye to redundancy. Store your data once, and
+                            keep your data as you like it.
                         </Typography>
                     </Box>
                 </Grid>
@@ -512,15 +553,17 @@ export function App() {
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                Docs, kanban, and databases are all fully
-                                functional at any place. You always keep
-                                what-you-see-is-what-you-get.
+                                Docs, Kanbans, and Databases are all fully
+                                functional anywhere, anytime. A truly
+                                what-you-see-is-what-you-get environment for
+                                your data.
                             </Typography>
                             <Typography
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                All pages come with docs and whiteboard mode.
+                                All pages come with a document (Paper Mode) and
+                                whiteboard (Edgeless Mode) view.
                             </Typography>
                         </Box>
                     </Grid>
@@ -588,21 +631,21 @@ export function App() {
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                No more chaos between so many views.
+                                No more chaos managing multiple views.
                             </Typography>
                             <Typography
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                Set a TODO with Markdown, and manage it in
-                                Kanban.
+                                Set a TODO with Markdown, and seamlessly edit it
+                                within a Kanban.
                             </Typography>
                             <Typography
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                Managing multi-dimensional tables should be
-                                simple as that.
+                                Managing multi-dimensional tables should be this
+                                simple – and now it is.
                             </Typography>
                         </Box>
                     </Grid>
@@ -661,16 +704,20 @@ export function App() {
                             fontSize="1.2em"
                             style={{ marginBottom: '0.25em' }}
                         >
-                            We don’t like cloud lock-in. Your data is always
-                            locally stored and secured, while you can still
-                            collaborate in real-time with others.
+                            We don’t like being locked-in, and neither should
+                            you. Privacy is at the foundation of everything we
+                            do, but it should not limit us that’s+ why there are
+                            no compromises.
                         </Typography>
                         <Typography
                             fontSize="1.2em"
                             style={{ marginBottom: '0.25em' }}
                         >
-                            Privacy is the foundation of everything we do. But
-                            it is no excuse for the bad experience.
+                            Your data is yours; it is always locally stored and
+                            secured - available to you always. While still being
+                            able enjoy collaboration features such as real-time
+                            editing and sharing with others, without any cloud
+                            setup.
                         </Typography>
                     </Box>
                 </Grid>
