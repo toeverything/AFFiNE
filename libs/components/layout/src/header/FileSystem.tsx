@@ -59,6 +59,14 @@ const StyledFileSystem = styled('div')<{ disabled?: boolean }>({
     },
 });
 
+export const fsApiSupported = () => {
+    try {
+        return 'showOpenFilePicker' in window;
+    } catch (e) {
+        return false;
+    }
+};
+
 export const FileSystem = () => {
     const [selected, onSelected] = useLocalTrigger();
     const [error, setError] = useState(false);
@@ -68,13 +76,7 @@ export const FileSystem = () => {
         setTimeout(() => setError(false), 3000);
     }, []);
 
-    const apiSupported = useMemo(() => {
-        try {
-            return 'showOpenFilePicker' in window;
-        } catch (e) {
-            return false;
-        }
-    }, []);
+    const apiSupported = useMemo(() => fsApiSupported(), []);
 
     if (apiSupported && !selected) {
         return (

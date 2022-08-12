@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { IconButton, styled } from '@toeverything/components/ui';
 import {
     LogoIcon,
@@ -5,15 +7,29 @@ import {
     SearchIcon,
     SideBarViewCloseIcon,
 } from '@toeverything/components/icons';
-import { useShowSettingsSidebar } from '@toeverything/datasource/state';
+import {
+    useShowSettingsSidebar,
+    useLocalTrigger,
+} from '@toeverything/datasource/state';
 
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
-import { FileSystem } from './FileSystem';
+import { fsApiSupported, FileSystem } from './FileSystem';
 import { CurrentPageTitle } from './Title';
 
 export const LayoutHeader = () => {
+    const [isLocalWorkspace] = useLocalTrigger();
     const { toggleSettingsSidebar: toggleInfoSidebar, showSettingsSidebar } =
         useShowSettingsSidebar();
+
+    const warningTips = useMemo(() => {
+        if (!fsApiSupported()) {
+            return 'Your browser does not support the local storage feature, please upgrade to the latest version of Chrome or Edge browser';
+        } else if (isLocalWorkspace) {
+            return 'You are in DEMO mode. Changes will NOT be saved unless you SYNC TO DISK';
+        } else {
+            return 'AFFiNE is under active development and the current version is UNSTABLE. Please DO NOT store information or data';
+        }
+    }, [isLocalWorkspace]);
 
     return (
         <StyledContainerForHeaderRoot>
@@ -53,10 +69,7 @@ export const LayoutHeader = () => {
                 </StyledContainerForEditorBoardSwitcher>
             </StyledHeaderRoot>
             <StyledUnstableTips>
-                <StyledUnstableTipsText>
-                    AFFiNE is currently under active development. This build is
-                    UNSTABLE. Please DO NOT store important data.
-                </StyledUnstableTipsText>
+                <StyledUnstableTipsText>{warningTips}</StyledUnstableTipsText>
             </StyledUnstableTips>
         </StyledContainerForHeaderRoot>
     );
