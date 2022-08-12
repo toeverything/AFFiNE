@@ -11,6 +11,7 @@ export type ModifyPanelProps = {
     iconConfig?: PendantConfig;
     isStatusSelect?: boolean;
     property?: RecastMetaProperty;
+    onTypeChange?: (type: PendantTypes) => void;
 };
 
 export type ModifyPanelContentProps = {

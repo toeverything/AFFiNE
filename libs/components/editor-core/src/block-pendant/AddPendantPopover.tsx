@@ -5,6 +5,7 @@ import {
     type PopoverProps,
     PopperHandler,
     Tag,
+    type PopperProps,
 } from '@toeverything/components/ui';
 import { TagsIcon } from '@toeverything/components/icons';
 
@@ -26,15 +27,20 @@ export const AddPendantPopover = ({
     ...popoverProps
 }: Props) => {
     const popoverHandlerRef = useRef<PopperHandler>();
+    const popperRef = useRef<any>();
     return (
         <Popover
-            ref={popoverHandlerRef}
+            popperHandlerRef={popoverHandlerRef}
+            popperRef={popperRef}
             content={
                 <CreatePendantPanel
                     block={block}
                     onSure={() => {
                         popoverHandlerRef.current?.setVisible(false);
                         onSure?.();
+                    }}
+                    onTypeChange={() => {
+                        popperRef.current?.update?.();
                     }}
                 />
             }
