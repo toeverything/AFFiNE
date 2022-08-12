@@ -1,22 +1,18 @@
 import { styled } from '@toeverything/components/ui';
 import { Link } from 'react-router-dom';
 
-export const TreeItemContainer = styled('div')`
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    color: #4c6275;
-`;
-
-export const Wrapper = styled('li')<{
+export const TreeItemContainer = styled('div')<{
     spacing: string;
     clone?: boolean;
     ghost?: boolean;
-    indicator?: boolean;
     disableSelection?: boolean;
     disableInteraction?: boolean;
     active?: boolean;
 }>`
+    display: flex;
+    align-items: center;
+    color: #4c6275;
+
     box-sizing: border-box;
     padding-left: ${({ spacing }) => spacing};
     list-style: none;
@@ -26,85 +22,19 @@ export const Wrapper = styled('li')<{
 
     ${({ clone, disableSelection }) =>
         (clone || disableSelection) &&
-        `width: 100%;
-        .Text,
-        .Count {
-            user-select: none;
-            -webkit-user-select: none;
-        }`}
-
-    ${({ indicator }) =>
-        indicator &&
-        `width: 100%;
-        .Text,
-        .Count {
-            user-select: none;
-            -webkit-user-select: none;
-        }`}
+        `
+        width: 100%;
+        user-select: none;
+        opacity: 0.7;
+        background: transparent;
+        cursor: grab;
+    `}
 
     ${({ disableInteraction }) => disableInteraction && `pointer-events: none;`}
 
     &:hover {
         background: #f5f7f8;
         border-radius: 5px;
-    }
-
-    &.clone {
-        display: inline-block;
-        padding: 0;
-        margin-left: 10px;
-        margin-top: 5px;
-        pointer-events: none;
-
-        ${TreeItemContainer} {
-            padding-right: 20px;
-            border-radius: 4px;
-            box-shadow: 0px 15px 15px 0 rgba(34, 33, 81, 0.1);
-        }
-    }
-
-    &.ghost {
-        &.indicator {
-            opacity: 1;
-            position: relative;
-            z-index: 1;
-            margin-bottom: -1px;
-
-            ${TreeItemContainer} {
-                position: relative;
-                padding: 0;
-                height: 8px;
-                border-color: #2389ff;
-                background-color: #56a1f8;
-
-                &:before {
-                    position: absolute;
-                    left: -8px;
-                    top: -4px;
-                    display: block;
-                    content: '';
-                    width: 12px;
-                    height: 12px;
-                    border-radius: 50%;
-                    border: 1px solid #2389ff;
-                }
-
-                > * {
-                    /* Items are hidden using height and opacity to retain focus */
-                    opacity: 0;
-                    height: 0;
-                }
-            }
-        }
-
-        &:not(.indicator) {
-            opacity: 0.5;
-        }
-
-        ${TreeItemContainer} > * {
-            box-shadow: none;
-            background-color: transparent;
-        }
     }
 `;
 
@@ -138,7 +68,7 @@ export const ActionButton = styled('button')<{
     border: none;
     outline: none;
     appearance: none;
-    background-color: transparent;
+    background: transparent;
     -webkit-tap-highlight-color: transparent;
 
     svg {
@@ -151,8 +81,7 @@ export const ActionButton = styled('button')<{
     }
 
     &:active {
-        background-color: ${({ background }) =>
-            background ?? 'rgba(0, 0, 0, 0.05)'};
+        background: ${({ background }) => background ?? 'rgba(0, 0, 0, 0.05)'};
 
         svg {
             fill: ${({ fill }) => fill ?? '#788491'};
@@ -170,9 +99,7 @@ export const TreeItemMoreActions = styled('div')`
     visibility: hidden;
 `;
 
-export const TextLink = styled(Link, {
-    shouldForwardProp: (prop: string) => !['active'].includes(prop),
-})<{ active?: boolean }>`
+export const TextLink = styled(Link)`
     display: flex;
     align-items: center;
     flex-grow: 1;
