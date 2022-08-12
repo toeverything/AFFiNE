@@ -507,6 +507,7 @@ const styles = style9.create({
         display: 'flex',
         width: '16px',
         margin: '0 16px 0 4px',
+        color: '#4C6275',
     },
     linkModalContainerInput: {
         flex: '1',
