@@ -24,9 +24,11 @@ import { useOnCreateSure } from './hooks';
 export const CreatePendantPanel = ({
     block,
     onSure,
+    onTypeChange,
 }: {
     block: AsyncBlock;
     onSure?: () => void;
+    onTypeChange?: (option: PendantOptions) => void;
 }) => {
     const [selectedOption, setSelectedOption] = useState<PendantOptions>();
     const [fieldName, setFieldName] = useState<string>('');
@@ -36,6 +38,10 @@ export const CreatePendantPanel = ({
         selectedOption &&
             setFieldName(generateRandomFieldName(selectedOption.type));
     }, [selectedOption]);
+
+    useEffect(() => {
+        onTypeChange?.(selectedOption);
+    }, [selectedOption, onTypeChange]);
 
     return (
         <StyledPopoverWrapper>

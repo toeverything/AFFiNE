@@ -17,7 +17,7 @@ export const PendantPopover = (
     const popoverHandlerRef = useRef<PopperHandler>();
     return (
         <Popover
-            ref={popoverHandlerRef}
+            popperHandlerRef={popoverHandlerRef}
             pointerEnterDelay={300}
             pointerLeaveDelay={200}
             placement="bottom-start"
@@ -26,13 +26,13 @@ export const PendantPopover = (
                     block={block}
                     endElement={
                         <AddPendantPopover
-                            container={popoverProps.container}
                             block={block}
                             onSure={() => {
                                 popoverHandlerRef.current?.setVisible(false);
                             }}
                             offset={[0, -30]}
                             trigger="click"
+                            useAddIcon={false}
                         />
                     }
                     onClose={() => {
