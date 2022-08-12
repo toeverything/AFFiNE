@@ -33,6 +33,7 @@ export const PendantPopover = (
                             }}
                             offset={[0, -30]}
                             trigger="click"
+                            useAddIcon={false}
                         />
                     }
                     onClose={() => {
