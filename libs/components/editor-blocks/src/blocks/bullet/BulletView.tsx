@@ -40,8 +40,9 @@ const todoIsEmpty = (contentValue: ContentColumnValue): boolean => {
         (todoValue.length === 1 && !todoValue[0]['text'])
     );
 };
-const BulletLeft = styled('div')(() => ({
+const BulletLeft = styled('div')(({ theme }) => ({
     height: '22px',
+    color: theme.affine.typography.body1.color,
 }));
 export const BulletView = ({ block, editor }: CreateView) => {
     // block.remove();
