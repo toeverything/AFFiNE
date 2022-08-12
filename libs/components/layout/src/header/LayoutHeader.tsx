@@ -52,8 +52,8 @@ export const LayoutHeader = () => {
             </StyledHeaderRoot>
             <StyledUnstableTips>
                 <StyledUnstableTipsText>
-                    AFFiNE now under active development, the version is
-                    UNSTABLE, please DO NOT store important data in this version
+                    AFFiNE is currently under active development. This build is
+                    UNSTABLE. Please DO NOT store important data.
                 </StyledUnstableTipsText>
             </StyledUnstableTips>
         </StyledContainerForHeaderRoot>
