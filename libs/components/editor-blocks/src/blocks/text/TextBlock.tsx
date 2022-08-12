@@ -11,13 +11,13 @@ import {
     Protocol,
 } from '@toeverything/datasource/db-service';
 import { TextView } from './TextView';
-import { FC } from 'react';
+
 import { getRandomString } from '@toeverything/components/common';
 
 export class TextBlock extends BaseView {
     type = Protocol.Block.Type.text;
 
-    View: FC<CreateView> = TextView;
+    View: (prop: CreateView) => JSX.Element = TextView;
 
     override async onCreate(block: AsyncBlock): Promise<AsyncBlock> {
         if (!block.getProperty('text')) {
@@ -134,7 +134,7 @@ export class TextBlock extends BaseView {
 export class Heading1Block extends BaseView {
     type = Protocol.Block.Type.heading1;
 
-    View: FC<CreateView> = TextView;
+    View: (prop: CreateView) => JSX.Element = TextView;
 
     override async onCreate(block: AsyncBlock): Promise<AsyncBlock> {
         if (!block.getProperty('text')) {
@@ -199,7 +199,7 @@ export class Heading1Block extends BaseView {
 export class Heading2Block extends BaseView {
     type = Protocol.Block.Type.heading2;
 
-    View: FC<CreateView> = TextView;
+    View: (prop: CreateView) => JSX.Element = TextView;
 
     override async onCreate(block: AsyncBlock): Promise<AsyncBlock> {
         if (!block.getProperty('text')) {
@@ -264,7 +264,7 @@ export class Heading2Block extends BaseView {
 export class Heading3Block extends BaseView {
     type = Protocol.Block.Type.heading3;
 
-    View: FC<CreateView> = TextView;
+    View: (prop: CreateView) => JSX.Element = TextView;
 
     override async onCreate(block: AsyncBlock): Promise<AsyncBlock> {
         if (!block.getProperty('text')) {

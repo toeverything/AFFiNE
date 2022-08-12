@@ -1,4 +1,4 @@
-import type { FC, CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import type { TLBounds } from '@tldraw/core';
 import { styled } from '@toeverything/components/ui';
 

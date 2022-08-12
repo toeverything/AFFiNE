@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Tooltip, styled, IconButton } from '@toeverything/components/ui';
 
 interface PenProps {

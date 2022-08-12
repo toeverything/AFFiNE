@@ -1,4 +1,4 @@
-import { FC, ReactElement, type CSSProperties } from 'react';
+import { ReactElement, type CSSProperties } from 'react';
 import style9 from 'style9';
 import {
     MuiDivider as Divider,

@@ -1,4 +1,4 @@
-import { FC, useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { StyleWithAtRules } from 'style9';
 
 import { CreateView } from '@toeverything/framework/virgo';

@@ -1,4 +1,4 @@
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { styled } from '@toeverything/components/ui';
 import type { AsyncBlock } from '../editor';
 import { PendantPopover } from './pendant-popover';

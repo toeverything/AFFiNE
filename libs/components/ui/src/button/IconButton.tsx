@@ -1,5 +1,4 @@
 import type {
-    FC,
     MouseEventHandler,
     CSSProperties,
     PropsWithChildren,

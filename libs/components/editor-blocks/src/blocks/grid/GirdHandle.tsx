@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { useState } from 'react';
 import { styled } from '@toeverything/components/ui';
 import { BlockEditor } from '@toeverything/framework/virgo';

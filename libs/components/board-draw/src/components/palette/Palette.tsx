@@ -1,4 +1,4 @@
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { useMemo } from 'react';
 import { styled, Tooltip } from '@toeverything/components/ui';
 import { ShapeColorNoneIcon } from '@toeverything/components/icons';

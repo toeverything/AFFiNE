@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import { Upload } from '../../components/upload/upload';
 import { services, FileColumnValue } from '@toeverything/datasource/db-service';

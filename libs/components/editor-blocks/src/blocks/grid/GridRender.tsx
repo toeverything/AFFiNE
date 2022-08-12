@@ -1,8 +1,7 @@
-import { FC } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import { BlockContainer } from '../../components/BlockContainer';
 
-export function GridRender(creator: FC<CreateView>) {
+export function GridRender(creator: (prop: CreateView) => JSX.Element) {
     return function GridWithItem(props: CreateView) {
         const { editor, block } = props;
         return (

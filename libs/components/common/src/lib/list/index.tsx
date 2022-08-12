@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import clsx from 'clsx';
 import style9 from 'style9';
@@ -21,7 +21,7 @@ export const commonListContainer = 'commonListContainer';
 type Content = {
     id: string;
     content: string;
-    icon: FC<SvgIconProps>;
+    icon: (prop: SvgIconProps) => JSX.Element;
 };
 
 export type CommonListItem = {

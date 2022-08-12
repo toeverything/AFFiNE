@@ -1,7 +1,6 @@
 import {
     useState,
     useEffect,
-    FC,
     type MouseEvent,
     type DragEvent,
     type ReactNode,

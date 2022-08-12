@@ -5,7 +5,7 @@ import {
     Protocol,
 } from '@toeverything/datasource/db-service';
 import { AsyncBlock, type CreateView } from '@toeverything/framework/virgo';
-import { useRef, type FC } from 'react';
+import { useRef } from 'react';
 import {
     TextManage,
     type ExtendedTextUtils,

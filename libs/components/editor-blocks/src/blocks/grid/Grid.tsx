@@ -1,6 +1,6 @@
 import { RenderBlock } from '@toeverything/components/editor-core';
 import { CreateView } from '@toeverything/framework/virgo';
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GridHandle } from './GirdHandle';
 import { styled } from '@toeverything/components/ui';
 import ReactDOM from 'react-dom';

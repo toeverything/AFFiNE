@@ -1,4 +1,4 @@
-import type { FC, PropsWithChildren, CSSProperties } from 'react';
+import type { PropsWithChildren, CSSProperties } from 'react';
 import { Clickable } from '../clickable';
 import { styled } from '../styled';
 

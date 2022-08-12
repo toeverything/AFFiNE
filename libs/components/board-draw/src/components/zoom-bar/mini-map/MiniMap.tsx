@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
 import { TLDR } from '@toeverything/components/board-state';

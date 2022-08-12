@@ -10,13 +10,13 @@ import {
     getTextProperties,
     SelectBlock,
 } from '@toeverything/framework/virgo';
-import { FC } from 'react';
+
 import { TextView } from './TextView';
 
 export class QuoteBlock extends BaseView {
     type = Protocol.Block.Type.quote;
 
-    View: FC<CreateView> = TextView;
+    View: (prop: CreateView) => JSX.Element = TextView;
 
     // override ChildrenView = IndentWrapper;
 
@@ -83,7 +83,7 @@ export class QuoteBlock extends BaseView {
 export class CalloutBlock extends BaseView {
     type = Protocol.Block.Type.callout;
 
-    View: FC<CreateView> = TextView;
+    View: (prop: CreateView) => JSX.Element = TextView;
 
     // override ChildrenView = IndentWrapper;
 

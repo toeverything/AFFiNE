@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { MoveToIcon } from '@toeverything/components/icons';
 import {
     ListItem,

@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import format from 'date-fns/format';
 import { Typography, styled } from '@toeverything/components/ui';
 import { useUserAndSpaces } from '@toeverything/datasource/state';

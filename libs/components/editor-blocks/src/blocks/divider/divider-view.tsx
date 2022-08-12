@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { CreateView } from '@toeverything/framework/virgo';
 import { styled } from '@toeverything/components/ui';
 import { useOnSelect } from '@toeverything/components/editor-core';

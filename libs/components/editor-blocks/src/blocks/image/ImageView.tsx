@@ -6,7 +6,7 @@ import {
 import { styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
 import { CreateView } from '@toeverything/framework/virgo';
-import { FC, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image as SourceView } from '../../components/ImageView';
 import { Upload } from '../../components/upload/upload';
 import { SCENE_CONFIG } from '../group/config';

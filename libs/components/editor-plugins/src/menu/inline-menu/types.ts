@@ -1,4 +1,3 @@
-import React, { type FC } from 'react';
 import type { SvgIconProps } from '@toeverything/components/ui';
 import type { Virgo, SelectionInfo } from '@toeverything/framework/virgo';
 import { inlineMenuNames, INLINE_MENU_UI_TYPES } from './config';
@@ -23,7 +22,7 @@ export type ClickItemHandler = ({
 
 export type IconItemType = {
     type: typeof INLINE_MENU_UI_TYPES['icon'];
-    icon: FC<SvgIconProps>;
+    icon: (prop: SvgIconProps) => JSX.Element;
     nameKey: InlineMenuNamesType;
     name: typeof inlineMenuNames[InlineMenuNamesType];
     onClick?: ClickItemHandler;
@@ -32,7 +31,7 @@ export type IconItemType = {
 
 export type DropdownItemType = {
     type: typeof INLINE_MENU_UI_TYPES['dropdown'];
-    icon: FC<SvgIconProps>;
+    icon: (prop: SvgIconProps) => JSX.Element;
     nameKey: InlineMenuNamesType;
     name: typeof inlineMenuNames[InlineMenuNamesType];
     children: IconItemType[];

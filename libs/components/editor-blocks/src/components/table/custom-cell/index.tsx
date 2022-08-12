@@ -1,4 +1,3 @@
-import type { FC } from 'react';
 import { ColumnType } from '@toeverything/datasource/db-service';
 import type { CustomCellProps as TableCustomCellProps } from '../basic-table';
 import { DEFAULT_RENDER_CELL } from '../basic-table';
@@ -16,7 +15,7 @@ const DefaultCell = ({ onChange, ...props }: CellProps) => {
 /**
  * @deprecated
  */
-const cellMap: Record<ColumnType, FC<CellProps<any>>> = {
+const cellMap: Record<ColumnType, (prop: CellProps<any>) => JSX.Element> = {
     [ColumnType.content]: DefaultCell,
     [ColumnType.number]: DefaultCell,
     [ColumnType.enum]: SelectCell,

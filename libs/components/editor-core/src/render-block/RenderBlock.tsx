@@ -1,5 +1,5 @@
 import { styled } from '@toeverything/components/ui';
-import { FC, useLayoutEffect, useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 
 // import { RenderChildren } from './RenderChildren';
 import { useEditor } from '../Contexts';

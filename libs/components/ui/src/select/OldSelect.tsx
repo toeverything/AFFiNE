@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { styled } from '../styled';
-import type { FC, CSSProperties, ChangeEvent } from 'react';
+import type { CSSProperties, ChangeEvent } from 'react';
 
 /**
  * WARNING: This component is about to be deprecated, use Select replace
