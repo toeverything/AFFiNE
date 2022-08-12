@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { Virgo, PluginHooks } from '@toeverything/framework/virgo';
 import { Cascader, CascaderItemProps } from '@toeverything/components/ui';
+import { Protocol } from '@toeverything/datasource/db-service';
 import { TurnIntoMenu } from './TurnIntoMenu';
 import {
+    AddViewIcon,
     DeleteCashBinIcon,
     TurnIntoIcon,
     UngroupIcon,
@@ -44,6 +46,24 @@ export function LeftMenu(props: LeftMenuProps) {
                     />
                 ),
                 icon: <TurnIntoIcon />,
+            },
+            {
+                title: 'Add A Below Block',
+                icon: <AddViewIcon />,
+                callback: async () => {
+                    const block = await editor.getBlockById(blockId);
+                    const belowType = [
+                        Protocol.Block.Type.numbered,
+                        Protocol.Block.Type.bullet,
+                        Protocol.Block.Type.todo,
+                    ].some(type => type === block.type)
+                        ? block.type
+                        : Protocol.Block.Type.text;
+                    editor.commands.blockCommands.createNextBlock(
+                        blockId,
+                        belowType
+                    );
+                },
             },
             {
                 title: 'Divide Here As A New Group',
