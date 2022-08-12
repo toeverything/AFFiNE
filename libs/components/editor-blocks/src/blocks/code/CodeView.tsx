@@ -52,6 +52,8 @@ import {
     BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { copyToClipboard } from '@toeverything/utils';
+import { DuplicateIcon } from '@toeverything/components/icons';
+
 interface CreateCodeView extends CreateView {
     style9?: StyleWithAtRules;
     containerClassName?: string;
@@ -117,10 +119,21 @@ const CodeBlock = styled('div')(({ theme }) => ({
         justifyContent: 'space-between',
     },
     '.copy-block': {
-        padding: '6px 10px',
+        padding: '0px 10px',
         backgroundColor: '#fff',
+        height: '32px',
+        display: 'flex',
+        width: '90px',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: '#4C6275',
+        fontSize: '14px',
         borderRadius: theme.affine.shape.borderRadius,
         cursor: 'pointer',
+        svg: {
+            marginRight: '4px',
+            display: 'block',
+        },
     },
     '.cm-focused': {
         outline: 'none !important',
@@ -187,7 +200,7 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
                     </div>
                     <div>
                         <div className="copy-block" onClick={copyCode}>
-                            Copy
+                            <DuplicateIcon></DuplicateIcon>Copy
                         </div>
                     </div>
                 </div>
