@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { services } from '@toeverything/datasource/db-service';
-import type { ReturnEditorBlock } from '@toeverything/datasource/db-service';
-import type { TDShape } from '@toeverything/components/board-types';
 import { Editor } from '@toeverything/components/board-shapes';
+import type { TDShape } from '@toeverything/components/board-types';
+import type { ReturnEditorBlock } from '@toeverything/datasource/db-service';
+import { services } from '@toeverything/datasource/db-service';
 import { usePageClientWidth } from '@toeverything/datasource/state';
+import { useEffect, useState } from 'react';
 
 export const useShapes = (workspace: string, rootBlockId: string) => {
     const { pageClientWidth } = usePageClientWidth();

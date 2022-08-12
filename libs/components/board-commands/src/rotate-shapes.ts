@@ -1,10 +1,10 @@
 import { Utils } from '@tldraw/core';
-import type {
-    TldrawCommand,
-    TDShape,
-} from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
 import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
+import type {
+    TDShape,
+    TldrawCommand,
+} from '@toeverything/components/board-types';
 
 const PI2 = Math.PI * 2;
 

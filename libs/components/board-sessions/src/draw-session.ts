@@ -1,13 +1,13 @@
 import { Utils } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
 import {
+    DrawShape,
     SessionType,
     TDStatus,
-    TldrawPatch,
     TldrawCommand,
-    DrawShape,
+    TldrawPatch,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
 import { BaseSession } from './base-session';
 
 export class DrawSession extends BaseSession {

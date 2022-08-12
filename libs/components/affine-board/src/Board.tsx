@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Tldraw } from '@toeverything/components/board-draw';
-import { tools } from '@toeverything/components/board-tools';
-import { getSession } from '@toeverything/components/board-sessions';
-import * as commands from '@toeverything/components/board-commands';
-import { TldrawApp, deepCopy } from '@toeverything/components/board-state';
-import { TDShapeType } from '@toeverything/components/board-types';
-import { services } from '@toeverything/datasource/db-service';
-import { useShapes } from './hooks';
-import { RecastBlockProvider } from '@toeverything/components/editor-core';
 import { createEditor } from '@toeverything/components/affine-editor';
+import * as commands from '@toeverything/components/board-commands';
+import { Tldraw } from '@toeverything/components/board-draw';
+import { getSession } from '@toeverything/components/board-sessions';
+import { deepCopy, TldrawApp } from '@toeverything/components/board-state';
+import { tools } from '@toeverything/components/board-tools';
+import { TDShapeType } from '@toeverything/components/board-types';
+import { RecastBlockProvider } from '@toeverything/components/editor-core';
+import { services } from '@toeverything/datasource/db-service';
 import { AsyncBlock, BlockEditor } from '@toeverything/framework/virgo';
+import { useEffect, useState } from 'react';
+import { useShapes } from './hooks';
 
 interface AffineBoardProps {
     workspace: string;

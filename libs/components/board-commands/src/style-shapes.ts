@@ -1,14 +1,11 @@
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import {
     Patch,
     ShapeStyles,
-    TldrawCommand,
     TDShape,
-    // TDShapeType,
-    // TextShape
+    TldrawCommand,
 } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
-import { Vec } from '@tldraw/vec';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export function styleShapes(
     app: TldrawApp,

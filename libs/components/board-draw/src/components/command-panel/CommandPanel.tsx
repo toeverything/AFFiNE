@@ -1,16 +1,15 @@
+import { TLDR, TldrawApp } from '@toeverything/components/board-state';
+import { Divider, Popover, styled } from '@toeverything/components/ui';
 import { Fragment } from 'react';
-import { Vec } from '@tldraw/vec';
-import { TldrawApp, TLDR } from '@toeverything/components/board-state';
-import { Popover, styled, Divider } from '@toeverything/components/ui';
-import { getAnchor, useConfig } from './utils';
 import { BorderColorConfig } from './BorderColorConfig';
+import { DeleteShapes } from './DeleteOperation';
 import { FillColorConfig } from './FillColorConfig';
 import { FontSizeConfig } from './FontSizeConfig';
-import { StrokeLineStyleConfig } from './stroke-line-style-config';
-import { Group, UnGroup } from './GroupOperation';
-import { DeleteShapes } from './DeleteOperation';
-import { Lock, Unlock } from './LockOperation';
 import { FrameFillColorConfig } from './FrameFillColorConfig';
+import { Group, UnGroup } from './GroupOperation';
+import { Lock, Unlock } from './LockOperation';
+import { StrokeLineStyleConfig } from './stroke-line-style-config';
+import { getAnchor, useConfig } from './utils';
 
 export const CommandPanel = ({ app }: { app: TldrawApp }) => {
     const state = app.useStore();

@@ -1,18 +1,18 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import {
+    ShapeColorDuotoneIcon,
+    ShapeColorNoneIcon,
+} from '@toeverything/components/icons';
+import {
+    IconButton,
     Popover,
     Tooltip,
-    IconButton,
     useTheme,
 } from '@toeverything/components/ui';
-import {
-    ShapeColorNoneIcon,
-    ShapeColorDuotoneIcon,
-} from '@toeverything/components/icons';
 import { countBy, maxBy } from '@toeverything/utils';
-import { getShapeIds } from './utils';
 import { Palette } from '../palette';
+import { getShapeIds } from './utils';
 
 interface BorderColorConfigProps {
     app: TldrawApp;

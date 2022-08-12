@@ -1,11 +1,11 @@
 import { Vec } from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
 import {
     SessionType,
     TDStatus,
-    TldrawPatch,
     TldrawCommand,
+    TldrawPatch,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
 import { BaseSession } from './base-session';
 export class LaserSession extends BaseSession {
     type = SessionType.Draw;

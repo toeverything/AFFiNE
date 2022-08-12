@@ -1,7 +1,7 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
-import { IconButton, Tooltip } from '@toeverything/components/ui';
 import { LockIcon, UnlockIcon } from '@toeverything/components/icons';
+import { IconButton, Tooltip } from '@toeverything/components/ui';
 import { getShapeIds } from './utils';
 
 interface GroupAndUnGroupProps {

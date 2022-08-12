@@ -1,12 +1,12 @@
-import { TDShape, TDShapeType } from '@toeverything/components/board-types';
 import { Utils } from '@tldraw/core';
-import type {
-    Patch,
-    TldrawCommand,
-    TDBinding,
-} from '@toeverything/components/board-types';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import { TLDR } from '@toeverything/components/board-state';
+import type {
+    Patch,
+    TDBinding,
+    TldrawCommand,
+} from '@toeverything/components/board-types';
+import { TDShape, TDShapeType } from '@toeverything/components/board-types';
 
 export function groupShapes(
     app: TldrawApp,

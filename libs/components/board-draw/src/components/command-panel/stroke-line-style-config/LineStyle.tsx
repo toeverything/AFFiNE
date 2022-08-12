@@ -1,15 +1,15 @@
 import { DashStyle, StrokeWidth } from '@toeverything/components/board-types';
 import {
-    LineNoneIcon,
-    DashLineIcon,
-    SolidLineIcon,
     BrushIcon,
+    DashLineIcon,
+    LineNoneIcon,
+    SolidLineIcon,
 } from '@toeverything/components/icons';
 import {
     IconButton,
+    Slider,
     styled,
     Tooltip,
-    Slider,
 } from '@toeverything/components/ui';
 
 export const lineStyles = [

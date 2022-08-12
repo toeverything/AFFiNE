@@ -8,21 +8,17 @@
  * 5. All Plugins should inherit from BasePlugin, in the form of objects
  * 6. Dependencies between plugins are not supported for the time being
  */
-// import { CompleteInfoSelectOption } from '@authing/react-ui-components/components/CompleteInfo/interface';
-import type {
-    BlockFlavors,
-    BlockFlavorKeys,
-} from '@toeverything/datasource/db-service';
 import type { PatchNode } from '@toeverything/components/ui';
+import type { BlockFlavors } from '@toeverything/datasource/db-service';
 import type { IdList, SelectionInfo, SelectionManager } from './selection';
 
+import { Point } from '@toeverything/utils';
+import { Observable } from 'rxjs';
 import type { AsyncBlock } from './block';
 import type { BlockHelper } from './block/block-helper';
 import type { BlockCommands } from './commands/block-commands';
 import type { DragDropManager } from './drag-drop';
 import { MouseManager } from './mouse';
-import { Observable } from 'rxjs';
-import { Point } from '@toeverything/utils';
 import { ScrollManager } from './scroll';
 
 // import { BrowserClipboard } from './clipboard/browser-clipboard';

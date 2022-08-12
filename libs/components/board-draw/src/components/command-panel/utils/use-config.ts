@@ -1,7 +1,7 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import { TDShapeType } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
 
 interface Config {
     type:

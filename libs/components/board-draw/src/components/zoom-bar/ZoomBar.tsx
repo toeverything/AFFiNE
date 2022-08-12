@@ -1,14 +1,14 @@
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import {
-    MuiIconButton as IconButton,
     MuiButton as Button,
+    MuiIconButton as IconButton,
     styled,
 } from '@toeverything/components/ui';
-import RemoveIcon from '@mui/icons-material/Remove';
-import AddIcon from '@mui/icons-material/Add';
-import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 
-import { useTldrawApp } from '../../hooks';
 import { TDSnapshot } from '@toeverything/components/board-types';
+import { useTldrawApp } from '../../hooks';
 
 import { MiniMap } from './mini-map';
 

@@ -1,11 +1,11 @@
 import { TLBounds, Utils } from '@tldraw/core';
+import type { TldrawApp } from '@toeverything/components/board-state';
 import {
     SessionType,
-    TldrawPatch,
     TDStatus,
     TldrawCommand,
+    TldrawPatch,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
 import { BaseSession } from './base-session';
 
 export class BrushSession extends BaseSession {

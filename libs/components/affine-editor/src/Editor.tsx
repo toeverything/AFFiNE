@@ -1,8 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 import {
-    RenderRoot,
     RenderBlock,
+    RenderRoot,
     type BlockEditor,
 } from '@toeverything/components/editor-core';
 import { useCurrentEditors } from '@toeverything/datasource/state';

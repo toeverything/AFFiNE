@@ -4,9 +4,9 @@ import { TLDR } from '@toeverything/components/board-state';
 import { styled } from '@toeverything/components/ui';
 import { useTldrawApp } from '../../../hooks';
 
+import { getViewportBound, processBound } from './bounds';
 import { SimplifiedShape } from './SimplifiedShape';
 import { Viewport } from './Viewport';
-import { processBound, getViewportBound } from './bounds';
 
 const MINI_MAP_WIDTH = 150;
 const MINI_MAP_HEIGHT = 100;

@@ -1,6 +1,6 @@
-import type { TldrawCommand } from '@toeverything/components/board-types';
 import { Utils } from '@tldraw/core';
 import type { TldrawApp } from '@toeverything/components/board-state';
+import type { TldrawCommand } from '@toeverything/components/board-types';
 
 export function duplicatePage(app: TldrawApp, pageId: string): TldrawCommand {
     const newId = Utils.uniqueId();

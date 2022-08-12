@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { TLBounds, Utils } from '@tldraw/core';
+import { Vec } from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import type {
     ArrowShape,
     PagePartial,
-    TldrawCommand,
     TDShape,
+    TldrawCommand,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
-import { TLDR } from '@toeverything/components/board-state';
-import { Utils, TLBounds } from '@tldraw/core';
-import { Vec } from '@tldraw/vec';
 
 export function moveShapesToPage(
     app: TldrawApp,
