@@ -211,7 +211,7 @@ export const TextView = ({
         block.firstCreateFlag = true;
     };
     const onTab: TextProps['handleTab'] = async ({ isShiftKey }) => {
-        await tabBlock(block, isShiftKey);
+        await tabBlock(editor, block, isShiftKey);
         return true;
     };
 
