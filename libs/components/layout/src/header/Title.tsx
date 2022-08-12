@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { styled, Typography } from '@toeverything/components/ui';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, styled } from '@toeverything/components/ui';
 
 import { services } from '@toeverything/datasource/db-service';
 import { useUserAndSpaces } from '@toeverything/datasource/state';

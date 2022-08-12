@@ -1,5 +1,5 @@
+import { ListIcon, ListItem, styled } from '@toeverything/components/ui';
 import type { ReactNode } from 'react';
-import { styled, ListItem, ListIcon } from '@toeverything/components/ui';
 
 type TabItemTitleProps = {
     icon: ReactNode;

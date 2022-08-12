@@ -1,26 +1,15 @@
-import React, {
-    useState,
-    MouseEvent,
-    useCallback,
-    useEffect,
-    useRef,
-} from 'react';
 import { services, TemplateFactory } from '@toeverything/datasource/db-service';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
-import { copyToClipboard } from '@toeverything/utils';
-import { ViewSidebarIcon } from '@toeverything/components/common';
 import {
-    MuiSnackbar as Snackbar,
-    MuiPopover as Popover,
-    ListButton,
-    MuiDivider as Divider,
-    MuiSwitch as Switch,
-    styled,
     BaseButton,
+    ListButton,
+    MuiPopover as Popover,
+    styled,
 } from '@toeverything/components/ui';
-import { useUserAndSpaces } from '@toeverything/datasource/state';
 import { useFlag } from '@toeverything/datasource/feature-flags';
+import { useUserAndSpaces } from '@toeverything/datasource/state';
 const NewFromTemplatePortalContainer = styled('div')({
     width: '320p',
     padding: '15px',

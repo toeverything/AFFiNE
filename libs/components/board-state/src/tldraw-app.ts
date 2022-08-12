@@ -3,77 +3,77 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable no-restricted-syntax */
-import { Vec } from '@tldraw/vec';
 import {
+    TLBounds,
     TLBoundsEventHandler,
     TLBoundsHandleEventHandler,
-    TLKeyboardEventHandler,
-    TLShapeCloneHandler,
     TLCanvasEventHandler,
+    TLDropEventHandler,
+    TLKeyboardEventHandler,
     TLPageState,
     TLPinchEventHandler,
     TLPointerEventHandler,
+    TLShapeCloneHandler,
     TLWheelEventHandler,
     Utils,
-    TLBounds,
-    TLDropEventHandler,
 } from '@tldraw/core';
+import { Vec } from '@tldraw/vec';
 import {
-    FlipType,
-    TDDocument,
-    MoveType,
+    clearPrevSize,
+    defaultStyle,
+    shapeUtils,
+} from '@toeverything/components/board-shapes';
+import {
     AlignType,
-    StretchType,
+    ArrowShape,
+    BaseSessionType,
     DistributeType,
+    FIT_TO_SCREEN_PADDING,
+    FlipType,
+    GRID_SIZE,
+    GroupShape,
+    IMAGE_EXTENSIONS,
+    MoveType,
+    SessionType,
     ShapeStyles,
+    StretchType,
+    SVG_EXPORT_PADDING,
+    TDAsset,
+    TDAssets,
+    TDAssetType,
+    TDBinding,
+    TDDocument,
+    TDExport,
+    TDExportType,
+    TDPage,
     TDShape,
     TDShapeType,
     TDSnapshot,
     TDStatus,
-    TDPage,
-    TDBinding,
-    GroupShape,
-    TldrawCommand,
-    TDUser,
-    SessionType,
     TDToolType,
-    TDAssetType,
-    TDAsset,
-    TDAssets,
-    TDExport,
-    ArrowShape,
-    TDExportType,
+    TDUser,
+    TldrawCommand,
     USER_COLORS,
-    FIT_TO_SCREEN_PADDING,
-    GRID_SIZE,
-    IMAGE_EXTENSIONS,
     VIDEO_EXTENSIONS,
-    SVG_EXPORT_PADDING,
-    BaseSessionType,
 } from '@toeverything/components/board-types';
+import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 import {
-    migrate,
     FileSystemHandle,
-    loadFileHandle,
-    openFromFileSystem,
-    saveToFileSystem,
-    openAssetFromFileSystem,
     fileToBase64,
     fileToText,
     getImageSizeFromSrc,
     getVideoSizeFromSrc,
+    loadFileHandle,
+    migrate,
+    openAssetFromFileSystem,
+    openFromFileSystem,
+    saveToFileSystem,
 } from './data';
-import { TLDR } from './tldr';
-import {
-    shapeUtils,
-    defaultStyle,
-    clearPrevSize,
-} from '@toeverything/components/board-shapes';
-import { StateManager } from './manager/state-manager';
 import { getClipboard, setClipboard } from './idb-clipboard';
+import { StateManager } from './manager/state-manager';
+import { TLDR } from './tldr';
 import type { Commands } from './types/commands';
 import type { BaseTool } from './types/tool';
-import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 
 const uuid = Utils.uniqueId();
 

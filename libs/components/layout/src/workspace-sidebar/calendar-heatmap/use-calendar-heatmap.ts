@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState, createElement } from 'react';
-import { atom, useAtom } from 'jotai';
 import type { PickersDayProps } from '@toeverything/components/ui';
+import { atom, useAtom } from 'jotai';
+import { createElement, useCallback, useState } from 'react';
 
-import type { CalendarDay } from './types';
 import type { CalendarHeatmapProps } from './CalendarHeatmap';
 import { HeatedDay } from './HeatedDay';
-import { fakeFetch, fetchActivitiesHeatmap } from './utils';
+import type { CalendarDay } from './types';
 // import { usePageTree } from 'PageTree';
 
 const highlightedDaysAtom = atom<CalendarDay[] | undefined>([]);

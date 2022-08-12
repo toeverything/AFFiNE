@@ -1,9 +1,8 @@
-import { Utils, TLPointerEventHandler } from '@tldraw/core';
+import { TLPointerEventHandler, Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
 import { Arrow } from '@toeverything/components/board-shapes';
-import { SessionType, TDShapeType } from '@toeverything/components/board-types';
 import { BaseTool, BaseToolStatus } from '@toeverything/components/board-state';
-import { services } from '@toeverything/datasource/db-service';
+import { SessionType, TDShapeType } from '@toeverything/components/board-types';
 
 export class ArrowTool extends BaseTool {
     override type = TDShapeType.Arrow as const;

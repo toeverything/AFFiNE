@@ -1,9 +1,9 @@
-import createVanilla, { StoreApi } from 'zustand/vanilla';
-import create, { UseBoundStore } from 'zustand';
-import * as idb from 'idb-keyval';
-import { deepCopy } from './deep-copy';
-import type { Patch, Command } from '@toeverything/components/board-types';
 import { Utils } from '@tldraw/core';
+import type { Command, Patch } from '@toeverything/components/board-types';
+import * as idb from 'idb-keyval';
+import create, { UseBoundStore } from 'zustand';
+import createVanilla, { StoreApi } from 'zustand/vanilla';
+import { deepCopy } from './deep-copy';
 
 export class StateManager<T extends Record<string, any>> {
     /**

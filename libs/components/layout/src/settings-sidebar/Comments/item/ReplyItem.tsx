@@ -1,4 +1,3 @@
-import { styled } from '@toeverything/components/ui';
 import type { CommentReply } from '@toeverything/datasource/db-service';
 
 import { CommentContent } from './CommentContent';

@@ -1,6 +1,6 @@
-import * as Y from 'yjs';
-import sqlite, { Database, SqlJsStatic } from 'sql.js';
 import { Observable } from 'lib0/observable.js';
+import sqlite, { Database, SqlJsStatic } from 'sql.js';
+import * as Y from 'yjs';
 
 const PREFERRED_TRIM_SIZE = 500;
 

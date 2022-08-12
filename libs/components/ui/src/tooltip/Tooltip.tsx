@@ -1,8 +1,8 @@
-import { type PropsWithChildren, type CSSProperties } from 'react';
-import { type PopperProps, Popper } from '../popper';
-import { PopoverContainer, placementToContainerDirection } from '../popover';
-import type { TooltipProps } from './interface';
+import { type CSSProperties, type PropsWithChildren } from 'react';
+import { placementToContainerDirection, PopoverContainer } from '../popover';
+import { Popper, type PopperProps } from '../popper';
 import { useTheme } from '../theme';
+import type { TooltipProps } from './interface';
 
 const useTooltipStyle = (): CSSProperties => {
     const theme = useTheme();

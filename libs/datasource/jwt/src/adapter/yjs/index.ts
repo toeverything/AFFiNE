@@ -5,17 +5,17 @@ import { Buffer } from 'buffer';
 import { saveAs } from 'file-saver';
 import { fromEvent } from 'file-selector';
 import LRUCache from 'lru-cache';
-import { debounce } from 'ts-debounce';
 import { nanoid } from 'nanoid';
+import { debounce } from 'ts-debounce';
 import { Awareness } from 'y-protocols/awareness.js';
 import {
-    Doc,
-    Array as YArray,
-    Map as YMap,
-    transact,
-    encodeStateAsUpdate,
     applyUpdate,
+    Array as YArray,
+    Doc,
+    encodeStateAsUpdate,
+    Map as YMap,
     snapshot,
+    transact,
 } from 'yjs';
 
 import {
@@ -31,12 +31,12 @@ import { getLogger, sha3, sleep } from '../../utils';
 import { YjsRemoteBinaries } from './binary';
 import { YjsBlockInstance } from './block';
 import { GateKeeper } from './gatekeeper';
-import {
-    YjsContentOperation,
-    DO_NOT_USE_THIS_OR_YOU_WILL_BE_FIRED_SYMBOL_INTO_INNER as INTO_INNER,
-} from './operation';
-import { EmitEvents, Suspend } from './listener';
 import { YjsHistoryManager } from './history';
+import { EmitEvents, Suspend } from './listener';
+import {
+    DO_NOT_USE_THIS_OR_YOU_WILL_BE_FIRED_SYMBOL_INTO_INNER as INTO_INNER,
+    YjsContentOperation,
+} from './operation';
 import { YjsProvider } from './provider';
 
 declare const JWT_DEV: boolean;
@@ -142,15 +142,14 @@ async function _initYjsDatabase(
 
 export type { YjsBlockInstance } from './block';
 export type { YjsContentOperation } from './operation';
+export { getYjsProviders } from './provider';
+export type { YjsProviderOptions } from './provider';
 
 export type YjsInitOptions = {
     userId?: string;
     token?: string;
     provider?: Record<string, YjsProvider>;
 };
-
-export { getYjsProviders } from './provider';
-export type { YjsProviderOptions } from './provider';
 
 export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
     private readonly _provider: YjsProviders;

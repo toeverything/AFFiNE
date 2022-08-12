@@ -1,9 +1,8 @@
-import * as React from 'react';
 /* eslint-disable no-restricted-imports */
 import MuiCheckbox, { type CheckboxProps } from '@mui/material/Checkbox';
 import {
-    CheckBoxUncheckIcon,
     CheckBoxCheckIcon,
+    CheckBoxUncheckIcon,
 } from '@toeverything/components/icons';
 import { styled } from '../styled';
 

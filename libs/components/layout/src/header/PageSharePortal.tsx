@@ -1,18 +1,17 @@
-import style9 from 'style9';
-import LanguageIcon from '@mui/icons-material/Language';
-import { useState, MouseEvent } from 'react';
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
+import LanguageIcon from '@mui/icons-material/Language';
 import ShareIcon from '@mui/icons-material/Share';
 import {
-    MuiSnackbar as Snackbar,
     MuiButton as Button,
-    MuiDivider as Divider,
     MuiInputBase as InputBase,
     MuiPaper as Paper,
+    MuiSnackbar as Snackbar,
     MuiSwitch as Switch,
     Popover,
 } from '@toeverything/components/ui';
 import { copyToClipboard } from '@toeverything/utils';
+import { useState } from 'react';
+import style9 from 'style9';
 
 const styles = style9.create({
     pageShareBox: {

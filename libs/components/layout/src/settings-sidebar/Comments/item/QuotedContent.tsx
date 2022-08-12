@@ -1,5 +1,5 @@
-import { styled } from '@toeverything/components/ui';
 import { DoneIcon } from '@toeverything/components/icons';
+import { styled } from '@toeverything/components/ui';
 
 type QuotedContentProps = {
     content: string;

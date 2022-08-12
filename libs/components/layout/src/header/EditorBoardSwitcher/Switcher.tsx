@@ -1,5 +1,5 @@
-import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { styled } from '@toeverything/components/ui';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { StatusText } from './StatusText';
 import { StatusTrack } from './StatusTrack';
 import { DocMode } from './type';

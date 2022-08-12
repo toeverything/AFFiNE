@@ -1,28 +1,28 @@
-import { diffArrays } from 'diff';
+import { BlockImplInstance, MapOperation } from '@toeverything/datasource/jwt';
 import { has } from '@toeverything/utils';
+import { diffArrays } from 'diff';
 import { ServiceBaseClass } from '../base';
 import type { ReturnUnobserve } from '../database/observer';
+import { Template, TemplateProperties } from './templates/types';
 import {
-    CreateEditorBlock,
-    ReturnEditorBlock,
-    GetEditorBlock,
-    UpdateEditorBlock,
-    DeleteEditorBlock,
     AddColumnProps,
-    RemoveColumnProps,
-    UpdateColumnProps,
     BlockFlavorKeys,
+    CreateEditorBlock,
+    DeleteEditorBlock,
+    GetEditorBlock,
+    RemoveColumnProps,
+    ReturnEditorBlock,
+    UpdateColumnProps,
+    UpdateEditorBlock,
 } from './types';
 import {
-    dbBlock2BusinessBlock,
-    serializeColumnConfig,
-    deserializeColumnConfig,
-    getOrInitBlockContentColumnsField,
     addColumn,
     Column,
+    dbBlock2BusinessBlock,
+    deserializeColumnConfig,
+    getOrInitBlockContentColumnsField,
+    serializeColumnConfig,
 } from './utils';
-import { BlockImplInstance, MapOperation } from '@toeverything/datasource/jwt';
-import { TemplateProperties, Template } from './templates/types';
 export type ObserveCallback = (businessBlock: ReturnEditorBlock) => void;
 export class EditorBlock extends ServiceBaseClass {
     async create({
@@ -398,39 +398,38 @@ export class EditorBlock extends ServiceBaseClass {
 }
 
 export type {
-    CreateEditorBlock,
-    ReturnEditorBlock,
-    GetEditorBlock,
-    UpdateEditorBlock,
-    DeleteEditorBlock,
-    BlockFlavors,
     BlockFlavorKeys,
+    BlockFlavors,
+    CreateEditorBlock,
+    DeleteEditorBlock,
+    GetEditorBlock,
+    ReturnEditorBlock,
+    UpdateEditorBlock,
 } from './types';
-
-export type {
-    Column,
-    ContentColumn,
-    NumberColumn,
-    EnumColumn,
-    DateColumn,
-    BooleanColumn,
-    FileColumn,
-    DefaultColumnsValue,
-    ContentColumnValue,
-    NumberColumnValue,
-    EnumColumnValue,
-    BooleanColumnValue,
-    DateColumnValue,
-    FileColumnValue,
-    StringColumnValue,
-} from './utils/column';
 export {
     ColumnType,
     isBooleanColumn,
     isContentColumn,
     isDateColumn,
+    isEnumColumn,
     isFileColumn,
     isNumberColumn,
-    isEnumColumn,
     isStringColumn,
+} from './utils/column';
+export type {
+    BooleanColumn,
+    BooleanColumnValue,
+    Column,
+    ContentColumn,
+    ContentColumnValue,
+    DateColumn,
+    DateColumnValue,
+    DefaultColumnsValue,
+    EnumColumn,
+    EnumColumnValue,
+    FileColumn,
+    FileColumnValue,
+    NumberColumn,
+    NumberColumnValue,
+    StringColumnValue,
 } from './utils/column';

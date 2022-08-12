@@ -6,7 +6,7 @@ import { getDateIsoStringWithTimezone } from '@toeverything/utils';
 import getDaysInMonth from 'date-fns/getDaysInMonth';
 import color, { ColorInput } from 'tinycolor2';
 
-import type { Theme, CalendarDay } from './types';
+import type { CalendarDay, Theme } from './types';
 
 // export const DEFAULT_THEME = createCalendarTheme('#3E6FDB');
 export const DEFAULT_THEME: Theme = {

@@ -1,4 +1,3 @@
-import * as React from 'react';
 /* eslint-disable no-restricted-imports */
 import MuiRadio, { type RadioProps } from '@mui/material/Radio';
 import { styled } from '../styled';

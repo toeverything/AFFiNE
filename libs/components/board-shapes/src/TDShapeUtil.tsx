@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Utils, TLShapeUtil } from '@tldraw/core';
-import type { TLPointerInfo, TLBounds } from '@tldraw/core';
+import type { TLBounds, TLPointerInfo } from '@tldraw/core';
+import { TLShapeUtil, Utils } from '@tldraw/core';
 import {
     intersectLineSegmentBounds,
     intersectLineSegmentPolyline,
@@ -15,9 +15,9 @@ import type {
 } from '@toeverything/components/board-types';
 import { BINDING_DISTANCE } from '@toeverything/components/board-types';
 import { createRef } from 'react';
-import { getTextSvgElement } from './shared/get-text-svg-element';
-import { getTextLabelSize } from './shared/get-text-size';
 import { getFontStyle, getShapeStyle } from './shared';
+import { getTextLabelSize } from './shared/get-text-size';
+import { getTextSvgElement } from './shared/get-text-svg-element';
 
 export abstract class TDShapeUtil<
     T extends TDShape,

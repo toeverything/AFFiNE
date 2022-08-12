@@ -1,4 +1,3 @@
-import ColorObject from './color';
 // import { ThemeOptions } from '@mui/material/styles';
 /**
  * @deprecated Please use the new {@link ThemeOptions} type.

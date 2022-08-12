@@ -1,21 +1,21 @@
 import { TDShapeType, TDToolType } from '@toeverything/components/board-types';
 import { ArrowTool } from './arrow-tool';
-import { LineTool } from './line-tool';
 import { DrawTool } from './draw-tool';
-import { PencilTool } from './pencil-tool';
-import { HighlightTool } from './highlight-tool';
-import { EllipseTool } from './ellipse-tool';
-import { RectangleTool } from './rectangle-tool';
-import { TriangleTool } from './triangle-tool';
-import { SelectTool } from './select-tool';
-import { EraseTool } from './erase-tool';
 import { EditorTool } from './editor-tool';
-import { HexagonTool } from './hexagon-tool';
-import { PentagramTool } from './pentagram-tool';
-import { WhiteArrowTool } from './white-arrow-tool';
-import { LaserTool } from './laser-tool';
-import { HandDrawTool } from './hand-draw';
+import { EllipseTool } from './ellipse-tool';
+import { EraseTool } from './erase-tool';
 import { FrameTool } from './frame-tool/frame-tool';
+import { HandDrawTool } from './hand-draw';
+import { HexagonTool } from './hexagon-tool';
+import { HighlightTool } from './highlight-tool';
+import { LaserTool } from './laser-tool';
+import { LineTool } from './line-tool';
+import { PencilTool } from './pencil-tool';
+import { PentagramTool } from './pentagram-tool';
+import { RectangleTool } from './rectangle-tool';
+import { SelectTool } from './select-tool';
+import { TriangleTool } from './triangle-tool';
+import { WhiteArrowTool } from './white-arrow-tool';
 
 export interface ToolsMap {
     select: typeof SelectTool;

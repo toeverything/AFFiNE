@@ -1,4 +1,4 @@
-import { styled, ListItem, Divider, Switch } from '@toeverything/components/ui';
+import { Divider, ListItem, styled, Switch } from '@toeverything/components/ui';
 import { useSettings } from './use-settings';
 
 export const SettingsList = () => {

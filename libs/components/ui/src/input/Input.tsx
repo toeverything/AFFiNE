@@ -1,8 +1,8 @@
 import React, {
     forwardRef,
+    type CSSProperties,
     type ForwardedRef,
     type InputHTMLAttributes,
-    type CSSProperties,
 } from 'react';
 import { styled } from '../styled';
 

@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import { styled, MuiAvatar as Avatar } from '@toeverything/components/ui';
+import { MuiAvatar as Avatar, styled } from '@toeverything/components/ui';
 import { useUserAndSpaces } from '@toeverything/datasource/state';
 import { getUserDisplayName } from '@toeverything/utils';
+import { useMemo } from 'react';
 
 type CommentedByUserProps = {
     username: string;

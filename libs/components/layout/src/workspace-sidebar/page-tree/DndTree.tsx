@@ -1,12 +1,12 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 
 import {
+    defaultDropAnimation,
     DndContext,
     DragOverlay,
     DropAnimation,
     MeasuringStrategy,
     PointerSensor,
-    defaultDropAnimation,
     useSensor,
     useSensors,
 } from '@dnd-kit/core';

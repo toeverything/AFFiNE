@@ -1,17 +1,17 @@
 import type { TLBounds } from '@tldraw/core';
-import type { TldrawApp } from '../tldraw-app';
 import type {
-    TldrawCommand,
     AlignType,
-    TDShape,
-    TDBinding,
     DistributeType,
     FlipType,
-    MoveType,
-    StretchType,
-    ShapeStyles,
     GroupShape,
+    MoveType,
+    ShapeStyles,
+    StretchType,
+    TDBinding,
+    TDShape,
+    TldrawCommand,
 } from '@toeverything/components/board-types';
+import type { TldrawApp } from '../tldraw-app';
 
 export interface Commands {
     alignShapes(app: TldrawApp, ids: string[], type: AlignType): TldrawCommand;

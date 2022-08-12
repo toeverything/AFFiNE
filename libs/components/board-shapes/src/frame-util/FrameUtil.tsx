@@ -1,20 +1,20 @@
 /* eslint-disable no-restricted-syntax */
-import { Utils, SVGContainer } from '@tldraw/core';
+import { SVGContainer, Utils } from '@tldraw/core';
 import {
     FrameShape,
-    TDShapeType,
     TDMeta,
+    TDShapeType,
 } from '@toeverything/components/board-types';
-import { TDShapeUtil } from '../TDShapeUtil';
+import { styled } from '@toeverything/components/ui';
 import {
     defaultStyle,
-    getShapeStyle,
     getBoundsRectangle,
+    getShapeStyle,
     transformRectangle,
     transformSingleRectangle,
 } from '../shared';
+import { TDShapeUtil } from '../TDShapeUtil';
 import { Frame } from './components/Frame';
-import { styled } from '@toeverything/components/ui';
 
 type T = FrameShape;
 type E = SVGSVGElement;

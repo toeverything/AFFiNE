@@ -1,13 +1,12 @@
-import { ComponentType, useEffect } from 'react';
 import {
-    styled,
-    MuiBox as Box,
-    MuiTextField as TextField,
+    AdapterDateFns,
     // CalendarPickerSkeleton,
     LocalizationProvider,
-    AdapterDateFns,
+    MuiBox as Box,
+    MuiTextField as TextField,
     StaticDatePicker,
 } from '@toeverything/components/ui';
+import { useEffect } from 'react';
 
 import type { Theme } from './types';
 import { useCalendarHeatmap } from './use-calendar-heatmap';

@@ -1,10 +1,10 @@
-import { Template, TemplateMeta, GroupTemplate } from './types';
 import blogTemplate from './blog.json';
 import emptyTemplate from './empty.json';
-import gridTemplate from './grid.json';
-import todoTemplate from './todo.json';
 import getStartedGroup0 from './get-started-group0.json';
 import getStartedGroup1 from './get-started-group1.json';
+import gridTemplate from './grid.json';
+import todoTemplate from './todo.json';
+import { Template, TemplateMeta } from './types';
 
 export type GroupTemplateKeys =
     | 'todolist'

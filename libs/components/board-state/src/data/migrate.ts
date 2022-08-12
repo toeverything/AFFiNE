@@ -1,10 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import {
     Decoration,
-    FontStyle,
     TDDocument,
     TDShapeType,
-    // TextShape
 } from '@toeverything/components/board-types';
 
 export function migrate(document: TDDocument, newVersion: number): TDDocument {

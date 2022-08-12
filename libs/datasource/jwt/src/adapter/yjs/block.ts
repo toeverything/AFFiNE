@@ -5,12 +5,12 @@ import {
     transact,
 } from 'yjs';
 
-import { BlockInstance, BlockListener, HistoryManager } from '../index';
 import { BlockItem, BlockTypes } from '../../types';
+import { BlockInstance, BlockListener, HistoryManager } from '../index';
 
-import { YjsContentOperation } from './operation';
-import { ChildrenListenerHandler, ContentListenerHandler } from './listener';
 import { YjsHistoryManager } from './history';
+import { ChildrenListenerHandler, ContentListenerHandler } from './listener';
+import { YjsContentOperation } from './operation';
 
 const GET_BLOCK_ITEM = Symbol('GET_BLOCK_ITEM');
 

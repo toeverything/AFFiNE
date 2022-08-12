@@ -1,5 +1,4 @@
 import type { TLBounds } from '@tldraw/core';
-import * as React from 'react';
 
 interface WithLabelMaskProps {
     id: string;

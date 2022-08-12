@@ -1,25 +1,4 @@
-import * as React from 'react';
-import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
-import {
-    WhiteArrowShape,
-    TDShapeType,
-    TDMeta,
-    TDShape,
-    DashStyle,
-    BINDING_DISTANCE,
-    GHOSTED_OPACITY,
-    LABEL_POINT,
-} from '@toeverything/components/board-types';
-import { TDShapeUtil } from '../TDShapeUtil';
-import {
-    defaultStyle,
-    getBoundsRectangle,
-    transformRectangle,
-    transformSingleRectangle,
-    getFontStyle,
-    TextLabel,
-    getShapeStyle,
-} from '../shared';
+import { SVGContainer, TLBounds, Utils } from '@tldraw/core';
 import {
     intersectBoundsPolygon,
     intersectLineSegmentPolyline,
@@ -27,13 +6,34 @@ import {
 } from '@tldraw/intersect';
 import Vec from '@tldraw/vec';
 import {
+    BINDING_DISTANCE,
+    DashStyle,
+    GHOSTED_OPACITY,
+    LABEL_POINT,
+    TDMeta,
+    TDShape,
+    TDShapeType,
+    WhiteArrowShape,
+} from '@toeverything/components/board-types';
+import { styled } from '@toeverything/components/ui';
+import * as React from 'react';
+import {
+    defaultStyle,
+    getBoundsRectangle,
+    getFontStyle,
+    getShapeStyle,
+    TextLabel,
+    transformRectangle,
+    transformSingleRectangle,
+} from '../shared';
+import { TDShapeUtil } from '../TDShapeUtil';
+import { DashedWhiteArrow } from './components/DashedWhiteArrow';
+import { DrawWhiteArrow } from './components/DrawWhiteArrow';
+import { WhiteArrowBindingIndicator } from './components/WhiteArrowBindingIndicator';
+import {
     getWhiteArrowCentroid,
     getWhiteArrowPoints,
 } from './white-arrow-helpers';
-import { styled } from '@toeverything/components/ui';
-import { DrawWhiteArrow } from './components/DrawWhiteArrow';
-import { DashedWhiteArrow } from './components/DashedWhiteArrow';
-import { WhiteArrowBindingIndicator } from './components/WhiteArrowBindingIndicator';
 
 type T = WhiteArrowShape;
 type E = HTMLDivElement;

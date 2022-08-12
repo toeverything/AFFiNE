@@ -1,23 +1,23 @@
 import { DependencyCallOrConstructProps } from '@toeverything/utils';
+import { WORKSPACE_COMMENTS } from '../../utils';
 import type { ReturnUnobserve } from '../database/observer';
+import { EditorBlock, ObserveCallback } from '../editor-block';
 import {
     DeleteEditorBlock,
     GetEditorBlock,
     ReturnEditorBlock,
 } from '../editor-block/types';
-import { EditorBlock, ObserveCallback } from '../editor-block';
+import { CommentColumnValue } from '../editor-block/utils/column/types';
+import { DefaultColumnsValue } from './../index';
 import {
+    Comment,
     CommentReply,
     CreateCommentBlock,
     CreateReplyBlock,
+    GetCommentsBlock,
     UpdateCommentBlock,
     UpdateReplyBlock,
-    GetCommentsBlock,
-    Comment,
 } from './types';
-import { DefaultColumnsValue } from './../index';
-import { CommentColumnValue } from '../editor-block/utils/column/types';
-import { WORKSPACE_COMMENTS } from '../../utils';
 
 export class CommentService {
     protected editor_block: EditorBlock;

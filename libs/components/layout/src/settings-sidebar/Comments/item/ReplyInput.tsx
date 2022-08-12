@@ -1,10 +1,10 @@
-import {
-    useState,
-    useCallback,
-    KeyboardEventHandler,
-    ChangeEvent,
-} from 'react';
 import { styled } from '@toeverything/components/ui';
+import {
+    ChangeEvent,
+    KeyboardEventHandler,
+    useCallback,
+    useState,
+} from 'react';
 
 export const ReplyInput = (props: any) => {
     const { onSubmit } = props;

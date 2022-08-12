@@ -1,5 +1,5 @@
-import { ClipboardParse } from '@toeverything/components/editor-core';
 import { createEditor } from '@toeverything/components/affine-editor';
+import { ClipboardParse } from '@toeverything/components/editor-core';
 import { fileExporter } from './file-exporter';
 
 interface CreateClipboardParseProps {

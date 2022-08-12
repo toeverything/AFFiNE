@@ -1,7 +1,7 @@
-import type { TDDocument } from '~types';
 import { TldrawApp } from '~state';
 import oldDoc from '~test/documents/old-doc';
 import oldDoc2 from '~test/documents/old-doc-2';
+import type { TDDocument } from '~types';
 
 describe('When migrating bindings', () => {
     it('migrates a document without a version', () => {

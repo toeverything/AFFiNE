@@ -1,12 +1,12 @@
 import { Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
-import * as React from 'react';
-import { EASINGS } from '@toeverything/components/board-types';
-import { getShapeStyle } from '../../shared';
 import type {
     Decoration,
     ShapeStyles,
 } from '@toeverything/components/board-types';
+import { EASINGS } from '@toeverything/components/board-types';
+import * as React from 'react';
+import { getShapeStyle } from '../../shared';
 import {
     getArcLength,
     getArrowArcPath,

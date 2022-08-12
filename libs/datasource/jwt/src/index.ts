@@ -4,18 +4,18 @@ import LRUCache from 'lru-cache';
 
 import {
     AsyncDatabaseAdapter,
-    YjsAdapter,
-    YjsInitOptions,
-    YjsContentOperation,
-    ChangedStates,
-    BlockListener,
     BlockInstance,
-    ContentOperation,
-    HistoryManager,
-    ContentTypes,
+    BlockListener,
+    ChangedStates,
     Connectivity,
+    ContentOperation,
+    ContentTypes,
     DataExporter,
     getDataExporter,
+    HistoryManager,
+    YjsAdapter,
+    YjsContentOperation,
+    YjsInitOptions,
 } from './adapter';
 import {
     getYjsProviders,
@@ -30,14 +30,14 @@ import {
 } from './block';
 import { QueryIndexMetadata } from './block/indexer';
 import {
-    BlockTypes,
-    BlockTypeKeys,
-    BlockFlavors,
-    UUID,
     BlockFlavorKeys,
+    BlockFlavors,
     BlockItem,
-    ExcludeFunction,
+    BlockTypeKeys,
+    BlockTypes,
     BucketBackend,
+    ExcludeFunction,
+    UUID,
 } from './types';
 import { BlockEventBus, genUUID, getLogger } from './utils';
 
@@ -649,18 +649,18 @@ export type BlockInitOptions = NonNullable<
 >;
 
 export type {
-    TextOperation,
     ArrayOperation,
-    MapOperation,
     ChangedStates,
     Connectivity,
+    MapOperation,
+    TextOperation,
 } from './adapter';
 export type {
     BlockSearchItem,
     Decoration as BlockDecoration,
     ReadableContentExporter as BlockContentExporter,
 } from './block';
-export type { BlockTypeKeys } from './types';
 export { BlockTypes, BucketBackend as BlockBackend } from './types';
+export type { BlockTypeKeys } from './types';
 export { isBlock } from './utils';
 export type { QueryIndexMetadata };

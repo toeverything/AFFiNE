@@ -1,9 +1,9 @@
-import * as React from 'react';
 import { Utils } from '@tldraw/core';
+import Vec from '@tldraw/vec';
 import type { ShapeStyles } from '@toeverything/components/board-types';
+import * as React from 'react';
 import { getShapeStyle } from '../../shared';
 import { getTrianglePoints } from '../triangle-helpers';
-import Vec from '@tldraw/vec';
 
 interface TriangleSvgProps {
     id: string;

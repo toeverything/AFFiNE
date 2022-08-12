@@ -1,5 +1,5 @@
 import { TLPerformanceMode } from '@tldraw/core';
-import { TDSnapshot, Patch } from './types';
+import { Patch, TDSnapshot } from './types';
 
 export enum SessionType {
     Transform = 'transform',

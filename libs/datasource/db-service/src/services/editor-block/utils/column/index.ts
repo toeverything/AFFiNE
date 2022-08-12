@@ -1,11 +1,11 @@
-import { nanoid } from 'nanoid';
 import {
+    ArrayOperation,
     BlockImplInstance,
     MapOperation,
-    ArrayOperation,
 } from '@toeverything/datasource/jwt';
-import type { Column } from './types';
+import { nanoid } from 'nanoid';
 import { DEFAULT_COLUMNS } from './default-config';
+import type { Column } from './types';
 export const serializeColumnConfig = (column: Column): string => {
     // TODO: Do the type check of the column parameter here
     return JSON.stringify(column);
@@ -87,31 +87,30 @@ export const getBlockColumns = (
     return columns;
 };
 
+export type { DefaultColumnsValue } from './default-config';
+export { ColumnType } from './types';
 export type {
+    BooleanColumn,
+    BooleanColumnValue,
     Column,
     ContentColumn,
-    NumberColumn,
-    EnumColumn,
-    DateColumn,
-    BooleanColumn,
-    FileColumn,
     ContentColumnValue,
-    NumberColumnValue,
-    EnumColumnValue,
-    BooleanColumnValue,
+    DateColumn,
     DateColumnValue,
+    EnumColumn,
+    EnumColumnValue,
+    FileColumn,
     FileColumnValue,
+    NumberColumn,
+    NumberColumnValue,
     StringColumnValue,
 } from './types';
-export { ColumnType } from './types';
-export type { DefaultColumnsValue } from './default-config';
-
 export {
+    isBooleanColumn,
     isContentColumn,
     isDateColumn,
+    isEnumColumn,
     isFileColumn,
     isNumberColumn,
-    isEnumColumn,
     isStringColumn,
-    isBooleanColumn,
 } from './utils';

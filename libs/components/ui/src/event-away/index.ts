@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Equal<X, Y, TrueValue, FalseValue> =
     // prettier-ignore

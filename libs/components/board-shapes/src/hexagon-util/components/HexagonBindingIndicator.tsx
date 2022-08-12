@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { BINDING_DISTANCE } from '@toeverything/components/board-types';
 import { getHexagonPoints } from '../hexagon-helpers';
 

@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
 import { atom, useAtom } from 'jotai';
+import { useCallback } from 'react';
 
 const _showSpaceSidebarAtom = atom<boolean>(true);
 const _fixedDisplayAtom = atom<boolean>(true);

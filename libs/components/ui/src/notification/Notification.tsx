@@ -1,12 +1,12 @@
-import React, { forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useImperativeHandle } from 'react';
 
 import {
     SnackbarProvider,
     useSnackbar,
-    type SnackbarProviderProps,
     type OptionsObject,
-    type SnackbarMessage,
     type SnackbarKey,
+    type SnackbarMessage,
+    type SnackbarProviderProps,
 } from 'notistack';
 import { createRoot } from 'react-dom/client';
 

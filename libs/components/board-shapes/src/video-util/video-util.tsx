@@ -1,20 +1,20 @@
-import * as React from 'react';
-import { Utils, HTMLContainer } from '@tldraw/core';
+import { HTMLContainer, Utils } from '@tldraw/core';
 import {
-    TDShapeType,
-    TDMeta,
-    VideoShape,
-    TDVideoAsset,
     GHOSTED_OPACITY,
+    TDMeta,
+    TDShapeType,
+    TDVideoAsset,
+    VideoShape,
 } from '@toeverything/components/board-types';
-import { TDShapeUtil } from '../TDShapeUtil';
+import { styled } from '@toeverything/components/ui';
+import * as React from 'react';
 import {
     defaultStyle,
     getBoundsRectangle,
     transformRectangle,
     transformSingleRectangle,
 } from '../shared';
-import { styled } from '@toeverything/components/ui';
+import { TDShapeUtil } from '../TDShapeUtil';
 
 type T = VideoShape;
 type E = HTMLDivElement;

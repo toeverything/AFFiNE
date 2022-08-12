@@ -1,6 +1,6 @@
-import format from 'date-fns/format';
-import { Typography, styled } from '@toeverything/components/ui';
+import { styled, Typography } from '@toeverything/components/ui';
 import { useUserAndSpaces } from '@toeverything/datasource/state';
+import format from 'date-fns/format';
 import { usePageLastUpdated, useWorkspaceAndPageId } from '../util';
 
 export const LastModified = () => {

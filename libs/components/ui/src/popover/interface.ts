@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { PopperProps } from '../popper';
 
 export type PopoverDirection =

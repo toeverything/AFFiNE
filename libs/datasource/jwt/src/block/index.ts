@@ -8,5 +8,5 @@ export type BlockSearchItem = Partial<
 
 export { BaseBlock } from './base';
 export type { Decoration, ReadableContentExporter } from './base';
-export { BlockIndexer } from './indexer';
 export type { BlockCapability } from './capability';
+export { BlockIndexer } from './indexer';

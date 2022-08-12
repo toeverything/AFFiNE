@@ -1,7 +1,7 @@
-import type { CSSProperties } from 'react';
-import { styled } from '../styled';
 import { useSwitch, UseSwitchParameters } from '@mui/base/SwitchUnstyled';
+import type { CSSProperties } from 'react';
 import { ReactNode } from 'react';
+import { styled } from '../styled';
 
 /**
  *  Switch is extend by mui SwitchUnstyled

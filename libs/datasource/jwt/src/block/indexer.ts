@@ -1,8 +1,8 @@
 /* eslint-disable max-lines */
 import { createNewSortInstance } from 'fast-sort';
-import { deflateSync, inflateSync, strToU8, strFromU8 } from 'fflate';
+import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import { Document as DocumentIndexer, DocumentSearchOptions } from 'flexsearch';
-import { get, set, keys, del, createStore } from 'idb-keyval';
+import { createStore, del, get, keys, set } from 'idb-keyval';
 import produce from 'immer';
 import LRUCache from 'lru-cache';
 import sift, { Query } from 'sift';

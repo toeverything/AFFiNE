@@ -1,6 +1,6 @@
 import { styled } from '@toeverything/components/ui';
-import { useComments } from './use-comments';
 import { CommentItem } from './CommentItem';
+import { useComments } from './use-comments';
 
 type CommentsProps = {
     activeCommentId: string;

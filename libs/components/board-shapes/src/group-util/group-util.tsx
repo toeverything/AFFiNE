@@ -1,15 +1,14 @@
-import * as React from 'react';
-import { styled } from '@toeverything/components/ui';
-import { Utils, SVGContainer } from '@tldraw/core';
-import { defaultStyle } from '../shared/shape-styles';
+import { SVGContainer, Utils } from '@tldraw/core';
 import {
-    TDShapeType,
+    GHOSTED_OPACITY,
     GroupShape,
     TDMeta,
-    GHOSTED_OPACITY,
+    TDShapeType,
 } from '@toeverything/components/board-types';
+import { styled } from '@toeverything/components/ui';
+import { commonColors, getBoundsRectangle } from '../shared';
+import { defaultStyle } from '../shared/shape-styles';
 import { TDShapeUtil } from '../TDShapeUtil';
-import { getBoundsRectangle, commonColors } from '../shared';
 
 type T = GroupShape;
 type E = SVGSVGElement;

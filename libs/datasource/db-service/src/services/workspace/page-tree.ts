@@ -1,7 +1,7 @@
 import type { BlockClientInstance } from '@toeverything/datasource/jwt';
 import { PAGE_TREE as pageTreeName } from '../../utils';
-import type { ReturnUnobserve } from '../database/observer';
 import { ServiceBaseClass } from '../base';
+import type { ReturnUnobserve } from '../database/observer';
 import { TreeItem } from './types';
 
 export type ObserveCallback = () => void;
