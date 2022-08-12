@@ -1,5 +1,5 @@
-import { forwardRef, type PropsWithChildren, type CSSProperties } from 'react';
-import { type PopperHandler, type PopperProps, Popper } from '../popper';
+import { type PropsWithChildren, type CSSProperties } from 'react';
+import { type PopperProps, Popper } from '../popper';
 import { PopoverContainer, placementToContainerDirection } from '../popover';
 import type { TooltipProps } from './interface';
 import { useTheme } from '../theme';
@@ -14,17 +14,15 @@ const useTooltipStyle = (): CSSProperties => {
     };
 };
 
-export const Tooltip = forwardRef<
-    PopperHandler,
-    PropsWithChildren<PopperProps & TooltipProps>
->((props, ref) => {
+export const Tooltip = (
+    props: PropsWithChildren<PopperProps & TooltipProps>
+) => {
     const { content, placement = 'top-start' } = props;
     const style = useTooltipStyle();
     // If there is no content, hide forever
     const visibleProp = content ? {} : { visible: false };
     return (
         <Popper
-            ref={ref}
             {...visibleProp}
             placement="top"
             {...props}
@@ -39,4 +37,4 @@ export const Tooltip = forwardRef<
             }
         />
     );
-});
+};

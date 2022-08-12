@@ -16,8 +16,7 @@ export function DndTreeItem({ id, depth, ...props }: DndTreeItemProps) {
         isDragging,
         isSorting,
         listeners,
-        setDraggableNodeRef,
-        setDroppableNodeRef,
+        setNodeRef,
         transform,
         transition,
     } = useSortable({ id });
@@ -29,8 +28,7 @@ export function DndTreeItem({ id, depth, ...props }: DndTreeItemProps) {
 
     return (
         <TreeItem
-            ref={setDraggableNodeRef}
-            wrapperRef={setDroppableNodeRef}
+            ref={setNodeRef}
             pageId={id}
             style={style}
             depth={depth}

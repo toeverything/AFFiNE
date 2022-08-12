@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router';
 import {
     getAuth,
     onAuthStateChanged,
@@ -62,11 +63,17 @@ const BRAND_ID = 'AFFiNE';
 
 const _localTrigger = atom<boolean>(false);
 const _useUserAndSpacesForFreeLogin = () => {
+    const navigate = useNavigate();
     const [user, setUser] = useAtom(_userAtom);
     const [loading, setLoading] = useAtom(_loadingAtom);
     const [localTrigger] = useAtom(_localTrigger);
 
-    useEffect(() => setLoading(false), []);
+    useEffect(() => {
+        if (loading) {
+            navigate('/demo');
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (localTrigger) {
@@ -75,6 +82,14 @@ const _useUserAndSpacesForFreeLogin = () => {
                 id: BRAND_ID,
                 username: BRAND_ID,
                 nickname: BRAND_ID,
+                email: '',
+            });
+        } else {
+            setUser({
+                photo: '',
+                id: 'demo',
+                username: 'demo',
+                nickname: 'demo',
                 email: '',
             });
         }
@@ -86,8 +101,8 @@ const _useUserAndSpacesForFreeLogin = () => {
 };
 
 export const useLocalTrigger = () => {
-    const [, setTrigger] = useAtom(_localTrigger);
-    return () => setTrigger(true);
+    const [trigger, setTrigger] = useAtom(_localTrigger);
+    return [trigger, () => setTrigger(true)] as [boolean, () => void];
 };
 
 export const useUserAndSpaces = process.env['NX_LOCAL']

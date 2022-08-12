@@ -22,8 +22,8 @@ export function WorkspaceHome() {
                     workspace_id,
                     user_initial_page_id,
                     TemplateFactory.generatePageTemplateByGroupKeys({
-                        name: null,
-                        groupKeys: ['todolist'],
+                        name: '👋 Get Started with AFFINE',
+                        groupKeys: ['getStartedGroup0', 'getStartedGroup1'],
                     })
                 );
             }

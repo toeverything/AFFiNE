@@ -1,18 +1,35 @@
-import { IconButton, styled, MuiButton } from '@toeverything/components/ui';
+import { useMemo } from 'react';
+
+import { IconButton, styled } from '@toeverything/components/ui';
 import {
     LogoIcon,
     SideBarViewIcon,
     SearchIcon,
     SideBarViewCloseIcon,
 } from '@toeverything/components/icons';
-import { useShowSettingsSidebar } from '@toeverything/datasource/state';
+import {
+    useShowSettingsSidebar,
+    useLocalTrigger,
+} from '@toeverything/datasource/state';
 
-import { CurrentPageTitle } from './Title';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
+import { fsApiSupported, FileSystem } from './FileSystem';
+import { CurrentPageTitle } from './Title';
 
 export const LayoutHeader = () => {
+    const [isLocalWorkspace] = useLocalTrigger();
     const { toggleSettingsSidebar: toggleInfoSidebar, showSettingsSidebar } =
         useShowSettingsSidebar();
+
+    const warningTips = useMemo(() => {
+        if (!fsApiSupported()) {
+            return 'Your browser does not support the local storage feature, please upgrade to the latest version of Chrome or Edge browser';
+        } else if (!isLocalWorkspace) {
+            return 'You are in DEMO mode. Changes will NOT be saved unless you SYNC TO DISK';
+        } else {
+            return 'AFFiNE is under active development and the current version is UNSTABLE. Please DO NOT store information or data';
+        }
+    }, [isLocalWorkspace]);
 
     return (
         <StyledContainerForHeaderRoot>
@@ -25,6 +42,7 @@ export const LayoutHeader = () => {
                 </FlexContainer>
                 <FlexContainer>
                     <StyledHelper>
+                        <FileSystem />
                         <StyledShare disabled={true}>Share</StyledShare>
                         <div style={{ margin: '0px 12px' }}>
                             <IconButton
@@ -51,10 +69,7 @@ export const LayoutHeader = () => {
                 </StyledContainerForEditorBoardSwitcher>
             </StyledHeaderRoot>
             <StyledUnstableTips>
-                <StyledUnstableTipsText>
-                    AFFiNE now under active development, the version is
-                    UNSTABLE, please DO NOT store important data in this version
-                </StyledUnstableTipsText>
+                <StyledUnstableTipsText>{warningTips}</StyledUnstableTipsText>
             </StyledUnstableTips>
         </StyledContainerForHeaderRoot>
     );

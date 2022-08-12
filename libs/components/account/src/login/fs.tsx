@@ -17,6 +17,7 @@ const cleanupWorkspace = (workspace: string) =>
 
 const requestPermission = async (workspace: string) => {
     await cleanupWorkspace(workspace);
+    // @ts-ignore
     const dirHandler = await window.showDirectoryPicker({
         id: 'AFFiNE_' + workspace,
         mode: 'readwrite',
@@ -46,19 +47,13 @@ const requestPermission = async (workspace: string) => {
 };
 
 export const FileSystem = (props: { onError: () => void }) => {
-    const onSelected = useLocalTrigger();
+    const [, onSelected] = useLocalTrigger();
 
     const apiSupported = useMemo(() => {
         try {
             return 'showOpenFilePicker' in window;
         } catch (e) {
             return false;
-        }
-    }, []);
-
-    useEffect(() => {
-        if (process.env['NX_E2E']) {
-            onSelected();
         }
     }, []);
 

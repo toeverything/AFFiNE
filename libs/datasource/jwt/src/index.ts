@@ -618,6 +618,7 @@ export class BlockClient<
 
         const instance = await YjsAdapter.init(workspace, {
             provider: getYjsProviders({
+                enabled: [],
                 backend: BucketBackend.YjsWebSocketAffine,
                 importData,
                 exportData,

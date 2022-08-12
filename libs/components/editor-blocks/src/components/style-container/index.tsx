@@ -5,6 +5,7 @@ export const List = styled('div')(({ theme }) => ({
     '.checkBoxContainer': {
         marginRight: '4px',
         lineHeight: theme.affine.typography.body1.lineHeight,
+        color: theme.affine.typography.body1.color,
     },
     '.textContainer': {
         flex: 1,

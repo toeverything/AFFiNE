@@ -233,7 +233,8 @@ export const SelectionRect = forwardRef<SelectionRef, SelectionProps>(
                     startPointRef.current &&
                     endPointRef.current &&
                     scrollManager.scrollContainer &&
-                    scrollContainerRect.current
+                    scrollContainerRect.current &&
+                    mouseType.current === 'down'
                 ) {
                     const xSign = DIRECTION_VALUE_MAP[direction[0]] || 0;
                     const ySign = DIRECTION_VALUE_MAP[direction[1]] || 0;

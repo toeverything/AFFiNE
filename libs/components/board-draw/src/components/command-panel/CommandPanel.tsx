@@ -22,7 +22,7 @@ export const CommandPanel = ({ app }: { app: TldrawApp }) => {
         ? app.getScreenPoint([bounds.minX, bounds.minY])
         : undefined;
 
-    const anchor = getAnchor({
+    const anchorEl = getAnchor({
         x: point?.[0] || 0,
         y: (point?.[1] || 0) + 40,
         width: bounds?.width ? bounds.width * camera.zoom : 0,
@@ -100,7 +100,7 @@ export const CommandPanel = ({ app }: { app: TldrawApp }) => {
         <Popover
             trigger="click"
             visible={!!point}
-            anchor={anchor}
+            anchorEl={anchorEl}
             popoverDirection="none"
             content={
                 <PopoverContainer>

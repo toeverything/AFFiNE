@@ -124,10 +124,16 @@ export class EditorUtil extends TDShapeUtil<T, E> {
             );
 
             const activateIfEditing = useCallback(() => {
+                const shapes =
+                    state.document.pages[state.appState.currentPageId].shapes;
+                // https://bugs.chromium.org/p/chromium/issues/detail?id=1352417
+                if (shapes[shape.id] != null) {
+                    return;
+                }
                 if (editingText && editingId !== shape.id) {
                     app.setEditingText(shape.id);
                 }
-            }, [app, shape.id, editingText, editingId]);
+            }, [app, state, shape.id, editingText, editingId]);
 
             return (
                 <HTMLContainer ref={ref} {...events}>

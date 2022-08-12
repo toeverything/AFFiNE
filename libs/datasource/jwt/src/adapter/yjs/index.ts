@@ -18,8 +18,6 @@ import {
     snapshot,
 } from 'yjs';
 
-import { IndexedDBProvider } from '@toeverything/datasource/jwt-rpc';
-
 import {
     AsyncDatabaseAdapter,
     BlockListener,
@@ -48,15 +46,17 @@ type ConnectivityListener = (
     workspace: string,
     connectivity: Connectivity
 ) => void;
+
 type YjsProviders = {
     awareness: Awareness;
-    idb: IndexedDBProvider;
-    binariesIdb: IndexedDBProvider;
+    binaries: Doc;
+    doc: Doc;
     gatekeeper: GateKeeper;
     connListener: { listeners?: ConnectivityListener };
     userId: string;
     remoteToken?: string; // remote storage token
 };
+
 const _yjsDatabaseInstance = new Map<string, YjsProviders>();
 
 const _asyncInitLoading = new Set<string>();
@@ -90,13 +90,9 @@ async function _initYjsDatabase(
     const { userId, token } = options;
 
     const doc = new Doc({ autoLoad: true, shouldLoad: true });
-    const idb = await new IndexedDBProvider(workspace, doc).whenSynced;
+    // const idb = await new IndexedDBProvider(workspace, doc).whenSynced;
 
     const binaries = new Doc({ autoLoad: true, shouldLoad: true });
-    const binariesIdb = await new IndexedDBProvider(
-        `${workspace}_binaries`,
-        binaries
-    ).whenSynced;
 
     const awareness = new Awareness(doc);
 
@@ -114,16 +110,24 @@ async function _initYjsDatabase(
         const emitState = (c: Connectivity) =>
             connListener.listeners?.(workspace, c);
         await Promise.all(
-            Object.entries(options.provider).map(async ([, p]) =>
-                p({ awareness, doc, token, workspace, emitState })
-            )
+            Object.entries(options.provider).flatMap(async ([, p]) => [
+                p({ awareness, doc, token, workspace, emitState }),
+                p({
+                    awareness,
+                    doc: binaries,
+                    token,
+                    workspace: `${workspace}_binaries`,
+                    emitState,
+                }),
+            ])
         );
     }
     const newInstance = {
         awareness,
-        idb,
-        binariesIdb,
+        binaries,
+        doc,
         gatekeeper,
+
         connListener,
         userId,
         remoteToken: token,
@@ -183,7 +187,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
 
     private constructor(providers: YjsProviders) {
         this._provider = providers;
-        this._doc = providers.idb.doc;
+        this._doc = providers.doc;
         this._awareness = providers.awareness;
         this._gatekeeper = providers.gatekeeper;
         this._reload = () => {
@@ -201,7 +205,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
             });
             // @ts-ignore
             this._binaries = new YjsRemoteBinaries(
-                providers.binariesIdb.doc.getMap(),
+                providers.binaries.getMap(),
                 providers.remoteToken
             );
             // @ts-ignore
@@ -336,7 +340,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 });
                 const [file] = (await fromEvent(handles)) as File[];
                 const binary = await file.arrayBuffer();
-                await this._provider.idb.clearData();
+                // await this._provider.idb.clearData();
                 const doc = new Doc({ autoLoad: true, shouldLoad: true });
                 let updated = 0;
                 let isUpdated = false;
@@ -357,8 +361,8 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                     };
                     check();
                 });
-                await new IndexedDBProvider(this._provider.idb.name, doc)
-                    .whenSynced;
+                // await new IndexedDBProvider(this._provider.idb.name, doc)
+                //     .whenSynced;
                 applyUpdate(doc, new Uint8Array(binary));
                 await update_check;
                 console.log('load success');

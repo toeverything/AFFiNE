@@ -23,7 +23,7 @@ export function RoutePrivate({
         return <PageLoading />;
     }
 
-    if (!user) {
+    if (!user || !pathname.startsWith(`/${user.id}`)) {
         return (
             <Navigate
                 to={unauthorizedRedirectTo}

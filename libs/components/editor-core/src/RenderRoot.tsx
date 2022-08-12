@@ -152,6 +152,7 @@ export const RenderRoot = ({
     };
 
     const onDrop = (event: React.DragEvent<Element>) => {
+        event.preventDefault();
         editor.dragDropManager.handlerEditorDrop(event);
         editor.getHooks().onRootNodeDrop(event);
     };

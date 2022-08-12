@@ -264,6 +264,7 @@ const Draggable = styled(Button)({
     backgroundColor: 'transparent',
     width: '16px',
     height: '22px',
+    color: '#B9CAD5',
     '& svg': {
         fontSize: '20px',
         marginLeft: '-2px',

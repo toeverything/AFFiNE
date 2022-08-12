@@ -1,4 +1,4 @@
-import { noop, Point } from '@toeverything/utils';
+import { Point } from '@toeverything/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditor } from './Contexts';
 import {
@@ -62,7 +62,7 @@ export const useBlock = (blockId: string) => {
             return undefined;
         }
         let valid = true;
-        let offUpdate = noop;
+        let offUpdate: () => void | undefined = undefined;
         editor.getBlockById(blockId).then(node => {
             if (!valid) {
                 return;
@@ -79,7 +79,7 @@ export const useBlock = (blockId: string) => {
 
         return () => {
             valid = false;
-            offUpdate();
+            offUpdate?.();
         };
     }, [blockId, editor, requestReRender]);
 

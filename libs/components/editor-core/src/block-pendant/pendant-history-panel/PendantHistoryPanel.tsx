@@ -91,7 +91,7 @@ export const PendantHistoryPanel = ({
                 return (
                     <Popover
                         key={item.id}
-                        ref={ref => {
+                        popperHandlerRef={ref => {
                             popoverHandlerRef.current[item.id] = ref;
                         }}
                         placement="bottom-start"

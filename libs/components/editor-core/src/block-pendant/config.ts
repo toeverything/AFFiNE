@@ -98,8 +98,8 @@ export const pendantConfig: { [key: string]: PendantConfig } = {
     },
     [PendantTypes.Status]: {
         iconName: IconNames.STATUS,
-        background: ['#C5FBE0', '#FFF5AB', '#FFCECE', '#E3DEFF'],
-        color: ['#05683D', '#896406', '#AF1212', '#511AAB'],
+        background: ['#FFCECE', '#FFF5AB', '#C5FBE0', '#E3DEFF'],
+        color: ['#AF1212', '#896406', '#05683D', '#511AAB'],
     },
     [PendantTypes.Select]: {
         iconName: IconNames.SINGLE_SELECT,

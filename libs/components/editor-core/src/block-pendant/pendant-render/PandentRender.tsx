@@ -56,7 +56,7 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
 
                 return (
                     <Popover
-                        ref={ref => {
+                        popperHandlerRef={ref => {
                             popoverHandlerRef.current[id] = ref;
                         }}
                         container={blockRenderContainerRef.current}
@@ -107,7 +107,7 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                             iconStyle={{ marginTop: 4 }}
                             trigger="click"
                             // trigger={isKanbanView ? 'hover' : 'click'}
-                            container={blockRenderContainerRef.current}
+                            // container={blockRenderContainerRef.current}
                         />
                     </div>
                 </MuiFade>
