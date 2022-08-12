@@ -48,7 +48,7 @@ export class SelectionManager implements VirgoSelection {
     private _scrollDelay = 150;
     private _selectEndDelayTime = 500;
     private _hasEmitEndPending = false;
-    private _scrollTimer: number = null;
+    private _scrollTimer: number | null = null;
     /**
      *
      * the selection info before current
