@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 
-import { PageLoading, Error } from '@toeverything/components/account';
+import { PageLoading } from '@toeverything/components/account';
 import { useUserAndSpaces } from '@toeverything/datasource/state';
 
 export type RoutePrivateProps = {

@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const UIPage = () => {
     return (
         <div className="">

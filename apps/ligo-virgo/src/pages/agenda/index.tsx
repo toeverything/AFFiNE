@@ -1,10 +1,10 @@
-import { Routes, Route } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
-import Container from './container';
 import Calendar from './calendar';
+import Container from './container';
+import Home from './home';
 import Tasks from './tasks';
 import Today from './today';
-import Home from './home';
 
 export default function AgendaContainer() {
     return (

@@ -1,8 +1,4 @@
-import {
-    AddIcon,
-    ArrowDropDownIcon,
-    ArrowRightIcon,
-} from '@toeverything/components/icons';
+import { AddIcon } from '@toeverything/components/icons';
 import {
     useCalendarHeatmap,
     usePageTree,

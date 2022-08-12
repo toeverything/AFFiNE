@@ -1,5 +1,4 @@
-/* eslint-disable filename-rules/match */
-import { Routes, Route, useParams, Navigate } from 'react-router';
+import { Route, Routes, useParams } from 'react-router';
 
 import { useUserAndSpaces } from '@toeverything/datasource/state';
 

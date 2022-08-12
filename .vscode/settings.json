@@ -2,6 +2,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.formatOnSaveMode": "file",
+    "editor.codeActionsOnSave": ["source.fixAll", "source.organizeImports"],
     "prettier.prettierPath": "./node_modules/prettier",
     "cSpell.words": [
         "AUTOINCREMENT",

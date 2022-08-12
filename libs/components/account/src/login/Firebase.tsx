@@ -1,12 +1,11 @@
-/* eslint-disable filename-rules/match */
-import { useCallback, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
-    GoogleAuthProvider,
-    getAuth,
-    signInWithPopup,
     browserLocalPersistence,
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
 } from 'firebase/auth';
+import { useCallback, useMemo } from 'react';
 
 import { MuiButton } from '@toeverything/components/ui';
 
