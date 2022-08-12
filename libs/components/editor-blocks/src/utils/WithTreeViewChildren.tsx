@@ -159,6 +159,7 @@ const TREE_COLOR = '#D5DFE6';
 const TREE_LINE_LEFT_OFFSET = '-16px';
 // determine the position of the horizontal line by the type of the item
 const TREE_LINE_TOP_OFFSET = '20px'; // '50%'
+const TREE_LINE_WIDTH = '12px';
 
 const TreeWrapper = styled('div')({
     position: 'relative',
@@ -194,7 +195,7 @@ const VerticalLine = styled(Line)<{ last: boolean }>(({ last }) => ({
 }));
 
 const HorizontalLine = styled(Line)<{ last: boolean }>(({ last }) => ({
-    width: '16px',
+    width: TREE_LINE_WIDTH,
     height: '1px',
     paddingLeft: 0,
     paddingRight: 0,
@@ -217,7 +218,7 @@ const LastItemRadius = styled('div')({
     top: 0,
     height: TREE_LINE_TOP_OFFSET,
     bottom: '50%',
-    width: '16px',
+    width: TREE_LINE_WIDTH,
     borderWidth: '1px',
     borderStyle: 'solid',
     borderLeftColor: TREE_COLOR,
