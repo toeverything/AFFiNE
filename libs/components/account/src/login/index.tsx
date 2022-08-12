@@ -21,7 +21,7 @@ export function Login() {
             <MuiSnackbar
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                 open={error}
-                message="Login failed, please check if you have permission"
+                message="Request File Permission failed, please check if you have permission"
             />
             <MuiGrid item xs={8}>
                 <Error
@@ -32,7 +32,6 @@ export function Login() {
             </MuiGrid>
 
             <MuiGrid item xs={4}>
-                {' '}
                 <MuiBox
                     style={{
                         display: 'flex',

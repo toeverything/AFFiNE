@@ -1,4 +1,4 @@
-import { IconButton, styled, MuiButton } from '@toeverything/components/ui';
+import { IconButton, styled } from '@toeverything/components/ui';
 import {
     LogoIcon,
     SideBarViewIcon,
@@ -7,8 +7,9 @@ import {
 } from '@toeverything/components/icons';
 import { useShowSettingsSidebar } from '@toeverything/datasource/state';
 
-import { CurrentPageTitle } from './Title';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
+import { FileSystem } from './FileSystem';
+import { CurrentPageTitle } from './Title';
 
 export const LayoutHeader = () => {
     const { toggleSettingsSidebar: toggleInfoSidebar, showSettingsSidebar } =
@@ -25,6 +26,7 @@ export const LayoutHeader = () => {
                 </FlexContainer>
                 <FlexContainer>
                     <StyledHelper>
+                        <FileSystem />
                         <StyledShare disabled={true}>Share</StyledShare>
                         <div style={{ margin: '0px 12px' }}>
                             <IconButton
