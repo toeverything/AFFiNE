@@ -37,11 +37,11 @@ Planning, Sorting and Creating all Together. Open-source, Privacy-First, and Fre
 
 # How to use
 <h3 align="center">
-🥳🥳🥳 Our web live demo is out! 🥳🥳🥳
+🥳🥳🥳 Our web live demo is ready! 🥳🥳🥳
 </h3>
 
 <h3 align="center">
-Start to try out <a href="https://affine.pro"><b>AFFiNE web version</b></a> on our landing page:
+Start to play with <a href="https://affine.pro"><b>AFFiNE web version</b></a> on our landing page:
 </h3>
 
 <p align="center"><a href="https://affine.pro">
