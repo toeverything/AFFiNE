@@ -22,6 +22,7 @@ import {
     Collapse,
     Container,
     Divider,
+    Fade,
     FormControlLabel,
     Grid,
     Grow,
@@ -52,7 +53,6 @@ import {
     tooltipClasses,
     Typography,
     Zoom,
-    Fade,
 } from '@mui/material';
 
 export { alpha } from '@mui/system';

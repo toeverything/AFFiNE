@@ -1,7 +1,7 @@
-import Vec from '@tldraw/vec';
 import type { TLPointerEventHandler } from '@tldraw/core';
-import { SessionType, DEAD_ZONE } from '@toeverything/components/board-types';
+import Vec from '@tldraw/vec';
 import { BaseTool } from '@toeverything/components/board-state';
+import { DEAD_ZONE, SessionType } from '@toeverything/components/board-types';
 
 enum Status {
     Idle = 'idle',

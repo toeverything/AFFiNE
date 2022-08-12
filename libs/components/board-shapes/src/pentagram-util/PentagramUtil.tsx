@@ -1,36 +1,36 @@
-import * as React from 'react';
-import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
-import {
-    PentagramShape,
-    TDShapeType,
-    TDMeta,
-    TDShape,
-    DashStyle,
-    BINDING_DISTANCE,
-    GHOSTED_OPACITY,
-    LABEL_POINT,
-} from '@toeverything/components/board-types';
-import { TDShapeUtil } from '../TDShapeUtil';
-import {
-    defaultStyle,
-    getBoundsRectangle,
-    transformRectangle,
-    transformSingleRectangle,
-    getFontStyle,
-    TextLabel,
-    getShapeStyle,
-} from '../shared';
+import { SVGContainer, TLBounds, Utils } from '@tldraw/core';
 import {
     intersectBoundsPolygon,
     intersectLineSegmentPolyline,
     intersectRayLineSegment,
 } from '@tldraw/intersect';
 import Vec from '@tldraw/vec';
-import { getPentagramCentroid, getPentagramPoints } from './pentagram-helpers';
+import {
+    BINDING_DISTANCE,
+    DashStyle,
+    GHOSTED_OPACITY,
+    LABEL_POINT,
+    PentagramShape,
+    TDMeta,
+    TDShape,
+    TDShapeType,
+} from '@toeverything/components/board-types';
 import { styled } from '@toeverything/components/ui';
-import { DrawPentagram } from './components/DrawPentagram';
+import * as React from 'react';
+import {
+    defaultStyle,
+    getBoundsRectangle,
+    getFontStyle,
+    getShapeStyle,
+    TextLabel,
+    transformRectangle,
+    transformSingleRectangle,
+} from '../shared';
+import { TDShapeUtil } from '../TDShapeUtil';
 import { DashedPentagram } from './components/DashedPentagram';
+import { DrawPentagram } from './components/DrawPentagram';
 import { PentagramBindingIndicator } from './components/PentagramBindingIndicator';
+import { getPentagramCentroid, getPentagramPoints } from './pentagram-helpers';
 
 type T = PentagramShape;
 type E = HTMLDivElement;

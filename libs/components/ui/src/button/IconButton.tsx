@@ -1,11 +1,11 @@
 import type {
-    MouseEventHandler,
     CSSProperties,
+    MouseEventHandler,
     PropsWithChildren,
 } from 'react';
+import { cx } from '../clsx';
 import { styled } from '../styled';
 import { buttonStatus } from './constants';
-import { cx } from '../clsx';
 
 /* Temporary solution, needs to be adjusted */
 const SIZE_SMALL = 'small' as const;

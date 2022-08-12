@@ -1,13 +1,13 @@
 import { Utils } from '@tldraw/core';
 import {
-    Theme,
+    AlignStyle,
     ColorStyle,
     DashStyle,
-    ShapeStyles,
     FontSizeStyle,
     FontStyle,
-    AlignStyle,
+    ShapeStyles,
     StrokeWidth,
+    Theme,
 } from '@toeverything/components/board-types';
 
 const canvasLight = '#fafafa';

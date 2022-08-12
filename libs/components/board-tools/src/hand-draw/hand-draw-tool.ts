@@ -1,9 +1,7 @@
-import { TLPointerEventHandler } from '@tldraw/core';
 // import { Draw } from '@toeverything/components/board-shapes';
-import { Vec } from '@tldraw/vec';
 
-import { TDShapeType } from '@toeverything/components/board-types';
 import { BaseTool } from '@toeverything/components/board-state';
+import { TDShapeType } from '@toeverything/components/board-types';
 
 enum Status {
     Idle = 'idle',

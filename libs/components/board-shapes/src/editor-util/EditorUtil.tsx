@@ -1,24 +1,24 @@
 /* eslint-disable no-restricted-syntax */
-import { useRef, useCallback, useEffect, memo } from 'react';
-import type { SyntheticEvent } from 'react';
-import { Utils, HTMLContainer, TLBounds } from '@tldraw/core';
+import { HTMLContainer, TLBounds, Utils } from '@tldraw/core';
+import { Vec } from '@tldraw/vec';
+import { AffineEditor } from '@toeverything/components/affine-editor';
 import {
     EditorShape,
     TDMeta,
     TDShapeType,
     TransformInfo,
 } from '@toeverything/components/board-types';
+import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
+import { styled } from '@toeverything/components/ui';
+import type { SyntheticEvent } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import {
     defaultTextStyle,
     getBoundsRectangle,
     getTextSvgElement,
 } from '../shared';
-import { TDShapeUtil } from '../TDShapeUtil';
 import { getShapeStyle } from '../shared/shape-styles';
-import { styled } from '@toeverything/components/ui';
-import { Vec } from '@tldraw/vec';
-import { AffineEditor } from '@toeverything/components/affine-editor';
-import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
+import { TDShapeUtil } from '../TDShapeUtil';
 const MemoAffineEditor = memo(AffineEditor, (prev, next) => {
     return (
         prev.workspace === next.workspace &&

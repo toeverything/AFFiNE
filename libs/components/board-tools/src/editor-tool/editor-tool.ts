@@ -2,8 +2,8 @@
 import { TLPointerEventHandler } from '@tldraw/core';
 import Vec from '@tldraw/vec';
 import { Editor } from '@toeverything/components/board-shapes';
-import { TDShapeType } from '@toeverything/components/board-types';
 import { BaseTool, BaseToolStatus } from '@toeverything/components/board-state';
+import { TDShapeType } from '@toeverything/components/board-types';
 import { services } from '@toeverything/datasource/db-service';
 
 export class EditorTool extends BaseTool {

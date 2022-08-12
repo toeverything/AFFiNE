@@ -4,14 +4,14 @@ import {
     intersectCircleLineSegment,
 } from '@tldraw/intersect';
 import Vec from '@tldraw/vec';
-import getStroke from 'perfect-freehand';
-import { EASINGS } from '@toeverything/components/board-types';
-import { getShapeStyle } from '../shared/shape-styles';
 import type {
     ArrowShape,
     Decoration,
     ShapeStyles,
 } from '@toeverything/components/board-types';
+import { EASINGS } from '@toeverything/components/board-types';
+import getStroke from 'perfect-freehand';
+import { getShapeStyle } from '../shared/shape-styles';
 
 export function getArrowArcPath(
     start: number[],

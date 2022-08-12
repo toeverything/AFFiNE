@@ -1,6 +1,6 @@
+import type { ShapeStyles } from '@toeverything/components/board-types';
 import * as React from 'react';
 import { getShapeStyle } from '../../shared';
-import type { ShapeStyles } from '@toeverything/components/board-types';
 import {
     getHexagonIndicatorPathTDSnapshot,
     getHexagonPath,

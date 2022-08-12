@@ -1,4 +1,4 @@
-export { Select } from './Select';
+export { OldSelect } from './OldSelect';
 export { Option } from './Option';
 export { OptionGroup } from './OptionGroup';
-export { OldSelect } from './OldSelect';
+export { Select } from './Select';

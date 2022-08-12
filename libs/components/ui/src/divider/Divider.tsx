@@ -1,7 +1,7 @@
-import type { ReactNode, CSSProperties } from 'react';
-import { styled } from '../styled';
-import { MuiDivider } from '../mui';
+import type { CSSProperties, ReactNode } from 'react';
 import type { MuiDividerProps } from '../mui';
+import { MuiDivider } from '../mui';
+import { styled } from '../styled';
 
 interface DividerProps {
     orientation?: 'horizontal' | 'vertical';

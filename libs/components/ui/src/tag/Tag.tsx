@@ -1,12 +1,7 @@
-import type {
-    ChangeEventHandler,
-    PropsWithChildren,
-    CSSProperties,
-    ReactNode,
-} from 'react';
+import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 
-import { MouseEventHandler } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
+import { MouseEventHandler } from 'react';
 import { StyledTag } from './style';
 
 export interface TagProps {

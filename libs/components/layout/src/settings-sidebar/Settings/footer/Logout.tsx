@@ -1,10 +1,5 @@
 import { MoveToIcon } from '@toeverything/components/icons';
-import {
-    ListItem,
-    ListIcon,
-    styled,
-    Typography,
-} from '@toeverything/components/ui';
+import { ListItem, styled, Typography } from '@toeverything/components/ui';
 import { LOGOUT_COOKIES, LOGOUT_LOCAL_STORAGE } from '@toeverything/utils';
 import { getAuth, signOut } from 'firebase/auth';
 

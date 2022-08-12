@@ -1,8 +1,8 @@
-import { Utils, TLPointerEventHandler, TLBoundsCorner } from '@tldraw/core';
+import { TLBoundsCorner, TLPointerEventHandler, Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
 import { Hexagon } from '@toeverything/components/board-shapes';
-import { SessionType, TDShapeType } from '@toeverything/components/board-types';
 import { BaseTool, BaseToolStatus } from '@toeverything/components/board-state';
+import { SessionType, TDShapeType } from '@toeverything/components/board-types';
 
 export class HexagonTool extends BaseTool {
     override type = TDShapeType.Triangle as const;

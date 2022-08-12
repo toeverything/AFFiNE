@@ -1,12 +1,12 @@
-import { useRef, useState, ReactElement } from 'react';
+import { ArrowRightIcon } from '@toeverything/components/icons';
+import { ReactElement, useRef, useState } from 'react';
+import { Divider } from '../divider';
 import {
     MuiGrow as Grow,
     MuiPopper as Popper,
     MuiPopperPlacementType as PopperPlacementType,
 } from '../mui';
 import { styled } from '../styled';
-import { ArrowRightIcon } from '@toeverything/components/icons';
-import { Divider } from '../divider';
 
 export interface CascaderItemProps {
     title: string;
@@ -39,7 +39,7 @@ function CascaderItem(props: ItemProps) {
     const [open, setOpen] = useState(false);
 
     if (isDivide) {
-        return <Divider></Divider>;
+        return <Divider />;
     }
 
     const on_click_item = () => {

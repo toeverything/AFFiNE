@@ -1,24 +1,23 @@
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import MenuIconBak from '@mui/icons-material/Menu';
-import {
-    useUserAndSpaces,
-    useShowSpaceSidebar,
-    useShowSettingsSidebar,
-} from '@toeverything/datasource/state';
+import { ListIcon, LogoLink, SpaceIcon } from '@toeverything/components/common';
+import { SideBarViewIcon } from '@toeverything/components/icons';
 import {
     MuiIconButton as IconButton,
     styled,
     Tooltip,
     useTheme,
 } from '@toeverything/components/ui';
-import { SideBarViewIcon } from '@toeverything/components/icons';
-import { LogoLink, ListIcon, SpaceIcon } from '@toeverything/components/common';
+import { useFlag } from '@toeverything/datasource/feature-flags';
+import {
+    useShowSettingsSidebar,
+    useShowSpaceSidebar,
+    useUserAndSpaces,
+} from '@toeverything/datasource/state';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PageHistoryPortal } from './PageHistoryPortal';
-import { PageSharePortal } from './PageSharePortal';
 import { PageSettingPortal } from './PageSettingPortal';
+import { PageSharePortal } from './PageSharePortal';
 import { CurrentPageTitle } from './Title';
 import { UserMenuIcon } from './user-menu-icon';
-import { useFlag } from '@toeverything/datasource/feature-flags';
 
 function hideAffineHeader(pathname: string): boolean {
     return ['/', '/login', '/error/workspace', '/error/404', '/ui'].includes(

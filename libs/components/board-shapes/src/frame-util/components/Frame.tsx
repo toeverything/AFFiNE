@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { BINDING_DISTANCE } from '@toeverything/components/board-types';
 import type { ShapeStyles } from '@toeverything/components/board-types';
+import { BINDING_DISTANCE } from '@toeverything/components/board-types';
+import * as React from 'react';
 import { getShapeStyle } from '../../shared';
 
 interface RectangleSvgProps {

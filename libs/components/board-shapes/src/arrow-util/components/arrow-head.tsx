@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 export interface ArrowheadProps {
     left: number[];
     middle: number[];

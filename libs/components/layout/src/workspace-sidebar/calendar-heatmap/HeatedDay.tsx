@@ -1,9 +1,9 @@
-import type { ComponentType } from 'react';
 import {
-    styled,
     PickersDay,
+    styled,
     type PickersDayProps,
 } from '@toeverything/components/ui';
+import type { ComponentType } from 'react';
 
 import type { Theme } from './types';
 import { DEFAULT_THEME } from './utils';

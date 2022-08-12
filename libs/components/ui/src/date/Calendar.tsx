@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     Calendar as ReactCalendar,
     type CalendarProps,

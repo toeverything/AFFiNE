@@ -7,8 +7,8 @@ import { useParams } from 'react-router-dom';
 
 import { useFlag } from '@toeverything/datasource/feature-flags';
 
-import MoreActions from './MoreActions';
 import { DotIcon } from '../../dot-icon';
+import MoreActions from './MoreActions';
 import {
     ActionButton,
     Counter,

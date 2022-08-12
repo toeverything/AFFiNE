@@ -1,8 +1,8 @@
-import { Utils, TLPointerEventHandler, TLBoundsCorner } from '@tldraw/core';
+import { TLBoundsCorner, TLPointerEventHandler, Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
 import { Triangle } from '@toeverything/components/board-shapes';
-import { SessionType, TDShapeType } from '@toeverything/components/board-types';
 import { BaseTool, BaseToolStatus } from '@toeverything/components/board-state';
+import { SessionType, TDShapeType } from '@toeverything/components/board-types';
 
 export class TriangleTool extends BaseTool {
     override type = TDShapeType.Triangle as const;

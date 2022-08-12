@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router';
 import {
     getAuth,
     onAuthStateChanged,
@@ -6,6 +5,7 @@ import {
 } from 'firebase/auth';
 import { atom, useAtom } from 'jotai';
 import { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 
 import { useIdentifyUser } from '@toeverything/datasource/feature-flags';
 import { UserInfo } from '@toeverything/utils';

@@ -1,32 +1,32 @@
-import * as React from 'react';
-import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
-import { Vec } from '@tldraw/vec';
-import {
-    defaultStyle,
-    getShapeStyle,
-    getFontStyle,
-    TextLabel,
-} from '../shared';
-import {
-    EllipseShape,
-    DashStyle,
-    TDShapeType,
-    TDShape,
-    TransformInfo,
-    TDMeta,
-    GHOSTED_OPACITY,
-    LABEL_POINT,
-} from '@toeverything/components/board-types';
-import { TDShapeUtil } from '../TDShapeUtil';
+import { SVGContainer, TLBounds, Utils } from '@tldraw/core';
 import {
     intersectEllipseBounds,
     intersectLineSegmentEllipse,
     intersectRayEllipse,
 } from '@tldraw/intersect';
-import { getEllipseIndicatorPath } from './ellipse-helpers';
-import { DrawEllipse } from './components/DrawEllipse';
-import { DashedEllipse } from './components/DashedEllipse';
+import { Vec } from '@tldraw/vec';
+import {
+    DashStyle,
+    EllipseShape,
+    GHOSTED_OPACITY,
+    LABEL_POINT,
+    TDMeta,
+    TDShape,
+    TDShapeType,
+    TransformInfo,
+} from '@toeverything/components/board-types';
 import { styled } from '@toeverything/components/ui';
+import * as React from 'react';
+import {
+    defaultStyle,
+    getFontStyle,
+    getShapeStyle,
+    TextLabel,
+} from '../shared';
+import { TDShapeUtil } from '../TDShapeUtil';
+import { DashedEllipse } from './components/DashedEllipse';
+import { DrawEllipse } from './components/DrawEllipse';
+import { getEllipseIndicatorPath } from './ellipse-helpers';
 
 type T = EllipseShape;
 type E = HTMLDivElement;

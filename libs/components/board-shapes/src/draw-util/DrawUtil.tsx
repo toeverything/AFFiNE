@@ -1,22 +1,22 @@
-import * as React from 'react';
-import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
-import { Vec } from '@tldraw/vec';
-import { defaultStyle, getShapeStyle } from '../shared/shape-styles';
-import {
-    DrawShape,
-    DashStyle,
-    TDShapeType,
-    TransformInfo,
-    TDMeta,
-    GHOSTED_OPACITY,
-} from '@toeverything/components/board-types';
-import { TDShapeUtil } from '../TDShapeUtil';
+import { SVGContainer, TLBounds, Utils } from '@tldraw/core';
 import {
     intersectBoundsBounds,
     intersectBoundsPolyline,
     intersectLineSegmentBounds,
     intersectLineSegmentLineSegment,
 } from '@tldraw/intersect';
+import { Vec } from '@tldraw/vec';
+import {
+    DashStyle,
+    DrawShape,
+    GHOSTED_OPACITY,
+    TDMeta,
+    TDShapeType,
+    TransformInfo,
+} from '@toeverything/components/board-types';
+import * as React from 'react';
+import { defaultStyle, getShapeStyle } from '../shared/shape-styles';
+import { TDShapeUtil } from '../TDShapeUtil';
 import {
     getDrawStrokePathTDSnapshot,
     getFillPath,

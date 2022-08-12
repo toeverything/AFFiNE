@@ -1,7 +1,5 @@
-import { useState } from 'react';
-
-import { styled } from '@mui/system';
 import ModalUnstyled from '@mui/base/ModalUnstyled';
+import { styled } from '@mui/system';
 // eslint-disable-next-line no-restricted-imports
 import Fade from '@mui/material/Fade';
 

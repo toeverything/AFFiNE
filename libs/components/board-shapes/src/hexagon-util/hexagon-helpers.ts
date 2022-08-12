@@ -1,8 +1,8 @@
 import { Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
-import getStroke, { getStrokePoints } from 'perfect-freehand';
 import type { ShapeStyles } from '@toeverything/components/board-types';
-import { getShapeStyle, getOffsetPolygon } from '../shared';
+import getStroke, { getStrokePoints } from 'perfect-freehand';
+import { getOffsetPolygon, getShapeStyle } from '../shared';
 function getPonits(w: number, h: number) {
     return [
         [w / 5, 0],

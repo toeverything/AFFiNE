@@ -1,4 +1,4 @@
-import { ChangedStates, BlockImplInstance } from '@toeverything/datasource/jwt';
+import { BlockImplInstance, ChangedStates } from '@toeverything/datasource/jwt';
 
 export type ObserveCallback = (
     changeStates: ChangedStates,

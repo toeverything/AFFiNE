@@ -1,5 +1,5 @@
+import { BoardViewIcon, DocViewIcon } from '@toeverything/components/icons';
 import { styled } from '@toeverything/components/ui';
-import { DocViewIcon, BoardViewIcon } from '@toeverything/components/icons';
 import { DocMode } from './type';
 
 interface StatusIconProps {

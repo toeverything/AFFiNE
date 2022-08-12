@@ -1,10 +1,10 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 // eslint-disable-next-line no-restricted-imports
 import {
     createTheme,
+    Theme as MuiTheme,
     ThemeProvider as MuiThemeProvider,
     useTheme as muiUseTheme,
-    Theme as MuiTheme,
 } from '@mui/material/styles';
 import type { ThemeOptions as AffineThemeOptions } from './theme';
 import { Theme } from './theme';

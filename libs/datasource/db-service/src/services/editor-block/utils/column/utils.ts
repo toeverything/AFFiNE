@@ -1,12 +1,12 @@
 import type {
+    BooleanColumn,
     Column,
     ContentColumn,
-    StringColumn,
-    NumberColumn,
-    EnumColumn,
     DateColumn,
+    EnumColumn,
     FileColumn,
-    BooleanColumn,
+    NumberColumn,
+    StringColumn,
 } from './types';
 
 export const isContentColumn = (column: Column): column is ContentColumn => {

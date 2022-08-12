@@ -6,9 +6,8 @@ import * as url from 'lib0/url';
 import * as awarenessProtocol from 'y-protocols/awareness';
 
 import { handler } from './handler';
-import { registerBroadcastSubscriber } from './broadcast';
-import { registerWebsocket } from './websocket';
 import { registerUpdateHandler } from './processor';
+import { registerWebsocket } from './websocket';
 
 /**
  * Websocket Provider for Yjs. Creates a websocket connection to sync the shared document.

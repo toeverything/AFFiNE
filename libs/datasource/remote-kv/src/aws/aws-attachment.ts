@@ -1,8 +1,10 @@
-import * as AWS from 'aws-sdk';
 import type { Credentials } from 'aws-sdk';
+import * as AWS from 'aws-sdk';
 import type { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload';
 import { saveAs } from 'file-saver';
 
+import { MESSAGE_INFO } from '../constant/message-info';
+import toAsync from '../utils/to-async';
 import {
     bucketName,
     bucketRegion,
@@ -10,8 +12,6 @@ import {
     identityPoolId,
     keyCreator,
 } from './aws-config';
-import toAsync from '../utils/to-async';
-import { MESSAGE_INFO } from '../constant/message-info';
 
 export default class AwsAttachment {
     readonly #s3;

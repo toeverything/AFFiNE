@@ -1,36 +1,36 @@
-import * as React from 'react';
-import { Utils, SVGContainer, TLBounds } from '@tldraw/core';
-import {
-    HexagonShape,
-    TDShapeType,
-    TDMeta,
-    TDShape,
-    DashStyle,
-    BINDING_DISTANCE,
-    GHOSTED_OPACITY,
-    LABEL_POINT,
-} from '@toeverything/components/board-types';
-import { TDShapeUtil } from '../TDShapeUtil';
-import {
-    defaultStyle,
-    getBoundsRectangle,
-    transformRectangle,
-    transformSingleRectangle,
-    getFontStyle,
-    TextLabel,
-    getShapeStyle,
-} from '../shared';
+import { SVGContainer, TLBounds, Utils } from '@tldraw/core';
 import {
     intersectBoundsPolygon,
     intersectLineSegmentPolyline,
     intersectRayLineSegment,
 } from '@tldraw/intersect';
 import Vec from '@tldraw/vec';
-import { getHexagonCentroid, getHexagonPoints } from './hexagon-helpers';
+import {
+    BINDING_DISTANCE,
+    DashStyle,
+    GHOSTED_OPACITY,
+    HexagonShape,
+    LABEL_POINT,
+    TDMeta,
+    TDShape,
+    TDShapeType,
+} from '@toeverything/components/board-types';
 import { styled } from '@toeverything/components/ui';
-import { DrawHexagon } from './components/DrawHexagon';
+import * as React from 'react';
+import {
+    defaultStyle,
+    getBoundsRectangle,
+    getFontStyle,
+    getShapeStyle,
+    TextLabel,
+    transformRectangle,
+    transformSingleRectangle,
+} from '../shared';
+import { TDShapeUtil } from '../TDShapeUtil';
 import { DashedHexagon } from './components/DashedHexagon';
+import { DrawHexagon } from './components/DrawHexagon';
 import { HexagonBindingIndicator } from './components/HexagonBindingIndicator';
+import { getHexagonCentroid, getHexagonPoints } from './hexagon-helpers';
 
 type T = HexagonShape;
 type E = HTMLDivElement;

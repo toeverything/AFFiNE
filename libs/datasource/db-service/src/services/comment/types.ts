@@ -1,4 +1,4 @@
-import { ContentColumnValue, BlockFlavorKeys } from '../index';
+import { BlockFlavorKeys, ContentColumnValue } from '../index';
 export interface CommentReply {
     id: string;
     workspace: string;

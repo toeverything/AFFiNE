@@ -1,31 +1,31 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { TLBounds, TLTransformInfo, Utils, TLPageState } from '@tldraw/core';
+import { TLBounds, TLPageState, TLTransformInfo, Utils } from '@tldraw/core';
 import {
-    TDSnapshot,
-    ShapesWithProp,
-    TDShape,
-    TDBinding,
-    TDPage,
-    TldrawCommand,
-    TldrawPatch,
-    TDShapeType,
-    ArrowShape,
-    TDHandle,
-    TDExportType,
-    BINDING_DISTANCE,
-} from '@toeverything/components/board-types';
+    intersectRayBounds,
+    intersectRayEllipse,
+    intersectRayLineSegment,
+} from '@tldraw/intersect';
 import { Vec } from '@tldraw/vec';
 import type { TDShapeUtil } from '@toeverything/components/board-shapes';
 import {
     getShapeUtil,
     getTrianglePoints,
 } from '@toeverything/components/board-shapes';
-import { deepCopy } from './manager/deep-copy';
 import {
-    intersectRayBounds,
-    intersectRayEllipse,
-    intersectRayLineSegment,
-} from '@tldraw/intersect';
+    ArrowShape,
+    BINDING_DISTANCE,
+    ShapesWithProp,
+    TDBinding,
+    TDExportType,
+    TDHandle,
+    TDPage,
+    TDShape,
+    TDShapeType,
+    TDSnapshot,
+    TldrawCommand,
+    TldrawPatch,
+} from '@toeverything/components/board-types';
+import { deepCopy } from './manager/deep-copy';
 
 const isDev = process.env['NODE_ENV'] === 'development';
 

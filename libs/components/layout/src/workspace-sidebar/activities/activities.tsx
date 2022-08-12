@@ -1,15 +1,14 @@
-import { services } from '@toeverything/datasource/db-service';
-import { useUserAndSpaces } from '@toeverything/datasource/state';
-import { useCallback, useEffect, useState } from 'react';
-import { styled } from '@toeverything/components/ui';
 import {
     MuiList as List,
     MuiListItem as ListItem,
     MuiListItemText as ListItemText,
-    MuiListItemButton as ListItemButton,
+    styled,
 } from '@toeverything/components/ui';
-import { useNavigate } from 'react-router';
+import { services } from '@toeverything/datasource/db-service';
+import { useUserAndSpaces } from '@toeverything/datasource/state';
 import { formatDistanceToNow } from 'date-fns';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { DotIcon } from '../dot-icon';
 
 const StyledWrapper = styled('div')({

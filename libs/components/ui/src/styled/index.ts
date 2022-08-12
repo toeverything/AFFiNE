@@ -1,8 +1,9 @@
-// eslint-disable-next-line no-restricted-imports
-import { styled as muiStyled, keyframes } from '@mui/material/styles';
-import { ReactHTML, ReactSVG } from 'react';
 import isPropValid from '@emotion/is-prop-valid';
+// eslint-disable-next-line no-restricted-imports
+import { keyframes, styled as muiStyled } from '@mui/material/styles';
+import { ReactHTML, ReactSVG } from 'react';
 export type { SxProps } from '@mui/system';
+export { keyframes };
 
 // Props that will be passed to DOM
 const ALLOW_LIST_PROPS: string[] = [];
@@ -71,5 +72,3 @@ export const styled: typeof muiStyled = (
     options.shouldForwardProp = isValidProp;
     return muiStyled(component, options);
 };
-
-export { keyframes };

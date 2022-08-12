@@ -1,17 +1,17 @@
-import { useNavigate } from 'react-router-dom';
 import { message } from '@toeverything/components/ui';
-import { useSettingFlags, type SettingFlags } from './use-setting-flags';
 import { copyToClipboard } from '@toeverything/utils';
+import { useNavigate } from 'react-router-dom';
+import { useSettingFlags, type SettingFlags } from './use-setting-flags';
 import {
-    duplicatePage,
-    getPageTitle,
-    exportHtml,
-    exportMarkdown,
-    importWorkspace,
-    exportWorkspace,
-    useWorkspaceAndPageId,
     // useReadingMode,
     clearWorkspace,
+    duplicatePage,
+    exportHtml,
+    exportMarkdown,
+    exportWorkspace,
+    getPageTitle,
+    importWorkspace,
+    useWorkspaceAndPageId,
 } from './util';
 
 interface BaseSettingItem {

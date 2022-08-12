@@ -1,11 +1,11 @@
 import type { TLBounds } from '@tldraw/core';
-import { getFontFace, getFontSize } from './shape-styles';
-import { getTextAlign } from './get-text-align';
 import {
-    LINE_HEIGHT,
     AlignStyle,
+    LINE_HEIGHT,
     ShapeStyles,
 } from '@toeverything/components/board-types';
+import { getTextAlign } from './get-text-align';
+import { getFontFace, getFontSize } from './shape-styles';
 
 export function getTextSvgElement(
     text: string,

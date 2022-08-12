@@ -1,6 +1,6 @@
 import type {
-    ReturnEditorBlock,
     Comment,
+    ReturnEditorBlock,
 } from '@toeverything/datasource/db-service';
 
 export const getCommentsFromEditorBlocks = (

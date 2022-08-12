@@ -4,11 +4,11 @@ import {
     TLPointerEventHandler,
     Utils,
 } from '@tldraw/core';
-import type { TldrawApp } from '../tldraw-app';
 import {
     TDEventHandler,
     TDToolType,
 } from '@toeverything/components/board-types';
+import type { TldrawApp } from '../tldraw-app';
 
 export enum Status {
     Idle = 'idle',

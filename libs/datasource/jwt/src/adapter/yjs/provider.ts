@@ -1,5 +1,5 @@
-import { Doc } from 'yjs';
 import { Awareness } from 'y-protocols/awareness.js';
+import { Doc } from 'yjs';
 
 import {
     IndexedDBProvider,

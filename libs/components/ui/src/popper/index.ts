@@ -1,2 +1,2 @@
-export * from './Popper';
 export * from './interface';
+export * from './Popper';

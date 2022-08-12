@@ -1,15 +1,15 @@
 import {
     NotificationInstance,
+    type NotificationContent,
     type NotificationController,
     type NotificationInstanceProps,
-    type NotificationContent,
-    type NotificationOption,
     type NotificationKey,
+    type NotificationOption,
 } from '../notification';
 import {
-    SuccessMessage,
     ErrorMessage,
     InfoMessage,
+    SuccessMessage,
     WarningMessage,
 } from './MessageContent';
 
