@@ -41,10 +41,7 @@ const _getIconRenderColor = (shapes: TDShape[]) => {
     return max[0];
 };
 
-export const FillColorConfig: FC<BorderColorConfigProps> = ({
-    app,
-    shapes,
-}) => {
+export const FillColorConfig = ({ app, shapes }: BorderColorConfigProps) => {
     const theme = useTheme();
     const setFillColor = (color: ColorType) => {
         app.style(

@@ -33,7 +33,7 @@ const shapes = [
 
 const activeToolSelector = (s: TDSnapshot) => s.appState.activeTool;
 
-export const LineTools: FC<{ app: TldrawApp }> = ({ app }) => {
+export const LineTools = ({ app }: { app: TldrawApp }) => {
     const activeTool = app.useStore(activeToolSelector);
 
     const [lastActiveTool, setLastActiveTool] = useState<ShapeTypes>(

@@ -20,7 +20,7 @@ export function removePercent(str: string) {
     return str.replace('%', '');
 }
 
-export const Grid: FC<CreateView> = function (props) {
+export const Grid = function (props: CreateView) {
     const { block, editor } = props;
     const gridItemMinWidth = editor.configManager.grid.gridItemMinWidth;
     const [isOnDrag, setIsOnDrag] = useState<boolean>(false);

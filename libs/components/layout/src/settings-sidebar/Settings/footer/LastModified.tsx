@@ -4,7 +4,7 @@ import { Typography, styled } from '@toeverything/components/ui';
 import { useUserAndSpaces } from '@toeverything/datasource/state';
 import { usePageLastUpdated, useWorkspaceAndPageId } from '../util';
 
-export const LastModified: FC = () => {
+export const LastModified = () => {
     const { user } = useUserAndSpaces();
     const username = user ? user.nickname : 'Anonymous';
     const { workspaceId, pageId } = useWorkspaceAndPageId();

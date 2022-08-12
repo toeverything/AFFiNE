@@ -68,7 +68,7 @@ const tools: Array<{
     },
 ];
 
-export const ToolsPanel: FC<{ app: TldrawApp }> = ({ app }) => {
+export const ToolsPanel = ({ app }: { app: TldrawApp }) => {
     const activeTool = app.useStore(activeToolSelector);
 
     const isToolLocked = app.useStore(toolLockedSelector);

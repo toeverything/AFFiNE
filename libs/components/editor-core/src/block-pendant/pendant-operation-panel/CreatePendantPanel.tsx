@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Input,
-    message,
-    Option,
-    Select,
-    Tooltip,
-} from '@toeverything/components/ui';
-import { HelpCenterIcon } from '@toeverything/components/icons';
+import { message, Option, Select } from '@toeverything/components/ui';
 import { AsyncBlock } from '../../editor';
 
 import { IconMap, pendantOptions } from '../config';
@@ -14,7 +7,6 @@ import { PendantOptions } from '../types';
 import { PendantModifyPanel } from '../pendant-modify-panel';
 import {
     StyledDivider,
-    StyledInputEndAdornment,
     StyledOperationLabel,
     StyledOperationTitle,
     StyledPopoverSubTitle,
@@ -26,6 +18,7 @@ import {
     getPendantConfigByType,
     checkPendantForm,
 } from '../utils';
+import { FieldTitleInput } from './FieldTitleInput';
 import { useOnCreateSure } from './hooks';
 
 export const CreatePendantPanel = ({
@@ -74,19 +67,11 @@ export const CreatePendantPanel = ({
                 })}
             </Select>
             <StyledOperationLabel>Field Title</StyledOperationLabel>
-            <Input
+            <FieldTitleInput
                 value={fieldName}
-                placeholder="Input your field name here"
                 onChange={e => {
                     setFieldName(e.target.value);
                 }}
-                endAdornment={
-                    <Tooltip content="Help info here" placement="top">
-                        <StyledInputEndAdornment>
-                            <HelpCenterIcon />
-                        </StyledInputEndAdornment>
-                    </Tooltip>
-                }
             />
             {selectedOption ? (
                 <>

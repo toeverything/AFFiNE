@@ -8,11 +8,11 @@ import type { CellProps } from '../types';
 /**
  * @deprecated
  */
-export const SelectCell: FC<CellProps<EnumColumnValue>> = ({
+export const SelectCell = ({
     value,
     column,
     onChange,
-}) => {
+}: CellProps<EnumColumnValue>) => {
     const options = useMemo(() => {
         if (isEnumColumn(column.columnConfig)) {
             return column.columnConfig.options.map(option => {

@@ -1,5 +1,5 @@
 import type { FC, ReactNode } from 'react';
 
-export const ContextMenu: FC<{ children: ReactNode }> = ({ children }) => {
+export const ContextMenu = ({ children }: { children: ReactNode }) => {
     return <div>{children}</div>;
 };

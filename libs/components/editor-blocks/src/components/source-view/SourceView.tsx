@@ -156,7 +156,7 @@ const LoadingContiner = () => {
     return <Loading>loading...</Loading>;
 };
 
-export const SourceView: FC<Props> = props => {
+export const SourceView = (props: Props) => {
     const { link, isSelected, block, editorElement } = props;
     const src = formatUrl(link);
     // let iframeShow = useLazyIframe(src, 3000, iframeContainer);

@@ -24,11 +24,11 @@ interface RenderRootProps {
 const MAX_PAGE_WIDTH = 5000;
 export const MIN_PAGE_WIDTH = 1480;
 
-export const RenderRoot: FC<PropsWithChildren<RenderRootProps>> = ({
+export const RenderRoot = ({
     editor,
     editorElement,
     children,
-}) => {
+}: PropsWithChildren<RenderRootProps>) => {
     const selectionRef = useRef<SelectionRef>(null);
     const triggeredBySelect = useRef(false);
     const [pageWidth, setPageWidth] = useState<number>(MIN_PAGE_WIDTH);

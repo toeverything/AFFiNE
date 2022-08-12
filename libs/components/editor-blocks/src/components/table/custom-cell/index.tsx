@@ -9,7 +9,7 @@ import type { CellProps } from './types';
 /**
  * @deprecated
  */
-const DefaultCell: FC<CellProps> = ({ onChange, ...props }) => {
+const DefaultCell = ({ onChange, ...props }: CellProps) => {
     return <DEFAULT_RENDER_CELL {...props} />;
 };
 
@@ -33,7 +33,7 @@ interface CustomCellProps extends TableCustomCellProps<unknown> {
     onChange: (data: TableCustomCellProps<unknown>) => void;
 }
 
-export const CustomCell: FC<CustomCellProps> = props => {
+export const CustomCell = (props: CustomCellProps) => {
     const View =
         props.rowIndex === 0
             ? DefaultCell

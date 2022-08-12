@@ -14,7 +14,7 @@ interface SliderProps {
     onChange?: SliderUnstyledProps['onChange'];
 }
 
-export const Slider: FC<SliderProps> = props => {
+export const Slider = (props: SliderProps) => {
     return <StyledSlider {...props} />;
 };
 

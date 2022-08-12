@@ -20,11 +20,11 @@ const _textAlignMap: Record<
     end: 'right',
 };
 
-export const Divider: FC<DividerProps> = ({
+export const Divider = ({
     orientation = 'horizontal',
     textAlign = 'center',
     children,
-}) => {
+}: DividerProps) => {
     return (
         <StyledMuiDivider
             orientation={orientation}

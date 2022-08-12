@@ -10,7 +10,7 @@ const _messages = {
 };
 
 type YoutubeView = CreateView;
-export const YoutubeView: FC<YoutubeView> = ({ block }) => {
+export const YoutubeView = ({ block }: YoutubeView) => {
     const [youtubeUrl, setYoutubeUrl] = useState<string>(
         block.getProperty('embedLink')?.value
     );

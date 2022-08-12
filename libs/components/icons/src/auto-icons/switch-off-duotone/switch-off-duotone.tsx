@@ -1,9 +1,6 @@
 
-import { FC } from 'react';
 // eslint-disable-next-line no-restricted-imports
-import { SvgIcon } from '@mui/material';
-// eslint-disable-next-line no-restricted-imports
-import type { SvgIconProps } from '@mui/material';
+import { SvgIcon, SvgIconProps } from '@mui/material';
 
 export interface SwitchOffDuotoneIconProps extends Omit<SvgIconProps, 'color'> {
     color0?: string
@@ -13,7 +10,7 @@ export interface SwitchOffDuotoneIconProps extends Omit<SvgIconProps, 'color'> {
     color2?: string
 }
 
-export const SwitchOffDuotoneIcon: FC<SwitchOffDuotoneIconProps> = ({ color0, primaryColor, color1, secondaryColor, color2, style, ...props}) => {
+export const SwitchOffDuotoneIcon = ({ color0, primaryColor, color1, secondaryColor, color2, style, ...props}: SwitchOffDuotoneIconProps) => {
     const propsStyles = {"--color-0": color0 || primaryColor, "--color-1": color1 || secondaryColor, "--color-2": color2};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

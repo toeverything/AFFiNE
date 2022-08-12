@@ -49,14 +49,14 @@ export function Login() {
                             width: '100px',
                         }}
                     />
-                    {/* {((process.env['NX_LOCAL'] || true) && ( */}
-                    <FileSystem onError={onError} />
-                    {/* )) ||
-                    null}
-                {((!process.env['NX_LOCAL'] || true) && ( */}
-                    <Firebase onError={onError} />
-                    {/* )) ||
-                    null} */}{' '}
+                    {(process.env['NX_LOCAL'] && (
+                        <FileSystem onError={onError} />
+                    )) ||
+                        null}
+                    {(!process.env['NX_LOCAL'] && (
+                        <Firebase onError={onError} />
+                    )) ||
+                        null}
                 </MuiBox>
             </MuiGrid>
         </MuiGrid>

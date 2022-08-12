@@ -9,7 +9,7 @@ import { ErrorBoundary } from '@toeverything/utils';
 //     onChange: () => void;
 // }
 
-export const Editable: FC = () => {
+export const Editable = () => {
     const editor = useMemo(() => withReact(createEditor()), []);
     return (
         <ErrorBoundary

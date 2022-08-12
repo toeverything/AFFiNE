@@ -6,7 +6,7 @@ interface TableProps extends BasicTableProps {
     addon?: ReactNode;
 }
 
-export const Table: FC<TableProps> = ({ addon, ...props }) => {
+export const Table = ({ addon, ...props }: TableProps) => {
     return (
         <div>
             {addon}

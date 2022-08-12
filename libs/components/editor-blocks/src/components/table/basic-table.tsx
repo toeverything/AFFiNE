@@ -64,8 +64,13 @@ export const DEFAULT_RENDER_CELL: CustomCell = ({ value }) => {
     return <span>{value ? String(value) : '--'}</span>;
 };
 
-const Cell: FC<GridChildComponentProps<TableData>> = memo(
-    ({ data, rowIndex, columnIndex, style }) => {
+const Cell = memo(
+    ({
+        data,
+        rowIndex,
+        columnIndex,
+        style,
+    }: GridChildComponentProps<TableData>) => {
         const column = data.columns[columnIndex];
         const row = data.rows[rowIndex];
         const is_first_column = columnIndex === 0;
@@ -89,18 +94,17 @@ const Cell: FC<GridChildComponentProps<TableData>> = memo(
                 />
             </div>
         );
-    },
-    areEqual
+    }
 );
 
-export const BasicTable: FC<BasicTableProps> = ({
+export const BasicTable = ({
     columns,
     rows,
     headerHeight = DEFAULT_ROW_HEIGHT,
     rowKey,
     border = true,
     renderCell = DEFAULT_RENDER_CELL,
-}) => {
+}: BasicTableProps) => {
     const container_ref = useRef<HTMLDivElement>();
     const [table_width, set_table_width] = useState(0);
 
