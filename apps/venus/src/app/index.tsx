@@ -235,7 +235,7 @@ const GitHub = (props: { center?: boolean; flat?: boolean }) => {
             startIcon={<GitHubIcon />}
             size="lg"
         >
-            Check GitHub
+            {props.center ? 'Check ' : ''}GitHub
         </Button>
     );
 };
