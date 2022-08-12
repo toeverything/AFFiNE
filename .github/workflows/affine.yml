@@ -19,6 +19,7 @@ env:
     NAMESPACE: toeverything
     AFFINE_IMAGE_NAME: AFFiNE
     IMAGE_TAG_LATEST: nightly-latest
+    LOCAL_CACHE: localhost:5000/toeverything/relocate:latest
 
 jobs:
     ligo-virgo:
@@ -28,30 +29,57 @@ jobs:
             contents: read
             packages: write
 
+        services:
+          registry:
+            image: registry:2
+            ports:
+              - 5000:5000
+
         steps:
             - name: Checkout
               uses: actions/checkout@v2
 
             - name: Log in to the Container registry
-              uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+              uses: docker/login-action@v2
               with:
                   registry: ${{ env.REGISTRY }}
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v1
+
+            - name: Set up Docker Buildx
+              id: buildx
+              uses: docker/setup-buildx-action@v1
+              with:
+                driver-opts: network=host
+
             - name: Extract metadata (tags, labels) for Docker (AFFiNE-Local)
               id: meta_affine
-              uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+              uses: docker/metadata-action@v4
               with:
                   images: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.AFFINE_IMAGE_NAME }}
                   tags: ${{ env.IMAGE_TAG_LATEST }}
 
             - name: Build and push Docker image (AFFINE-Local)
-              uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+              uses: docker/build-push-action@v3
               with:
                   context: .
+                  push: true
                   file: ./.github/deployment/Dockerfile-affine
+                  tags: ${{ env.LOCAL_CACHE }}
+                  target: AFFiNE
+
+            - name: Build and push Docker image (AFFINE-Local)
+              uses: docker/build-push-action@v3
+              with:
+                  context: .
+                  platforms: linux/amd64,linux/arm64/v8
+                  file: ./.github/deployment/Dockerfile-affine-multiplatform
                   push: ${{ github.ref == 'refs/heads/master' && true || false }}
                   tags: ${{ steps.meta_affine.outputs.tags }}
                   labels: ${{ steps.meta_affine.outputs.labels }}
                   target: AFFiNE
+                  build-args: |
+                    BASE_IMAGE=${{ env.LOCAL_CACHE }}
