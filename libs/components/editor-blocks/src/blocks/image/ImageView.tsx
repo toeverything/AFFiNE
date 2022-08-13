@@ -1,7 +1,7 @@
 import {
+    BlockPendantProvider,
     useCurrentView,
     useOnSelect,
-    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
@@ -41,6 +41,18 @@ const ImageBlock = styled('div')({
     },
     '.progress': {},
 });
+const ImageShade = styled('div')(({ theme }) => {
+    return {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        zIndex: 2,
+        right: 0,
+        background: 'transparent',
+    };
+});
+
 const KanbanImageContainer = styled('div')<{ isSelected: boolean }>(
     ({ theme, isSelected }) => {
         return {
@@ -56,73 +68,72 @@ const KanbanImageContainer = styled('div')<{ isSelected: boolean }>(
 );
 export const ImageView = ({ block, editor }: ImageView) => {
     const workspace = editor.workspace;
-    const [imgUrl, set_image_url] = useState<string>();
+    const [imgUrl, setImageUrl] = useState<string>();
     const [imgWidth, setImgWidth] = useState<number>(0);
-    const [ratio, set_ratio] = useState<number>(0);
-    const resize_box = useRef(null);
+    const [ratio, setRatio] = useState<number>(0);
+    const resizeBox = useRef(null);
     const [currentView] = useCurrentView();
     const [isSelect, setIsSelect] = useState<boolean>();
     useOnSelect(block.id, (isSelect: boolean) => {
         setIsSelect(isSelect);
     });
 
-    const img_load = (url: string) => {
-        const boxWidth = resize_box.current.offsetWidth;
+    const imgLoad = (url: string) => {
+        const boxWidth = resizeBox.current.offsetWidth;
 
         const imageStyle = block.getProperty('image_style');
         if (imageStyle?.width) {
-            set_ratio(imageStyle.width / imageStyle.height);
+            setRatio(imageStyle.width / imageStyle.height);
             setImgWidth(imageStyle.width);
-            set_image_url(url);
+            setImageUrl(url);
             return;
         }
         const img = new Image();
         img.src = url;
         // load complete execution
         img.onload = async () => {
-            const img_radio = img.width / img.height;
+            const imgRadio = img.width / img.height;
 
             if (img.width >= boxWidth - 20) {
                 img.width = boxWidth - 20;
             }
-            img.height = img.width / img_radio;
+            img.height = img.width / imgRadio;
 
             block.setProperty('image_style', {
                 width: img.width,
                 height: img.height,
             });
             setImgWidth(img.width);
-            set_image_url(url);
-            set_ratio(img_radio);
+            setImageUrl(url);
+            setRatio(imgRadio);
         };
         img.onerror = e => {
             console.log(e);
         };
     };
     useEffect(() => {
-        const style = window.getComputedStyle(block?.dom);
-        const image_info = block.getProperty('image');
-        const image_block_id = image_info?.value;
-        const image_info_url = image_info?.url;
+        const imageInfo = block.getProperty('image');
+        const imageBlockId = imageInfo?.value;
+        const imageInfoUrl = imageInfo?.url;
 
-        if (image_info_url) {
-            img_load(image_info_url);
+        if (imageInfoUrl) {
+            imgLoad(imageInfoUrl);
             return;
         }
-        if (image_block_id) {
-            services.api.file.get(image_block_id, workspace).then(file_info => {
-                img_load(file_info.url);
+        if (imageBlockId) {
+            services.api.file.get(imageBlockId, workspace).then(fileInfo => {
+                imgLoad(fileInfo.url);
             });
         }
     }, [workspace]);
 
-    const down_ref = useRef(null);
-    const on_file_change = async (file: File) => {
+    const downRef = useRef(null);
+    const onFileChange = async (file: File) => {
         const result = await services.api.file.create({
             workspace: editor.workspace,
             file: file,
         });
-        img_load(result.url);
+        imgLoad(result.url);
         block.setProperty('image', {
             value: result.id,
             name: file.name,
@@ -130,11 +141,11 @@ export const ImageView = ({ block, editor }: ImageView) => {
             type: file.type,
         });
     };
-    const delete_file = () => {
+    const deleteFile = () => {
         block.remove();
     };
-    const sava_link = (link: string) => {
-        img_load(link);
+    const savaLink = (link: string) => {
+        imgLoad(link);
         block.setProperty('image', {
             value: '',
             url: link,
@@ -143,27 +154,25 @@ export const ImageView = ({ block, editor }: ImageView) => {
             type: 'link',
         });
     };
-    const handle_click = async (e: React.MouseEvent<HTMLDivElement>) => {
-        //TODO clear active selection
-        // document.getElementsByTagName('body')[0].click();
-        e.stopPropagation();
-        e.nativeEvent.stopPropagation();
+    const handleClick = async (e: React.MouseEvent<HTMLDivElement>) => {
         await editor.selectionManager.setSelectedNodesIds([block.id]);
         await editor.selectionManager.activeNodeByNodeId(block.id, 'end');
     };
     const down_file = () => {
-        if (down_ref) {
-            down_ref.current.click();
+        if (downRef) {
+            downRef.current.click();
         }
     };
 
     return (
         <BlockPendantProvider block={block}>
             <ImageBlock>
-                <div ref={resize_box}>
+                <div style={{ position: 'relative' }} ref={resizeBox}>
+                    {!isSelect ? (
+                        <ImageShade onClick={handleClick}></ImageShade>
+                    ) : null}
                     {imgUrl ? (
                         <div
-                            onClick={handle_click}
                             onMouseDown={e => {
                                 // e.nativeEvent.stopPropagation();
                                 e.stopPropagation();
@@ -175,7 +184,7 @@ export const ImageView = ({ block, editor }: ImageView) => {
                                     viewStyle={{
                                         width: imgWidth,
                                         maxWidth:
-                                            resize_box.current.offsetWidth - 20,
+                                            resizeBox.current.offsetWidth - 20,
                                         minWidth: 32,
                                         ratio: ratio,
                                     }}
@@ -193,9 +202,9 @@ export const ImageView = ({ block, editor }: ImageView) => {
                         <Upload
                             firstCreate={block.firstCreateFlag}
                             uploadType={'image'}
-                            fileChange={on_file_change}
-                            deleteFile={delete_file}
-                            savaLink={sava_link}
+                            fileChange={onFileChange}
+                            deleteFile={deleteFile}
+                            savaLink={savaLink}
                             isSelected={isSelect}
                             defaultAddBtnText={MESSAGES.ADD_AN_IMAGE}
                             accept={
@@ -215,14 +224,14 @@ export const ImageView = ({ block, editor }: ImageView) => {
                         }}
                     ></DownloadIcon>
                     <DeleteSweepOutlinedIcon
-                        onClick={delete_file}
+                        onClick={deleteFile}
                         className="delete-icon"
                         fontSize="small"
                         sx={{ color: '#000', cursor: 'pointer' }}
                     ></DeleteSweepOutlinedIcon>
                     <a
                         href={imgUrl}
-                        ref={down_ref}
+                        ref={downRef}
                         style={{ display: 'none' }}
                         download="text.png"
                     ></a>
