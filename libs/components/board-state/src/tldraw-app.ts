@@ -3981,7 +3981,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 this.patchState({
                     settings: {
                         forcePanning:
-                            this.currentTool.type === TDShapeType.HandDraw,
+                            this.currentTool.type === TDShapeType.HandDrag,
                     },
                 });
                 this.spaceKey = false;

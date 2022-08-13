@@ -212,7 +212,7 @@ export type TDToolType =
     | TDShapeType.WhiteArrow
     | TDShapeType.Editor
     | TDShapeType.Frame
-    | TDShapeType.HandDraw;
+    | TDShapeType.HandDrag;
 
 export type Easing =
     | 'linear'
@@ -287,7 +287,7 @@ export enum TDShapeType {
     Video = 'video',
     Editor = 'editor',
     WhiteArrow = 'white-arrow',
-    HandDraw = 'hand-draw',
+    HandDrag = 'hand-drag',
     Frame = 'frame',
 }
 
