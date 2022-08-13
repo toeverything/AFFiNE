@@ -1,20 +1,9 @@
 import { Link } from 'react-router-dom';
-import style9 from 'style9';
 import { getAuth, signOut } from 'firebase/auth';
 
 import { MuiBox as Box } from '@toeverything/components/ui';
 import { keyframes } from '@emotion/react';
 import { LOGOUT_LOCAL_STORAGE, LOGOUT_COOKIES } from '@toeverything/utils';
-
-const styles = style9.create({
-    container: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-        height: 'calc( 100vh - 64px )',
-    },
-});
 
 type ErrorProps = {
     title?: string;

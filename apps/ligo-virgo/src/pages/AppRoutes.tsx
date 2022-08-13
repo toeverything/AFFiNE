@@ -41,7 +41,7 @@ export function LigoVirgoRoutes() {
                         </RoutePrivate>
                     }
                 />
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
             </Route>
 
             {/* put public routes here; header and sidebar are disabled here */}

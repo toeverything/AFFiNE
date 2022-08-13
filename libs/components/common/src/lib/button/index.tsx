@@ -1,31 +1,7 @@
-import clsx from 'clsx';
-import style9 from 'style9';
-
-const styles = style9.create({
-    ligoButton: {
-        border: 'none',
-        outline: 'none',
-        // backgroundColor: 'white',
-        cursor: 'pointer',
-        ':hover': {
-            backgroundColor: '#edeef0',
-        },
-    },
-});
-
-export type ButtonType =
-    | 'default'
-    | 'primary'
-    | 'ghost'
-    | 'dashed'
-    | 'link'
-    | 'text';
-
-export type SizeType = 'small' | 'medium' | 'large';
+import React from 'react';
+import { styled } from '@toeverything/components/ui';
 
 export type ButtonProps = {
-    type?: ButtonType;
-    size?: SizeType;
     icon?: React.ReactNode;
     className?: string;
     children?: React.ReactNode;
@@ -33,16 +9,18 @@ export type ButtonProps = {
     style?: React.CSSProperties;
 };
 
+const StyledButton = styled('button')({
+    border: 'none',
+    outline: 'none',
+    // backgroundColor: 'white',
+    cursor: 'pointer',
+    '&:hover': {
+        backgroundColor: '#edeef0',
+    },
+});
+
 export default function Button(props: ButtonProps) {
-    const { className, type, style, size, children } = props;
-    const classes = clsx(
-        styles('ligoButton'),
-        {
-            [`${styles('ligoButton')}-${type}`]: type,
-            [`${styles('ligoButton')}-icon-only`]: !children && children !== 0,
-        },
-        className
-    );
+    const { className, style, children } = props;
     const handleClick = (
         e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement, MouseEvent>
     ) => {
@@ -54,8 +32,8 @@ export default function Button(props: ButtonProps) {
         )?.(e);
     };
     return (
-        <button className={classes} style={style || {}} onClick={handleClick}>
+        <StyledButton className={className} style={style} onClick={handleClick}>
             {children}
-        </button>
+        </StyledButton>
     );
 }

@@ -1,4 +1,3 @@
-import style9 from 'style9';
 import {
     // MuiIconButton as IconButton,
     // MuiTooltip as Tooltip,
@@ -90,8 +89,8 @@ export const ToolsPanel = ({ app }: { app: TldrawApp }) => {
             }}
             direction="none"
         >
-            <div className={styles('container')}>
-                <div className={styles('toolBar')}>
+            <div style={containerStyle}>
+                <div style={toolBarStyle}>
                     {tools.map(
                         ({
                             type,
@@ -133,18 +132,17 @@ export const ToolsPanel = ({ app }: { app: TldrawApp }) => {
     );
 };
 
-const styles = style9.create({
-    container: {
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        height: '100%',
-    },
-    toolBar: {
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#ffffff',
-        borderRadius: '10px',
-        padding: '4px 4px',
-    },
-});
+const containerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    height: '100%',
+};
+
+const toolBarStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: '#ffffff',
+    borderRadius: '10px',
+    padding: '4px 4px',
+};

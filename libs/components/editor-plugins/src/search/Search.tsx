@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import style9 from 'style9';
 
 import { BlockPreview } from '@toeverything/components/common';
 import {
@@ -12,23 +11,23 @@ import {
 import { Virgo, BlockEditor } from '@toeverything/framework/virgo';
 import { throttle } from '@toeverything/utils';
 
-const styles = style9.create({
-    wrapper: {
-        position: 'absolute',
-        top: '20%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '50vw',
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    resultItem: {
-        width: '100%',
-    },
-    resultHide: {
-        opacity: 0,
-    },
-});
+const wrapperStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '20%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '50vw',
+    display: 'flex',
+    flexDirection: 'column',
+};
+
+const resultItemStyle: React.CSSProperties = {
+    width: '100%',
+};
+
+const resultHideStyle: React.CSSProperties = {
+    opacity: 0,
+};
 
 export type QueryResult = Awaited<ReturnType<BlockEditor['search']>>;
 
@@ -76,7 +75,7 @@ export const Search = (props: SearchProps) => {
                 props.onClose();
             }}
         >
-            <Box className={styles('wrapper')}>
+            <Box style={wrapperStyle}>
                 <SearchInput
                     autoFocus
                     value={search}
@@ -84,13 +83,11 @@ export const Search = (props: SearchProps) => {
                 />
                 <ResultContainer
                     sx={{ maxHeight: `${result.length * 28 + 32 + 20}px` }}
-                    className={styles({
-                        resultHide: !result.length,
-                    })}
+                    style={result.length === 0 ? resultHideStyle : {}}
                 >
                     {result.map(block => (
                         <BlockPreview
-                            className={styles('resultItem')}
+                            style={resultItemStyle}
                             key={block.id}
                             block={block}
                             onClick={() => {

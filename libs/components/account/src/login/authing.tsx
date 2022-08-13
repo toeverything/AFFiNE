@@ -42,7 +42,7 @@ export function Authing() {
     }, [currentSpaceId, navigate]);
 
     return (
-        <div className={styles('loginContainer')}>
+        <div style={loginContainerStyle}>
             <Box
                 sx={{
                     '.g2-view-header': {
@@ -67,12 +67,10 @@ export function Authing() {
     );
 }
 
-const styles = style9.create({
-    loginContainer: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-        height: 'calc( 100vh - 64px )',
-    },
-});
+const loginContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: 'calc( 100vh - 64px )',
+};

@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import clsx from 'clsx';
-import style9 from 'style9';
 
 import {
     BaseButton,
@@ -49,22 +47,15 @@ export const CommonList = (props: MenuItemsProps) => {
         return !JSONUnsupportedBlockTypes.includes(item?.content?.id);
     });
     return (
-        <div className={clsx(styles('root_container'), props.className)}>
-            <div
-                className={clsx([
-                    styles('scroll_container'),
-                    commonListContainer,
-                ])}
-            >
+        <div style={rootContainerStyle} className={props.className}>
+            <div style={scrollContainerStyle} className={commonListContainer}>
                 {usedItems?.length ? (
                     usedItems.map((item, idx) => {
                         if (item.block) {
                             return (
                                 <BlockPreview
-                                    className={clsx(
-                                        styles('button'),
-                                        `item-${item.block.id}`
-                                    )}
+                                    style={buttonStyle}
+                                    className={`item-${item.block.id}`}
                                     key={item.block.id}
                                     block={item.block}
                                     onClick={() => onSelected?.(item.block.id)}
@@ -79,10 +70,8 @@ export const CommonList = (props: MenuItemsProps) => {
                             return (
                                 <ListButton
                                     key={id}
-                                    className={clsx(
-                                        styles('button'),
-                                        `item-${id}`
-                                    )}
+                                    style={buttonStyle}
+                                    className={`item-${id}`}
                                     onClick={() => onSelected?.(id)}
                                     onMouseOver={() => setCurrentItem?.(id)}
                                     hover={currentItem === id}
@@ -93,7 +82,7 @@ export const CommonList = (props: MenuItemsProps) => {
                         } else if (item.divider) {
                             return (
                                 <hr
-                                    className={styles('separator')}
+                                    style={separatorStyle}
                                     key={`${item.divider}${idx}-separator`}
                                     tabIndex={-1}
                                 />
@@ -103,7 +92,7 @@ export const CommonList = (props: MenuItemsProps) => {
                         }
                     })
                 ) : (
-                    <span className={styles('empty')}>no search result</span>
+                    <span style={emptyStyle}>no search result</span>
                 )}
             </div>
         </div>
@@ -140,7 +129,7 @@ export const BackLink = (props: BackLinkProps) => {
                 }
             >
                 <BaseButton
-                    className={styles('backlinks_button')}
+                    style={backlinksButtonStyle}
                     onClick={() => set_visible(bool => !bool)}
                 >
                     <BackwardUndoIcon sx={{ width: 20, height: 20 }} />
@@ -151,51 +140,49 @@ export const BackLink = (props: BackLinkProps) => {
     ) : null;
 };
 
-const styles = style9.create({
-    root_container: {
-        width: '228px',
-        overflowX: 'hidden',
-        overflowY: 'hidden',
-        marginTop: '6px',
-        marginLeft: '5px',
-    },
-    scroll_container: {
-        width: 'calc(100% + 25px)',
-        height: '100%',
-        overflowY: 'scroll',
-    },
-    button: {
-        width: '220px',
-        borderRadius: '5px!important',
-        marginTop: '0px!important',
-    },
-    empty: {
-        display: 'inline-flex',
-        width: '220px',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontSize: '15px',
-        lineHeight: '17px',
-        textAlign: 'justify',
-        letterSpacing: '1.5px',
-        color: '#4C6275',
-    },
-    separator: {
-        height: '1px',
-        border: 0,
-        marginTop: '8px',
-        marginBottom: '8px',
-        backgroundColor: 'rgba(152, 172, 189, 0.6)',
-        borderColor: 'rgba(152, 172, 189, 0.6)',
-    },
-    backlinks_container: {
-        borderRadius: '10px',
-        boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
-        backgroundColor: '#fff',
-    },
-    backlinks_button: {
-        display: 'flex',
-        alignItems: 'center',
-    },
-});
+const rootContainerStyle: React.CSSProperties = {
+    width: '228px',
+    overflowX: 'hidden',
+    overflowY: 'hidden',
+    marginTop: '6px',
+    marginLeft: '5px',
+};
+const scrollContainerStyle: React.CSSProperties = {
+    width: 'calc(100% + 25px)',
+    height: '100%',
+    overflowY: 'scroll',
+};
+const buttonStyle: React.CSSProperties = {
+    width: '220px',
+    borderRadius: '5px!important',
+    marginTop: '0px!important',
+};
+const emptyStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    width: '220px',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '15px',
+    lineHeight: '17px',
+    textAlign: 'justify',
+    letterSpacing: '1.5px',
+    color: '#4C6275',
+};
+const separatorStyle: React.CSSProperties = {
+    height: '1px',
+    border: 0,
+    marginTop: '8px',
+    marginBottom: '8px',
+    backgroundColor: 'rgba(152, 172, 189, 0.6)',
+    borderColor: 'rgba(152, 172, 189, 0.6)',
+};
+const backlinksContainerStyle: React.CSSProperties = {
+    borderRadius: '10px',
+    boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
+    backgroundColor: '#fff',
+};
+const backlinksButtonStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+};

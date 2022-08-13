@@ -12,7 +12,6 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 
 import isUrl from 'is-url';
-import style9 from 'style9';
 import {
     Editor,
     Transforms,
@@ -194,10 +193,10 @@ export const LinkComponent = ({
         >
             <a
                 {...attributes}
-                className={styles({
-                    linkWrapper: true,
-                    linkWrapperHover: tooltip_visible,
-                })}
+                style={{
+                    ...linkWrapperStyle,
+                    ...(tooltip_visible ? linkWrapperHoverStyle : {}),
+                }}
                 href={element.url}
             >
                 {/* <InlineChromiumBugfix /> */}
@@ -304,21 +303,18 @@ const LinkTooltips = (props: LinkTooltipsProps) => {
     }, [editor, select_link]);
 
     return (
-        <div className={styles('linkTooltipContainer')}>
-            <span className={styles('linkModalIcon')}>
+        <div style={linkTooltipContainerStyle}>
+            <span style={linkModalIconStyle}>
                 <OpenInNewIcon style={{ fontSize: 15 }} />
             </span>
-            <span className={styles('linkModalUrl')}>{url}</span>
-            <div className={styles('linkModalStick')} />
-            <div
-                onClick={handle_edit_link_url}
-                className={styles('linkModalBtn')}
-            >
+            <span style={linkModalUrlStyle}>{url}</span>
+            <div style={linkModalStickStyle} />
+            <LinkModalBtn onClick={handle_edit_link_url}>
                 <EditIcon style={{ fontSize: 16 }} />
-            </div>
-            <div onClick={handle_unlink} className={styles('linkModalBtn')}>
+            </LinkModalBtn>
+            <LinkModalBtn onClick={handle_unlink}>
                 <LinkOffIcon style={{ fontSize: 16 }} />
-            </div>
+            </LinkModalBtn>
         </div>
     );
 };
@@ -417,13 +413,12 @@ export const LinkModal = memo((props: LinkModalProps) => {
                         left,
                     }}
                 >
-                    <div className={styles('linkModalContainerIcon')}>
+                    <div style={linkModalContainerIconStyle}>
                         <LinkIcon
                             style={{ fontSize: '16px', marginTop: '2px' }}
                         />
                     </div>
-                    <input
-                        className={styles('linkModalContainerInput')}
+                    <LinkModalContainerInput
                         onKeyDown={handle_key_down}
                         placeholder="Paste link url, like https://affine.pro"
                         autoComplete="off"
@@ -467,8 +462,13 @@ const LinkBehavior = (props: {
                 return (
                     <div
                         key={`fake-selection-${i}`}
-                        className={styles('fakeSelection')}
-                        style={{ top, left, width, height }}
+                        style={{
+                            top,
+                            left,
+                            width,
+                            height,
+                            ...fakeSelectionStyle,
+                        }}
                     />
                 );
             });
@@ -479,11 +479,7 @@ const LinkBehavior = (props: {
 
     return (
         <>
-            <div
-                ref={ref}
-                className={styles('linkMask')}
-                onMouseDown={onMousedown}
-            />
+            <div ref={ref} style={linkMaskStyle} onMouseDown={onMousedown} />
             {renderFakeSelection()}
         </>
     );
@@ -502,73 +498,81 @@ const LinkModalContainer = styled('div')(({ theme }) => ({
     zIndex: '1',
 }));
 
-const styles = style9.create({
-    linkModalContainerIcon: {
-        display: 'flex',
-        width: '16px',
-        margin: '0 16px 0 4px',
-        color: '#4C6275',
+const linkModalContainerIconStyle: React.CSSProperties = {
+    display: 'flex',
+    width: '16px',
+    margin: '0 16px 0 4px',
+    color: '#4C6275',
+};
+
+const LinkModalContainerInput = styled('input')(() => ({
+    flex: '1',
+    outline: 'none',
+    border: 'none',
+    padding: '0',
+    fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
+    '::-webkit-input-placeholder': {
+        color: '#98acbd',
     },
-    linkModalContainerInput: {
-        flex: '1',
-        outline: 'none',
-        border: 'none',
-        padding: '0',
-        fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
-        '::-webkit-input-placeholder': {
-            color: '#98acbd',
-        },
-        color: '#4C6275',
-    },
-    linkMask: {
-        position: 'fixed',
-        top: '0',
-        left: '0',
-        width: '100vw',
-        height: '100vh',
-        zIndex: '1',
-    },
-    fakeSelection: {
-        pointerEvents: 'none',
-        position: 'fixed',
-        // backgroundColor: 'rgba(80, 46, 196, 0.1)',
-        zIndex: '1',
-    },
-    linkWrapper: {
+    color: '#4C6275',
+}));
+
+const linkMaskStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100vw',
+    height: '100vh',
+    zIndex: '1',
+};
+
+const fakeSelectionStyle: React.CSSProperties = {
+    pointerEvents: 'none',
+    position: 'fixed',
+    // backgroundColor: 'rgba(80, 46, 196, 0.1)',
+    zIndex: '1',
+};
+
+const linkWrapperStyle: React.CSSProperties = {
+    cursor: 'pointer',
+    textDecorationLine: 'none',
+};
+
+const linkWrapperHoverStyle: React.CSSProperties = {};
+
+const linkTooltipContainerStyle: React.CSSProperties = {
+    // color: 'var(--ligo-Gray04)',
+    display: 'flex',
+    alignItems: 'center',
+};
+
+const linkModalIconStyle: React.CSSProperties = {};
+
+const linkModalStickStyle: React.CSSProperties = {
+    width: '1px',
+    height: '20px',
+    margin: '0 10px 0 16px',
+};
+
+const linkModalUrlStyle: React.CSSProperties = {
+    marginLeft: '8px',
+    maxWidth: '261px',
+    textOverflow: 'ellipsis',
+    overflowX: 'hidden',
+    overflowY: 'hidden',
+    whiteSpace: 'nowrap',
+};
+
+const LinkModalBtn = styled('div')(() => ({
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '28px',
+    height: '28px',
+    transitionProperty: 'background-color',
+    transitionDuration: '0.3s',
+    borderRadius: '4px',
+    ':hover': {
         cursor: 'pointer',
-        textDecorationLine: 'none',
     },
-    linkWrapperHover: {},
-    linkTooltipContainer: {
-        // color: 'var(--ligo-Gray04)',
-        display: 'flex',
-        alignItems: 'center',
-    },
-    linkModalIcon: {},
-    linkModalStick: {
-        width: '1px',
-        height: '20px',
-        margin: '0 10px 0 16px',
-    },
-    linkModalUrl: {
-        marginLeft: '8px',
-        maxWidth: '261px',
-        textOverflow: 'ellipsis',
-        overflowX: 'hidden',
-        overflowY: 'hidden',
-        whiteSpace: 'nowrap',
-    },
-    linkModalBtn: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '28px',
-        height: '28px',
-        transitionProperty: 'background-color',
-        transitionDuration: '0.3s',
-        borderRadius: '4px',
-        ':hover': {
-            cursor: 'pointer',
-        },
-    },
-});
+}));

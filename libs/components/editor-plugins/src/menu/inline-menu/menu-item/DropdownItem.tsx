@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import style9 from 'style9';
 import {
     Popover,
     styled,
@@ -45,7 +44,7 @@ export const MenuDropdownItem = ({
                 trigger="click"
                 placement="bottom-start"
                 content={
-                    <div className={styles('dropdownContainer')}>
+                    <div style={dropdownContainerStyle}>
                         {children.map(item => {
                             const {
                                 name,
@@ -57,8 +56,7 @@ export const MenuDropdownItem = ({
                             const StyledIcon = withStylesForIcon(ItemIcon);
 
                             return (
-                                <button
-                                    className={styles('dropdownItem')}
+                                <DropdownItem
                                     key={name}
                                     onClick={() => {
                                         if (
@@ -101,12 +99,10 @@ export const MenuDropdownItem = ({
                                         // }
                                     />
                                     {/* <ItemIcon sx={{ width: 20, height: 20 }} /> */}
-                                    <span
-                                        className={styles('dropdownItemItext')}
-                                    >
+                                    <span style={dropdownItemItextStyle}>
                                         {name}
                                     </span>
-                                </button>
+                                </DropdownItem>
                             );
                         })}
                     </div>
@@ -122,13 +118,10 @@ export const MenuDropdownItem = ({
                     placement="top"
                     trigger="hover"
                 >
-                    <button
-                        className={styles('currentDropdownButton')}
-                        aria-label={name}
-                    >
+                    <CurrentDropdownButton aria-label={name}>
                         <MenuIcon sx={{ width: 20, height: 20 }} />
                         <ArrowDropDownIcon sx={{ width: 20, height: 20 }} />
-                    </button>
+                    </CurrentDropdownButton>
                 </Tooltip>
             </Popover>
         </>
@@ -152,31 +145,32 @@ const withStylesForIcon = (
         }
     );
 
-const styles = style9.create({
-    currentDropdownButton: {
-        display: 'inline-flex',
-        padding: '0',
-        margin: '15px 6px',
-        color: '#98acbd',
-        ':hover': { backgroundColor: 'transparent' },
-    },
-    dropdownContainer: {
-        margin: '8px 4px',
-    },
-    dropdownItem: {
-        display: 'flex',
-        alignItems: 'center',
-        // @ts-ignore
-        gap: '12px',
-        // width: '120px',
-        height: '32px',
-        padding: '0px 12px',
-        borderRadius: '5px',
-        color: '#98acbd',
-        ':hover': { backgroundColor: '#F5F7F8' },
-    },
-    dropdownItemItext: {
-        color: '#4C6275',
-        fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
-    },
-});
+const CurrentDropdownButton = styled('button')(() => ({
+    display: 'inline-flex',
+    padding: '0',
+    margin: '15px 6px',
+    color: '#98acbd',
+    ':hover': { backgroundColor: 'transparent' },
+}));
+
+const dropdownContainerStyle: React.CSSProperties = {
+    margin: '8px 4px',
+};
+
+const DropdownItem = styled('button')(() => ({
+    display: 'flex',
+    alignItems: 'center',
+    // @ts-ignore
+    gap: '12px',
+    // width: '120px',
+    height: '32px',
+    padding: '0px 12px',
+    borderRadius: '5px',
+    color: '#98acbd',
+    ':hover': { backgroundColor: '#F5F7F8' },
+}));
+
+const dropdownItemItextStyle: React.CSSProperties = {
+    color: '#4C6275',
+    fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
+};

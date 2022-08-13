@@ -75,15 +75,17 @@ const Cell = memo(
         const row = data.rows[rowIndex];
         const is_first_column = columnIndex === 0;
         const is_first_row = rowIndex === 0;
-        const class_name = styles({
-            cell: true,
-            cellLeftBorder: !is_first_column,
-            cellTopBorder: !is_first_row,
-        });
+
+        const mergedStyle = {
+            ...cellStyle,
+            ...(!is_first_column ? cellLeftBorderStyle : {}),
+            ...(!is_first_row ? cellTopBorderStyle : {}),
+            ...style,
+        };
 
         const CustomCell = data.CustomCell;
         return (
-            <div style={style} className={class_name}>
+            <div style={mergedStyle}>
                 <CustomCell
                     column={column}
                     row={row}
@@ -157,7 +159,7 @@ export const BasicTable = ({
     );
 
     return (
-        <div ref={container_ref} className={styles('containerBorder')}>
+        <div ref={container_ref} style={containerBorderStyle}>
             {table_width ? (
                 <VariableSizeGrid
                     className="v-basic-table-body"
@@ -181,22 +183,25 @@ export const BasicTable = ({
     );
 };
 
-const styles = style9.create({
-    containerBorder: {
-        borderTop: '1px solid #ECEFF3',
-        borderBottom: '1px solid #ECEFF3',
-        boxSizing: 'border-box',
-    },
-    cell: {
-        overflowX: 'hidden',
-        overflowY: 'hidden',
-        padding: '10px 4px',
-        boxSizing: 'border-box',
-    },
-    cellLeftBorder: {
-        // borderLeft: '1px solid #98ACBD'
-    },
-    cellTopBorder: {
-        borderTop: '1px solid #ECEFF3',
-    },
-});
+const containerBorderStyle: React.CSSProperties = {
+    borderTop: '1px solid #ECEFF3',
+    borderBottom: '1px solid #ECEFF3',
+    boxSizing: 'border-box',
+};
+
+const cellStyle: React.CSSProperties = {
+    overflowX: 'hidden',
+    overflowY: 'hidden',
+    padding: '10px 4px',
+    boxSizing: 'border-box',
+};
+
+const cellLeftBorderStyle: React.CSSProperties = {
+    // borderLeft: '1px solid #98ACBD'
+};
+
+const cellTopBorderStyle: React.CSSProperties = {
+    borderTop: '1px solid #ECEFF3',
+    borderBottom: '1px solid #ECEFF3',
+    boxSizing: 'border-box',
+};

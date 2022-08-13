@@ -1,9 +1,8 @@
 import React, { useCallback } from 'react';
-import style9 from 'style9';
 
 import type { IconItemType, WithEditorSelectionType } from '../types';
 import { inlineMenuNamesKeys, inlineMenuShortcuts } from '../config';
-import { Tooltip } from '@toeverything/components/ui';
+import { styled, Tooltip } from '@toeverything/components/ui';
 type MenuIconItemProps = IconItemType & WithEditorSelectionType;
 
 export const MenuIconItem = ({
@@ -48,23 +47,17 @@ export const MenuIconItem = ({
             placement="top"
             trigger="hover"
         >
-            <button
-                onClick={handleToolbarItemClick}
-                className={styles('currentIcon')}
-                aria-label={name}
-            >
+            <CurrentIcon onClick={handleToolbarItemClick} aria-label={name}>
                 <MenuIcon sx={{ width: 20, height: 20 }} />
-            </button>
+            </CurrentIcon>
         </Tooltip>
     );
 };
 
-const styles = style9.create({
-    currentIcon: {
-        display: 'inline-flex',
-        padding: '0',
-        margin: '15px 6px',
-        color: '#98acbd',
-        ':hover': { backgroundColor: 'transparent' },
-    },
-});
+const CurrentIcon = styled('button')(() => ({
+    display: 'inline-flex',
+    padding: '0',
+    margin: '15px 6px',
+    color: '#98acbd',
+    ':hover': { backgroundColor: 'transparent' },
+}));

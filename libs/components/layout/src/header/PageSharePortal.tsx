@@ -1,4 +1,3 @@
-import style9 from 'style9';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useState, MouseEvent } from 'react';
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
@@ -14,48 +13,55 @@ import {
 } from '@toeverything/components/ui';
 import { copyToClipboard } from '@toeverything/utils';
 
-const styles = style9.create({
-    pageShareBox: {
-        width: '500px',
-        padding: '30px 20px 50px 20px',
-    },
-    btnPageShare: {
-        width: '24px',
-        height: '24px',
-    },
-    pageShareBoxIcon: {
-        position: 'absolute',
-        left: '5px',
-        top: '10px',
-        color: 'var(--color-gray-400)',
-    },
-    pageShareBoxForWeb: {
-        position: 'relative',
-        paddingLeft: '40px',
-        borderBottom: '1px solid var(--color-gray-400))',
-        marginBottom: '15px',
-    },
-    pageShareBoxSwitch: {
-        position: 'absolute',
-        right: '5px',
-        top: '10px',
-    },
-    pageShareBoxForWebP1: {
-        fontWeight: 'bold',
-        marginBottom: '5px',
-    },
-    pageShareBoxForWebP2: {
-        color: 'var(--color-gray-400)',
-    },
-    copyLinkBtn: {
-        marginTop: '15px',
-        float: 'right',
-        cursor: 'pointer',
-    },
-    copyLinkcon: {
-        verticalAlign: 'middle',
-    },
-});
+const pageShareBoxStyle: React.CSSProperties = {
+    width: '500px',
+    padding: '30px 20px 50px 20px',
+};
+
+const btnPageShareStyle: React.CSSProperties = {
+    width: '24px',
+    height: '24px',
+};
+
+const pageShareBoxIconStyle: React.CSSProperties = {
+    position: 'absolute',
+    left: '5px',
+    top: '10px',
+    color: 'var(--color-gray-400)',
+};
+
+const pageShareBoxForWebStyle: React.CSSProperties = {
+    position: 'relative',
+    paddingLeft: '40px',
+    borderBottom: '1px solid var(--color-gray-400))',
+    marginBottom: '15px',
+};
+
+const pageShareBoxSwitchStyle: React.CSSProperties = {
+    position: 'absolute',
+    right: '5px',
+    top: '10px',
+};
+
+const pageShareBoxForWebP1Style: React.CSSProperties = {
+    fontWeight: 'bold',
+    marginBottom: '5px',
+};
+
+const pageShareBoxForWebP2Style: React.CSSProperties = {
+    color: 'var(--color-gray-400)',
+};
+
+const copyLinkBtnStyle: React.CSSProperties = {
+    marginTop: '15px',
+    float: 'right',
+    cursor: 'pointer',
+};
+
+const copyLinkconStyle: React.CSSProperties = {
+    verticalAlign: 'middle',
+};
+
 const MESSAGES = {
     COPY_LINK: ' Copy Link',
     INVITE: 'Add people,emails, or groups',
@@ -79,18 +85,16 @@ function PageSharePortal() {
                 placement="bottom-start"
                 trigger="click"
                 content={
-                    <div className={styles('pageShareBox')}>
-                        <div className={styles('pageShareBoxForWeb')}>
-                            <LanguageIcon
-                                className={styles('pageShareBoxIcon')}
-                            />
-                            <p className={styles('pageShareBoxForWebP1')}>
+                    <div style={pageShareBoxStyle}>
+                        <div style={pageShareBoxForWebStyle}>
+                            <LanguageIcon style={pageShareBoxIconStyle} />
+                            <p style={pageShareBoxForWebP1Style}>
                                 {MESSAGES.SHARE_TO_WEB}
                             </p>
-                            <p className={styles('pageShareBoxForWebP2')}>
+                            <p style={pageShareBoxForWebP2Style}>
                                 {MESSAGES.SHARE_TO_ANYONE}
                             </p>
-                            <div className={styles('pageShareBoxSwitch')}>
+                            <div style={pageShareBoxSwitchStyle}>
                                 <Switch />
                             </div>
                         </div>
@@ -113,13 +117,8 @@ function PageSharePortal() {
                             </Paper>
                         </div>
                         <div>
-                            <a
-                                className={styles('copyLinkBtn')}
-                                onClick={handleCopy}
-                            >
-                                <InsertLinkIcon
-                                    className={styles('copyLinkcon')}
-                                />
+                            <a style={copyLinkBtnStyle} onClick={handleCopy}>
+                                <InsertLinkIcon style={copyLinkconStyle} />
                                 {MESSAGES.COPY_LINK}
                             </a>
                         </div>

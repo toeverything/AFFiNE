@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import style9 from 'style9';
 
 import { CommandMenuCategories } from './config';
 
@@ -44,15 +43,17 @@ export const MenuCategories = ({
     };
 
     return (
-        <div className={styles('rootContainer')}>
+        <div style={rootContainerStyle}>
             {categories_data.map((menu_category, index) => {
                 const { type, text } = menu_category;
                 return categories.includes(type) ? (
                     <button
-                        className={styles({
-                            categoryItem: true,
-                            activeItem: currentCategories === type,
-                        })}
+                        style={{
+                            ...categoryItemStyle,
+                            ...(currentCategories === type
+                                ? activeItemStyle
+                                : {}),
+                        }}
                         key={type}
                         onClick={() => {
                             handle_click(type);
@@ -66,26 +67,27 @@ export const MenuCategories = ({
     );
 };
 
-const styles = style9.create({
-    rootContainer: {
-        minWidth: '120px',
-        marginTop: '6px',
-    },
-    categoryItem: {
-        display: 'flex',
-        width: '120px',
-        paddingLeft: '12px',
-        paddingTop: '6px',
-        paddingBottom: '6px',
-        borderRadius: '5px',
-        color: '#98ACBD',
-        fontSize: '12px',
-        lineHeight: '14px',
-        fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
-        textAlign: 'justify',
-        letterSpacing: '1.5px',
-    },
-    activeItem: {
-        backgroundColor: 'rgba(152, 172, 189, 0.1)',
-    },
-});
+const rootContainerStyle: React.CSSProperties = {
+    minWidth: '120px',
+    marginTop: '6px',
+};
+
+const categoryItemStyle: React.CSSProperties = {
+    display: 'flex',
+    width: '120px',
+    paddingLeft: '12px',
+    paddingTop: '6px',
+    paddingBottom: '6px',
+    borderRadius: '5px',
+    color: '#98ACBD',
+    fontSize: '12px',
+    lineHeight: '14px',
+    fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
+    textAlign: 'justify',
+    letterSpacing: '1.5px',
+};
+
+const activeItemStyle: React.CSSProperties = {
+    minWidth: '120px',
+    marginTop: '6px',
+};
