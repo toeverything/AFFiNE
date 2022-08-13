@@ -3,7 +3,7 @@ import { StyleWithAtRules } from 'style9';
 
 import { CreateView } from '@toeverything/framework/virgo';
 import CodeMirror, { ReactCodeMirrorRef } from './CodeMirror';
-import { styled } from '@toeverything/components/ui';
+import { styled, Option, Select } from '@toeverything/components/ui';
 
 import { javascript } from '@codemirror/lang-javascript';
 import { html } from '@codemirror/lang-html';
@@ -45,7 +45,6 @@ import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile';
 import { julia } from '@codemirror/legacy-modes/mode/julia';
 import { r } from '@codemirror/legacy-modes/mode/r';
 import { Extension } from '@codemirror/state';
-import { Option, Select } from '@toeverything/components/ui';
 
 import {
     useOnSelect,
@@ -106,33 +105,43 @@ const langs: Record<string, any> = {
 const DEFAULT_LANG = 'javascript';
 const CodeBlock = styled('div')(({ theme }) => ({
     backgroundColor: '#F2F5F9',
-    padding: '8px 24px',
     borderRadius: theme.affine.shape.borderRadius,
-    '&:hover': {
-        '.operation': {
-            display: 'flex',
+    '.operation': {
+        position: 'absolute',
+        top: '4px',
+        right: '15px',
+        zIndex: 999,
+        marginTop: '8px',
+        div: {
+            display: 'inline',
+            paddingTop: '4px',
+            paddingBottom: '4px',
+            '&:hover': {
+                borderColor: '#3E6FDB',
+            },
+            '&:active': {
+                borderColor: '#3E6FDB',
+            },
         },
     },
-    '.operation': {
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-    },
     '.copy-block': {
-        padding: '0px 10px',
         backgroundColor: '#fff',
-        height: '32px',
-        display: 'flex',
-        width: '90px',
-        justifyContent: 'center',
-        alignItems: 'center',
         color: '#4C6275',
         fontSize: '14px',
         borderRadius: theme.affine.shape.borderRadius,
+        border: '1px solid #E0E6EB',
         cursor: 'pointer',
+        padding: '4px 7px 4px 5px',
+        marginLeft: '2px',
         svg: {
-            marginRight: '4px',
-            display: 'block',
+            marginBottom: '-7px',
+            transform: 'scale(.7)',
+        },
+        '&:hover': {
+            borderColor: '#3E6FDB',
+        },
+        '&:active': {
+            borderColor: '#3E6FDB',
         },
     },
     '.cm-focused': {
@@ -144,11 +153,18 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     const langType: string = block.getProperty('lang');
     const [extensions, setExtensions] = useState<Extension[]>();
     const codeMirror = useRef<ReactCodeMirrorRef>();
+    const [showCodeActions, setShowCodeActions] = useState(false);
     useOnSelect(block.id, (_is_select: boolean) => {
         if (codeMirror.current) {
             codeMirror?.current?.view?.focus();
         }
     });
+    const handleMouseEnter = () => {
+        setShowCodeActions(true);
+    };
+    const handleMouseLeave = () => {
+        setShowCodeActions(false);
+    };
     const onChange = (value: string) => {
         block.setProperty('text', {
             value: [{ text: value }],
@@ -174,36 +190,39 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     return (
         <BlockPendantProvider block={block}>
             <CodeBlock
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
                 onKeyDown={e => {
                     e.stopPropagation();
                 }}
             >
-                <div className="operation">
-                    <div className="select">
-                        <Select
-                            width={128}
-                            placeholder="Search for a field type"
-                            value={langType || DEFAULT_LANG}
-                            listboxStyle={{ maxHeight: '400px' }}
-                            onChange={(selectedValue: string) => {
-                                handleLangChange(selectedValue);
-                            }}
-                        >
-                            {Object.keys(langs).map(item => {
-                                return (
-                                    <Option key={item} value={item}>
-                                        {item}
-                                    </Option>
-                                );
-                            })}
-                        </Select>
+                {showCodeActions && (
+                    <div className="operation">
+                        <span className="select">
+                            <Select
+                                width={128}
+                                placeholder="Search for a field type"
+                                value={langType || DEFAULT_LANG}
+                                listboxStyle={{ maxHeight: '400px' }}
+                                onChange={(selectedValue: string) => {
+                                    handleLangChange(selectedValue);
+                                }}
+                            >
+                                {Object.keys(langs).map(item => {
+                                    return (
+                                        <Option key={item} value={item}>
+                                            {item}
+                                        </Option>
+                                    );
+                                })}
+                            </Select>
+                            <span className="copy-block" onClick={copyCode}>
+                                <DuplicateIcon />
+                                Copy
+                            </span>
+                        </span>
                     </div>
-                    <div>
-                        <div className="copy-block" onClick={copyCode}>
-                            <DuplicateIcon></DuplicateIcon>Copy
-                        </div>
-                    </div>
-                </div>
+                )}
 
                 <CodeMirror
                     ref={codeMirror}
