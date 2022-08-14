@@ -114,10 +114,28 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                 }
             }, [onShapeChange]);
 
-            const stopPropagation = useCallback(
+            let numClicks = 0;
+            const handlePointerDown = useCallback(
                 (e: SyntheticEvent) => {
-                    if (isEditing) {
+                    numClicks++;
+                    let isDblClick = false;
+                    let singleClickTimer;
+                    if (numClicks === 1) {
+                        singleClickTimer = setTimeout(() => {
+                            numClicks = 0;
+                            isDblClick = false;
+                        }, 400);
+                    } else if (numClicks === 2) {
+                        clearTimeout(singleClickTimer);
+                        numClicks = 0;
+                        isDblClick = true;
+                    }
+
+                    if (isEditing || isDblClick) {
                         e.stopPropagation();
+                    }
+                    if (isDblClick) {
+                        app.setEditingText(shape.id);
                     }
                 },
                 [isEditing]
@@ -140,7 +158,7 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                     <Container
                         ref={containerRef}
                         editing={isEditing}
-                        onPointerDown={stopPropagation}
+                        onPointerDown={handlePointerDown}
                         onMouseEnter={activateIfEditing}
                         onDragEnter={activateIfEditing}
                     >
