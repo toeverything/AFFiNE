@@ -714,7 +714,7 @@ export function App() {
                         >
                             Your data is yours; it is always locally stored and
                             secured - available to you always. While still being
-                            able enjoy collaboration features such as real-time
+                            able to enjoy collaboration features such as real-time
                             editing and sharing with others, without any cloud
                             setup.
                         </Typography>
