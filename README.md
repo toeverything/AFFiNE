@@ -18,7 +18,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-27-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
@@ -224,6 +224,10 @@ For help, discussion about best practices, or any other conversation that would 
   <tr>
     <td align="center"><a href="https://github.com/westongraham"><img src="https://avatars.githubusercontent.com/u/89493023?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Weston Graham</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=westongraham" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/pointmax"><img src="https://avatars.githubusercontent.com/u/49361135?v=4?s=50" width="50px;" alt=""/><br /><sub><b>pointmax</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=pointmax" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://liby.github.io/notes"><img src="https://avatars.githubusercontent.com/u/38807139?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Bryan Lee</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=liby" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/chenmoonmo"><img src="https://avatars.githubusercontent.com/u/36295999?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Simon Li</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=chenmoonmo" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/githbq"><img src="https://avatars.githubusercontent.com/u/10009709?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Bob Hu</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=githbq" title="Code">💻</a></td>
+    <td align="center"><a href="https://quavo.vercel.app/"><img src="https://avatars.githubusercontent.com/u/67266933?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Quavo</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=lucky-chap" title="Documentation">📖</a></td>
   </tr>
 </table>
 
