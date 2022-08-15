@@ -1,9 +1,9 @@
 import {
+    BlockPendantProvider,
     CreateView,
     RenderBlock,
     useCurrentView,
     useOnSelect,
-    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import type {
@@ -60,8 +60,8 @@ const ChildrenView = ({
             {childrenIds.map((childId, idx) => {
                 if (isKanbanScene) {
                     return (
-                        <StyledBorder>
-                            <RenderBlock key={childId} blockId={childId} />
+                        <StyledBorder key={childId}>
+                            <RenderBlock blockId={childId} />
                         </StyledBorder>
                     );
                 }
