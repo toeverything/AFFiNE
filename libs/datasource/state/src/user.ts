@@ -5,7 +5,7 @@ import {
 } from 'firebase/auth';
 import { atom, useAtom } from 'jotai';
 import { useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 import { useIdentifyUser } from '@toeverything/datasource/feature-flags';
 import { UserInfo } from '@toeverything/utils';
@@ -63,6 +63,7 @@ const BRAND_ID = 'AFFiNE';
 
 const _localTrigger = atom<boolean>(false);
 const _useUserAndSpacesForFreeLogin = () => {
+    const location = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = useAtom(_userAtom);
     const [loading, setLoading] = useAtom(_loadingAtom);
@@ -70,7 +71,11 @@ const _useUserAndSpacesForFreeLogin = () => {
 
     useEffect(() => {
         if (loading) {
-            navigate('/demo');
+            if (location.pathname.startsWith('/local')) {
+                navigate('/local');
+            } else {
+                navigate('/demo');
+            }
             setLoading(false);
         }
     }, []);
@@ -85,15 +90,25 @@ const _useUserAndSpacesForFreeLogin = () => {
                 email: '',
             });
         } else {
-            setUser({
-                photo: '',
-                id: 'demo',
-                username: 'demo',
-                nickname: 'demo',
-                email: '',
-            });
+            if (location.pathname.startsWith('/local')) {
+                setUser({
+                    photo: '',
+                    id: 'local',
+                    username: 'local',
+                    nickname: 'local',
+                    email: '',
+                });
+            } else {
+                setUser({
+                    photo: '',
+                    id: 'demo',
+                    username: 'demo',
+                    nickname: 'demo',
+                    email: '',
+                });
+            }
         }
-    }, [localTrigger, setLoading, setUser]);
+    }, [localTrigger, location, setLoading, setUser]);
 
     const currentSpaceId: string | undefined = useMemo(() => user?.id, [user]);
 
