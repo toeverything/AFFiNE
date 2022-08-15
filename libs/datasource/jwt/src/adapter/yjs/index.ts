@@ -78,7 +78,7 @@ async function _initYjsDatabase(
         await _waitLoading(workspace);
     }
     const instance = _yjsDatabaseInstance.get(workspace);
-    // tTODO:odo temporarily handle this
+    // TODO: temporarily handle this
     if (
         instance &&
         (instance.userId === options.userId || options.userId === 'default')
@@ -110,7 +110,7 @@ async function _initYjsDatabase(
         const emitState = (c: Connectivity) =>
             connListener.listeners?.(workspace, c);
         await Promise.all(
-            Object.entries(options.provider).flatMap(async ([, p]) => [
+            Object.entries(options.provider).flatMap(([, p]) => [
                 p({ awareness, doc, token, workspace, emitState }),
                 p({
                     awareness,
