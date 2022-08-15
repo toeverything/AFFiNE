@@ -230,6 +230,42 @@
             "contributions": [
                 "doc"
             ]
+        },
+        {
+            "login": "liby",
+            "name": "Bryan Lee",
+            "avatar_url": "https://avatars.githubusercontent.com/u/38807139?v=4",
+            "profile": "https://liby.github.io/notes",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "chenmoonmo",
+            "name": "Simon Li",
+            "avatar_url": "https://avatars.githubusercontent.com/u/36295999?v=4",
+            "profile": "https://github.com/chenmoonmo",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "githbq",
+            "name": "Bob Hu",
+            "avatar_url": "https://avatars.githubusercontent.com/u/10009709?v=4",
+            "profile": "https://github.com/githbq",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "lucky-chap",
+            "name": "Quavo",
+            "avatar_url": "https://avatars.githubusercontent.com/u/67266933?v=4",
+            "profile": "https://quavo.vercel.app/",
+            "contributions": [
+                "doc"
+            ]
         }
     ]
 }
