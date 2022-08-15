@@ -33,21 +33,14 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 </div>
 
 <p align="center">
-    <a href="http://affine.pro"><b>Website</b></a> •
-    <a href="https://discord.com/invite/yz6tGVsf5p"><b>Discord</b></a> •
-    <a href="https://twitter.com/AffineOfficial"><b>Twitter</b></a> •
-    <a href="https://medium.com/@affineworkos"><b>Medium</b></a> •
-    <a href="https://t.me/affineworkos"><b>Telegram</b></a>
-</p>
-
-<p align="center">
-    <a href="http://affine.pro"><img src="https://img.shields.io/badge/-AFFiNE-06449d?style=social&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAMAAAAPkIrYAAAAP1BMVEU8b9w8b9w+b947cNw7b9w6b908b909b9w8b9w7b9w8b9w7cN08b9w7b908b9w7b9w8b907cNw8b9w8b91HcEx3NJCJAAAAFXRSTlP/3QWSgA+lHPlu6Di4XtIrxk/xRADGudUoAAAB9UlEQVR42tWYwbKjIBREG0GJKkRj/v9bZ1ZvRC99rzib11tTB9qqnKoW3/+X38vy7ifzQ1b/wk/8Q1bCv3y6Z6wFh2x2llIRGB6xRhzz6p+wVhRJD1gRZZYHrADYSyqsjFPGZtYbuFESesUysZXlcMnYyJpxTW5keQh5N7G6CUJCE2uHFNfEGiBmbmB1H4jxDawNcqbuPmtAJTtj6RZ0lpIwiR5jNmgfNtHHwLXPWfFYcS2NMdxkjac/dNaNCJPo3yf9pFuseHbDrBsRFguGs8te8Q4rXzTjVSPCIHp3FePKWbzi30xE+4zlBMmoJaGLfpLUmAmLiN4Xyibahy76WZRQMLJ2WX27on2oFvQVac8yi4p+J2forA0V8W1c++AVS1f1H6p9KKLHxk9RWKmsyB+VLC76gV65DLjokdg5KmsEMXsiDwXWSmTc9ezSoKJHoi9zUVihbMHfQOSsXB7Mrz1S1huKPde69sEsiKgNt8hYTjiWlAyENeu7IFe1D15RSEBN+yCiXw17K1RZm/w7UtJVWYN8f1ZyLlkVb2bT4vIVVrINH1dqX2YttkHmIWsfVWs646wcRFYis6fIVGpfYq1kjpGSW8kSRD+xYSmXRM0Ang9eSZioVdy/5pWaLqzIRyIpuVxYozvGf1m67I7pf/s3UXv+AP61NI2Y+BbSAAAAAElFTkSuQmCC" height=25></a>  
+    <a href="http://affine.pro"><img src="https://img.shields.io/badge/-AFFiNE-06449d?style=social&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAMAAAAPkIrYAAAAP1BMVEU8b9w8b9w+b947cNw7b9w6b908b909b9w8b9w7b9w8b9w7cN08b9w7b908b9w7b9w8b907cNw8b9w8b91HcEx3NJCJAAAAFXRSTlP/3QWSgA+lHPlu6Di4XtIrxk/xRADGudUoAAAB9UlEQVR42tWYwbKjIBREG0GJKkRj/v9bZ1ZvRC99rzib11tTB9qqnKoW3/+X38vy7ifzQ1b/wk/8Q1bCv3y6Z6wFh2x2llIRGB6xRhzz6p+wVhRJD1gRZZYHrADYSyqsjFPGZtYbuFESesUysZXlcMnYyJpxTW5keQh5N7G6CUJCE2uHFNfEGiBmbmB1H4jxDawNcqbuPmtAJTtj6RZ0lpIwiR5jNmgfNtHHwLXPWfFYcS2NMdxkjac/dNaNCJPo3yf9pFuseHbDrBsRFguGs8te8Q4rXzTjVSPCIHp3FePKWbzi30xE+4zlBMmoJaGLfpLUmAmLiN4Xyibahy76WZRQMLJ2WX27on2oFvQVac8yi4p+J2forA0V8W1c++AVS1f1H6p9KKLHxk9RWKmsyB+VLC76gV65DLjokdg5KmsEMXsiDwXWSmTc9ezSoKJHoi9zUVihbMHfQOSsXB7Mrz1S1huKPde69sEsiKgNt8hYTjiWlAyENeu7IFe1D15RSEBN+yCiXw17K1RZm/w7UtJVWYN8f1ZyLlkVb2bT4vIVVrINH1dqX2YttkHmIWsfVWs646wcRFYis6fIVGpfYq1kjpGSW8kSRD+xYSmXRM0Ang9eSZioVdy/5pWaLqzIRyIpuVxYozvGf1m67I7pf/s3UXv+AP61NI2Y+BbSAAAAAElFTkSuQmCC" height=25></a>
     <a href="https://discord.com/invite/yz6tGVsf5p"><img src="https://img.shields.io/badge/-Discord-424549?style=social&logo=discord" height=25></a>  
     <a href="https://t.me/affineworkos"><img src="https://img.shields.io/badge/-Telegram-red?style=social&logo=telegram" height=25></a>  
-    <a href="https://twitter.com/USER"><img src="https://img.shields.io/badge/-Twitter-red?style=social&logo=twitter" height=25></a>  
-    <a href="https://medium.com/USER"><img src="https://img.shields.io/badge/-Medium-red?style=social&logo=medium" height=25></a>
+    <a href="https://twitter.com/AffineOfficial"><img src="https://img.shields.io/badge/-Twitter-red?style=social&logo=twitter" height=25></a>  
+    <a href="https://medium.com/@affineworkos"><img src="https://img.shields.io/badge/-Medium-red?style=social&logo=medium" height=25></a>
 </p>
 
+<br />
 
 <p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/21084335/182552060-972cac0e-6258-4ccb-85bd-3bb466c30ccd.png"><p/>
 
