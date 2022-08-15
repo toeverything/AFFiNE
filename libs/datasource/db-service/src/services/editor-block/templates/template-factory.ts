@@ -2,6 +2,7 @@ import blogTemplate from './blog.json';
 import emptyTemplate from './empty.json';
 import getStartedGroup0 from './get-started-group0.json';
 import getStartedGroup1 from './get-started-group1.json';
+import getStartedGroup2 from './get-started-group2.json';
 import gridTemplate from './grid.json';
 import todoTemplate from './todo.json';
 import { Template, TemplateMeta } from './types';
@@ -12,7 +13,8 @@ export type GroupTemplateKeys =
     | 'empty'
     | 'grid'
     | 'getStartedGroup0'
-    | 'getStartedGroup1';
+    | 'getStartedGroup1'
+    | 'getStartedGroup2';
 type GroupTemplateMap = Record<GroupTemplateKeys, any>;
 const groupTemplateMap = {
     empty: emptyTemplate,
@@ -21,6 +23,7 @@ const groupTemplateMap = {
     grid: gridTemplate,
     getStartedGroup0,
     getStartedGroup1,
+    getStartedGroup2,
 } as GroupTemplateMap;
 
 const defaultTemplateList: Array<TemplateMeta> = [
