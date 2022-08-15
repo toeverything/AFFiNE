@@ -11,4 +11,4 @@ if test $current_branch != $default_branch; then
   exit 0
 fi
 
-npm run type:check
+pnpm run build:check

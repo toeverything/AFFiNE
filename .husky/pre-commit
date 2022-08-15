@@ -3,6 +3,4 @@
 
 # npx lint-staged
 
-pnpm run lint:with-cache
-pnpm run check
 pnpm run format:ci
