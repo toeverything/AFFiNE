@@ -67,19 +67,31 @@ export const TextView = ({
         const { contentBeforeSelection, contentAfterSelection } = splitContents;
         const before = [...contentBeforeSelection.content];
         const after = [...contentAfterSelection.content];
-        const _nextBlockChildren = await block.children();
-        const _nextBlock = await editor.createBlock('text');
-        await _nextBlock.setProperty('text', {
+        const nextBlockChildren = await block.children();
+        const nextBlock = await editor.createBlock('text');
+        if (!nextBlock) {
+            throw new Error('Failed to create text block');
+        }
+        await nextBlock.setProperty('text', {
             value: after as CustomText[],
         });
-        _nextBlock.append(..._nextBlockChildren);
-        block.removeChildren();
         await block.setProperty('text', {
             value: before as CustomText[],
         });
-        await block.after(_nextBlock);
 
-        editor.selectionManager.activeNodeByNodeId(_nextBlock.id);
+        if (editor.getRootBlockId() === block.id) {
+            // If the block is the root block,
+            // new block can not append as next sibling,
+            // all new blocks should be append as children.
+            await block.insert(0, [nextBlock]);
+            editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+            return true;
+        }
+        await nextBlock.append(...nextBlockChildren);
+        await block.removeChildren();
+        await block.after(nextBlock);
+
+        editor.selectionManager.activeNodeByNodeId(nextBlock.id);
         return true;
     };
 
