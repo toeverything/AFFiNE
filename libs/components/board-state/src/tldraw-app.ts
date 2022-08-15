@@ -15,13 +15,13 @@ import {
     TLPointerEventHandler,
     TLShapeCloneHandler,
     TLWheelEventHandler,
-    Utils,
+    Utils
 } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
 import {
     clearPrevSize,
     defaultStyle,
-    shapeUtils,
+    shapeUtils
 } from '@toeverything/components/board-shapes';
 import {
     AlignType,
@@ -54,7 +54,7 @@ import {
     TDUser,
     TldrawCommand,
     USER_COLORS,
-    VIDEO_EXTENSIONS,
+    VIDEO_EXTENSIONS
 } from '@toeverything/components/board-types';
 import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 import {
@@ -67,7 +67,7 @@ import {
     migrate,
     openAssetFromFileSystem,
     openFromFileSystem,
-    saveToFileSystem,
+    saveToFileSystem
 } from './data';
 import { getClipboard, setClipboard } from './idb-clipboard';
 import { StateManager } from './manager/state-manager';
