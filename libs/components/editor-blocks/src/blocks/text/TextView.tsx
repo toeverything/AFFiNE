@@ -83,8 +83,8 @@ export const TextView = ({
         return true;
     };
 
-    const onBackspace: TextProps['handleBackSpace'] = async props => {
-        return await editor.withSuspend(async () => {
+    const onBackspace: TextProps['handleBackSpace'] = editor.withBatch(
+        async props => {
             const { isCollAndStart } = props;
             if (!isCollAndStart) {
                 return false;
@@ -114,7 +114,6 @@ export const TextView = ({
                 // TODO: abstract this part of code
                 if (preNode) {
                     if (supportChildren(preNode)) {
-                        editor.suspend(true);
                         await editor.selectionManager.activePreviousNode(
                             block.id,
                             'end'
@@ -133,7 +132,6 @@ export const TextView = ({
                         }
                         await preNode.append(...children);
                         await block.remove();
-                        editor.suspend(false);
                     } else {
                         // TODO: point does not clear
                         await editor.selectionManager.activePreviousNode(
@@ -200,8 +198,9 @@ export const TextView = ({
                 );
             }
             return true;
-        });
-    };
+        }
+    );
+
     const handleConvert = async (
         toType: string,
         options?: Record<string, unknown>
