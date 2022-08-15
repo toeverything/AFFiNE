@@ -23,7 +23,11 @@ export function WorkspaceHome() {
                     user_initial_page_id,
                     TemplateFactory.generatePageTemplateByGroupKeys({
                         name: '👋 Get Started with AFFINE',
-                        groupKeys: ['getStartedGroup0', 'getStartedGroup1'],
+                        groupKeys: [
+                            'getStartedGroup0',
+                            'getStartedGroup1',
+                            'getStartedGroup2',
+                        ],
                     })
                 );
             }

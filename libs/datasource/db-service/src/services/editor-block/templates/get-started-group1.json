@@ -1,129 +1,16 @@
 {
     "type": "group",
-    "properties": {
-        "recastCurrentViewId": "vwjI_O0J2CEsHyMW",
-        "metaProps": [
-            {
-                "id": "bNjVwBq8YLxvmvr7",
-                "name": "Status#GVsG",
-                "type": "status",
-                "options": [
-                    {
-                        "id": "wusZ8Qht8rsmFD1s",
-                        "name": "No Started",
-                        "color": "#AF1212",
-                        "background": "#FFCECE",
-                        "iconName": "status"
-                    },
-                    {
-                        "id": "qLJFK5bqYhW8NLtQ",
-                        "name": "In Progress",
-                        "color": "#896406",
-                        "background": "#FFF5AB",
-                        "iconName": "status"
-                    },
-                    {
-                        "id": "u0ZgY0sRCnqMkxzn",
-                        "name": "Complete",
-                        "color": "#05683D",
-                        "background": "#C5FBE0",
-                        "iconName": "status"
-                    }
-                ]
-            },
-            {
-                "id": "DfVMd-EXXO9-WZTO",
-                "type": "date",
-                "name": "Date#0neY",
-                "background": "#6880FF",
-                "color": "#fff",
-                "iconName": "date"
-            },
-            {
-                "id": "UgQQiv9D-72nRyYy",
-                "type": "mention",
-                "name": "Mention#Recx",
-                "background": "#FFD568",
-                "color": "#FFFFFF",
-                "iconName": "collaborator"
-            },
-            {
-                "id": "ICT1AlKCQkwYLjGs",
-                "type": "text",
-                "name": "Text#uObM",
-                "background": "#67dcaa",
-                "color": "#FFF",
-                "iconName": "text"
-            }
-        ],
-        "recastViews": [
-            {
-                "id": "qJslh-HAKnf8gGV-",
-                "name": "Text",
-                "type": "page"
-            },
-            {
-                "id": "vwjI_O0J2CEsHyMW",
-                "name": "Kanban",
-                "type": "kanban",
-                "groupBy": "bNjVwBq8YLxvmvr7"
-            }
-        ]
-    },
+    "properties": {},
     "blocks": [
         {
-            "type": "text",
+            "type": "heading1",
             "properties": {
                 "text": {
                     "value": [
                         {
-                            "text": "You can customize a Kanban to fit your workflow. Such as by adding/removing columns or changing Tag App labels."
+                            "text": "Want to save changes?"
                         }
                     ]
-                },
-                "textStyle": {}
-            },
-            "blocks": []
-        },
-        {
-            "type": "text",
-            "properties": {
-                "text": {
-                    "value": [{ "text": "Add a Due Date to set a reminder" }]
-                },
-                "recastValues": {
-                    "bNjVwBq8YLxvmvr7": {
-                        "id": "bNjVwBq8YLxvmvr7",
-                        "type": "status",
-                        "value": "wusZ8Qht8rsmFD1s"
-                    },
-                    "DfVMd-EXXO9-WZTO": {
-                        "id": "DfVMd-EXXO9-WZTO",
-                        "type": "date",
-                        "value": 1660233600000
-                    }
-                },
-                "textStyle": {}
-            },
-            "blocks": []
-        },
-        {
-            "type": "text",
-            "properties": {
-                "text": {
-                    "value": [{ "text": "Type ＠ to mention people" }]
-                },
-                "recastValues": {
-                    "bNjVwBq8YLxvmvr7": {
-                        "id": "bNjVwBq8YLxvmvr7",
-                        "type": "status",
-                        "value": "wusZ8Qht8rsmFD1s"
-                    },
-                    "UgQQiv9D-72nRyYy": {
-                        "id": "UgQQiv9D-72nRyYy",
-                        "type": "mention",
-                        "value": "AFFiNE"
-                    }
                 },
                 "textStyle": {}
             },
@@ -135,66 +22,35 @@
                 "text": {
                     "value": [
                         {
-                            "text": "Check the box to complete the task!"
+                            "text": "Your data is always stored locally first, and only stored where you want it."
                         }
                     ]
-                },
-                "recastValues": {
-                    "bNjVwBq8YLxvmvr7": {
-                        "id": "bNjVwBq8YLxvmvr7",
-                        "type": "status",
-                        "value": "qLJFK5bqYhW8NLtQ"
-                    }
-                },
-                "textStyle": {},
-                "collapsed": { "value": false }
-            },
-            "blocks": [
-                {
-                    "type": "todo",
-                    "properties": {
-                        "text": { "value": [{ "text": "Check 01" }] },
-                        "textStyle": {},
-                        "collapsed": { "value": false },
-                        "checked": { "value": true }
-                    },
-                    "blocks": []
-                },
-                {
-                    "type": "todo",
-                    "properties": {
-                        "text": { "value": [{ "text": "Check 02" }] },
-                        "textStyle": {}
-                    },
-                    "blocks": []
                 }
-            ]
+            }
         },
         {
-            "type": "text",
+            "type": "todo",
             "properties": {
                 "text": {
                     "value": [
                         {
-                            "text": "The GroupBy button allows you to customise how you want your data grouped just utilize your preferred Tag App settings"
+                            "text": "So if you want to make changes, you can open a local folder via SYNC TO DISK (you should find the link at the top-right of the page). "
                         }
                     ]
-                },
-                "recastValues": {
-                    "bNjVwBq8YLxvmvr7": {
-                        "id": "bNjVwBq8YLxvmvr7",
-                        "type": "status",
-                        "value": "u0ZgY0sRCnqMkxzn"
-                    },
-                    "ICT1AlKCQkwYLjGs": {
-                        "id": "ICT1AlKCQkwYLjGs",
-                        "type": "text",
-                        "value": "GroupBy others"
-                    }
-                },
-                "textStyle": {}
-            },
-            "blocks": []
+                }
+            }
+        },
+        {
+            "type": "todo",
+            "properties": {
+                "text": {
+                    "value": [
+                        {
+                            "text": "Once you have opened a local folder any changes you make will be saved and stored locally on your device only."
+                        }
+                    ]
+                }
+            }
         }
     ]
 }
