@@ -10,7 +10,7 @@
     "commit": false,
     "commitConvention": "angular",
     "contributorsPerLine": 7,
-    "badgeTemplate": "[all-contributors-badge]: https://img.shields.io/badge/all_contributors-<%= contributors.length %>-orange.svg?style=flat-square",
+    "badgeTemplate": "\n[all-contributors-badge]: https://img.shields.io/badge/all_contributors-<%= contributors.length %>-orange.svg?style=flat-square\n",
     "contributors": [
         {
             "login": "darkskygit",
