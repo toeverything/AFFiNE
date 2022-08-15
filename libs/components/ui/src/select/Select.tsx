@@ -1,5 +1,6 @@
 import {
     forwardRef,
+    useState,
     type CSSProperties,
     type ForwardedRef,
     type ReactNode,
@@ -39,6 +40,7 @@ export const Select = forwardRef(function CustomSelect<TValue>(
     props: ExtendSelectProps & SelectUnstyledProps<TValue>,
     ref: ForwardedRef<HTMLUListElement>
 ) {
+    const [isOpen, setIsOpen] = useState(false);
     const { width = '100%', style, listboxStyle, placeholder } = props;
     const components: SelectUnstyledProps<TValue>['components'] = {
         // Root: generateStyledRoot({ width, ...style }),
@@ -76,7 +78,21 @@ export const Select = forwardRef(function CustomSelect<TValue>(
         ...props.components,
     };
 
-    return <SelectUnstyled {...props} ref={ref} components={components} />;
+    return (
+        <SelectUnstyled
+            listboxOpen={isOpen}
+            onListboxOpenChange={() => {
+                setIsOpen(true);
+            }}
+            {...props}
+            onChange={v => {
+                setIsOpen(false);
+                props.onChange && props.onChange(v);
+            }}
+            ref={ref}
+            components={components}
+        />
+    );
 }) as <TValue>(
     props: ExtendSelectProps &
         SelectUnstyledProps<TValue> &
