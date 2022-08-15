@@ -2,28 +2,28 @@
 import {
     Descendant,
     Editor,
+    Location,
+    Node as SlateNode,
+    Path,
     Point,
-    Transforms,
     Range,
     Text,
-    Location,
-    Path,
-    Node as SlateNode,
+    Transforms,
 } from 'slate';
 import { ReactEditor } from 'slate-react';
 
-import {
-    getCommentsIdsOnTextNode,
-    getEditorMarkForCommentId,
-    MARKDOWN_STYLE_MAP,
-    MatchRes,
-} from './utils';
 import {
     fontBgColorPalette,
     fontColorPalette,
     type TextAlignOptions,
     type TextStyleMark,
 } from './constants';
+import {
+    getCommentsIdsOnTextNode,
+    getEditorMarkForCommentId,
+    MARKDOWN_STYLE_MAP,
+    MatchRes,
+} from './utils';
 
 function isInlineAndVoid(editor: Editor, el: any) {
     return editor.isInline(el) && editor.isVoid(el);
@@ -567,8 +567,46 @@ class SlateUtils {
             anchor: point1,
             focus: point2,
         });
-        // @ts-ignore
-        return fragment[0].children;
+        if (!fragment.length) {
+            console.error('Debug information:', point1, point2, fragment);
+            throw new Error('Failed to get content between!');
+        }
+
+        if (fragment.length > 1) {
+            console.warn(
+                'Fragment length is greater than one, ' +
+                    'please be careful if there is missing content!\n' +
+                    'Debug information:',
+                point1,
+                point2,
+                fragment
+            );
+        }
+
+        const firstFragment = fragment[0];
+        if (!('type' in firstFragment)) {
+            console.error('Debug information:', point1, point2, fragment);
+            throw new Error(
+                'Failed to get content between! type of firstFragment not found!'
+            );
+        }
+
+        const fragmentChildren = firstFragment.children;
+
+        const textChildren: Text[] = [];
+        for (const child of fragmentChildren) {
+            if (!('text' in child)) {
+                console.error('Debug information:', point1, point2, fragment);
+                throw new Error('Fragment exists nested!');
+            }
+            // Filter empty string
+            if (child.text === '') {
+                continue;
+            }
+            textChildren.push(child);
+        }
+
+        return textChildren;
     }
 
     public getSplitContentsBySelection() {
