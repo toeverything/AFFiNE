@@ -73,7 +73,6 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
             groupCount = groupCount + 1;
         }
 
-        console.log('acc: ', acc);
         return acc;
     }, {} as Record<string, TDShape>);
 };
