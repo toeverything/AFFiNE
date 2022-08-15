@@ -4,10 +4,7 @@ import {
     type SlateUtils,
     type TextProps,
 } from '@toeverything/components/common';
-import {
-    useOnSelectActive,
-    useOnSelectSetSelection,
-} from '@toeverything/components/editor-core';
+import { useOnSelectActive } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { ContentColumnValue } from '@toeverything/datasource/db-service';
 import {
@@ -119,13 +116,14 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
 
         const properties = block.getProperties();
 
-        const onTextViewSetSelection = (selection: Range | Point) => {
-            if (selection instanceof Point) {
-                //do some thing
-            } else {
-                textRef.current.setSelection(selection);
-            }
-        };
+        // const onTextViewSetSelection = (selection: Range | Point) => {
+        //     console.log('selection: ', selection);
+        //     if (selection instanceof Point) {
+        //         //do some thing
+        //     } else {
+        //         // textRef.current.setSelection(selection);
+        //     }
+        // };
 
         // block = await editor.commands.blockCommands.createNextBlock(block.id,)
         const onTextViewActive = useCallback(
@@ -209,7 +207,8 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
         );
 
         useOnSelectActive(block.id, onTextViewActive);
-        useOnSelectSetSelection<'Range'>(block.id, onTextViewSetSelection);
+        // TODO undo dont reset selection
+        // useOnSelectSetSelection<'Range'>(block.id, onTextViewSetSelection);
 
         useEffect(() => {
             if (textRef.current) {
