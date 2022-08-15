@@ -447,6 +447,7 @@ export function App() {
                             textAlign: 'center',
                             marginTop: '1.5em',
                             marginBottom: '12vh!important',
+                            rawGap: '1em',
                         }}
                     >
                         <GitHub center />

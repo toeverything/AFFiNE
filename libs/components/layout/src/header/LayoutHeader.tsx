@@ -23,9 +23,9 @@ export const LayoutHeader = () => {
 
     const warningTips = useMemo(() => {
         if (!fsApiSupported()) {
-            return 'Your browser does not support the local storage feature, please upgrade to the latest version of Chrome or Edge browser';
+            return 'Welcome to the AFFiNE demo. To begin saving changes you can SYNC DATA TO DISK with the latest version of Chromium based browser like Chrome/Edge';
         } else if (!isLocalWorkspace) {
-            return 'You are in DEMO mode. Changes will NOT be saved unless you SYNC TO DISK';
+            return 'Welcome to the AFFiNE demo. To begin saving changes you can SYNC TO DISK.';
         } else {
             return 'AFFiNE is under active development and the current version is UNSTABLE. Please DO NOT store information or data';
         }
