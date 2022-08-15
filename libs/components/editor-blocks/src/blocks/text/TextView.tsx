@@ -2,13 +2,11 @@ import { useState } from 'react';
 
 import { CustomText, TextProps } from '@toeverything/components/common';
 import {
-    mergeGroup,
+    BlockPendantProvider,
     RenderBlockChildren,
     splitGroup,
     supportChildren,
-    unwrapGroup,
     useOnSelect,
-    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { Protocol } from '@toeverything/datasource/db-service';
@@ -95,13 +93,21 @@ export const TextView = ({
                 await block.setType('text');
                 return true;
             }
+            if (editor.getRootBlockId() === block.id) {
+                // Can not delete
+                return false;
+            }
             const parentBlock = await block.parent();
 
             if (!parentBlock) {
                 return false;
             }
+
             const preParent = await parentBlock.previousSibling();
-            if (Protocol.Block.Type.group === parentBlock.type) {
+            if (
+                Protocol.Block.Type.group === parentBlock.type ||
+                editor.getRootBlockId() === parentBlock.id
+            ) {
                 const children = await block.children();
                 const preNode = await block.physicallyPerviousSibling();
                 // FIXME support children do not means has textBlock
