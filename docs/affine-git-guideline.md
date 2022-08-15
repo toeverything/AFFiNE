@@ -1,15 +1,15 @@
 # AFFiNE Git Guideline
 
-# 1. Git Branch Name
+## 1. Git Branch Name
 
 -   fix/
 -   feat/
 
-# 2. **Commit message guidelines**
+## 2. Commit message guidelines
 
 AFFiNE uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and package publishing. For that to work, commitmessages need to be in the right format.
 
-### **Atomic commits**
+### Atomic commits
 
 If possible, make [atomic commits](https://en.wikipedia.org/wiki/Atomic_commit), which means:
 
@@ -19,26 +19,28 @@ If possible, make [atomic commits](https://en.wikipedia.org/wiki/Atomic_commit)
 
 A complex feature can be broken down into multiple commits as long as each one keep a consistent state and consist of a self-contained change.
 
-### **Commit message format**
+### Commit message format
 
 Each commit message consists of a **header**, a **body** and a **footer**. The header has a special format that includes a **type**, a **scope** and a **subject**:
 
-`<type>(<scope>): <subject>
+```txt
+<type>(<scope>): <subject>
 <BLANK LINE>
 
 <body>
 <BLANK LINE>
-<footer>`
+<footer>
+```
 
 The **header** is mandatory and the **scope** of the header is optional.
 
 The **footer** can contain a [closing reference to an issue](https://help.github.com/articles/closing-issues-via-commit-messages).
 
-### **Revert**
+#### Revert
 
 If the commit reverts a previous commit, it should begin with `revert:` , followed by the header of the reverted commit. In the body it should say: `This reverts commit <hash>.`, where the hash is the SHA of the commit being reverted.
 
-### **Type**
+#### Type
 
 The type must be one of the following:
 | Type | Description |
@@ -54,7 +56,7 @@ The type must be one of the following:
 | test | Adding missing tests or correcting existing tests |
 | chore | Changes to the build process or auxiliary tools | |
 
-### **Subject**
+#### Subject
 
 The subject contains succinct description of the change:
 
@@ -62,30 +64,35 @@ The subject contains succinct description of the change:
 -   don't capitalize first letter
 -   no dot (.) at the end
 
-### **Body**
+#### Body
 
 Just as in the **subject**, use the imperative, present tense: "change" not "changed" nor "changes". The body should include the motivation for the change and contrast this with previous behavior.
 
-### **Footer**
+#### Footer
 
 The footer should contain any information about **Breaking Changes** and is also the place to reference GitHub issues that this commit **Closes**.
 
 **Breaking Changes** should start with the word `BREAKING CHANGE:` with a space or two newlines. The rest of the commit message is then used for this.
 
-### **Examples**
+### Examples
 
-`fix(pencil): stop graphite breaking when too much pressure applied`
+```txt
+fix(pencil): stop graphite breaking when too much pressure applied
+```
 
-``feat(pencil): add 'graphiteWidth' option`
+```txt
+feat(pencil): add 'graphiteWidth' option
 
-Fix #42`
+Fix #42
+```
 
-`perf(pencil): remove graphiteWidth option`
+```txt
+perf(pencil): remove graphiteWidth option
 
 BREAKING CHANGE: The graphiteWidth option has been removed.
+The default graphite width of 10mm is always used for performance reasons.
+```
 
-The default graphite width of 10mm is always used for performance reasons.`
-
-# 3. tracking-your-work-with-issues
+## 3. tracking-your-work-with-issues
 
 [https://docs.github.com/en/issues/tracking-your-work-with-issues/about-issues](https://docs.github.com/en/issues/tracking-your-work-with-issues/about-issues)
