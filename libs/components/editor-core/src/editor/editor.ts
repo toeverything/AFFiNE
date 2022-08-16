@@ -42,7 +42,7 @@ export interface EditorCtorProps {
     views: Partial<Record<keyof BlockFlavors, BaseView>>;
     plugins: PluginCreator[];
     rootBlockId: string;
-    isWhiteboard?: boolean;
+    isEdgeless?: boolean;
 }
 
 export class Editor implements Virgo {
@@ -75,7 +75,7 @@ export class Editor implements Virgo {
         render: PatchNode;
         has: (key: string) => boolean;
     };
-    public isWhiteboard = false;
+    public isEdgeless = false;
     private _isDisposed = false;
 
     constructor(props: EditorCtorProps) {
@@ -85,8 +85,8 @@ export class Editor implements Virgo {
         this.hooks = new Hooks();
         this.plugin_manager = new PluginManager(this, this.hooks);
         this.plugin_manager.registerAll(props.plugins);
-        if (props.isWhiteboard) {
-            this.isWhiteboard = true;
+        if (props.isEdgeless) {
+            this.isEdgeless = true;
         }
         for (const [name, block] of Object.entries(props.views)) {
             services.api.editorBlock.registerContentExporter(

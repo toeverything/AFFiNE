@@ -107,7 +107,7 @@ export interface Virgo {
     getBlockDomById: (id: string) => Promise<HTMLElement>;
     getBlockByPoint: (point: Point) => Promise<AsyncBlock>;
     getGroupBlockByPoint: (point: Point) => Promise<AsyncBlock>;
-    isWhiteboard: boolean;
+    isEdgeless: boolean;
     mouseManager: MouseManager;
 }
 

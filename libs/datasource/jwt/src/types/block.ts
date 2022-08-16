@@ -37,7 +37,6 @@ export const BlockFlavors = {
     quote: 'quote' as const, // quote
     toc: 'toc' as const, //directory
     database: 'database' as const, //Multidimensional table
-    whiteboard: 'whiteboard' as const, // whiteboard
     template: 'template' as const, // template
     discussion: 'discussion' as const, // comment header
     comment: 'comment' as const, // comment details

@@ -9,11 +9,11 @@ const MemoAffineBoard = memo(AffineBoard, (prev, next) => {
     return prev.rootBlockId === next.rootBlockId;
 });
 
-type WhiteboardProps = {
+type EdgelessProps = {
     workspace: string;
 };
 
-export const Whiteboard = (props: WhiteboardProps) => {
+export const Edgeless = (props: EdgelessProps) => {
     const { page_id } = useParams();
     const { user } = useUserAndSpaces();
 
