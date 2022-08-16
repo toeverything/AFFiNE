@@ -2,47 +2,47 @@
 import HotKeys from 'hotkeys-js';
 import LRUCache from 'lru-cache';
 
-import { services } from '@toeverything/datasource/db-service';
+import type { PatchNode } from '@toeverything/components/ui';
 import type {
     BlockFlavors,
     ReturnEditorBlock,
     UpdateEditorBlock,
 } from '@toeverything/datasource/db-service';
-import type { PatchNode } from '@toeverything/components/ui';
+import { services } from '@toeverything/datasource/db-service';
 
-import { AsyncBlock } from './block';
-import type { WorkspaceAndBlockId } from './block';
-import type { BaseView } from './views/base-view';
-import { SelectionManager } from './selection';
-import { Hooks, PluginManager } from './plugin';
-import { EditorCommands } from './commands';
-import {
-    Virgo,
-    HooksRunner,
-    PluginHooks,
-    PluginCreator,
-    StorageManager,
-    VirgoSelection,
-    PluginManagerInterface,
-} from './types';
-import { KeyboardManager } from './keyboard';
-import { MouseManager } from './mouse';
-import { ScrollManager } from './scroll';
-import assert from 'assert';
-import { domToRect, last, Point, sleep } from '@toeverything/utils';
 import { Commands } from '@toeverything/datasource/commands';
+import { domToRect, last, Point, sleep } from '@toeverything/utils';
+import assert from 'assert';
+import type { WorkspaceAndBlockId } from './block';
+import { AsyncBlock } from './block';
+import { BlockHelper } from './block/block-helper';
 import { BrowserClipboard } from './clipboard/browser-clipboard';
 import { ClipboardPopulator } from './clipboard/clipboard-populator';
-import { BlockHelper } from './block/block-helper';
-import { DragDropManager } from './drag-drop';
+import { EditorCommands } from './commands';
 import { EditorConfig } from './config';
+import { DragDropManager } from './drag-drop';
+import { KeyboardManager } from './keyboard';
+import { MouseManager } from './mouse';
+import { Hooks, PluginManager } from './plugin';
+import { ScrollManager } from './scroll';
+import { SelectionManager } from './selection';
+import {
+    HooksRunner,
+    PluginCreator,
+    PluginHooks,
+    PluginManagerInterface,
+    StorageManager,
+    Virgo,
+    VirgoSelection,
+} from './types';
+import type { BaseView } from './views/base-view';
 
 export interface EditorCtorProps {
     workspace: string;
     views: Partial<Record<keyof BlockFlavors, BaseView>>;
     plugins: PluginCreator[];
     rootBlockId: string;
-    isWhiteboard?: boolean;
+    isEdgeless?: boolean;
 }
 
 export class Editor implements Virgo {
@@ -75,7 +75,7 @@ export class Editor implements Virgo {
         render: PatchNode;
         has: (key: string) => boolean;
     };
-    public isWhiteboard = false;
+    public isEdgeless = false;
     private _isDisposed = false;
 
     constructor(props: EditorCtorProps) {
@@ -85,8 +85,8 @@ export class Editor implements Virgo {
         this.hooks = new Hooks();
         this.plugin_manager = new PluginManager(this, this.hooks);
         this.plugin_manager.registerAll(props.plugins);
-        if (props.isWhiteboard) {
-            this.isWhiteboard = true;
+        if (props.isEdgeless) {
+            this.isEdgeless = true;
         }
         for (const [name, block] of Object.entries(props.views)) {
             services.api.editorBlock.registerContentExporter(

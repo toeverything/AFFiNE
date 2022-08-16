@@ -1,5 +1,5 @@
 const _regex =
-    /^(https?:\/\/(localhost:4200|(nightly|app)\.affine\.pro|.*?\.ligo-virgo\.pages\.dev)\/\w{28}\/)?(affine\w{16})(\/whiteboard)?$/;
+    /^(https?:\/\/(localhost:4200|(nightly|app)\.affine\.pro|.*?\.ligo-virgo\.pages\.dev)\/\w{28}\/)?(affine\w{16})(\/edgeless)?$/;
 
 export const isAffineUrl = (url?: string) => {
     if (!url) return false;

@@ -17,7 +17,7 @@ interface AffineEditorProps {
      */
     scrollBlank?: boolean;
 
-    isWhiteboard?: boolean;
+    isEdgeless?: boolean;
 
     scrollContainer?: HTMLElement;
     scrollController?: {
@@ -29,12 +29,12 @@ interface AffineEditorProps {
 function _useConstantWithDispose(
     workspace: string,
     rootBlockId: string,
-    isWhiteboard: boolean
+    isEdgeless: boolean
 ) {
     const ref = useRef<{ data: BlockEditor; onInit: boolean }>(null);
     const { setCurrentEditors } = useCurrentEditors();
     ref.current ??= {
-        data: createEditor(workspace, rootBlockId, isWhiteboard),
+        data: createEditor(workspace, rootBlockId, isEdgeless),
         onInit: true,
     };
 
@@ -42,18 +42,14 @@ function _useConstantWithDispose(
         if (ref.current.onInit) {
             ref.current.onInit = false;
         } else {
-            ref.current.data = createEditor(
-                workspace,
-                rootBlockId,
-                isWhiteboard
-            );
+            ref.current.data = createEditor(workspace, rootBlockId, isEdgeless);
         }
         setCurrentEditors(prev => ({
             ...prev,
             [rootBlockId]: ref.current.data,
         }));
         return () => ref.current.data.dispose();
-    }, [workspace, rootBlockId, isWhiteboard, setCurrentEditors]);
+    }, [workspace, rootBlockId, isEdgeless, setCurrentEditors]);
 
     return ref.current.data;
 }
@@ -64,7 +60,7 @@ export const AffineEditor = forwardRef<BlockEditor, AffineEditorProps>(
             workspace,
             rootBlockId,
             scrollBlank = true,
-            isWhiteboard,
+            isEdgeless,
             scrollController,
             scrollContainer,
         },
@@ -73,7 +69,7 @@ export const AffineEditor = forwardRef<BlockEditor, AffineEditorProps>(
         const editor = _useConstantWithDispose(
             workspace,
             rootBlockId,
-            isWhiteboard
+            isEdgeless
         );
 
         useEffect(() => {

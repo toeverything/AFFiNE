@@ -14,7 +14,7 @@ export class GroupMenuPlugin extends BasePlugin {
     }
 
     protected override _onRender(): void {
-        if (this.editor.isWhiteboard) return;
+        if (this.editor.isEdgeless) return;
         this.root = new PluginRenderRoot({
             name: PLUGIN_NAME,
             render: this.editor.reactRenderRoot.render,

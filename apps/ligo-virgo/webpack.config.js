@@ -73,9 +73,9 @@ module.exports = function (webpackConfig) {
                         priority: -5,
                         chunks: 'all',
                     },
-                    whiteboard: {
+                    edgeless: {
                         test: /(libs\/components\/board-|[\\/]node_modules[\\/]@tldraw)/,
-                        name: 'whiteboard',
+                        name: 'edgeless',
                         priority: -7,
                         chunks: 'all',
                     },
