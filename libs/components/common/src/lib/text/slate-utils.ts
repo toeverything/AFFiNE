@@ -605,6 +605,11 @@ class SlateUtils {
             }
             textChildren.push(child);
         }
+        // If nothing, should preserve empty string
+        // Fix Slate Cannot get the start point in the node at path [0] because it has no start text node.
+        if (!textChildren.length) {
+            textChildren.push({ text: '' });
+        }
 
         return textChildren;
     }
