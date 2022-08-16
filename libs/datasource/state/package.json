@@ -6,7 +6,6 @@
         "jotai": "^1.7.4"
     },
     "devDependencies": {
-        "authing-js-sdk": "^4.23.35",
         "firebase": "^9.9.2"
     }
 }
