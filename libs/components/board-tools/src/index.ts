@@ -5,7 +5,7 @@ import { EditorTool } from './editor-tool';
 import { EllipseTool } from './ellipse-tool';
 import { EraseTool } from './erase-tool';
 import { FrameTool } from './frame-tool/frame-tool';
-import { HandDrawTool } from './hand-draw';
+import { HandDragTool } from './hand-drag';
 import { HexagonTool } from './hexagon-tool';
 import { HighlightTool } from './highlight-tool';
 import { LaserTool } from './laser-tool';
@@ -32,7 +32,7 @@ export interface ToolsMap {
     [TDShapeType.Highlight]: typeof HighlightTool;
     [TDShapeType.Editor]: typeof EditorTool;
     [TDShapeType.WhiteArrow]: typeof WhiteArrowTool;
-    [TDShapeType.HandDraw]: typeof HandDrawTool;
+    [TDShapeType.HandDrag]: typeof HandDragTool;
     [TDShapeType.Laser]: typeof LaserTool;
     [TDShapeType.Frame]: typeof FrameTool;
 }
@@ -59,6 +59,6 @@ export const tools: { [K in TDToolType]: ToolsMap[K] } = {
     [TDShapeType.Hexagon]: HexagonTool,
     [TDShapeType.WhiteArrow]: WhiteArrowTool,
     [TDShapeType.Laser]: LaserTool,
-    [TDShapeType.HandDraw]: HandDrawTool,
+    [TDShapeType.HandDrag]: HandDragTool,
     [TDShapeType.Frame]: FrameTool,
 };

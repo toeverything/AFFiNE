@@ -9,8 +9,8 @@ enum Status {
     Draw = 'draw',
 }
 
-export class HandDrawTool extends BaseTool {
-    override type = TDShapeType.HandDraw as const;
+export class HandDragTool extends BaseTool {
+    override type = TDShapeType.HandDrag as const;
 
     override status: Status = Status.Idle;
 
