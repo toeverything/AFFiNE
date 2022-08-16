@@ -52,8 +52,8 @@ const tools: Array<{
     { type: 'frame', label: 'Frame', tooltip: 'Frame', icon: FrameIcon },
     {
         type: TDShapeType.Editor,
-        label: 'TextBlock',
-        tooltip: 'TextBlock',
+        label: 'Text Block',
+        tooltip: 'Text Block',
         icon: TextIcon,
     },
     { type: 'shapes', component: ShapeTools },
@@ -62,8 +62,8 @@ const tools: Array<{
     // { type: 'erase', label: 'Erase', tooltip: 'Erase', icon: EraseIcon },
     {
         type: TDShapeType.HandDrag,
-        label: 'HandDrag',
-        tooltip: 'HandDrag',
+        label: 'Hand Drag',
+        tooltip: 'Hand Drag',
         icon: HandToolIcon,
     },
     {
