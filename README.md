@@ -188,6 +188,10 @@ For help, discussion about best practices, or any other conversation that would 
 
 [Discuss AFFiNE on GitHub](https://github.com/toeverything/AFFiNE/discussions)
 
+# Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=toeverything/AFFiNE&type=Date)](https://star-history.com/#toeverything/AFFiNE)
+
 # Contributors
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
