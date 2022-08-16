@@ -116,16 +116,6 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
 
         const properties = block.getProperties();
 
-        // const onTextViewSetSelection = (selection: Range | Point) => {
-        //     console.log('selection: ', selection);
-        //     if (selection instanceof Point) {
-        //         //do some thing
-        //     } else {
-        //         // textRef.current.setSelection(selection);
-        //     }
-        // };
-
-        // block = await editor.commands.blockCommands.createNextBlock(block.id,)
         const onTextViewActive = useCallback(
             (point: CursorTypes) => {
                 // TODO code to be optimized
@@ -207,8 +197,6 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
         );
 
         useOnSelectActive(block.id, onTextViewActive);
-        // TODO undo dont reset selection
-        // useOnSelectSetSelection<'Range'>(block.id, onTextViewSetSelection);
 
         useEffect(() => {
             if (textRef.current) {
