@@ -4,7 +4,7 @@ import { StatusText } from './StatusText';
 import { StatusTrack } from './StatusTrack';
 import { DocMode } from './type';
 
-const isBoard = (pathname: string): boolean => pathname.endsWith('/whiteboard');
+const isBoard = (pathname: string): boolean => pathname.endsWith('/edgeless');
 
 export const Switcher = () => {
     const navigate = useNavigate();
@@ -20,11 +20,11 @@ export const Switcher = () => {
         /**
          * There are two possible modes:
          * Page mode: /{workspaceId}/{pageId}
-         * Board mode: /{workspaceId}/{pageId}/whiteboard
+         * Board mode: /{workspaceId}/{pageId}/edgeless
          */
         const pageId = params['*'].split('/')[0];
         const targetUrl = `/${workspaceId}/${pageId}${
-            targetViewMode === DocMode.board ? '/whiteboard' : ''
+            targetViewMode === DocMode.board ? '/edgeless' : ''
         }`;
         navigate(targetUrl);
     };
