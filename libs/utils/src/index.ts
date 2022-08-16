@@ -2,7 +2,7 @@ export * from './types';
 
 export * from './constants';
 
-export * from './error-boundary';
+export * from './ErrorBoundary';
 
 export * from './date';
 
