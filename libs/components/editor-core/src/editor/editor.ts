@@ -2,40 +2,40 @@
 import HotKeys from 'hotkeys-js';
 import LRUCache from 'lru-cache';
 
-import { services } from '@toeverything/datasource/db-service';
+import type { PatchNode } from '@toeverything/components/ui';
 import type {
     BlockFlavors,
     ReturnEditorBlock,
     UpdateEditorBlock,
 } from '@toeverything/datasource/db-service';
-import type { PatchNode } from '@toeverything/components/ui';
+import { services } from '@toeverything/datasource/db-service';
 
-import { AsyncBlock } from './block';
-import type { WorkspaceAndBlockId } from './block';
-import type { BaseView } from './views/base-view';
-import { SelectionManager } from './selection';
-import { Hooks, PluginManager } from './plugin';
-import { EditorCommands } from './commands';
-import {
-    Virgo,
-    HooksRunner,
-    PluginHooks,
-    PluginCreator,
-    StorageManager,
-    VirgoSelection,
-    PluginManagerInterface,
-} from './types';
-import { KeyboardManager } from './keyboard';
-import { MouseManager } from './mouse';
-import { ScrollManager } from './scroll';
-import assert from 'assert';
-import { domToRect, last, Point, sleep } from '@toeverything/utils';
 import { Commands } from '@toeverything/datasource/commands';
+import { domToRect, last, Point, sleep } from '@toeverything/utils';
+import assert from 'assert';
+import type { WorkspaceAndBlockId } from './block';
+import { AsyncBlock } from './block';
+import { BlockHelper } from './block/block-helper';
 import { BrowserClipboard } from './clipboard/browser-clipboard';
 import { ClipboardPopulator } from './clipboard/clipboard-populator';
-import { BlockHelper } from './block/block-helper';
-import { DragDropManager } from './drag-drop';
+import { EditorCommands } from './commands';
 import { EditorConfig } from './config';
+import { DragDropManager } from './drag-drop';
+import { KeyboardManager } from './keyboard';
+import { MouseManager } from './mouse';
+import { Hooks, PluginManager } from './plugin';
+import { ScrollManager } from './scroll';
+import { SelectionManager } from './selection';
+import {
+    HooksRunner,
+    PluginCreator,
+    PluginHooks,
+    PluginManagerInterface,
+    StorageManager,
+    Virgo,
+    VirgoSelection,
+} from './types';
+import type { BaseView } from './views/base-view';
 
 export interface EditorCtorProps {
     workspace: string;
@@ -148,18 +148,41 @@ export class Editor implements Virgo {
     public get container() {
         return this.ui_container;
     }
-    // preference to use withSuspend
+
+    /**
+     * Use it discreetly.
+     * Preference to use {@link withBatch}
+     */
     public suspend(flag: boolean) {
         services.api.editorBlock.suspend(this.workspace, flag);
     }
 
-    public async withSuspend<T extends (...args: any[]) => any>(
+    // TODO support suspend recursion
+    private _isSuspend = false;
+    public withBatch<T extends (...args: any[]) => Promise<any>>(fn: T): T {
+        return (async (...args) => {
+            if (this._isSuspend) {
+                console.warn(
+                    'The editor currently has suspend! Please do not call batch method repeatedly!'
+                );
+            }
+            this._isSuspend = true;
+            services.api.editorBlock.suspend(this.workspace, true);
+            const result = await fn(...args);
+            services.api.editorBlock.suspend(this.workspace, false);
+            this._isSuspend = false;
+            return result;
+        }) as T;
+    }
+
+    /**
+     * Use it discreetly.
+     * Preference to use {@link withBatch}
+     */
+    public async batch<T extends (...args: any[]) => any>(
         fn: T
     ): Promise<Awaited<ReturnType<T>>> {
-        services.api.editorBlock.suspend(this.workspace, true);
-        const result = await fn();
-        services.api.editorBlock.suspend(this.workspace, false);
-        return result;
+        return this.withBatch(fn)();
     }
 
     public setReactRenderRoot(props: {
