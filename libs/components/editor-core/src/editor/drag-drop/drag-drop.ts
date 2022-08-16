@@ -1,4 +1,5 @@
 /* eslint-disable max-lines */
+import { Protocol } from '@toeverything/datasource/db-service';
 import { domToRect, Point } from '@toeverything/utils';
 import { AsyncBlock } from '../..';
 import { GridDropType } from '../commands/types';
@@ -6,7 +7,6 @@ import { Editor } from '../editor';
 import { BlockDropPlacement, GroupDirection } from '../types';
 // TODO: Evaluate implementing custom events with Rxjs
 import EventEmitter from 'eventemitter3';
-import { Protocol } from '@toeverything/datasource/db-service';
 
 enum DragType {
     dragBlock = 'dragBlock',
@@ -281,6 +281,10 @@ export class DragDropManager {
             this._editor.getRootBlockId()
         );
         let direction = BlockDropPlacement.none;
+        if (!rootBlock || !rootBlock.dom) {
+            console.warn('Can not find dom bind with block', rootBlock);
+            return;
+        }
         const rootBlockRect = domToRect(rootBlock.dom);
         let targetBlock: AsyncBlock | undefined;
         let typesInfo = {
@@ -303,6 +307,10 @@ export class DragDropManager {
         if (direction !== BlockDropPlacement.none) {
             const blockList = await this._editor.getBlockListByLevelOrder();
             targetBlock = blockList.find(block => {
+                if (!block.dom) {
+                    console.warn('Can not find dom bind with block', block);
+                    return false;
+                }
                 const domRect = domToRect(block.dom);
                 const pointChecker =
                     direction === BlockDropPlacement.outerLeft
