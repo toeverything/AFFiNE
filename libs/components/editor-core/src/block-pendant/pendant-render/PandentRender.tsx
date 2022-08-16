@@ -59,7 +59,7 @@ export const PendantRender = ({ block }: { block: AsyncBlock }) => {
                         popperHandlerRef={ref => {
                             popoverHandlerRef.current[id] = ref;
                         }}
-                        container={blockRenderContainerRef.current}
+                        // container={blockRenderContainerRef.current}
                         key={id}
                         trigger="click"
                         placement="bottom-start"
