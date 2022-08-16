@@ -1,27 +1,28 @@
-import React, {
-    CSSProperties,
-    useEffect,
-    useState,
-    KeyboardEvent,
-    useRef,
-} from 'react';
 import { Add, Close } from '@mui/icons-material';
-import { ModifyPanelContentProps } from './types';
-import {
-    MultiSelectProperty,
-    SelectProperty,
-    SelectOptionId,
-} from '../../recast-block';
 import {
     Checkbox,
     Radio,
     styled,
-    useTheme,
     Tooltip,
+    useTheme,
 } from '@toeverything/components/ui';
-import { HighLightIconInput } from './IconInput';
-import { PendantConfig, IconNames, OptionIdType, OptionType } from '../types';
+import { uaHelper } from '@toeverything/utils';
+import {
+    CSSProperties,
+    KeyboardEvent,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
+import {
+    MultiSelectProperty,
+    SelectOptionId,
+    SelectProperty,
+} from '../../recast-block';
+import { IconNames, OptionIdType, OptionType, PendantConfig } from '../types';
 import { generateBasicOption } from '../utils';
+import { HighLightIconInput } from './IconInput';
+import { ModifyPanelContentProps } from './types';
 
 type OptionItemType = {
     option: OptionType;
@@ -219,7 +220,7 @@ const OptionItem = ({
                     onEnter?.(e);
                     e.preventDefault();
                 }
-                if (e.ctrlKey && e.code === 'Backspace') {
+                if ((e.metaKey || e.ctrlKey) && e.code === 'Backspace') {
                     onDelete?.(option.id);
                     e.preventDefault();
                 }
@@ -254,7 +255,13 @@ const OptionItem = ({
                         onDelete(option.id);
                     }}
                 >
-                    <Tooltip content="ctrl + backspace">
+                    <Tooltip
+                        content={
+                            uaHelper.isMacOs
+                                ? '⌘ + backspace'
+                                : 'ctrl + backspace'
+                        }
+                    >
                         <Close
                             style={{
                                 fontSize: 12,
