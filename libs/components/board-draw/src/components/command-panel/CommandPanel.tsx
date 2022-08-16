@@ -8,6 +8,7 @@ import { FontSizeConfig } from './FontSizeConfig';
 import { FrameFillColorConfig } from './FrameFillColorConfig';
 import { Group, UnGroup } from './GroupOperation';
 import { Lock, Unlock } from './LockOperation';
+import { MoveCoverageConfig } from './MoveCoverage';
 import { StrokeLineStyleConfig } from './stroke-line-style-config';
 import { getAnchor, useConfig } from './utils';
 
@@ -87,6 +88,13 @@ export const CommandPanel = ({ app }: { app: TldrawApp }) => {
         delete: (
             <DeleteShapes
                 key="deleteShapes"
+                app={app}
+                shapes={config.deleteShapes.selectedShapes}
+            />
+        ),
+        delete2: (
+            <MoveCoverageConfig
+                key="deleteShapes1"
                 app={app}
                 shapes={config.deleteShapes.selectedShapes}
             />
