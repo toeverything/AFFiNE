@@ -53,7 +53,7 @@ const ModalPage = ({ blockId }: { blockId: string | null }) => {
                     workspace={editor.workspace}
                     rootBlockId={blockId}
                     scrollBlank={false}
-                    isWhiteboard
+                    isEdgeless
                 />
             )}
         </Modal>
