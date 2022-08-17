@@ -19,7 +19,9 @@ export class YoutubeBlock extends BaseView {
         const tag_name = el.tagName;
         if (tag_name === 'A' && el.parentElement?.childElementCount === 1) {
             const href = el.getAttribute('href');
-            if (href.indexOf('.youtube.com') !== -1) {
+            const allowedHosts = ['.youtube.com'];
+
+            if (allowedHosts.includes(href)) {
                 return [
                     {
                         type: this.type,
