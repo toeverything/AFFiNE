@@ -3,7 +3,7 @@ import { StyleWithAtRules } from 'style9';
 
 import { CreateView } from '@toeverything/framework/virgo';
 import CodeMirror, { ReactCodeMirrorRef } from './CodeMirror';
-import { styled } from '@toeverything/components/ui';
+import { styled, Option, Select } from '@toeverything/components/ui';
 
 import { javascript } from '@codemirror/lang-javascript';
 import { html } from '@codemirror/lang-html';
@@ -45,8 +45,7 @@ import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile';
 import { julia } from '@codemirror/legacy-modes/mode/julia';
 import { r } from '@codemirror/legacy-modes/mode/r';
 import { Extension } from '@codemirror/state';
-import { Option, Select } from '@toeverything/components/ui';
-
+import { themes, DEFAULT_THEME_NAME, DEFAULT_THEME_EXT } from './theme';
 import {
     useOnSelect,
     BlockPendantProvider,
@@ -142,6 +141,7 @@ const CodeBlock = styled('div')(({ theme }) => ({
 export const CodeView = ({ block, editor }: CreateCodeView) => {
     const initValue: string = block.getProperty('text')?.value?.[0]?.text;
     const langType: string = block.getProperty('lang');
+    const theme: string = block.getProperty('theme');
     const [extensions, setExtensions] = useState<Extension[]>();
     const codeMirror = useRef<ReactCodeMirrorRef>();
     useOnSelect(block.id, (_is_select: boolean) => {
@@ -157,6 +157,9 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     const handleLangChange = (lang: string) => {
         block.setProperty('lang', lang);
         setExtensions([langs[lang]()]);
+    };
+    const handleThemeChange = (themeName: string) => {
+        block.setProperty('theme', themeName);
     };
     useEffect(() => {
         handleLangChange(langType ? langType : DEFAULT_LANG);
@@ -198,9 +201,28 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
                             })}
                         </Select>
                     </div>
+                    <div className="select">
+                        <Select
+                            placeholder="Select theme"
+                            value={theme || DEFAULT_THEME_NAME}
+                            listboxStyle={{ maxHeight: '400px' }}
+                            onChange={(selectedValue: string) => {
+                                handleThemeChange(selectedValue);
+                            }}
+                        >
+                            {themes.map(item => {
+                                return (
+                                    <Option key={item.name} value={item.name}>
+                                        {item.text}
+                                    </Option>
+                                );
+                            })}
+                        </Select>
+                    </div>
                     <div>
                         <div className="copy-block" onClick={copyCode}>
-                            <DuplicateIcon></DuplicateIcon>Copy
+                            <DuplicateIcon />
+                            Copy
                         </div>
                     </div>
                 </div>
@@ -213,6 +235,10 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
                     onChange={onChange}
                     handleKeyArrowDown={handleKeyArrowDown}
                     handleKeyArrowUp={handleKeyArrowUp}
+                    theme={
+                        themes.find(themeDef => themeDef.name === theme) ||
+                        DEFAULT_THEME_EXT
+                    }
                 />
             </CodeBlock>
         </BlockPendantProvider>

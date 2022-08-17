@@ -194,7 +194,7 @@ importers:
       yjs: ^13.5.41
     dependencies:
       authing-js-sdk: 4.23.35
-      firebase-admin: 11.0.1_@firebase+app-types@0.7.0
+      firebase-admin: 11.0.1
       lib0: 0.2.52
       lru-cache: 7.13.2
       nanoid: 4.0.0
@@ -288,7 +288,7 @@ importers:
       '@tldraw/intersect': ^1.7.1
       '@tldraw/vec': ^1.7.0
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
 
@@ -299,7 +299,7 @@ importers:
       '@tldraw/vec': ^1.7.0
       perfect-freehand: ^1.0.16
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
       perfect-freehand: 1.1.0
@@ -312,7 +312,7 @@ importers:
       idb-keyval: ^6.2.0
       zustand: ^3.7.2
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
       idb-keyval: 6.2.0
@@ -324,7 +324,7 @@ importers:
       '@tldraw/intersect': ^1.7.1
       '@tldraw/vec': ^1.7.0
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
 
@@ -334,7 +334,7 @@ importers:
       '@tldraw/intersect': ^1.7.1
       '@tldraw/vec': ^1.7.0
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
 
@@ -400,6 +400,14 @@ importers:
       '@types/codemirror': ^5.60.5
       '@types/react-resizable': ^3.0.1
       '@types/react-window': ^1.8.5
+      cm6-theme-basic-dark: 0.2.0
+      cm6-theme-basic-light: 0.2.0
+      cm6-theme-gruvbox-dark: 0.2.0
+      cm6-theme-gruvbox-light: 0.2.0
+      cm6-theme-material-dark: 0.2.0
+      cm6-theme-nord: 0.2.0
+      cm6-theme-solarized-dark: 0.2.0
+      cm6-theme-solarized-light: 0.2.0
       code-example: ^3.3.6
       codemirror: 6.0.1
       codemirror-lang-elixir: ^3.0.0
@@ -437,6 +445,14 @@ importers:
       '@emotion/react': 11.9.3_@babel+core@7.18.6
       '@emotion/styled': 11.9.3_dc5dh2wp562rsjxvguwi2i3yzq
       '@mui/system': 5.8.7_d6menda4vqwq6peqnkbe7mkj4i
+      cm6-theme-basic-dark: 0.2.0_vizwl77xswrokzqaojzmx3k2yy
+      cm6-theme-basic-light: 0.2.0_vizwl77xswrokzqaojzmx3k2yy
+      cm6-theme-gruvbox-dark: 0.2.0_vizwl77xswrokzqaojzmx3k2yy
+      cm6-theme-gruvbox-light: 0.2.0_vizwl77xswrokzqaojzmx3k2yy
+      cm6-theme-material-dark: 0.2.0_vizwl77xswrokzqaojzmx3k2yy
+      cm6-theme-nord: 0.2.0_vizwl77xswrokzqaojzmx3k2yy
+      cm6-theme-solarized-dark: 0.2.0_vizwl77xswrokzqaojzmx3k2yy
+      cm6-theme-solarized-light: 0.2.0_vizwl77xswrokzqaojzmx3k2yy
       code-example: 3.3.6
       codemirror: 6.0.1
       codemirror-lang-elixir: 3.0.0_@codemirror+language@6.2.1
@@ -3210,6 +3226,15 @@ packages:
       - utf-8-validate
     dev: true
 
+  /@firebase/auth-interop-types/0.1.6_@firebase+util@1.6.3:
+    resolution: {integrity: sha512-etIi92fW3CctsmR9e3sYM3Uqnoq861M0Id9mdOPF6PWIg38BXL5k4upCNBggGUpLIS0H1grMOvy/wn1xymwe2g==}
+    peerDependencies:
+      '@firebase/app-types': 0.x
+      '@firebase/util': 1.x
+    dependencies:
+      '@firebase/util': 1.6.3
+    dev: false
+
   /@firebase/auth-interop-types/0.1.6_pbfwexsq7uf6mrzcwnikj3g37m:
     resolution: {integrity: sha512-etIi92fW3CctsmR9e3sYM3Uqnoq861M0Id9mdOPF6PWIg38BXL5k4upCNBggGUpLIS0H1grMOvy/wn1xymwe2g==}
     peerDependencies:
@@ -3218,6 +3243,7 @@ packages:
     dependencies:
       '@firebase/app-types': 0.7.0
       '@firebase/util': 1.6.3
+    dev: true
 
   /@firebase/auth-types/0.11.0_pbfwexsq7uf6mrzcwnikj3g37m:
     resolution: {integrity: sha512-q7Bt6cx+ySj9elQHTsKulwk3+qDezhzRBFC9zlQ1BjgMueUOnGMcvqmU0zuKlQ4RhLSH7MNAdBV2znVaoN3Vxw==}
@@ -3253,6 +3279,19 @@ packages:
       '@firebase/util': 1.6.3
       tslib: 2.4.0
 
+  /@firebase/database-compat/0.2.4:
+    resolution: {integrity: sha512-VtsGixO5mTjNMJn6PwxAJEAR70fj+3blCXIdQKel3q+eYGZAfdqxox1+tzZDnf9NWBJpaOgAHPk3JVDxEo9NFQ==}
+    dependencies:
+      '@firebase/component': 0.5.17
+      '@firebase/database': 0.13.4
+      '@firebase/database-types': 0.9.12
+      '@firebase/logger': 0.3.3
+      '@firebase/util': 1.6.3
+      tslib: 2.4.0
+    transitivePeerDependencies:
+      - '@firebase/app-types'
+    dev: false
+
   /@firebase/database-compat/0.2.4_@firebase+app-types@0.7.0:
     resolution: {integrity: sha512-VtsGixO5mTjNMJn6PwxAJEAR70fj+3blCXIdQKel3q+eYGZAfdqxox1+tzZDnf9NWBJpaOgAHPk3JVDxEo9NFQ==}
     dependencies:
@@ -3264,6 +3303,7 @@ packages:
       tslib: 2.4.0
     transitivePeerDependencies:
       - '@firebase/app-types'
+    dev: true
 
   /@firebase/database-types/0.9.10:
     resolution: {integrity: sha512-2ji6nXRRsY+7hgU6zRhUtK0RmSjVWM71taI7Flgaw+BnopCo/lDF5HSwxp8z7LtiHlvQqeRA3Ozqx5VhlAbiKg==}
@@ -3278,6 +3318,19 @@ packages:
       '@firebase/app-types': 0.7.0
       '@firebase/util': 1.6.3
 
+  /@firebase/database/0.13.4:
+    resolution: {integrity: sha512-NW7bOoiaC4sJCj6DY/m9xHoFNa0CK32YPMCh6FiMweLCDQbOZM8Ql/Kn6yyuxCb7K7ypz9eSbRlCWQJsJRQjhg==}
+    dependencies:
+      '@firebase/auth-interop-types': 0.1.6_@firebase+util@1.6.3
+      '@firebase/component': 0.5.17
+      '@firebase/logger': 0.3.3
+      '@firebase/util': 1.6.3
+      faye-websocket: 0.11.4
+      tslib: 2.4.0
+    transitivePeerDependencies:
+      - '@firebase/app-types'
+    dev: false
+
   /@firebase/database/0.13.4_@firebase+app-types@0.7.0:
     resolution: {integrity: sha512-NW7bOoiaC4sJCj6DY/m9xHoFNa0CK32YPMCh6FiMweLCDQbOZM8Ql/Kn6yyuxCb7K7ypz9eSbRlCWQJsJRQjhg==}
     dependencies:
@@ -3289,6 +3342,7 @@ packages:
       tslib: 2.4.0
     transitivePeerDependencies:
       - '@firebase/app-types'
+    dev: true
 
   /@firebase/firestore-compat/0.1.23_53yvy43rwpg2c45kgeszsxtrca:
     resolution: {integrity: sha512-QfcuyMAavp//fQnjSfCEpnbWi7spIdKaXys1kOLu7395fLr+U6ykmto1HUMCSz8Yus9cEr/03Ujdi2SUl2GUAA==}
@@ -6463,6 +6517,28 @@ packages:
       react-dom: 18.2.0_react@18.2.0
     dev: true
 
+  /@tldraw/core/1.14.1:
+    resolution: {integrity: sha512-FAiX/TD/tl5eMvTk0IHhFUSmldCe/UTTOnLL5aWQHqhicF/iTP5m3H12L6kyjN60yfssN8U9g4E/7y70TY7JxA==}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+    dependencies:
+      '@tldraw/intersect': 1.7.1
+      '@tldraw/vec': 1.7.1
+      '@use-gesture/react': 10.2.16
+      mobx-react-lite: 3.4.0
+      perfect-freehand: 1.1.0
+      resize-observer-polyfill: 1.5.1
+    transitivePeerDependencies:
+      - mobx
+      - react-native
+    dev: false
+
   /@tldraw/core/1.14.1_mobx@6.6.1:
     resolution: {integrity: sha512-FAiX/TD/tl5eMvTk0IHhFUSmldCe/UTTOnLL5aWQHqhicF/iTP5m3H12L6kyjN60yfssN8U9g4E/7y70TY7JxA==}
     peerDependencies:
@@ -8514,6 +8590,118 @@ packages:
   /clsx/1.2.1:
     resolution: {integrity: sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==}
     engines: {node: '>=6'}
+    dev: false
+
+  /cm6-theme-basic-dark/0.2.0_vizwl77xswrokzqaojzmx3k2yy:
+    resolution: {integrity: sha512-+mNNJecRtxS/KkloMDCQF0oTrT6aFGRZTjnBcdT5UG1pcDO4Brq8l1+0KR/8dZ7hub2gOGOzoi3rGFD8GzlH7Q==}
+    peerDependencies:
+      '@codemirror/language': ^6.0.0
+      '@codemirror/state': ^6.0.0
+      '@codemirror/view': ^6.0.0
+      '@lezer/highlight': ^1.0.0
+    dependencies:
+      '@codemirror/language': 6.2.1
+      '@codemirror/state': 6.1.1
+      '@codemirror/view': 6.2.0
+      '@lezer/highlight': 1.0.0
+    dev: false
+
+  /cm6-theme-basic-light/0.2.0_vizwl77xswrokzqaojzmx3k2yy:
+    resolution: {integrity: sha512-1prg2gv44sYfpHscP26uLT/ePrh0mlmVwMSoSd3zYKQ92Ab3jPRLzyCnpyOCQLJbK+YdNs4HvMRqMNYdy4pMhA==}
+    peerDependencies:
+      '@codemirror/language': ^6.0.0
+      '@codemirror/state': ^6.0.0
+      '@codemirror/view': ^6.0.0
+      '@lezer/highlight': ^1.0.0
+    dependencies:
+      '@codemirror/language': 6.2.1
+      '@codemirror/state': 6.1.1
+      '@codemirror/view': 6.2.0
+      '@lezer/highlight': 1.0.0
+    dev: false
+
+  /cm6-theme-gruvbox-dark/0.2.0_vizwl77xswrokzqaojzmx3k2yy:
+    resolution: {integrity: sha512-xyqsG19qV+nb7ZHTMocSNWwZHMExfQxDm0FlbNMqEGKeQR96WryssXJH/IZZQudwrPpWU2dCoyOgMFhti2UTYA==}
+    peerDependencies:
+      '@codemirror/language': ^6.0.0
+      '@codemirror/state': ^6.0.0
+      '@codemirror/view': ^6.0.0
+      '@lezer/highlight': ^1.0.0
+    dependencies:
+      '@codemirror/language': 6.2.1
+      '@codemirror/state': 6.1.1
+      '@codemirror/view': 6.2.0
+      '@lezer/highlight': 1.0.0
+    dev: false
+
+  /cm6-theme-gruvbox-light/0.2.0_vizwl77xswrokzqaojzmx3k2yy:
+    resolution: {integrity: sha512-sc4dEMLU5y4F3QGLjwMQs1H3Q0a0ooXA1EvyWnknxLEGQVXwJrxkkV67gs1TqWASl2i63iomt4zyz5pkbfO1yg==}
+    peerDependencies:
+      '@codemirror/language': ^6.0.0
+      '@codemirror/state': ^6.0.0
+      '@codemirror/view': ^6.0.0
+      '@lezer/highlight': ^1.0.0
+    dependencies:
+      '@codemirror/language': 6.2.1
+      '@codemirror/state': 6.1.1
+      '@codemirror/view': 6.2.0
+      '@lezer/highlight': 1.0.0
+    dev: false
+
+  /cm6-theme-material-dark/0.2.0_vizwl77xswrokzqaojzmx3k2yy:
+    resolution: {integrity: sha512-H09JZihzg4w0mTtOqo5bQdxItkQWw+ergKlk7BSfwYjaR2nOi+wIN0R+ByAo7bON8GbFODvjTxH3EIqdhovFeA==}
+    peerDependencies:
+      '@codemirror/language': ^6.0.0
+      '@codemirror/state': ^6.0.0
+      '@codemirror/view': ^6.0.0
+      '@lezer/highlight': ^1.0.0
+    dependencies:
+      '@codemirror/language': 6.2.1
+      '@codemirror/state': 6.1.1
+      '@codemirror/view': 6.2.0
+      '@lezer/highlight': 1.0.0
+    dev: false
+
+  /cm6-theme-nord/0.2.0_vizwl77xswrokzqaojzmx3k2yy:
+    resolution: {integrity: sha512-jTh+5nvl+N/5CtTK7UVcrxDCj2AOStvbNM8uP6tx6amq4QaaLDlapjMw+MNzEkvxcPnHY+YM91tbklS2KNlR2w==}
+    peerDependencies:
+      '@codemirror/language': ^6.0.0
+      '@codemirror/state': ^6.0.0
+      '@codemirror/view': ^6.0.0
+      '@lezer/highlight': ^1.0.0
+    dependencies:
+      '@codemirror/language': 6.2.1
+      '@codemirror/state': 6.1.1
+      '@codemirror/view': 6.2.0
+      '@lezer/highlight': 1.0.0
+    dev: false
+
+  /cm6-theme-solarized-dark/0.2.0_vizwl77xswrokzqaojzmx3k2yy:
+    resolution: {integrity: sha512-FWtYHcX8NLzNSs21yGbkLF+q/5m2u80ug0JytKoI9nMZWPP5dcnsFYp1iZBEegLehiZnpv1qcmTsLTUG2KD39w==}
+    peerDependencies:
+      '@codemirror/language': ^6.0.0
+      '@codemirror/state': ^6.0.0
+      '@codemirror/view': ^6.0.0
+      '@lezer/highlight': ^1.0.0
+    dependencies:
+      '@codemirror/language': 6.2.1
+      '@codemirror/state': 6.1.1
+      '@codemirror/view': 6.2.0
+      '@lezer/highlight': 1.0.0
+    dev: false
+
+  /cm6-theme-solarized-light/0.2.0_vizwl77xswrokzqaojzmx3k2yy:
+    resolution: {integrity: sha512-Iw7Xv+9A6NlT7sRGlM2pOwD3ZBETkAqpb7c6O0LPj5kjwcK6C3k+mvjzaQt1gzfBErMmhL1HHuK07zICeXkE+w==}
+    peerDependencies:
+      '@codemirror/language': ^6.0.0
+      '@codemirror/state': ^6.0.0
+      '@codemirror/view': ^6.0.0
+      '@lezer/highlight': ^1.0.0
+    dependencies:
+      '@codemirror/language': 6.2.1
+      '@codemirror/state': 6.1.1
+      '@codemirror/view': 6.2.0
+      '@lezer/highlight': 1.0.0
     dev: false
 
   /co/4.6.0:
@@ -10684,12 +10872,12 @@ packages:
       semver-regex: 2.0.0
     dev: true
 
-  /firebase-admin/11.0.1_@firebase+app-types@0.7.0:
+  /firebase-admin/11.0.1:
     resolution: {integrity: sha512-rL3wlZbi2Kb/KJgcmj1YHlD4ZhfmhfgRO2YJialxAllm0tj1IQea878hHuBLGmv4DpbW9t9nLvX9kddNR2Y65Q==}
     engines: {node: '>=14'}
     dependencies:
       '@fastify/busboy': 1.1.0
-      '@firebase/database-compat': 0.2.4_@firebase+app-types@0.7.0
+      '@firebase/database-compat': 0.2.4
       '@firebase/database-types': 0.9.10
       '@types/node': 18.0.1
       jsonwebtoken: 8.5.1
@@ -14193,6 +14381,22 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
     dev: true
+
+  /mobx-react-lite/3.4.0:
+    resolution: {integrity: sha512-bRuZp3C0itgLKHu/VNxi66DN/XVkQG7xtoBVWxpvC5FhAqbOCP21+nPhULjnzEqd7xBMybp6KwytdUpZKEgpIQ==}
+    peerDependencies:
+      mobx: ^6.1.0
+      react: ^16.8.0 || ^17 || ^18
+      react-dom: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+    dev: false
 
   /mobx-react-lite/3.4.0_mobx@6.6.1:
     resolution: {integrity: sha512-bRuZp3C0itgLKHu/VNxi66DN/XVkQG7xtoBVWxpvC5FhAqbOCP21+nPhULjnzEqd7xBMybp6KwytdUpZKEgpIQ==}
