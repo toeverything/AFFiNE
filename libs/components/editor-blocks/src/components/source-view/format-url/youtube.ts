@@ -1,6 +1,7 @@
 export const isYoutubeUrl = (url?: string): boolean => {
-    const allowedHosts = ['youtu.be', 'youtube.com'];
-    return allowedHosts.includes(url);
+    const allowedHosts = ['www.youtu.be', 'www.youtube.com'];
+    const host = new URL(url).host;
+    return allowedHosts.includes(host);
 };
 
 const _regexp = /.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=)([^#&?]*).*/;
