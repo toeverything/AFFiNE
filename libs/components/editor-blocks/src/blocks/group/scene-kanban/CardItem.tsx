@@ -1,5 +1,9 @@
-import type { KanbanCard } from '@toeverything/components/editor-core';
-import { RenderBlock, useKanban } from '@toeverything/components/editor-core';
+import {
+    KanbanCard,
+    RenderBlock,
+    useEditor,
+    useKanban,
+} from '@toeverything/components/editor-core';
 import { PenIcon } from '@toeverything/components/icons';
 import {
     IconButton,
@@ -89,6 +93,7 @@ export const CardItem = ({
     const { openSubPage } = useRefPage();
     const [editable, setEditable] = useState(false);
     const showKanbanRefPageFlag = useFlag('ShowKanbanRefPage', false);
+    const { editor } = useEditor();
 
     const onAddItem = async () => {
         setEditable(true);
@@ -108,9 +113,13 @@ export const CardItem = ({
                 {!editable && (
                     <Overlay onClick={onClickCard}>
                         <IconButton
+                            backgroundColor="#fff"
                             onClick={e => {
                                 e.stopPropagation();
                                 setEditable(true);
+                                editor.selectionManager.activeNodeByNodeId(
+                                    block.id
+                                );
                             }}
                         >
                             <PenIcon />
