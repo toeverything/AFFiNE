@@ -29,8 +29,8 @@ type SizeType = keyof typeof SIZE_CONFIG;
 
 type IconButtonContainerProps = {
     size?: SizeType;
-    hoverColor?: CSSProperties['backgroundColor'];
-    backgroundColor?: CSSProperties['backgroundColor'];
+    hoverColor?: string; // CSSProperties['backgroundColor'];
+    backgroundColor?: string; // CSSProperties['backgroundColor'];
     disabled?: boolean;
 };
 
