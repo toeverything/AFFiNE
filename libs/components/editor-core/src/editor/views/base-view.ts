@@ -9,10 +9,10 @@ import {
     BlockDecoration,
     MapOperation,
 } from '@toeverything/datasource/jwt';
+import { cloneDeep } from '@toeverything/utils';
 import type { EventData } from '../block';
 import { AsyncBlock } from '../block';
 import type { Editor } from '../editor';
-import { cloneDeep } from '@toeverything/utils';
 import { SelectBlock } from '../selection';
 
 export interface CreateView {
@@ -114,7 +114,21 @@ export abstract class BaseView {
     // Whether the component is empty
     isEmpty(block: AsyncBlock): boolean {
         const text = block.getProperty('text');
-        return !text?.value?.[0]?.text;
+        const result = !text?.value?.[0]?.text;
+
+        // Assert that the text is really empty
+        if (
+            result &&
+            block.getProperty('text')?.value.some(content => content.text)
+        ) {
+            console.warn(
+                'Assertion isEmpty error! The block has an empty start fragment, but it is not empty',
+                block
+            );
+        }
+        // Assert end
+
+        return result;
     }
 
     getSelProperties(block: AsyncBlock, selectInfo: any): DefaultColumnsValue {
