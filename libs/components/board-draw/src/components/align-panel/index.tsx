@@ -7,7 +7,7 @@ interface AlignObject {
      * color: none means no color
      */
     title: string;
-    icon?: string;
+    icon?: JSX.Element;
 }
 /**
  * ColorValue : none means no color
@@ -35,7 +35,7 @@ export const AlignPanel = ({
                                 onSelect?.(option);
                             }}
                         >
-                            {alignOption.name}
+                            {alignOption.icon}
                         </SelectableContainer>
                     </Tooltip>
                 );
