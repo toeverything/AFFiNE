@@ -1,18 +1,6 @@
 import { HooksRunner } from '../types';
-import {
-    OFFICE_CLIPBOARD_MIMETYPE,
-    InnerClipInfo,
-    ClipBlockInfo,
-} from './types';
 import { Editor } from '../editor';
-import { AsyncBlock } from '../block';
 import ClipboardParse from './clipboard-parse';
-import { SelectInfo } from '../selection';
-import {
-    Protocol,
-    BlockFlavorKeys,
-    services,
-} from '@toeverything/datasource/db-service';
 import { MarkdownParser } from './markdown-parse';
 import { shouldHandlerContinue } from './utils';
 import { Paste } from './paste';
