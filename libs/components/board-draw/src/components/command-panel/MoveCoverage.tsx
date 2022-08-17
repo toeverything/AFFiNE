@@ -1,44 +1,40 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import {
-    HeadingOneIcon,
-    HeadingThreeIcon,
-    HeadingTwoIcon,
-    LockIcon,
-    TextFontIcon,
+    BringForwardIcon,
+    BringToFrontIcon,
+    LayersIcon,
+    SendBackwardIcon,
+    SendToBackIcon,
 } from '@toeverything/components/icons';
-import {
-    IconButton,
-    Popover,
-    styled,
-    Tooltip,
-} from '@toeverything/components/ui';
+import { IconButton, Popover, Tooltip } from '@toeverything/components/ui';
+import { AlignPanel } from '../align-panel';
 
 interface FontSizeConfigProps {
     app: TldrawApp;
     shapes: TDShape[];
 }
 
-const _fontSizes = [
+const AlignPanelArr = [
     {
-        name: 'To Front',
-        value: 'tofront',
-        icon: <HeadingOneIcon />,
+        title: 'To Front',
+        name: 'tofront',
+        icon: <BringToFrontIcon />,
     },
     {
-        name: 'Forward',
-        value: 'forward',
-        icon: <HeadingTwoIcon />,
+        title: 'Forward',
+        name: 'forward',
+        icon: <BringForwardIcon />,
     },
     {
-        name: 'Backward',
-        value: 'backward',
-        icon: <HeadingThreeIcon />,
+        title: 'Backward',
+        name: 'backward',
+        icon: <SendBackwardIcon />,
     },
     {
-        name: 'To Back',
-        value: 'toback',
-        icon: <TextFontIcon />,
+        title: 'To Back',
+        name: 'toback',
+        icon: <SendToBackIcon />,
     },
 ];
 
@@ -65,45 +61,17 @@ export const MoveCoverageConfig = ({ app, shapes }: FontSizeConfigProps) => {
             trigger="hover"
             placement="bottom-start"
             content={
-                <div>
-                    {_fontSizes.map(fontSize => {
-                        return (
-                            <ListItemContainer
-                                key={fontSize.value}
-                                onClick={() => moveCoverage(fontSize.value)}
-                            >
-                                {/* {fontSize.icon} */}
-                                <ListItemTitle>{fontSize.name}</ListItemTitle>
-                            </ListItemContainer>
-                        );
-                    })}
-                </div>
+                <AlignPanel
+                    alignOptions={AlignPanelArr}
+                    onSelect={moveCoverage}
+                ></AlignPanel>
             }
         >
-            <Tooltip content="Font Size" placement="top-start">
+            <Tooltip content="Layers" placement="top-start">
                 <IconButton>
-                    <LockIcon />
+                    <LayersIcon />
                 </IconButton>
             </Tooltip>
         </Popover>
     );
 };
-
-const ListItemContainer = styled('div')(({ theme }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer',
-    height: '32px',
-    padding: '4px 12px',
-    color: theme.affine.palette.icons,
-
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    '&:hover': {
-        backgroundColor: theme.affine.palette.hover,
-    },
-}));
-
-const ListItemTitle = styled('span')(({ theme }) => ({
-    marginLeft: '12px',
-    color: theme.affine.palette.primaryText,
-}));
