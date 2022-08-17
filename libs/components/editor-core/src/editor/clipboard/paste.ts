@@ -377,15 +377,16 @@ export class Paste {
             const pasteBlocks = await this._createBlocks(blocks);
 
             let groupBlock: AsyncBlock;
-            if (
-                selectedBlock?.type === 'group' ||
-                selectedBlock?.type === 'page'
-            ) {
+            if (selectedBlock?.type === 'page') {
                 groupBlock = await this._editor.createBlock('group');
                 await Promise.all(
                     pasteBlocks.map(block => groupBlock.append(block))
                 );
                 await selectedBlock.after(groupBlock);
+            } else if (selectedBlock?.type === 'group') {
+                await Promise.all(
+                    pasteBlocks.map(block => selectedBlock.append(block))
+                );
             } else {
                 await Promise.all(
                     pasteBlocks.map(block => selectedBlock.after(block))
@@ -413,7 +414,11 @@ export class Paste {
                     clipBlockInfo.type
                 );
                 block?.setProperties(clipBlockInfo.properties);
-                await this._createBlocks(clipBlockInfo.children, block?.id);
+                const children = await this._createBlocks(
+                    clipBlockInfo.children,
+                    block?.id
+                );
+                await Promise.all(children.map(child => block?.append(child)));
                 return block;
             })
         );
