@@ -15,13 +15,13 @@ import {
     TLPointerEventHandler,
     TLShapeCloneHandler,
     TLWheelEventHandler,
-    Utils,
+    Utils
 } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
 import {
     clearPrevSize,
     defaultStyle,
-    shapeUtils,
+    shapeUtils
 } from '@toeverything/components/board-shapes';
 import {
     AlignType,
@@ -54,7 +54,7 @@ import {
     TDUser,
     TldrawCommand,
     USER_COLORS,
-    VIDEO_EXTENSIONS,
+    VIDEO_EXTENSIONS
 } from '@toeverything/components/board-types';
 import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 import {
@@ -67,7 +67,7 @@ import {
     migrate,
     openAssetFromFileSystem,
     openFromFileSystem,
-    saveToFileSystem,
+    saveToFileSystem
 } from './data';
 import { getClipboard, setClipboard } from './idb-clipboard';
 import { StateManager } from './manager/state-manager';
@@ -3779,7 +3779,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                         const svgString = await fileToText(file);
                         const viewBoxAttribute =
                             this.get_viewbox_from_svg(svgString);
-
+                        
                         if (viewBoxAttribute) {
                             viewBox = viewBoxAttribute.split(' ');
                             size[0] = parseFloat(viewBox[2]);
@@ -3840,12 +3840,10 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     private get_viewbox_from_svg = (svgStr: string | ArrayBuffer | null) => {
-        const viewBoxRegex =
-            /.*?viewBox=["'](-?[\d.]+[, ]+-?[\d.]+[, ][\d.]+[, ][\d.]+)["']/;
-
+      
         if (typeof svgStr === 'string') {
-            const matches = svgStr.match(viewBoxRegex);
-            return matches && matches.length >= 2 ? matches[1] : null;
+            let viewBox = (new DOMParser()).parseFromString(svgStr, "text/xml")
+            return viewBox.children[0].getAttribute('viewBox')
         }
 
         console.warn('could not get viewbox from svg string');
