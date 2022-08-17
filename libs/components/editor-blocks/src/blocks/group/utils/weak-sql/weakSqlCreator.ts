@@ -49,7 +49,7 @@ const weakSqlCreator = (weak_sql_express = ''): Promise<Constraint[]> => {
                 constraints.push({
                     field: field.trim(),
                     relation: relation.trim() as Relation,
-                    value: pickValue(value.replace(/&&|&|;/, '').trim()),
+                    value: pickValue(value.replace(/&&|&|;/g, '').trim()),
                 });
 
                 /* meaningless return value */

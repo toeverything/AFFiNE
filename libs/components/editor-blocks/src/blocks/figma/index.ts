@@ -1,9 +1,9 @@
+import { Protocol } from '@toeverything/datasource/db-service';
 import {
     AsyncBlock,
     BaseView,
     SelectBlock,
 } from '@toeverything/framework/virgo';
-import { Protocol, services } from '@toeverything/datasource/db-service';
 import { FigmaView } from './FigmaView';
 
 export class FigmaBlock extends BaseView {
@@ -19,7 +19,10 @@ export class FigmaBlock extends BaseView {
         const tag_name = el.tagName;
         if (tag_name === 'A' && el.parentElement?.childElementCount === 1) {
             const href = el.getAttribute('href');
-            if (href.indexOf('.figma.com') !== -1) {
+            const allowedHosts = ['www.figma.com'];
+            const host = new URL(href).host;
+
+            if (allowedHosts.includes(host)) {
                 return [
                     {
                         type: this.type,
