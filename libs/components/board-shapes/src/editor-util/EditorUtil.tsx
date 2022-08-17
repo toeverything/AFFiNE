@@ -8,8 +8,10 @@ import {
     TDShapeType,
     TransformInfo,
 } from '@toeverything/components/board-types';
-import type { BlockEditor } from '@toeverything/components/editor-core';
-import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
+import {
+    BlockEditor,
+    MIN_PAGE_WIDTH,
+} from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import type { SyntheticEvent } from 'react';
 import { memo, useCallback, useEffect, useRef } from 'react';
@@ -136,18 +138,6 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                     app.setEditingText(shape.id);
                 }
             }, [app, state, shape.id, editingText, editingId]);
-
-            useEffect(() => {
-                (async () => {
-                    if (isEditing) {
-                        const lastBlock =
-                            await editorRef.current.getLastBlock();
-                        editorRef.current.selectionManager.activeNodeByNodeId(
-                            lastBlock.id
-                        );
-                    }
-                })();
-            }, [isEditing]);
 
             return (
                 <HTMLContainer ref={ref} {...events}>
