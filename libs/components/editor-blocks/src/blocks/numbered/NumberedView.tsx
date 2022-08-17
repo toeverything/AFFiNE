@@ -167,7 +167,7 @@ export const NumberedView = ({ block, editor }: CreateView) => {
             }
             return true;
         } else {
-            tabBlock(block, isShiftKey);
+            tabBlock(editor, block, isShiftKey);
             return false;
         }
     };

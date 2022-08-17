@@ -4,7 +4,7 @@ describe('ligo-virgo', () => {
     beforeEach(() => cy.visit('/'));
 
     it('basic load check', () => {
-        getTitle().contains('👋 Get Started with AFFINE');
+        getTitle().contains('👋 Get Started with AFFiNE');
 
         cy.get('.block_container').contains('The Essentials');
 

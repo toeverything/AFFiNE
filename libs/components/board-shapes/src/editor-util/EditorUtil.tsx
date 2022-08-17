@@ -148,7 +148,7 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                             workspace={workspace}
                             rootBlockId={rootBlockId}
                             scrollBlank={false}
-                            isWhiteboard
+                            isEdgeless
                         />
                         {editingText ? null : <Mask />}
                     </Container>

@@ -31,7 +31,7 @@ export const BlockPendantProvider = ({
                 <StyledPendantContainer ref={triggerRef}>
                     <PendantPopover
                         block={block}
-                        container={triggerRef.current}
+                        // container={triggerRef.current}
                     >
                         <StyledTriggerLine />
                     </PendantPopover>

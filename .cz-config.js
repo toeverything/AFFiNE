@@ -26,7 +26,7 @@ module.exports = {
     ],
     scopes: [
         { name: 'selection' },
-        { name: 'whiteboard' },
+        { name: 'edgeless' },
         { name: 'point' },
         { name: 'group' },
         { name: 'page' },
