@@ -1,7 +1,8 @@
 FROM node:16-alpine as builder
 WORKDIR /app
 COPY . .
-RUN apk add g++ make python3 git libpng-dev
+# RUN apk add g++ make python3 git libpng-dev
+RUN apk add git
 RUN npm i -g pnpm@7 && pnpm i --frozen-lockfile --store=node_modules/.pnpm-store --filter "!ligo-virgo-e2e" --filter "!keck" --filter "!venus"  && pnpm run build
 
 FROM node:16-alpine as relocate
