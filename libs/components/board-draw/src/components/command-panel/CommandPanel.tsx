@@ -1,6 +1,7 @@
 import { TLDR, TldrawApp } from '@toeverything/components/board-state';
 import { Divider, Popover, styled } from '@toeverything/components/ui';
 import { Fragment } from 'react';
+import { AlignOperation } from './AlignOperation';
 import { BorderColorConfig } from './BorderColorConfig';
 import { DeleteShapes } from './DeleteOperation';
 import { FillColorConfig } from './FillColorConfig';
@@ -92,13 +93,19 @@ export const CommandPanel = ({ app }: { app: TldrawApp }) => {
                 shapes={config.deleteShapes.selectedShapes}
             />
         ),
-        delete2: (
+        moveCoverageConfig: (
             <MoveCoverageConfig
                 key="deleteShapes1"
                 app={app}
                 shapes={config.deleteShapes.selectedShapes}
             />
         ),
+        alginOperation: config.group.selectedShapes.length ? (
+            <AlignOperation
+                app={app}
+                shapes={config.deleteShapes.selectedShapes}
+            ></AlignOperation>
+        ) : null,
     };
 
     const nodes = Object.entries(configNodes).filter(([key, node]) => !!node);
