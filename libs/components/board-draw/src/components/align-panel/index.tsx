@@ -45,18 +45,16 @@ export const AlignPanel = ({
 };
 
 const Container = styled('div')({
-    width: '120px',
+    width: '170px',
     display: 'flex',
     flexWrap: 'wrap',
 });
 
 const SelectableContainer = styled('div')<{ selected?: boolean }>(
     ({ selected, theme }) => ({
-        width: '20px',
-        height: '20px',
-        // border: `1px solid ${
-        //     selected ? theme.affine.palette.primary : 'rgba(0,0,0,0)'
-        // }`,
+        width: '22px',
+        height: '22px',
+        color: theme.affine.palette.icons,
         borderRadius: '5px',
         overflow: 'hidden',
         margin: '10px',
@@ -65,10 +63,3 @@ const SelectableContainer = styled('div')<{ selected?: boolean }>(
         boxSizing: 'border-box',
     })
 );
-
-const Color = styled('div')({
-    width: '16px',
-    height: '16px',
-    borderRadius: '5px',
-    boxShadow: '0px 0px 2px rgba(0, 0, 0, 0.25)',
-});

@@ -1,5 +1,5 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
-import type { TDShape } from '@toeverything/components/board-types';
+import { StretchType, TDShape } from '@toeverything/components/board-types';
 import {
     AlignHorizontalCenterIcon,
     AlignIcon,
@@ -8,6 +8,8 @@ import {
     AlignToRightIcon,
     AlignToTopIcon,
     AlignVerticalCenterIcon,
+    DistributeHorizontalIcon,
+    DistributeVerticalIcon,
 } from '@toeverything/components/icons';
 import {
     IconButton,
@@ -61,11 +63,31 @@ let AlignPanelArr = [
         title: 'Align centerHorizontal',
         icon: <AlignHorizontalCenterIcon></AlignHorizontalCenterIcon>,
     },
+    {
+        name: 'stretchCenterHorizontal',
+        title: 'Align stretch centerHorizontal',
+        icon: <DistributeHorizontalIcon></DistributeHorizontalIcon>,
+    },
+    {
+        name: 'stretchCenterVertical',
+        title: 'Align stretch centerHorizontal',
+        icon: <DistributeVerticalIcon></DistributeVerticalIcon>,
+    },
 ];
 export const AlignOperation = ({ app, shapes }: BorderColorConfigProps) => {
     const theme = useTheme();
-    const setAlign = (alginType: AlignType) => {
-        app.align(alginType);
+    const setAlign = (alginType: string) => {
+        switch (alginType) {
+            case 'stretchCenterHorizontal':
+                app.stretch(StretchType.Horizontal);
+                break;
+            case 'stretchCenterVertical':
+                app.stretch(StretchType.Vertical);
+                break;
+            default:
+                app.align(alginType as AlignType);
+                break;
+        }
     };
 
     return (
@@ -79,7 +101,7 @@ export const AlignOperation = ({ app, shapes }: BorderColorConfigProps) => {
                 ></AlignPanel>
             }
         >
-            <Tooltip content="Fill Color" placement="top-start">
+            <Tooltip content="Align" placement="top-start">
                 <IconButton>
                     <AlignIcon />
                 </IconButton>
