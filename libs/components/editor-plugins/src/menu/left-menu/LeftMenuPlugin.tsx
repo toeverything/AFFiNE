@@ -1,15 +1,15 @@
-import { HookType, BlockDropPlacement } from '@toeverything/framework/virgo';
-import { StrictMode } from 'react';
-import { BasePlugin } from '../../base-plugin';
-import { ignoreBlockTypes } from './menu-config';
-import {
-    LineInfoSubject,
-    LeftMenuDraggable,
-    BlockDomInfo,
-} from './LeftMenuDraggable';
-import { PluginRenderRoot } from '../../utils';
-import { Subject, throttleTime } from 'rxjs';
+import { BlockDropPlacement, HookType } from '@toeverything/framework/virgo';
 import { domToRect, last, Point } from '@toeverything/utils';
+import { StrictMode } from 'react';
+import { Subject, throttleTime } from 'rxjs';
+import { BasePlugin } from '../../base-plugin';
+import { PluginRenderRoot } from '../../utils';
+import {
+    BlockDomInfo,
+    LeftMenuDraggable,
+    LineInfoSubject,
+} from './LeftMenuDraggable';
+import { ignoreBlockTypes } from './menu-config';
 const DRAG_THROTTLE_DELAY = 60;
 export class LeftMenuPlugin extends BasePlugin {
     private _mousedown?: boolean;
@@ -111,6 +111,10 @@ export class LeftMenuPlugin extends BasePlugin {
                 block.dom,
                 block.id
             );
+        if (!targetBlock.dom) {
+            console.warn('Can not find dom bind with block', targetBlock);
+            return;
+        }
         this._lineInfo.next({
             direction,
             blockInfo: {

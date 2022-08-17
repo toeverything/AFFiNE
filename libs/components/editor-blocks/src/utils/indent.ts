@@ -1,6 +1,6 @@
 import {
-    type BlockEditor,
     supportChildren,
+    type BlockEditor,
 } from '@toeverything/components/editor-core';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { AsyncBlock } from '@toeverything/framework/virgo';
@@ -81,7 +81,7 @@ const indentBlock = async (block: TodoAsyncBlock) => {
  *  └─ [ ]
  * ```
  */
-const dedentBlock = async (editor: BlockEditor, block: AsyncBlock) => {
+export const dedentBlock = async (editor: BlockEditor, block: AsyncBlock) => {
     if (editor.getRootBlockId() === block.id) {
         return false;
     }

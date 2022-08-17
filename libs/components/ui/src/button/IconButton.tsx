@@ -3,9 +3,7 @@ import type {
     MouseEventHandler,
     PropsWithChildren,
 } from 'react';
-import { cx } from '../clsx';
 import { styled } from '../styled';
-import { buttonStatus } from './constants';
 
 /* Temporary solution, needs to be adjusted */
 const SIZE_SMALL = 'small' as const;
@@ -29,13 +27,18 @@ const SIZE_CONFIG = {
 
 type SizeType = keyof typeof SIZE_CONFIG;
 
-interface IconButtonProps {
+type IconButtonContainerProps = {
+    size?: SizeType;
+    hoverColor?: string; // CSSProperties['backgroundColor'];
+    backgroundColor?: string; // CSSProperties['backgroundColor'];
+    disabled?: boolean;
+};
+
+interface IconButtonProps extends IconButtonContainerProps {
     onClick?: MouseEventHandler;
     disabled?: boolean;
     style?: CSSProperties;
     className?: string;
-    size?: SizeType;
-    hoverColor?: string;
 }
 
 export const IconButton = ({
@@ -50,55 +53,40 @@ export const IconButton = ({
             {...props}
             onClick={disabled ? undefined : onClick}
             disabled={disabled}
-            className={cx({ [buttonStatus.disabled]: disabled }, className)}
         >
             {children}
         </Container>
     );
 };
 
-const Container = styled('button')<{
-    size?: SizeType;
-    hoverColor?: string;
-}>(({ theme, size = SIZE_MIDDLE, hoverColor }) => {
-    const { iconSize, areaSize } = SIZE_CONFIG[size];
+const Container = styled('button')<IconButtonContainerProps>(
+    ({ theme, size = SIZE_MIDDLE, hoverColor, backgroundColor, disabled }) => {
+        const { iconSize, areaSize } = SIZE_CONFIG[size];
 
-    return {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: areaSize,
-        height: areaSize,
-        backgroundColor: 'transparent',
-        color: theme.affine.palette.icons,
-        padding: theme.affine.spacing.iconPadding,
-        borderRadius: '3px',
-
-        '& svg': {
-            width: iconSize,
-            height: iconSize,
+        return {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-        },
+            width: areaSize,
+            height: areaSize,
+            backgroundColor: backgroundColor ?? 'transparent',
+            color: theme.affine.palette.icons,
+            padding: theme.affine.spacing.iconPadding,
+            borderRadius: '3px',
 
-        '&:hover': {
-            backgroundColor: hoverColor || theme.affine.palette.hover,
-        },
+            '& svg': {
+                width: iconSize,
+                height: iconSize,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+            },
 
-        [`&${buttonStatus.hover}`]: {
-            backgroundColor: theme.affine.palette.hover,
-        },
+            '&:hover': {
+                backgroundColor: hoverColor || theme.affine.palette.hover,
+            },
 
-        '&:focus': {
-            color: theme.affine.palette.primary,
-        },
-        [`&.${buttonStatus.focus}`]: {
-            color: theme.affine.palette.primary,
-        },
-
-        [`&${buttonStatus.disabled}`]: {
-            cursor: 'not-allowed',
-        },
-    };
-});
+            ...(disabled ? { cursor: 'not-allowed' } : {}),
+        };
+    }
+);

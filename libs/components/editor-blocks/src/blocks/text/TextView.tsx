@@ -14,7 +14,7 @@ import { CreateView } from '@toeverything/framework/virgo';
 import { BlockContainer } from '../../components/BlockContainer';
 import { IndentWrapper } from '../../components/IndentWrapper';
 import { TextManage } from '../../components/text-manage';
-import { tabBlock } from '../../utils/indent';
+import { dedentBlock, tabBlock } from '../../utils/indent';
 interface CreateTextView extends CreateView {
     // TODO: need to optimize
     containerClassName?: string;
@@ -115,7 +115,19 @@ export const TextView = ({
                 return false;
             }
 
-            const preParent = await parentBlock.previousSibling();
+            // The parent block is group block or is the root block.
+            // Merge block to previous sibling.
+            //
+            // - group/root   <- parent block
+            //   - text1      <- preNode
+            //   - text2      <- press backspace before target block
+            //     - children
+            //
+            // ---
+            //
+            // - group/root
+            //   - text1text2  <- merge block to previous sibling
+            //     - children  <- children should switch parent block
             if (
                 Protocol.Block.Type.group === parentBlock.type ||
                 editor.getRootBlockId() === parentBlock.id
@@ -130,10 +142,7 @@ export const TextView = ({
                             block.id,
                             'end'
                         );
-                        if (
-                            block.getProperty('text').value[0] &&
-                            block.getProperty('text').value[0]?.text !== ''
-                        ) {
+                        if (!block.blockProvider?.isEmpty()) {
                             const value = [
                                 ...preNode.getProperty('text').value,
                                 ...block.getProperty('text').value,
@@ -145,12 +154,13 @@ export const TextView = ({
                         await preNode.append(...children);
                         await block.remove();
                     } else {
+                        // If not pre node, block should be merged to the parent block
                         // TODO: point does not clear
                         await editor.selectionManager.activePreviousNode(
                             block.id,
                             'start'
                         );
-                        if (block.blockProvider.isEmpty()) {
+                        if (block.blockProvider?.isEmpty()) {
                             await block.remove();
                             const parentChild = await parentBlock.children();
                             if (
@@ -158,6 +168,8 @@ export const TextView = ({
                                     Protocol.Block.Type.group &&
                                 !parentChild.length
                             ) {
+                                const preParent =
+                                    await parentBlock.previousSibling();
                                 await editor.selectionManager.setSelectedNodesIds(
                                     [preParent?.id ?? editor.getRootBlockId()]
                                 );
@@ -198,17 +210,9 @@ export const TextView = ({
                     await parentBlock.remove();
                 }
                 return true;
-            } else {
-                const nextNodes = await block.nextSiblings();
-                for (const nextNode of nextNodes) {
-                    await nextNode.remove();
-                }
-                block.append(...nextNodes);
-                editor.commands.blockCommands.moveBlockAfter(
-                    block.id,
-                    parentBlock.id
-                );
             }
+
+            dedentBlock(editor, block);
             return true;
         }
     );
