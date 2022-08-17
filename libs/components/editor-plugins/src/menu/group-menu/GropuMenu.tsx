@@ -4,7 +4,7 @@ import {
     PluginHooks,
     Virgo,
 } from '@toeverything/components/editor-core';
-import { Point, sleep } from '@toeverything/utils';
+import { Point } from '@toeverything/utils';
 import { GroupDirection } from '@toeverything/framework/virgo';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { DragItem } from './DragItem';
@@ -154,9 +154,10 @@ export const GroupMenu = function ({ editor, hooks }: GroupMenuProps) {
         setShowMenu(false);
 
         if (groupBlock) {
-            const unobserve = groupBlock.onUpdate(async () => {
-                await sleep();
-                setGroupBlock(null);
+            const unobserve = groupBlock.onUpdate(() => {
+                requestAnimationFrame(() => {
+                    setGroupBlock(null);
+                });
             });
             return unobserve;
         }
