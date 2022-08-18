@@ -1,6 +1,5 @@
 /* eslint-disable max-lines */
 import HotKeys from 'hotkeys-js';
-import LRUCache from 'lru-cache';
 
 import type { PatchNode } from '@toeverything/components/ui';
 import type {
@@ -46,10 +45,7 @@ export interface EditorCtorProps {
 }
 
 export class Editor implements Virgo {
-    private _cacheManager = new LRUCache<string, Promise<AsyncBlock | null>>({
-        max: 8192,
-        ttl: 1000 * 60 * 30,
-    });
+    private _cacheManager = new Map<string, Promise<AsyncBlock | null>>();
     public mouseManager = new MouseManager(this);
     public selectionManager = new SelectionManager(this);
     public keyboardManager = new KeyboardManager(this);
