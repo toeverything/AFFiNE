@@ -1,15 +1,15 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
 import { DistributeType, TDShape } from '@toeverything/components/board-types';
 import {
-    AlignHorizontalCenterIcon,
     AlignIcon,
-    AlignToBottomIcon,
-    AlignToLeftIcon,
-    AlignToRightIcon,
-    AlignToTopIcon,
-    AlignVerticalCenterIcon,
-    DistributeHorizontalIcon,
-    DistributeVerticalIcon,
+    ShapesAlignBottomIcon,
+    ShapesAlignHorizontalCenterIcon,
+    ShapesAlignLeftIcon,
+    ShapesAlignRightIcon,
+    ShapesAlignTopIcon,
+    ShapesAlignVerticalCenterIcon,
+    ShapesDistributeHorizontalIcon,
+    ShapesDistributeVerticalIcon,
 } from '@toeverything/components/icons';
 import { IconButton, Popover, Tooltip } from '@toeverything/components/ui';
 import { AlignPanel } from '../align-panel';
@@ -31,43 +31,45 @@ let AlignPanelArr = [
     {
         name: 'left',
         title: 'Align left',
-        icon: <AlignToLeftIcon></AlignToLeftIcon>,
+        icon: <ShapesAlignLeftIcon></ShapesAlignLeftIcon>,
     },
     {
         name: 'centerVertical',
         title: 'Align Center Vertical',
-        icon: <AlignVerticalCenterIcon></AlignVerticalCenterIcon>,
+        icon: <ShapesAlignVerticalCenterIcon></ShapesAlignVerticalCenterIcon>,
     },
     {
         name: 'right',
         title: 'Align right',
-        icon: <AlignToRightIcon></AlignToRightIcon>,
+        icon: <ShapesAlignRightIcon></ShapesAlignRightIcon>,
     },
     {
         name: 'top',
         title: 'Align top',
-        icon: <AlignToTopIcon></AlignToTopIcon>,
+        icon: <ShapesAlignTopIcon></ShapesAlignTopIcon>,
     },
     {
         name: 'bottom',
         title: 'Align bottom',
-        icon: <AlignToBottomIcon></AlignToBottomIcon>,
+        icon: <ShapesAlignBottomIcon></ShapesAlignBottomIcon>,
     },
 
     {
         name: 'centerHorizontal',
         title: 'Align centerHorizontal',
-        icon: <AlignHorizontalCenterIcon></AlignHorizontalCenterIcon>,
+        icon: (
+            <ShapesAlignHorizontalCenterIcon></ShapesAlignHorizontalCenterIcon>
+        ),
     },
     {
         name: 'distributeCenterHorizontal',
         title: 'Align distribute center horizontal',
-        icon: <DistributeHorizontalIcon></DistributeHorizontalIcon>,
+        icon: <ShapesDistributeHorizontalIcon></ShapesDistributeHorizontalIcon>,
     },
     {
         name: 'distributeCenterVertical',
         title: 'Align distribute center horizontal',
-        icon: <DistributeVerticalIcon></DistributeVerticalIcon>,
+        icon: <ShapesDistributeVerticalIcon></ShapesDistributeVerticalIcon>,
     },
 ];
 export const AlignOperation = ({ app, shapes }: BorderColorConfigProps) => {

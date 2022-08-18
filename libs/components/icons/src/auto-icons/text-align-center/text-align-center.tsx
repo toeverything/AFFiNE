@@ -2,17 +2,17 @@
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon, SvgIconProps } from '@mui/material';
 
-export interface DistributeHorizontalIconProps extends Omit<SvgIconProps, 'color'> {
+export interface TextAlignCenterIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const DistributeHorizontalIcon = ({ color, style, ...props}: DistributeHorizontalIconProps) => {
+export const TextAlignCenterIcon = ({ color, style, ...props}: TextAlignCenterIconProps) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}
     return (
         <SvgIcon style={styles} {...props}>
-        <path fillRule="evenodd" d="M20 21V3h-1v18h1ZM5 21V3H4v18h1Z" clipRule="evenodd" /><path d="M0 0H10V3H0z" transform="matrix(0 -1 -1 0 13.5 17)" />
+        <path fillRule="evenodd" d="M2 4h20v1.6H2V4ZM5 9h14v1.6H5V9ZM22 15H2v-1.6h20V15ZM19 20H5v-1.6h14V20Z" clipRule="evenodd" />
         </SvgIcon>
     )
 };
