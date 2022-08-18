@@ -3841,7 +3841,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     private get_viewbox_from_svg = (svgStr: string | ArrayBuffer | null) => {
         if (typeof svgStr === 'string') {
-            let viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
+            const viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
             return viewBox.children[0].getAttribute('viewBox');
         }
 
@@ -4539,6 +4539,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             isSnapping: false,
             isDebugMode: false,
             isReadonlyMode: false,
+            erasing: false,
             forcePanning: false,
             keepStyleMenuOpen: false,
             nudgeDistanceLarge: 16,

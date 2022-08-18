@@ -16,6 +16,14 @@ export class EraseTool extends BaseTool {
 
     /* ----------------- Event Handlers ----------------- */
 
+    override onEnter = () => {
+        this.app.patchState({
+            settings: {
+                erasing: true,
+            },
+        });
+    };
+
     override onPointerDown: TLPointerEventHandler = () => {
         if (this.status !== Status.Idle) return;
 
@@ -87,5 +95,13 @@ export class EraseTool extends BaseTool {
         }
 
         this.app.cancelSession();
+    };
+
+    override onExit = () => {
+        this.app.patchState({
+            settings: {
+                erasing: false,
+            },
+        });
     };
 }

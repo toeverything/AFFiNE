@@ -386,6 +386,7 @@ const InnerTldraw = memo(function InnerTldraw({
         <StyledLayout
             ref={rWrapper}
             panning={settings.forcePanning}
+            erasing={settings.erasing}
             tabIndex={-0}
             penColor={app?.appState?.currentStyle?.stroke}
         >
@@ -506,42 +507,44 @@ const OneOff = memo(function OneOff({
     return null;
 });
 
-const StyledLayout = styled('div')<{ penColor: string; panning: boolean }>(
-    ({ theme, panning, penColor }) => {
-        return {
-            position: 'relative',
+const StyledLayout = styled('div')<{
+    penColor: string;
+    panning: boolean;
+    erasing: boolean;
+}>(({ theme, panning, penColor, erasing }) => {
+    return {
+        position: 'relative',
+        height: '100%',
+        width: '100vw',
+        minHeight: 0,
+        minWidth: 0,
+        maxHeight: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        outline: 'none',
+        cursor: erasing ? 'crosshair' : panning ? 'grab' : 'unset',
+
+        '& .tl-container': {
+            position: 'absolute',
+            top: 0,
+            left: 0,
             height: '100%',
-            width: '100vw',
-            minHeight: 0,
-            minWidth: 0,
-            maxHeight: '100%',
-            maxWidth: '100%',
-            overflow: 'hidden',
-            boxSizing: 'border-box',
-            outline: 'none',
-            cursor: panning ? 'grab' : 'unset',
-
-            '& .tl-container': {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                height: '100%',
-                width: '100%',
-                zIndex: 1,
-                '.tl-erase-line': {
-                    fill: penColor,
-                },
+            width: '100%',
+            zIndex: 1,
+            '.tl-erase-line': {
+                fill: penColor,
             },
+        },
 
-            '& input, textarea, button, select, label, button': {
-                webkitTouchCallout: 'none',
-                webkitUserSelect: 'none',
-                WebkitTapHighlightColor: 'transparent',
-                tapHighlightColor: 'transparent',
-            },
-        };
-    }
-);
+        '& input, textarea, button, select, label, button': {
+            webkitTouchCallout: 'none',
+            webkitUserSelect: 'none',
+            WebkitTapHighlightColor: 'transparent',
+            tapHighlightColor: 'transparent',
+        },
+    };
+});
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const StyledUI = styled('div')({

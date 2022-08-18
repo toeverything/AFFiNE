@@ -85,6 +85,7 @@ export interface TDSnapshot {
         isReadonlyMode: boolean;
         isZoomSnap: boolean;
         forcePanning: boolean;
+        erasing: boolean;
         keepStyleMenuOpen: boolean;
         nudgeDistanceSmall: number;
         nudgeDistanceLarge: number;
