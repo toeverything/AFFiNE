@@ -1,5 +1,5 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
-import { StretchType, TDShape } from '@toeverything/components/board-types';
+import { DistributeType, TDShape } from '@toeverything/components/board-types';
 import {
     AlignHorizontalCenterIcon,
     AlignIcon,
@@ -11,12 +11,7 @@ import {
     DistributeHorizontalIcon,
     DistributeVerticalIcon,
 } from '@toeverything/components/icons';
-import {
-    IconButton,
-    Popover,
-    Tooltip,
-    useTheme,
-} from '@toeverything/components/ui';
+import { IconButton, Popover, Tooltip } from '@toeverything/components/ui';
 import { AlignPanel } from '../align-panel';
 interface BorderColorConfigProps {
     app: TldrawApp;
@@ -34,9 +29,9 @@ export enum AlignType {
 
 let AlignPanelArr = [
     {
-        name: 'top',
-        title: 'Align top',
-        icon: <AlignToTopIcon></AlignToTopIcon>,
+        name: 'left',
+        title: 'Align left',
+        icon: <AlignToLeftIcon></AlignToLeftIcon>,
     },
     {
         name: 'centerVertical',
@@ -44,45 +39,45 @@ let AlignPanelArr = [
         icon: <AlignVerticalCenterIcon></AlignVerticalCenterIcon>,
     },
     {
-        name: 'bottom',
-        title: 'Align bottom',
-        icon: <AlignToBottomIcon></AlignToBottomIcon>,
-    },
-    {
-        name: 'left',
-        title: 'Align left',
-        icon: <AlignToLeftIcon></AlignToLeftIcon>,
-    },
-    {
         name: 'right',
         title: 'Align right',
         icon: <AlignToRightIcon></AlignToRightIcon>,
     },
+    {
+        name: 'top',
+        title: 'Align top',
+        icon: <AlignToTopIcon></AlignToTopIcon>,
+    },
+    {
+        name: 'bottom',
+        title: 'Align bottom',
+        icon: <AlignToBottomIcon></AlignToBottomIcon>,
+    },
+
     {
         name: 'centerHorizontal',
         title: 'Align centerHorizontal',
         icon: <AlignHorizontalCenterIcon></AlignHorizontalCenterIcon>,
     },
     {
-        name: 'stretchCenterHorizontal',
-        title: 'Align stretch centerHorizontal',
+        name: 'distributeCenterHorizontal',
+        title: 'Align distribute center horizontal',
         icon: <DistributeHorizontalIcon></DistributeHorizontalIcon>,
     },
     {
-        name: 'stretchCenterVertical',
-        title: 'Align stretch centerHorizontal',
+        name: 'distributeCenterVertical',
+        title: 'Align distribute center horizontal',
         icon: <DistributeVerticalIcon></DistributeVerticalIcon>,
     },
 ];
 export const AlignOperation = ({ app, shapes }: BorderColorConfigProps) => {
-    const theme = useTheme();
     const setAlign = (alginType: string) => {
         switch (alginType) {
-            case 'stretchCenterHorizontal':
-                app.stretch(StretchType.Horizontal);
+            case 'distributeCenterHorizontal':
+                app.distribute(DistributeType.Horizontal);
                 break;
-            case 'stretchCenterVertical':
-                app.stretch(StretchType.Vertical);
+            case 'distributeCenterVertical':
+                app.distribute(DistributeType.Vertical);
                 break;
             default:
                 app.align(alginType as AlignType);
