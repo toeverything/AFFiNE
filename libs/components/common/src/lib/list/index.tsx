@@ -57,7 +57,9 @@ export const CommonList = (props: MenuItemsProps) => {
             >
                 {usedItems?.length ? (
                     usedItems.map((item, idx) => {
-                        if (item.block) {
+                        if (item.renderCustom) {
+                            return item.renderCustom(item);
+                        } else if (item.block) {
                             return (
                                 <BlockPreview
                                     className={clsx(

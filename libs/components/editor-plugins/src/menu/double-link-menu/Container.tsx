@@ -1,21 +1,17 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-
-import { Virgo, PluginHooks, HookType } from '@toeverything/framework/virgo';
 import {
     CommonList,
-    CommonListItem,
     commonListContainer,
+    CommonListItem,
 } from '@toeverything/components/common';
-import { domToRect } from '@toeverything/utils';
 import { styled } from '@toeverything/components/ui';
-
-import { QueryResult } from '../../search';
+import { HookType, PluginHooks, Virgo } from '@toeverything/framework/virgo';
+import { domToRect } from '@toeverything/utils';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export type DoubleLinkMenuContainerProps = {
     editor: Virgo;
     hooks: PluginHooks;
     style?: React.CSSProperties;
-    isShow?: boolean;
     blockId: string;
     onSelected?: (item: string) => void;
     onClose?: () => void;
@@ -25,7 +21,6 @@ export type DoubleLinkMenuContainerProps = {
 
 export const DoubleLinkMenuContainer = ({
     hooks,
-    isShow = false,
     onSelected,
     onClose,
     types,
@@ -66,12 +61,13 @@ export const DoubleLinkMenuContainer = ({
     }, [needCheckIntoView, currentItem]);
 
     useEffect(() => {
-        if (isShow && types && !currentItem) setCurrentItem(types[0]);
-        if (!isShow) onClose?.();
-    }, [currentItem, isShow, onClose, types]);
+        if (types && !currentItem) {
+            setCurrentItem(types[0]);
+        }
+    }, [currentItem, onClose, types]);
 
     useEffect(() => {
-        if (isShow && types) {
+        if (types) {
             if (!types.includes(currentItem)) {
                 setNeedCheckIntoView(true);
                 if (types.length) {
@@ -81,11 +77,11 @@ export const DoubleLinkMenuContainer = ({
                 }
             }
         }
-    }, [isShow, types, currentItem]);
+    }, [types, currentItem]);
 
     const handleClickUp = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (isShow && types && event.code === 'ArrowUp') {
+            if (types && event.code === 'ArrowUp') {
                 event.preventDefault();
                 if (!currentItem && types.length) {
                     setCurrentItem(types[types.length - 1]);
@@ -99,12 +95,12 @@ export const DoubleLinkMenuContainer = ({
                 }
             }
         },
-        [isShow, types, currentItem]
+        [types, currentItem]
     );
 
     const handleClickDown = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (isShow && types && event.code === 'ArrowDown') {
+            if (types && event.code === 'ArrowDown') {
                 event.preventDefault();
                 if (!currentItem && types.length) {
                     setCurrentItem(types[0]);
@@ -118,17 +114,17 @@ export const DoubleLinkMenuContainer = ({
                 }
             }
         },
-        [isShow, types, currentItem]
+        [types, currentItem]
     );
 
     const handleClickEnter = useCallback(
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (isShow && event.code === 'Enter' && currentItem) {
+            if (event.code === 'Enter' && currentItem) {
                 event.preventDefault();
                 onSelected && onSelected(currentItem);
             }
         },
-        [isShow, currentItem, onSelected]
+        [currentItem, onSelected]
     );
 
     const handleKeyDown = useCallback(
@@ -150,7 +146,7 @@ export const DoubleLinkMenuContainer = ({
         };
     }, [hooks, handleKeyDown]);
 
-    return isShow ? (
+    return (
         <RootContainer
             ref={menuRef}
             onKeyDownCapture={handleKeyDown}
@@ -165,11 +161,10 @@ export const DoubleLinkMenuContainer = ({
                 />
             </ContentContainer>
         </RootContainer>
-    ) : null;
+    );
 };
 
 const RootContainer = styled('div')(({ theme }) => ({
-    // position: 'fixed',
     zIndex: 1,
     maxHeight: '525px',
     borderRadius: '10px',
