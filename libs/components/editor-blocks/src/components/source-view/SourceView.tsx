@@ -1,17 +1,15 @@
 import {
     AsyncBlock,
     useCurrentView,
-    useLazyIframe,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
-import { ReactElement, ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { SCENE_CONFIG } from '../../blocks/group/config';
 import { BlockPreview } from './BlockView';
 import { formatUrl } from './format-url';
 
 export interface Props {
     block: AsyncBlock;
-    editorElement?: () => JSX.Element;
     viewType?: string;
     link: string;
     // onResizeEnd: (data: any) => void;
@@ -150,7 +148,7 @@ const LoadingContiner = () => {
 };
 
 export const SourceView = (props: Props) => {
-    const { link, isSelected, block, editorElement } = props;
+    const { link, isSelected, block } = props;
     const src = formatUrl(link);
     // let iframeShow = useLazyIframe(src, 3000, iframeContainer);
     const [currentView] = useCurrentView();
@@ -161,10 +159,7 @@ export const SourceView = (props: Props) => {
                 <SourceViewContainer isSelected={isSelected} scene={type}>
                     <MouseMaskContainer />
 
-                    <LazyIframe
-                        src={src}
-                        fallback={LoadingContiner()}
-                    ></LazyIframe>
+                    <LazyIframe src={src} fallback={LoadingContiner()} />
                 </SourceViewContainer>
             </div>
         );
@@ -175,11 +170,7 @@ export const SourceView = (props: Props) => {
                 style={{ padding: '0' }}
                 scene={type}
             >
-                <BlockPreview
-                    block={block}
-                    editorElement={editorElement}
-                    blockId={src}
-                />
+                <BlockPreview block={block} blockId={src} />
             </SourceViewContainer>
         );
     }
