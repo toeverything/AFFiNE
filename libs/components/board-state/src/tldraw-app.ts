@@ -3841,7 +3841,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     private get_viewbox_from_svg = (svgStr: string | ArrayBuffer | null) => {
         if (typeof svgStr === 'string') {
-            let viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
+            const viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
             return viewBox.children[0].getAttribute('viewBox');
         }
 
@@ -4125,7 +4125,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     onPointerDown: TLPointerEventHandler = (info, e) => {
-        if (e.buttons === 4) {
+        if (e.button === 1) {
             this.patchState({
                 settings: {
                     forcePanning: true,
@@ -4142,6 +4142,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     onPointerUp: TLPointerEventHandler = (info, e) => {
+        if (e.button === 1) {
+            this.patchState({
+                settings: {
+                    forcePanning: false,
+                },
+            });
+        }
         this.isPointing = false;
         this.updateInputs(info, e);
         this.currentTool.onPointerUp?.(info, e);
