@@ -2,16 +2,44 @@
 import {
     fontBgColorPalette,
     fontColorPalette,
-    type TextAlignOptions
+    type TextAlignOptions,
 } from '@toeverything/components/common';
 import {
-    BacklinksIcon, BulletIcon, CalloutIcon, CodeBlockIcon, CodeIcon, CommentIcon, FileIcon, FormatBackgroundIcon, FormatBoldEmphasisIcon, FormatColorTextIcon, FormatItalicIcon,
-    FormatStrikethroughIcon, HeadingOneIcon, HeadingThreeIcon, HeadingTwoIcon, ImageIcon, LinkIcon, MoreIcon, NumberIcon, PagesIcon, QuoteIcon, TextAlignCenterIcon, TextAlignLeftIcon, TextAlignRightIcon, TextFontIcon, ToDoIcon, TurnIntoIcon
+    BacklinksIcon,
+    BulletIcon,
+    CalloutIcon,
+    CodeBlockIcon,
+    CodeIcon,
+    CommentIcon,
+    FileIcon,
+    FormatBackgroundIcon,
+    FormatBoldEmphasisIcon,
+    FormatColorTextIcon,
+    FormatItalicIcon,
+    FormatStrikethroughIcon,
+    HeadingOneIcon,
+    HeadingThreeIcon,
+    HeadingTwoIcon,
+    ImageIcon,
+    LinkIcon,
+    MoreIcon,
+    NumberIcon,
+    PagesIcon,
+    QuoteIcon,
+    TextAlignCenterIcon,
+    TextAlignLeftIcon,
+    TextAlignRightIcon,
+    TextFontIcon,
+    ToDoIcon,
+    TurnIntoIcon,
 } from '@toeverything/components/icons';
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
 import { Virgo } from '@toeverything/framework/virgo';
 import {
-    inlineMenuNames, inlineMenuNamesForFontColor, inlineMenuNamesKeys, INLINE_MENU_UI_TYPES
+    inlineMenuNames,
+    inlineMenuNamesForFontColor,
+    inlineMenuNamesKeys,
+    INLINE_MENU_UI_TYPES,
 } from './config';
 import { ClickItemHandler, InlineMenuItem } from './types';
 
