@@ -1,13 +1,9 @@
 import { Editor } from '../editor';
-import { SelectInfo, SelectBlock } from '../selection';
-import {
-    ClipBlockInfo,
-    OFFICE_CLIPBOARD_MIMETYPE,
-    InnerClipInfo,
-} from './types';
+import { SelectInfo } from '../selection';
+import { OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
-import assert from 'assert';
 import ClipboardParse from './clipboard-parse';
+import { getClipDataOfBlocksById } from './utils';
 
 class Copy {
     private _editor: Editor;
@@ -47,16 +43,11 @@ class Copy {
     }
 
     async getClips() {
-        const clips: any[] = [];
+        const clips: Clip[] = [];
 
         // get custom clip
         const affineClip = await this._getAffineClip();
-        clips.push(
-            new Clip(
-                OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED,
-                JSON.stringify(affineClip)
-            )
-        );
+        clips.push(affineClip);
 
         // get common html clip
         const htmlClip = await this._clipboardParse.generateHtml();
@@ -66,39 +57,14 @@ class Copy {
         return clips;
     }
 
-    private async _getAffineClip(): Promise<InnerClipInfo> {
-        const clips: ClipBlockInfo[] = [];
+    private async _getAffineClip(): Promise<Clip> {
         const selectInfo: SelectInfo =
             await this._editor.selectionManager.getSelectInfo();
-        for (let i = 0; i < selectInfo.blocks.length; i++) {
-            const selBlock = selectInfo.blocks[i];
-            const clipBlockInfo = await this._getClipInfoOfBlock(selBlock);
-            clips.push(clipBlockInfo);
-        }
-        return {
-            select: selectInfo,
-            data: clips,
-        };
-    }
 
-    private async _getClipInfoOfBlock(selBlock: SelectBlock) {
-        const block = await this._editor.getBlockById(selBlock.blockId);
-        const blockView = this._editor.getView(block.type);
-        assert(blockView);
-        const blockInfo: ClipBlockInfo = {
-            type: block.type,
-            properties: blockView.getSelProperties(block, selBlock),
-            children: [] as any[],
-        };
-
-        for (let i = 0; i < selBlock.children.length; i++) {
-            const childInfo = await this._getClipInfoOfBlock(
-                selBlock.children[i]
-            );
-            blockInfo.children.push(childInfo);
-        }
-
-        return blockInfo;
+        return getClipDataOfBlocksById(
+            this._editor,
+            selectInfo.blocks.map(block => block.blockId)
+        );
     }
 
     private _copyToClipboardFromPc(clips: any[]) {

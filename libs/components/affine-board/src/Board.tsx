@@ -70,12 +70,15 @@ const AffineBoard = ({
                     set_app(app);
                 },
                 async onCopy(e, groupIds) {
-                    const [mimeType, data] = await getClipDataOfBlocksById(
+                    const clip = await getClipDataOfBlocksById(
                         editor,
                         groupIds
                     );
 
-                    e.clipboardData?.setData(mimeType, data);
+                    e.clipboardData?.setData(
+                        clip.getMimeType(),
+                        clip.getData()
+                    );
                 },
                 onChangePage(app, shapes, bindings, assets) {
                     Promise.all(

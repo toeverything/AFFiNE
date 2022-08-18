@@ -42,10 +42,11 @@ export const getClipDataOfBlocksById = async (
     const clipInfos = await Promise.all(
         blockIds.map(blockId => getClipInfoOfBlockById(editor, blockId))
     );
-    return [
+
+    return new Clip(
         OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED,
         JSON.stringify({
             data: clipInfos,
-        }),
-    ];
+        })
+    );
 };
