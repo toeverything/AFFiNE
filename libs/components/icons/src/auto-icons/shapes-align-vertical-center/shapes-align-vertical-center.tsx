@@ -2,11 +2,11 @@
 // eslint-disable-next-line no-restricted-imports
 import { SvgIcon, SvgIconProps } from '@mui/material';
 
-export interface AlignVerticalCenterIconProps extends Omit<SvgIconProps, 'color'> {
+export interface ShapesAlignVerticalCenterIconProps extends Omit<SvgIconProps, 'color'> {
     color?: string
 }
 
-export const AlignVerticalCenterIcon = ({ color, style, ...props}: AlignVerticalCenterIconProps) => {
+export const ShapesAlignVerticalCenterIcon = ({ color, style, ...props}: ShapesAlignVerticalCenterIconProps) => {
     const propsStyles = {"color": color};
     const customStyles = {};
     const styles = {...propsStyles, ...customStyles, ...style}

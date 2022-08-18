@@ -52,14 +52,15 @@ const Container = styled('div')({
 
 const SelectableContainer = styled('div')<{ selected?: boolean }>(
     ({ selected, theme }) => ({
-        width: '22px',
-        height: '22px',
         color: theme.affine.palette.icons,
         borderRadius: '5px',
         overflow: 'hidden',
-        margin: '10px',
-        padding: '1px',
+        margin: '5px',
+        padding: '3px',
         cursor: 'pointer',
         boxSizing: 'border-box',
+        '&:hover': {
+            backgroundColor: theme.affine.palette.hover,
+        },
     })
 );
