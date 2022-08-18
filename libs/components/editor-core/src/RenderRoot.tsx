@@ -1,16 +1,16 @@
-import type { BlockEditor } from './editor';
 import { styled, usePatchNodes } from '@toeverything/components/ui';
-import type { PropsWithChildren } from 'react';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { EditorProvider } from './Contexts';
-import { SelectionRect, SelectionRef } from './Selection';
 import {
     Protocol,
     services,
     type ReturnUnobserve,
 } from '@toeverything/datasource/db-service';
-import { addNewGroup, appendNewGroup } from './recast-block';
+import type { PropsWithChildren } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { EditorProvider } from './Contexts';
+import type { BlockEditor } from './editor';
 import { useIsOnDrag } from './hooks';
+import { addNewGroup, appendNewGroup } from './recast-block';
+import { SelectionRect, SelectionRef } from './Selection';
 
 interface RenderRootProps {
     editor: BlockEditor;
@@ -160,7 +160,7 @@ export const RenderRoot = ({
     return (
         <EditorProvider value={{ editor, editorElement }}>
             <Container
-                isWhiteboard={editor.isWhiteboard}
+                isEdgeless={editor.isEdgeless}
                 ref={ref => {
                     if (ref != null && ref !== editor.container) {
                         editor.container = ref;
@@ -188,7 +188,7 @@ export const RenderRoot = ({
                 </Content>
                 {/** TODO: remove selectionManager insert */}
                 {editor && <SelectionRect ref={selectionRef} editor={editor} />}
-                {editor.isWhiteboard ? null : <ScrollBlank editor={editor} />}
+                {editor.isEdgeless ? null : <ScrollBlank editor={editor} />}
                 {patchedNodes}
             </Container>
         </EditorProvider>
@@ -262,16 +262,10 @@ function ScrollBlank({ editor }: { editor: BlockEditor }) {
 const PADDING_X = 150;
 
 const Container = styled('div')(
-    ({
-        isWhiteboard,
-        isOnDrag,
-    }: {
-        isWhiteboard: boolean;
-        isOnDrag: boolean;
-    }) => ({
+    ({ isEdgeless, isOnDrag }: { isEdgeless: boolean; isOnDrag: boolean }) => ({
         width: '100%',
-        padding: isWhiteboard ? 0 : `72px ${PADDING_X}px 0 ${PADDING_X}px`,
-        minWidth: isWhiteboard ? 'unset' : '940px',
+        padding: isEdgeless ? 0 : `72px ${PADDING_X}px 0 ${PADDING_X}px`,
+        minWidth: isEdgeless ? 'unset' : '940px',
         position: 'relative',
         ...(isOnDrag && {
             cursor: 'grabbing',

@@ -3853,12 +3853,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     private get_viewbox_from_svg = (svgStr: string | ArrayBuffer | null) => {
-        const viewBoxRegex =
-            /.*?viewBox=["'](-?[\d.]+[, ]+-?[\d.]+[, ][\d.]+[, ][\d.]+)["']/;
-
         if (typeof svgStr === 'string') {
-            const matches = svgStr.match(viewBoxRegex);
-            return matches && matches.length >= 2 ? matches[1] : null;
+            let viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
+            return viewBox.children[0].getAttribute('viewBox');
         }
 
         console.warn('could not get viewbox from svg string');
@@ -3994,7 +3991,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 this.patchState({
                     settings: {
                         forcePanning:
-                            this.currentTool.type === TDShapeType.HandDraw,
+                            this.currentTool.type === TDShapeType.HandDrag,
                     },
                 });
                 this.spaceKey = false;

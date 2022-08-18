@@ -103,7 +103,7 @@ export const GroupView = (props: CreateView) => {
                     <View {...props} />
                 </GroupContainer>
 
-                {editor.isWhiteboard ? null : (
+                {editor.isEdgeless ? null : (
                     <GroupAction onAddGroup={addGroup} />
                 )}
             </GroupBox>

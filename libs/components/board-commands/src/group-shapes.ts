@@ -100,6 +100,7 @@ export function groupShapes(
 
     afterShapes[groupId] = TLDR.get_shape_util(TDShapeType.Group).create({
         id: groupId,
+        affineId: groupId,
         childIndex: groupChildIndex,
         parentId: groupParentId,
         point: [groupBounds.minX, groupBounds.minY],
@@ -217,7 +218,6 @@ export function groupShapes(
             }
         }
     });
-
     return {
         id: 'group',
         before: {

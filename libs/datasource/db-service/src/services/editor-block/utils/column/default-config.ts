@@ -16,7 +16,6 @@ export enum GroupScene {
     page = 'page',
     table = 'table',
     kanban = 'kanban',
-    whiteboard = 'whiteboard',
 }
 
 /**

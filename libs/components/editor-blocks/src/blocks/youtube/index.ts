@@ -1,9 +1,9 @@
+import { Protocol } from '@toeverything/datasource/db-service';
 import {
     AsyncBlock,
     BaseView,
     SelectBlock,
 } from '@toeverything/framework/virgo';
-import { Protocol } from '@toeverything/datasource/db-service';
 import { YoutubeView } from './YoutubeView';
 
 export class YoutubeBlock extends BaseView {
@@ -19,7 +19,10 @@ export class YoutubeBlock extends BaseView {
         const tag_name = el.tagName;
         if (tag_name === 'A' && el.parentElement?.childElementCount === 1) {
             const href = el.getAttribute('href');
-            if (href.indexOf('.youtube.com') !== -1) {
+            const allowedHosts = ['www.youtu.be', 'www.youtube.com'];
+            const host = new URL(href).host;
+
+            if (allowedHosts.includes(host)) {
                 return [
                     {
                         type: this.type,

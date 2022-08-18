@@ -30,7 +30,7 @@ import { BlockEditor } from '@toeverything/framework/virgo';
 export const createEditor = (
     workspace: string,
     rootBlockId: string,
-    isWhiteboard?: boolean
+    isEdgeless?: boolean
 ) => {
     const blockEditor = new BlockEditor({
         workspace,
@@ -61,7 +61,7 @@ export const createEditor = (
             [Protocol.Block.Type.groupDivider]: new GroupDividerBlock(),
         },
         plugins,
-        isWhiteboard,
+        isEdgeless,
     });
 
     return blockEditor;

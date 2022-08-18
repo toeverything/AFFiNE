@@ -1,47 +1,47 @@
 /* eslint-disable max-lines */
 import {
-    HeadingOneIcon,
-    HeadingTwoIcon,
-    HeadingThreeIcon,
-    ToDoIcon,
-    NumberIcon,
-    BulletIcon,
-    FormatBoldEmphasisIcon,
-    FormatItalicIcon,
-    FormatStrikethroughIcon,
-    LinkIcon,
-    CodeIcon,
-    FormatColorTextIcon,
-    FormatBackgroundIcon,
-    AlignLeftIcon,
-    AlignCenterIcon,
-    AlignRightIcon,
-    TurnIntoIcon,
-    BacklinksIcon,
-    MoreIcon,
-    TextFontIcon,
-    QuoteIcon,
-    CalloutIcon,
-    FileIcon,
-    ImageIcon,
-    PagesIcon,
-    CodeBlockIcon,
-    CommentIcon,
-} from '@toeverything/components/icons';
-import {
     fontBgColorPalette,
     fontColorPalette,
     type TextAlignOptions,
 } from '@toeverything/components/common';
-import { Virgo } from '@toeverything/framework/virgo';
-import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
-import { ClickItemHandler, InlineMenuItem } from './types';
 import {
-    inlineMenuNamesKeys,
-    inlineMenuNamesForFontColor,
-    INLINE_MENU_UI_TYPES,
+    BacklinksIcon,
+    BulletIcon,
+    CalloutIcon,
+    CodeBlockIcon,
+    CodeIcon,
+    CommentIcon,
+    FileIcon,
+    FormatBackgroundIcon,
+    FormatBoldEmphasisIcon,
+    FormatColorTextIcon,
+    FormatItalicIcon,
+    FormatStrikethroughIcon,
+    HeadingOneIcon,
+    HeadingThreeIcon,
+    HeadingTwoIcon,
+    ImageIcon,
+    LinkIcon,
+    MoreIcon,
+    NumberIcon,
+    PagesIcon,
+    QuoteIcon,
+    TextAlignCenterIcon,
+    TextAlignLeftIcon,
+    TextAlignRightIcon,
+    TextFontIcon,
+    ToDoIcon,
+    TurnIntoIcon,
+} from '@toeverything/components/icons';
+import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
+import { Virgo } from '@toeverything/framework/virgo';
+import {
     inlineMenuNames,
+    inlineMenuNamesForFontColor,
+    inlineMenuNamesKeys,
+    INLINE_MENU_UI_TYPES,
 } from './config';
+import { ClickItemHandler, InlineMenuItem } from './types';
 
 const convert_to_block_type = async ({
     editor,
@@ -732,27 +732,27 @@ export const getInlineMenuData = ({
         },
         {
             type: INLINE_MENU_UI_TYPES.dropdown,
-            icon: AlignLeftIcon,
+            icon: TextAlignLeftIcon,
             name: inlineMenuNames.currentTextAlign,
             nameKey: inlineMenuNamesKeys.currentTextAlign,
             children: [
                 {
                     type: INLINE_MENU_UI_TYPES.icon,
-                    icon: AlignLeftIcon,
+                    icon: TextAlignLeftIcon,
                     name: inlineMenuNames.alignLeft,
                     nameKey: inlineMenuNamesKeys.alignLeft,
                     onClick: common_handler_for_inline_menu,
                 },
                 {
                     type: INLINE_MENU_UI_TYPES.icon,
-                    icon: AlignCenterIcon,
+                    icon: TextAlignCenterIcon,
                     name: inlineMenuNames.alignCenter,
                     nameKey: inlineMenuNamesKeys.alignCenter,
                     onClick: common_handler_for_inline_menu,
                 },
                 {
                     type: INLINE_MENU_UI_TYPES.icon,
-                    icon: AlignRightIcon,
+                    icon: TextAlignRightIcon,
                     name: inlineMenuNames.alignRight,
                     nameKey: inlineMenuNamesKeys.alignRight,
                     onClick: common_handler_for_inline_menu,

@@ -1,4 +1,6 @@
+import { MuiClickAwayListener } from '@toeverything/components/ui';
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
+import { HookType, PluginHooks, Virgo } from '@toeverything/framework/virgo';
 import React, {
     useCallback,
     useEffect,
@@ -6,18 +8,15 @@ import React, {
     useRef,
     useState,
 } from 'react';
-
-import { MuiClickAwayListener } from '@toeverything/components/ui';
-import { Virgo, HookType, PluginHooks } from '@toeverything/framework/virgo';
-
-import { CommandMenuContainer } from './Container';
+import { QueryResult } from '../../search';
 import {
     CommandMenuCategories,
     commandMenuHandlerMap,
     commonCommandMenuHandler,
     menuItemsMap,
 } from './config';
-import { QueryResult } from '../../search';
+import { CommandMenuContainer } from './Container';
+
 export type CommandMenuProps = {
     editor: Virgo;
     hooks: PluginHooks;
@@ -225,7 +224,11 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                 await commonCommandMenuHandler(blockId, type, editor);
             }
             const block = await editor.getBlockById(blockId);
-            block.remove();
+            let nextBlock = await block.nextSibling();
+            editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+            if (block.blockProvider.isEmpty()) {
+                block.remove();
+            }
         } else {
             if (Protocol.Block.Type[type as BlockFlavorKeys]) {
                 const block = await editor.commands.blockCommands.convertBlock(
