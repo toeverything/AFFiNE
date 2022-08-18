@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { CreateView } from '@toeverything/framework/virgo';
 import {
     BlockPendantProvider,
     useOnSelect,
 } from '@toeverything/components/editor-core';
-import { Upload } from '../../components/upload/upload';
+import { CreateView } from '@toeverything/framework/virgo';
+import { useState } from 'react';
 import { SourceView } from '../../components/source-view';
 import { LinkContainer } from '../../components/style-container';
+import { Upload } from '../../components/upload/upload';
 
 const MESSAGES = {
     ADD_EMBED_LINK: 'Add embed link',
@@ -38,7 +38,6 @@ export const EmbedLinkView = (props: EmbedLinkView) => {
                 {embedLinkUrl ? (
                     <SourceView
                         block={block}
-                        editorElement={props.editorElement}
                         isSelected={isSelect}
                         viewType="embedLink"
                         link={embedLinkUrl}

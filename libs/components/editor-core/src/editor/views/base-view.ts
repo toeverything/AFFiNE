@@ -18,7 +18,6 @@ import { SelectBlock } from '../selection';
 export interface CreateView {
     block: AsyncBlock;
     editor: Editor;
-    editorElement: () => JSX.Element;
     /**
      * @deprecated Use recast table instead
      */
