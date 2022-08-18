@@ -4,7 +4,7 @@ import { OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
 import ClipboardParse from './clipboard-parse';
 import { getClipDataOfBlocksById } from './utils';
-
+import { copyToClipboard } from '@toeverything/utils';
 class Copy {
     private _editor: Editor;
     private _clipboardParse: ClipboardParse;
