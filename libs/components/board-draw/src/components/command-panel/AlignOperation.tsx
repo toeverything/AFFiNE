@@ -1,22 +1,17 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
-import { StretchType, TDShape } from '@toeverything/components/board-types';
+import { DistributeType, TDShape } from '@toeverything/components/board-types';
 import {
-    AlignHorizontalCenterIcon,
     AlignIcon,
-    AlignToBottomIcon,
-    AlignToLeftIcon,
-    AlignToRightIcon,
-    AlignToTopIcon,
-    AlignVerticalCenterIcon,
-    DistributeHorizontalIcon,
-    DistributeVerticalIcon,
+    ShapesAlignBottomIcon,
+    ShapesAlignHorizontalCenterIcon,
+    ShapesAlignLeftIcon,
+    ShapesAlignRightIcon,
+    ShapesAlignTopIcon,
+    ShapesAlignVerticalCenterIcon,
+    ShapesDistributeHorizontalIcon,
+    ShapesDistributeVerticalIcon,
 } from '@toeverything/components/icons';
-import {
-    IconButton,
-    Popover,
-    Tooltip,
-    useTheme,
-} from '@toeverything/components/ui';
+import { IconButton, Popover, Tooltip } from '@toeverything/components/ui';
 import { AlignPanel } from '../align-panel';
 interface BorderColorConfigProps {
     app: TldrawApp;
@@ -34,55 +29,57 @@ export enum AlignType {
 
 let AlignPanelArr = [
     {
-        name: 'top',
-        title: 'Align top',
-        icon: <AlignToTopIcon></AlignToTopIcon>,
+        name: 'left',
+        title: 'Align left',
+        icon: <ShapesAlignLeftIcon></ShapesAlignLeftIcon>,
     },
     {
         name: 'centerVertical',
         title: 'Align Center Vertical',
-        icon: <AlignVerticalCenterIcon></AlignVerticalCenterIcon>,
-    },
-    {
-        name: 'bottom',
-        title: 'Align bottom',
-        icon: <AlignToBottomIcon></AlignToBottomIcon>,
-    },
-    {
-        name: 'left',
-        title: 'Align left',
-        icon: <AlignToLeftIcon></AlignToLeftIcon>,
+        icon: <ShapesAlignVerticalCenterIcon></ShapesAlignVerticalCenterIcon>,
     },
     {
         name: 'right',
         title: 'Align right',
-        icon: <AlignToRightIcon></AlignToRightIcon>,
+        icon: <ShapesAlignRightIcon></ShapesAlignRightIcon>,
     },
+    {
+        name: 'top',
+        title: 'Align top',
+        icon: <ShapesAlignTopIcon></ShapesAlignTopIcon>,
+    },
+    {
+        name: 'bottom',
+        title: 'Align bottom',
+        icon: <ShapesAlignBottomIcon></ShapesAlignBottomIcon>,
+    },
+
     {
         name: 'centerHorizontal',
         title: 'Align centerHorizontal',
-        icon: <AlignHorizontalCenterIcon></AlignHorizontalCenterIcon>,
+        icon: (
+            <ShapesAlignHorizontalCenterIcon></ShapesAlignHorizontalCenterIcon>
+        ),
     },
     {
-        name: 'stretchCenterHorizontal',
-        title: 'Align stretch centerHorizontal',
-        icon: <DistributeHorizontalIcon></DistributeHorizontalIcon>,
+        name: 'distributeCenterHorizontal',
+        title: 'Align distribute center horizontal',
+        icon: <ShapesDistributeHorizontalIcon></ShapesDistributeHorizontalIcon>,
     },
     {
-        name: 'stretchCenterVertical',
-        title: 'Align stretch centerHorizontal',
-        icon: <DistributeVerticalIcon></DistributeVerticalIcon>,
+        name: 'distributeCenterVertical',
+        title: 'Align distribute center horizontal',
+        icon: <ShapesDistributeVerticalIcon></ShapesDistributeVerticalIcon>,
     },
 ];
 export const AlignOperation = ({ app, shapes }: BorderColorConfigProps) => {
-    const theme = useTheme();
     const setAlign = (alginType: string) => {
         switch (alginType) {
-            case 'stretchCenterHorizontal':
-                app.stretch(StretchType.Horizontal);
+            case 'distributeCenterHorizontal':
+                app.distribute(DistributeType.Horizontal);
                 break;
-            case 'stretchCenterVertical':
-                app.stretch(StretchType.Vertical);
+            case 'distributeCenterVertical':
+                app.distribute(DistributeType.Vertical);
                 break;
             default:
                 app.align(alginType as AlignType);
