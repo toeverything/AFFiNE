@@ -414,16 +414,35 @@ export class Paste {
         }, 100);
     }
 
-    private async _createBlocks(blocks: ClipBlockInfo[], parentId?: string) {
+    private _flatGroupBlocks(blocks: ClipBlockInfo[]) {
+        return blocks.reduce(
+            (blockList: ClipBlockInfo[], block: ClipBlockInfo) => {
+                if (block.type === 'group') {
+                    block?.children?.forEach(childBlock => {
+                        childBlock.children = this._flatGroupBlocks(
+                            childBlock.children
+                        );
+                    });
+                    block?.children?.length &&
+                        blockList.push(...block.children);
+                } else {
+                    blockList.push(block);
+                    block.children = this._flatGroupBlocks(block.children);
+                }
+                return blockList;
+            },
+            []
+        );
+    }
+    private async _createBlocks(blocks: ClipBlockInfo[]) {
         return Promise.all(
-            blocks.map(async clipBlockInfo => {
+            this._flatGroupBlocks(blocks).map(async clipBlockInfo => {
                 const block = await this._editor.createBlock(
                     clipBlockInfo.type
                 );
                 block?.setProperties(clipBlockInfo.properties);
                 const children = await this._createBlocks(
-                    clipBlockInfo.children,
-                    block?.id
+                    clipBlockInfo.children
                 );
                 await Promise.all(children.map(child => block?.append(child)));
                 return block;
