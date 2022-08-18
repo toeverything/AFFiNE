@@ -1,7 +1,6 @@
 /* eslint-disable max-lines */
 import { DocumentSearchOptions } from 'flexsearch';
 import LRUCache from 'lru-cache';
-
 import {
     AsyncDatabaseAdapter,
     BlockInstance,
@@ -290,19 +289,22 @@ export class BlockClient<
             | string
             | Partial<DocumentSearchOptions<boolean>>
     ): Promise<BlockSearchItem[]> {
-        const promised_pages = await Promise.all(
-            this.search(part_of_title_or_content).flatMap(({ result }) =>
-                result.map(async id => {
-                    const page = this._pageMapping.get(id as string);
-                    if (page) return page;
-                    const block = await this.get(id as BlockTypeKeys);
-                    return this.set_page(block);
-                })
-            )
-        );
-        const pages = [
-            ...new Set(promised_pages.filter((v): v is string => !!v)),
-        ];
+        let pages = [];
+        if (part_of_title_or_content) {
+            const promisedPages = await Promise.all(
+                this.search(part_of_title_or_content).flatMap(({ result }) =>
+                    result.map(async id => {
+                        const page = this._pageMapping.get(id as string);
+                        if (page) return page;
+                        const block = await this.get(id as BlockTypeKeys);
+                        return this.set_page(block);
+                    })
+                )
+            );
+            pages = [...new Set(promisedPages.filter((v): v is string => !!v))];
+        } else {
+            pages = await this.getBlockByFlavor('page');
+        }
         return Promise.all(
             this._blockIndexer.getMetadata(pages).map(async page => ({
                 content: this.get_decoded_content(

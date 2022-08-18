@@ -1,19 +1,19 @@
 /* eslint-disable max-lines */
-import EventEmitter from 'eventemitter3';
 import {
-    ReturnEditorBlock,
-    UpdateEditorBlock,
     DefaultColumnsValue,
     Protocol,
+    ReturnEditorBlock,
+    UpdateEditorBlock,
 } from '@toeverything/datasource/db-service';
 import {
-    isDev,
     createNoopWithMessage,
-    lowerFirst,
+    isDev,
     last,
+    lowerFirst,
 } from '@toeverything/utils';
-import { BlockProvider } from './block-provider';
+import EventEmitter from 'eventemitter3';
 import { BaseView, BaseView as BlockView } from './../views/base-view';
+import { BlockProvider } from './block-provider';
 
 type EventType = 'update';
 export interface EventData {
@@ -154,6 +154,7 @@ export class AsyncBlock {
         }
         this.initialized = true;
         this.raw_data = await this.filterPageInvalidChildren(this.raw_data);
+        this.raw_data = await this.updateDoubleLinkBlock(this.raw_data);
         const { workspace, id } = this.raw_data;
         this.unobserve = await this.services.observe(
             { workspace, id },
@@ -161,6 +162,7 @@ export class AsyncBlock {
                 const oldData = this.raw_data;
                 this.raw_data = blockData;
                 this.raw_data = await this.filterPageInvalidChildren(blockData);
+                this.raw_data = await this.updateDoubleLinkBlock(this.raw_data);
                 this.emit('update', { block: this, oldData });
             }
         );
@@ -494,5 +496,36 @@ export class AsyncBlock {
     // Get block location information
     getBoundingClientRect() {
         return this.dom?.getBoundingClientRect();
+    }
+
+    async updateDoubleLinkBlock(rawData: ReturnEditorBlock) {
+        const values = rawData.properties?.text?.value || [];
+        for (let i = 0; i < values.length; i++) {
+            const item = values[i] as any;
+            if (item.linkType === 'doubleLink') {
+                const linkBlock = await this.services.load({
+                    workspace: item.workspaceId,
+                    id: item.blockId,
+                });
+
+                if (linkBlock) {
+                    let children = linkBlock.getProperties().text?.value || [];
+                    if (children.length === 1 && !children[0].text) {
+                        children = [{ text: 'Untitled' }];
+                    }
+                    if (
+                        children.map(v => v.text).join('') !==
+                        (item.children || []).map((v: any) => v.text).join('')
+                    ) {
+                        const newItem = {
+                            ...item,
+                            children: children,
+                        };
+                        values.splice(i, 1, newItem);
+                    }
+                }
+            }
+        }
+        return rawData;
     }
 }

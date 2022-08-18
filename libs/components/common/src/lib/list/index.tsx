@@ -1,8 +1,4 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import clsx from 'clsx';
-import style9 from 'style9';
-
+import { BackwardUndoIcon } from '@toeverything/components/icons';
 import {
     BaseButton,
     ListButton,
@@ -12,9 +8,11 @@ import {
 } from '@toeverything/components/ui';
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { BlockSearchItem } from '@toeverything/datasource/jwt';
-
+import clsx from 'clsx';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import style9 from 'style9';
 import { BlockPreview } from '../block-preview';
-import { BackwardUndoIcon } from '@toeverything/components/icons';
 
 export const commonListContainer = 'commonListContainer';
 
@@ -28,6 +26,7 @@ export type CommonListItem = {
     divider?: string;
     content?: Content;
     block?: BlockSearchItem;
+    renderCustom?: (props: CommonListItem) => JSX.Element;
 };
 
 type MenuItemsProps = {
@@ -45,7 +44,7 @@ export const CommonList = (props: MenuItemsProps) => {
     // ]);
     // TODO Insert bidirectional link to be developed
     const JSONUnsupportedBlockTypes = ['page'];
-    let usedItems = items.filter(item => {
+    const usedItems = items.filter(item => {
         return !JSONUnsupportedBlockTypes.includes(item?.content?.id);
     });
     return (

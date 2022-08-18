@@ -1,1 +1,0 @@
-export { ReferenceMenuPlugin } from './Plugin';
