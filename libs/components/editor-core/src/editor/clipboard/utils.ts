@@ -26,7 +26,7 @@ export const getClipInfoOfBlockById = async (
         properties: blockView.getSelProperties(block, {}),
         children: [] as ClipBlockInfo[],
     };
-    const children = await block?.children();
+    const children = await block?.children() ?? [];
 
     for (let i = 0; i < children.length; i++) {
         const childInfo = await getClipInfoOfBlockById(editor, children[i].id);
