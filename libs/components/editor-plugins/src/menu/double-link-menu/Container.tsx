@@ -166,7 +166,6 @@ export const DoubleLinkMenuContainer = ({
 
 const RootContainer = styled('div')(({ theme }) => ({
     zIndex: 1,
-    maxHeight: '525px',
     borderRadius: '10px',
     boxShadow: theme.affine.shadows.shadow1,
     backgroundColor: '#fff',
@@ -176,5 +175,5 @@ const RootContainer = styled('div')(({ theme }) => ({
 const ContentContainer = styled('div')(({ theme }) => ({
     display: 'flex',
     overflow: 'hidden',
-    maxHeight: '493px',
+    maxHeight: '300px',
 }));

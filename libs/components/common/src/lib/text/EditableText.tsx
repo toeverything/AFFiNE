@@ -1,5 +1,4 @@
 /* eslint-disable max-lines */
-import { SearchIcon } from '@toeverything/components/icons';
 import { ErrorBoundary, isEqual } from '@toeverything/utils';
 import isHotkey from 'is-hotkey';
 import isUrl from 'is-url';
@@ -844,8 +843,7 @@ const EditorLeaf = ({ attributes, children, leaf }: any) => {
 
     if (leaf.doubleLinkSearch) {
         customChildren = (
-            <span style={{ backgroundColor: '#eee' }}>
-                <SearchIcon style={{ width: '16px', height: '16px' }} />
+            <span style={{ backgroundColor: '#eee', borderRadius: '4px' }}>
                 {customChildren}
             </span>
         );

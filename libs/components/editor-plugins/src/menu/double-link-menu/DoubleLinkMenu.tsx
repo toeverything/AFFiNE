@@ -56,7 +56,7 @@ export const DoubleLinkMenu = ({
         });
 
     const [curBlockId, setCurBlockId] = useState<string>();
-    const [searchText, setSearchText] = useState<string>('');
+    const [searchText, setSearchText] = useState<string>();
     const [inAddNewPage, setInAddNewPage] = useState(false);
     const [filterText, setFilterText] = useState<string>('');
     const [searchResultBlocks, setSearchResultBlocks] = useState<QueryResult>(
@@ -85,7 +85,13 @@ export const DoubleLinkMenu = ({
             });
             items.push(
                 ...(searchResultBlocks?.map(
-                    block => ({ block } as CommonListItem)
+                    block =>
+                        ({
+                            block: {
+                                ...block,
+                                content: block.content || 'Untitled',
+                            },
+                        } as CommonListItem)
                 ) || [])
             );
         }
@@ -199,11 +205,32 @@ export const DoubleLinkMenu = ({
 
     const handleKeyDown = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
+            if (!isOpen) {
+                return;
+            }
             if (event.code === 'Escape') {
                 hideMenu();
             }
+            const { type, anchorNode } = editor.selection.currentSelectInfo;
+            if (
+                type === 'Range' &&
+                anchorNode &&
+                editor.blockHelper.isSelectionCollapsed(anchorNode.id)
+            ) {
+                const text = editor.blockHelper.getBlockTextBeforeSelection(
+                    anchorNode.id
+                );
+                if (text.endsWith('[[')) {
+                    if (event.key === 'Backspace') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        hideMenu();
+                        return;
+                    }
+                }
+            }
         },
-        [hideMenu]
+        [hideMenu, editor, isOpen]
     );
 
     useEffect(() => {
