@@ -53,6 +53,7 @@ export type DefaultColumnsValue = {
     filterConstraint: FilterConstraint;
     filterWeakSqlConstraint: string;
     sorterConstraint: SorterConstraint;
+    bindings: StringColumnValue;
 };
 
 export const DEFAULT_COLUMN_KEYS = {

@@ -18,7 +18,6 @@ interface AffineBoardProps {
 
 const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
     const [app, set_app] = useState<TldrawApp>();
-
     const [document] = useState(() => {
         return {
             ...deepCopy(TldrawApp.default_document),
@@ -45,10 +44,12 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
         };
     });
 
-    const shapes = useShapes(workspace, rootBlockId);
+    const { shapes, bindings } = useShapes(workspace, rootBlockId);
+
+    // const bindings = useBindings(workspace, rootBlockId);
     useEffect(() => {
         if (app) {
-            app.replacePageContent(shapes || {}, {}, {});
+            app.replacePageContent(shapes || {}, bindings, {});
         }
     }, [app, shapes]);
 
@@ -62,8 +63,11 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                 onMount(app) {
                     set_app(app);
                 },
-                onChangePage(app, shapes, bindings, assets) {
-                    Promise.all(
+                async onChangePage(app, shapes, bindings, assets) {
+                    console.log('shapes, bindings: ', shapes, bindings);
+                    //
+
+                    await Promise.all(
                         Object.entries(shapes).map(async ([id, shape]) => {
                             if (shape === undefined) {
                                 return services.api.editorBlock.delete({
@@ -91,6 +95,21 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                                         });
                                 }
                                 shape.affineId = block.id;
+                                Object.keys(bindings).forEach(bilingKey => {
+                                    if (!bindings[bilingKey]) {
+                                        delete bindings[bilingKey];
+                                    }
+                                    if (
+                                        bindings[bilingKey]?.fromId === shape.id
+                                    ) {
+                                        bindings[bilingKey].fromId = block.id;
+                                    }
+                                    if (
+                                        bindings[bilingKey]?.toId === shape.id
+                                    ) {
+                                        bindings[bilingKey].toId = block.id;
+                                    }
+                                });
                                 return services.api.editorBlock.update({
                                     workspace: shape.workspace,
                                     id: block.id,
@@ -103,6 +122,22 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                             }
                         })
                     );
+                    // let pageBindings = services.api.editorBlock.get({workspace: workspace,ids:[rootBlockId]})?[0]
+                    let block = (
+                        await services.api.editorBlock.get({
+                            workspace: workspace,
+                            ids: [rootBlockId],
+                        })
+                    )?.[0];
+                    services.api.editorBlock.update({
+                        workspace: workspace,
+                        id: block.id,
+                        properties: {
+                            bindings: {
+                                value: JSON.stringify(bindings),
+                            },
+                        },
+                    });
                 },
             }}
         />
