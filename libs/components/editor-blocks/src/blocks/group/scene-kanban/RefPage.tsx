@@ -1,4 +1,3 @@
-import { AffineEditor } from '@toeverything/components/affine-editor';
 import { useEditor } from '@toeverything/components/editor-core';
 import { MuiBackdrop, styled, useTheme } from '@toeverything/components/ui';
 import { createContext, ReactNode, useContext, useState } from 'react';
@@ -44,7 +43,9 @@ const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
 };
 
 const ModalPage = ({ blockId }: { blockId: string | null }) => {
-    const { editor } = useEditor();
+    const { editor, editorElement } = useEditor();
+
+    const AffineEditor = editorElement as any;
 
     return (
         <Modal open={!!blockId}>
@@ -53,6 +54,7 @@ const ModalPage = ({ blockId }: { blockId: string | null }) => {
                     workspace={editor.workspace}
                     rootBlockId={blockId}
                     scrollBlank={false}
+                    // use edgeless mode prevent padding and blank bottom
                     isEdgeless
                 />
             )}
