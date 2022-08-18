@@ -230,7 +230,12 @@ export class Editor implements Virgo {
             return await services.api.editorBlock.update(patches);
         },
         remove: async ({ workspace, id }: WorkspaceAndBlockId) => {
-            return await services.api.editorBlock.delete({ workspace, id });
+            const ret = await services.api.editorBlock.delete({
+                workspace,
+                id,
+            });
+            this._cacheManager.delete(id);
+            return ret;
         },
         observe: async (
             { workspace, id }: WorkspaceAndBlockId,
