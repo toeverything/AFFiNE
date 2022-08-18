@@ -111,7 +111,8 @@ export class TranslateSession extends BaseSession {
                             Utils.boundsContain(
                                 TLDR.get_bounds(shap),
                                 TLDR.get_bounds(shapItem)
-                            )
+                            ) &&
+                            !shapItem.isLocked
                         ) {
                             selectedShapes.push(shapItem);
                         }
