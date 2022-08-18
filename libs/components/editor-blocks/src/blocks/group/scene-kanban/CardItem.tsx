@@ -11,7 +11,7 @@ import {
     styled,
 } from '@toeverything/components/ui';
 import { useFlag } from '@toeverything/datasource/feature-flags';
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { useRefPage } from './RefPage';
 
 const CardContent = styled('div')({
@@ -101,7 +101,13 @@ export const CardItem = ({
     };
 
     const onClickCard = async () => {
-        showKanbanRefPageFlag && openSubPage(id);
+        openSubPage(id);
+    };
+
+    const onClickPen = (e: MouseEvent<Element>) => {
+        e.stopPropagation();
+        setEditable(true);
+        editor.selectionManager.activeNodeByNodeId(block.id);
     };
 
     return (
@@ -110,18 +116,9 @@ export const CardItem = ({
                 <CardContent>
                     <RenderBlock blockId={id} />
                 </CardContent>
-                {!editable && (
+                {showKanbanRefPageFlag && !editable && (
                     <Overlay onClick={onClickCard}>
-                        <IconButton
-                            backgroundColor="#fff"
-                            onClick={e => {
-                                e.stopPropagation();
-                                setEditable(true);
-                                editor.selectionManager.activeNodeByNodeId(
-                                    block.id
-                                );
-                            }}
-                        >
+                        <IconButton backgroundColor="#fff" onClick={onClickPen}>
                             <PenIcon />
                         </IconButton>
                     </Overlay>
