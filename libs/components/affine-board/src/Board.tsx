@@ -64,9 +64,6 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                     set_app(app);
                 },
                 async onChangePage(app, shapes, bindings, assets) {
-                    console.log('shapes, bindings: ', shapes, bindings);
-                    //
-
                     await Promise.all(
                         Object.entries(shapes).map(async ([id, shape]) => {
                             if (shape === undefined) {
@@ -110,7 +107,7 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                                         bindings[bilingKey].toId = block.id;
                                     }
                                 });
-                                return services.api.editorBlock.update({
+                                return await services.api.editorBlock.update({
                                     workspace: shape.workspace,
                                     id: block.id,
                                     properties: {
@@ -122,19 +119,27 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                             }
                         })
                     );
-                    // let pageBindings = services.api.editorBlock.get({workspace: workspace,ids:[rootBlockId]})?[0]
-                    let block = (
+                    let pageBindingsString = (
                         await services.api.editorBlock.get({
                             workspace: workspace,
                             ids: [rootBlockId],
                         })
-                    )?.[0];
+                    )?.[0].properties.bindings.value;
+                    let pageBindings = JSON.parse(pageBindingsString ?? '{}');
+                    Object.keys(bindings).forEach(bindingsKey => {
+                        if (bindings[bindingsKey] === undefined) {
+                            delete pageBindings[bindingsKey];
+                        } else {
+                            Object.assign(pageBindings, bindings);
+                        }
+                    });
+                    console.log(pageBindings);
                     services.api.editorBlock.update({
                         workspace: workspace,
-                        id: block.id,
+                        id: rootBlockId,
                         properties: {
                             bindings: {
-                                value: JSON.stringify(bindings),
+                                value: JSON.stringify(pageBindings),
                             },
                         },
                     });

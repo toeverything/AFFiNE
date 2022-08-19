@@ -115,19 +115,3 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
         bindings: JSON.parse(blocks?.bindings ?? '{}'),
     };
 };
-
-export const useBindings = (workspace: string, rootBlockId: string) => {
-    const [bindings, setBindings] = useState<string>();
-    useEffect(() => {
-        services.api.editorBlock
-            .get({
-                workspace: workspace,
-                ids: [rootBlockId],
-            })
-            .then(blcoks => {
-                setBindings(blcoks[0].properties.bindings?.value);
-            });
-        return () => {};
-    }, [workspace, rootBlockId]);
-    return bindings ? JSON.parse(bindings) : {};
-};
