@@ -30,23 +30,22 @@ export const DoubleLinkMenuContainer = (
     useEffect(() => {
         if (needCheckIntoView) {
             if (currentItem && menuRef.current) {
-                const itemEle =
+                const itemElement =
                     menuRef.current.querySelector<HTMLButtonElement>(
                         `.item-${currentItem}`
                     );
-                const scrollEle =
+                const scrollElement =
                     menuRef.current.querySelector<HTMLButtonElement>(
                         `.${commonListContainer}`
                     );
-                if (itemEle) {
-                    const itemRect = domToRect(itemEle);
-                    const scrollRect = domToRect(scrollEle);
+                if (itemElement) {
+                    const itemRect = domToRect(itemElement);
+                    const scrollRect = domToRect(scrollElement);
                     if (
                         itemRect.top < scrollRect.top ||
                         itemRect.bottom > scrollRect.bottom
                     ) {
-                        // IMP: may be do it with self function
-                        itemEle.scrollIntoView({
+                        itemElement.scrollIntoView({
                             block: 'nearest',
                         });
                     }
@@ -80,12 +79,16 @@ export const DoubleLinkMenuContainer = (
             if (types && ['ArrowUp', 'ArrowDown'].includes(event.code)) {
                 event.preventDefault();
                 const isUpkey = event.code === 'ArrowUp';
+                const indexBound = isUpkey ? types.length - 1 : 0;
                 if (!currentItem && types.length) {
-                    setCurrentItem(types[isUpkey ? types.length - 1 : 0]);
+                    setCurrentItem(types[indexBound]);
                 }
                 if (currentItem) {
                     const idx = types.indexOf(currentItem);
-                    if (isUpkey ? idx > 0 : idx < types.length - 1) {
+                    const needChange = isUpkey
+                        ? idx > indexBound
+                        : idx < indexBound;
+                    if (needChange) {
                         setNeedCheckIntoView(true);
                         setCurrentItem(types[isUpkey ? idx - 1 : idx + 1]);
                     }
