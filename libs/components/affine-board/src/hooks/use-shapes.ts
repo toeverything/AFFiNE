@@ -5,32 +5,56 @@ import { services } from '@toeverything/datasource/db-service';
 import { usePageClientWidth } from '@toeverything/datasource/state';
 import { useEffect, useState } from 'react';
 
+const getBindings = (workspace: string, rootBlockId: string) => {
+    return services.api.editorBlock
+        .get({
+            workspace: workspace,
+            ids: [rootBlockId],
+        })
+        .then(blcoks => {
+            return blcoks[0].properties.bindings?.value;
+        });
+};
+
 export const useShapes = (workspace: string, rootBlockId: string) => {
     const { pageClientWidth } = usePageClientWidth();
     // page padding left and right total 300px
     const editorShapeInitSize = pageClientWidth - 300;
-    const [blocks, setBlocks] = useState<ReturnEditorBlock[]>();
+    const [blocks, setBlocks] = useState<{
+        shapes: [ReturnEditorBlock[]];
+        bindings: string;
+    }>();
     useEffect(() => {
-        services.api.editorBlock
-            .get({ workspace, ids: [rootBlockId] })
-            .then(async blockData => {
-                const shapes = await Promise.all(
-                    (blockData?.[0]?.children || []).map(async childId => {
-                        const childBlock = (
-                            await services.api.editorBlock.get({
-                                workspace,
-                                ids: [childId],
-                            })
-                        )?.[0];
-                        return childBlock;
-                    })
-                );
-                setBlocks(shapes);
+        Promise.all([
+            services.api.editorBlock
+                .get({ workspace, ids: [rootBlockId] })
+                .then(async blockData => {
+                    const shapes = await Promise.all(
+                        (blockData?.[0]?.children || []).map(async childId => {
+                            const childBlock = (
+                                await services.api.editorBlock.get({
+                                    workspace,
+                                    ids: [childId],
+                                })
+                            )?.[0];
+                            return childBlock;
+                        })
+                    );
+                    return shapes;
+                }),
+        ]).then(shapes => {
+            getBindings(workspace, rootBlockId).then(bindings => {
+                setBlocks({
+                    shapes,
+                    bindings: bindings,
+                });
             });
+        });
+
         let unobserve: () => void;
         services.api.editorBlock
             .observe({ workspace, id: rootBlockId }, async blockData => {
-                const shapes = await Promise.all(
+                Promise.all(
                     (blockData?.children || []).map(async childId => {
                         const childBlock = (
                             await services.api.editorBlock.get({
@@ -40,8 +64,14 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                         )?.[0];
                         return childBlock;
                     })
-                );
-                setBlocks(shapes);
+                ).then(shapes => {
+                    getBindings(workspace, rootBlockId).then(bindings => {
+                        setBlocks({
+                            shapes: [shapes],
+                            bindings: bindings,
+                        });
+                    });
+                });
             })
             .then(cb => {
                 unobserve = cb;
@@ -53,8 +83,7 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
     }, [workspace, rootBlockId]);
 
     let groupCount = 0;
-
-    return blocks?.reduce((acc, block) => {
+    let blocksShapes = blocks?.shapes[0]?.reduce((acc, block) => {
         const shapeProps = block.properties.shapeProps?.value
             ? JSON.parse(block.properties.shapeProps.value)
             : {};
@@ -75,4 +104,8 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
 
         return acc;
     }, {} as Record<string, TDShape>);
+    return {
+        shapes: blocksShapes,
+        bindings: JSON.parse(blocks?.bindings ?? '{}'),
+    };
 };

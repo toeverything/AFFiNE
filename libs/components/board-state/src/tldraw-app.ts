@@ -444,7 +444,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                         if (visitedShapes.has(fromShape)) {
                             return;
                         }
-
                         // We only need to update the binding's "from" shape (an arrow)
                         const fromDelta = TLDR.update_arrow_bindings(
                             page,
@@ -860,7 +859,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 if (!page.bindings[binding.id]) {
                     return;
                 }
-
                 const fromShape = page.shapes[binding.fromId] as ArrowShape;
 
                 if (visitedShapes.has(fromShape)) {
@@ -868,6 +866,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 }
 
                 // We only need to update the binding's "from" shape (an arrow)
+
                 const fromDelta = TLDR.update_arrow_bindings(page, fromShape);
                 visitedShapes.add(fromShape);
 

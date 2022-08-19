@@ -288,7 +288,7 @@ importers:
       '@tldraw/intersect': ^1.7.1
       '@tldraw/vec': ^1.7.0
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
 
@@ -299,7 +299,7 @@ importers:
       '@tldraw/vec': ^1.7.0
       perfect-freehand: ^1.0.16
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
       perfect-freehand: 1.1.0
@@ -312,7 +312,7 @@ importers:
       idb-keyval: ^6.2.0
       zustand: ^3.7.2
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
       idb-keyval: 6.2.0
@@ -324,7 +324,7 @@ importers:
       '@tldraw/intersect': ^1.7.1
       '@tldraw/vec': ^1.7.0
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
 
@@ -334,7 +334,7 @@ importers:
       '@tldraw/intersect': ^1.7.1
       '@tldraw/vec': ^1.7.0
     dependencies:
-      '@tldraw/core': 1.14.1_mobx@6.6.1
+      '@tldraw/core': 1.14.1
       '@tldraw/intersect': 1.7.1
       '@tldraw/vec': 1.7.1
 
@@ -6199,6 +6199,28 @@ packages:
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
     dev: true
+
+  /@tldraw/core/1.14.1:
+    resolution: {integrity: sha512-FAiX/TD/tl5eMvTk0IHhFUSmldCe/UTTOnLL5aWQHqhicF/iTP5m3H12L6kyjN60yfssN8U9g4E/7y70TY7JxA==}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+    dependencies:
+      '@tldraw/intersect': 1.7.1
+      '@tldraw/vec': 1.7.1
+      '@use-gesture/react': 10.2.16
+      mobx-react-lite: 3.4.0
+      perfect-freehand: 1.1.0
+      resize-observer-polyfill: 1.5.1
+    transitivePeerDependencies:
+      - mobx
+      - react-native
+    dev: false
 
   /@tldraw/core/1.14.1_mobx@6.6.1:
     resolution: {integrity: sha512-FAiX/TD/tl5eMvTk0IHhFUSmldCe/UTTOnLL5aWQHqhicF/iTP5m3H12L6kyjN60yfssN8U9g4E/7y70TY7JxA==}
@@ -13809,6 +13831,22 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
     dev: true
+
+  /mobx-react-lite/3.4.0:
+    resolution: {integrity: sha512-bRuZp3C0itgLKHu/VNxi66DN/XVkQG7xtoBVWxpvC5FhAqbOCP21+nPhULjnzEqd7xBMybp6KwytdUpZKEgpIQ==}
+    peerDependencies:
+      mobx: ^6.1.0
+      react: ^16.8.0 || ^17 || ^18
+      react-dom: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+    dev: false
 
   /mobx-react-lite/3.4.0_mobx@6.6.1:
     resolution: {integrity: sha512-bRuZp3C0itgLKHu/VNxi66DN/XVkQG7xtoBVWxpvC5FhAqbOCP21+nPhULjnzEqd7xBMybp6KwytdUpZKEgpIQ==}
