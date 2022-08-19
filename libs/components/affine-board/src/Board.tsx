@@ -109,10 +109,8 @@ const AffineBoard = ({
                                         });
                                 }
                                 shape.affineId = block.id;
+
                                 Object.keys(bindings).forEach(bilingKey => {
-                                    if (!bindings[bilingKey]) {
-                                        delete bindings[bilingKey];
-                                    }
                                     if (
                                         bindings[bilingKey]?.fromId === shape.id
                                     ) {
@@ -142,9 +140,12 @@ const AffineBoard = ({
                             ids: [rootBlockId],
                         })
                     )?.[0].properties.bindings?.value;
+                    console.log(123123123);
                     let pageBindings = JSON.parse(pageBindingsString ?? '{}');
+                    console.log(pageBindings, 3333, bindings);
                     Object.keys(bindings).forEach(bindingsKey => {
-                        if (bindings[bindingsKey] === undefined) {
+                        console.log(345345345345345);
+                        if (!bindings[bindingsKey]) {
                             delete pageBindings[bindingsKey];
                         } else {
                             Object.assign(pageBindings, bindings);
