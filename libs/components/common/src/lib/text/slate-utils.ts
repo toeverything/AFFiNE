@@ -11,6 +11,7 @@ import {
     Transforms,
 } from 'slate';
 import { ReactEditor } from 'slate-react';
+import type { CustomElement } from '..';
 import {
     fontBgColorPalette,
     fontColorPalette,
@@ -597,7 +598,7 @@ class SlateUtils {
 
         const fragmentChildren = firstFragment.children;
 
-        const textChildren = [];
+        const textChildren: CustomElement[] = [];
         for (let i = 0; i < fragmentChildren.length; i++) {
             const child = fragmentChildren[i];
             if ('type' in child && child.type === 'link') {
