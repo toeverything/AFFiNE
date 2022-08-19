@@ -156,19 +156,14 @@ export const DoubleLinkMenu = ({
                 });
                 setAnchorEl(dialogRef.current);
             }
-            setTimeout(() => {
-                const textSelection = editor.blockHelper.selectionToSlateRange(
-                    nextNodeId,
-                    editor.selection.currentSelectInfo.browserSelection
-                );
-                if (textSelection) {
-                    const { anchor } = textSelection;
-                    editor.blockHelper.setDoubleLinkSearchSlash(
-                        nextNodeId,
-                        anchor
-                    );
-                }
-            });
+            const textSelection = editor.blockHelper.selectionToSlateRange(
+                nextNodeId,
+                editor.selection.currentSelectInfo?.browserSelection
+            );
+            if (textSelection) {
+                const { anchor } = textSelection;
+                editor.blockHelper.setDoubleLinkSearchSlash(nextNodeId, anchor);
+            }
         },
         [editor]
     );

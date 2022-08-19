@@ -1,11 +1,6 @@
-import {
-    CommonList,
-    commonListContainer,
-    CommonListItem,
-} from '@toeverything/components/common';
+import { CommonList, CommonListItem } from '@toeverything/components/common';
 import { styled } from '@toeverything/components/ui';
 import { HookType, PluginHooks, Virgo } from '@toeverything/framework/virgo';
-import { domToRect } from '@toeverything/utils';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export type DoubleLinkMenuContainerProps = {
@@ -25,54 +20,12 @@ export const DoubleLinkMenuContainer = (
     const { hooks, onSelected, onClose, types, style, items } = props;
     const menuRef = useRef<HTMLDivElement>(null);
     const [currentItem, setCurrentItem] = useState<string | undefined>();
-    const [needCheckIntoView, setNeedCheckIntoView] = useState<boolean>(false);
-
-    useEffect(() => {
-        if (needCheckIntoView) {
-            if (currentItem && menuRef.current) {
-                const itemElement =
-                    menuRef.current.querySelector<HTMLButtonElement>(
-                        `.item-${currentItem}`
-                    );
-                const scrollElement =
-                    menuRef.current.querySelector<HTMLButtonElement>(
-                        `.${commonListContainer}`
-                    );
-                if (itemElement) {
-                    const itemRect = domToRect(itemElement);
-                    const scrollRect = domToRect(scrollElement);
-                    if (
-                        itemRect.top < scrollRect.top ||
-                        itemRect.bottom > scrollRect.bottom
-                    ) {
-                        itemElement.scrollIntoView({
-                            block: 'nearest',
-                        });
-                    }
-                }
-            }
-            setNeedCheckIntoView(false);
-        }
-    }, [needCheckIntoView, currentItem]);
 
     useEffect(() => {
         if (types && !currentItem) {
             setCurrentItem(types[0]);
         }
     }, [currentItem, onClose, types]);
-
-    useEffect(() => {
-        if (types) {
-            if (!types.includes(currentItem)) {
-                setNeedCheckIntoView(true);
-                if (types.length) {
-                    setCurrentItem(types[0]);
-                } else {
-                    setCurrentItem(undefined);
-                }
-            }
-        }
-    }, [types, currentItem]);
 
     const handleUpDownKey = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -85,7 +38,6 @@ export const DoubleLinkMenuContainer = (
                 if (currentItem) {
                     const idx = types.indexOf(currentItem);
                     if (isUpkey ? idx > 0 : idx < types.length - 1) {
-                        setNeedCheckIntoView(true);
                         setCurrentItem(types[isUpkey ? idx - 1 : idx + 1]);
                     }
                 }

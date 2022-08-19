@@ -162,7 +162,6 @@ export class AsyncBlock {
                 const oldData = this.raw_data;
                 this.raw_data = blockData;
                 this.raw_data = await this.filterPageInvalidChildren(blockData);
-                this.raw_data = await this.updateDoubleLinkBlock(this.raw_data);
                 this.emit('update', { block: this, oldData });
             }
         );

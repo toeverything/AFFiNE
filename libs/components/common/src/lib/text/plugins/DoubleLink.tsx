@@ -2,6 +2,7 @@ import { PagesIcon } from '@toeverything/components/icons';
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Descendant } from 'slate';
+import { RenderElementProps } from 'slate-react';
 
 export type DoubleLinkElement = {
     type: 'link';
@@ -11,17 +12,17 @@ export type DoubleLinkElement = {
     id: string;
 };
 
-export const DoubleLinkComponent = ({ attributes, children, element }: any) => {
+export const DoubleLinkComponent = (props: RenderElementProps) => {
+    const { attributes, children, element } = props;
+    const doubleLinkElement = element as DoubleLinkElement;
     const navigate = useNavigate();
 
     const handleClickLinkText = useCallback(
         (event: React.MouseEvent<HTMLAnchorElement>) => {
-            event.preventDefault();
-            event.stopPropagation();
-            const { workspaceId, blockId } = element;
+            const { workspaceId, blockId } = doubleLinkElement;
             navigate(`/${workspaceId}/${blockId}`);
         },
-        [element, navigate]
+        [doubleLinkElement, navigate]
     );
 
     return (
@@ -30,7 +31,7 @@ export const DoubleLinkComponent = ({ attributes, children, element }: any) => {
             <a
                 {...attributes}
                 style={{ cursor: 'pointer' }}
-                href={`/${element.workspaceId}/${element.blockId}`}
+                href={`/${doubleLinkElement.workspaceId}/${doubleLinkElement.blockId}`}
             >
                 <span onClick={handleClickLinkText}>{children}</span>
             </a>
