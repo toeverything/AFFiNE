@@ -599,6 +599,10 @@ class SlateUtils {
 
         const textChildren: Text[] = [];
         for (const child of fragmentChildren) {
+            if ((child as any).type === 'link') {
+                textChildren.push(child as Text);
+                continue;
+            }
             if (!('text' in child)) {
                 console.error('Debug information:', point1, point2, fragment);
                 throw new Error('Fragment exists nested!');

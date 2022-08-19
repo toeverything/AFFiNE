@@ -20,6 +20,7 @@ export const DoubleLinkComponent = ({ attributes, children, element }: any) => {
             <PagesIcon style={{ verticalAlign: 'middle', height: '20px' }} />
             <a
                 {...attributes}
+                style={{ cursor: 'pointer' }}
                 href={`/${element.workspaceId}/${element.blockId}`}
             >
                 <span onClick={handleClickLinkText}>{children}</span>

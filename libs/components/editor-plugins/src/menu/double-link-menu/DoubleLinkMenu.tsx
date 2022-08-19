@@ -11,7 +11,6 @@ import {
 } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
 import { HookType, PluginHooks, Virgo } from '@toeverything/framework/virgo';
-import { getPageId } from '@toeverything/utils';
 import React, {
     ChangeEvent,
     useCallback,
@@ -20,12 +19,13 @@ import React, {
     useRef,
     useState,
 } from 'react';
+import { useParams } from 'react-router-dom';
 import { QueryBlocks, QueryResult } from '../../search';
 import { DoubleLinkMenuContainer } from './Container';
 
 const ADD_NEW_SUB_PAGE = 'AddNewSubPage';
 const ADD_NEW_PAGE = 'AddNewPage';
-const ARRAY_KEYS = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'];
+const ARRAY_CODES = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'];
 
 export type DoubleLinkMenuProps = {
     editor: Virgo;
@@ -44,6 +44,7 @@ export const DoubleLinkMenu = ({
     hooks,
     style,
 }: DoubleLinkMenuProps) => {
+    const { page_id: curPageId } = useParams();
     const [isOpen, setIsOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
     const dialogRef = useRef<HTMLDivElement>();
@@ -120,9 +121,12 @@ export const DoubleLinkMenu = ({
     useEffect(() => {
         const text = inAddNewPage ? filterText : searchText;
         QueryBlocks(editor, text, result => {
+            if (!inAddNewPage) {
+                result = result.filter(item => item.id !== curPageId);
+            }
             setSearchResultBlocks(result);
         });
-    }, [editor, searchText, filterText, inAddNewPage]);
+    }, [editor, searchText, filterText, inAddNewPage, curPageId]);
 
     const hideMenu = useCallback(() => {
         setIsOpen(false);
@@ -133,23 +137,31 @@ export const DoubleLinkMenu = ({
 
     const searchChange = useCallback(
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (ARRAY_KEYS.includes(event.key)) {
+            if (ARRAY_CODES.includes(event.code)) {
                 return;
+            }
+            if (event.code === 'Backspace') {
+                const searchText =
+                    editor.blockHelper.getDoubleLinkSearchSlashText(curBlockId);
+                if (!searchText || searchText === '[[') {
+                    hideMenu();
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                }
             }
             const { type, anchorNode } = editor.selection.currentSelectInfo;
             if (
-                type === 'Range' &&
-                anchorNode &&
-                editor.blockHelper.isSelectionCollapsed(anchorNode.id)
+                !isOpen ||
+                (type === 'Range' &&
+                    anchorNode &&
+                    anchorNode.id !== curBlockId &&
+                    editor.blockHelper.isSelectionCollapsed(anchorNode.id))
             ) {
                 const text = editor.blockHelper.getBlockTextBeforeSelection(
                     anchorNode.id
                 );
                 if (text.endsWith('[[')) {
-                    if (event.key === 'Backspace') {
-                        hideMenu();
-                        return;
-                    }
                     editor.blockHelper.removeDoubleLinkSearchSlash(curBlockId);
                     setCurBlockId(anchorNode.id);
                     setSearchText('');
@@ -211,26 +223,18 @@ export const DoubleLinkMenu = ({
             if (event.code === 'Escape') {
                 hideMenu();
             }
-            const { type, anchorNode } = editor.selection.currentSelectInfo;
-            if (
-                type === 'Range' &&
-                anchorNode &&
-                editor.blockHelper.isSelectionCollapsed(anchorNode.id)
-            ) {
-                const text = editor.blockHelper.getBlockTextBeforeSelection(
-                    anchorNode.id
-                );
-                if (text.endsWith('[[')) {
-                    if (event.key === 'Backspace') {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        hideMenu();
-                        return;
-                    }
+
+            if (event.code === 'Backspace') {
+                const searchText =
+                    editor.blockHelper.getDoubleLinkSearchSlashText(curBlockId);
+                if (!searchText || searchText === '[[') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
                 }
             }
         },
-        [hideMenu, editor, isOpen]
+        [hideMenu, editor, isOpen, curBlockId]
     );
 
     useEffect(() => {
@@ -294,7 +298,7 @@ export const DoubleLinkMenu = ({
                 return;
             }
             if (id === ADD_NEW_SUB_PAGE) {
-                const pageId = await addSubPage(getPageId());
+                const pageId = await addSubPage(curPageId);
                 insertDoubleLink(pageId);
                 return;
             }
