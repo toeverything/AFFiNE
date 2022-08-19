@@ -18,7 +18,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-27-orange.svg?style=flat-square
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-31-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
@@ -228,6 +228,12 @@ For help, discussion about best practices, or any other conversation that would 
     <td align="center"><a href="https://github.com/chenmoonmo"><img src="https://avatars.githubusercontent.com/u/36295999?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Simon Li</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=chenmoonmo" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/githbq"><img src="https://avatars.githubusercontent.com/u/10009709?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Bob Hu</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=githbq" title="Code">💻</a></td>
     <td align="center"><a href="https://quavo.vercel.app/"><img src="https://avatars.githubusercontent.com/u/67266933?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Quavo</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=lucky-chap" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/LuciNyan"><img src="https://avatars.githubusercontent.com/u/22126563?v=4?s=50" width="50px;" alt=""/><br /><sub><b>子瞻 Luci</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=LuciNyan" title="Code">💻</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="http://blog.ipili.me/"><img src="https://avatars.githubusercontent.com/u/4948120?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Horus</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=m1911star" title="Code">💻</a> <a href="#platform-m1911star" title="Packaging/porting to new platform">📦</a></td>
+    <td align="center"><a href="https://segmentfault.com/u/qzuser_584786517d31a"><img src="https://avatars.githubusercontent.com/u/15103283?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Super.x</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=fanshyiis" title="Code">💻</a></td>
+    <td align="center"><a href="https://wangyu-1999.github.io/"><img src="https://avatars.githubusercontent.com/u/80874770?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Wang Yu</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=wangyu-1999" title="Code">💻</a></td>
   </tr>
 </table>
 
