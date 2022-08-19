@@ -25,45 +25,41 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
         bindings: string;
     }>();
     useEffect(() => {
-        Promise.all([
-            services.api.editorBlock
-                .get({ workspace, ids: [rootBlockId] })
-                .then(async blockData => {
-                    const shapes = await Promise.all(
-                        (blockData?.[0]?.children || []).map(async childId => {
-                            const childBlock = (
-                                await services.api.editorBlock.get({
-                                    workspace,
-                                    ids: [childId],
-                                })
-                            )?.[0];
-                            return childBlock;
-                        })
-                    );
-                    return shapes;
-                }),
-        ]).then(shapes => {
-            getBindings(workspace, rootBlockId).then(bindings => {
-                setBlocks({
-                    shapes,
-                    bindings: bindings,
-                });
-            });
-        });
-
-        let unobserve: () => void;
         services.api.editorBlock
-            .observe({ workspace, id: rootBlockId }, async blockData => {
+            .get({ workspace, ids: [rootBlockId] })
+            .then(blockData =>
                 Promise.all(
-                    (blockData?.children || []).map(async childId => {
-                        const childBlock = (
-                            await services.api.editorBlock.get({
+                    (blockData?.[0]?.children ?? []).map(childId =>
+                        services.api.editorBlock
+                            .get({
                                 workspace,
                                 ids: [childId],
                             })
-                        )?.[0];
-                        return childBlock;
-                    })
+                            .then(blocks => blocks?.[0])
+                    )
+                )
+            )
+            .then(shape => {
+                getBindings(workspace, rootBlockId).then(bindings => {
+                    setBlocks({
+                        shapes: [shape],
+                        bindings: bindings,
+                    });
+                });
+            });
+
+        let unobserve: () => void;
+        services.api.editorBlock
+            .observe({ workspace, id: rootBlockId }, blockData => {
+                Promise.all(
+                    (blockData?.children ?? []).map(childId =>
+                        services.api.editorBlock
+                            .get({
+                                workspace,
+                                ids: [childId],
+                            })
+                            .then(blocks => blocks?.[0])
+                    )
                 ).then(shapes => {
                     getBindings(workspace, rootBlockId).then(bindings => {
                         setBlocks({
@@ -83,10 +79,9 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
     }, [workspace, rootBlockId]);
 
     let groupCount = 0;
-    let blocksShapes = blocks?.shapes[0]?.reduce((acc, block) => {
-        const shapeProps = block.properties.shapeProps?.value
-            ? JSON.parse(block.properties.shapeProps.value)
-            : {};
+    const blocksShapes = blocks?.shapes[0]?.reduce((acc, block) => {
+        const shapePropsJson = block.properties.shapeProps?.value;
+        const shapeProps = shapePropsJson ? JSON.parse(shapePropsJson) : {};
         if (block.type === 'shape') {
             acc[block.id] = { ...shapeProps, id: block.id };
         } else {
