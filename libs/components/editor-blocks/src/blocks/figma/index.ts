@@ -8,7 +8,7 @@ import { FigmaView } from './FigmaView';
 
 export class FigmaBlock extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     type = Protocol.Block.Type.figma;
     View = FigmaView;
 

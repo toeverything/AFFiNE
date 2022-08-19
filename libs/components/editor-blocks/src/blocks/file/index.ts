@@ -12,7 +12,7 @@ import { FileView } from './FileView';
 
 export class FileBlock extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     type = Protocol.Block.Type.file;
     View = FileView;
 

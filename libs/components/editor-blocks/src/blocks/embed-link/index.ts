@@ -8,7 +8,7 @@ import { EmbedLinkView } from './EmbedLinkView';
 
 export class EmbedLinkBlock extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     type = Protocol.Block.Type.embedLink;
     View = EmbedLinkView;
 
