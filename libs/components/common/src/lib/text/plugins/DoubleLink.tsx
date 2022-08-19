@@ -1,6 +1,15 @@
 import { PagesIcon } from '@toeverything/components/icons';
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Descendant } from 'slate';
+
+export type DoubleLinkElement = {
+    type: 'link';
+    workspaceId: string;
+    blockId: string;
+    children: Descendant[];
+    id: string;
+};
 
 export const DoubleLinkComponent = ({ attributes, children, element }: any) => {
     const navigate = useNavigate();

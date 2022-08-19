@@ -1,5 +1,6 @@
 import { BaseEditor } from 'slate';
 import { ReactEditor } from 'slate-react';
+import { DoubleLinkElement } from './text/plugins/DoubleLink';
 import { LinkElement } from './text/plugins/link';
 import { RefLinkElement } from './text/plugins/reflink';
 
@@ -8,7 +9,8 @@ export type CustomElement =
     | { type: string; children: CustomElement[] }
     | CustomText
     | LinkElement
-    | RefLinkElement;
+    | RefLinkElement
+    | DoubleLinkElement;
 declare module 'slate' {
     interface CustomTypes {
         Editor: BaseEditor & ReactEditor;
@@ -19,35 +21,32 @@ declare module 'slate' {
 
 export { BlockPreview, StyledBlockPreview } from './block-preview';
 export { default as Button } from './button';
-export type { CommonListItem } from './list';
-export { CommonList, BackLink, commonListContainer } from './list';
-export * from './Logo';
-export { default as Toolbar } from './toolbar';
 export { CollapsibleTitle } from './collapsible-title';
-
-export * from './text';
-
+export * from './comming-soon/CommingSoon';
 export {
-    NewpageIcon,
+    AddIcon,
     ClockIcon,
-    ViewSidebarIcon,
+    CloseIcon,
+    CodeBlockInlineIcon,
+    DocumentIcon,
+    FilterIcon,
+    FullScreenIcon,
+    HighlighterDuotoneIcon,
+    KanbanIcon,
     ListIcon,
-    SpaceIcon,
+    NewpageIcon,
+    PagesIcon,
     PencilDotDuotoneIcon,
     PencilDuotoneIcon,
-    HighlighterDuotoneIcon,
-    CodeBlockInlineIcon,
-    PagesIcon,
-    CloseIcon,
-    DocumentIcon,
-    TodoListIcon,
-    KanbanIcon,
-    TableIcon,
-    AddIcon,
-    FilterIcon,
     SorterIcon,
-    FullScreenIcon,
+    SpaceIcon,
+    TableIcon,
+    TodoListIcon,
     UnGroupIcon,
+    ViewSidebarIcon,
 } from './icon';
-
-export * from './comming-soon/CommingSoon';
+export { BackLink, CommonList, commonListContainer } from './list';
+export type { CommonListItem } from './list';
+export * from './Logo';
+export * from './text';
+export { default as Toolbar } from './toolbar';
