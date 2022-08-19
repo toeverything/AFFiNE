@@ -238,7 +238,7 @@ const GitHub = (props: { center?: boolean; flat?: boolean }) => {
             startIcon={<GitHubIcon />}
             size="lg"
         >
-            {t(`${props.center ? 'Check ' : ''}GitHub`)}
+            {props.center ? t('Check GitHub') : t('GitHub')}
         </Button>
     );
 };
@@ -715,11 +715,7 @@ export function App() {
                             fontSize="1.2em"
                             style={{ marginBottom: '0.25em' }}
                         >
-                            Your data is yours; it is always locally stored and
-                            secured - available to you always. While still being
-                            able enjoy collaboration features such as real-time
-                            editing and sharing with others, without any cloud
-                            setup.
+                            {t('description4.part3')}
                         </Typography>
                     </Box>
                 </Grid>
