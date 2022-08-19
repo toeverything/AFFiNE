@@ -19,14 +19,10 @@ export type DoubleLinkMenuContainerProps = {
     items?: CommonListItem[];
 };
 
-export const DoubleLinkMenuContainer = ({
-    hooks,
-    onSelected,
-    onClose,
-    types,
-    style,
-    items,
-}: DoubleLinkMenuContainerProps) => {
+export const DoubleLinkMenuContainer = (
+    props: DoubleLinkMenuContainerProps
+) => {
+    const { hooks, onSelected, onClose, types, style, items } = props;
     const menuRef = useRef<HTMLDivElement>(null);
     const [currentItem, setCurrentItem] = useState<string | undefined>();
     const [needCheckIntoView, setNeedCheckIntoView] = useState<boolean>(false);
@@ -79,42 +75,37 @@ export const DoubleLinkMenuContainer = ({
         }
     }, [types, currentItem]);
 
-    const handleClickUp = useCallback(
+    const handleUpDownKey = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (types && event.code === 'ArrowUp') {
+            if (types && ['ArrowUp', 'ArrowDown'].includes(event.code)) {
                 event.preventDefault();
+                const isUpkey = event.code === 'ArrowUp';
                 if (!currentItem && types.length) {
-                    setCurrentItem(types[types.length - 1]);
+                    setCurrentItem(types[isUpkey ? types.length - 1 : 0]);
                 }
                 if (currentItem) {
                     const idx = types.indexOf(currentItem);
-                    if (idx > 0) {
+                    if (isUpkey ? idx > 0 : idx < types.length - 1) {
                         setNeedCheckIntoView(true);
-                        setCurrentItem(types[idx - 1]);
+                        setCurrentItem(types[isUpkey ? idx - 1 : idx + 1]);
                     }
                 }
             }
         },
-        [types, currentItem]
+        [currentItem, types]
+    );
+    const handleClickUp = useCallback(
+        (event: React.KeyboardEvent<HTMLDivElement>) => {
+            handleUpDownKey(event);
+        },
+        [handleUpDownKey]
     );
 
     const handleClickDown = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (types && event.code === 'ArrowDown') {
-                event.preventDefault();
-                if (!currentItem && types.length) {
-                    setCurrentItem(types[0]);
-                }
-                if (currentItem) {
-                    const idx = types.indexOf(currentItem);
-                    if (idx < types.length - 1) {
-                        setNeedCheckIntoView(true);
-                        setCurrentItem(types[idx + 1]);
-                    }
-                }
-            }
+            handleUpDownKey(event);
         },
-        [types, currentItem]
+        [handleUpDownKey]
     );
 
     const handleClickEnter = useCallback(
