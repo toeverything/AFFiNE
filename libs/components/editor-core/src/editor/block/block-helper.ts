@@ -19,6 +19,11 @@ type TextUtilsFunctions =
     | 'setSearchSlash'
     | 'removeSearchSlash'
     | 'getSearchSlashText'
+    | 'setDoubleLinkSearchSlash'
+    | 'getDoubleLinkSearchSlashText'
+    | 'setSelectDoubleLinkSearchSlash'
+    | 'removeDoubleLinkSearchSlash'
+    | 'insertDoubleLink'
     | 'selectionToSlateRange'
     | 'transformPoint'
     | 'toggleTextFormatBySelection'
@@ -32,7 +37,6 @@ type TextUtilsFunctions =
     | 'getCommentsIdsBySelection'
     | 'getCurrentSelection'
     | 'removeSelection'
-    | 'insertReference'
     | 'isCollapsed'
     | 'blur'
     | 'setSelection'
@@ -149,27 +153,60 @@ export class BlockHelper {
         }
     }
 
-    public insertReference(
-        reference: string,
+    public setDoubleLinkSearchSlash(blockId: string, point: Point) {
+        const textUtils = this._blockTextUtilsMap[blockId];
+        if (textUtils) {
+            textUtils.setDoubleLinkSearchSlash(point);
+        } else {
+            console.warn('Could find the block text utils');
+        }
+    }
+
+    public getDoubleLinkSearchSlashText(blockId: string) {
+        const textUtils = this._blockTextUtilsMap[blockId];
+        if (textUtils) {
+            return textUtils.getDoubleLinkSearchSlashText();
+        }
+        console.warn('Could find the block text utils');
+        return '';
+    }
+    public setSelectDoubleLinkSearchSlash(blockId: string) {
+        const textUtils = this._blockTextUtilsMap[blockId];
+        if (textUtils) {
+            return textUtils.setSelectDoubleLinkSearchSlash();
+        }
+        console.warn('Could find the block text utils');
+        return '';
+    }
+
+    public removeDoubleLinkSearchSlash(
         blockId: string,
-        selection: Selection,
-        offset: number
+        isRemoveSlash?: boolean
     ) {
-        const text_utils = this._blockTextUtilsMap[blockId];
-        if (text_utils) {
-            const offsetSelection = window.getSelection();
-            offsetSelection.setBaseAndExtent(
-                selection.anchorNode,
-                selection.anchorOffset,
-                selection.focusNode,
-                selection.focusOffset + offset
-            );
+        const textUtils = this._blockTextUtilsMap[blockId];
+        if (textUtils) {
+            textUtils.removeDoubleLinkSearchSlash(isRemoveSlash);
+        } else {
+            console.warn('Could find the block text utils');
+        }
+    }
 
-            text_utils.removeSelection(offsetSelection);
-            text_utils.insertReference(reference);
-
-            // range.
-            // text_utils.toggleTextFormatBySelection(format, range);
+    public async insertDoubleLink(
+        workspaceId: string,
+        linkBlockId: string,
+        blockId: string
+    ) {
+        const textUtils = this._blockTextUtilsMap[blockId];
+        if (textUtils) {
+            const linkBlock = await this._editor.getBlock({
+                workspace: workspaceId,
+                id: linkBlockId,
+            });
+            let children = linkBlock.getProperties().text?.value || [];
+            if (children.length === 1 && !children[0].text) {
+                children = [{ text: 'Untitled' }];
+            }
+            textUtils.insertDoubleLink(workspaceId, linkBlockId, children);
         }
         console.warn('Could find the block text utils');
     }

@@ -1,0 +1,1 @@
+export { DoubleLinkMenuPlugin } from './Plugin';

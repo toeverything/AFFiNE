@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import style9 from 'style9';
-
 import { SvgIconProps } from '../svg-icon';
 import { BaseButton } from './base-button';
 
@@ -35,7 +34,7 @@ const styles = style9.create({
 
 type ListButtonProps = {
     className?: string;
-    onClick: () => void;
+    onClick?: () => void;
     onMouseOver?: () => void;
     content?: string;
     children?: () => JSX.Element;

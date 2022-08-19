@@ -1,15 +1,15 @@
 import type { PluginCreator } from '@toeverything/framework/virgo';
-import {
-    LeftMenuPlugin,
-    InlineMenuPlugin,
-    CommandMenuPlugin,
-    ReferenceMenuPlugin,
-    SelectionGroupPlugin,
-    GroupMenuPlugin,
-} from './menu';
-import { TemplatePlugin } from './template';
-import { FullTextSearchPlugin } from './search';
 import { AddCommentPlugin } from './comment';
+import {
+    CommandMenuPlugin,
+    DoubleLinkMenuPlugin,
+    GroupMenuPlugin,
+    InlineMenuPlugin,
+    LeftMenuPlugin,
+    SelectionGroupPlugin,
+} from './menu';
+import { FullTextSearchPlugin } from './search';
+import { TemplatePlugin } from './template';
 // import { PlaceholderPlugin } from './placeholder';
 
 // import { BlockPropertyPlugin } from './block-property';
@@ -19,7 +19,7 @@ export const plugins: PluginCreator[] = [
     LeftMenuPlugin,
     InlineMenuPlugin,
     CommandMenuPlugin,
-    ReferenceMenuPlugin,
+    DoubleLinkMenuPlugin,
     TemplatePlugin,
     // SelectionGroupPlugin,
     AddCommentPlugin,
