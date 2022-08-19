@@ -7,12 +7,15 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import RedditIcon from '@mui/icons-material/Reddit';
 import TelegramIcon from '@mui/icons-material/Telegram';
 import { Box, Button, Container, Grid, SvgIcon, Typography } from '@mui/joy';
+import Option from '@mui/joy/Option';
+import Select from '@mui/joy/Select';
 import { CssVarsProvider, styled } from '@mui/joy/styles';
 import { LogoIcon } from '@toeverything/components/icons';
 // eslint-disable-next-line no-restricted-imports
 import { useMediaQuery } from '@mui/material';
-
+import { useTranslation } from 'react-i18next';
 import CollaborationImage from './collaboration.png';
+import { options } from './i18n';
 import LogoImage from './logo.png';
 import PageImage from './page.png';
 import ShapeImage from './shape.png';
@@ -199,6 +202,7 @@ const AffineImage = styled('img')({
 
 const GitHub = (props: { center?: boolean; flat?: boolean }) => {
     const matches = useMediaQuery('(max-width: 1024px)');
+    const { t } = useTranslation();
 
     return (
         <Button
@@ -234,14 +238,14 @@ const GitHub = (props: { center?: boolean; flat?: boolean }) => {
             startIcon={<GitHubIcon />}
             size="lg"
         >
-            {props.center ? 'Check ' : ''}GitHub
+            {props.center ? t('Check GitHub') : t('GitHub')}
         </Button>
     );
 };
 
 const AFFiNEOnline = (props: { center?: boolean; flat?: boolean }) => {
     const matches = useMediaQuery('(max-width: 1024px)');
-
+    const { t } = useTranslation();
     return (
         <Button
             onClick={() => {
@@ -277,14 +281,18 @@ const AFFiNEOnline = (props: { center?: boolean; flat?: boolean }) => {
             startIcon={<LogoIcon />}
             size="lg"
         >
-            Try it Online
+            {t('Try it Online')}
         </Button>
     );
 };
 
 export function App() {
     const matches = useMediaQuery('(max-width: 1024px)');
+    const { t, i18n } = useTranslation();
 
+    const changeLanguage = (event: any) => {
+        i18n.changeLanguage(event);
+    };
     return (
         <CssVarsProvider>
             <VenusContainer
@@ -342,6 +350,13 @@ export function App() {
                         >
                             Blog
                         </Button>
+                        <Select defaultValue="en" onChange={changeLanguage}>
+                            {options.map(option => (
+                                <Option key={option.value} value={option.value}>
+                                    {option.text}
+                                </Option>
+                            ))}
+                        </Select>
                     </Grid>
                 </Grid>
                 <Grid
@@ -369,7 +384,7 @@ export function App() {
                                 },
                             }}
                         >
-                            Open Source,
+                            {t('Open Source')},
                         </Typography>
                         <Typography
                             fontSize="96px"
@@ -380,7 +395,7 @@ export function App() {
                                 },
                             }}
                         >
-                            Privacy First
+                            {t('Privacy First')}
                         </Typography>
                     </Box>
                 </Grid>
@@ -413,7 +428,7 @@ export function App() {
                                 },
                             }}
                         >
-                            Alternative
+                            {t('Alternative')}
                         </Typography>
                     </Box>
                 </Grid>
@@ -432,8 +447,7 @@ export function App() {
                             fontWeight={'400'}
                             sx={{ color: '#888' }}
                         >
-                            Affine is the next-generation collaborative
-                            knowledge base for professionals.
+                            {t('description1.part1')}
                         </Typography>
                     </Box>
                 </Grid>
@@ -488,8 +502,7 @@ export function App() {
                             level={matches ? 'h2' : 'h1'}
                             fontWeight={'bold'}
                         >
-                            It’s not just a collection of Docs, whiteboard, and
-                            tables.
+                            {t('description1.part2')}
                         </Typography>
                     </Box>
                 </Grid>
@@ -506,11 +519,10 @@ export function App() {
                         }}
                     >
                         <Typography fontSize="1.2em">
-                            Transform any building block as you like.
+                            {t('description1.part3')}
                         </Typography>
                         <Typography fontSize="1.2em">
-                            Say goodbye to redundancy. Store your data once, and
-                            keep your data as you like it.
+                            {t('description1.part4')}
                         </Typography>
                     </Box>
                 </Grid>
@@ -547,23 +559,19 @@ export function App() {
                                 fontWeight={'bold'}
                                 style={{ marginBottom: '0.5em' }}
                             >
-                                Shape Your Page
+                                {t('description2.part1')}
                             </Typography>
                             <Typography
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                Docs, Kanbans, and Databases are all fully
-                                functional anywhere, anytime. A truly
-                                what-you-see-is-what-you-get environment for
-                                your data.
+                                {t('description2.part2')}
                             </Typography>
                             <Typography
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                All pages come with a document (Paper Mode) and
-                                whiteboard (Edgeless Mode) view.
+                                {t('description2.part3')}
                             </Typography>
                         </Box>
                     </Grid>
@@ -625,27 +633,25 @@ export function App() {
                                 fontWeight={'bold'}
                                 style={{ marginBottom: '0.5em' }}
                             >
-                                Plan Your Task
+                                {t('description3.part1')}
                             </Typography>
                             <Typography
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                No more chaos managing multiple views.
+                                {t('description3.part2')}
                             </Typography>
                             <Typography
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                Set a TODO with Markdown, and seamlessly edit it
-                                within a Kanban.
+                                {t('description3.part3')}
                             </Typography>
                             <Typography
                                 fontSize="1.2em"
                                 style={{ marginBottom: '0.25em' }}
                             >
-                                Managing multi-dimensional tables should be this
-                                simple – and now it is.
+                                {t('description3.part4')}
                             </Typography>
                         </Box>
                     </Grid>
@@ -697,27 +703,19 @@ export function App() {
                             fontWeight={'bold'}
                             style={{ marginBottom: '0.5em' }}
                         >
-                            Privacy-first, and collaborative. No compromises
-                            whatsoever.
+                            {t('description4.part1')}
                         </Typography>
                         <Typography
                             fontSize="1.2em"
                             style={{ marginBottom: '0.25em' }}
                         >
-                            We don’t like being locked-in, and neither should
-                            you. Privacy is at the foundation of everything we
-                            do, but it should not limit us that’s+ why there are
-                            no compromises.
+                            {t('description4.part2')}
                         </Typography>
                         <Typography
                             fontSize="1.2em"
                             style={{ marginBottom: '0.25em' }}
                         >
-                            Your data is yours; it is always locally stored and
-                            secured - available to you always. While still being
-                            able to enjoy collaboration features such as
-                            real-time editing and sharing with others, without
-                            any cloud setup.
+                            {t('description4.part3')}
                         </Typography>
                     </Box>
                 </Grid>
@@ -762,7 +760,7 @@ export function App() {
                         }}
                     >
                         <Typography fontSize={'1.5em'}>
-                            Build for an open and semantic future
+                            {t('BuildFor')}
                         </Typography>
                     </Box>
                 </Grid>
@@ -778,7 +776,7 @@ export function App() {
                     >
                         <Typography level="h3" sx={{ display: 'flex' }}>
                             <span style={{ alignSelf: 'center' }}>
-                                Keep Updated on
+                                {t('KeepUpdated')}
                             </span>
                             <GitHub />
                         </Typography>
@@ -795,7 +793,7 @@ export function App() {
                         }}
                     >
                         <Typography level="h2" sx={{ display: 'flex' }}>
-                            Join Our Community
+                            {t('Join')}
                         </Typography>
                     </Box>
                 </Grid>

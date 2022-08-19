@@ -7,16 +7,18 @@
     "keywords": [],
     "author": "DarkSky <darksky2048@gmail.com>",
     "dependencies": {
-        "@mui/joy": "^5.0.0-alpha.39",
         "@emotion/react": "^11.10.0",
         "@emotion/styled": "^11.10.0",
-        "lozad": "^1.16.0"
+        "@mui/joy": "^5.0.0-alpha.39",
+        "i18next": "^21.9.1",
+        "lozad": "^1.16.0",
+        "react-i18next": "^11.18.4"
     },
     "devDependencies": {
-        "mini-css-extract-plugin": "^2.6.1",
         "image-minimizer-webpack-plugin": "^3.2.3",
         "imagemin": "^8.0.1",
         "imagemin-optipng": "^8.0.0",
+        "mini-css-extract-plugin": "^2.6.1",
         "webpack": "^5.74.0"
     }
 }
