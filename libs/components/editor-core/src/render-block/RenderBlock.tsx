@@ -13,7 +13,7 @@ export function RenderBlock({
     blockId,
     hasContainer = true,
 }: RenderBlockProps) {
-    const { editor, editorElement } = useEditor();
+    const { editor } = useEditor();
     const { block } = useBlock(blockId);
 
     const setRef = useCallback(
@@ -50,7 +50,6 @@ export function RenderBlock({
             block={block}
             columns={columns.columns}
             columnsFromId={columns.fromId}
-            editorElement={editorElement}
         />
     );
 

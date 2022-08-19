@@ -171,6 +171,10 @@ interface TDCallbacks {
      * (optional) A callback to run when the user exports their page or selection.
      */
     onExport?: (app: TldrawApp, info: TDExport) => Promise<void>;
+    /**
+     * (optional) A callback to run when the shape is copied.
+     */
+    onCopy?: (e: ClipboardEvent, ids: string[]) => void;
 }
 
 export interface TldrawAppCtorProps {
@@ -1898,12 +1902,14 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     /**
      * Copy one or more shapes to the clipboard.
      * @param ids The ids of the shapes to copy.
+     * @param pageId
+     * @param e
      */
-    copy = (
+    copy = async (
         ids = this.selectedIds,
         pageId = this.currentPageId,
         e?: ClipboardEvent
-    ): this => {
+    ) => {
         e?.preventDefault();
 
         this.clipboard = this.get_clipboard(ids, pageId);
@@ -1919,17 +1925,24 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
         if (e) {
             e.clipboardData?.setData('text/html', tldrawString);
+            await this.callbacks.onCopy?.(e, this.selectedIds);
         }
 
-        if (navigator.clipboard && window.ClipboardItem) {
-            navigator.clipboard.write([
-                new ClipboardItem({
-                    'text/html': new Blob([tldrawString], {
-                        type: 'text/html',
-                    }),
-                }),
-            ]);
-        }
+        /**
+         * Reasons for not using Clipboard API for now:
+         * 1. The `clipboardData.setData` method temporarily satisfies the need for replication functionality
+         * 2. Clipboard API requires the user to agree to access(https://developer.mozilla.org/en-US/docs/Web/API/Permissions_API)
+         *
+         * **/
+        // if (navigator.clipboard && window.ClipboardItem) {
+        //     navigator.clipboard.write([
+        //         new ClipboardItem({
+        //             'text/html': new Blob([tldrawString], {
+        //                 type: 'text/html',
+        //             }),
+        //         }),
+        //     ]);
+        // }
 
         this.pasteInfo.offset = [0, 0];
         this.pasteInfo.center = [0, 0];
@@ -3841,7 +3854,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     private get_viewbox_from_svg = (svgStr: string | ArrayBuffer | null) => {
         if (typeof svgStr === 'string') {
-            let viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
+            const viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
             return viewBox.children[0].getAttribute('viewBox');
         }
 
@@ -4125,7 +4138,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     onPointerDown: TLPointerEventHandler = (info, e) => {
-        if (e.buttons === 4) {
+        if (e.button === 1) {
             this.patchState({
                 settings: {
                     forcePanning: true,
@@ -4142,6 +4155,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     onPointerUp: TLPointerEventHandler = (info, e) => {
+        if (e.button === 1) {
+            this.patchState({
+                settings: {
+                    forcePanning: false,
+                },
+            });
+        }
         this.isPointing = false;
         this.updateInputs(info, e);
         this.currentTool.onPointerUp?.(info, e);

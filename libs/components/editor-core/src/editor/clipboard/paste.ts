@@ -241,15 +241,12 @@ export class Paste {
                             []
                         );
 
-                        selectedBlock.setProperties({
+                        await selectedBlock.setProperties({
                             text: {
                                 value: newTextValue,
                             },
                         });
-                        const pasteBlocks = await this._createBlocks(blocks);
-                        await Promise.all(
-                            pasteBlocks.map(block => selectedBlock.after(block))
-                        );
+                        const pastedBlocks = await this._createBlocks(blocks);
 
                         const nextBlock = await this._editor.createBlock(
                             selectedBlock?.type
@@ -259,11 +256,12 @@ export class Paste {
                                 value: nextTextValue,
                             },
                         });
-                        pasteBlocks[pasteBlocks.length - 1].after(nextBlock);
 
-                        this._setEndSelectToBlock(
-                            pasteBlocks[pasteBlocks.length - 1].id
-                        );
+                        await this._insertBlocksAfterBlock(selectedBlock, [
+                            ...pastedBlocks,
+                            nextBlock,
+                        ]);
+                        await this._setEndSelectToBlock(nextBlock.id);
                     } else {
                         this._editor.blockHelper.insertNodes(
                             selectedBlock.id,
@@ -327,10 +325,7 @@ export class Paste {
                                 value: newTextValue,
                             },
                         });
-                        const pasteBlocks = await this._createBlocks(blocks);
-                        pasteBlocks.forEach((block: AsyncBlock) => {
-                            selectedBlock.after(block);
-                        });
+                        const pastedBlocks = await this._createBlocks(blocks);
                         const nextBlock = await this._editor.createBlock(
                             selectedBlock?.type
                         );
@@ -339,11 +334,12 @@ export class Paste {
                                 value: nextTextValue,
                             },
                         });
-                        pasteBlocks[pasteBlocks.length - 1].after(nextBlock);
+                        await this._insertBlocksAfterBlock(selectedBlock, [
+                            ...pastedBlocks,
+                            nextBlock,
+                        ]);
 
-                        this._setEndSelectToBlock(
-                            pasteBlocks[pasteBlocks.length - 1].id
-                        );
+                        await this._setEndSelectToBlock(nextBlock.id);
                     } else {
                         this._editor.blockHelper.insertNodes(
                             selectedBlock.id,
@@ -353,10 +349,10 @@ export class Paste {
                     }
                 }
             } else {
-                const pasteBlocks = await this._createBlocks(blocks);
+                const pastedBlocks = await this._createBlocks(blocks);
 
                 await Promise.all(
-                    pasteBlocks.map(block => selectedBlock.after(block))
+                    pastedBlocks.map(block => selectedBlock.after(block))
                 );
 
                 if (isSelectedBlockEmpty) {
@@ -364,7 +360,7 @@ export class Paste {
                 }
 
                 this._setEndSelectToBlock(
-                    pasteBlocks[pasteBlocks.length - 1].id
+                    pastedBlocks[pastedBlocks.length - 1].id
                 );
             }
         }
@@ -374,27 +370,39 @@ export class Paste {
                 currentSelectInfo.blocks[currentSelectInfo.blocks.length - 1]
                     .blockId
             );
-            const pasteBlocks = await this._createBlocks(blocks);
+            const pastedBlocks = await this._createBlocks(blocks);
 
             let groupBlock: AsyncBlock;
-            if (
-                selectedBlock?.type === 'group' ||
-                selectedBlock?.type === 'page'
-            ) {
+            if (selectedBlock?.type === 'page') {
                 groupBlock = await this._editor.createBlock('group');
                 await Promise.all(
-                    pasteBlocks.map(block => groupBlock.append(block))
+                    pastedBlocks.map(block => groupBlock.append(block))
                 );
                 await selectedBlock.after(groupBlock);
+            } else if (selectedBlock?.type === 'group') {
+                await Promise.all(
+                    pastedBlocks.map(block => selectedBlock.append(block))
+                );
             } else {
                 await Promise.all(
-                    pasteBlocks.map(block => selectedBlock.after(block))
+                    pastedBlocks.map(block => selectedBlock.after(block))
                 );
             }
-            this._setEndSelectToBlock(pasteBlocks[pasteBlocks.length - 1].id);
+            this._setEndSelectToBlock(pastedBlocks[pastedBlocks.length - 1].id);
         }
     }
 
+    private async _insertBlocksAfterBlock(
+        targetBlock: AsyncBlock,
+        blocks: AsyncBlock[]
+    ) {
+        if (blocks.length === 0) {
+            return;
+        }
+        const [firstBlock, ...otherBlock] = blocks;
+        await targetBlock.after(firstBlock);
+        await this._insertBlocksAfterBlock(blocks[0], otherBlock);
+    }
     private async _setEndSelectToBlock(blockId: string) {
         const block = await this._editor.getBlockById(blockId);
         const isBlockCanEdit = Paste._isTextEditBlock(block.type);
@@ -406,14 +414,37 @@ export class Paste {
         }, 100);
     }
 
-    private async _createBlocks(blocks: ClipBlockInfo[], parentId?: string) {
+    private _flatGroupBlocks(blocks: ClipBlockInfo[]) {
+        return blocks.reduce(
+            (blockList: ClipBlockInfo[], block: ClipBlockInfo) => {
+                if (block.type === 'group') {
+                    block?.children?.forEach(childBlock => {
+                        childBlock.children = this._flatGroupBlocks(
+                            childBlock.children
+                        );
+                    });
+                    block?.children?.length &&
+                        blockList.push(...block.children);
+                } else {
+                    blockList.push(block);
+                    block.children = this._flatGroupBlocks(block.children);
+                }
+                return blockList;
+            },
+            []
+        );
+    }
+    private async _createBlocks(blocks: ClipBlockInfo[]) {
         return Promise.all(
-            blocks.map(async clipBlockInfo => {
+            this._flatGroupBlocks(blocks).map(async clipBlockInfo => {
                 const block = await this._editor.createBlock(
                     clipBlockInfo.type
                 );
                 block?.setProperties(clipBlockInfo.properties);
-                await this._createBlocks(clipBlockInfo.children, block?.id);
+                const children = await this._createBlocks(
+                    clipBlockInfo.children
+                );
+                await Promise.all(children.map(child => block?.append(child)));
                 return block;
             })
         );

@@ -8,9 +8,10 @@ import {
     TDShapeType,
     TransformInfo,
 } from '@toeverything/components/board-types';
+import type { BlockEditor } from '@toeverything/components/editor-core';
 import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
-import type { SyntheticEvent } from 'react';
+import type { MouseEvent, SyntheticEvent } from 'react';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import {
     defaultTextStyle,
@@ -66,6 +67,7 @@ export class EditorUtil extends TDShapeUtil<T, E> {
     Component = TDShapeUtil.Component<T, E, TDMeta>(
         ({ shape, meta: { app }, events, isEditing, onShapeChange }, ref) => {
             const containerRef = useRef<HTMLDivElement>();
+            const editorRef = useRef<BlockEditor>();
             const {
                 workspace,
                 rootBlockId,
@@ -135,6 +137,27 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                 }
             }, [app, state, shape.id, editingText, editingId]);
 
+            useEffect(() => {
+                (async () => {
+                    if (isEditing) {
+                        const lastBlock =
+                            await editorRef.current.getLastBlock();
+                        editorRef.current.selectionManager.activeNodeByNodeId(
+                            lastBlock.id
+                        );
+                    }
+                })();
+            }, [isEditing]);
+
+            const onMouseDown = useCallback(
+                (e: MouseEvent) => {
+                    if (e.detail === 2) {
+                        app.setEditingText(shape.id);
+                    }
+                },
+                [app, shape.id]
+            );
+
             return (
                 <HTMLContainer ref={ref} {...events}>
                     <Container
@@ -143,12 +166,14 @@ export class EditorUtil extends TDShapeUtil<T, E> {
                         onPointerDown={stopPropagation}
                         onMouseEnter={activateIfEditing}
                         onDragEnter={activateIfEditing}
+                        onMouseDown={onMouseDown}
                     >
                         <MemoAffineEditor
                             workspace={workspace}
                             rootBlockId={rootBlockId}
                             scrollBlank={false}
                             isEdgeless
+                            ref={editorRef}
                         />
                         {editingText ? null : <Mask />}
                     </Container>
