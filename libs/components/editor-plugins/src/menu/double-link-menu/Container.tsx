@@ -79,16 +79,12 @@ export const DoubleLinkMenuContainer = (
             if (types && ['ArrowUp', 'ArrowDown'].includes(event.code)) {
                 event.preventDefault();
                 const isUpkey = event.code === 'ArrowUp';
-                const indexBound = isUpkey ? types.length - 1 : 0;
                 if (!currentItem && types.length) {
-                    setCurrentItem(types[indexBound]);
+                    setCurrentItem(types[isUpkey ? types.length - 1 : 0]);
                 }
                 if (currentItem) {
                     const idx = types.indexOf(currentItem);
-                    const needChange = isUpkey
-                        ? idx > indexBound
-                        : idx < indexBound;
-                    if (needChange) {
+                    if (isUpkey ? idx > 0 : idx < types.length - 1) {
                         setNeedCheckIntoView(true);
                         setCurrentItem(types[isUpkey ? idx - 1 : idx + 1]);
                     }
