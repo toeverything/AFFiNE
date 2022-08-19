@@ -5,6 +5,17 @@ import { services } from '@toeverything/datasource/db-service';
 import { usePageClientWidth } from '@toeverything/datasource/state';
 import { useEffect, useState } from 'react';
 
+const getBindings = (workspace: string, rootBlockId: string) => {
+    return services.api.editorBlock
+        .get({
+            workspace: workspace,
+            ids: [rootBlockId],
+        })
+        .then(blcoks => {
+            return blcoks[0].properties.bindings?.value;
+        });
+};
+
 export const useShapes = (workspace: string, rootBlockId: string) => {
     const { pageClientWidth } = usePageClientWidth();
     // page padding left and right total 300px
@@ -30,28 +41,20 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                         })
                     );
                     return shapes;
-                    // setBlocks(shapes);
                 }),
         ]).then(shapes => {
-            console.log(shapes);
-            services.api.editorBlock
-                .get({
-                    workspace: workspace,
-                    ids: [rootBlockId],
-                })
-                .then(blcoks => {
-                    setBlocks({
-                        shapes,
-                        bindings: blcoks[0].properties.bindings?.value,
-                    });
-                    // setBindings(blcoks[0].properties.bindings?.value);
+            getBindings(workspace, rootBlockId).then(bindings => {
+                setBlocks({
+                    shapes,
+                    bindings: bindings,
                 });
+            });
         });
 
         let unobserve: () => void;
         services.api.editorBlock
             .observe({ workspace, id: rootBlockId }, async blockData => {
-                const shapes = await Promise.all(
+                Promise.all(
                     (blockData?.children || []).map(async childId => {
                         const childBlock = (
                             await services.api.editorBlock.get({
@@ -62,22 +65,13 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                         return childBlock;
                     })
                 ).then(shapes => {
-                    console.log(shapes);
-                    services.api.editorBlock
-                        .get({
-                            workspace: workspace,
-                            ids: [rootBlockId],
-                        })
-                        .then(blcoks => {
-                            setBlocks({
-                                shapes: [shapes],
-                                bindings: blcoks[0].properties.bindings?.value,
-                            });
-                            // setBindings(blcoks[0].properties.bindings?.value);
+                    getBindings(workspace, rootBlockId).then(bindings => {
+                        setBlocks({
+                            shapes: [shapes],
+                            bindings: bindings,
                         });
+                    });
                 });
-                return shapes;
-                // setBlocks(shapes);
             })
             .then(cb => {
                 unobserve = cb;

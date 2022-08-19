@@ -45,8 +45,6 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
     });
 
     const { shapes, bindings } = useShapes(workspace, rootBlockId);
-
-    // const bindings = useBindings(workspace, rootBlockId);
     useEffect(() => {
         if (app) {
             app.replacePageContent(shapes || {}, bindings, {});
@@ -124,7 +122,7 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                             workspace: workspace,
                             ids: [rootBlockId],
                         })
-                    )?.[0].properties.bindings.value;
+                    )?.[0].properties.bindings?.value;
                     let pageBindings = JSON.parse(pageBindingsString ?? '{}');
                     Object.keys(bindings).forEach(bindingsKey => {
                         if (bindings[bindingsKey] === undefined) {
@@ -133,7 +131,6 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                             Object.assign(pageBindings, bindings);
                         }
                     });
-                    console.log(pageBindings);
                     services.api.editorBlock.update({
                         workspace: workspace,
                         id: rootBlockId,
