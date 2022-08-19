@@ -508,21 +508,19 @@ export class AsyncBlock {
                     id: item.blockId,
                 });
 
-                if (linkBlock) {
-                    let children = linkBlock.getProperties().text?.value || [];
-                    if (children.length === 1 && !children[0].text) {
-                        children = [{ text: 'Untitled' }];
-                    }
-                    if (
-                        children.map(v => v.text).join('') !==
-                        (item.children || []).map((v: any) => v.text).join('')
-                    ) {
-                        const newItem = {
-                            ...item,
-                            children: children,
-                        };
-                        values.splice(i, 1, newItem);
-                    }
+                let children = linkBlock?.getProperties().text?.value || [];
+                if (children.length === 1 && !children[0].text) {
+                    children = [{ text: 'Untitled' }];
+                }
+                if (
+                    children.map(v => v.text).join('') !==
+                    (item.children || []).map((v: any) => v.text).join('')
+                ) {
+                    const newItem = {
+                        ...item,
+                        children: children,
+                    };
+                    values.splice(i, 1, newItem);
                 }
             }
         }

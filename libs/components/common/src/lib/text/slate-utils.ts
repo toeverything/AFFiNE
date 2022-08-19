@@ -597,10 +597,11 @@ class SlateUtils {
 
         const fragmentChildren = firstFragment.children;
 
-        const textChildren: Text[] = [];
-        for (const child of fragmentChildren) {
-            if ((child as any).type === 'link') {
-                textChildren.push(child as Text);
+        const textChildren = [];
+        for (let i = 0; i < fragmentChildren.length; i++) {
+            const child = fragmentChildren[i];
+            if ('type' in child && child.type === 'link') {
+                i !== fragmentChildren.length - 1 && textChildren.push(child);
                 continue;
             }
             if (!('text' in child)) {

@@ -135,6 +135,44 @@ export const DoubleLinkMenu = ({
         editor.scrollManager.unLock();
     }, [curBlockId, editor]);
 
+    const resetState = useCallback(
+        (preNodeId: string, nextNodeId: string) => {
+            editor.blockHelper.removeDoubleLinkSearchSlash(preNodeId);
+            setCurBlockId(nextNodeId);
+            setSearchText('');
+            setIsOpen(true);
+            editor.scrollManager.lock();
+            const clientRect =
+                editor.selection.currentSelectInfo?.browserSelection
+                    ?.getRangeAt(0)
+                    ?.getBoundingClientRect();
+            if (clientRect) {
+                const rectTop = clientRect.top;
+                const { top, left } = editor.container.getBoundingClientRect();
+                setDoubleLinkMenuStyle({
+                    top: rectTop - top,
+                    left: clientRect.left - left,
+                    height: clientRect.height,
+                });
+                setAnchorEl(dialogRef.current);
+            }
+            setTimeout(() => {
+                const textSelection = editor.blockHelper.selectionToSlateRange(
+                    nextNodeId,
+                    editor.selection.currentSelectInfo.browserSelection
+                );
+                if (textSelection) {
+                    const { anchor } = textSelection;
+                    editor.blockHelper.setDoubleLinkSearchSlash(
+                        nextNodeId,
+                        anchor
+                    );
+                }
+            });
+        },
+        [editor]
+    );
+
     const searchChange = useCallback(
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
             if (ARRAY_CODES.includes(event.code)) {
@@ -162,41 +200,7 @@ export const DoubleLinkMenu = ({
                     anchorNode.id
                 );
                 if (text.endsWith('[[')) {
-                    editor.blockHelper.removeDoubleLinkSearchSlash(curBlockId);
-                    setCurBlockId(anchorNode.id);
-                    setSearchText('');
-                    setIsOpen(true);
-                    editor.scrollManager.lock();
-                    const clientRect =
-                        editor.selection.currentSelectInfo?.browserSelection
-                            ?.getRangeAt(0)
-                            ?.getBoundingClientRect();
-                    if (clientRect) {
-                        const rectTop = clientRect.top;
-                        const { top, left } =
-                            editor.container.getBoundingClientRect();
-                        setDoubleLinkMenuStyle({
-                            top: rectTop - top,
-                            left: clientRect.left - left,
-                            height: clientRect.height,
-                        });
-                        setAnchorEl(dialogRef.current);
-                    }
-                    setTimeout(() => {
-                        const textSelection =
-                            editor.blockHelper.selectionToSlateRange(
-                                anchorNode.id,
-                                editor.selection.currentSelectInfo
-                                    .browserSelection
-                            );
-                        if (textSelection) {
-                            const { anchor } = textSelection;
-                            editor.blockHelper.setDoubleLinkSearchSlash(
-                                anchorNode.id,
-                                anchor
-                            );
-                        }
-                    });
+                    resetState(curBlockId, anchorNode.id);
                 }
             }
             if (isOpen) {
@@ -372,7 +376,6 @@ export const DoubleLinkMenu = ({
         </div>
     );
 };
-
 const NewPageSearchContainer = styled('div')({
     padding: '8px 8px 0px 8px',
 });
