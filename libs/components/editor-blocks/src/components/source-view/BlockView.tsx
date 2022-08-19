@@ -1,9 +1,9 @@
-import { memo, useEffect, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
+import { memo, useEffect, useRef, useState } from 'react';
 
 import { StyledBlockPreview } from '@toeverything/components/common';
+import { AsyncBlock, useEditor } from '@toeverything/components/editor-core';
 import { services } from '@toeverything/datasource/db-service';
-import { AsyncBlock } from '@toeverything/framework/virgo';
 import { debounce, sleep } from '@toeverything/utils';
 
 const updateTitle = async (
@@ -73,15 +73,15 @@ const useBlockTitle = (block: AsyncBlock, blockId: string) => {
 type BlockPreviewProps = {
     block: AsyncBlock;
     blockId: string;
-    editorElement?: () => JSX.Element;
 };
 
 const InternalBlockPreview = (props: BlockPreviewProps) => {
     const container = useRef<HTMLDivElement>();
     const [preview, setPreview] = useState(true);
     const title = useBlockTitle(props.block, props.blockId);
+    const { editorElement } = useEditor();
 
-    const AffineEditor = props.editorElement as any;
+    const AffineEditor = editorElement as any;
 
     useEffect(() => {
         if (container?.current) {

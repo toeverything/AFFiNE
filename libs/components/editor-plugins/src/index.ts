@@ -21,7 +21,7 @@ export const plugins: PluginCreator[] = [
     CommandMenuPlugin,
     DoubleLinkMenuPlugin,
     TemplatePlugin,
-    SelectionGroupPlugin,
+    // SelectionGroupPlugin,
     AddCommentPlugin,
     GroupMenuPlugin,
 ];

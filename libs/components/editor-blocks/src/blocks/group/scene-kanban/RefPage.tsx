@@ -1,7 +1,7 @@
+import { useEditor } from '@toeverything/components/editor-core';
 import { MuiBackdrop, styled, useTheme } from '@toeverything/components/ui';
 import { createContext, ReactNode, useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RenderBlock } from '../render-block';
 
 const Dialog = styled('div')({
     flex: 1,
@@ -30,7 +30,7 @@ const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
             onClick={closeSubPage}
         >
             <Dialog
-                onClick={e => {
+                onClick={(e: { stopPropagation: () => void }) => {
                     e.stopPropagation();
                 }}
             >
@@ -43,9 +43,21 @@ const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
 };
 
 const ModalPage = ({ blockId }: { blockId: string | null }) => {
+    const { editor, editorElement } = useEditor();
+
+    const AffineEditor = editorElement as any;
+
     return (
         <Modal open={!!blockId}>
-            {blockId && <RenderBlock blockId={blockId} />}
+            {blockId && (
+                <AffineEditor
+                    workspace={editor.workspace}
+                    rootBlockId={blockId}
+                    scrollBlank={false}
+                    // use edgeless mode prevent padding and blank bottom
+                    isEdgeless
+                />
+            )}
         </Modal>
     );
 };

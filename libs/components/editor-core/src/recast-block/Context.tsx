@@ -2,7 +2,6 @@ import { Protocol } from '@toeverything/datasource/db-service';
 import { AsyncBlock } from '../editor';
 import { ComponentType, createContext, ReactNode, useContext } from 'react';
 import { RecastBlock } from './types';
-import { RefPageProvider } from '../ref-page';
 
 /**
  * Determine whether the block supports RecastBlock
@@ -48,7 +47,7 @@ export const RecastBlockProvider = ({
 
     return (
         <RecastBlockContext.Provider value={block}>
-            <RefPageProvider>{children}</RefPageProvider>
+            {children}
         </RecastBlockContext.Provider>
     );
 };
