@@ -220,17 +220,21 @@ importers:
       '@emotion/react': ^11.10.0
       '@emotion/styled': ^11.10.0
       '@mui/joy': ^5.0.0-alpha.39
+      i18next: ^21.9.1
       image-minimizer-webpack-plugin: ^3.2.3
       imagemin: ^8.0.1
       imagemin-optipng: ^8.0.0
       lozad: ^1.16.0
       mini-css-extract-plugin: ^2.6.1
+      react-i18next: ^11.18.4
       webpack: ^5.74.0
     dependencies:
       '@emotion/react': 11.10.0
       '@emotion/styled': 11.10.0_@emotion+react@11.10.0
       '@mui/joy': 5.0.0-alpha.39_72v32ofbtgpmxm7mhvtx474vfu
+      i18next: 21.9.1
       lozad: 1.16.0
+      react-i18next: 11.18.4_i18next@21.9.1
     devDependencies:
       image-minimizer-webpack-plugin: 3.2.3_5emixpjl54fjyhdvj76qjbw4py
       imagemin: 8.0.1
@@ -11121,6 +11125,12 @@ packages:
       terser: 5.14.1
     dev: true
 
+  /html-parse-stringify/3.0.1:
+    resolution: {integrity: sha512-KknJ50kTInJ7qIScF3jeaFRpMpE8/lfiTdzf/twXyPBLAGrLRTmkz3AdTnKeh40X8k9L2fdYwEp/42WGXIRGcg==}
+    dependencies:
+      void-elements: 3.1.0
+    dev: false
+
   /html-webpack-plugin/5.5.0_webpack@5.74.0:
     resolution: {integrity: sha512-sy88PC2cRTVxvETRgUHFrL4No3UxvcH8G1NepGhqaTT+GXN2kTamqasot0inS5hXeg1cMbFDt27zzo9p35lZVw==}
     engines: {node: '>=10.13.0'}
@@ -11305,6 +11315,12 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
     dev: true
+
+  /i18next/21.9.1:
+    resolution: {integrity: sha512-ITbDrAjbRR73spZAiu6+ex5WNlHRr1mY+acDi2ioTHuUiviJqSz269Le1xHAf0QaQ6GgIHResUhQNcxGwa/PhA==}
+    dependencies:
+      '@babel/runtime': 7.18.6
+    dev: false
 
   /iconv-lite/0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
@@ -15345,6 +15361,26 @@ packages:
       hotkeys-js: 3.9.3
     dev: false
 
+  /react-i18next/11.18.4_i18next@21.9.1:
+    resolution: {integrity: sha512-gK/AylAQC5DvCD5YLNCHW4PNzpCfrWIyVAXbSMl+/5QXzlDP8VdBoqE2s2niGHB+zIXwBV9hRXbDrVuupbgHcg==}
+    peerDependencies:
+      i18next: '>= 19.0.0'
+      react: '>= 16.8.0'
+      react-dom: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+    dependencies:
+      '@babel/runtime': 7.18.6
+      html-parse-stringify: 3.0.1
+      i18next: 21.9.1
+    dev: false
+
   /react-is/16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
@@ -17599,6 +17635,11 @@ packages:
       core-util-is: 1.0.2
       extsprintf: 1.3.0
     dev: true
+
+  /void-elements/3.1.0:
+    resolution: {integrity: sha512-Dhxzh5HZuiHQhbvTW9AMetFfBHDMYpo23Uo9btPXgdYP+3T5S+p+jgNy7spra+veYhBP2dCSgxR/i2Y02h5/6w==}
+    engines: {node: '>=0.10.0'}
+    dev: false
 
   /w3c-hr-time/1.0.2:
     resolution: {integrity: sha512-z8P5DvDNjKDoFIHK7q8r8lackT6l+jo/Ye3HOle7l9nICP9lf1Ci25fy9vHd0JOWewkIFzXIEig3TdKT7JQ5fQ==}
