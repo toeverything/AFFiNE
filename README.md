@@ -123,7 +123,7 @@ Please view the path Contribute-to-AFFiNE/Software-Contributions/Quick-Start in 
 
 # Roadmap
 
-Coming Soon...
+Yes! Permanent storage, collaboration, stable release is planned! Check it [here](https://github.com/toeverything/AFFiNE/issues/293)
 
 # Releases
 
