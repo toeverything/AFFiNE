@@ -131,10 +131,6 @@ export abstract class BaseView {
         return result;
     }
 
-    getSelProperties(block: AsyncBlock, selectInfo: any): DefaultColumnsValue {
-        return cloneDeep(block.getProperties());
-    }
-
     html2block(el: Element, parseEl: (el: Element) => any[]): any[] | null {
         return null;
     }
@@ -146,31 +142,24 @@ export abstract class BaseView {
     ): Promise<string> {
         return '';
     }
-}
+    async block2Text(
+        block: AsyncBlock,
+        // The selectInfo parameter is not passed when the block is selected in ful, the selectInfo.type is Range
+        selectInfo?: SelectBlock
+    ): Promise<string> {
+        return '';
+    }
 
-export const getTextProperties = (
-    properties: DefaultColumnsValue,
-    selectInfo: any
-) => {
-    let text_value = properties.text.value;
-    if (text_value.length === 0) {
-        return properties;
-    }
-    if (selectInfo.endInfo) {
-        text_value = text_value.slice(0, selectInfo.endInfo.arrayIndex + 1);
-        text_value[text_value.length - 1].text = text_value[
-            text_value.length - 1
-        ].text.substring(0, selectInfo.endInfo.offset);
-    }
-    if (selectInfo.startInfo) {
-        text_value = text_value.slice(selectInfo.startInfo.arrayIndex);
-        text_value[0].text = text_value[0].text.substring(
-            selectInfo.startInfo.offset
-        );
-    }
-    properties.text.value = text_value;
-    return properties;
-};
+    // TODO: Try using new methods
+    // async block2html2(props: {
+    //     editor: Editor;
+    //     block: AsyncBlock;
+    //     // The selectInfo parameter is not passed when the block is selected in ful, the selectInfo.type is Range
+    //     selectInfo?: SelectBlock;
+    // }) {
+    //     return '';
+    // }
+}
 
 export const getTextHtml = (block: AsyncBlock) => {
     const generate = (textList: any[]) => {

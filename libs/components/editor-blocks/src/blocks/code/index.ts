@@ -1,7 +1,6 @@
 import {
     BaseView,
     AsyncBlock,
-    getTextProperties,
     CreateView,
     SelectBlock,
     getTextHtml,
@@ -26,14 +25,6 @@ export class CodeBlock extends BaseView {
             });
         }
         return block;
-    }
-
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
     }
 
     // TODO: internal format not implemented yet

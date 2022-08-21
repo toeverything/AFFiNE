@@ -2,7 +2,6 @@ import {
     BaseView,
     CreateView,
     AsyncBlock,
-    getTextProperties,
     SelectBlock,
     getTextHtml,
 } from '@toeverything/framework/virgo';
@@ -26,14 +25,6 @@ export class TextBlock extends BaseView {
             });
         }
         return block;
-    }
-
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
     }
 
     override html2block(
@@ -145,14 +136,6 @@ export class Heading1Block extends BaseView {
         return block;
     }
 
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
-    }
-
     override html2block(
         el: Element,
         parseEl: (el: Element) => any[]
@@ -210,14 +193,6 @@ export class Heading2Block extends BaseView {
         return block;
     }
 
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
-    }
-
     override html2block(
         el: Element,
         parseEl: (el: Element) => any[]
@@ -273,14 +248,6 @@ export class Heading3Block extends BaseView {
             });
         }
         return block;
-    }
-
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
     }
 
     override html2block(

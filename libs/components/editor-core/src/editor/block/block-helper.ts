@@ -11,6 +11,11 @@ import {
     Selection as SlateSelection,
 } from 'slate';
 import { Editor } from '../editor';
+import {
+    AsyncBlock,
+    SelectBlock,
+    SelectInfo,
+} from '@toeverything/components/editor-core';
 
 type TextUtilsFunctions =
     | 'getString'
@@ -37,7 +42,9 @@ type TextUtilsFunctions =
     | 'blur'
     | 'setSelection'
     | 'insertNodes'
-    | 'getNodeByPath';
+    | 'getNodeByPath'
+    | 'getNodeByRange'
+    | 'convertLeaf2Html';
 
 type ExtendedTextUtils = SlateUtils & {
     setLinkModalVisible: (visible: boolean) => void;
@@ -98,13 +105,114 @@ export class BlockHelper {
         return '';
     }
 
-    public getBlockTextBetweenSelection(blockId: string) {
+    public async isBlockEditable(blockOrBlockId: AsyncBlock | string) {
+        const block =
+            typeof blockOrBlockId === 'string'
+                ? await this._editor.getBlockById(blockOrBlockId)
+                : blockOrBlockId;
+        const blockView = this._editor.getView(block.type);
+
+        return blockView.activatable;
+    }
+
+    public async getFlatBlocksUnderParent(
+        parentBlockId: string,
+        includeParent: boolean = false
+    ): Promise<AsyncBlock[]> {
+        const blocks = [];
+        const block = await this._editor.getBlockById(parentBlockId);
+        if (includeParent) {
+            blocks.push(block);
+        }
+        const children = await block.children();
+        (
+            await Promise.all(
+                children.map(child => {
+                    return this.getFlatBlocksUnderParent(child.id, true);
+                })
+            )
+        ).forEach(editableChildren => {
+            blocks.push(...editableChildren);
+        });
+        return blocks;
+    }
+
+    public getBlockTextBetweenSelection(
+        blockId: string,
+        shouldUsePreviousSelection = true
+    ) {
         const text_utils = this._blockTextUtilsMap[blockId];
         if (text_utils) {
-            return text_utils.getStringBetweenSelection(true);
+            return text_utils.getStringBetweenSelection(
+                shouldUsePreviousSelection
+            );
         }
         console.warn('Could find the block text utils');
         return '';
+    }
+
+    public async getEditableBlockPropertiesBySelectInfo(
+        block: AsyncBlock,
+        selectInfo: SelectBlock
+    ) {
+        const properties = block.getProperties();
+        if (properties.text.value.length === 0) {
+            return properties;
+        }
+        let text_value = properties.text.value;
+
+        const {
+            text: { value: originTextValue, ...otherTextProperties },
+            ...otherProperties
+        } = properties;
+
+        // Use deepClone method will throw incomprehensible error
+        let textValue = JSON.parse(JSON.stringify(originTextValue));
+
+        if (selectInfo.endInfo) {
+            textValue = textValue.slice(0, selectInfo.endInfo.arrayIndex + 1);
+            textValue[textValue.length - 1].text = text_value[
+                textValue.length - 1
+            ].text.substring(0, selectInfo.endInfo.offset);
+        }
+        if (selectInfo.startInfo) {
+            textValue = textValue.slice(selectInfo.startInfo.arrayIndex);
+            textValue[0].text = textValue[0].text.substring(
+                selectInfo.startInfo.offset
+            );
+        }
+        return {
+            ...otherProperties,
+            text: {
+                ...otherTextProperties,
+                value: textValue,
+            },
+        };
+    }
+
+    // For editable blocks, the properties containing the selected text will be returned with the selection information
+    public async getBlockPropertiesBySelectInfo(selectBlockInfo: SelectBlock) {
+        const block = await this._editor.getBlockById(selectBlockInfo.blockId);
+        const blockView = this._editor.getView(block.type);
+        if (blockView.activatable) {
+            return this.getEditableBlockPropertiesBySelectInfo(
+                block,
+                selectBlockInfo
+            );
+        } else {
+            return block?.getProperties();
+        }
+    }
+
+    public convertTextValue2Html(blockId: string, textValue: any) {
+        const text_utils = this._blockTextUtilsMap[blockId];
+        if (!text_utils) {
+            return '';
+        }
+        return textValue.reduce((html: string, textValueItem: any) => {
+            const fragment = text_utils.convertLeaf2Html(textValueItem);
+            return `${html}${fragment}`;
+        }, '');
     }
 
     public setBlockBlur(blockId: string) {

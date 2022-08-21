@@ -8,7 +8,6 @@ import {
     BaseView,
     ChildrenView,
     getTextHtml,
-    getTextProperties,
     SelectBlock,
 } from '@toeverything/framework/virgo';
 
@@ -33,14 +32,6 @@ export class PageBlock extends BaseView {
 
     override onExport(content: any): string {
         return this.get_decoration<any>(content, 'text')?.value?.[0].text;
-    }
-
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
     }
 
     override async block2html(

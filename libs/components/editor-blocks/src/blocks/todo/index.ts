@@ -1,6 +1,5 @@
 import {
     BaseView,
-    getTextProperties,
     AsyncBlock,
     SelectBlock,
     getTextHtml,
@@ -27,14 +26,6 @@ export class TodoBlock extends BaseView {
             await block.setProperties(defaultTodoProps);
         }
         return block;
-    }
-
-    override getSelProperties(
-        block: TodoAsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
     }
 
     override html2block(

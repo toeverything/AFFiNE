@@ -2,7 +2,10 @@ import { Editor } from '../editor';
 import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
 
-export const shouldHandlerContinue = (event: Event, editor: Editor) => {
+export const shouldHandlerContinue = (
+    event: ClipboardEvent,
+    editor: Editor
+) => {
     const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
 
     if (event.defaultPrevented) {
@@ -20,10 +23,9 @@ export const getClipInfoOfBlockById = async (
     blockId: string
 ) => {
     const block = await editor.getBlockById(blockId);
-    const blockView = editor.getView(block.type);
     const blockInfo: ClipBlockInfo = {
         type: block.type,
-        properties: blockView.getSelProperties(block, {}),
+        properties: block?.getProperties(),
         children: [] as ClipBlockInfo[],
     };
     const children = (await block?.children()) ?? [];

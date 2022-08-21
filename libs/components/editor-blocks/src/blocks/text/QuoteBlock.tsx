@@ -7,7 +7,6 @@ import {
     BaseView,
     CreateView,
     getTextHtml,
-    getTextProperties,
     SelectBlock,
 } from '@toeverything/framework/virgo';
 
@@ -27,14 +26,6 @@ export class QuoteBlock extends BaseView {
             });
         }
         return block;
-    }
-
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
     }
 
     override html2block(
@@ -94,14 +85,6 @@ export class CalloutBlock extends BaseView {
             });
         }
         return block;
-    }
-
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
     }
 
     override html2block(

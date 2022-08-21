@@ -42,13 +42,13 @@ export class Paste {
         OFFICE_CLIPBOARD_MIMETYPE.HTML,
         OFFICE_CLIPBOARD_MIMETYPE.TEXT,
     ];
-    public handlePaste(e: Event) {
+    public handlePaste(e: ClipboardEvent) {
         if (!shouldHandlerContinue(e, this._editor)) {
             return;
         }
         e.stopPropagation();
 
-        const clipboardData = (e as ClipboardEvent).clipboardData;
+        const clipboardData = e.clipboardData;
 
         const isPureFile = Paste._isPureFileInClipboard(clipboardData);
         if (isPureFile) {

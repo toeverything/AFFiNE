@@ -41,7 +41,9 @@ export class YoutubeBlock extends BaseView {
 
         return null;
     }
-
+    override async block2Text(block: AsyncBlock, selectInfo: SelectBlock) {
+        return block.getProperty('embedLink')?.value ?? '';
+    }
     override async block2html(
         block: AsyncBlock,
         children: SelectBlock[],

@@ -15,8 +15,7 @@ import assert from 'assert';
 import type { WorkspaceAndBlockId } from './block';
 import { AsyncBlock } from './block';
 import { BlockHelper } from './block/block-helper';
-import { BrowserClipboard } from './clipboard/browser-clipboard';
-import { ClipboardPopulator } from './clipboard/clipboard-populator';
+import { Clipboard } from './clipboard/clipboard';
 import { EditorCommands } from './commands';
 import { EditorConfig } from './config';
 import { DragDropManager } from './drag-drop';
@@ -65,8 +64,9 @@ export class Editor implements Virgo {
     readonly = false;
     private _rootBlockId: string;
     private storage_manager?: StorageManager;
-    private clipboard?: BrowserClipboard;
-    private clipboard_populator?: ClipboardPopulator;
+    private _clipboard: Clipboard;
+    // private clipboardActionDispacher?: ClipboardEventDispatcher;
+    // private clipboard_populator?: ClipboardPopulator;
     public reactRenderRoot: {
         render: PatchNode;
         has: (key: string) => boolean;
@@ -138,7 +138,7 @@ export class Editor implements Virgo {
 
     public set container(v: HTMLDivElement) {
         this.ui_container = v;
-        this._initClipboard();
+        this._clipboard = new Clipboard(this, this.ui_container);
     }
 
     public get container() {
@@ -191,26 +191,26 @@ export class Editor implements Virgo {
         };
     }
 
-    private _disposeClipboard() {
-        this.clipboard?.dispose();
-        this.clipboard_populator?.disposeInternal();
-    }
+    // private _disposeClipboard() {
+    //     this.clipboard?.dispose();
+    //     this.clipboard_populator?.disposeInternal();
+    // }
 
-    private _initClipboard() {
-        this._disposeClipboard();
-        if (this.ui_container && !this._isDisposed) {
-            this.clipboard = new BrowserClipboard(
-                this.ui_container,
-                this.hooks,
-                this
-            );
-            this.clipboard_populator = new ClipboardPopulator(
-                this,
-                this.hooks,
-                this.selectionManager
-            );
-        }
-    }
+    // private _initClipboard() {
+    //     this._disposeClipboard();
+    //     if (this.ui_container && !this._isDisposed) {
+    //         this.clipboardActionDispacher = new ClipboardEventDispatcher({
+    //             clipboardTarget: this.ui_container,
+    //             hooks: this.hooks,
+    //             editor: this,
+    //         });
+    //         this.clipboard_populator = new ClipboardPopulator(
+    //             this,
+    //             this.hooks,
+    //             this.selectionManager
+    //         );
+    //     }
+    // }
 
     /** Root Block Id */
     getRootBlockId() {
@@ -498,12 +498,13 @@ export class Editor implements Virgo {
     }
 
     public async page2html(): Promise<string> {
-        const parse = this.clipboard?.getClipboardParse();
-        if (!parse) {
-            return '';
-        }
-        const html_str = await parse.page2html();
-        return html_str;
+        return '';
+        // const parse = this.clipboard?.getClipboardParse();
+        // if (!parse) {
+        //     return '';
+        // }
+        // const html_str = await parse.page2html();
+        // return html_str;
     }
 
     dispose() {
@@ -519,6 +520,6 @@ export class Editor implements Virgo {
         this.plugin_manager.dispose();
         this.selectionManager.dispose();
         this.dragDropManager.dispose();
-        this._disposeClipboard();
+        this._clipboard?.dispose();
     }
 }

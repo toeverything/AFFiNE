@@ -1,7 +1,6 @@
 import {
     AsyncBlock,
     BaseView,
-    getTextProperties,
     SelectBlock,
     getTextHtml,
 } from '@toeverything/framework/virgo';
@@ -27,14 +26,6 @@ export class NumberedBlock extends BaseView {
             await block.setProperties(defaultTodoProps);
         }
         return block;
-    }
-
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
     }
 
     override html2block(
