@@ -139,6 +139,10 @@ Get quick help on [Telegram](https://t.me/affineworkos) or [Discord](https://dis
 
 Our latest news can be found on [Twitter](https://twitter.com/AffineOfficial), [Medium](https://medium.com/@affineworkos) and the [AFFiNE Blog](https://blog.affine.pro/).
 
+# Contact Us
+The contact info for AFFiNE Founder is here: hejiachen@toeverything.info
+
+
 # The Philosophy of AFFiNE
 
 Timothy Berners-Lee once taught us about the idea of the semantic web, where all the data can be interpreted in any form while the "truth" is kept. This gives our best image of an ideal knowledge base by far, that sorting of information, planning of project and goals as well as creating of knowledge can be all together.
