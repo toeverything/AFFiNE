@@ -1,12 +1,12 @@
-import { TDShape, TDShapeType } from '@toeverything/components/board-types';
 import { Utils } from '@tldraw/core';
-import type {
-    Patch,
-    TldrawCommand,
-    TDBinding,
-} from '@toeverything/components/board-types';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import { TLDR } from '@toeverything/components/board-state';
+import type {
+    Patch,
+    TDBinding,
+    TldrawCommand,
+} from '@toeverything/components/board-types';
+import { TDShape, TDShapeType } from '@toeverything/components/board-types';
 
 export function groupShapes(
     app: TldrawApp,
@@ -100,6 +100,7 @@ export function groupShapes(
 
     afterShapes[groupId] = TLDR.get_shape_util(TDShapeType.Group).create({
         id: groupId,
+        affineId: groupId,
         childIndex: groupChildIndex,
         parentId: groupParentId,
         point: [groupBounds.minX, groupBounds.minY],
@@ -217,7 +218,6 @@ export function groupShapes(
             }
         }
     });
-
     return {
         id: 'group',
         before: {

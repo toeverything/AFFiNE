@@ -1,29 +1,28 @@
-/* eslint-disable filename-rules/match */
-import { useEffect, useRef, type UIEvent, useState } from 'react';
+import { useEffect, useRef, useState, type UIEvent } from 'react';
 import { useParams } from 'react-router';
 
 import { AffineEditor } from '@toeverything/components/affine-editor';
-import {
-    CalendarHeatmap,
-    PageTree,
-    Activities,
-} from '@toeverything/components/layout';
 import { CollapsibleTitle } from '@toeverything/components/common';
 import {
-    useShowSpaceSidebar,
-    usePageClientWidth,
-} from '@toeverything/datasource/state';
+    Activities,
+    CalendarHeatmap,
+    PageTree,
+} from '@toeverything/components/layout';
 import {
     MuiBox as Box,
     MuiCircularProgress as CircularProgress,
     styled,
 } from '@toeverything/components/ui';
+import {
+    usePageClientWidth,
+    useShowSpaceSidebar,
+} from '@toeverything/datasource/state';
 
-import { WorkspaceName } from './workspace-name';
-import { CollapsiblePageTree } from './collapsible-page-tree';
-import { useFlag } from '@toeverything/datasource/feature-flags';
 import { type BlockEditor } from '@toeverything/components/editor-core';
+import { useFlag } from '@toeverything/datasource/feature-flags';
+import { CollapsiblePageTree } from './collapsible-page-tree';
 import { Tabs } from './components/tabs';
+import { WorkspaceName } from './workspace-name';
 type PageProps = {
     workspace: string;
 };

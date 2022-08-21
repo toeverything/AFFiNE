@@ -1,4 +1,3 @@
-import { PageBlock } from '../types';
 import TurndownService from 'turndown';
 const FileExporter = {
     exportFile: (filename: string, text: string, format: string) => {

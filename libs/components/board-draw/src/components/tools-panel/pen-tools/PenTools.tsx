@@ -1,19 +1,18 @@
-import { ReactElement, type CSSProperties } from 'react';
-import style9 from 'style9';
-import {
-    MuiDivider as Divider,
-    Popover,
-    Tooltip,
-    IconButton,
-    styled,
-} from '@toeverything/components/ui';
-import { TDShapeType, TDToolType } from '@toeverything/components/board-types';
 import { TldrawApp } from '@toeverything/components/board-state';
+import { TDShapeType, TDToolType } from '@toeverything/components/board-types';
 import {
-    PencilDuotoneIcon,
     HighlighterDuotoneIcon,
     LaserPenDuotoneIcon,
+    PencilDuotoneIcon,
 } from '@toeverything/components/icons';
+import {
+    IconButton,
+    MuiDivider as Divider,
+    Popover,
+    styled,
+    Tooltip,
+} from '@toeverything/components/ui';
+import { ReactElement, type CSSProperties } from 'react';
 import { Palette } from '../../palette';
 import { Pen } from './Pen';
 

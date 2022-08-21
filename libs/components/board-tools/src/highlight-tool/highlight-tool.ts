@@ -1,12 +1,12 @@
-import { Utils, TLPointerEventHandler } from '@tldraw/core';
+import { TLPointerEventHandler, Utils } from '@tldraw/core';
 import { Draw } from '@toeverything/components/board-shapes';
-import {
-    SessionType,
-    TDShapeType,
-    DashStyle,
-    StrokeWidth,
-} from '@toeverything/components/board-types';
 import { BaseTool } from '@toeverything/components/board-state';
+import {
+    DashStyle,
+    SessionType,
+    StrokeWidth,
+    TDShapeType,
+} from '@toeverything/components/board-types';
 
 enum Status {
     Idle = 'idle',

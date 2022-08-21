@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { Vec } from '@tldraw/vec';
 import { Utils } from '@tldraw/core';
+import { Vec } from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import {
     AlignType,
-    TldrawCommand,
     TDShapeType,
+    TldrawCommand,
 } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export function alignShapes(
     app: TldrawApp,

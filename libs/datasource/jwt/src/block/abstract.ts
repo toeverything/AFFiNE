@@ -8,10 +8,10 @@ import {
     MapOperation,
 } from '../adapter';
 import {
-    BlockTypes,
-    BlockTypeKeys,
-    BlockFlavors,
     BlockFlavorKeys,
+    BlockFlavors,
+    BlockTypeKeys,
+    BlockTypes,
 } from '../types';
 import { getLogger } from '../utils';
 

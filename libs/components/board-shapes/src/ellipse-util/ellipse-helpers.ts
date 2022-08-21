@@ -1,7 +1,7 @@
 import { Utils } from '@tldraw/core';
-import { getStrokeOutlinePoints, getStrokePoints } from 'perfect-freehand';
-import { EASINGS } from '@toeverything/components/board-types';
 import type { ShapeStyles } from '@toeverything/components/board-types';
+import { EASINGS } from '@toeverything/components/board-types';
+import { getStrokeOutlinePoints, getStrokePoints } from 'perfect-freehand';
 import { getShapeStyle } from '../shared/shape-styles';
 
 export function getEllipseStrokePoints(

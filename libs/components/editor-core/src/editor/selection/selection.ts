@@ -1,15 +1,16 @@
 /* eslint-disable max-lines */
 import {
+    debounce,
     domToRect,
+    getBlockIdByDom,
+    last,
     Point,
     Rect,
-    last,
     without,
-    debounce,
-    getBlockIdByDom,
 } from '@toeverything/utils';
 import EventEmitter from 'eventemitter3';
 
+import { Protocol } from '@toeverything/datasource/db-service';
 import { BlockEditor } from '../..';
 import { AsyncBlock } from '../block';
 import { VirgoSelection } from '../types';
@@ -18,19 +19,17 @@ import {
     changeEventName,
     CursorTypes,
     IdList,
+    SelectBlock,
     selectEndEventName,
     SelectEventCallbackTypes,
     SelectEventTypes,
+    SelectInfo,
     SelectionSettings,
     SelectionSettingsMap,
     SelectionTypes,
     SelectPosition,
-    SelectBlock,
-    SelectInfo,
 } from './types';
 import { isLikeBlockListIds } from './utils';
-import { Protocol } from '@toeverything/datasource/db-service';
-import { Editor } from 'slate';
 // IMP: maybe merge active and select into single function
 
 export type SelectionInfo = InstanceType<
@@ -336,11 +335,11 @@ export class SelectionManager implements VirgoSelection {
                 });
                 for await (const childBlock of selectableChildren) {
                     const { dom } = childBlock;
-                    if (dom && selectionRect.isIntersect(domToRect(dom))) {
-                        selectedNodes.push(childBlock);
-                    }
                     if (!dom) {
                         console.warn('can not find dom bind with block');
+                    }
+                    if (dom && selectionRect.isIntersect(domToRect(dom))) {
+                        selectedNodes.push(childBlock);
                     }
                 }
                 // if just only has one selected maybe select the children
@@ -1063,10 +1062,10 @@ export class SelectionManager implements VirgoSelection {
         index: number,
         blockId: string
     ): Promise<void> {
-        let preRang = document.createRange();
+        const preRang = document.createRange();
         preRang.setStart(nowRange.startContainer, index);
         preRang.setEnd(nowRange.endContainer, index);
-        let prePosition = preRang.getClientRects().item(0);
+        const prePosition = preRang.getClientRects().item(0);
         this.activeNodeByNodeId(
             blockId,
             new Point(prePosition.left, prePosition.bottom)

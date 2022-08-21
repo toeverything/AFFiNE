@@ -1,14 +1,14 @@
 import { Vec } from '@tldraw/vec';
-import {
-    SessionType,
-    TDStatus,
-    TDShape,
-    PagePartial,
-    TDBinding,
-    TldrawPatch,
-    TldrawCommand,
-} from '@toeverything/components/board-types';
 import type { TldrawApp } from '@toeverything/components/board-state';
+import {
+    PagePartial,
+    SessionType,
+    TDBinding,
+    TDShape,
+    TDStatus,
+    TldrawCommand,
+    TldrawPatch,
+} from '@toeverything/components/board-types';
 import { BaseSession } from './base-session';
 
 export class EraseSession extends BaseSession {

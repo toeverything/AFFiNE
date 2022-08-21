@@ -13,7 +13,7 @@ export function RenderBlock({
     blockId,
     hasContainer = true,
 }: RenderBlockProps) {
-    const { editor, editorElement } = useEditor();
+    const { editor } = useEditor();
     const { block } = useBlock(blockId);
 
     const setRef = useCallback(
@@ -25,11 +25,11 @@ export function RenderBlock({
         [block]
     );
 
-    const blockView = useMemo(() => {
+    const BlockView = useMemo(() => {
         if (block?.type) {
-            return editor.getView(block.type);
+            return editor.getView(block.type).View;
         }
-        return null;
+        return () => null;
     }, [editor, block?.type]);
 
     if (!block) {
@@ -44,22 +44,21 @@ export function RenderBlock({
         columns: block.columns ?? [],
     };
 
-    const view = blockView?.View ? (
-        <blockView.View
+    const view = (
+        <BlockView
             editor={editor}
             block={block}
             columns={columns.columns}
             columnsFromId={columns.fromId}
-            editorElement={editorElement}
         />
-    ) : null;
+    );
 
     return hasContainer ? (
         <BlockContainer block-id={blockId} ref={setRef} data-block-id={blockId}>
             {view}
         </BlockContainer>
     ) : (
-        <> {view}</>
+        view
     );
 }
 

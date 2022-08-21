@@ -1,12 +1,11 @@
-/* eslint-disable filename-rules/match */
-import { useCallback, useState } from 'react';
 import { LogoImg } from '@toeverything/components/common';
 import { MuiBox, MuiGrid, MuiSnackbar } from '@toeverything/components/ui';
+import { useCallback, useState } from 'react';
 
-// import { Authing } from './authing';
-import { Firebase } from './firebase';
-import { FileSystem } from './fs';
 import { Error } from './../error';
+// import { Authing } from './Authing';
+import { FileSystem } from './FileSystem';
+import { Firebase } from './Firebase';
 
 export function Login() {
     const [error, setError] = useState(false);

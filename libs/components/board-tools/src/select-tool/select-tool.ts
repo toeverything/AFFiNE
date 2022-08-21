@@ -4,19 +4,18 @@ import {
     TLBoundsEventHandler,
     TLBoundsHandleEventHandler,
     TLCanvasEventHandler,
-    TLPointerEventHandler,
     TLKeyboardEventHandler,
+    TLPointerEventHandler,
     TLShapeCloneHandler,
     Utils,
 } from '@tldraw/core';
+import Vec from '@tldraw/vec';
+import { BaseTool, TLDR } from '@toeverything/components/board-state';
 import {
-    SessionType,
-    TDShapeType,
     CLONING_DISTANCE,
     DEAD_ZONE,
+    SessionType,
 } from '@toeverything/components/board-types';
-import { BaseTool, TLDR } from '@toeverything/components/board-state';
-import Vec from '@tldraw/vec';
 
 enum Status {
     Idle = 'idle',

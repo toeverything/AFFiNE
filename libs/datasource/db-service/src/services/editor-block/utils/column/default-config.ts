@@ -1,22 +1,21 @@
 import {
+    BooleanColumnValue,
     Column,
     ColumnType,
+    CommentColumnValue,
     ContentColumnValue,
-    BooleanColumnValue,
-    StringColumnValue,
-    FileColumnValue,
     DateColumnValue,
     EnumColumnValue,
-    CommentColumnValue,
+    FileColumnValue,
     FilterConstraint,
     SorterConstraint,
+    StringColumnValue,
 } from './types';
 
 export enum GroupScene {
     page = 'page',
     table = 'table',
     kanban = 'kanban',
-    whiteboard = 'whiteboard',
 }
 
 /**
@@ -54,6 +53,7 @@ export type DefaultColumnsValue = {
     filterConstraint: FilterConstraint;
     filterWeakSqlConstraint: string;
     sorterConstraint: SorterConstraint;
+    bindings: StringColumnValue;
 };
 
 export const DEFAULT_COLUMN_KEYS = {

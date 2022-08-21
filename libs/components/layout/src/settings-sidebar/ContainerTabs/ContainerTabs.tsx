@@ -1,13 +1,13 @@
-import { cloneElement, useMemo, useCallback, type ReactElement } from 'react';
-import { styled } from '@toeverything/components/ui';
 import {
     CommentIcon,
     LayoutIcon,
     SettingsIcon,
 } from '@toeverything/components/icons';
-import { LayoutSettings } from '../Layout';
+import { styled } from '@toeverything/components/ui';
+import { cloneElement, useCallback, useMemo, type ReactElement } from 'react';
 import { Comments } from '../Comments';
 import { useActiveComment } from '../Comments/use-comments';
+import { LayoutSettings } from '../Layout';
 import { SettingsPanel } from '../Settings';
 import { TabItemTitle } from './TabItemTitle';
 import { useTabs } from './use-tabs';

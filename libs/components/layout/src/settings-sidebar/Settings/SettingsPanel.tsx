@@ -1,6 +1,6 @@
 import { styled } from '@toeverything/components/ui';
-import { SettingsList } from './SettingsList';
 import { Footer } from './footer';
+import { SettingsList } from './SettingsList';
 
 export const SettingsPanel = () => {
     return (

@@ -1,55 +1,49 @@
 /* eslint-disable max-lines */
-import HotKeys from 'hotkeys-js';
-import LRUCache from 'lru-cache';
-
-import { services } from '@toeverything/datasource/db-service';
+import type { PatchNode } from '@toeverything/components/ui';
+import { Commands } from '@toeverything/datasource/commands';
 import type {
     BlockFlavors,
     ReturnEditorBlock,
     UpdateEditorBlock,
 } from '@toeverything/datasource/db-service';
-import type { PatchNode } from '@toeverything/components/ui';
-
-import { AsyncBlock } from './block';
-import type { WorkspaceAndBlockId } from './block';
-import type { BaseView } from './views/base-view';
-import { SelectionManager } from './selection';
-import { Hooks, PluginManager } from './plugin';
-import { EditorCommands } from './commands';
-import {
-    Virgo,
-    HooksRunner,
-    PluginHooks,
-    PluginCreator,
-    StorageManager,
-    VirgoSelection,
-    PluginManagerInterface,
-} from './types';
-import { KeyboardManager } from './keyboard';
-import { MouseManager } from './mouse';
-import { ScrollManager } from './scroll';
-import assert from 'assert';
+import { services } from '@toeverything/datasource/db-service';
 import { domToRect, last, Point, sleep } from '@toeverything/utils';
-import { Commands } from '@toeverything/datasource/commands';
+import assert from 'assert';
+import HotKeys from 'hotkeys-js';
+import type { WorkspaceAndBlockId } from './block';
+import { AsyncBlock } from './block';
+import { BlockHelper } from './block/block-helper';
 import { BrowserClipboard } from './clipboard/browser-clipboard';
 import { ClipboardPopulator } from './clipboard/clipboard-populator';
-import { BlockHelper } from './block/block-helper';
-import { DragDropManager } from './drag-drop';
+import { EditorCommands } from './commands';
 import { EditorConfig } from './config';
+import { DragDropManager } from './drag-drop';
+import { KeyboardManager } from './keyboard';
+import { MouseManager } from './mouse';
+import { Hooks, PluginManager } from './plugin';
+import { ScrollManager } from './scroll';
+import { SelectionManager } from './selection';
+import {
+    HooksRunner,
+    PluginCreator,
+    PluginHooks,
+    PluginManagerInterface,
+    StorageManager,
+    Virgo,
+    VirgoSelection,
+} from './types';
+import type { BaseView } from './views/base-view';
 
 export interface EditorCtorProps {
     workspace: string;
     views: Partial<Record<keyof BlockFlavors, BaseView>>;
     plugins: PluginCreator[];
     rootBlockId: string;
-    isWhiteboard?: boolean;
+    isEdgeless?: boolean;
 }
 
 export class Editor implements Virgo {
-    private _cacheManager = new LRUCache<string, Promise<AsyncBlock | null>>({
-        max: 8192,
-        ttl: 1000 * 60 * 30,
-    });
+    private _cacheManager = new Map<string, Promise<AsyncBlock | null>>();
     public mouseManager = new MouseManager(this);
     public selectionManager = new SelectionManager(this);
     public keyboardManager = new KeyboardManager(this);
@@ -75,7 +69,7 @@ export class Editor implements Virgo {
         render: PatchNode;
         has: (key: string) => boolean;
     };
-    public isWhiteboard = false;
+    public isEdgeless = false;
     private _isDisposed = false;
 
     constructor(props: EditorCtorProps) {
@@ -85,8 +79,8 @@ export class Editor implements Virgo {
         this.hooks = new Hooks();
         this.plugin_manager = new PluginManager(this, this.hooks);
         this.plugin_manager.registerAll(props.plugins);
-        if (props.isWhiteboard) {
-            this.isWhiteboard = true;
+        if (props.isEdgeless) {
+            this.isEdgeless = true;
         }
         for (const [name, block] of Object.entries(props.views)) {
             services.api.editorBlock.registerContentExporter(
@@ -148,18 +142,41 @@ export class Editor implements Virgo {
     public get container() {
         return this.ui_container;
     }
-    // preference to use withSuspend
+
+    /**
+     * Use it discreetly.
+     * Preference to use {@link withBatch}
+     */
     public suspend(flag: boolean) {
         services.api.editorBlock.suspend(this.workspace, flag);
     }
 
-    public async withSuspend<T extends (...args: any[]) => any>(
+    // TODO support suspend recursion
+    private _isSuspend = false;
+    public withBatch<T extends (...args: any[]) => Promise<any>>(fn: T): T {
+        return (async (...args) => {
+            if (this._isSuspend) {
+                console.warn(
+                    'The editor currently has suspend! Please do not call batch method repeatedly!'
+                );
+            }
+            this._isSuspend = true;
+            services.api.editorBlock.suspend(this.workspace, true);
+            const result = await fn(...args);
+            services.api.editorBlock.suspend(this.workspace, false);
+            this._isSuspend = false;
+            return result;
+        }) as T;
+    }
+
+    /**
+     * Use it discreetly.
+     * Preference to use {@link withBatch}
+     */
+    public async batch<T extends (...args: any[]) => any>(
         fn: T
     ): Promise<Awaited<ReturnType<T>>> {
-        services.api.editorBlock.suspend(this.workspace, true);
-        const result = await fn();
-        services.api.editorBlock.suspend(this.workspace, false);
-        return result;
+        return this.withBatch(fn)();
     }
 
     public setReactRenderRoot(props: {
@@ -211,7 +228,12 @@ export class Editor implements Virgo {
             return await services.api.editorBlock.update(patches);
         },
         remove: async ({ workspace, id }: WorkspaceAndBlockId) => {
-            return await services.api.editorBlock.delete({ workspace, id });
+            const ret = await services.api.editorBlock.delete({
+                workspace,
+                id,
+            });
+            this._cacheManager.delete(id);
+            return ret;
         },
         observe: async (
             { workspace, id }: WorkspaceAndBlockId,
@@ -258,7 +280,7 @@ export class Editor implements Virgo {
         return await blockView.onCreate(block);
     }
 
-    private async getBlock({
+    public async getBlock({
         workspace,
         id,
     }: WorkspaceAndBlockId): Promise<AsyncBlock | null> {

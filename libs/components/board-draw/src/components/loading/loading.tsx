@@ -1,7 +1,6 @@
-import * as React from 'react';
-import { useTldrawApp } from '../../hooks';
-import { styled } from '@toeverything/components/ui';
 import type { TDSnapshot } from '@toeverything/components/board-types';
+import { styled } from '@toeverything/components/ui';
+import { useTldrawApp } from '../../hooks';
 
 const loadingSelector = (s: TDSnapshot) => s.appState.isLoading;
 

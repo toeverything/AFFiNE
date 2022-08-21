@@ -1,30 +1,30 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
-    TLPageState,
-    Utils,
-    TLBoundsWithCenter,
-    TLSnapLine,
     TLBounds,
+    TLBoundsWithCenter,
+    TLPageState,
+    TLSnapLine,
+    Utils,
 } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import {
-    TDShape,
-    TDBinding,
-    TldrawCommand,
-    TDStatus,
-    ArrowShape,
-    Patch,
-    GroupShape,
-    SessionType,
     ArrowBinding,
-    TldrawPatch,
-    TDShapeType,
+    ArrowShape,
+    GroupShape,
+    Patch,
+    SessionType,
     SLOW_SPEED,
     SNAP_DISTANCE,
+    TDBinding,
+    TDShape,
+    TDShapeType,
+    TDStatus,
+    TldrawCommand,
+    TldrawPatch,
 } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
 import { BaseSession } from './base-session';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 type CloneInfo =
     | {
@@ -111,7 +111,8 @@ export class TranslateSession extends BaseSession {
                             Utils.boundsContain(
                                 TLDR.get_bounds(shap),
                                 TLDR.get_bounds(shapItem)
-                            )
+                            ) &&
+                            !shapItem.isLocked
                         ) {
                             selectedShapes.push(shapItem);
                         }

@@ -1,45 +1,45 @@
-import { DiContainer } from '@toeverything/utils';
 import type { RegisterDependencyConfig } from '@toeverything/utils';
+import { DiContainer } from '@toeverything/utils';
+import { CommentService } from './comment';
 import { Database } from './database';
-import { PageTree } from './workspace/page-tree';
-import { UserConfig } from './workspace/user-config';
 import { EditorBlock } from './editor-block';
 import { FileService } from './file';
-import { CommentService } from './comment';
+import { PageTree } from './workspace/page-tree';
+import { UserConfig } from './workspace/user-config';
 
-export type {
-    CreateEditorBlock,
-    ReturnEditorBlock,
-    GetEditorBlock,
-    DeleteEditorBlock,
-    UpdateEditorBlock,
-    BlockFlavors,
-    BlockFlavorKeys,
-    Column,
-    ContentColumn,
-    NumberColumn,
-    EnumColumn,
-    DateColumn,
-    BooleanColumn,
-    FileColumn,
-    DefaultColumnsValue,
-    ContentColumnValue,
-    NumberColumnValue,
-    EnumColumnValue,
-    BooleanColumnValue,
-    DateColumnValue,
-    FileColumnValue,
-    StringColumnValue,
-} from './editor-block';
 export {
     ColumnType,
     isBooleanColumn,
     isContentColumn,
     isDateColumn,
+    isEnumColumn,
     isFileColumn,
     isNumberColumn,
-    isEnumColumn,
     isStringColumn,
+} from './editor-block';
+export type {
+    BlockFlavorKeys,
+    BlockFlavors,
+    BooleanColumn,
+    BooleanColumnValue,
+    Column,
+    ContentColumn,
+    ContentColumnValue,
+    CreateEditorBlock,
+    DateColumn,
+    DateColumnValue,
+    DefaultColumnsValue,
+    DeleteEditorBlock,
+    EnumColumn,
+    EnumColumnValue,
+    FileColumn,
+    FileColumnValue,
+    GetEditorBlock,
+    NumberColumn,
+    NumberColumnValue,
+    ReturnEditorBlock,
+    StringColumnValue,
+    UpdateEditorBlock,
 } from './editor-block';
 
 export interface DbServicesMap {

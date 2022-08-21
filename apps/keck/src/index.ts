@@ -7,8 +7,8 @@ import firebaseAuth = require('firebase-admin/auth');
 import LRUCache = require('lru-cache');
 import nanoid = require('nanoid');
 
-import { handleConnection } from './utils';
 import { URL } from 'url';
+import { handleConnection } from './utils';
 
 if (process.env.NODE_ENV !== 'development') {
     firebaseApp.initializeApp({

@@ -1,17 +1,17 @@
+import type { TLBounds } from '@tldraw/core';
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import {
+    ArrowShape,
+    EllipseShape,
+    RectangleShape,
     SessionType,
+    TDStatus,
     TldrawCommand,
     TldrawPatch,
-    TDStatus,
-    RectangleShape,
     TriangleShape,
-    EllipseShape,
-    ArrowShape,
 } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
 import { BaseSession } from './base-session';
-import type { TldrawApp } from '@toeverything/components/board-state';
-import type { TLBounds } from '@tldraw/core';
 
 export class TranslateLabelSession extends BaseSession {
     type = SessionType.Handle;

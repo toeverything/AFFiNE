@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { TLPageState, TLBounds, Utils } from '@tldraw/core';
+import { TLBounds, TLPageState, Utils } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
 import {
     Patch,
+    SessionType,
     TDShape,
     TDStatus,
-    SessionType,
-    TDShapeType,
-    TldrawPatch,
     TldrawCommand,
+    TldrawPatch,
 } from '@toeverything/components/board-types';
 import { BaseSession } from './base-session';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export class GridSession extends BaseSession {
     type = SessionType.Grid;

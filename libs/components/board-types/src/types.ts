@@ -1,24 +1,24 @@
 /* eslint-disable max-lines */
 import type {
-    TLPage,
-    TLUser,
-    TLPageState,
+    TLAsset,
     TLBinding,
     TLBoundsCorner,
     TLBoundsEdge,
-    TLShape,
-    TLHandle,
-    TLSnapLine,
-    TLPinchEventHandler,
-    TLKeyboardEventHandler,
-    TLPointerEventHandler,
-    TLWheelEventHandler,
-    TLCanvasEventHandler,
     TLBoundsEventHandler,
     TLBoundsHandleEventHandler,
+    TLCanvasEventHandler,
+    TLHandle,
+    TLKeyboardEventHandler,
+    TLPage,
+    TLPageState,
+    TLPinchEventHandler,
+    TLPointerEventHandler,
+    TLShape,
     TLShapeBlurHandler,
     TLShapeCloneHandler,
-    TLAsset,
+    TLSnapLine,
+    TLUser,
+    TLWheelEventHandler,
 } from '@tldraw/core';
 
 /* -------------------------------------------------- */
@@ -212,7 +212,7 @@ export type TDToolType =
     | TDShapeType.WhiteArrow
     | TDShapeType.Editor
     | TDShapeType.Frame
-    | TDShapeType.HandDraw;
+    | TDShapeType.HandDrag;
 
 export type Easing =
     | 'linear'
@@ -287,7 +287,7 @@ export enum TDShapeType {
     Video = 'video',
     Editor = 'editor',
     WhiteArrow = 'white-arrow',
-    HandDraw = 'hand-draw',
+    HandDrag = 'hand-drag',
     Frame = 'frame',
 }
 

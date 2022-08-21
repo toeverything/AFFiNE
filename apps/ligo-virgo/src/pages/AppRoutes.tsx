@@ -1,20 +1,20 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
+import { Login } from './account';
 import Agenda from './agenda';
-import { WorkspaceContainer } from './workspace';
+import { LigoVirgoRootContainer } from './AppContainer';
 import Recent from './recent';
+import { RoutePrivate } from './RoutePrivate';
+import { RoutePublicAutoLogin } from './RoutePublicAutoLogin';
 import Search from './search';
 import Settings from './settings';
 import Shared from './shared';
 import Starred from './starred';
-import { Login } from './account';
 import { PageNotFound } from './status/page-not-found';
 import { WorkspaceNotFound } from './status/workspace-not-found';
-import { RoutePrivate } from './RoutePrivate';
-import { RoutePublicAutoLogin } from './RoutePublicAutoLogin';
 import { Tools } from './tools';
-import { LigoVirgoRootContainer } from './AppContainer';
 import { UIPage } from './ui';
+import { WorkspaceContainer } from './workspace';
 
 export function LigoVirgoRoutes() {
     return (

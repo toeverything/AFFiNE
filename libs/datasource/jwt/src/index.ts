@@ -1,21 +1,20 @@
 /* eslint-disable max-lines */
 import { DocumentSearchOptions } from 'flexsearch';
 import LRUCache from 'lru-cache';
-
 import {
     AsyncDatabaseAdapter,
-    YjsAdapter,
-    YjsInitOptions,
-    YjsContentOperation,
-    ChangedStates,
-    BlockListener,
     BlockInstance,
-    ContentOperation,
-    HistoryManager,
-    ContentTypes,
+    BlockListener,
+    ChangedStates,
     Connectivity,
+    ContentOperation,
+    ContentTypes,
     DataExporter,
     getDataExporter,
+    HistoryManager,
+    YjsAdapter,
+    YjsContentOperation,
+    YjsInitOptions,
 } from './adapter';
 import {
     getYjsProviders,
@@ -30,14 +29,14 @@ import {
 } from './block';
 import { QueryIndexMetadata } from './block/indexer';
 import {
-    BlockTypes,
-    BlockTypeKeys,
-    BlockFlavors,
-    UUID,
     BlockFlavorKeys,
+    BlockFlavors,
     BlockItem,
-    ExcludeFunction,
+    BlockTypeKeys,
+    BlockTypes,
     BucketBackend,
+    ExcludeFunction,
+    UUID,
 } from './types';
 import { BlockEventBus, genUUID, getLogger } from './utils';
 
@@ -290,19 +289,22 @@ export class BlockClient<
             | string
             | Partial<DocumentSearchOptions<boolean>>
     ): Promise<BlockSearchItem[]> {
-        const promised_pages = await Promise.all(
-            this.search(part_of_title_or_content).flatMap(({ result }) =>
-                result.map(async id => {
-                    const page = this._pageMapping.get(id as string);
-                    if (page) return page;
-                    const block = await this.get(id as BlockTypeKeys);
-                    return this.set_page(block);
-                })
-            )
-        );
-        const pages = [
-            ...new Set(promised_pages.filter((v): v is string => !!v)),
-        ];
+        let pages = [];
+        if (part_of_title_or_content) {
+            const promisedPages = await Promise.all(
+                this.search(part_of_title_or_content).flatMap(({ result }) =>
+                    result.map(async id => {
+                        const page = this._pageMapping.get(id as string);
+                        if (page) return page;
+                        const block = await this.get(id as BlockTypeKeys);
+                        return this.set_page(block);
+                    })
+                )
+            );
+            pages = [...new Set(promisedPages.filter((v): v is string => !!v))];
+        } else {
+            pages = await this.getBlockByFlavor('page');
+        }
         return Promise.all(
             this._blockIndexer.getMetadata(pages).map(async page => ({
                 content: this.get_decoded_content(
@@ -649,18 +651,18 @@ export type BlockInitOptions = NonNullable<
 >;
 
 export type {
-    TextOperation,
     ArrayOperation,
-    MapOperation,
     ChangedStates,
     Connectivity,
+    MapOperation,
+    TextOperation,
 } from './adapter';
 export type {
     BlockSearchItem,
     Decoration as BlockDecoration,
     ReadableContentExporter as BlockContentExporter,
 } from './block';
-export type { BlockTypeKeys } from './types';
 export { BlockTypes, BucketBackend as BlockBackend } from './types';
+export type { BlockTypeKeys } from './types';
 export { isBlock } from './utils';
 export type { QueryIndexMetadata };

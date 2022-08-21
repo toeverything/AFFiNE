@@ -1,4 +1,4 @@
-import React, {
+import {
     useEffect,
     useImperativeHandle,
     useMemo,
@@ -171,7 +171,9 @@ const Container = styled('div')({
     display: 'contents',
 });
 
-const BasicStyledPopper = styled(PopperUnstyled)<{
+const BasicStyledPopper = styled(PopperUnstyled, {
+    shouldForwardProp: propName => !['zIndex'].some(name => name === propName),
+})<{
     zIndex?: number;
 }>(({ zIndex, theme }) => {
     return {

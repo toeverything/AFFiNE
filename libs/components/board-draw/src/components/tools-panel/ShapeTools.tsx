@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
 import {
-    ShapeIcon,
-    RectangleIcon,
-    EllipseIcon,
-    TriangleIcon,
-    PolygonIcon,
-    StarIcon,
     ArrowIcon,
+    EllipseIcon,
+    PolygonIcon,
+    RectangleIcon,
+    ShapeIcon,
+    StarIcon,
+    TriangleIcon,
 } from '@toeverything/components/icons';
 import {
-    Tooltip,
-    Popover,
     IconButton,
+    Popover,
     styled,
+    Tooltip,
 } from '@toeverything/components/ui';
+import { useEffect, useState } from 'react';
 
-import { TDSnapshot, TDShapeType } from '@toeverything/components/board-types';
 import { TldrawApp } from '@toeverything/components/board-state';
+import { TDShapeType, TDSnapshot } from '@toeverything/components/board-types';
 
 export type ShapeTypes =
     | TDShapeType.Rectangle

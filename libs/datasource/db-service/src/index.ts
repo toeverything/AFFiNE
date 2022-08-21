@@ -1,13 +1,48 @@
-import { diContainer, serviceMapByCallName } from './services';
 import type { DbServicesMap } from './services';
-export type { Template } from './services/editor-block/templates/types';
+import { diContainer, serviceMapByCallName } from './services';
+export { Protocol } from './protocol';
+export {
+    ColumnType,
+    isBooleanColumn,
+    isContentColumn,
+    isDateColumn,
+    isEnumColumn,
+    isFileColumn,
+    isNumberColumn,
+    isStringColumn,
+} from './services';
+export type {
+    BlockFlavorKeys,
+    BlockFlavors,
+    BooleanColumn,
+    BooleanColumnValue,
+    Column,
+    ContentColumn,
+    ContentColumnValue,
+    CreateEditorBlock,
+    DateColumn,
+    DateColumnValue,
+    DefaultColumnsValue,
+    DeleteEditorBlock,
+    EnumColumn,
+    EnumColumnValue,
+    FileColumn,
+    FileColumnValue,
+    GetEditorBlock,
+    NumberColumn,
+    NumberColumnValue,
+    ReturnEditorBlock,
+    StringColumnValue,
+    UpdateEditorBlock,
+} from './services';
+export type { Comment, CommentReply } from './services/comment/types';
+export type { ReturnUnobserve } from './services/database';
 export {
     TemplateFactory,
     type TemplateMeta,
 } from './services/editor-block/templates';
-
-export type { ReturnUnobserve } from './services/database';
-export type { Comment, CommentReply } from './services/comment/types';
+export type { Template } from './services/editor-block/templates/types';
+export { DEFAULT_COLUMN_KEYS } from './services/editor-block/utils/column/default-config';
 
 const api = new Proxy<DbServicesMap>({} as DbServicesMap, {
     get(target, prop) {
@@ -23,40 +58,3 @@ export const services = {
     api,
 };
 (window as any)['services'] = services;
-
-export type {
-    CreateEditorBlock,
-    ReturnEditorBlock,
-    GetEditorBlock,
-    UpdateEditorBlock,
-    DeleteEditorBlock,
-    BlockFlavors,
-    BlockFlavorKeys,
-    Column,
-    ContentColumn,
-    NumberColumn,
-    EnumColumn,
-    DateColumn,
-    BooleanColumn,
-    FileColumn,
-    DefaultColumnsValue,
-    ContentColumnValue,
-    NumberColumnValue,
-    EnumColumnValue,
-    BooleanColumnValue,
-    DateColumnValue,
-    FileColumnValue,
-    StringColumnValue,
-} from './services';
-export {
-    ColumnType,
-    isBooleanColumn,
-    isContentColumn,
-    isDateColumn,
-    isFileColumn,
-    isNumberColumn,
-    isEnumColumn,
-    isStringColumn,
-} from './services';
-export { Protocol } from './protocol';
-export { DEFAULT_COLUMN_KEYS } from './services/editor-block/utils/column/default-config';

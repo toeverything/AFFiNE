@@ -1,9 +1,9 @@
 import {
     BlockClientInstance,
-    BlockInitOptions,
-    BlockImplInstance,
-    BlockMatcher,
     BlockContentExporter,
+    BlockImplInstance,
+    BlockInitOptions,
+    BlockMatcher,
     QueryIndexMetadata,
 } from '@toeverything/datasource/jwt';
 import { DependencyCallOrConstructProps } from '@toeverything/utils';

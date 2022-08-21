@@ -117,7 +117,7 @@ export const PendantHistoryPanel = ({
                             />
                         }
                         trigger="click"
-                        container={historyPanelRef.current}
+                        // container={historyPanelRef.current}
                     >
                         <PendantTag
                             style={{

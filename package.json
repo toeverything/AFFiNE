@@ -1,6 +1,6 @@
 {
     "name": "toeverything",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "license": "MIT",
     "author": "AFFiNE <developer@affine.pro>",
     "scripts": {
@@ -15,6 +15,7 @@
         "build:keck": "nx build keck",
         "build:venus": "nx build venus",
         "build:analytic": "cross-env BUNDLE_ANALYZER=true nx build --skip-nx-cache",
+        "build:check": "pnpm exec nx affected --target=build --parallel=2",
         "test": "nx run-many --target test --all",
         "check": "nx run-many --target check --all",
         "add:components": "nx generate @nrwl/react:library --directory=components --buildable --no-component --no-routing --tags=components",
@@ -26,7 +27,6 @@
         "lint:with-cache": "nx run-many --target=lint --all --exclude=components-common,keck,theme",
         "format": "nx format",
         "format:ci": "nx format:check",
-        "type:check": "nx build ligo-virgo",
         "prepare": "husky install"
     },
     "private": true,

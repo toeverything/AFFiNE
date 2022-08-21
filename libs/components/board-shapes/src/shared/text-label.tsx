@@ -1,12 +1,12 @@
-import * as React from 'react';
-import { stopPropagation } from './stop-propagation';
 import {
     GHOSTED_OPACITY,
     LETTER_SPACING,
 } from '@toeverything/components/board-types';
-import { normalizeText } from './normalize-text';
 import { styled } from '@toeverything/components/ui';
+import * as React from 'react';
 import { getTextLabelSize } from './get-text-size';
+import { normalizeText } from './normalize-text';
+import { stopPropagation } from './stop-propagation';
 import { TextAreaUtils } from './text-area-utils';
 
 export interface TextLabelProps {

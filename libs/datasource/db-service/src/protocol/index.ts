@@ -22,7 +22,6 @@ const Protocol = {
             quote: 'quote',
             toc: 'toc',
             database: 'database',
-            whiteboard: 'whiteboard',
             template: 'template',
             discussion: 'discussion',
             comment: 'comment',

@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { BINDING_DISTANCE } from '@toeverything/components/board-types';
 import { getPentagramPoints } from '../pentagram-helpers';
 

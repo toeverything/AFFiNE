@@ -1,8 +1,8 @@
-import { FlipType } from '@toeverything/components/board-types';
 import { TLBoundsCorner, Utils } from '@tldraw/core';
-import type { TldrawCommand } from '@toeverything/components/board-types';
 import type { TldrawApp } from '@toeverything/components/board-state';
 import { TLDR } from '@toeverything/components/board-state';
+import type { TldrawCommand } from '@toeverything/components/board-types';
+import { FlipType } from '@toeverything/components/board-types';
 
 export function flipShapes(
     app: TldrawApp,

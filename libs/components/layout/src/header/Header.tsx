@@ -1,24 +1,23 @@
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import MenuIconBak from '@mui/icons-material/Menu';
-import {
-    useUserAndSpaces,
-    useShowSpaceSidebar,
-    useShowSettingsSidebar,
-} from '@toeverything/datasource/state';
+import { ListIcon, LogoLink, SpaceIcon } from '@toeverything/components/common';
+import { SideBarViewIcon } from '@toeverything/components/icons';
 import {
     MuiIconButton as IconButton,
     styled,
     Tooltip,
     useTheme,
 } from '@toeverything/components/ui';
-import { SideBarViewIcon } from '@toeverything/components/icons';
-import { LogoLink, ListIcon, SpaceIcon } from '@toeverything/components/common';
+import { useFlag } from '@toeverything/datasource/feature-flags';
+import {
+    useShowSettingsSidebar,
+    useShowSpaceSidebar,
+    useUserAndSpaces,
+} from '@toeverything/datasource/state';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PageHistoryPortal } from './PageHistoryPortal';
-import { PageSharePortal } from './PageSharePortal';
 import { PageSettingPortal } from './PageSettingPortal';
+import { PageSharePortal } from './PageSharePortal';
 import { CurrentPageTitle } from './Title';
 import { UserMenuIcon } from './user-menu-icon';
-import { useFlag } from '@toeverything/datasource/feature-flags';
 
 function hideAffineHeader(pathname: string): boolean {
     return ['/', '/login', '/error/workspace', '/error/404', '/ui'].includes(
@@ -27,7 +26,7 @@ function hideAffineHeader(pathname: string): boolean {
 }
 
 type HeaderIconProps = {
-    isWhiteboardView?: boolean;
+    isEdgelessView?: boolean;
 };
 
 export const AffineHeader = () => {
@@ -39,7 +38,7 @@ export const AffineHeader = () => {
     const { toggleSettingsSidebar: toggleInfoSidebar } =
         useShowSettingsSidebar();
     const theme = useTheme();
-    const isWhiteboardView = pathname.endsWith('/whiteboard');
+    const isEdgelessView = pathname.endsWith('/edgeless');
     const pageHistoryPortalFlag = useFlag('BooleanPageHistoryPortal', false);
     const pageSettingPortalFlag = useFlag('PageSettingPortal', false);
     const BooleanPageSharePortal = useFlag('BooleanPageSharePortal', false);
@@ -78,9 +77,9 @@ export const AffineHeader = () => {
                         <Tooltip content="Doc">
                             <HeaderIcon
                                 style={{ width: '80px' }}
-                                isWhiteboardView={!isWhiteboardView}
+                                isEdgelessView={!isEdgelessView}
                                 onClick={() =>
-                                    isWhiteboardView
+                                    isEdgelessView
                                         ? navigate(
                                               `/${
                                                   params['workspace_id'] ||
@@ -101,17 +100,17 @@ export const AffineHeader = () => {
                                 </span>
                             </HeaderIcon>
                         </Tooltip>
-                        <Tooltip content="Whiteboard">
+                        <Tooltip content="Edgeless">
                             <HeaderIcon
-                                isWhiteboardView={isWhiteboardView}
+                                isEdgelessView={isEdgelessView}
                                 onClick={() =>
-                                    isWhiteboardView
+                                    isEdgelessView
                                         ? null
                                         : navigate(
                                               `/${
                                                   params['workspace_id'] ||
                                                   'space'
-                                              }/${params['*']}` + '/whiteboard'
+                                              }/${params['*']}` + '/edgeless'
                                           )
                                 }
                             >
@@ -167,14 +166,14 @@ const StyledHeaderRight = styled('div')`
 `;
 
 const HeaderIcon = styled(IconButton, {
-    shouldForwardProp: (prop: string) => prop !== 'isWhiteboardView',
-})<HeaderIconProps>(({ isWhiteboardView = false }) => ({
+    shouldForwardProp: (prop: string) => prop !== 'isEdgelessView',
+})<HeaderIconProps>(({ isEdgelessView = false }) => ({
     color: '#98ACBD',
     minWidth: 48,
     width: 48,
     height: 36,
     borderRadius: '8px',
-    ...(isWhiteboardView && {
+    ...(isEdgelessView && {
         color: '#fff',
         backgroundColor: '#3E6FDB',
         '&:hover': {

@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import style9 from 'style9';
-
 import { BlockPreview } from '@toeverything/components/common';
 import {
-    TransitionsModal,
     MuiBox as Box,
     MuiBox,
     styled,
+    TransitionsModal,
 } from '@toeverything/components/ui';
-import { Virgo, BlockEditor } from '@toeverything/framework/virgo';
+import { BlockEditor, Virgo } from '@toeverything/framework/virgo';
 import { throttle } from '@toeverything/utils';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import style9 from 'style9';
 
 const styles = style9.create({
     wrapper: {
@@ -37,9 +36,7 @@ const query_blocks = (
     search: string,
     callback: (result: QueryResult) => void
 ) => {
-    (editor as BlockEditor)
-        .search(search)
-        .then(pages => callback(pages.filter(b => !!b.content)));
+    (editor as BlockEditor).search(search).then(pages => callback(pages));
 };
 
 export const QueryBlocks = throttle(query_blocks, 500);

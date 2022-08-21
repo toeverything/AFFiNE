@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { TDDocument, TDFile } from '@toeverything/components/board-types';
-import type { FileSystemHandle } from './browser-fs-access';
-import { get as getFromIdb, set as setToIdb } from 'idb-keyval';
 import {
     IMAGE_EXTENSIONS,
     VIDEO_EXTENSIONS,
 } from '@toeverything/components/board-types';
+import { get as getFromIdb, set as setToIdb } from 'idb-keyval';
+import type { FileSystemHandle } from './browser-fs-access';
 
 const options = { mode: 'readwrite' as const };
 

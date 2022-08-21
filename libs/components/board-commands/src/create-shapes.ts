@@ -1,10 +1,10 @@
+import type { TldrawApp } from '@toeverything/components/board-state';
 import type {
     Patch,
+    TDBinding,
     TDShape,
     TldrawCommand,
-    TDBinding,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export function createShapes(
     app: TldrawApp,

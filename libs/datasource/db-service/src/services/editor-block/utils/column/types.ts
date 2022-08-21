@@ -1,5 +1,4 @@
 /** Column */
-import type { CSSProperties } from 'react';
 
 export enum ColumnType {
     /**

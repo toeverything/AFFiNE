@@ -1,6 +1,6 @@
-import type { DocMode } from './type';
 import { styled } from '@toeverything/components/ui';
 import { StatusIcon } from './StatusIcon';
+import type { DocMode } from './type';
 
 interface StatusTrackProps {
     mode: DocMode;

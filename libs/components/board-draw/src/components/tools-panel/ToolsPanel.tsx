@@ -1,35 +1,35 @@
-import style9 from 'style9';
 import {
+    EraserIcon,
+    EraserIconProps,
+    FrameIcon,
+    HandToolIcon,
+    HandToolIconProps,
+    SelectIcon,
+    SelectIconProps,
+    TextIcon,
+    TextIconProps,
+} from '@toeverything/components/icons';
+import {
+    IconButton,
+    PopoverContainer,
     // MuiIconButton as IconButton,
     // MuiTooltip as Tooltip,
     Tooltip,
-    PopoverContainer,
-    IconButton,
     useTheme,
 } from '@toeverything/components/ui';
-import {
-    FrameIcon,
-    HandToolIcon,
-    SelectIcon,
-    TextIcon,
-    EraserIcon,
-    SelectIconProps,
-    EraserIconProps,
-    HandToolIconProps,
-    TextIconProps,
-} from '@toeverything/components/icons';
+import style9 from 'style9';
 
+import { TldrawApp } from '@toeverything/components/board-state';
 import {
-    TDSnapshot,
     TDShapeType,
+    TDSnapshot,
     TDToolType,
 } from '@toeverything/components/board-types';
-import { TldrawApp } from '@toeverything/components/board-state';
 
-import { ShapeTools } from './ShapeTools';
-import { PenTools } from './pen-tools';
+import { ComponentType } from 'react';
 import { LineTools } from './LineTools';
-import { ComponentType, Component } from 'react';
+import { PenTools } from './pen-tools';
+import { ShapeTools } from './ShapeTools';
 
 const activeToolSelector = (s: TDSnapshot) => s.appState.activeTool;
 const toolLockedSelector = (s: TDSnapshot) => s.appState.isToolLocked;
@@ -52,8 +52,8 @@ const tools: Array<{
     { type: 'frame', label: 'Frame', tooltip: 'Frame', icon: FrameIcon },
     {
         type: TDShapeType.Editor,
-        label: 'Text',
-        tooltip: 'Text',
+        label: 'Text Block',
+        tooltip: 'Text Block',
         icon: TextIcon,
     },
     { type: 'shapes', component: ShapeTools },
@@ -61,9 +61,9 @@ const tools: Array<{
     { type: 'Connector', component: LineTools },
     // { type: 'erase', label: 'Erase', tooltip: 'Erase', icon: EraseIcon },
     {
-        type: TDShapeType.HandDraw,
-        label: 'HandDraw',
-        tooltip: 'HandDraw',
+        type: TDShapeType.HandDrag,
+        label: 'Hand Drag',
+        tooltip: 'Hand Drag',
         icon: HandToolIcon,
     },
     {

@@ -2,13 +2,11 @@ import { useState } from 'react';
 
 import { CustomText, TextProps } from '@toeverything/components/common';
 import {
-    mergeGroup,
+    BlockPendantProvider,
     RenderBlockChildren,
     splitGroup,
     supportChildren,
-    unwrapGroup,
     useOnSelect,
-    BlockPendantProvider,
 } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { Protocol } from '@toeverything/datasource/db-service';
@@ -16,7 +14,7 @@ import { CreateView } from '@toeverything/framework/virgo';
 import { BlockContainer } from '../../components/BlockContainer';
 import { IndentWrapper } from '../../components/IndentWrapper';
 import { TextManage } from '../../components/text-manage';
-import { tabBlock } from '../../utils/indent';
+import { dedentBlock, tabBlock } from '../../utils/indent';
 interface CreateTextView extends CreateView {
     // TODO: need to optimize
     containerClassName?: string;
@@ -69,24 +67,36 @@ export const TextView = ({
         const { contentBeforeSelection, contentAfterSelection } = splitContents;
         const before = [...contentBeforeSelection.content];
         const after = [...contentAfterSelection.content];
-        const _nextBlockChildren = await block.children();
-        const _nextBlock = await editor.createBlock('text');
-        await _nextBlock.setProperty('text', {
+        const nextBlockChildren = await block.children();
+        const nextBlock = await editor.createBlock('text');
+        if (!nextBlock) {
+            throw new Error('Failed to create text block');
+        }
+        await nextBlock.setProperty('text', {
             value: after as CustomText[],
         });
-        _nextBlock.append(..._nextBlockChildren);
-        block.removeChildren();
         await block.setProperty('text', {
             value: before as CustomText[],
         });
-        await block.after(_nextBlock);
 
-        editor.selectionManager.activeNodeByNodeId(_nextBlock.id);
+        if (editor.getRootBlockId() === block.id) {
+            // If the block is the root block,
+            // new block can not append as next sibling,
+            // all new blocks should be append as children.
+            await block.insert(0, [nextBlock]);
+            editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+            return true;
+        }
+        await nextBlock.append(...nextBlockChildren);
+        await block.removeChildren();
+        await block.after(nextBlock);
+
+        editor.selectionManager.activeNodeByNodeId(nextBlock.id);
         return true;
     };
 
-    const onBackspace: TextProps['handleBackSpace'] = async props => {
-        return await editor.withSuspend(async () => {
+    const onBackspace: TextProps['handleBackSpace'] = editor.withBatch(
+        async props => {
             const { isCollAndStart } = props;
             if (!isCollAndStart) {
                 return false;
@@ -95,28 +105,44 @@ export const TextView = ({
                 await block.setType('text');
                 return true;
             }
+            if (editor.getRootBlockId() === block.id) {
+                // Can not delete
+                return false;
+            }
             const parentBlock = await block.parent();
 
             if (!parentBlock) {
                 return false;
             }
-            const preParent = await parentBlock.previousSibling();
-            if (Protocol.Block.Type.group === parentBlock.type) {
+
+            // The parent block is group block or is the root block.
+            // Merge block to previous sibling.
+            //
+            // - group/root   <- parent block
+            //   - text1      <- preNode
+            //   - text2      <- press backspace before target block
+            //     - children
+            //
+            // ---
+            //
+            // - group/root
+            //   - text1text2  <- merge block to previous sibling
+            //     - children  <- children should switch parent block
+            if (
+                Protocol.Block.Type.group === parentBlock.type ||
+                editor.getRootBlockId() === parentBlock.id
+            ) {
                 const children = await block.children();
                 const preNode = await block.physicallyPerviousSibling();
                 // FIXME support children do not means has textBlock
                 // TODO: abstract this part of code
                 if (preNode) {
                     if (supportChildren(preNode)) {
-                        editor.suspend(true);
                         await editor.selectionManager.activePreviousNode(
                             block.id,
                             'end'
                         );
-                        if (
-                            block.getProperty('text').value[0] &&
-                            block.getProperty('text').value[0]?.text !== ''
-                        ) {
+                        if (!block.blockProvider?.isEmpty()) {
                             const value = [
                                 ...preNode.getProperty('text').value,
                                 ...block.getProperty('text').value,
@@ -127,14 +153,14 @@ export const TextView = ({
                         }
                         await preNode.append(...children);
                         await block.remove();
-                        editor.suspend(false);
                     } else {
+                        // If not pre node, block should be merged to the parent block
                         // TODO: point does not clear
                         await editor.selectionManager.activePreviousNode(
                             block.id,
                             'start'
                         );
-                        if (block.blockProvider.isEmpty()) {
+                        if (block.blockProvider?.isEmpty()) {
                             await block.remove();
                             const parentChild = await parentBlock.children();
                             if (
@@ -142,6 +168,8 @@ export const TextView = ({
                                     Protocol.Block.Type.group &&
                                 !parentChild.length
                             ) {
+                                const preParent =
+                                    await parentBlock.previousSibling();
                                 await editor.selectionManager.setSelectedNodesIds(
                                     [preParent?.id ?? editor.getRootBlockId()]
                                 );
@@ -182,20 +210,13 @@ export const TextView = ({
                     await parentBlock.remove();
                 }
                 return true;
-            } else {
-                const nextNodes = await block.nextSiblings();
-                for (const nextNode of nextNodes) {
-                    await nextNode.remove();
-                }
-                block.append(...nextNodes);
-                editor.commands.blockCommands.moveBlockAfter(
-                    block.id,
-                    parentBlock.id
-                );
             }
+
+            dedentBlock(editor, block);
             return true;
-        });
-    };
+        }
+    );
+
     const handleConvert = async (
         toType: string,
         options?: Record<string, unknown>
@@ -211,7 +232,7 @@ export const TextView = ({
         block.firstCreateFlag = true;
     };
     const onTab: TextProps['handleTab'] = async ({ isShiftKey }) => {
-        await tabBlock(block, isShiftKey);
+        await tabBlock(editor, block, isShiftKey);
         return true;
     };
 

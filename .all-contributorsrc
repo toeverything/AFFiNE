@@ -10,6 +10,7 @@
     "commit": false,
     "commitConvention": "angular",
     "contributorsPerLine": 7,
+    "badgeTemplate": "\n[all-contributors-badge]: https://img.shields.io/badge/all_contributors-<%= contributors.length %>-orange.svg?style=flat-square\n",
     "contributors": [
         {
             "login": "darkskygit",
@@ -228,6 +229,79 @@
             "profile": "https://github.com/pointmax",
             "contributions": [
                 "doc"
+            ]
+        },
+        {
+            "login": "liby",
+            "name": "Bryan Lee",
+            "avatar_url": "https://avatars.githubusercontent.com/u/38807139?v=4",
+            "profile": "https://liby.github.io/notes",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "chenmoonmo",
+            "name": "Simon Li",
+            "avatar_url": "https://avatars.githubusercontent.com/u/36295999?v=4",
+            "profile": "https://github.com/chenmoonmo",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "githbq",
+            "name": "Bob Hu",
+            "avatar_url": "https://avatars.githubusercontent.com/u/10009709?v=4",
+            "profile": "https://github.com/githbq",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "lucky-chap",
+            "name": "Quavo",
+            "avatar_url": "https://avatars.githubusercontent.com/u/67266933?v=4",
+            "profile": "https://quavo.vercel.app/",
+            "contributions": [
+                "doc"
+            ]
+        },
+        {
+            "login": "LuciNyan",
+            "name": "子瞻 Luci",
+            "avatar_url": "https://avatars.githubusercontent.com/u/22126563?v=4",
+            "profile": "https://github.com/LuciNyan",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "m1911star",
+            "name": "Horus",
+            "avatar_url": "https://avatars.githubusercontent.com/u/4948120?v=4",
+            "profile": "http://blog.ipili.me/",
+            "contributions": [
+                "code",
+                "platform"
+            ]
+        },
+        {
+            "login": "fanshyiis",
+            "name": "Super.x",
+            "avatar_url": "https://avatars.githubusercontent.com/u/15103283?v=4",
+            "profile": "https://segmentfault.com/u/qzuser_584786517d31a",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "wangyu-1999",
+            "name": "Wang Yu",
+            "avatar_url": "https://avatars.githubusercontent.com/u/80874770?v=4",
+            "profile": "https://wangyu-1999.github.io/",
+            "contributions": [
+                "code"
             ]
         }
     ]

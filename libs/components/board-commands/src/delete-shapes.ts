@@ -1,9 +1,9 @@
+import type { TldrawApp } from '@toeverything/components/board-state';
 import type {
     TDAsset,
     TDAssets,
     TldrawCommand,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
 import { removeShapesFromPage } from './shared/remove-shapes-from-page';
 
 const removeAssetsFromDocument = (assets: TDAssets, idsToRemove: string[]) => {

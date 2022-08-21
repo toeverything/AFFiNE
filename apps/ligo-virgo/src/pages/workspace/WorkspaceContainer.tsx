@@ -1,14 +1,13 @@
-/* eslint-disable filename-rules/match */
-import { Routes, Route, useParams, Navigate } from 'react-router';
+import { Route, Routes, useParams } from 'react-router';
 
 import { useUserAndSpaces } from '@toeverything/datasource/state';
 
 import { WorkspaceRootContainer } from './Container';
 import { Page } from './docs';
+import { Edgeless } from './Edgeless';
 import { WorkspaceHome } from './Home';
 import Labels from './labels';
 import Pages from './pages';
-import { Whiteboard } from './Whiteboard';
 
 export function WorkspaceContainer() {
     const { workspace_id } = useParams();
@@ -27,8 +26,8 @@ export function WorkspaceContainer() {
                 <Route path="/labels" element={<Labels />} />
                 <Route path="/pages" element={<Pages />} />
                 <Route
-                    path="/:page_id/whiteboard"
-                    element={<Whiteboard workspace={workspace_id} />}
+                    path="/:page_id/edgeless"
+                    element={<Edgeless workspace={workspace_id} />}
                 />
                 <Route
                     path="/:page_id"

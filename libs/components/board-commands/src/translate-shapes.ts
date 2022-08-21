@@ -1,10 +1,10 @@
 import { Vec } from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
 import { TLDR } from '@toeverything/components/board-state';
 import type {
-    TldrawCommand,
     PagePartial,
+    TldrawCommand,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export function translateShapes(
     app: TldrawApp,

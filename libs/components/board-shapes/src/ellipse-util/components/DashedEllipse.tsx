@@ -1,6 +1,6 @@
-import * as React from 'react';
 import { Utils } from '@tldraw/core';
 import type { ShapeStyles } from '@toeverything/components/board-types';
+import * as React from 'react';
 import { getShapeStyle } from '../../shared';
 
 interface EllipseSvgProps {

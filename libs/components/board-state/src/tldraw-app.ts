@@ -3,77 +3,77 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable no-restricted-syntax */
-import { Vec } from '@tldraw/vec';
 import {
+    TLBounds,
     TLBoundsEventHandler,
     TLBoundsHandleEventHandler,
-    TLKeyboardEventHandler,
-    TLShapeCloneHandler,
     TLCanvasEventHandler,
+    TLDropEventHandler,
+    TLKeyboardEventHandler,
     TLPageState,
     TLPinchEventHandler,
     TLPointerEventHandler,
+    TLShapeCloneHandler,
     TLWheelEventHandler,
     Utils,
-    TLBounds,
-    TLDropEventHandler,
 } from '@tldraw/core';
+import { Vec } from '@tldraw/vec';
 import {
-    FlipType,
-    TDDocument,
-    MoveType,
+    clearPrevSize,
+    defaultStyle,
+    shapeUtils,
+} from '@toeverything/components/board-shapes';
+import {
     AlignType,
-    StretchType,
+    ArrowShape,
+    BaseSessionType,
     DistributeType,
+    FIT_TO_SCREEN_PADDING,
+    FlipType,
+    GRID_SIZE,
+    GroupShape,
+    IMAGE_EXTENSIONS,
+    MoveType,
+    SessionType,
     ShapeStyles,
+    StretchType,
+    SVG_EXPORT_PADDING,
+    TDAsset,
+    TDAssets,
+    TDAssetType,
+    TDBinding,
+    TDDocument,
+    TDExport,
+    TDExportType,
+    TDPage,
     TDShape,
     TDShapeType,
     TDSnapshot,
     TDStatus,
-    TDPage,
-    TDBinding,
-    GroupShape,
-    TldrawCommand,
-    TDUser,
-    SessionType,
     TDToolType,
-    TDAssetType,
-    TDAsset,
-    TDAssets,
-    TDExport,
-    ArrowShape,
-    TDExportType,
+    TDUser,
+    TldrawCommand,
     USER_COLORS,
-    FIT_TO_SCREEN_PADDING,
-    GRID_SIZE,
-    IMAGE_EXTENSIONS,
     VIDEO_EXTENSIONS,
-    SVG_EXPORT_PADDING,
-    BaseSessionType,
 } from '@toeverything/components/board-types';
+import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 import {
-    migrate,
     FileSystemHandle,
-    loadFileHandle,
-    openFromFileSystem,
-    saveToFileSystem,
-    openAssetFromFileSystem,
     fileToBase64,
     fileToText,
     getImageSizeFromSrc,
     getVideoSizeFromSrc,
+    loadFileHandle,
+    migrate,
+    openAssetFromFileSystem,
+    openFromFileSystem,
+    saveToFileSystem,
 } from './data';
-import { TLDR } from './tldr';
-import {
-    shapeUtils,
-    defaultStyle,
-    clearPrevSize,
-} from '@toeverything/components/board-shapes';
-import { StateManager } from './manager/state-manager';
 import { getClipboard, setClipboard } from './idb-clipboard';
+import { StateManager } from './manager/state-manager';
+import { TLDR } from './tldr';
 import type { Commands } from './types/commands';
 import type { BaseTool } from './types/tool';
-import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 
 const uuid = Utils.uniqueId();
 
@@ -171,6 +171,10 @@ interface TDCallbacks {
      * (optional) A callback to run when the user exports their page or selection.
      */
     onExport?: (app: TldrawApp, info: TDExport) => Promise<void>;
+    /**
+     * (optional) A callback to run when the shape is copied.
+     */
+    onCopy?: (e: ClipboardEvent, ids: string[]) => void;
 }
 
 export interface TldrawAppCtorProps {
@@ -440,7 +444,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                         if (visitedShapes.has(fromShape)) {
                             return;
                         }
-
                         // We only need to update the binding's "from" shape (an arrow)
                         const fromDelta = TLDR.update_arrow_bindings(
                             page,
@@ -856,7 +859,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 if (!page.bindings[binding.id]) {
                     return;
                 }
-
                 const fromShape = page.shapes[binding.fromId] as ArrowShape;
 
                 if (visitedShapes.has(fromShape)) {
@@ -864,6 +866,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 }
 
                 // We only need to update the binding's "from" shape (an arrow)
+
                 const fromDelta = TLDR.update_arrow_bindings(page, fromShape);
                 visitedShapes.add(fromShape);
 
@@ -1898,12 +1901,14 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     /**
      * Copy one or more shapes to the clipboard.
      * @param ids The ids of the shapes to copy.
+     * @param pageId
+     * @param e
      */
-    copy = (
+    copy = async (
         ids = this.selectedIds,
         pageId = this.currentPageId,
         e?: ClipboardEvent
-    ): this => {
+    ) => {
         e?.preventDefault();
 
         this.clipboard = this.get_clipboard(ids, pageId);
@@ -1919,17 +1924,24 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
         if (e) {
             e.clipboardData?.setData('text/html', tldrawString);
+            await this.callbacks.onCopy?.(e, this.selectedIds);
         }
 
-        if (navigator.clipboard && window.ClipboardItem) {
-            navigator.clipboard.write([
-                new ClipboardItem({
-                    'text/html': new Blob([tldrawString], {
-                        type: 'text/html',
-                    }),
-                }),
-            ]);
-        }
+        /**
+         * Reasons for not using Clipboard API for now:
+         * 1. The `clipboardData.setData` method temporarily satisfies the need for replication functionality
+         * 2. Clipboard API requires the user to agree to access(https://developer.mozilla.org/en-US/docs/Web/API/Permissions_API)
+         *
+         * **/
+        // if (navigator.clipboard && window.ClipboardItem) {
+        //     navigator.clipboard.write([
+        //         new ClipboardItem({
+        //             'text/html': new Blob([tldrawString], {
+        //                 type: 'text/html',
+        //             }),
+        //         }),
+        //     ]);
+        // }
 
         this.pasteInfo.offset = [0, 0];
         this.pasteInfo.center = [0, 0];
@@ -3840,12 +3852,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     private get_viewbox_from_svg = (svgStr: string | ArrayBuffer | null) => {
-        const viewBoxRegex =
-            /.*?viewBox=["'](-?[\d.]+[, ]+-?[\d.]+[, ][\d.]+[, ][\d.]+)["']/;
-
         if (typeof svgStr === 'string') {
-            const matches = svgStr.match(viewBoxRegex);
-            return matches && matches.length >= 2 ? matches[1] : null;
+            const viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
+            return viewBox.children[0].getAttribute('viewBox');
         }
 
         console.warn('could not get viewbox from svg string');
@@ -3981,7 +3990,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 this.patchState({
                     settings: {
                         forcePanning:
-                            this.currentTool.type === TDShapeType.HandDraw,
+                            this.currentTool.type === TDShapeType.HandDrag,
                     },
                 });
                 this.spaceKey = false;
@@ -4128,7 +4137,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     onPointerDown: TLPointerEventHandler = (info, e) => {
-        if (e.buttons === 4) {
+        if (e.button === 1) {
             this.patchState({
                 settings: {
                     forcePanning: true,
@@ -4145,6 +4154,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     onPointerUp: TLPointerEventHandler = (info, e) => {
+        if (e.button === 1) {
+            this.patchState({
+                settings: {
+                    forcePanning: false,
+                },
+            });
+        }
         this.isPointing = false;
         this.updateInputs(info, e);
         this.currentTool.onPointerUp?.(info, e);

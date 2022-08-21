@@ -1,21 +1,21 @@
 import { TDShapeType, TDToolType } from '@toeverything/components/board-types';
 import { ArrowTool } from './arrow-tool';
-import { LineTool } from './line-tool';
 import { DrawTool } from './draw-tool';
-import { PencilTool } from './pencil-tool';
-import { HighlightTool } from './highlight-tool';
-import { EllipseTool } from './ellipse-tool';
-import { RectangleTool } from './rectangle-tool';
-import { TriangleTool } from './triangle-tool';
-import { SelectTool } from './select-tool';
-import { EraseTool } from './erase-tool';
 import { EditorTool } from './editor-tool';
-import { HexagonTool } from './hexagon-tool';
-import { PentagramTool } from './pentagram-tool';
-import { WhiteArrowTool } from './white-arrow-tool';
-import { LaserTool } from './laser-tool';
-import { HandDrawTool } from './hand-draw';
+import { EllipseTool } from './ellipse-tool';
+import { EraseTool } from './erase-tool';
 import { FrameTool } from './frame-tool/frame-tool';
+import { HandDragTool } from './hand-drag';
+import { HexagonTool } from './hexagon-tool';
+import { HighlightTool } from './highlight-tool';
+import { LaserTool } from './laser-tool';
+import { LineTool } from './line-tool';
+import { PencilTool } from './pencil-tool';
+import { PentagramTool } from './pentagram-tool';
+import { RectangleTool } from './rectangle-tool';
+import { SelectTool } from './select-tool';
+import { TriangleTool } from './triangle-tool';
+import { WhiteArrowTool } from './white-arrow-tool';
 
 export interface ToolsMap {
     select: typeof SelectTool;
@@ -32,7 +32,7 @@ export interface ToolsMap {
     [TDShapeType.Highlight]: typeof HighlightTool;
     [TDShapeType.Editor]: typeof EditorTool;
     [TDShapeType.WhiteArrow]: typeof WhiteArrowTool;
-    [TDShapeType.HandDraw]: typeof HandDrawTool;
+    [TDShapeType.HandDrag]: typeof HandDragTool;
     [TDShapeType.Laser]: typeof LaserTool;
     [TDShapeType.Frame]: typeof FrameTool;
 }
@@ -59,6 +59,6 @@ export const tools: { [K in TDToolType]: ToolsMap[K] } = {
     [TDShapeType.Hexagon]: HexagonTool,
     [TDShapeType.WhiteArrow]: WhiteArrowTool,
     [TDShapeType.Laser]: LaserTool,
-    [TDShapeType.HandDraw]: HandDrawTool,
+    [TDShapeType.HandDrag]: HandDragTool,
     [TDShapeType.Frame]: FrameTool,
 };

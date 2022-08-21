@@ -261,6 +261,12 @@
             }
         },
         {
+            "files": ["index.tsx", "index.*.tsx"],
+            "rules": {
+                "filename-rules/match": "off"
+            }
+        },
+        {
             "files": ["*.ts", "*.tsx"],
             "extends": ["plugin:@nrwl/nx/typescript"],
             "rules": {

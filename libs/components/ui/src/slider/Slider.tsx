@@ -1,5 +1,5 @@
-import { SliderUnstyled, sliderUnstyledClasses } from '@mui/base';
 import type { SliderUnstyledProps } from '@mui/base';
+import { SliderUnstyled, sliderUnstyledClasses } from '@mui/base';
 import { alpha } from '@mui/system';
 import { styled } from '../styled';
 

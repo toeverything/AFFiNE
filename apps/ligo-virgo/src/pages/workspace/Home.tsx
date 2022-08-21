@@ -1,7 +1,7 @@
+import { services, TemplateFactory } from '@toeverything/datasource/db-service';
+import { useUserAndSpaces } from '@toeverything/datasource/state';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useUserAndSpaces } from '@toeverything/datasource/state';
-import { services, TemplateFactory } from '@toeverything/datasource/db-service';
 
 export function WorkspaceHome() {
     const navigate = useNavigate();
@@ -22,8 +22,12 @@ export function WorkspaceHome() {
                     workspace_id,
                     user_initial_page_id,
                     TemplateFactory.generatePageTemplateByGroupKeys({
-                        name: '👋 Get Started with AFFINE',
-                        groupKeys: ['getStartedGroup0', 'getStartedGroup1'],
+                        name: '👋 Get Started with AFFiNE',
+                        groupKeys: [
+                            'getStartedGroup0',
+                            'getStartedGroup1',
+                            'getStartedGroup2',
+                        ],
                     })
                 );
             }

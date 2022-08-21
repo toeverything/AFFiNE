@@ -1,11 +1,11 @@
 import { Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
+import type { DrawShape } from '@toeverything/components/board-types';
 import {
     getStrokeOutlinePoints,
     getStrokePoints,
     StrokeOptions,
 } from 'perfect-freehand';
-import type { DrawShape } from '@toeverything/components/board-types';
 import { getShapeStyle } from '../shared/shape-styles';
 
 const simulatePressureSettings: StrokeOptions = {

@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
 import {
-    ConnectorIcon,
-    ConectorLineIcon,
     ConectorArrowIcon,
+    ConectorLineIcon,
+    ConnectorIcon,
 } from '@toeverything/components/icons';
 import {
-    Tooltip,
-    Popover,
     IconButton,
+    Popover,
     styled,
+    Tooltip,
 } from '@toeverything/components/ui';
+import { useEffect, useState } from 'react';
 
-import { TDSnapshot, TDShapeType } from '@toeverything/components/board-types';
 import { TldrawApp } from '@toeverything/components/board-state';
+import { TDShapeType, TDSnapshot } from '@toeverything/components/board-types';
 
 export type ShapeTypes = TDShapeType.Line | TDShapeType.Arrow;
 

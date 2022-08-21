@@ -1,9 +1,9 @@
+import type { QueryIndexMetadata } from '@toeverything/datasource/jwt';
 import { RECENT_PAGES, WORKSPACE_CONFIG } from '../../utils';
 import { ServiceBaseClass } from '../base';
 import { ObserveCallback, ReturnUnobserve } from '../database';
 import { PageTree } from './page-tree';
 import { PageConfigItem } from './types';
-import type { QueryIndexMetadata } from '@toeverything/datasource/jwt';
 
 /** Operate the user configuration at the workspace level */
 export class UserConfig extends ServiceBaseClass {

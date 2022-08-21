@@ -1,11 +1,10 @@
-/* eslint-disable filename-rules/match */
 import { StrictMode } from 'react';
 
 import { HookType } from '@toeverything/framework/virgo';
 
 import { BasePlugin } from '../base-plugin';
-import { Search } from './Search';
 import { PluginRenderRoot } from '../utils';
+import { Search } from './Search';
 
 export class FullTextSearchPlugin extends BasePlugin {
     #root?: PluginRenderRoot;
@@ -58,5 +57,5 @@ export class FullTextSearchPlugin extends BasePlugin {
     }
 }
 
-export type { QueryResult } from './Search';
 export { QueryBlocks } from './Search';
+export type { QueryResult } from './Search';

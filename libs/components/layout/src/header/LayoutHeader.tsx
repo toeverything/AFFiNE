@@ -1,19 +1,19 @@
 import { useMemo } from 'react';
 
-import { IconButton, styled } from '@toeverything/components/ui';
 import {
     LogoIcon,
-    SideBarViewIcon,
     SearchIcon,
     SideBarViewCloseIcon,
+    SideBarViewIcon,
 } from '@toeverything/components/icons';
+import { IconButton, styled } from '@toeverything/components/ui';
 import {
-    useShowSettingsSidebar,
     useLocalTrigger,
+    useShowSettingsSidebar,
 } from '@toeverything/datasource/state';
 
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
-import { fsApiSupported, FileSystem } from './FileSystem';
+import { FileSystem, fsApiSupported } from './FileSystem';
 import { CurrentPageTitle } from './Title';
 
 export const LayoutHeader = () => {

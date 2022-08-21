@@ -1,14 +1,14 @@
-import { useMemo } from 'react';
 import { getAuth, signOut } from 'firebase/auth';
+import { useMemo } from 'react';
 
-import { LOGOUT_COOKIES, LOGOUT_LOCAL_STORAGE } from '@toeverything/utils';
-import { useUserAndSpaces } from '@toeverything/datasource/state';
 import {
     MuiDivider as Divider,
     MuiList as List,
     MuiListItem as ListItem,
     MuiListItemText as ListItemText,
 } from '@toeverything/components/ui';
+import { useUserAndSpaces } from '@toeverything/datasource/state';
+import { LOGOUT_COOKIES, LOGOUT_LOCAL_STORAGE } from '@toeverything/utils';
 
 export const UserMenuList = () => {
     const { user } = useUserAndSpaces();

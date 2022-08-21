@@ -1,7 +1,7 @@
-import * as Y from 'yjs';
 import * as idb from 'lib0/indexeddb.js';
 import * as mutex from 'lib0/mutex.js';
 import { Observable } from 'lib0/observable.js';
+import * as Y from 'yjs';
 
 const customStoreName = 'custom';
 const updatesStoreName = 'updates';

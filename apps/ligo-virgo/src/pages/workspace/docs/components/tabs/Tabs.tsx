@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { styled } from '@toeverything/components/ui';
 import type { ValueOf } from '@toeverything/utils';
+import { useState } from 'react';
 
 const StyledTabs = styled('div')(({ theme }) => {
     return {

@@ -1,7 +1,7 @@
 import { Utils } from '@tldraw/core';
 import Vec from '@tldraw/vec';
-import getStroke, { getStrokePoints } from 'perfect-freehand';
 import type { ShapeStyles } from '@toeverything/components/board-types';
+import getStroke, { getStrokePoints } from 'perfect-freehand';
 import { getShapeStyle } from '../shared';
 
 function getRectangleDrawPoints(

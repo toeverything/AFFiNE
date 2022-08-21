@@ -4,14 +4,14 @@ import {
     BlockClient,
     BlockClientInstance,
     BlockContentExporter,
-    BlockMatcher,
     BlockInitOptions,
+    BlockMatcher,
     Connectivity,
 } from '@toeverything/datasource/jwt';
 import { sleep } from '@toeverything/utils';
 
-import { ObserverManager, getObserverName } from './observer';
 import type { ObserveCallback, ReturnUnobserve } from './observer';
+import { getObserverName, ObserverManager } from './observer';
 export type { ObserveCallback, ReturnUnobserve } from './observer';
 
 const workspaces: Record<string, BlockClientInstance> = {};

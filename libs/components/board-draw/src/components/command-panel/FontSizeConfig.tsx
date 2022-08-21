@@ -2,17 +2,17 @@ import type { TldrawApp } from '@toeverything/components/board-state';
 import type { TDShape } from '@toeverything/components/board-types';
 import { FontSizeStyle } from '@toeverything/components/board-types';
 import {
-    Popover,
-    Tooltip,
-    IconButton,
-    styled,
-} from '@toeverything/components/ui';
-import {
-    TextFontIcon,
     HeadingOneIcon,
-    HeadingTwoIcon,
     HeadingThreeIcon,
+    HeadingTwoIcon,
+    TextFontIcon,
 } from '@toeverything/components/icons';
+import {
+    IconButton,
+    Popover,
+    styled,
+    Tooltip,
+} from '@toeverything/components/ui';
 import { countBy, maxBy } from '@toeverything/utils';
 import { getShapeIds } from './utils';
 
@@ -86,7 +86,7 @@ export const FontSizeConfig = ({ app, shapes }: FontSizeConfigProps) => {
     );
 };
 
-const ListItemContainer = styled('div')(({ theme }) => ({
+export const ListItemContainer = styled('div')(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
     cursor: 'pointer',
@@ -100,7 +100,7 @@ const ListItemContainer = styled('div')(({ theme }) => ({
     },
 }));
 
-const ListItemTitle = styled('span')(({ theme }) => ({
+export const ListItemTitle = styled('span')(({ theme }) => ({
     marginLeft: '12px',
     color: theme.affine.palette.primaryText,
 }));

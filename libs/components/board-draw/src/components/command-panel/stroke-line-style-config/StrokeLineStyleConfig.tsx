@@ -1,8 +1,8 @@
 import type { TldrawApp } from '@toeverything/components/board-state';
-import { DashStyle, StrokeWidth } from '@toeverything/components/board-types';
 import type { TDShape } from '@toeverything/components/board-types';
-import { Popover, IconButton, Tooltip } from '@toeverything/components/ui';
+import { DashStyle, StrokeWidth } from '@toeverything/components/board-types';
 import { BrushIcon } from '@toeverything/components/icons';
+import { IconButton, Popover, Tooltip } from '@toeverything/components/ui';
 import { countBy, maxBy } from '@toeverything/utils';
 import { getShapeIds } from '../utils';
 import { LineStyle, lineStyles } from './LineStyle';

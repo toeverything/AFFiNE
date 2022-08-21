@@ -2,13 +2,13 @@ import {
     forwardRef,
     type CSSProperties,
     type ForwardedRef,
-    type RefAttributes,
     type ReactNode,
+    type RefAttributes,
 } from 'react';
 /* eslint-disable no-restricted-imports */
 import SelectUnstyled, {
-    type SelectUnstyledProps,
     selectUnstyledClasses,
+    type SelectUnstyledProps,
 } from '@mui/base/SelectUnstyled';
 /* eslint-disable no-restricted-imports */
 import PopperUnstyled from '@mui/base/PopperUnstyled';

@@ -1,14 +1,14 @@
 import { Vec } from '@tldraw/vec';
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import {
     SessionType,
     ShapesWithProp,
+    TDStatus,
     TldrawCommand,
     TldrawPatch,
-    TDStatus,
 } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
 import { BaseSession } from './base-session';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 export class HandleSession extends BaseSession {
     type = SessionType.Handle;

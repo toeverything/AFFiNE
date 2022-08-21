@@ -1,18 +1,18 @@
+import type { TLBoundsWithCenter, TLSnapLine } from '@tldraw/core';
 import { TLBounds, TLBoundsCorner, TLBoundsEdge, Utils } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
-import type { TLSnapLine, TLBoundsWithCenter } from '@tldraw/core';
+import type { TldrawApp } from '@toeverything/components/board-state';
+import { TLDR } from '@toeverything/components/board-state';
 import {
     SessionType,
-    TldrawCommand,
-    TldrawPatch,
-    TDShape,
-    TDStatus,
     SLOW_SPEED,
     SNAP_DISTANCE,
+    TDShape,
+    TDStatus,
+    TldrawCommand,
+    TldrawPatch,
 } from '@toeverything/components/board-types';
-import { TLDR } from '@toeverything/components/board-state';
 import { BaseSession } from './base-session';
-import type { TldrawApp } from '@toeverything/components/board-state';
 
 type SnapInfo =
     | {

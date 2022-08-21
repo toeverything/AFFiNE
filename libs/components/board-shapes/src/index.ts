@@ -1,20 +1,23 @@
 import { TDShape, TDShapeType } from '@toeverything/components/board-types';
-import type { TDShapeUtil } from './TDShapeUtil';
-import { RectangleUtil } from './rectangle-util';
-import { TriangleUtil } from './triangle-util';
-import { HexagonUtil } from './hexagon-util';
 import { ArrowUtil } from './arrow-util';
 import { DrawUtil } from './draw-util';
-import { EllipseUtil } from './ellipse-util';
-import { GroupUtil } from './group-util';
-import { ImageUtil } from './image-util';
-import { VideoUtil } from './video-util';
 import { EditorUtil } from './editor-util';
-import { PentagramUtil } from './pentagram-util';
-import { WhiteArrowUtil } from './white-arrow-util';
+import { EllipseUtil } from './ellipse-util';
 import { FrameUtil } from './frame-util';
+import { GroupUtil } from './group-util';
+import { HexagonUtil } from './hexagon-util';
+import { ImageUtil } from './image-util';
+import { PentagramUtil } from './pentagram-util';
+import { RectangleUtil } from './rectangle-util';
+import type { TDShapeUtil } from './TDShapeUtil';
+import { TriangleUtil } from './triangle-util';
+import { VideoUtil } from './video-util';
+import { WhiteArrowUtil } from './white-arrow-util';
 
+export { clearPrevSize } from './shared/get-text-size';
+export { defaultStyle } from './shared/shape-styles';
 export { TDShapeUtil } from './TDShapeUtil';
+export { getTrianglePoints } from './triangle-util/triangle-helpers';
 
 export const Rectangle = new RectangleUtil();
 export const Triangle = new TriangleUtil();
@@ -54,7 +57,3 @@ export const getShapeUtil = <T extends TDShape>(
         return shapeUtils[shape] as unknown as TDShapeUtil<T>;
     return shapeUtils[shape.type] as unknown as TDShapeUtil<T>;
 };
-
-export { getTrianglePoints } from './triangle-util/triangle-helpers';
-export { defaultStyle } from './shared/shape-styles';
-export { clearPrevSize } from './shared/get-text-size';

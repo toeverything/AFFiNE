@@ -1,24 +1,30 @@
-import { useEffect, useState } from 'react';
-import { Tldraw } from '@toeverything/components/board-draw';
-import { tools } from '@toeverything/components/board-tools';
-import { getSession } from '@toeverything/components/board-sessions';
-import * as commands from '@toeverything/components/board-commands';
-import { TldrawApp, deepCopy } from '@toeverything/components/board-state';
-import { TDShapeType } from '@toeverything/components/board-types';
-import { services } from '@toeverything/datasource/db-service';
-import { useShapes } from './hooks';
-import { RecastBlockProvider } from '@toeverything/components/editor-core';
 import { createEditor } from '@toeverything/components/affine-editor';
+import * as commands from '@toeverything/components/board-commands';
+import { Tldraw } from '@toeverything/components/board-draw';
+import { getSession } from '@toeverything/components/board-sessions';
+import { deepCopy, TldrawApp } from '@toeverything/components/board-state';
+import { tools } from '@toeverything/components/board-tools';
+import { TDShapeType } from '@toeverything/components/board-types';
+import {
+    getClipDataOfBlocksById,
+    RecastBlockProvider,
+} from '@toeverything/components/editor-core';
+import { services } from '@toeverything/datasource/db-service';
 import { AsyncBlock, BlockEditor } from '@toeverything/framework/virgo';
+import { useEffect, useState } from 'react';
+import { useShapes } from './hooks';
 
 interface AffineBoardProps {
     workspace: string;
     rootBlockId: string;
 }
 
-const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
+const AffineBoard = ({
+    workspace,
+    rootBlockId,
+    editor,
+}: AffineBoardProps & { editor: BlockEditor }) => {
     const [app, set_app] = useState<TldrawApp>();
-
     const [document] = useState(() => {
         return {
             ...deepCopy(TldrawApp.default_document),
@@ -45,10 +51,10 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
         };
     });
 
-    const shapes = useShapes(workspace, rootBlockId);
+    const { shapes, bindings } = useShapes(workspace, rootBlockId);
     useEffect(() => {
         if (app) {
-            app.replacePageContent(shapes || {}, {}, {});
+            app.replacePageContent(shapes || {}, bindings, {});
         }
     }, [app, shapes]);
 
@@ -62,7 +68,19 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                 onMount(app) {
                     set_app(app);
                 },
-                onChangePage(app, shapes, bindings, assets) {
+
+                async onCopy(e, groupIds) {
+                    const clip = await getClipDataOfBlocksById(
+                        editor,
+                        groupIds
+                    );
+
+                    e.clipboardData?.setData(
+                        clip.getMimeType(),
+                        clip.getData()
+                    );
+                },
+                async onChangePage(app, shapes, bindings, assets) {
                     Promise.all(
                         Object.entries(shapes).map(async ([id, shape]) => {
                             if (shape === undefined) {
@@ -91,7 +109,20 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                                         });
                                 }
                                 shape.affineId = block.id;
-                                return services.api.editorBlock.update({
+
+                                Object.keys(bindings).forEach(bilingKey => {
+                                    if (
+                                        bindings[bilingKey]?.fromId === shape.id
+                                    ) {
+                                        bindings[bilingKey].fromId = block.id;
+                                    }
+                                    if (
+                                        bindings[bilingKey]?.toId === shape.id
+                                    ) {
+                                        bindings[bilingKey].toId = block.id;
+                                    }
+                                });
+                                return await services.api.editorBlock.update({
                                     workspace: shape.workspace,
                                     id: block.id,
                                     properties: {
@@ -103,6 +134,32 @@ const AffineBoard = ({ workspace, rootBlockId }: AffineBoardProps) => {
                             }
                         })
                     );
+                    let pageBindingsString = (
+                        await services.api.editorBlock.get({
+                            workspace: workspace,
+                            ids: [rootBlockId],
+                        })
+                    )?.[0].properties.bindings?.value;
+                    console.log(123123123);
+                    let pageBindings = JSON.parse(pageBindingsString ?? '{}');
+                    console.log(pageBindings, 3333, bindings);
+                    Object.keys(bindings).forEach(bindingsKey => {
+                        console.log(345345345345345);
+                        if (!bindings[bindingsKey]) {
+                            delete pageBindings[bindingsKey];
+                        } else {
+                            Object.assign(pageBindings, bindings);
+                        }
+                    });
+                    services.api.editorBlock.update({
+                        workspace: workspace,
+                        id: rootBlockId,
+                        properties: {
+                            bindings: {
+                                value: JSON.stringify(pageBindings),
+                            },
+                        },
+                    });
                 },
             }}
         />
@@ -130,7 +187,11 @@ export const AffineBoardWitchContext = ({
     }, [editor, rootBlockId]);
     return page ? (
         <RecastBlockProvider block={page}>
-            <AffineBoard workspace={workspace} rootBlockId={rootBlockId} />
+            <AffineBoard
+                workspace={workspace}
+                rootBlockId={rootBlockId}
+                editor={editor}
+            />
         </RecastBlockProvider>
     ) : null;
 };

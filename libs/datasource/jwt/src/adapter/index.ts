@@ -184,11 +184,11 @@ export const getDataExporter = () => {
     return { importData, exportData, hasExporter, installExporter };
 };
 
+export { YjsAdapter } from './yjs';
+export type { YjsContentOperation, YjsInitOptions } from './yjs';
 export type {
     AsyncDatabaseAdapter,
     BlockPosition,
     BlockInstance,
     ContentOperation,
 };
-export type { YjsInitOptions, YjsContentOperation } from './yjs';
-export { YjsAdapter } from './yjs';

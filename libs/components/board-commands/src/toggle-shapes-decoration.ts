@@ -1,10 +1,10 @@
-import { Decoration } from '@toeverything/components/board-types';
+import type { TldrawApp } from '@toeverything/components/board-state';
 import type {
-    Patch,
     ArrowShape,
+    Patch,
     TldrawCommand,
 } from '@toeverything/components/board-types';
-import type { TldrawApp } from '@toeverything/components/board-state';
+import { Decoration } from '@toeverything/components/board-types';
 
 export function toggleShapesDecoration(
     app: TldrawApp,
