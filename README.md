@@ -141,7 +141,7 @@ Our latest news can be found on [Twitter](https://twitter.com/AffineOfficial), [
 
 # Contact Us
 
-The contact info for AFFiNE Founder is here: hejiachen@toeverything.info
+You may contact us by emailing to: contact@toeverything.info 
 
 # The Philosophy of AFFiNE
 
