@@ -1,16 +1,10 @@
-import {
-    AsyncBlock,
-    BaseView,
-    SelectBlock,
-    getTextHtml,
-} from '@toeverything/framework/virgo';
-import {
-    Protocol,
-    DefaultColumnsValue,
-} from '@toeverything/datasource/db-service';
-// import { withTreeViewChildren } from '../../utils/with-tree-view-children';
+import { AsyncBlock, BaseView } from '@toeverything/framework/virgo';
+import { Protocol } from '@toeverything/datasource/db-service';
 import { defaultTodoProps, NumberedView } from './NumberedView';
-import { IndentWrapper } from '../../components/IndentWrapper';
+import {
+    Block2HtmlProps,
+    commonBlock2HtmlContent,
+} from '../../utils/commonBlockClip';
 
 export class NumberedBlock extends BaseView {
     public type = Protocol.Block.Type.numbered;
@@ -77,14 +71,7 @@ export class NumberedBlock extends BaseView {
 
         return null;
     }
-
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<ol><li>${content}</li></ol>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<ol><li>${await commonBlock2HtmlContent(props)}</li></ol>`;
     }
 }

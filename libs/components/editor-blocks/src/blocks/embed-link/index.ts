@@ -5,6 +5,7 @@ import {
 } from '@toeverything/framework/virgo';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { EmbedLinkView } from './EmbedLinkView';
+import { Block2HtmlProps } from '../../utils/commonBlockClip';
 
 export class EmbedLinkBlock extends BaseView {
     public override selectable = true;
@@ -35,13 +36,8 @@ export class EmbedLinkBlock extends BaseView {
 
         return null;
     }
-
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        const figma_url = block.getProperty('embedLink')?.value;
-        return `<p><a src=${figma_url}>${figma_url}</p>`;
+    override async block2html({ block }: Block2HtmlProps) {
+        const url = block.getProperty('embedLink')?.value;
+        return `<p><a href="${url}">${url}</a></p>`;
     }
 }

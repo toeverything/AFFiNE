@@ -1,16 +1,10 @@
-import {
-    BaseView,
-    AsyncBlock,
-    CreateView,
-    SelectBlock,
-    getTextHtml,
-} from '@toeverything/framework/virgo';
-import {
-    Protocol,
-    DefaultColumnsValue,
-} from '@toeverything/datasource/db-service';
+import { BaseView, AsyncBlock } from '@toeverything/framework/virgo';
+import { Protocol } from '@toeverything/datasource/db-service';
 import { CodeView } from './CodeView';
-import { ComponentType } from 'react';
+import {
+    Block2HtmlProps,
+    commonBlock2HtmlContent,
+} from '../../utils/commonBlockClip';
 
 export class CodeBlock extends BaseView {
     type = Protocol.Block.Type.code;
@@ -62,13 +56,7 @@ export class CodeBlock extends BaseView {
         return null;
     }
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<code>${content}</code>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<code>${await commonBlock2HtmlContent(props)}<code/>`;
     }
 }

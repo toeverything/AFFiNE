@@ -1,30 +1,6 @@
 import { Protocol, BlockFlavorKeys } from '@toeverything/datasource/db-service';
-import { escape } from '@toeverything/utils';
 import { Editor } from '../editor';
-import { SelectBlock } from '../selection';
 import { ClipBlockInfo } from './types';
-
-class DefaultBlockParse {
-    public static html2block(el: Element): ClipBlockInfo[] | undefined | null {
-        const tag_name = el.tagName;
-        if (tag_name === 'DIV' || el instanceof Text) {
-            return el.textContent?.split('\n').map(str => {
-                const data = {
-                    text: escape(str),
-                };
-                return {
-                    type: 'text',
-                    properties: {
-                        text: { value: [data] },
-                    },
-                    children: [],
-                };
-            });
-        }
-
-        return null;
-    }
-}
 
 export default class ClipboardParse {
     private editor: Editor;
@@ -82,7 +58,7 @@ export default class ClipboardParse {
 
     constructor(editor: Editor) {
         this.editor = editor;
-        this.generate_html = this.generate_html.bind(this);
+        // this.generate_html = this.generate_html.bind(this);
         this.parse_dom = this.parse_dom.bind(this);
     }
     // TODO: escape
@@ -150,55 +126,6 @@ export default class ClipboardParse {
             blocks.push(...blocks_info);
         }
         return blocks;
-    }
-
-    public async generateHtml(): Promise<string> {
-        const select_info = await this.editor.selectionManager.getSelectInfo();
-        return await this.generate_html(select_info.blocks);
-    }
-
-    public async page2html(): Promise<string> {
-        const root_block_id = this.editor.getRootBlockId();
-        if (!root_block_id) {
-            return '';
-        }
-
-        const block_info = await this.get_select_info(root_block_id);
-        return await this.generate_html([block_info]);
-    }
-
-    private async get_select_info(blockId: string) {
-        const block = await this.editor.getBlockById(blockId);
-        if (!block) return null;
-        const block_info: SelectBlock = {
-            blockId: block.id,
-            children: [],
-        };
-        const children_ids = block.childrenIds;
-        for (let i = 0; i < children_ids.length; i++) {
-            block_info.children.push(
-                await this.get_select_info(children_ids[i])
-            );
-        }
-        return block_info;
-    }
-
-    private async generate_html(selectBlocks: SelectBlock[]): Promise<string> {
-        let result = '';
-        for (let i = 0; i < selectBlocks.length; i++) {
-            const sel_block = selectBlocks[i];
-            if (!sel_block || !sel_block.blockId) continue;
-            const block = await this.editor.getBlockById(sel_block.blockId);
-            if (!block) continue;
-            const block_utils = this.editor.getView(block.type);
-            const html = await block_utils.block2html(
-                block,
-                sel_block.children,
-                this.generate_html
-            );
-            result += html;
-        }
-        return result;
     }
 
     public dispose() {

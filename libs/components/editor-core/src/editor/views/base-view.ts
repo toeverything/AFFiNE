@@ -135,13 +135,6 @@ export abstract class BaseView {
         return null;
     }
 
-    async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        return '';
-    }
     async block2Text(
         block: AsyncBlock,
         // The selectInfo parameter is not passed when the block is selected in ful, the selectInfo.type is Range
@@ -151,45 +144,12 @@ export abstract class BaseView {
     }
 
     // TODO: Try using new methods
-    // async block2html2(props: {
-    //     editor: Editor;
-    //     block: AsyncBlock;
-    //     // The selectInfo parameter is not passed when the block is selected in ful, the selectInfo.type is Range
-    //     selectInfo?: SelectBlock;
-    // }) {
-    //     return '';
-    // }
+    async block2html(props: {
+        editor: Editor;
+        block: AsyncBlock;
+        // The selectInfo parameter is not passed when the block is selected in ful, the selectInfo.type is Range
+        selectInfo?: SelectBlock;
+    }) {
+        return '';
+    }
 }
-
-export const getTextHtml = (block: AsyncBlock) => {
-    const generate = (textList: any[]) => {
-        let content = '';
-        textList.forEach(text_obj => {
-            let text = text_obj.text || '';
-            if (text_obj.bold) {
-                text = `<strong>${text}</strong>`;
-            }
-            if (text_obj.italic) {
-                text = `<em>${text}</em>`;
-            }
-            if (text_obj.underline) {
-                text = `<u>${text}</u>`;
-            }
-            if (text_obj.inlinecode) {
-                text = `<code>${text}</code>`;
-            }
-            if (text_obj.strikethrough) {
-                text = `<s>${text}</s>`;
-            }
-            if (text_obj.type === 'link') {
-                text = `<a href='${text_obj.url}'>${generate(
-                    text_obj.children
-                )}</a>`;
-            }
-            content += text;
-        });
-        return content;
-    };
-    const text_list: any[] = block.getProperty('text').value;
-    return generate(text_list);
-};

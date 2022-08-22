@@ -993,7 +993,7 @@ class SlateUtils {
                 textValue.children
             )}</a>`;
         }
-        return `<span ${style}>${text}</span>>`;
+        return `<span ${style}>${text}</span>`;
     }
 
     public getStartSelection() {

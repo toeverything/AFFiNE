@@ -1,5 +1,9 @@
 import { Editor } from '../editor';
-import { SelectBlock, SelectInfo } from '@toeverything/components/editor-core';
+import {
+    AsyncBlock,
+    SelectBlock,
+    SelectInfo,
+} from '@toeverything/components/editor-core';
 import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
 
@@ -82,5 +86,77 @@ export class ClipboardUtils {
                 data: clipInfos,
             })
         );
+    }
+
+    async convertTextValue2HtmlBySelectInfo(
+        blockOrBlockId: AsyncBlock | string,
+        selectBlockInfo?: SelectBlock
+    ) {
+        const block =
+            typeof blockOrBlockId === 'string'
+                ? await this._editor.getBlockById(blockOrBlockId)
+                : blockOrBlockId;
+        const selectedProperties =
+            await this._editor.blockHelper.getEditableBlockPropertiesBySelectInfo(
+                block,
+                selectBlockInfo
+            );
+        return this._editor.blockHelper.convertTextValue2Html(
+            block.id,
+            selectedProperties.text.value
+        );
+    }
+    async convertBlock2HtmlBySelectInfos(
+        blockOrBlockId: AsyncBlock | string,
+        selectBlockInfos?: SelectBlock[]
+    ) {
+        if (!selectBlockInfos) {
+            const block =
+                typeof blockOrBlockId === 'string'
+                    ? await this._editor.getBlockById(blockOrBlockId)
+                    : blockOrBlockId;
+            const children = await block?.children();
+            return (
+                await Promise.all(
+                    children.map(async childBlock => {
+                        const blockView = this._editor.getView(childBlock.type);
+                        return await blockView.block2html({
+                            editor: this._editor,
+                            block: childBlock,
+                        });
+                    })
+                )
+            ).join('');
+        }
+
+        return (
+            await Promise.all(
+                selectBlockInfos.map(async selectBlockInfo => {
+                    const block = await this._editor.getBlockById(
+                        selectBlockInfo.blockId
+                    );
+                    const blockView = this._editor.getView(block.type);
+                    return await blockView.block2html({
+                        editor: this._editor,
+                        block,
+                        selectInfo: selectBlockInfo,
+                    });
+                })
+            )
+        ).join('');
+    }
+
+    async page2html() {
+        const rootBlockId = this._editor.getRootBlockId();
+        if (!rootBlockId) {
+            return '';
+        }
+        const rootBlock = await this._editor.getBlockById(rootBlockId);
+        const blockView = this._editor.getView(rootBlock.type);
+
+        return await blockView.block2html({
+            editor: this._editor,
+            block: rootBlock,
+        });
     }
 }

@@ -1,18 +1,12 @@
-import {
-    BaseView,
-    AsyncBlock,
-    SelectBlock,
-    getTextHtml,
-} from '@toeverything/framework/virgo';
-// import type { CreateView } from '@toeverything/framework/virgo';
-import {
-    Protocol,
-    DefaultColumnsValue,
-} from '@toeverything/datasource/db-service';
-// import { withTreeViewChildren } from '../../utils/with-tree-view-children';
+import { BaseView } from '@toeverything/framework/virgo';
+import { Protocol } from '@toeverything/datasource/db-service';
 import { withTreeViewChildren } from '../../utils/WithTreeViewChildren';
 import { TodoView, defaultTodoProps } from './TodoView';
 import type { TodoAsyncBlock } from './types';
+import {
+    Block2HtmlProps,
+    commonBlock2HtmlContent,
+} from '../../utils/commonBlockClip';
 
 export class TodoBlock extends BaseView {
     type = Protocol.Block.Type.todo;
@@ -78,13 +72,7 @@ export class TodoBlock extends BaseView {
         return null;
     }
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<ul><li>[ ] ${content}</li></ul>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<ul><li>[ ] ${await commonBlock2HtmlContent(props)}</li></ul>`;
     }
 }

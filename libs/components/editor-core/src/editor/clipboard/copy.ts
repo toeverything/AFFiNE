@@ -50,62 +50,38 @@ class Copy {
         const textClip = await this._getTextClip();
         clips.push(textClip);
 
-        // const htmlClip = await this._getHtmlClip();
-        // clips.push(htmlClip);
-        const htmlClip = await this._clipboardParse.generateHtml();
-        htmlClip &&
-            clips.push(new Clip(OFFICE_CLIPBOARD_MIMETYPE.HTML, htmlClip));
+        const htmlClip = await this._getHtmlClip();
+
+        clips.push(htmlClip);
+        // const htmlClip = await this._clipboardParse.generateHtml();
+        // htmlClip &&
+        //     clips.push(new Clip(OFFICE_CLIPBOARD_MIMETYPE.HTML, htmlClip));
 
         return clips;
     }
 
-    // private async _getHtmlClip(): Promise<Clip> {
-    //     const selectInfo: SelectInfo =
-    //         await this._editor.selectionManager.getSelectInfo();
-    //
-    //     if (selectInfo.type === 'Range') {
-    //         const html = (
-    //             await Promise.all(
-    //                 selectInfo.blocks.map(async selectBlockInfo => {
-    //                     const block = await this._editor.getBlockById(
-    //                         selectBlockInfo.blockId
-    //                     );
-    //                     const blockView = this._editor.getView(block.type);
-    //                     const block2html = await blockView.block2html({
-    //                         editor: this._editor,
-    //                         block,
-    //                         selectInfo: selectBlockInfo,
-    //                     });
-    //
-    //                     if (
-    //                         await this._editor.blockHelper.isBlockEditable(
-    //                             block
-    //                         )
-    //                     ) {
-    //                         const selectedProperties =
-    //                             await this._editor.blockHelper.getEditableBlockPropertiesBySelectInfo(
-    //                                 block,
-    //                                 selectBlockInfo
-    //                             );
-    //
-    //                         return (
-    //                             block2html ||
-    //                             this._editor.blockHelper.convertTextValue2Html(
-    //                                 block.id,
-    //                                 selectedProperties.text.value
-    //                             )
-    //                         );
-    //                     }
-    //
-    //                     return block2html;
-    //                 })
-    //             )
-    //         ).join('');
-    //         console.log('html', html);
-    //     }
-    //
-    //     return new Clip(OFFICE_CLIPBOARD_MIMETYPE.HTML, 'blockText');
-    // }
+    private async _getHtmlClip(): Promise<Clip> {
+        const selectInfo: SelectInfo =
+            await this._editor.selectionManager.getSelectInfo();
+
+        const htmlStr = (
+            await Promise.all(
+                selectInfo.blocks.map(async selectBlockInfo => {
+                    const block = await this._editor.getBlockById(
+                        selectBlockInfo.blockId
+                    );
+                    const blockView = this._editor.getView(block.type);
+                    return await blockView.block2html({
+                        editor: this._editor,
+                        block,
+                        selectInfo: selectBlockInfo,
+                    });
+                })
+            )
+        ).join('');
+
+        return new Clip(OFFICE_CLIPBOARD_MIMETYPE.HTML, htmlStr);
+    }
 
     private async _getAffineClip(): Promise<Clip> {
         const selectInfo: SelectInfo =

@@ -502,13 +502,7 @@ export class Editor implements Virgo {
     }
 
     public async page2html(): Promise<string> {
-        return '';
-        // const parse = this.clipboard?.getClipboardParse();
-        // if (!parse) {
-        //     return '';
-        // }
-        // const html_str = await parse.page2html();
-        // return html_str;
+        return this.clipboard?.clipboardUtils?.page2html?.();
     }
 
     dispose() {

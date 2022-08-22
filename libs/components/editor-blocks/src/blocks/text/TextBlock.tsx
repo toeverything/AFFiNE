@@ -2,16 +2,15 @@ import {
     BaseView,
     CreateView,
     AsyncBlock,
-    SelectBlock,
-    getTextHtml,
 } from '@toeverything/framework/virgo';
-import {
-    DefaultColumnsValue,
-    Protocol,
-} from '@toeverything/datasource/db-service';
+import { Protocol } from '@toeverything/datasource/db-service';
 import { TextView } from './TextView';
 
 import { getRandomString } from '@toeverything/components/common';
+import {
+    Block2HtmlProps,
+    commonBlock2HtmlContent,
+} from '../../utils/commonBlockClip';
 
 export class TextBlock extends BaseView {
     type = Protocol.Block.Type.text;
@@ -111,14 +110,8 @@ export class TextBlock extends BaseView {
             : null;
     }
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<p>${content}</p>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<p>${await commonBlock2HtmlContent(props)}</p>`;
     }
 }
 
@@ -168,14 +161,8 @@ export class Heading1Block extends BaseView {
         return null;
     }
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<h1>${content}</h1>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<h1>${await commonBlock2HtmlContent(props)}</h1>`;
     }
 }
 
@@ -225,14 +212,8 @@ export class Heading2Block extends BaseView {
         return null;
     }
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<h2>${content}</h2>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<h2>${await commonBlock2HtmlContent(props)}</h2>`;
     }
 }
 
@@ -282,13 +263,7 @@ export class Heading3Block extends BaseView {
         return null;
     }
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<h3>${content}</h3>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<h3>${await commonBlock2HtmlContent(props)}</h3>`;
     }
 }

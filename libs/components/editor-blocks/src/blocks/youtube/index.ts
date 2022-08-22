@@ -5,6 +5,10 @@ import {
     SelectBlock,
 } from '@toeverything/framework/virgo';
 import { YoutubeView } from './YoutubeView';
+import {
+    Block2HtmlProps,
+    commonBlock2HtmlContent,
+} from '../../utils/commonBlockClip';
 
 export class YoutubeBlock extends BaseView {
     public override selectable = true;
@@ -44,12 +48,8 @@ export class YoutubeBlock extends BaseView {
     override async block2Text(block: AsyncBlock, selectInfo: SelectBlock) {
         return block.getProperty('embedLink')?.value ?? '';
     }
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
+    override async block2html({ block }: Block2HtmlProps) {
         const url = block.getProperty('embedLink')?.value;
-        return `<p><a src=${url}>${url}</p>`;
+        return `<p><a href="${url}">${url}</a></p>`;
     }
 }

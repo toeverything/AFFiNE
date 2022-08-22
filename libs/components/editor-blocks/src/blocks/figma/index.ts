@@ -5,6 +5,7 @@ import {
     SelectBlock,
 } from '@toeverything/framework/virgo';
 import { FigmaView } from './FigmaView';
+import { Block2HtmlProps } from '../../utils/commonBlockClip';
 
 export class FigmaBlock extends BaseView {
     public override selectable = true;
@@ -41,13 +42,8 @@ export class FigmaBlock extends BaseView {
 
         return null;
     }
-
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        const figma_url = block.getProperty('embedLink')?.value;
-        return `<p><a src=${figma_url}>${figma_url}</p>`;
+    override async block2html({ block }: Block2HtmlProps) {
+        const figmaUrl = block.getProperty('embedLink')?.value;
+        return `<p><a href="${figmaUrl}">${figmaUrl}</a></p>`;
     }
 }

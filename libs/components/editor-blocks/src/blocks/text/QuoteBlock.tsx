@@ -1,14 +1,13 @@
-import {
-    DefaultColumnsValue,
-    Protocol,
-} from '@toeverything/datasource/db-service';
+import { Protocol } from '@toeverything/datasource/db-service';
 import {
     AsyncBlock,
     BaseView,
     CreateView,
-    getTextHtml,
-    SelectBlock,
 } from '@toeverything/framework/virgo';
+import {
+    Block2HtmlProps,
+    commonBlock2HtmlContent,
+} from '../../utils/commonBlockClip';
 
 import { TextView } from './TextView';
 
@@ -60,14 +59,10 @@ export class QuoteBlock extends BaseView {
         return null;
     }
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<blockquote>${content}</blockquote>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<blockquote>${await commonBlock2HtmlContent(
+            props
+        )}</blockquote>`;
     }
 }
 
@@ -135,13 +130,7 @@ export class CalloutBlock extends BaseView {
         return null;
     }
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        let content = getTextHtml(block);
-        content += await generateHtml(children);
-        return `<aside>${content}</aside>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<aside>${await commonBlock2HtmlContent(props)}</aside>`;
     }
 }

@@ -153,7 +153,7 @@ export class BlockHelper {
 
     public async getEditableBlockPropertiesBySelectInfo(
         block: AsyncBlock,
-        selectInfo: SelectBlock
+        selectInfo?: SelectBlock
     ) {
         const properties = block.getProperties();
         if (properties.text.value.length === 0) {
@@ -169,13 +169,13 @@ export class BlockHelper {
         // Use deepClone method will throw incomprehensible error
         let textValue = JSON.parse(JSON.stringify(originTextValue));
 
-        if (selectInfo.endInfo) {
+        if (selectInfo?.endInfo) {
             textValue = textValue.slice(0, selectInfo.endInfo.arrayIndex + 1);
             textValue[textValue.length - 1].text = text_value[
                 textValue.length - 1
             ].text.substring(0, selectInfo.endInfo.offset);
         }
-        if (selectInfo.startInfo) {
+        if (selectInfo?.startInfo) {
             textValue = textValue.slice(selectInfo.startInfo.arrayIndex);
             textValue[0].text = textValue[0].text.substring(
                 selectInfo.startInfo.offset

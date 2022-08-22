@@ -5,6 +5,7 @@ import {
 } from '@toeverything/framework/virgo';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { GroupDividerView } from './groupDividerView';
+import { Block2HtmlProps } from '../../utils/commonBlockClip';
 
 export class GroupDividerBlock extends BaseView {
     type = Protocol.Block.Type.groupDivider;
@@ -28,12 +29,7 @@ export class GroupDividerBlock extends BaseView {
 
         return null;
     }
-
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        return `<hr>`;
+    override async block2html(props: Block2HtmlProps) {
+        return `<hr/>`;
     }
 }

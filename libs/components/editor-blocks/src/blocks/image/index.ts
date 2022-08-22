@@ -1,10 +1,7 @@
-import {
-    AsyncBlock,
-    BaseView,
-    SelectBlock,
-} from '@toeverything/framework/virgo';
+import { BaseView } from '@toeverything/framework/virgo';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { ImageView } from './ImageView';
+import { Block2HtmlProps } from '../../utils/commonBlockClip';
 
 export class ImageBlock extends BaseView {
     public override selectable = true;
@@ -37,18 +34,13 @@ export class ImageBlock extends BaseView {
         return null;
     }
 
-    // TODO:
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        const text = block.getProperty('text');
+    override async block2html({ block, editor }: Block2HtmlProps) {
+        const textValue = block.getProperty('text');
         const content = '';
-        if (text) {
-            text.value.map(text => `<span>${text}</span>`).join('');
-        }
-        // TODO: child
-        return `<p><img src=${content}></p>`;
+        // TODO: text.value should export with style??
+        const figcaption = (textValue?.value ?? [])
+            .map(({ text }) => `<span>${text}</span>`)
+            .join('');
+        return `<figure><img src="${content}" alt="${figcaption}"/><figcaption>${figcaption}<figcaption/></figure>`;
     }
 }
