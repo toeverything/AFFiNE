@@ -29,7 +29,7 @@ const groupTemplateMap = {
 const defaultTemplateList: Array<TemplateMeta> = [
     {
         name: 'New From Quick Start',
-        groupKeys: ['todolist'],
+        groupKeys: ['getStartedGroup0', 'getStartedGroup1', 'getStartedGroup2'],
     },
     { name: 'New From Grid System', groupKeys: ['grid'] },
     { name: 'New From Blog', groupKeys: ['blog'] },
