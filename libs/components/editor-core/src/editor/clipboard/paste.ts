@@ -14,7 +14,6 @@ import {
     services,
 } from '@toeverything/datasource/db-service';
 import { MarkdownParser } from './markdown-parse';
-import { shouldHandlerContinue } from './utils';
 const SUPPORT_MARKDOWN_PASTE = true;
 
 type TextValueItem = {
@@ -26,7 +25,6 @@ export class Paste {
     private _editor: Editor;
     private _markdownParse: MarkdownParser;
     private _clipboardParse: ClipboardParse;
-
     constructor(
         editor: Editor,
         clipboardParse: ClipboardParse,
@@ -43,9 +41,6 @@ export class Paste {
         OFFICE_CLIPBOARD_MIMETYPE.TEXT,
     ];
     public handlePaste(e: ClipboardEvent) {
-        if (!shouldHandlerContinue(e, this._editor)) {
-            return;
-        }
         e.stopPropagation();
 
         const clipboardData = e.clipboardData;

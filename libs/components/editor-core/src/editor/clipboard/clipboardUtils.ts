@@ -1,11 +1,6 @@
 import { Editor } from '../editor';
-import {
-    AsyncBlock,
-    SelectBlock,
-    SelectInfo,
-} from '@toeverything/components/editor-core';
+import { SelectBlock, SelectInfo } from '@toeverything/components/editor-core';
 import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
-import { getClipInfoOfBlockById } from './utils';
 import { Clip } from './clip';
 
 export class ClipboardUtils {
@@ -14,15 +9,18 @@ export class ClipboardUtils {
         this._editor = editor;
     }
 
-    async isBlockEditable(blockOrBlockId: AsyncBlock | string) {
-        const block =
-            typeof blockOrBlockId === 'string'
-                ? await this._editor.getBlockById(blockOrBlockId)
-                : blockOrBlockId;
-        const blockView = this._editor.getView(block.type);
+    shouldHandlerContinue = (event: ClipboardEvent) => {
+        const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
 
-        return blockView.activatable;
-    }
+        if (event.defaultPrevented) {
+            return false;
+        }
+        if (filterNodes.includes((event.target as HTMLElement)?.tagName)) {
+            return false;
+        }
+
+        return this._editor.selectionManager.currentSelectInfo.type !== 'None';
+    };
 
     async getClipInfoOfBlockById(blockId: string) {
         const block = await this._editor.getBlockById(blockId);
@@ -84,38 +82,5 @@ export class ClipboardUtils {
                 data: clipInfos,
             })
         );
-    }
-
-    async convertEditableBlockToHtml(block: AsyncBlock) {
-        const generate = (textList: any[]) => {
-            let content = '';
-            textList.forEach(text_obj => {
-                let text = text_obj.text || '';
-                if (text_obj.bold) {
-                    text = `<strong>${text}</strong>`;
-                }
-                if (text_obj.italic) {
-                    text = `<em>${text}</em>`;
-                }
-                if (text_obj.underline) {
-                    text = `<u>${text}</u>`;
-                }
-                if (text_obj.inlinecode) {
-                    text = `<code>${text}</code>`;
-                }
-                if (text_obj.strikethrough) {
-                    text = `<s>${text}</s>`;
-                }
-                if (text_obj.type === 'link') {
-                    text = `<a href='${text_obj.url}'>${generate(
-                        text_obj.children
-                    )}</a>`;
-                }
-                content += text;
-            });
-            return content;
-        };
-        const text_list: any[] = block.getProperty('text').value;
-        return generate(text_list);
     }
 }

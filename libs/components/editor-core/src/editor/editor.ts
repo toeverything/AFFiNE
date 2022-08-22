@@ -145,6 +145,10 @@ export class Editor implements Virgo {
         return this.ui_container;
     }
 
+    public get clipboard() {
+        return this._clipboard;
+    }
+
     /**
      * Use it discreetly.
      * Preference to use {@link withBatch}

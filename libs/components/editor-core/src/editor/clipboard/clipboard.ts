@@ -5,6 +5,7 @@ import { Copy } from './copy';
 import { Paste } from './paste';
 import ClipboardParse from './clipboard-parse';
 import { MarkdownParser } from './markdown-parse';
+import { ClipboardUtils } from './clipboardUtils';
 
 export class Clipboard {
     private _clipboardEventDispatcher: ClipboardEventDispatcher;
@@ -12,20 +13,23 @@ export class Clipboard {
     private _paste: Paste;
     private _clipboardParse: ClipboardParse;
     private _markdownParse: MarkdownParser;
+    public clipboardUtils: ClipboardUtils;
 
     constructor(editor: Editor, clipboardTarget: HTMLElement) {
-        this._clipboardEventDispatcher = new ClipboardEventDispatcher(
-            editor,
-            clipboardTarget
-        );
         this._clipboardParse = new ClipboardParse(editor);
         this._markdownParse = new MarkdownParser();
+        this.clipboardUtils = new ClipboardUtils(editor);
         this._copy = new Copy(editor);
 
         this._paste = new Paste(
             editor,
             this._clipboardParse,
             this._markdownParse
+        );
+
+        this._clipboardEventDispatcher = new ClipboardEventDispatcher(
+            editor,
+            clipboardTarget
         );
 
         editor

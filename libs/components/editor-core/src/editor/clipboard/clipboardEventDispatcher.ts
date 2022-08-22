@@ -1,5 +1,5 @@
 import { Editor } from '../editor';
-import { shouldHandlerContinue } from './utils';
+import { ClipboardUtils } from './clipboardUtils';
 
 enum ClipboardAction {
     copy = 'copy',
@@ -11,10 +11,12 @@ enum ClipboardAction {
 export class ClipboardEventDispatcher {
     private _editor: Editor;
     private _clipboardTarget: HTMLElement;
+    private _utils: ClipboardUtils;
 
     constructor(editor: Editor, clipboardTarget: HTMLElement) {
         this._editor = editor;
         this._clipboardTarget = clipboardTarget;
+        this._utils = new ClipboardUtils(editor);
         this._initialize();
     }
 
@@ -41,20 +43,20 @@ export class ClipboardEventDispatcher {
     }
 
     private _copyHandler(e: ClipboardEvent) {
-        if (!shouldHandlerContinue(e, this._editor)) {
+        if (!this._utils.shouldHandlerContinue(e)) {
             return;
         }
         this._editor.getHooks().onCopy(e);
     }
 
     private _cutHandler(e: ClipboardEvent) {
-        if (!shouldHandlerContinue(e, this._editor)) {
+        if (!this._utils.shouldHandlerContinue(e)) {
             return;
         }
         this._editor.getHooks().onCut(e);
     }
     private _pasteHandler(e: ClipboardEvent) {
-        if (!shouldHandlerContinue(e, this._editor)) {
+        if (!this._utils.shouldHandlerContinue(e)) {
             return;
         }
 

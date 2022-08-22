@@ -3,7 +3,6 @@ import { SelectInfo } from '../selection';
 import { OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
 import ClipboardParse from './clipboard-parse';
-import { getClipDataOfBlocksById } from './utils';
 import { ClipboardUtils } from './clipboardUtils';
 class Copy {
     private _editor: Editor;
