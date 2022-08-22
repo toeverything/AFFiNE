@@ -16,7 +16,7 @@ import { ComponentType } from 'react';
 export class CodeBlock extends BaseView {
     type = Protocol.Block.Type.code;
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     // View = CodeView;
     View = CodeView;
     override async onCreate(block: AsyncBlock): Promise<AsyncBlock> {

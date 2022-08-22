@@ -6,7 +6,7 @@ import { GridItemRender } from './GridItemRender';
 
 export class GridItemBlock extends BaseView {
     public override selectable = false;
-    public override activatable = false;
+    public override editable = false;
     public override allowPendant = false;
     public override layoutOnly = true;
 
