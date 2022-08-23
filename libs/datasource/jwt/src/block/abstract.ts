@@ -1,4 +1,11 @@
 import {
+    BlockFlavorKeys,
+    BlockFlavors,
+    BlockTypeKeys,
+    BlockTypes,
+} from '../types';
+import { getLogger } from '../utils';
+import {
     BlockInstance,
     BlockListener,
     BlockPosition,
@@ -6,14 +13,7 @@ import {
     ContentTypes,
     HistoryManager,
     MapOperation,
-} from '../adapter';
-import {
-    BlockFlavorKeys,
-    BlockFlavors,
-    BlockTypeKeys,
-    BlockTypes,
-} from '../types';
-import { getLogger } from '../utils';
+} from '../yjs/types';
 
 declare const JWT_DEV: boolean;
 const logger = getLogger('BlockDB:block');
@@ -29,10 +29,10 @@ export class AbstractBlock<
     private readonly _id: string;
     private readonly _block: BlockInstance<C>;
     private readonly _history: HistoryManager;
-    private readonly _root?: AbstractBlock<B, C>;
+    private readonly _root: AbstractBlock<B, C> | undefined;
     private readonly _parentListener: Map<string, BlockListener>;
 
-    private _parent?: AbstractBlock<B, C>;
+    private _parent: AbstractBlock<B, C> | undefined;
     private _changeParent?: () => void;
 
     constructor(
@@ -48,7 +48,9 @@ export class AbstractBlock<
         this._parentListener = new Map();
 
         JWT_DEV && logger_debug(`init: exists ${this._id}`);
-        if (parent) this._refreshParent(parent);
+        if (parent) {
+            this._refreshParent(parent);
+        }
     }
 
     public get root() {
@@ -146,7 +148,7 @@ export class AbstractBlock<
                 return new Date(timestamp)
                     .toISOString()
                     .split('T')[0]
-                    .replace(/-/g, '');
+                    ?.replace(/-/g, '');
             }
             // eslint-disable-next-line no-empty
         } catch (e) {}
@@ -259,7 +261,7 @@ export class AbstractBlock<
     }
 
     /**
-     * Insert sub-Block
+     * Insert children block
      * @param block Block instance
      * @param position Insertion position, if it is empty, it will be inserted at the end. If the block already exists, the position will be moved
      * @returns
@@ -270,9 +272,12 @@ export class AbstractBlock<
     ) {
         JWT_DEV && logger(`insertChildren: start`);
 
-        if (block.id === this._id) return; // avoid self-reference
+        if (block.id === this._id) {
+            // avoid self-reference
+            return;
+        }
         if (
-            this.type !== BlockTypes.block || // binary cannot insert subblocks
+            this.type !== BlockTypes.block || // binary cannot insert children blocks
             (block.type !== BlockTypes.block &&
                 this.flavor !== BlockFlavors.workspace) // binary can only be inserted into workspace
         ) {

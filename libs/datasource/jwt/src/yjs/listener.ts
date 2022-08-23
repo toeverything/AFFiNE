@@ -1,7 +1,8 @@
 import { produce } from 'immer';
 import { debounce } from 'ts-debounce';
 import { YEvent } from 'yjs';
-import { BlockListener, ChangedStateKeys } from '../index';
+
+import { BlockListener, ChangedStateKeys } from './types';
 
 let listener_suspend = false;
 

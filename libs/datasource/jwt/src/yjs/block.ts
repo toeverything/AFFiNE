@@ -5,8 +5,8 @@ import {
     transact,
 } from 'yjs';
 
-import { BlockItem, BlockTypes } from '../../types';
-import { BlockInstance, BlockListener, HistoryManager } from '../index';
+import { BlockItem, BlockTypes } from '../types';
+import { BlockInstance, BlockListener, HistoryManager } from './types';
 
 import { YjsHistoryManager } from './history';
 import { ChildrenListenerHandler, ContentListenerHandler } from './listener';
@@ -34,7 +34,7 @@ type YjsBlockInstanceProps = {
 export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
     private readonly _id: string;
     private readonly _block: YMap<unknown>;
-    private readonly _binary?: YArray<ArrayBuffer>;
+    private readonly _binary: YArray<ArrayBuffer> | undefined;
     private readonly _children: YArray<string>;
     private readonly _setBlock: (
         id: string,
@@ -48,8 +48,7 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
     private readonly _childrenListeners: Map<string, BlockListener>;
     private readonly _contentListeners: Map<string, BlockListener>;
 
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    _childrenMap: Map<string, number>;
+    private _childrenMap: Map<string, number>;
 
     constructor(props: YjsBlockInstanceProps) {
         this._id = props.id;
@@ -184,7 +183,9 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
     }
 
     hasChildren(id: string): boolean {
-        if (this.children.includes(id)) return true;
+        if (this.children.includes(id)) {
+            return true;
+        }
         return this.getChildren().some(block => block.hasChildren(id));
     }
 
@@ -263,7 +264,9 @@ export class YjsBlockInstance implements BlockInstance<YjsContentOperation> {
                                 break;
                             }
                         }
-                        if (id) failed.push(id);
+                        if (id) {
+                            failed.push(id);
+                        }
                     }
 
                     this._childrenMap = getMapFromYArray(this._children);
