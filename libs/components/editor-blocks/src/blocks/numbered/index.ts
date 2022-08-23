@@ -1,17 +1,16 @@
 import {
+    DefaultColumnsValue,
+    Protocol,
+} from '@toeverything/datasource/db-service';
+import {
     AsyncBlock,
     BaseView,
+    getTextHtml,
     getTextProperties,
     SelectBlock,
-    getTextHtml,
 } from '@toeverything/framework/virgo';
-import {
-    Protocol,
-    DefaultColumnsValue,
-} from '@toeverything/datasource/db-service';
 // import { withTreeViewChildren } from '../../utils/with-tree-view-children';
 import { defaultTodoProps, NumberedView } from './NumberedView';
-import { IndentWrapper } from '../../components/IndentWrapper';
 
 export class NumberedBlock extends BaseView {
     public type = Protocol.Block.Type.numbered;

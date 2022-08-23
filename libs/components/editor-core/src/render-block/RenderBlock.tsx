@@ -69,4 +69,5 @@ export function RenderBlock({
 
 const BlockContainer = styled('div')(({ theme }) => ({
     fontSize: theme.typography.body1.fontSize,
+    flex: 1,
 }));

@@ -1,8 +1,8 @@
 import { TextProps } from '@toeverything/components/common';
 import {
     ContentColumnValue,
-    services,
     Protocol,
+    services,
 } from '@toeverything/datasource/db-service';
 import { type CreateView } from '@toeverything/framework/virgo';
 import { useEffect, useRef, useState } from 'react';
@@ -11,18 +11,17 @@ import {
     type ExtendedTextUtils,
 } from '../../components/text-manage';
 import { tabBlock } from '../../utils/indent';
-import { IndentWrapper } from '../../components/IndentWrapper';
 import type { Numbered, NumberedAsyncBlock } from './types';
 
-import { getChildrenType, getNumber } from './data';
 import {
-    supportChildren,
-    RenderBlockChildren,
-    useOnSelect,
     BlockPendantProvider,
+    RenderBlockChildren,
+    supportChildren,
+    useOnSelect,
 } from '@toeverything/components/editor-core';
-import { List } from '../../components/style-container';
 import { BlockContainer } from '../../components/BlockContainer';
+import { List } from '../../components/style-container';
+import { getChildrenType, getNumber } from './data';
 
 export const defaultTodoProps: Numbered = {
     text: { value: [{ text: '' }] },
@@ -204,9 +203,7 @@ export const NumberedView = ({ block, editor }: CreateView) => {
                 </List>
             </BlockPendantProvider>
 
-            <IndentWrapper>
-                <RenderBlockChildren block={block} />
-            </IndentWrapper>
+            <RenderBlockChildren block={block} />
         </BlockContainer>
     );
 };
