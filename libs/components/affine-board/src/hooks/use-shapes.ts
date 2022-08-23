@@ -104,6 +104,7 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
 
         return acc;
     }, {} as Record<string, TDShape>);
+
     return {
         shapes: blocksShapes,
         bindings: JSON.parse(blocks?.bindings ?? '{}'),
