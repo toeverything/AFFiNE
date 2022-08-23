@@ -92,11 +92,8 @@ And when it comes to collaboration, these features are not just necessarily for 
 
 - Dsicussions on GitHub: [https://github.com/toeverything/AFFiNE/discussions](https://github.com/toeverything/AFFiNE/discussions)
 
-# FAQ
-
-Get quick help on [Telegram](https://t.me/affineworkos) or [Discord](https://discord.gg/yz6tGVsf5p) and join our community of developers and contributors.
-
-Our latest news can be found on [Twitter](https://twitter.com/AffineOfficial), [Medium](https://medium.com/@affineworkos) and the [AFFiNE Blog](https://blog.affine.pro/).
+- AFFiNE Communities: [Discord](https://discord.gg/yz6tGVsf5p) | [Telegram](https://t.me/affineworkos) | [Twitter](https://twitter.com/AffineOfficial)  | 
+[Medium](https://medium.com/@affineworkos) | [AFFiNE Blog](https://blog.affine.pro)
 
 # Contact Us
 
