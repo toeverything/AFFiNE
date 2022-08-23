@@ -9,7 +9,6 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
-const Style9Plugin = require('style9/webpack');
 
 const enableBundleAnalyzer = process.env.BUNDLE_ANALYZER;
 
@@ -18,15 +17,13 @@ module.exports = function (webpackConfig) {
 
     const isProd = config.mode === 'production';
 
-    const style9 = {
-        test: /\.(tsx|ts|js|mjs|jsx)$/,
+    const mdx = {
+        test: /\.mdx?$/,
         use: [
             {
-                loader: Style9Plugin.loader,
-                options: {
-                    minifyProperties: isProd,
-                    incrementalClassnames: isProd,
-                },
+                loader: '@mdx-js/loader',
+                /** @type {import('@mdx-js/loader').Options} */
+                options: {},
             },
         ],
     };
@@ -34,7 +31,6 @@ module.exports = function (webpackConfig) {
     config.experiments.topLevelAwait = true;
 
     if (isProd) {
-        config.module.rules.unshift(style9);
         config.entry = {
             main: [...config.entry.main, ...config.entry.polyfills],
         };
@@ -119,7 +115,6 @@ module.exports = function (webpackConfig) {
         });
         config.module.rules.splice(6);
     } else {
-        config.module.rules.push(style9);
         config.output = {
             ...config.output,
             publicPath: '/',
@@ -137,6 +132,8 @@ module.exports = function (webpackConfig) {
             ];
         }
     }
+
+    config.module.rules.push(mdx);
 
     addEmotionBabelPlugin(config);
 
@@ -158,7 +155,6 @@ module.exports = function (webpackConfig) {
                 template: path.resolve(__dirname, './src/template.html'),
                 publicPath: '/',
             }),
-        new Style9Plugin(),
         isProd && new MiniCssExtractPlugin(),
         isProd &&
             new CompressionPlugin({
