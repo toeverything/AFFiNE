@@ -239,4 +239,4 @@ For help, discussion about best practices, or any other conversation that would 
 
 AFFiNE is distributed under the terms of MIT license.
 
-See LICENSE for details.
+See [LICENSE](/LICENSE) for details.
