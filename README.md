@@ -63,27 +63,6 @@ for more information.
 <br /><br />
 ⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
 
-# Table of contents
-
--   [Stay Up-to-Date and Support Us](#stay-up-to-date-and-support-us)
--   [How to Use](#how-to-use)
--   [Table of contents](#table-of-contents)
-    -   [Shape your page](#shape-your-page)
-    -   [Plan your task](#plan-your-task)
-    -   [Sort your knowledge](#sort-your-knowledge)
-    -   [Create your story](#create-your-story)
--   [Documentation](#documentation)
-    -   [Getting Started with development](#getting-started-with-development)
--   [Roadmap](#roadmap)
--   [Releases](#releases)
--   [Feature requests](#feature-requests)
--   [FAQ](#faq)
--   [The Philosophy of AFFiNE](#the-philosophy-of-affine)
--   [Community](#community)
--   [Contributors](#contributors)
--   [Acknowledgments](#acknowledgments)
--   [License](#license)
-
 ## Shape your page
 
 ![546163d6-4c39-4128-ae7f-55d59bc3b76b](https://user-images.githubusercontent.com/79301703/182365611-b0ba3690-21c0-4d9b-bfbc-0bc15da05aeb.gif)
@@ -102,25 +81,17 @@ We want your data always to be yours, without any sacrifice to your accessibilit
 And when it comes to collaboration, these features are not just necessarily for teams -- you can take and insert pictures on your phone, edit them from your desktop, and then share them with your collaborators.
 Affine is fully built with web technologies to ensure consistency and accessibility on Mac, Windows and Linux. The local file system support will be available when version 0.0.1beta is released.
 
-# Documentation
+# Useful Links
+- Documentation: [https://docs.affine.pro/affine/](https://docs.affine.pro/affine/)
 
-AFFiNE is not yet ready for production use. For installation, you may check how to build or deploy AFFiNE from our [quick-start](https://docs.affine.pro/affine/basic-documentation/contribute-to-affine/quick-start) guide. Alternatively, you can view our [full documentation](https://docs.affine.pro/affine/).
+- Feature Roadmap: [https://github.com/toeverything/AFFiNE/issues/293](https://github.com/toeverything/AFFiNE/issues/293)
+- Release Notes: [https://github.com/toeverything/AFFiNE/wiki](https://github.com/toeverything/AFFiNE/wiki)
 
-## Getting Started with development
+- Create a new issue/feature request - and view existing issues: [https://github.com/toeverything/AFFiNE/issues](https://github.com/toeverything/AFFiNE/issues)
+- Contributing Guide: [/docs/CONTRIBUTING](/docs/CONTRIBUTING)
+- Code of Conduct Guide: [/docs/CODE_OF_CONDUCT](/docs/CODE_OF_CONDUCT) 
 
-Please view the path Contribute-to-AFFiNE/Software-Contributions/Quick-Start in the documentation.
-
-# Roadmap
-
-Yes! Permanent storage, collaboration, stable release is planned! Check it [here](https://github.com/toeverything/AFFiNE/issues/293)
-
-# Releases
-
-Get our latest [release notes](https://github.com/toeverything/AFFiNE/wiki) from here.
-
-# Feature requests
-
-Please go to [feature requests](https://github.com/toeverything/AFFiNE/issues).
+- Dsicussions on GitHub: [https://github.com/toeverything/AFFiNE/discussions](https://github.com/toeverything/AFFiNE/discussions)
 
 # FAQ
 
@@ -174,12 +145,6 @@ We would also like to give thanks to open-source projects that make affine possi
 -   Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies)
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
-
-# Community
-
-For help, discussion about best practices, or any other conversation that would benefit from being searchable:
-
-[Discuss AFFiNE on GitHub](https://github.com/toeverything/AFFiNE/discussions)
 
 # Contributors
 
