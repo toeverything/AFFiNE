@@ -81,23 +81,20 @@ And when it comes to collaboration, these features are not just necessarily for 
 ![c9e1ff46-cec2-411b-b89d-6727a5e6f6c3](https://user-images.githubusercontent.com/79301703/182366602-08e44d28-a031-4097-9904-52fb9b1e9e17.gif)
 
 # Useful Links
-- Documentation: [https://docs.affine.pro/affine/](https://docs.affine.pro/affine/)
+- [AFFiNE Documentation](https://docs.affine.pro/affine/) - More detailed documentation on how to use and develop with AFFiNE
 
-- Feature Roadmap: [https://github.com/toeverything/AFFiNE/issues/293](https://github.com/toeverything/AFFiNE/issues/293)
-- Release Notes: [https://github.com/toeverything/AFFiNE/wiki](https://github.com/toeverything/AFFiNE/wiki)
-
-- Create a new issue/feature request - and view existing issues: [https://github.com/toeverything/AFFiNE/issues](https://github.com/toeverything/AFFiNE/issues)
-- Contributing Guide: [/docs/CONTRIBUTING.md](/docs/CONTRIBUTING.md)
-- Code of Conduct Guide: [/docs/CODE_OF_CONDUCT.md](/docs/CODE_OF_CONDUCT.md) 
-
-- Dsicussions on GitHub: [https://github.com/toeverything/AFFiNE/discussions](https://github.com/toeverything/AFFiNE/discussions)
-
+- [Feature Roadmap](https://github.com/toeverything/AFFiNE/issues/293) - Looking for a feature? It might already be planned for release - you can check here
+- [Release Notes](https://github.com/toeverything/AFFiNE/wiki) - Find out what changes we are making and how we are improving AFFiNE
+ 
+- [Contributing Guide](/docs/CONTRIBUTING.md) - Want to help improve AFFiNE? You might not even need to write a line of code. Find out how you can contribute.
+- [Code of Conduct](/docs/CODE_OF_CONDUCT.md) - How we promote and maintain a harassment-free experience for everyone in our community.
+ 
 - AFFiNE Communities: [Discord](https://discord.gg/yz6tGVsf5p) | [Telegram](https://t.me/affineworkos) | [Twitter](https://twitter.com/AffineOfficial)  | 
 [Medium](https://medium.com/@affineworkos) | [AFFiNE Blog](https://blog.affine.pro)
 
 # Contact Us
 
-You may contact us by emailing to: contact@toeverything.info 
+Feel free to send us an email: contact@toeverything.info 
 
 # The Philosophy of AFFiNE
 
