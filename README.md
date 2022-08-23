@@ -50,31 +50,18 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 <p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/21084335/182552060-972cac0e-6258-4ccb-85bd-3bb466c30ccd.png"><p/>
 
-# Stay Up-to-Date and Support Us
-
+# :star: Support Us and Keep Updated :star:
 ![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
 
-# How to use
+# Getting Started
+ 
+[![affine.pro](https://img.shields.io/static/v1?label=Try%20it%20Online&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAhpJREFUWEdjZEACtnl3MxgY/0YzMjAaMzAwcCLLUYH9/T/D/7MM/5mXHp6kPANmHiOI4Zx9Xfg3C+tKBob/zlSwiAgjGPey/vkdvneq5luwA+zy7+yhn+Vwv+89NFHFhREU7IyM/6YT4WyqK/n/nymT0Tb/1mFGBkYbqptOhIH/Gf4fYbTLv/2NBgmOCOvBSr6DHPCfWNW0UEe2A2x1uRlakiXBbtpx6jND+7KXZLmPbAdURokzeJjxwi31rrzH8OX7P5IdQbYDtnUoMXBzMMEt7Fj2imH7qU/0cQBy8MNsPHL5K0P13Of0cQB68MNsJScaSI4CHk4mhq3tSnCf3n36k0FZmh3Mn7L+DcPqgx9ICgWSHeBpxsdQESUGtgRk+eqDH+H8O09/MiR3P6atA1qTJRlsdLnhPgYlPOQQCW96wPDi3R+iHUFSCKAHP8wydEeREg0kOQA9+JOgwR1qL8CQEygC9jWp0UCSA+aVysIT3JqDHxgmr38DtlRCiIVhZZ0CPNhB6QDkEGIA0Q4gZAkuxxFyBNEOQA7ml+/+MIQ1PUAxG1kelAhB6YMYQLQDCPmQUAjhcgxRDiDWcEKOxOYIohyQGyjCEGIvANaPLfhhBiNHA6hmBBXNhABRDgCV/aBQAAFQpYMrn4PUgNTCACiXEMoNRDmAkC8okR8UDhjYRumAN8sHvGMCSkAD2jUDOWDAO6ewbDQQ3XMAy/oxKownQR0AAAAASUVORK5CYII=&message=%E2%86%92&style=for-the-badge)](https://affine.pro) No installation or registration required! Head over to our website and try it out now.
 
-<h3 align="center">
-🥳🥳🥳 Our web live demo is ready! 🥳🥳🥳
-</h3>
-
-<h3 align="center">
-Start to play with <a href="https://affine.pro"><b>AFFiNE web version</b></a> on our landing page:
-</h3>
-
-<p align="center"><a href="https://affine.pro">
-    <img 
-    src="https://user-images.githubusercontent.com/79301703/184340907-5aaa4e6e-7d37-4523-a06c-7d630e7864d1.jpeg" 
-    width="600px"
-    alt="check_live_demo" 
-    />
-</a></p>
-
-If you have experience in front-end development, you may wish to refer to our [documentation](https://docs.affine.pro/affine/basic-documentation/contribute-to-affine) to learn more about deploying your own version or contributing further to development.
-Also, thanks to Lee who has made a [desktop build with Tauri](https://github.com/m1911star/affine-client) for you to try out.
-Please notice that AFFiNE is still under Alpha stage and is not ready for production use.
+Want to deploy it yourself? AFFiNE can run just about anywhere. Check our 
+[documentation](#documentation)
+for more information.
+<br /><br />
+⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
 
 # Table of contents
 
