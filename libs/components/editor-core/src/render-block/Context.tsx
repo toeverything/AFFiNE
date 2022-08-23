@@ -13,6 +13,9 @@ export const BlockRenderContext = createContext<BlockRenderProps>(
     ) as any
 );
 
+/**
+ * CAUTION! DO NOT PROVIDE A DYNAMIC BLOCK RENDER!
+ */
 export const BlockRenderProvider = ({
     blockRender,
     children,
