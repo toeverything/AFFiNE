@@ -134,17 +134,14 @@ const AffineBoard = ({
                             }
                         })
                     );
-                    let pageBindingsString = (
+                    const pageBindingsString = (
                         await services.api.editorBlock.get({
                             workspace: workspace,
                             ids: [rootBlockId],
                         })
                     )?.[0].properties.bindings?.value;
-                    console.log(123123123);
-                    let pageBindings = JSON.parse(pageBindingsString ?? '{}');
-                    console.log(pageBindings, 3333, bindings);
+                    const pageBindings = JSON.parse(pageBindingsString ?? '{}');
                     Object.keys(bindings).forEach(bindingsKey => {
-                        console.log(345345345345345);
                         if (!bindings[bindingsKey]) {
                             delete pageBindings[bindingsKey];
                         } else {

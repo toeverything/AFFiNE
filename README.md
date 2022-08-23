@@ -94,7 +94,7 @@ And when it comes to collaboration, these features are not just necessarily for 
 
 # Contact Us
 
-Feel free to send us an email: contact@toeverything.info 
+Feel free to send us an email: contact@toeverything.info
 
 # The Philosophy of AFFiNE
 

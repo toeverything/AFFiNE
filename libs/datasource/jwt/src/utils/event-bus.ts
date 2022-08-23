@@ -81,7 +81,7 @@ class BlockScopedEventBus<T> extends BlockEventBus {
         options?: ListenerOptions
     ) {
         if (options?.debounce) {
-            const { wait, maxWait } = options.debounce;
+            const { wait, maxWait = 500 } = options.debounce;
             const debounced = debounce(listener, wait, { maxWait });
             this.on_listener(this._topic, name, e => {
                 debounced((e as CustomEvent)?.detail);

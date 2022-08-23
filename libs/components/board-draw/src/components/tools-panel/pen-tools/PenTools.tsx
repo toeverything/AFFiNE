@@ -12,7 +12,7 @@ import {
     styled,
     Tooltip,
 } from '@toeverything/components/ui';
-import { ReactElement, type CSSProperties } from 'react';
+import { useState, type CSSProperties, type ReactElement } from 'react';
 import { Palette } from '../../palette';
 import { Pen } from './Pen';
 
@@ -106,6 +106,7 @@ const PENCIL_CONFIGS_MAP = PENCIL_CONFIGS.reduce<
 
 export const PenTools = ({ app }: { app: TldrawApp }) => {
     const appCurrentTool = app.useStore(state => state.appState.activeTool);
+    const [visible, setVisible] = useState(false);
     const chosenPen =
         PENCIL_CONFIGS.find(config => config.key === appCurrentTool) ||
         PENCIL_CONFIGS[0];
@@ -134,8 +135,10 @@ export const PenTools = ({ app }: { app: TldrawApp }) => {
 
     return (
         <Popover
+            visible={visible}
             placement="right-start"
-            trigger="click"
+            onClick={() => setVisible(prev => !prev)}
+            onClickAway={() => setVisible(false)}
             content={
                 <Container>
                     <PensContainer>
@@ -153,7 +156,10 @@ export const PenTools = ({ app }: { app: TldrawApp }) => {
                                         name={title}
                                         primaryColor={color_vars['--color-0']}
                                         secondaryColor={color_vars['--color-1']}
-                                        onClick={() => setPen(key)}
+                                        onClick={() => {
+                                            setVisible(false);
+                                            setPen(key);
+                                        }}
                                     />
                                 );
                             }
@@ -163,7 +169,10 @@ export const PenTools = ({ app }: { app: TldrawApp }) => {
                     <Palette
                         selected={chosenColor}
                         colors={PENCIL_CONFIGS_MAP[chosenPenKey].colors}
-                        onSelect={color => setPenColor(color)}
+                        onSelect={color => {
+                            setVisible(false);
+                            setPenColor(color);
+                        }}
                     />
                     <div />
                 </Container>

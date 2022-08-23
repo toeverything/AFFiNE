@@ -18,15 +18,15 @@ import {
     transact,
 } from 'yjs';
 
+import { BlockItem, BlockTypes } from '../types';
+import { getLogger, sha3, sleep } from '../utils';
 import {
     AsyncDatabaseAdapter,
     BlockListener,
     ChangedStateKeys,
     Connectivity,
     HistoryManager,
-} from '../../adapter';
-import { BlockItem, BlockTypes } from '../../types';
-import { getLogger, sha3, sleep } from '../../utils';
+} from './types';
 
 import { YjsRemoteBinaries } from './binary';
 import { YjsBlockInstance } from './block';
@@ -40,6 +40,7 @@ import {
 import { YjsProvider } from './provider';
 
 declare const JWT_DEV: boolean;
+// @ts-ignore
 const logger = getLogger('BlockDB:yjs');
 
 type ConnectivityListener = (
@@ -54,7 +55,7 @@ type YjsProviders = {
     gatekeeper: GateKeeper;
     connListener: { listeners?: ConnectivityListener };
     userId: string;
-    remoteToken?: string; // remote storage token
+    remoteToken: string | undefined; // remote storage token
 };
 
 const _yjsDatabaseInstance = new Map<string, YjsProviders>();
@@ -70,8 +71,8 @@ async function _initYjsDatabase(
     workspace: string,
     options: {
         userId: string;
-        token?: string;
-        provider?: Record<string, YjsProvider>;
+        token?: string | undefined;
+        provider?: Record<string, YjsProvider> | undefined;
     }
 ): Promise<YjsProviders> {
     if (_asyncInitLoading.has(workspace)) {
@@ -243,9 +244,10 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                             typeof updated === 'number' &&
                             updated + 1000 * 10 > Date.now()
                         ) {
-                            if (!editing_mapping[editing])
+                            if (!editing_mapping[editing]) {
                                 editing_mapping[editing] = [];
-                            editing_mapping[editing].push(userId);
+                            }
+                            editing_mapping[editing]?.push(userId);
                         }
                     }
                     listener(
@@ -338,7 +340,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                     ],
                 });
                 const [file] = (await fromEvent(handles)) as File[];
-                const binary = await file.arrayBuffer();
+                const binary = await file?.arrayBuffer();
                 // await this._provider.idb.clearData();
                 const doc = new Doc({ autoLoad: true, shouldLoad: true });
                 let updated = 0;
@@ -348,7 +350,9 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                     updated += 1;
                 });
                 setInterval(() => {
-                    if (updated > 0) updated -= 1;
+                    if (updated > 0) {
+                        updated -= 1;
+                    }
                 }, 500);
 
                 const update_check = new Promise<void>(resolve => {
@@ -362,8 +366,10 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 });
                 // await new IndexedDBProvider(this._provider.idb.name, doc)
                 //     .whenSynced;
-                applyUpdate(doc, new Uint8Array(binary));
-                await update_check;
+                if (binary) {
+                    applyUpdate(doc, new Uint8Array(binary));
+                    await update_check;
+                }
                 console.log('load success');
             },
             parse: () => this._doc.toJSON(),
@@ -409,8 +415,8 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
 
     async createBlock(
         options: Pick<BlockItem<YjsContentOperation>, 'type' | 'flavor'> & {
-            uuid?: string;
-            binary?: ArrayBufferLike;
+            uuid: string | undefined;
+            binary: ArrayBufferLike | undefined;
         }
     ): Promise<YjsBlockInstance> {
         const uuid = options.uuid || `affine${nanoid(16)}`;
@@ -481,7 +487,9 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
 
     async getBlock(id: string): Promise<YjsBlockInstance | undefined> {
         const block_instance = this.get_block_sync(id);
-        if (block_instance) return block_instance;
+        if (block_instance) {
+            return block_instance;
+        }
         const block = this._blocks.get(id);
         if (block && block.get('type') === BlockTypes.binary) {
             const binary = await this._binaries.get(
@@ -540,7 +548,9 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 let uploaded: Promise<void> | undefined;
                 if (!block.size) {
                     const content = item.content[INTO_INNER]();
-                    if (!content) return reject();
+                    if (!content) {
+                        return reject();
+                    }
 
                     const children = new YArray();
                     children.push(item.children);
