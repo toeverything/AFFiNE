@@ -137,7 +137,8 @@ export const DoubleLinkMenu = ({
 
     const resetState = useCallback(
         (preNodeId: string, nextNodeId: string) => {
-            editor.blockHelper.removeDoubleLinkSearchSlash(preNodeId);
+            preNodeId &&
+                editor.blockHelper.removeDoubleLinkSearchSlash(preNodeId);
             setCurBlockId(nextNodeId);
             setSearchText('');
             setIsOpen(true);
@@ -206,7 +207,7 @@ export const DoubleLinkMenu = ({
                 }
             }
         },
-        [editor, isOpen, curBlockId, hideMenu]
+        [editor, isOpen, curBlockId, hideMenu, resetState]
     );
 
     const handleKeyup = useCallback(
@@ -250,6 +251,20 @@ export const DoubleLinkMenu = ({
             sub.unsubscribe();
         };
     }, [handleKeyup, handleKeyDown, hooks]);
+
+    useEffect(() => {
+        const showDoubleLink = () => {
+            const { anchorNode } = editor.selection.currentSelectInfo;
+            editor.blockHelper.insertNodes(anchorNode.id, [{ text: '[[' }], {
+                select: true,
+            });
+            setTimeout(() => {
+                resetState('', anchorNode.id);
+            }, 0);
+        };
+        editor.plugins.observe('showDoubleLink', showDoubleLink);
+        return () => editor.plugins.unobserve('showDoubleLink', showDoubleLink);
+    }, [editor, resetState]);
 
     const insertDoubleLink = useCallback(
         async (pageId: string) => {
@@ -328,46 +343,48 @@ export const DoubleLinkMenu = ({
                 ...doubleLinkMenuStyle,
             }}
         >
-            <MuiClickAwayListener onClickAway={() => hideMenu()}>
-                <Popper
-                    open={isOpen}
-                    anchorEl={anchorEl}
-                    transition
-                    placement="bottom-start"
-                >
-                    {({ TransitionProps }) => (
-                        <Grow
-                            {...TransitionProps}
-                            style={{
-                                transformOrigin: 'left bottom',
-                            }}
-                        >
-                            <Paper>
-                                {inAddNewPage && (
-                                    <NewPageSearchContainer>
-                                        <Input
-                                            ref={newPageSearchRef}
-                                            value={filterText}
-                                            onChange={handleFilterChange}
-                                            placeholder="Search page to add to..."
-                                        />
-                                    </NewPageSearchContainer>
-                                )}
-                                <DoubleLinkMenuContainer
-                                    editor={editor}
-                                    hooks={hooks}
-                                    style={style}
-                                    blockId={curBlockId}
-                                    onSelected={handleSelected}
-                                    onClose={hideMenu}
-                                    items={menuItems}
-                                    types={menuTypes}
-                                />
-                            </Paper>
-                        </Grow>
-                    )}
-                </Popper>
-            </MuiClickAwayListener>
+            {isOpen && (
+                <MuiClickAwayListener onClickAway={() => hideMenu()}>
+                    <Popper
+                        open={isOpen}
+                        anchorEl={anchorEl}
+                        transition
+                        placement="bottom-start"
+                    >
+                        {({ TransitionProps }) => (
+                            <Grow
+                                {...TransitionProps}
+                                style={{
+                                    transformOrigin: 'left bottom',
+                                }}
+                            >
+                                <Paper>
+                                    {inAddNewPage && (
+                                        <NewPageSearchContainer>
+                                            <Input
+                                                ref={newPageSearchRef}
+                                                value={filterText}
+                                                onChange={handleFilterChange}
+                                                placeholder="Search page to add to..."
+                                            />
+                                        </NewPageSearchContainer>
+                                    )}
+                                    <DoubleLinkMenuContainer
+                                        editor={editor}
+                                        hooks={hooks}
+                                        style={style}
+                                        blockId={curBlockId}
+                                        onSelected={handleSelected}
+                                        onClose={hideMenu}
+                                        items={menuItems}
+                                        types={menuTypes}
+                                    />
+                                </Paper>
+                            </Grow>
+                        )}
+                    </Popper>
+                </MuiClickAwayListener>
+            )}
         </div>
     );
 };

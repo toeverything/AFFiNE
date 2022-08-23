@@ -1,9 +1,9 @@
+import { Tooltip } from '@toeverything/components/ui';
 import React, { useCallback } from 'react';
 import style9 from 'style9';
-
-import type { IconItemType, WithEditorSelectionType } from '../types';
 import { inlineMenuNamesKeys, inlineMenuShortcuts } from '../config';
-import { Tooltip } from '@toeverything/components/ui';
+import type { IconItemType, WithEditorSelectionType } from '../types';
+
 type MenuIconItemProps = IconItemType & WithEditorSelectionType;
 
 export const MenuIconItem = ({
@@ -22,6 +22,7 @@ export const MenuIconItem = ({
                     editor,
                     type: nameKey,
                     anchorNodeId: selectionInfo?.anchorNode?.id,
+                    setShow,
                 });
             }
             if ([inlineMenuNamesKeys.comment].includes(nameKey)) {

@@ -6,6 +6,7 @@ import { RenderElementProps } from 'slate-react';
 
 export type DoubleLinkElement = {
     type: 'link';
+    linkType: 'doubleLink';
     workspaceId: string;
     blockId: string;
     children: Descendant[];
