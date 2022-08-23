@@ -36,10 +36,10 @@ export abstract class BaseView {
     abstract type: string;
 
     /**
-     * activatable means can be focused
+     * editable means can be focused
      * @memberof BaseView
      */
-    public activatable = true;
+    public editable = true;
 
     public selectable = true;
 

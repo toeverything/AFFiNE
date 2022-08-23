@@ -8,7 +8,7 @@ import { YoutubeView } from './YoutubeView';
 
 export class YoutubeBlock extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     type = Protocol.Block.Type.youtube;
     View = YoutubeView;
 
