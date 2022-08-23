@@ -1,5 +1,5 @@
 import { ArrowRightIcon } from '@toeverything/components/icons';
-import { ReactElement, useRef, useState } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { Divider } from '../divider';
 import {
     MuiGrow as Grow,

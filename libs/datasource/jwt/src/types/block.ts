@@ -1,4 +1,4 @@
-import { ContentOperation } from '../adapter';
+import { ContentOperation } from '../yjs/types';
 import { RefMetadata } from './metadata';
 import { UUID } from './uuid';
 // base type of block
@@ -60,8 +60,8 @@ export type BlockItem<C extends ContentOperation> = {
     flavor: typeof BlockFlavors[BlockFlavorKeys];
     children: string[];
     readonly created: number; // creation time, UTC timestamp
-    readonly updated?: number; // update time, UTC timestamp
-    readonly creator?: string; // creator id
+    readonly updated?: number | undefined; // update time, UTC timestamp
+    readonly creator?: string | undefined; // creator id
     content: C; // Essentially what is stored here is either Uint8Array (binary resource) or YDoc (structured resource)
 };
 
