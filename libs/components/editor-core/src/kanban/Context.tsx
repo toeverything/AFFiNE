@@ -10,6 +10,8 @@ import {
     RecastMetaProperty,
     RecastPropertyId,
 } from '../recast-block/types';
+import { BlockRenderProvider } from '../render-block';
+import { KanbanBlockRender } from '../render-block/RenderKanbanBlock';
 import { useInitKanbanEffect, useRecastKanban } from './kanban';
 import { KanbanGroup } from './types';
 
@@ -54,9 +56,11 @@ export const KanbanProvider = ({
     };
 
     return (
-        <KanbanContext.Provider value={value}>
-            {children}
-        </KanbanContext.Provider>
+        <BlockRenderProvider blockRender={KanbanBlockRender}>
+            <KanbanContext.Provider value={value}>
+                {children}
+            </KanbanContext.Provider>
+        </BlockRenderProvider>
     );
 };
 
