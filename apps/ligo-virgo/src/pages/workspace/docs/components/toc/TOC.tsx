@@ -11,8 +11,10 @@ import {
 import { useParams } from 'react-router';
 import {
     BLOCK_TYPES,
+    destroyEventList,
     getContentByAsyncBlocks,
     getPageTOC,
+    type TocType,
 } from '../../utils/toc';
 
 const StyledTOCItem = styled('a')<{ type?: string; isActive?: boolean }>(
@@ -119,19 +121,24 @@ const renderTOCContent = tocDataSource => {
 export const Toc = (props: Props) => {
     const { editor } = props;
     const { page_id } = useParams();
-    const [tocDataSource, setTocDataSource] = useState([]);
-    const [activeBlockId, setActiveBlockId] = useState('blockId');
+    const [tocDataSource, setTocDataSource] = useState<TocType[]>([]);
+    const [activeBlockId, setActiveBlockId] = useState('');
+    const [blockEventListeners, setBlockEventListeners] = useState([]);
 
     const updateTocDataSource = useCallback(async () => {
+        destroyEventList(blockEventListeners);
+
         const { children = [] } =
             (await editor.queryByPageId(page_id))?.[0] || {};
         const asyncBlocks = (await editor.getBlockByIds(children)) || [];
-        const tocDataSource = getPageTOC(
+        const { tocContents, eventListeners } = await getContentByAsyncBlocks(
             asyncBlocks,
-            await getContentByAsyncBlocks(asyncBlocks, updateTocDataSource)
+            updateTocDataSource
         );
 
+        const tocDataSource = getPageTOC(asyncBlocks, tocContents);
         setTocDataSource(tocDataSource);
+        setBlockEventListeners(eventListeners);
     }, [editor, page_id]);
 
     useEffect(() => {

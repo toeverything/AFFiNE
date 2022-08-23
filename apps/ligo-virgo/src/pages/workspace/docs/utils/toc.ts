@@ -1,5 +1,11 @@
 import { AsyncBlock } from '@toeverything/components/editor-core';
 
+export type TocType = {
+    id: string;
+    type: string;
+    text: string;
+};
+
 export const BLOCK_TYPES = {
     GROUP: 'group',
     HEADING1: 'heading1',
@@ -11,36 +17,51 @@ export const BLOCK_TYPES = {
 const getContentByAsyncBlocks = async (
     asyncBlocks: AsyncBlock[] = [],
     callback: () => void
-): Promise<any[]> => {
-    /* maybe should recast it to tail recursion */
-    return await Promise.all(
-        asyncBlocks.map(async (asyncBlock: AsyncBlock) => {
-            const asyncBlocks = await asyncBlock.children();
+): Promise<{
+    tocContents: any[];
+    eventListeners: (() => void | undefined)[];
+}> => {
+    const eventListeners = [];
 
-            if (asyncBlocks?.length) {
-                return getContentByAsyncBlocks(asyncBlocks, callback);
-            }
+    const collect = async (asyncBlocks): Promise<any[]> => {
+        /* maybe should recast it to tail recursion */
+        return await Promise.all(
+            asyncBlocks.map(async (asyncBlock: AsyncBlock) => {
+                const asyncBlocks = await asyncBlock.children();
 
-            /* get update notice */
-            asyncBlock.onUpdate(callback);
+                if (asyncBlocks?.length) {
+                    return collect(asyncBlocks);
+                }
 
-            const { id, type } = asyncBlock;
-            if (Object.values(BLOCK_TYPES).includes(type)) {
-                const properties = await asyncBlock.getProperties();
+                /* get update notice */
+                const destroyHandler = asyncBlock.onUpdate(callback);
 
-                return {
-                    id,
-                    type,
-                    text: properties?.text?.value?.[0]?.text || '',
-                };
-            }
+                /* collect destroy handlers */
+                eventListeners.push(destroyHandler);
 
-            return null;
-        })
-    );
+                const { id, type } = asyncBlock;
+                if (Object.values(BLOCK_TYPES).includes(type)) {
+                    const properties = await asyncBlock.getProperties();
+
+                    return {
+                        id,
+                        type,
+                        text: properties?.text?.value?.[0]?.text || '',
+                    };
+                }
+
+                return null;
+            })
+        );
+    };
+
+    return {
+        tocContents: await collect(asyncBlocks),
+        eventListeners,
+    };
 };
 
-const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents) => {
+const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents): TocType[] => {
     return tocContents
         .reduce((tocGroupContent, tocContent, index) => {
             const { id, type } = asyncBlocks[index];
@@ -62,4 +83,14 @@ const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents) => {
         .filter(Boolean);
 };
 
-export { getPageTOC, getContentByAsyncBlocks };
+const destroyEventList = (
+    eventListeners: (() => void | undefined)[] = []
+): boolean => {
+    for (const eventListener of eventListeners) {
+        eventListener?.();
+    }
+
+    return true;
+};
+
+export { getPageTOC, getContentByAsyncBlocks, destroyEventList };
