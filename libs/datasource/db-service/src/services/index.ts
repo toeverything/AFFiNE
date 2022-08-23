@@ -5,7 +5,6 @@ import { Database } from './database';
 import { EditorBlock } from './editor-block';
 import { FileService } from './file';
 import { PageTree } from './workspace/page-tree';
-import { TOC } from './workspace/toc';
 import { UserConfig } from './workspace/user-config';
 
 export {
@@ -49,7 +48,6 @@ export interface DbServicesMap {
     userConfig: UserConfig;
     file: FileService;
     commentService: CommentService;
-    tocService: TOC;
 }
 
 interface RegisterDependencyConfigWithName extends RegisterDependencyConfig {
@@ -76,13 +74,6 @@ const dbServiceConfig: RegisterDependencyConfigWithName[] = [
         callName: 'pageTree',
         token: PageTree,
         value: PageTree,
-        dependencies: [{ token: Database }],
-    },
-    {
-        type: 'class',
-        callName: 'tocService',
-        token: TOC,
-        value: TOC,
         dependencies: [{ token: Database }],
     },
     {

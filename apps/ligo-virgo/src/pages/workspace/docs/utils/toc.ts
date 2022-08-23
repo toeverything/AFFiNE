@@ -1,4 +1,4 @@
-import type { BlockEditor } from '@toeverything/components/editor-core';
+import { AsyncBlock } from '@toeverything/components/editor-core';
 
 export const BLOCK_TYPES = {
     GROUP: 'group',
@@ -7,23 +7,29 @@ export const BLOCK_TYPES = {
     HEADING3: 'heading3',
 };
 
-const getContentByAsyncBlocks = async (asyncBlocks = []) => {
+/* 😞😞sorry, I don't know how to define unlimited dimensions array */
+const getContentByAsyncBlocks = async (
+    asyncBlocks: AsyncBlock[] = [],
+    callback: () => void
+): Promise<any[]> => {
     /* maybe should recast it to tail recursion */
     return await Promise.all(
-        asyncBlocks.map(async asyncBlock => {
+        asyncBlocks.map(async (asyncBlock: AsyncBlock) => {
             const asyncBlocks = await asyncBlock.children();
 
             if (asyncBlocks?.length) {
-                return getContentByAsyncBlocks(asyncBlocks);
+                return getContentByAsyncBlocks(asyncBlocks, callback);
             }
 
-            const { id, type } = asyncBlock;
+            /* get update notice */
+            asyncBlock.onUpdate(callback);
 
+            const { id, type } = asyncBlock;
             if (Object.values(BLOCK_TYPES).includes(type)) {
                 const properties = await asyncBlock.getProperties();
 
                 return {
-                    id: id,
+                    id,
                     type,
                     text: properties?.text?.value?.[0]?.text || '',
                 };
@@ -34,12 +40,7 @@ const getContentByAsyncBlocks = async (asyncBlocks = []) => {
     );
 };
 
-const getPageContentById = async (editor: BlockEditor, pageId: string) => {
-    const { children = [] } = (await editor.queryByPageId(pageId))?.[0] || {};
-    const asyncBlocks = (await editor.getBlockByIds(children)) || [];
-
-    const tocContents = await getContentByAsyncBlocks(asyncBlocks);
-
+const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents) => {
     return tocContents
         .reduce((tocGroupContent, tocContent, index) => {
             const { id, type } = asyncBlocks[index];
@@ -61,4 +62,4 @@ const getPageContentById = async (editor: BlockEditor, pageId: string) => {
         .filter(Boolean);
 };
 
-export { getPageContentById };
+export { getPageTOC, getContentByAsyncBlocks };

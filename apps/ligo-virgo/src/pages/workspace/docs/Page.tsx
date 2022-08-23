@@ -23,7 +23,7 @@ import { useFlag } from '@toeverything/datasource/feature-flags';
 import { CollapsiblePageTree } from './collapsible-page-tree';
 import { Tabs } from './components/tabs';
 import { TabMap, TAB_TITLE } from './components/tabs/Tabs';
-import { TOC } from './components/toc';
+import { Toc } from './components/toc';
 import { WorkspaceName } from './workspace-name';
 
 type PageProps = {
@@ -92,7 +92,7 @@ export function Page(props: PageProps) {
                         )}
 
                         {activeTab === TabMap.get(TAB_TITLE.TOC).value && (
-                            <TOC editor={editorRef.current}>TOC</TOC>
+                            <Toc editor={editorRef.current}>TOC</Toc>
                         )}
                     </WorkspaceSidebarContent>
                 </WorkspaceSidebar>

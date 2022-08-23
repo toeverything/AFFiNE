@@ -1,6 +1,5 @@
 import { BlockEditor } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
-import { services } from '@toeverything/datasource/db-service';
 import type { ReactNode } from 'react';
 import {
     createContext,
@@ -12,12 +11,9 @@ import {
 import { useParams } from 'react-router';
 import {
     BLOCK_TYPES,
-    getPageContentById,
-} from '../../utils/getPageContentById';
-
-const StyledTOC = styled('div')(() => {
-    return {};
-});
+    getContentByAsyncBlocks,
+    getPageTOC,
+} from '../../utils/toc';
 
 const StyledTOCItem = styled('a')<{ type?: string; isActive?: boolean }>(
     ({ type, isActive }) => {
@@ -120,49 +116,42 @@ const renderTOCContent = tocDataSource => {
     );
 };
 
-export const TOC = (props: Props) => {
+export const Toc = (props: Props) => {
     const { editor } = props;
-    const { workspace_id, page_id } = useParams();
+    const { page_id } = useParams();
     const [tocDataSource, setTocDataSource] = useState([]);
     const [activeBlockId, setActiveBlockId] = useState('blockId');
 
     const updateTocDataSource = useCallback(async () => {
-        const tocDataSource = await getPageContentById(editor, page_id);
+        const { children = [] } =
+            (await editor.queryByPageId(page_id))?.[0] || {};
+        const asyncBlocks = (await editor.getBlockByIds(children)) || [];
+        const tocDataSource = getPageTOC(
+            asyncBlocks,
+            await getContentByAsyncBlocks(asyncBlocks, updateTocDataSource)
+        );
+
         setTocDataSource(tocDataSource);
     }, [editor, page_id]);
 
     useEffect(() => {
-        (async () => await updateTocDataSource())();
+        (async () => {
+            await updateTocDataSource();
+        })();
     }, [updateTocDataSource]);
-
-    useEffect(() => {
-        let unobserve: () => void;
-        const observe = async () => {
-            unobserve = await services.api.tocService.observe(
-                { workspace: workspace_id, pageId: page_id },
-                updateTocDataSource
-            );
-        };
-        void observe();
-
-        return () => {
-            unobserve?.();
-        };
-    }, [updateTocDataSource, workspace_id]);
 
     const onClick = async (blockId?: string) => {
         if (blockId === activeBlockId) {
             return;
         }
 
-        console.log(blockId);
         setActiveBlockId(blockId);
         await editor.scrollManager.scrollIntoViewByBlockId(blockId);
     };
 
     return (
         <TOCContext.Provider value={{ activeBlockId, onClick }}>
-            <StyledTOC>{renderTOCContent(tocDataSource)}</StyledTOC>
+            <div>{renderTOCContent(tocDataSource)}</div>
         </TOCContext.Provider>
     );
 };

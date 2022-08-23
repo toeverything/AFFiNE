@@ -1,1 +1,1 @@
-export { TOC } from './TOC';
+export { Toc } from './Toc';
