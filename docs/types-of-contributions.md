@@ -17,7 +17,7 @@ You can [create a new pull request](https://github.com/toeverything/AFFiNE/compa
 
 ### :question: Support
 We are a small team working hard to keep up with the documentation demands of a continuously changing product. 
-You may be able to find additional help and information on our social media platforms and groups - the links to these can be found in our [README](../README.md)
+You may be able to find additional help and information on our social media platforms and groups - the links to these can be found in our [README](../README.md).
 
 ### :earth_asia: Translations
 
