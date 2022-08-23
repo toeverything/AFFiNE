@@ -12,7 +12,7 @@ const getBindings = (workspace: string, rootBlockId: string) => {
             ids: [rootBlockId],
         })
         .then(blcoks => {
-            return blcoks[0].properties.bindings?.value;
+            return blcoks[0]?.properties.bindings?.value;
         });
 };
 
