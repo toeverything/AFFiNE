@@ -62,4 +62,6 @@ export type PopperProps = {
     showArrow?: boolean;
 
     popperHandlerRef?: Ref<PopperHandler>;
+
+    onClickAway?: () => void;
 } & Omit<PopperUnstyledProps, 'open' | 'ref'>;
