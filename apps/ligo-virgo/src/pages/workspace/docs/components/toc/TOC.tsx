@@ -14,6 +14,7 @@ import {
     destroyEventList,
     getContentByAsyncBlocks,
     getPageTOC,
+    listenerMap,
     type TocType,
 } from '../../utils/toc';
 
@@ -123,24 +124,35 @@ export const Toc = (props: Props) => {
     const { page_id } = useParams();
     const [tocDataSource, setTocDataSource] = useState<TocType[]>([]);
     const [activeBlockId, setActiveBlockId] = useState('');
-    const [blockEventListeners, setBlockEventListeners] = useState([]);
 
     const updateTocDataSource = useCallback(async () => {
-        destroyEventList(blockEventListeners);
+        /* page listener: trigger update-notice when add new group */
+        const pageAsyncBlock = (await editor.getBlockByIds([page_id]))?.[0];
+        if (!listenerMap.has(pageAsyncBlock.id)) {
+            listenerMap.set(
+                pageAsyncBlock.id,
+                pageAsyncBlock.onUpdate(updateTocDataSource)
+            );
+        }
 
+        /* block listener: trigger update-notice when change block content */
         const { children = [] } =
             (await editor.queryByPageId(page_id))?.[0] || {};
         const asyncBlocks = (await editor.getBlockByIds(children)) || [];
-        const { tocContents, eventListeners } = await getContentByAsyncBlocks(
+        const { tocContents } = await getContentByAsyncBlocks(
             asyncBlocks,
             updateTocDataSource
         );
 
+        /* toc: flat content */
         const tocDataSource = getPageTOC(asyncBlocks, tocContents);
         setTocDataSource(tocDataSource);
-        setBlockEventListeners(eventListeners);
+
+        /* remove listener when unmount component */
+        return destroyEventList;
     }, [editor, page_id]);
 
+    /* init toc and add page/block update-listener & unmount-listener */
     useEffect(() => {
         (async () => {
             await updateTocDataSource();

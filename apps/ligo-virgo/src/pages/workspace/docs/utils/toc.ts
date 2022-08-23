@@ -13,16 +13,16 @@ export const BLOCK_TYPES = {
     HEADING3: 'heading3',
 };
 
+/* store page/block unmount-listener */
+export const listenerMap = new Map<string, () => void>();
+
 /* 😞😞sorry, I don't know how to define unlimited dimensions array */
 const getContentByAsyncBlocks = async (
     asyncBlocks: AsyncBlock[] = [],
     callback: () => void
 ): Promise<{
     tocContents: any[];
-    eventListeners: (() => void | undefined)[];
 }> => {
-    const eventListeners = [];
-
     const collect = async (asyncBlocks): Promise<any[]> => {
         /* maybe should recast it to tail recursion */
         return await Promise.all(
@@ -33,11 +33,14 @@ const getContentByAsyncBlocks = async (
                     return collect(asyncBlocks);
                 }
 
-                /* get update notice */
-                const destroyHandler = asyncBlock.onUpdate(callback);
+                /* add only once event listener for every block */
+                if (!listenerMap.has(asyncBlock.id)) {
+                    /* get update notice */
+                    const destroyHandler = asyncBlock.onUpdate(callback);
 
-                /* collect destroy handlers */
-                eventListeners.push(destroyHandler);
+                    /* collect destroy handlers */
+                    listenerMap.set(asyncBlock.id, destroyHandler);
+                }
 
                 const { id, type } = asyncBlock;
                 if (Object.values(BLOCK_TYPES).includes(type)) {
@@ -57,10 +60,14 @@ const getContentByAsyncBlocks = async (
 
     return {
         tocContents: await collect(asyncBlocks),
-        eventListeners,
     };
 };
 
+/**
+ * get flat toc
+ * @param asyncBlocks
+ * @param tocContents
+ */
 const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents): TocType[] => {
     return tocContents
         .reduce((tocGroupContent, tocContent, index) => {
@@ -83,9 +90,10 @@ const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents): TocType[] => {
         .filter(Boolean);
 };
 
-const destroyEventList = (
-    eventListeners: (() => void | undefined)[] = []
-): boolean => {
+/* destroy page/block update-listener */
+const destroyEventList = (): boolean => {
+    const eventListeners = listenerMap.values();
+
     for (const eventListener of eventListeners) {
         eventListener?.();
     }
