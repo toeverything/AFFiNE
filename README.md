@@ -87,8 +87,8 @@ And when it comes to collaboration, these features are not just necessarily for 
 - Release Notes: [https://github.com/toeverything/AFFiNE/wiki](https://github.com/toeverything/AFFiNE/wiki)
 
 - Create a new issue/feature request - and view existing issues: [https://github.com/toeverything/AFFiNE/issues](https://github.com/toeverything/AFFiNE/issues)
-- Contributing Guide: [/docs/CONTRIBUTING](/docs/CONTRIBUTING)
-- Code of Conduct Guide: [/docs/CODE_OF_CONDUCT](/docs/CODE_OF_CONDUCT) 
+- Contributing Guide: [/docs/CONTRIBUTING.md](/docs/CONTRIBUTING.md)
+- Code of Conduct Guide: [/docs/CODE_OF_CONDUCT.md](/docs/CODE_OF_CONDUCT.md) 
 
 - Dsicussions on GitHub: [https://github.com/toeverything/AFFiNE/discussions](https://github.com/toeverything/AFFiNE/discussions)
 
