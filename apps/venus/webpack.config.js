@@ -39,6 +39,7 @@ module.exports = function (webpackConfig) {
             ...config.output,
             filename: '[name].[contenthash:8].js',
             chunkFilename: '[name].[chunkhash:8].js',
+            hashDigestLength: 8,
             hashFunction: undefined,
         };
         config.optimization = {
@@ -98,22 +99,7 @@ module.exports = function (webpackConfig) {
                 },
             ],
         });
-        config.module.rules.unshift({
-            test: /\.scss$/i,
-            use: [
-                'style-loader',
-                {
-                    loader: 'css-loader',
-                    options: {
-                        sourceMap: false,
-                    },
-                },
-                {
-                    loader: 'postcss-loader',
-                },
-            ],
-        });
-        config.module.rules.splice(6);
+        config.module.rules.splice(4);
     } else {
         config.output = {
             ...config.output,
@@ -155,7 +141,11 @@ module.exports = function (webpackConfig) {
                 template: path.resolve(__dirname, './src/template.html'),
                 publicPath: '/',
             }),
-        isProd && new MiniCssExtractPlugin(),
+        isProd &&
+            new MiniCssExtractPlugin({
+                filename: '[name].[contenthash:8].css',
+                chunkFilename: '[id].[chunkhash:8].css',
+            }),
         isProd &&
             new CompressionPlugin({
                 test: /\.(js|css|html|svg|ttf|woff)$/,
@@ -201,15 +191,6 @@ const addEmotionBabelPlugin = config => {
                 // See https://github.com/mui/material-ui/issues/27380#issuecomment-928973157
                 // See https://github.com/emotion-js/emotion/tree/main/packages/babel-plugin#importmap
                 importMap: {
-                    '@toeverything/components/ui': {
-                        styled: {
-                            canonicalImport: ['@emotion/styled', 'default'],
-                            styledBaseImport: [
-                                '@toeverything/components/ui',
-                                'styled',
-                            ],
-                        },
-                    },
                     '@mui/material': {
                         styled: {
                             canonicalImport: ['@emotion/styled', 'default'],
