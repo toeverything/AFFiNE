@@ -408,13 +408,13 @@ export class SelectionManager implements VirgoSelection {
 
     /**
      *
-     * get previous activatable blockNode
+     * get previous editable blockNode
      * @private
      * @param {AsyncBlock} node
      * @return {*}  {(Promise<AsyncBlock | null>)}
      * @memberof SelectionManager
      */
-    private async _getPreviousActivatableBlockNode(
+    private async _getPreviousEditableBlockNode(
         node: AsyncBlock
     ): Promise<AsyncBlock | null> {
         const preNode = await node.physicallyPerviousSibling();
@@ -422,8 +422,8 @@ export class SelectionManager implements VirgoSelection {
         if (!preNode) {
             return null;
         }
-        const { activatable, selectable } = this._editor.getView(preNode.type);
-        if (activatable) {
+        const { editable, selectable } = this._editor.getView(preNode.type);
+        if (editable) {
             this.setSelectedNodesIds([]);
             return preNode;
         }
@@ -432,18 +432,18 @@ export class SelectionManager implements VirgoSelection {
             (document.activeElement as HTMLInputElement)?.blur();
             return null;
         }
-        return this._getPreviousActivatableBlockNode(preNode);
+        return this._getPreviousEditableBlockNode(preNode);
     }
 
     /**
      *
-     * get next activatable blockNode
+     * get next editable blockNode
      * @private
      * @param {AsyncBlock} node
      * @return {*}  {(Promise<AsyncBlock | null>)}
      * @memberof SelectionManager
      */
-    private async _getNextActivatableBlockNode(
+    private async _getNextEditableBlockNode(
         node: AsyncBlock,
         ignoreSelf = true
     ): Promise<AsyncBlock | null> {
@@ -482,8 +482,8 @@ export class SelectionManager implements VirgoSelection {
             }
         }
 
-        const { activatable, selectable } = this._editor.getView(nextNode.type);
-        if (activatable) {
+        const { editable, selectable } = this._editor.getView(nextNode.type);
+        if (editable) {
             this.setSelectedNodesIds([]);
             return nextNode;
         }
@@ -492,7 +492,7 @@ export class SelectionManager implements VirgoSelection {
             (document.activeElement as HTMLInputElement)?.blur();
             return null;
         }
-        return this._getNextActivatableBlockNode(nextNode);
+        return this._getNextEditableBlockNode(nextNode);
     }
 
     /**
@@ -513,7 +513,7 @@ export class SelectionManager implements VirgoSelection {
                     return;
                 }
             }
-            preNode = await this._getPreviousActivatableBlockNode(node);
+            preNode = await this._getPreviousEditableBlockNode(node);
             if (preNode) {
                 this.activeNodeByNodeId(preNode.id, position);
             }
@@ -622,7 +622,7 @@ export class SelectionManager implements VirgoSelection {
                 }
             }
 
-            nextNode = await this._getNextActivatableBlockNode(node);
+            nextNode = await this._getNextEditableBlockNode(node);
             if (nextNode) {
                 this.activeNodeByNodeId(nextNode.id, position);
             }

@@ -9,7 +9,7 @@ import { Block2HtmlProps } from '../../utils/commonBlockClip';
 
 export class FigmaBlock extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     type = Protocol.Block.Type.figma;
     View = FigmaView;
 

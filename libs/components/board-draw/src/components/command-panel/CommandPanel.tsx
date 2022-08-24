@@ -106,6 +106,12 @@ export const CommandPanel = ({ app }: { app: TldrawApp }) => {
                 shapes={config.deleteShapes.selectedShapes}
             ></AlignOperation>
         ) : null,
+        // toNextShap: (
+        //     <ArrowTo
+        //         app={app}
+        //         shapes={config.deleteShapes.selectedShapes}
+        //     ></ArrowTo>
+        // ),
     };
 
     const nodes = Object.entries(configNodes).filter(([key, node]) => !!node);

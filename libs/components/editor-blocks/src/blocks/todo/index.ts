@@ -1,17 +1,18 @@
+import { Protocol } from '@toeverything/datasource/db-service';
 import {
     BaseView,
     BlockEditor,
     HTML2BlockResult,
+    withTreeViewChildren,
 } from '@toeverything/framework/virgo';
-import { Protocol } from '@toeverything/datasource/db-service';
-import { withTreeViewChildren } from '../../utils/WithTreeViewChildren';
-import { TodoView, defaultTodoProps } from './TodoView';
-import type { TodoAsyncBlock } from './types';
+import { defaultTodoProps, TodoView } from './TodoView';
+
 import {
     Block2HtmlProps,
     commonBlock2HtmlContent,
     commonHTML2block,
 } from '../../utils/commonBlockClip';
+import type { TodoAsyncBlock } from './types';
 
 export class TodoBlock extends BaseView {
     type = Protocol.Block.Type.todo;

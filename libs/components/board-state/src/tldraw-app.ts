@@ -175,6 +175,10 @@ interface TDCallbacks {
      * (optional) A callback to run when the shape is copied.
      */
     onCopy?: (e: ClipboardEvent, ids: string[]) => void;
+    /**
+     * (optional) A callback to run when the shape is paste.
+     */
+    onPaste?: (e: ClipboardEvent, data: any) => void;
 }
 
 export interface TldrawAppCtorProps {
@@ -444,7 +448,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                         if (visitedShapes.has(fromShape)) {
                             return;
                         }
-
                         // We only need to update the binding's "from" shape (an arrow)
                         const fromDelta = TLDR.update_arrow_bindings(
                             page,
@@ -627,7 +630,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     private prev_bindings = this.page.bindings;
     private prev_assets = this.document.assets;
 
-    private _broadcastPageChanges = () => {
+    private _broadcastPageChanges = async () => {
         const visited = new Set<string>();
 
         const changedShapes: Record<string, TDShape | undefined> = {};
@@ -684,7 +687,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             Object.keys(changedAssets).length > 0
         ) {
             this.just_sent = true;
-            this.callbacks.onChangePage?.(
+            await this.callbacks.onChangePage?.(
                 this,
                 changedShapes,
                 changedBindings,
@@ -860,7 +863,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 if (!page.bindings[binding.id]) {
                     return;
                 }
-
                 const fromShape = page.shapes[binding.fromId] as ArrowShape;
 
                 if (visitedShapes.has(fromShape)) {
@@ -868,6 +870,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
                 }
 
                 // We only need to update the binding's "from" shape (an arrow)
+
                 const fromDelta = TLDR.update_arrow_bindings(page, fromShape);
                 visitedShapes.add(fromShape);
 
@@ -1957,6 +1960,53 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     paste = async (point?: number[], e?: ClipboardEvent) => {
         if (this.readOnly) return;
 
+        if (e) {
+            const data = e.clipboardData?.getData('text/html');
+            const paste_as_html = (html: string) => {
+                try {
+                    const maybeJson = html.match(/<tldraw>(.*)<\/tldraw>/)?.[1];
+
+                    if (!maybeJson) return;
+
+                    const json: {
+                        type: string;
+                        shapes: TDShape[];
+                        bindings: TDBinding[];
+                        assets: TDAsset[];
+                    } = JSON.parse(maybeJson);
+                    return json;
+                } catch (e) {
+                    return;
+                }
+            };
+            this.callbacks.onPaste?.(e, paste_as_html(data));
+            return this;
+        }
+
+        const paste_as_html = (html: string) => {
+            try {
+                const maybeJson = html.match(/<tldraw>(.*)<\/tldraw>/)?.[1];
+
+                if (!maybeJson) return;
+
+                const json: {
+                    type: string;
+                    shapes: TDShape[];
+                    bindings: TDBinding[];
+                    assets: TDAsset[];
+                } = JSON.parse(maybeJson);
+
+                if (json.type === 'tldr/clipboard') {
+                    pasteInCurrentPage(json.shapes, json.bindings, json.assets);
+                    return;
+                } else {
+                    throw Error('Not tldraw data!');
+                }
+            } catch (e) {
+                pasteTextAsShape(html);
+                return;
+            }
+        };
         const pasteInCurrentPage = (
             shapes: TDShape[],
             bindings: TDBinding[],
@@ -2106,31 +2156,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             //     style: { ...this.appState.currentStyle }
             // });
             // this.select(shapeId);
-        };
-
-        const paste_as_html = (html: string) => {
-            try {
-                const maybeJson = html.match(/<tldraw>(.*)<\/tldraw>/)?.[1];
-
-                if (!maybeJson) return;
-
-                const json: {
-                    type: string;
-                    shapes: TDShape[];
-                    bindings: TDBinding[];
-                    assets: TDAsset[];
-                } = JSON.parse(maybeJson);
-
-                if (json.type === 'tldr/clipboard') {
-                    pasteInCurrentPage(json.shapes, json.bindings, json.assets);
-                    return;
-                } else {
-                    throw Error('Not tldraw data!');
-                }
-            } catch (e) {
-                pasteTextAsShape(html);
-                return;
-            }
         };
 
         if (e !== undefined) {
@@ -3854,7 +3879,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     private get_viewbox_from_svg = (svgStr: string | ArrayBuffer | null) => {
         if (typeof svgStr === 'string') {
-            let viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
+            const viewBox = new DOMParser().parseFromString(svgStr, 'text/xml');
             return viewBox.children[0].getAttribute('viewBox');
         }
 
@@ -4138,7 +4163,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     onPointerDown: TLPointerEventHandler = (info, e) => {
-        if (e.buttons === 4) {
+        if (e.button === 1) {
             this.patchState({
                 settings: {
                     forcePanning: true,
@@ -4155,6 +4180,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     };
 
     onPointerUp: TLPointerEventHandler = (info, e) => {
+        if (e.button === 1) {
+            this.patchState({
+                settings: {
+                    forcePanning: false,
+                },
+            });
+        }
         this.isPointing = false;
         this.updateInputs(info, e);
         this.currentTool.onPointerUp?.(info, e);

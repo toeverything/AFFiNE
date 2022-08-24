@@ -266,6 +266,43 @@
             "contributions": [
                 "doc"
             ]
+        },
+        {
+            "login": "LuciNyan",
+            "name": "子瞻 Luci",
+            "avatar_url": "https://avatars.githubusercontent.com/u/22126563?v=4",
+            "profile": "https://github.com/LuciNyan",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "m1911star",
+            "name": "Horus",
+            "avatar_url": "https://avatars.githubusercontent.com/u/4948120?v=4",
+            "profile": "http://blog.ipili.me/",
+            "contributions": [
+                "code",
+                "platform"
+            ]
+        },
+        {
+            "login": "fanshyiis",
+            "name": "Super.x",
+            "avatar_url": "https://avatars.githubusercontent.com/u/15103283?v=4",
+            "profile": "https://segmentfault.com/u/qzuser_584786517d31a",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "wangyu-1999",
+            "name": "Wang Yu",
+            "avatar_url": "https://avatars.githubusercontent.com/u/80874770?v=4",
+            "profile": "https://wangyu-1999.github.io/",
+            "contributions": [
+                "code"
+            ]
         }
     ]
 }

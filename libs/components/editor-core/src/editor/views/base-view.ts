@@ -13,7 +13,6 @@ import { HTML2BlockResult } from '../clipboard/types';
 export interface CreateView {
     block: AsyncBlock;
     editor: Editor;
-    editorElement: () => JSX.Element;
     /**
      * @deprecated Use recast table instead
      */
@@ -32,10 +31,10 @@ export abstract class BaseView {
     abstract type: string;
 
     /**
-     * activatable means can be focused
+     * editable means can be focused
      * @memberof BaseView
      */
-    public activatable = true;
+    public editable = true;
 
     public selectable = true;
 

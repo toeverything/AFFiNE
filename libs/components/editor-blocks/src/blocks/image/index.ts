@@ -10,7 +10,7 @@ import { getRandomString } from '@toeverything/components/common';
 
 export class ImageBlock extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     type = Protocol.Block.Type.image;
     View = ImageView;
 

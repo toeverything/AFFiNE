@@ -7,14 +7,14 @@ import produce from 'immer';
 import LRUCache from 'lru-cache';
 import sift, { Query } from 'sift';
 
+import { BlockFlavors } from '../types';
+import { BlockEventBus, getLogger } from '../utils';
 import {
     AsyncDatabaseAdapter,
     BlockInstance,
     ChangedStates,
     ContentOperation,
-} from '../adapter';
-import { BlockFlavors } from '../types';
-import { BlockEventBus, getLogger } from '../utils';
+} from '../yjs/types';
 
 import { BaseBlock, IndexMetadata, QueryMetadata } from './base';
 
@@ -123,8 +123,8 @@ export class BlockIndexer<
     constructor(
         adapter: A,
         workspace: string,
-        block_builder: (block: BlockInstance<C>) => Promise<BaseBlock<B, C>>,
-        event_bus: BlockEventBus
+        blockBuilder: (block: BlockInstance<C>) => Promise<BaseBlock<B, C>>,
+        eventBus: BlockEventBus
     ) {
         this._adapter = adapter;
         this._idb = initIndexIdb(workspace);
@@ -144,8 +144,8 @@ export class BlockIndexer<
             ttl: 1000 * 60 * 30,
         });
 
-        this._blockBuilder = block_builder;
-        this._eventBus = event_bus;
+        this._blockBuilder = blockBuilder;
+        this._eventBus = eventBus;
 
         this._delayIndex = { documents: new Map() };
 
@@ -315,7 +315,9 @@ export class BlockIndexer<
     private _testMetaKey(key: string) {
         try {
             const metadata = this._blockMetadata.values().next().value;
-            if (!metadata || typeof metadata !== 'object') return false;
+            if (!metadata || typeof metadata !== 'object') {
+                return false;
+            }
             return !!(key in metadata);
         } catch (e) {
             return false;
@@ -324,8 +326,11 @@ export class BlockIndexer<
 
     private _getSortedMetadata(sort: string, desc?: boolean) {
         const sorter = naturalSort(Array.from(this._blockMetadata.entries()));
-        if (desc) return sorter.desc(([, m]) => m[sort]);
-        else return sorter.asc(([, m]) => m[sort]);
+        if (desc) {
+            return sorter.desc(([, m]) => m[sort]);
+        } else {
+            return sorter.asc(([, m]) => m[sort]);
+        }
     }
 
     public query(query: QueryIndexMetadata) {
@@ -337,15 +342,23 @@ export class BlockIndexer<
         if ($sort && this._testMetaKey($sort)) {
             const metadata = this._getSortedMetadata($sort, $desc);
             metadata.forEach(([key, value]) => {
-                if (matches.length > limit) return;
-                if (filter(value)) matches.push(key);
+                if (matches.length > limit) {
+                    return;
+                }
+                if (filter(value)) {
+                    matches.push(key);
+                }
             });
 
             return matches;
         } else {
             this._blockMetadata.forEach((value, key) => {
-                if (matches.length > limit) return;
-                if (filter(value)) matches.push(key);
+                if (matches.length > limit) {
+                    return;
+                }
+                if (filter(value)) {
+                    matches.push(key);
+                }
             });
 
             return matches;

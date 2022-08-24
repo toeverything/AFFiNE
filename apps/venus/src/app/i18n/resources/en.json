@@ -1,0 +1,34 @@
+{
+    "translation": {
+        "Open Source": "Open Source",
+        "Privacy First": "Privacy First",
+        "Alternative": "Alternative",
+        "Check GitHub": "Check GitHub",
+        "Try it Online": "Try it Online",
+        "description1": {
+            "part1": "Affine is the next-generation collaborative knowledge base for professionals.",
+            "part2": "It's not just a collection of Docs, whiteboard, and tables.",
+            "part3": "Transform any building block as you like.",
+            "part4": "Say goodbye to redundancy. Store your data once, and keep your data as you like it."
+        },
+        "description2": {
+            "part1": "Shape Your Page",
+            "part2": "Docs, Kanbans, and Databases are all fully functional anywhere, anytime. A truly what-you-see-is-what-you-get environment for your data.",
+            "part3": "All pages come with a document (Paper Mode) and whiteboard (Edgeless Mode) view."
+        },
+        "description3": {
+            "part1": "Plan Your Task",
+            "part2": "No more chaos managing multiple views.",
+            "part3": "Set a TODO with Markdown, and seamlessly edit it within a Kanban.",
+            "part4": "Managing multi-dimensional tables should be this simple - and now it is."
+        },
+        "description4": {
+            "part1": "Privacy-first, and collaborative. No compromises whatsoever.",
+            "part2": "We don't like being locked-in, and neither should you. Privacy is at the foundation of everything we do, but it should not limit us that's why there are no compromises.",
+            "part3": "Your data is yours;it is always locally stored and secured - available to you always. While still being able to enjoy collaboration features such as real-time editing and sharing with others, without any cloud setup."
+        },
+        "BuildFor": "Build for an open and semantic future",
+        "KeepUpdated": "Keep Updated on",
+        "Join": "Join Our Community"
+    }
+}

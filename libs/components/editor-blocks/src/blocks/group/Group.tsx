@@ -13,7 +13,7 @@ import {
 
 export class Group extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     public override allowPendant = false;
 
     type = Protocol.Block.Type.group;

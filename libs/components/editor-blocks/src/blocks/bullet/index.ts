@@ -1,16 +1,18 @@
+import { Protocol } from '@toeverything/datasource/db-service';
 import {
     AsyncBlock,
     BaseView,
     BlockEditor,
     HTML2BlockResult,
 } from '@toeverything/framework/virgo';
-import { Protocol } from '@toeverything/datasource/db-service';
-import { defaultBulletProps, BulletView } from './BulletView';
+
 import {
     Block2HtmlProps,
     commonBlock2HtmlContent,
     commonHTML2block,
 } from '../../utils/commonBlockClip';
+import { BulletView, defaultBulletProps } from './BulletView';
+
 export class BulletBlock extends BaseView {
     public type = Protocol.Block.Type.bullet;
 

@@ -1,29 +1,28 @@
 import type { TextProps } from '@toeverything/components/common';
 import {
     ContentColumnValue,
-    services,
     Protocol,
+    services,
 } from '@toeverything/datasource/db-service';
 import { type CreateView } from '@toeverything/framework/virgo';
 import { useEffect, useRef, useState } from 'react';
 
 import {
+    BlockPendantProvider,
+    RenderBlockChildren,
+    supportChildren,
+    useOnSelect,
+} from '@toeverything/components/editor-core';
+import { styled } from '@toeverything/components/ui';
+import { BlockContainer } from '../../components/BlockContainer';
+import { List } from '../../components/style-container';
+import {
     TextManage,
     type ExtendedTextUtils,
 } from '../../components/text-manage';
 import { tabBlock } from '../../utils/indent';
+import { BulletIcon, getChildrenType, NumberType } from './data';
 import { BulletBlock, BulletProperties } from './types';
-import {
-    supportChildren,
-    RenderBlockChildren,
-    useOnSelect,
-    BlockPendantProvider,
-} from '@toeverything/components/editor-core';
-import { List } from '../../components/style-container';
-import { getChildrenType, BulletIcon, NumberType } from './data';
-import { IndentWrapper } from '../../components/IndentWrapper';
-import { BlockContainer } from '../../components/BlockContainer';
-import { styled } from '@toeverything/components/ui';
 
 export const defaultBulletProps: BulletProperties = {
     text: { value: [{ text: '' }] },
@@ -208,9 +207,7 @@ export const BulletView = ({ block, editor }: CreateView) => {
                     </div>
                 </List>
             </BlockPendantProvider>
-            <IndentWrapper>
-                <RenderBlockChildren block={block} />
-            </IndentWrapper>
+            <RenderBlockChildren block={block} />
         </BlockContainer>
     );
 };

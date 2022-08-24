@@ -1,4 +1,4 @@
-import { RenderBlock } from '@toeverything/components/editor-core';
+import { useBlockRender } from '@toeverything/components/editor-core';
 import { ChildrenView, CreateView } from '@toeverything/framework/virgo';
 
 export const GridItemRender = function (
@@ -6,10 +6,11 @@ export const GridItemRender = function (
 ) {
     const GridItem = function (props: CreateView) {
         const { block } = props;
+        const { BlockRender } = useBlockRender();
         const children = (
             <>
                 {block.childrenIds.map(id => {
-                    return <RenderBlock key={id} blockId={id} />;
+                    return <BlockRender key={id} blockId={id} />;
                 })}
             </>
         );

@@ -32,7 +32,7 @@ export class GateKeeper {
         return creator === this._userId || !!this._common.get(block_id);
     }
 
-    checkDeleteLists(block_ids: string[]) {
+    checkDeleteLists(block_ids: string[]): [string[], string[]] {
         const success = [];
         const fail = [];
         for (const block_id of block_ids) {

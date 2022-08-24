@@ -1,16 +1,16 @@
+import { Protocol } from '@toeverything/datasource/db-service';
 import {
     AsyncBlock,
     BaseView,
     BlockEditor,
     HTML2BlockResult,
 } from '@toeverything/framework/virgo';
-import { Protocol } from '@toeverything/datasource/db-service';
-import { defaultTodoProps, NumberedView } from './NumberedView';
 import {
     Block2HtmlProps,
     commonBlock2HtmlContent,
     commonHTML2block,
 } from '../../utils/commonBlockClip';
+import { defaultTodoProps, NumberedView } from './NumberedView';
 
 export class NumberedBlock extends BaseView {
     public type = Protocol.Block.Type.numbered;

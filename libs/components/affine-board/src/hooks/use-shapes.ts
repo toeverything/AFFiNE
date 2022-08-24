@@ -9,28 +9,37 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
     const { pageClientWidth } = usePageClientWidth();
     // page padding left and right total 300px
     const editorShapeInitSize = pageClientWidth - 300;
-    const [blocks, setBlocks] = useState<ReturnEditorBlock[]>();
+    const [blocks, setBlocks] = useState<{
+        shapes: [ReturnEditorBlock[]];
+    }>();
     useEffect(() => {
-        services.api.editorBlock
-            .get({ workspace, ids: [rootBlockId] })
-            .then(async blockData => {
-                const shapes = await Promise.all(
-                    (blockData?.[0]?.children || []).map(async childId => {
-                        const childBlock = (
-                            await services.api.editorBlock.get({
-                                workspace,
-                                ids: [childId],
-                            })
-                        )?.[0];
-                        return childBlock;
-                    })
-                );
-                setBlocks(shapes);
+        Promise.all([
+            services.api.editorBlock
+                .get({ workspace, ids: [rootBlockId] })
+                .then(async blockData => {
+                    const shapes = await Promise.all(
+                        (blockData?.[0]?.children || []).map(async childId => {
+                            const childBlock = (
+                                await services.api.editorBlock.get({
+                                    workspace,
+                                    ids: [childId],
+                                })
+                            )?.[0];
+                            return childBlock;
+                        })
+                    );
+                    return shapes;
+                }),
+        ]).then(shapes => {
+            setBlocks({
+                shapes: shapes,
             });
+        });
+
         let unobserve: () => void;
         services.api.editorBlock
             .observe({ workspace, id: rootBlockId }, async blockData => {
-                const shapes = await Promise.all(
+                Promise.all(
                     (blockData?.children || []).map(async childId => {
                         const childBlock = (
                             await services.api.editorBlock.get({
@@ -40,8 +49,11 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                         )?.[0];
                         return childBlock;
                     })
-                );
-                setBlocks(shapes);
+                ).then(shapes => {
+                    setBlocks({
+                        shapes: [shapes],
+                    });
+                });
             })
             .then(cb => {
                 unobserve = cb;
@@ -53,8 +65,7 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
     }, [workspace, rootBlockId]);
 
     let groupCount = 0;
-
-    return blocks?.reduce((acc, block) => {
+    let blocksShapes = blocks?.shapes[0]?.reduce((acc, block) => {
         const shapeProps = block.properties.shapeProps?.value
             ? JSON.parse(block.properties.shapeProps.value)
             : {};
@@ -75,4 +86,8 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
 
         return acc;
     }, {} as Record<string, TDShape>);
+
+    return {
+        shapes: blocksShapes,
+    };
 };

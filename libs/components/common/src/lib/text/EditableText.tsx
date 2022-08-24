@@ -1,54 +1,53 @@
 /* eslint-disable max-lines */
+import { ErrorBoundary, isEqual } from '@toeverything/utils';
+import isHotkey from 'is-hotkey';
+import isUrl from 'is-url';
 import React, {
+    CSSProperties,
+    DragEvent,
+    forwardRef,
     KeyboardEvent,
     KeyboardEventHandler,
+    MouseEvent,
+    MouseEventHandler,
     useCallback,
     useEffect,
+    useLayoutEffect,
     useMemo,
     useRef,
     useState,
-    forwardRef,
-    MouseEventHandler,
-    useLayoutEffect,
-    CSSProperties,
-    MouseEvent,
-    DragEvent,
 } from 'react';
-import isHotkey from 'is-hotkey';
 import {
     createEditor,
     Descendant,
-    Range,
-    Element as SlateElement,
     Editor,
-    Transforms,
+    Element as SlateElement,
     Node,
     Path,
+    Range,
+    Transforms,
 } from 'slate';
 import {
     Editable,
-    withReact,
-    Slate,
     ReactEditor,
+    Slate,
     useSlateStatic,
+    withReact,
 } from 'slate-react';
-
-import { ErrorBoundary, isEqual, uaHelper } from '@toeverything/utils';
-
-import { Contents, SlateUtils, isSelectAll } from './slate-utils';
+import { CustomElement } from '..';
+import { HOTKEYS, INLINE_STYLES } from './constants';
+import { TextWithComments } from './element-leaf/TextWithComments';
+import { InlineDate, withDate } from './plugins/date';
+import { DoubleLinkComponent } from './plugins/DoubleLink';
+import { LinkComponent, LinkModal, withLinks, wrapLink } from './plugins/link';
+import { InlineRefLink } from './plugins/reflink';
+import { Contents, isSelectAll, SlateUtils } from './slate-utils';
 import {
     getCommentsIdsOnTextNode,
     getExtraPropertiesFromEditorOutmostNode,
     isInterceptCharacter,
     matchMarkdown,
 } from './utils';
-import { HOTKEYS, INLINE_STYLES } from './constants';
-import { LinkComponent, LinkModal, withLinks, wrapLink } from './plugins/link';
-import { withDate, InlineDate } from './plugins/date';
-import { CustomElement } from '..';
-import isUrl from 'is-url';
-import { InlineRefLink } from './plugins/reflink';
-import { TextWithComments } from './element-leaf/TextWithComments';
 
 export interface TextProps {
     /** read only */
@@ -739,6 +738,9 @@ const EditorElement = (props: any) => {
 
     switch (element.type) {
         case 'link': {
+            if (element.linkType === 'doubleLink') {
+                return <DoubleLinkComponent {...props} editor={editor} />;
+            }
             return (
                 <LinkComponent
                     {...props}
@@ -802,7 +804,7 @@ const EditorLeaf = ({ attributes, children, leaf }: any) => {
                         backgroundColor: '#F2F5F9',
                         borderRadius: '5px',
                         color: '#3A4C5C',
-                        padding: '3px 8px',
+                        padding: '1px 8px',
                         margin: '0 2px',
                     }}
                 >
@@ -837,6 +839,14 @@ const EditorLeaf = ({ attributes, children, leaf }: any) => {
                 textDecoration: 'line-through',
             };
         }
+    }
+
+    if (leaf.doubleLinkSearch) {
+        customChildren = (
+            <span style={{ backgroundColor: '#eee', borderRadius: '4px' }}>
+                {customChildren}
+            </span>
+        );
     }
 
     customChildren = (

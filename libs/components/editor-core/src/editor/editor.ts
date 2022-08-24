@@ -1,17 +1,15 @@
 /* eslint-disable max-lines */
-import HotKeys from 'hotkeys-js';
-
 import type { PatchNode } from '@toeverything/components/ui';
+import { Commands } from '@toeverything/datasource/commands';
 import type {
     BlockFlavors,
     ReturnEditorBlock,
     UpdateEditorBlock,
 } from '@toeverything/datasource/db-service';
 import { services } from '@toeverything/datasource/db-service';
-
-import { Commands } from '@toeverything/datasource/commands';
 import { domToRect, last, Point, sleep } from '@toeverything/utils';
 import assert from 'assert';
+import HotKeys from 'hotkeys-js';
 import type { WorkspaceAndBlockId } from './block';
 import { AsyncBlock } from './block';
 import { BlockHelper } from './block/block-helper';
@@ -295,7 +293,7 @@ export class Editor implements Virgo {
         return await blockView.onCreate(block);
     }
 
-    private async getBlock({
+    public async getBlock({
         workspace,
         id,
     }: WorkspaceAndBlockId): Promise<AsyncBlock | null> {

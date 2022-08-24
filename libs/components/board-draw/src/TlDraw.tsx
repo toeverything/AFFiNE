@@ -13,6 +13,8 @@ import {
     TDStatus,
 } from '@toeverything/components/board-types';
 import { styled } from '@toeverything/components/ui';
+// import { FocusButton } from '~components/FocusButton';
+import { usePageClientWidth } from '@toeverything/datasource/state';
 import {
     memo,
     useEffect,
@@ -22,22 +24,20 @@ import {
     useState,
     type RefObject,
 } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
+import { CommandPanel } from './components/command-panel';
+// import { TopPanel } from '~components/TopPanel';
+import { ContextMenu } from './components/context-menu';
+import { ErrorFallback } from './components/error-fallback';
+import { Loading } from './components/loading';
 import { ToolsPanel } from './components/tools-panel';
+import { ZoomBar } from './components/zoom-bar';
 import {
     TldrawContext,
     useKeyboardShortcuts,
     useStylesheet,
     useTldrawApp,
 } from './hooks';
-// import { TopPanel } from '~components/TopPanel';
-import { ContextMenu } from './components/context-menu';
-// import { FocusButton } from '~components/FocusButton';
-import { usePageClientWidth } from '@toeverything/datasource/state';
-import { ErrorBoundary } from 'react-error-boundary';
-import { CommandPanel } from './components/command-panel';
-import { ErrorFallback } from './components/error-fallback';
-import { Loading } from './components/loading';
-import { ZoomBar } from './components/zoom-bar';
 
 export interface TldrawProps extends TldrawAppCtorProps {
     /**
@@ -295,7 +295,6 @@ const InnerTldraw = memo(function InnerTldraw({
     const pageState = document.pageStates[page.id];
     const assets = document.assets;
     const { selectedIds } = pageState;
-
     const isHideBoundsShape =
         selectedIds.length === 1 &&
         page.shapes[selectedIds[0]] &&
@@ -363,7 +362,7 @@ const InnerTldraw = memo(function InnerTldraw({
 
     // Hide bounds when not using the select tool, or when the only selected shape has handles
     const hideBounds =
-        (isInSession && app.session?.constructor.name !== 'BrushSession') ||
+        (isInSession && app.session?.constructor.name === 'BrushSession') ||
         !isSelecting ||
         isHideBoundsShape ||
         !!pageState.editingId;

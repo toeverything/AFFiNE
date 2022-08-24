@@ -56,7 +56,8 @@ const SelectableContainer = styled('div')<{ selected?: boolean }>(
         borderRadius: '5px',
         overflow: 'hidden',
         margin: '5px',
-        padding: '3px',
+        width: '24px',
+        height: '24px',
         cursor: 'pointer',
         boxSizing: 'border-box',
         '&:hover': {

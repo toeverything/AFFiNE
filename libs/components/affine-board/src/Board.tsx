@@ -22,7 +22,6 @@ const AffineBoard = ({
     editor,
 }: AffineBoardProps & { editor: BlockEditor }) => {
     const [app, set_app] = useState<TldrawApp>();
-
     const [document] = useState(() => {
         return {
             ...deepCopy(TldrawApp.default_document),
@@ -49,7 +48,7 @@ const AffineBoard = ({
         };
     });
 
-    const shapes = useShapes(workspace, rootBlockId);
+    const { shapes } = useShapes(workspace, rootBlockId);
     useEffect(() => {
         if (app) {
             app.replacePageContent(shapes || {}, {}, {});
@@ -66,6 +65,9 @@ const AffineBoard = ({
                 onMount(app) {
                     set_app(app);
                 },
+                async onPaste(e, data) {
+                    console.log('e,data: ', e, data);
+                },
                 async onCopy(e, groupIds) {
                     const clip =
                         await editor.clipboard.clipboardUtils.getClipDataOfBlocksById(
@@ -77,7 +79,7 @@ const AffineBoard = ({
                         clip.getData()
                     );
                 },
-                onChangePage(app, shapes, bindings, assets) {
+                async onChangePage(app, shapes, bindings, assets) {
                     Promise.all(
                         Object.entries(shapes).map(async ([id, shape]) => {
                             if (shape === undefined) {
@@ -106,7 +108,7 @@ const AffineBoard = ({
                                         });
                                 }
                                 shape.affineId = block.id;
-                                return services.api.editorBlock.update({
+                                return await services.api.editorBlock.update({
                                     workspace: shape.workspace,
                                     id: block.id,
                                     properties: {

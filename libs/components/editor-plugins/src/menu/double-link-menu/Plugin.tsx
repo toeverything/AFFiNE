@@ -1,12 +1,11 @@
 import { StrictMode } from 'react';
-
 import { BasePlugin } from '../../base-plugin';
 import { PluginRenderRoot } from '../../utils';
-import { ReferenceMenu } from './ReferenceMenu';
+import { DoubleLinkMenu } from './DoubleLinkMenu';
 
 const PLUGIN_NAME = 'reference-menu';
 
-export class ReferenceMenuPlugin extends BasePlugin {
+export class DoubleLinkMenuPlugin extends BasePlugin {
     private _root?: PluginRenderRoot;
 
     public static override get pluginName(): string {
@@ -22,7 +21,7 @@ export class ReferenceMenuPlugin extends BasePlugin {
 
         this._root?.render(
             <StrictMode>
-                <ReferenceMenu editor={this.editor} hooks={this.hooks} />
+                <DoubleLinkMenu editor={this.editor} hooks={this.hooks} />
             </StrictMode>
         );
     }

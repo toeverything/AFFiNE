@@ -13,7 +13,7 @@ import { Block2HtmlProps } from '../../utils/commonBlockClip';
 
 export class FileBlock extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     type = Protocol.Block.Type.file;
     View = FileView;
     override async block2html({ block }: Block2HtmlProps) {

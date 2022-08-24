@@ -11,7 +11,7 @@ import {
     Transforms,
 } from 'slate';
 import { ReactEditor } from 'slate-react';
-
+import type { CustomElement } from '..';
 import {
     fontBgColorPalette,
     fontColorPalette,
@@ -21,6 +21,7 @@ import {
 import {
     getCommentsIdsOnTextNode,
     getEditorMarkForCommentId,
+    getRandomString,
     MARKDOWN_STYLE_MAP,
     MatchRes,
 } from './utils';
@@ -247,7 +248,11 @@ Editor.insertText = function (
         const { path, offset } = at;
         if (text.length > 0) {
             const marks = Editor.marks(editor);
-            if (text === '\u0020' && Object.keys(marks).length) {
+            if (
+                text === '\u0020' &&
+                Object.keys(marks).length &&
+                !(marks as any).doubleLinkSearch
+            ) {
                 // If the input is a space and the mark has content, remove the mark
                 const newPath = [path[0], path[1] + 1];
                 const newPoint = {
@@ -594,8 +599,13 @@ class SlateUtils {
 
         const fragmentChildren = firstFragment.children;
 
-        const textChildren: Text[] = [];
-        for (const child of fragmentChildren) {
+        const textChildren: CustomElement[] = [];
+        for (let i = 0; i < fragmentChildren.length; i++) {
+            const child = fragmentChildren[i];
+            if ('type' in child && child.type === 'link') {
+                i !== fragmentChildren.length - 1 && textChildren.push(child);
+                continue;
+            }
             if (!('text' in child)) {
                 console.error('Debug information:', point1, point2, fragment);
                 throw new Error('Fragment exists nested!');
@@ -1119,32 +1129,128 @@ class SlateUtils {
         });
     }
 
-    public insertReference(reference: string) {
-        try {
-            // Transforms.setSelection(this.editor, this.getEndSelection());
-            const { anchor, focus } = this.getEndSelection();
-            Transforms.insertNodes(
+    public setDoubleLinkSearchSlash(point: Point) {
+        const str = Editor.string(this.editor, {
+            anchor: this.getStart(),
+            focus: point,
+        });
+        if (str.endsWith('[[')) {
+            Transforms.select(this.editor, {
+                anchor: point,
+                focus: Object.assign({}, point, {
+                    offset: point.offset - 2,
+                }),
+            });
+            Editor.addMark(this.editor, 'doubleLinkSearch', true);
+            Transforms.select(this.editor, {
+                anchor: this.editor.selection.anchor,
+                focus: this.editor.selection.anchor,
+            });
+        }
+    }
+
+    public getDoubleLinkSearchSlashText() {
+        const nodes = Editor.nodes(this.editor, {
+            at: [],
+            //@ts-ignore
+            match: node => !!node.doubleLinkSearch,
+        });
+        const searchNode = nodes.next().value;
+        if (searchNode && (searchNode[0] as { text?: string }).text) {
+            return (searchNode[0] as { text?: string }).text;
+        }
+        return '';
+    }
+
+    public setSelectDoubleLinkSearchSlash() {
+        const nodes = Editor.nodes(this.editor, {
+            at: [],
+            //@ts-ignore
+            match: node => !!node.doubleLinkSearch,
+        });
+        const searchNode = nodes.next().value;
+        if (searchNode) {
+            const text = (searchNode[0] as { text?: string })?.text || '';
+            const path = searchNode[1];
+            const anchor = Editor.before(
                 this.editor,
                 {
-                    type: 'reflink',
-                    reference,
-                    children: [],
+                    path,
+                    offset: 1,
                 },
-                { at: focus || anchor }
+                {
+                    unit: 'offset',
+                }
             );
-
-            // requestAnimationFrame(() => {
-            //     console.log(this.editor.selection, this.editor.insertNode);
-            //     this.editor.insertNode({
-            //         type: 'reflink',
-            //         reference,
-            //         children: [{ text: '' }]
-            //     });
-            //     // Transforms.select();
-            // });
-        } catch (e) {
-            console.log(e);
+            const focus = Editor.after(
+                this.editor,
+                {
+                    path,
+                    offset: text.length - 1,
+                },
+                {
+                    unit: 'offset',
+                }
+            );
+            Transforms.select(this.editor, { anchor, focus });
         }
+    }
+
+    public removeDoubleLinkSearchSlash(isRemoveSlash?: boolean) {
+        if (isRemoveSlash) {
+            const nodes = Editor.nodes(this.editor, {
+                at: [],
+                //@ts-ignore
+                match: node => !!node.doubleLinkSearch,
+            });
+            const searchNode = nodes.next().value;
+            if (searchNode) {
+                const text = (searchNode[0] as { text?: string })?.text || '';
+                if (text.startsWith('[[')) {
+                    const path = searchNode[1];
+                    Transforms.delete(this.editor, {
+                        at: {
+                            path,
+                            offset: 0,
+                        },
+                        distance: text.length,
+                        unit: 'character',
+                    });
+                }
+            }
+        }
+        Transforms.setNodes(
+            this.editor,
+            { doubleLinkSearch: null } as Partial<SlateNode>,
+            {
+                at: [],
+                match: node => {
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    //@ts-ignore
+                    return !!node.doubleLinkSearch;
+                },
+            }
+        );
+        this.editor.removeMark('doubleLinkSearch');
+    }
+
+    public insertDoubleLink(
+        workspaceId: string,
+        linkBlockId: string,
+        children: any[]
+    ) {
+        const link = {
+            type: 'link',
+            linkType: 'doubleLink',
+            workspaceId: workspaceId,
+            blockId: linkBlockId,
+            children: children,
+            id: getRandomString('link'),
+        };
+        Transforms.insertNodes(this.editor, link);
+        requestAnimationFrame(() => {
+            ReactEditor.focus(this.editor);
+        });
     }
 
     /** todo  improve if selection is collapsed  */

@@ -1,10 +1,11 @@
 import { Map as YMap, UndoManager } from 'yjs';
 
-import { HistoryCallback, HistoryManager } from '../../adapter';
+import { HistoryCallback, HistoryManager } from './types';
 
 type StackItem = UndoManager['undoStack'][0];
 
 export class YjsHistoryManager implements HistoryManager {
+    // @ts-ignore
     private readonly _blocks: YMap<any>;
     private readonly _historyManager: UndoManager;
     private readonly _pushListeners: Map<string, HistoryCallback<any>>;
@@ -56,7 +57,7 @@ export class YjsHistoryManager implements HistoryManager {
     }
 
     break(): void {
-        // this.#history_manager.
+        // this._historyManager.
     }
 
     undo<T = unknown>(): Map<string, T> | undefined {
