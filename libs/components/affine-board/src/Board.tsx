@@ -123,31 +123,6 @@ const AffineBoard = ({
                             }
                         })
                     );
-
-                    const pageBindingsString = (
-                        await services.api.editorBlock.get({
-                            workspace: workspace,
-                            ids: [rootBlockId],
-                        })
-                    )?.[0].properties.bindings?.value;
-                    const pageBindings = JSON.parse(pageBindingsString ?? '{}');
-                    Object.keys(bindings).forEach(bindingsKey => {
-                        if (!bindings[bindingsKey]) {
-                            delete pageBindings[bindingsKey];
-                        } else {
-                            Object.assign(pageBindings, bindings);
-                        }
-                    });
-
-                    await services.api.editorBlock.update({
-                        workspace: workspace,
-                        id: rootBlockId,
-                        properties: {
-                            bindings: {
-                                value: JSON.stringify(pageBindings),
-                            },
-                        },
-                    });
                 },
             }}
         />
