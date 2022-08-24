@@ -97,14 +97,17 @@ export class AbstractBlock<
     }
 
     public on(
-        event: 'content' | 'children' | 'parent',
+        event: 'cascade' | 'content' | 'children' | 'parent',
         name: string,
         callback: BlockListener
     ) {
         this._listeners[event]?.set(name, callback);
     }
 
-    public off(event: 'content' | 'children' | 'parent', name: string) {
+    public off(
+        event: 'cascade' | 'content' | 'children' | 'parent',
+        name: string
+    ) {
         this._listeners[event]?.delete(name);
     }
 
