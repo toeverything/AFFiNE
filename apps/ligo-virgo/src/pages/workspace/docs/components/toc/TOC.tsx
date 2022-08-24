@@ -119,7 +119,7 @@ const renderTOCContent = tocDataSource => {
     );
 };
 
-export const Toc = (props: Props) => {
+export const TOC = (props: Props) => {
     const { editor } = props;
     const { page_id } = useParams();
     const [tocDataSource, setTocDataSource] = useState<TocType[]>([]);
