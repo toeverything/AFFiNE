@@ -111,18 +111,6 @@ const AffineBoard = ({
                                         });
                                 }
                                 shape.affineId = block.id;
-                                Object.keys(bindings).forEach(bilingKey => {
-                                    if (
-                                        bindings[bilingKey]?.fromId === shape.id
-                                    ) {
-                                        bindings[bilingKey].fromId = block.id;
-                                    }
-                                    if (
-                                        bindings[bilingKey]?.toId === shape.id
-                                    ) {
-                                        bindings[bilingKey].toId = block.id;
-                                    }
-                                });
                                 return await services.api.editorBlock.update({
                                     workspace: shape.workspace,
                                     id: block.id,
