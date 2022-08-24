@@ -116,7 +116,7 @@ export class BlockHelper {
                 : blockOrBlockId;
         const blockView = this._editor.getView(block.type);
 
-        return blockView.activatable;
+        return blockView.editable;
     }
 
     public async getFlatBlocksUnderParent(
@@ -198,7 +198,7 @@ export class BlockHelper {
     public async getBlockPropertiesBySelectInfo(selectBlockInfo: SelectBlock) {
         const block = await this._editor.getBlockById(selectBlockInfo.blockId);
         const blockView = this._editor.getView(block.type);
-        if (blockView.activatable) {
+        if (blockView.editable) {
             return this.getEditableBlockPropertiesBySelectInfo(
                 block,
                 selectBlockInfo
