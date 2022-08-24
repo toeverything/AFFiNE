@@ -175,7 +175,7 @@ const WorkspaceSidebar = styled('div')(({ theme }) => ({
     width: 300,
     minWidth: 300,
     borderRadius: '0px 10px 10px 0px',
-    boxShadow: theme.affine.shadows.shadow1,
+    boxShadow: theme.affine.shadows.shadow2,
     backgroundColor: '#FFFFFF',
     transitionProperty: 'left',
     transitionDuration: '0.35s',

@@ -1,6 +1,6 @@
 import {
     KanbanCard,
-    RenderBlock,
+    useBlockRender,
     useEditor,
     useKanban,
 } from '@toeverything/components/editor-core';
@@ -94,6 +94,7 @@ export const CardItem = ({
     const [editable, setEditable] = useState(false);
     const showKanbanRefPageFlag = useFlag('ShowKanbanRefPage', false);
     const { editor } = useEditor();
+    const { BlockRender } = useBlockRender();
 
     const onAddItem = async () => {
         setEditable(true);
@@ -114,7 +115,7 @@ export const CardItem = ({
         <MuiClickAwayListener onClickAway={() => setEditable(false)}>
             <CardContainer>
                 <CardContent>
-                    <RenderBlock blockId={id} />
+                    <BlockRender blockId={id} />
                 </CardContent>
                 {showKanbanRefPageFlag && !editable && (
                     <Overlay onClick={onClickCard}>

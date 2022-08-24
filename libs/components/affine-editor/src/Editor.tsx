@@ -1,7 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 import {
-    RenderBlock,
     RenderRoot,
     type BlockEditor,
 } from '@toeverything/components/editor-core';
@@ -88,9 +87,7 @@ export const AffineEditor = forwardRef<BlockEditor, AffineEditorProps>(
                 editor={editor}
                 editorElement={AffineEditor as any}
                 scrollBlank={scrollBlank}
-            >
-                <RenderBlock blockId={editor.getRootBlockId()} />
-            </RenderRoot>
+            />
         );
     }
 );

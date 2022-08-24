@@ -1,10 +1,3 @@
-import {
-    BlockPendantProvider,
-    CreateView,
-    RenderBlock,
-    useCurrentView,
-    useOnSelect,
-} from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import type {
     ComponentPropsWithoutRef,
@@ -12,9 +5,10 @@ import type {
     CSSProperties,
     ReactElement,
 } from 'react';
-import { forwardRef, useState } from 'react';
-import { SCENE_CONFIG } from '../blocks/group/config';
-import { BlockContainer } from '../components/BlockContainer';
+import { forwardRef } from 'react';
+import { CreateView } from '../editor';
+import { useBlockRender } from './Context';
+import { NullBlockRender } from './RenderBlock';
 
 type WithChildrenConfig = {
     indent: CSSProperties['marginLeft'];
@@ -41,45 +35,6 @@ const TreeView = forwardRef<
     );
 });
 
-interface ChildrenViewProp {
-    childrenIds: string[];
-    handleCollapse: () => void;
-    indent?: string | number;
-}
-
-const ChildrenView = ({
-    childrenIds,
-    handleCollapse,
-    indent,
-}: ChildrenViewProp) => {
-    const [currentView] = useCurrentView();
-    const isKanbanScene = currentView.type === SCENE_CONFIG.KANBAN;
-
-    return (
-        <Children style={{ ...(!isKanbanScene && { marginLeft: indent }) }}>
-            {childrenIds.map((childId, idx) => {
-                if (isKanbanScene) {
-                    return (
-                        <StyledBorder key={childId}>
-                            <RenderBlock blockId={childId} />
-                        </StyledBorder>
-                    );
-                }
-
-                return (
-                    <TreeView
-                        key={childId}
-                        lastItem={idx === childrenIds.length - 1}
-                        onClick={handleCollapse}
-                    >
-                        <RenderBlock key={childId} blockId={childId} />
-                    </TreeView>
-                );
-            })}
-        </Children>
-    );
-};
-
 const CollapsedNode = forwardRef<
     HTMLDivElement,
     ComponentPropsWithoutRef<'div'>
@@ -104,15 +59,15 @@ export const withTreeViewChildren = (
     };
 
     return (props: CreateView) => {
-        const { block, editor } = props;
+        const { block } = props;
+        const { BlockRender } = useBlockRender();
         const collapsed = block.getProperty('collapsed')?.value;
         const childrenIds = block.childrenIds;
-        const showChildren = !collapsed && childrenIds.length > 0;
+        const showChildren =
+            !collapsed &&
+            childrenIds.length > 0 &&
+            BlockRender !== NullBlockRender;
 
-        const [isSelect, setIsSelect] = useState<boolean>(false);
-        useOnSelect(block.id, (isSelect: boolean) => {
-            setIsSelect(isSelect);
-        });
         const handleCollapse = () => {
             block.setProperty('collapsed', { value: true });
         };
@@ -122,15 +77,8 @@ export const withTreeViewChildren = (
         };
 
         return (
-            <BlockContainer
-                editor={props.editor}
-                block={block}
-                selected={isSelect}
-                className={Wrapper.toString()}
-            >
-                <BlockPendantProvider block={block}>
-                    <div>{creator(props)}</div>
-                </BlockPendantProvider>
+            <>
+                {creator(props)}
 
                 {collapsed && (
                     <CollapsedNode
@@ -138,21 +86,23 @@ export const withTreeViewChildren = (
                         style={{ marginLeft: config.indent }}
                     />
                 )}
-                {showChildren && (
-                    <ChildrenView
-                        childrenIds={childrenIds}
-                        handleCollapse={handleCollapse}
-                        indent={config.indent}
-                    />
-                )}
-            </BlockContainer>
+                {showChildren &&
+                    childrenIds.map((childId, idx) => {
+                        return (
+                            <TreeView
+                                key={childId}
+                                lastItem={idx === childrenIds.length - 1}
+                                onClick={handleCollapse}
+                                style={{ marginLeft: config.indent }}
+                            >
+                                <BlockRender key={childId} blockId={childId} />
+                            </TreeView>
+                        );
+                    })}
+            </>
         );
     };
 };
-
-const Wrapper = styled('div')({ display: 'flex', flexDirection: 'column' });
-
-const Children = Wrapper;
 
 const TREE_COLOR = '#D5DFE6';
 // adjust left and right margins of the the tree line
@@ -163,6 +113,7 @@ const TREE_LINE_WIDTH = '12px';
 
 const TreeWrapper = styled('div')({
     position: 'relative',
+    display: 'flex',
 });
 
 const StyledTreeView = styled('div')({
@@ -227,10 +178,4 @@ const LastItemRadius = styled('div')({
     borderRight: 'none',
     borderRadius: '0 0 0 3px',
     pointerEvents: 'none',
-});
-
-const StyledBorder = styled('div')({
-    border: '1px solid #E0E6EB',
-    borderRadius: '5px',
-    margin: '4px',
 });

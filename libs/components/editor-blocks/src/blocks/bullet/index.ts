@@ -1,18 +1,16 @@
 import {
+    DefaultColumnsValue,
+    Protocol,
+} from '@toeverything/datasource/db-service';
+import {
     AsyncBlock,
     BaseView,
-    CreateView,
+    getTextHtml,
     getTextProperties,
     SelectBlock,
-    getTextHtml,
 } from '@toeverything/framework/virgo';
-import {
-    Protocol,
-    DefaultColumnsValue,
-} from '@toeverything/datasource/db-service';
 // import { withTreeViewChildren } from '../../utils/with-tree-view-children';
-import { defaultBulletProps, BulletView } from './BulletView';
-import { IndentWrapper } from '../../components/IndentWrapper';
+import { BulletView, defaultBulletProps } from './BulletView';
 
 export class BulletBlock extends BaseView {
     public type = Protocol.Block.Type.bullet;
