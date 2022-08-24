@@ -1,7 +1,12 @@
 import { styled } from '@toeverything/components/ui';
-import type { PropsWithChildren } from 'react';
-import { useRef } from 'react';
-import type { AsyncBlock } from '../editor';
+import { containerFlavor } from '@toeverything/datasource/db-service';
+import {
+    useCallback,
+    useRef,
+    type MouseEvent,
+    type PropsWithChildren,
+} from 'react';
+import type { AsyncBlock, BlockEditor } from '../editor';
 import { getRecastItemValue, useRecastBlockMeta } from '../recast-block';
 import { PendantPopover } from './pendant-popover';
 import { PendantRender } from './pendant-render';
@@ -9,10 +14,12 @@ import { PendantRender } from './pendant-render';
  * @deprecated
  */
 interface BlockTagProps {
+    editor: BlockEditor;
     block: AsyncBlock;
 }
 
 export const BlockPendantProvider = ({
+    editor,
     block,
     children,
 }: PropsWithChildren<BlockTagProps>) => {
@@ -23,8 +30,23 @@ export const BlockPendantProvider = ({
     const showTriggerLine =
         properties.filter(property => getValue(property.id)).length === 0;
 
+    const onClick = useCallback(
+        (e: MouseEvent<HTMLDivElement>) => {
+            if (containerFlavor.includes(block.type)) {
+                return;
+            }
+            if (e.target === e.currentTarget) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const middle = (rect.left + rect.right) / 2;
+                const position = e.clientX < middle ? 'start' : 'end';
+                editor.selectionManager.activeNodeByNodeId(block.id, position);
+            }
+        },
+        [editor, block]
+    );
+
     return (
-        <Container>
+        <Container onClick={onClick}>
             {children}
 
             {showTriggerLine ? (

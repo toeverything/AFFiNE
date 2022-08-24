@@ -132,7 +132,7 @@ export const TodoView = ({ block, editor }: CreateView) => {
 
     return (
         <BlockContainer editor={editor} block={block} selected={isSelect}>
-            <BlockPendantProvider block={block}>
+            <BlockPendantProvider editor={editor} block={block}>
                 <TodoBlock>
                     <div className={'checkBoxContainer'}>
                         <CheckBox

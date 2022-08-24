@@ -242,7 +242,7 @@ export const TextView = ({
             selected={isSelect}
             className={containerClassName}
         >
-            <BlockPendantProvider block={block}>
+            <BlockPendantProvider editor={editor} block={block}>
                 <TextBlock
                     block={block}
                     type={block.type}

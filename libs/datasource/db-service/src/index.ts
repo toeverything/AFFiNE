@@ -42,6 +42,7 @@ export {
     type TemplateMeta,
 } from './services/editor-block/templates';
 export type { Template } from './services/editor-block/templates/types';
+export { containerFlavor } from './services/editor-block/types';
 export { DEFAULT_COLUMN_KEYS } from './services/editor-block/utils/column/default-config';
 
 const api = new Proxy<DbServicesMap>({} as DbServicesMap, {

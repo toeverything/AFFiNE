@@ -4,6 +4,15 @@ import { Column, DefaultColumnsValue } from './utils/column';
 export type BlockFlavors = typeof Protocol.Block.Type;
 export type BlockFlavorKeys = keyof typeof Protocol.Block.Type;
 
+export const containerFlavor: BlockFlavorKeys[] = [
+    Protocol.Block.Type.workspace,
+    Protocol.Block.Type.page,
+    Protocol.Block.Type.group,
+    Protocol.Block.Type.title,
+    Protocol.Block.Type.grid,
+    Protocol.Block.Type.gridItem,
+];
+
 export interface CreateEditorBlock {
     workspace: string;
     type: keyof BlockFlavors;

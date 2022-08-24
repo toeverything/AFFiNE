@@ -1,14 +1,14 @@
-import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
-import ShortTextIcon from '@mui/icons-material/ShortText';
-import TitleIcon from '@mui/icons-material/Title';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
+import ListIcon from '@mui/icons-material/List';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import ShortTextIcon from '@mui/icons-material/ShortText';
+import TitleIcon from '@mui/icons-material/Title';
 import {
     CodeBlockInlineIcon,
     PagesIcon,
 } from '@toeverything/components/common';
-import ListIcon from '@mui/icons-material/List';
+import { Protocol } from '@toeverything/datasource/db-service';
 export const MENU_WIDTH = 14;
 export const pageConvertIconSize = 24;
 type MenuItem = {
@@ -93,12 +93,3 @@ const textTypeBlocks: MenuItem[] = [
 export const addMenuList = [...textTypeBlocks].filter(v => v);
 
 export const textConvertMenuList = textTypeBlocks;
-
-export const ignoreBlockTypes: BlockFlavorKeys[] = [
-    Protocol.Block.Type.workspace,
-    Protocol.Block.Type.page,
-    Protocol.Block.Type.group,
-    Protocol.Block.Type.title,
-    Protocol.Block.Type.grid,
-    Protocol.Block.Type.gridItem,
-];

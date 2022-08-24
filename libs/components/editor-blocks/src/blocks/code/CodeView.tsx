@@ -170,7 +170,7 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
         editor.selectionManager.activePreviousNode(block.id, 'start');
     };
     return (
-        <BlockPendantProvider block={block}>
+        <BlockPendantProvider editor={editor} block={block}>
             <CodeBlock
                 onKeyDown={e => {
                     e.stopPropagation();
@@ -198,7 +198,8 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
                     </div>
                     <div>
                         <div className="copy-block" onClick={copyCode}>
-                            <DuplicateIcon></DuplicateIcon>Copy
+                            <DuplicateIcon />
+                            Copy
                         </div>
                     </div>
                 </div>

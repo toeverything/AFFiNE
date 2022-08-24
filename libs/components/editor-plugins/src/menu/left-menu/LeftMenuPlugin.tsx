@@ -1,3 +1,4 @@
+import { containerFlavor } from '@toeverything/datasource/db-service';
 import { BlockDropPlacement, HookType } from '@toeverything/framework/virgo';
 import { domToRect, last, Point } from '@toeverything/utils';
 import { StrictMode } from 'react';
@@ -9,7 +10,6 @@ import {
     LeftMenuDraggable,
     LineInfoSubject,
 } from './LeftMenuDraggable';
-import { ignoreBlockTypes } from './menu-config';
 const DRAG_THROTTLE_DELAY = 60;
 export class LeftMenuPlugin extends BasePlugin {
     private _mousedown?: boolean;
@@ -104,7 +104,7 @@ export class LeftMenuPlugin extends BasePlugin {
         const block = await this.editor.getBlockByPoint(
             new Point(event.clientX, event.clientY)
         );
-        if (block == null || ignoreBlockTypes.includes(block.type)) return;
+        if (block == null || containerFlavor.includes(block.type)) return;
         const { direction, block: targetBlock } =
             await this.editor.dragDropManager.checkBlockDragTypes(
                 event,
@@ -143,7 +143,7 @@ export class LeftMenuPlugin extends BasePlugin {
         const node = await this.editor.getBlockByPoint(
             new Point(event.clientX, event.clientY)
         );
-        if (node == null || ignoreBlockTypes.includes(node.type)) {
+        if (node == null || containerFlavor.includes(node.type)) {
             return;
         }
         if (node.dom) {
