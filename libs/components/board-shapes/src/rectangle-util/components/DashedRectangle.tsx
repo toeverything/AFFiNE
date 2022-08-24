@@ -36,7 +36,6 @@ export const DashedRectangle = React.memo(function DashedRectangle({
     ];
 
     const paths = strokes.map(([start, end, length], i) => {
-        console.log('start, end: ', start, end);
         const { strokeDasharray, strokeDashoffset } = Utils.getPerfectDashProps(
             length,
             strokeWidth * 1.618,

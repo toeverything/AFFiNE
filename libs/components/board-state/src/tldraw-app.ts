@@ -2899,6 +2899,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
      * @param center The point to zoom toward.
      */
     zoomBy = Utils.throttle((delta: number, center?: number[]): this => {
+        console.log(123123);
         const { zoom } = this.camera;
         const nextZoom = TLDR.get_camera_zoom(zoom - delta * zoom);
         return this.zoomTo(nextZoom, center);
