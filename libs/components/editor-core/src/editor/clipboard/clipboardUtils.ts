@@ -147,14 +147,14 @@ export class ClipboardUtils {
         ).join('');
     }
 
-    async convertHTMLString2Blocks(html: string) {
+    async convertHTMLString2Blocks(html: string): Promise<ClipBlockInfo[]> {
         const htmlEl = document.createElement('html');
         htmlEl.innerHTML = html;
         htmlEl.querySelector('head')?.remove();
 
-        return this.convertHtml2Block(htmlEl);
+        return this.convertHtml2Blocks(htmlEl);
     }
-    async convertHtml2Block(element: Element): Promise<ClipBlockInfo[]> {
+    async convertHtml2Blocks(element: Element): Promise<ClipBlockInfo[]> {
         const editableViews = this._editor.getEditableViews();
         // 如果block能够捕捉htmlElement则返回block的html2block
         const [clipBlockInfos] = (
@@ -174,7 +174,7 @@ export class ClipboardUtils {
         return (
             await Promise.all(
                 Array.from(element.children).map(async childElement => {
-                    const clipBlockInfos = await this.convertHtml2Block(
+                    const clipBlockInfos = await this.convertHtml2Blocks(
                         childElement
                     );
 

@@ -19,13 +19,10 @@ type TextValueItem = {
 export class Paste {
     private _editor: Editor;
     private _markdownParse: MarkdownParser;
-    private readonly _supportMarkdownPaste: boolean = true;
     private _utils: ClipboardUtils;
-    constructor(editor: Editor, supportMarkdownPaste?: boolean) {
+    constructor(editor: Editor) {
         this._markdownParse = new MarkdownParser();
         this._editor = editor;
-        this._supportMarkdownPaste =
-            supportMarkdownPaste ?? this._supportMarkdownPaste;
 
         this._utils = new ClipboardUtils(editor);
         this.handlePaste = this.handlePaste.bind(this);
@@ -37,17 +34,21 @@ export class Paste {
         OFFICE_CLIPBOARD_MIMETYPE.TEXT,
     ];
 
-    public handlePaste(e: ClipboardEvent) {
+    public async handlePaste(e: ClipboardEvent) {
         e.stopPropagation();
 
-        const clipboardData = e.clipboardData;
+        const blocks = await this.clipboardEvent2Blocks(e);
+        await this._insertBlocks(blocks);
+    }
 
+    public async clipboardEvent2Blocks(e: ClipboardEvent) {
+        const clipboardData = e.clipboardData;
         const isPureFile = Paste._isPureFileInClipboard(clipboardData);
+
         if (isPureFile) {
-            this._pasteFile(clipboardData);
-        } else {
-            this._pasteContent(clipboardData);
+            return this._file2Blocks(clipboardData);
         }
+        return this._clipboardData2Blocks(clipboardData);
     }
     // Get the most needed clipboard data based on `_optimalMimeTypes` order
     public getOptimalClip(clipboardData: ClipboardEvent['clipboardData']) {
@@ -66,43 +67,41 @@ export class Paste {
         return null;
     }
 
-    private _pasteContent(clipboardData: ClipboardEvent['clipboardData']) {
+    private async _clipboardData2Blocks(
+        clipboardData: ClipboardEvent['clipboardData']
+    ): Promise<ClipBlockInfo[]> {
         const optimalClip = this.getOptimalClip(clipboardData);
         if (
             optimalClip?.type ===
             OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED
         ) {
-            return this._firePasteEditAction(optimalClip.data);
+            const clipInfo: InnerClipInfo = JSON.parse(optimalClip.data);
+            return clipInfo.data;
         }
 
         const textClipData = escape(
             clipboardData.getData(OFFICE_CLIPBOARD_MIMETYPE.TEXT)
         );
+
         const shouldConvertMarkdown =
-            this._supportMarkdownPaste &&
             this._markdownParse.checkIfTextContainsMd(textClipData);
 
         if (
             optimalClip?.type === OFFICE_CLIPBOARD_MIMETYPE.HTML &&
             !shouldConvertMarkdown
         ) {
-            return this._pasteHtml(optimalClip.data);
+            return this._utils.convertHTMLString2Blocks(optimalClip.data);
         }
 
         if (shouldConvertMarkdown) {
             const md2html = marked.parse(textClipData);
-            return this._pasteHtml(md2html);
+            return this._utils.convertHTMLString2Blocks(md2html);
         }
 
-        return this._pasteText(textClipData);
+        return this._utils.textToBlock(textClipData);
     }
 
-    private async _firePasteEditAction(clipboardData: string) {
-        const clipInfo: InnerClipInfo = JSON.parse(clipboardData);
-        clipInfo && this._insertBlocks(clipInfo.data);
-    }
-
-    private async _pasteFile(clipboardData: any) {
+    private async _file2Blocks(clipboardData: any): Promise<ClipBlockInfo[]> {
         const file = Paste._getImageFile(clipboardData);
         if (file) {
             const result = await services.api.file.create({
@@ -121,8 +120,9 @@ export class Paste {
                 },
                 children: [] as ClipBlockInfo[],
             };
-            await this._insertBlocks([blockInfo]);
+            return [blockInfo];
         }
+        return [];
     }
     private static _isPureFileInClipboard(clipboardData: DataTransfer) {
         const types = clipboardData.types;
@@ -421,16 +421,6 @@ export class Paste {
                 return block;
             })
         );
-    }
-
-    private async _pasteHtml(clipData: string) {
-        const block2 = await this._utils.convertHTMLString2Blocks(clipData);
-        await this._insertBlocks(block2);
-    }
-
-    private async _pasteText(clipData: string) {
-        const blocks = this._utils.textToBlock(clipData);
-        await this._insertBlocks(blocks);
     }
 
     private static _getImageFile(clipboardData: any) {

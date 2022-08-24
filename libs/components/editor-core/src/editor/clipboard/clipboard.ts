@@ -10,7 +10,6 @@ export class Clipboard {
     private _clipboardEventDispatcher: ClipboardEventDispatcher;
     private _copy: Copy;
     private _paste: Paste;
-    private readonly _supportMarkdownPaste = true;
     public clipboardUtils: ClipboardUtils;
     private _clipboardTarget: HTMLElement;
 
@@ -19,7 +18,7 @@ export class Clipboard {
         this._clipboardTarget = clipboardTarget;
         this._copy = new Copy(editor);
 
-        this._paste = new Paste(editor, this._supportMarkdownPaste);
+        this._paste = new Paste(editor);
 
         this._clipboardEventDispatcher = new ClipboardEventDispatcher(
             editor,
@@ -49,7 +48,9 @@ export class Clipboard {
         return this._clipboardTarget;
     }
 
-    setEditorContainer(container: HTMLElement) {}
+    public clipboardEvent2Blocks(e: ClipboardEvent) {
+        return this._paste.clipboardEvent2Blocks(e);
+    }
 
     public dispose() {
         this._clipboardEventDispatcher.dispose(this.clipboardTarget);
