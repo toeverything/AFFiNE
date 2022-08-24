@@ -361,11 +361,11 @@ const InnerTldraw = memo(function InnerTldraw({
     const isInSession = app.session !== undefined;
 
     // Hide bounds when not using the select tool, or when the only selected shape has handles
-    // const hideBounds =
-    //     (isInSession && app.session?.constructor.name !== 'BrushSession') ||
-    //     !isSelecting ||
-    //     isHideBoundsShape ||
-    //     !!pageState.editingId;
+    const hideBounds =
+        (isInSession && app.session?.constructor.name === 'BrushSession') ||
+        !isSelecting ||
+        isHideBoundsShape ||
+        !!pageState.editingId;
 
     // Hide bounds when not using the select tool, or when in session
     const hideHandles = isInSession || !isSelecting;
@@ -406,7 +406,7 @@ const InnerTldraw = memo(function InnerTldraw({
                         userId={room?.userId}
                         theme={theme}
                         meta={meta as unknown as Record<string, unknown>}
-                        hideBounds={false}
+                        hideBounds={hideBounds}
                         hideHandles={hideHandles}
                         hideResizeHandles={isHideResizeHandlesShape}
                         hideIndicators={hideIndicators}
