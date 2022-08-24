@@ -1,6 +1,6 @@
 import {
+    KanbanBlockRender,
     KanbanCard,
-    useBlockRender,
     useEditor,
     useKanban,
 } from '@toeverything/components/editor-core';
@@ -14,9 +14,9 @@ import { useFlag } from '@toeverything/datasource/feature-flags';
 import { useState, type MouseEvent } from 'react';
 import { useRefPage } from './RefPage';
 
-const CardContent = styled('div')({
+const CardContent = styled('div')(({ theme }) => ({
     margin: '20px',
-});
+}));
 
 const CardActions = styled('div')({
     cursor: 'pointer',
@@ -82,42 +82,38 @@ const Overlay = styled('div')({
     },
 });
 
-export const CardItem = ({
-    id,
-    block,
-}: {
-    id: KanbanCard['id'];
-    block: KanbanCard['block'];
-}) => {
+export const CardItem = ({ block }: { block: KanbanCard['block'] }) => {
     const { addSubItem } = useKanban();
     const { openSubPage } = useRefPage();
-    const [editable, setEditable] = useState(false);
+    const [editableBlock, setEditableBlock] = useState<string | null>(null);
     const showKanbanRefPageFlag = useFlag('ShowKanbanRefPage', false);
     const { editor } = useEditor();
-    const { BlockRender } = useBlockRender();
 
     const onAddItem = async () => {
-        setEditable(true);
-        await addSubItem(block);
+        const newItem = await addSubItem(block);
+        setEditableBlock(newItem.id);
     };
 
     const onClickCard = async () => {
-        openSubPage(id);
+        openSubPage(block.id);
     };
 
     const onClickPen = (e: MouseEvent<Element>) => {
         e.stopPropagation();
-        setEditable(true);
+        setEditableBlock(block.id);
         editor.selectionManager.activeNodeByNodeId(block.id);
     };
 
     return (
-        <MuiClickAwayListener onClickAway={() => setEditable(false)}>
+        <MuiClickAwayListener onClickAway={() => setEditableBlock(null)}>
             <CardContainer>
                 <CardContent>
-                    <BlockRender blockId={id} />
+                    <KanbanBlockRender
+                        blockId={block.id}
+                        activeBlock={editableBlock}
+                    />
                 </CardContent>
-                {showKanbanRefPageFlag && !editable && (
+                {showKanbanRefPageFlag && !editableBlock && (
                     <Overlay onClick={onClickCard}>
                         <IconButton backgroundColor="#fff" onClick={onClickPen}>
                             <PenIcon />
