@@ -21,6 +21,7 @@ const logger_debug = getLogger('debug:BlockDB:block');
 
 const _GET_BLOCK = Symbol('GET_BLOCK');
 const _SET_PARENT = Symbol('SET_PARENT');
+const _EMIT_EVENT = Symbol('EMIT_EVENT');
 
 export class AbstractBlock<
     B extends BlockInstance<C>,
@@ -30,7 +31,12 @@ export class AbstractBlock<
     private readonly _block: BlockInstance<C>;
     private readonly _history: HistoryManager;
     private readonly _root: AbstractBlock<B, C> | undefined;
-    private readonly _parentListener: Map<string, BlockListener>;
+    private readonly _listeners: {
+        cascade: Map<string, BlockListener>;
+        children: Map<string, BlockListener>;
+        content: Map<string, BlockListener>;
+        parent: Map<string, BlockListener>;
+    };
 
     private _parent: AbstractBlock<B, C> | undefined;
     private _changeParent?: () => void;
@@ -45,7 +51,19 @@ export class AbstractBlock<
         this._history = this._block.scopedHistory([this._id]);
 
         this._root = root;
-        this._parentListener = new Map();
+        this._listeners = {
+            cascade: new Map(),
+            children: new Map(),
+            content: new Map(),
+            parent: new Map(),
+        };
+
+        this._block.on('content', 'internal', states =>
+            this[_EMIT_EVENT]('content', states)
+        );
+        this._block.on('children', 'internal', states =>
+            this[_EMIT_EVENT]('children', states)
+        );
 
         JWT_DEV && logger_debug(`init: exists ${this._id}`);
         if (parent) {
@@ -83,19 +101,11 @@ export class AbstractBlock<
         name: string,
         callback: BlockListener
     ) {
-        if (event === 'parent') {
-            this._parentListener.set(name, callback);
-        } else {
-            this._block.on(event, name, callback);
-        }
+        this._listeners[event]?.set(name, callback);
     }
 
     public off(event: 'content' | 'children' | 'parent', name: string) {
-        if (event === 'parent') {
-            this._parentListener.delete(name);
-        } else {
-            this._block.off(event, name);
-        }
+        this._listeners[event]?.delete(name);
     }
 
     public addChildrenListener(name: string, listener: BlockListener) {
@@ -189,9 +199,22 @@ export class AbstractBlock<
         const states: Map<string, 'update' | 'delete'> = new Map([
             [parentId, type],
         ]);
-        for (const listener of this._parentListener.values()) {
+        for (const listener of this._listeners.parent.values()) {
             listener(states);
         }
+    }
+
+    [_EMIT_EVENT](
+        event: 'cascade' | 'content' | 'children',
+        states: Parameters<BlockListener>[0]
+    ) {
+        const listeners = this._listeners[event];
+        if (listeners) {
+            for (const listener of listeners.values()) {
+                listener(states);
+            }
+        }
+        this._parent?.[_EMIT_EVENT]('cascade', states);
     }
 
     private _refreshParent(parent: AbstractBlock<B, C>) {

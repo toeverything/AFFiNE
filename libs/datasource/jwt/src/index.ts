@@ -679,7 +679,7 @@ export type {
     ReadableContentExporter as BlockContentExporter,
 } from './block';
 export { BlockTypes, BucketBackend as BlockBackend } from './types';
-export type { BlockTypeKeys } from './types';
+export type { BlockFlavorKeys, BlockTypeKeys } from './types';
 export { isBlock } from './utils';
 export type {
     ArrayOperation,

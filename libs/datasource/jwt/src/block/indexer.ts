@@ -123,8 +123,8 @@ export class BlockIndexer<
     constructor(
         adapter: A,
         workspace: string,
-        block_builder: (block: BlockInstance<C>) => Promise<BaseBlock<B, C>>,
-        event_bus: BlockEventBus
+        blockBuilder: (block: BlockInstance<C>) => Promise<BaseBlock<B, C>>,
+        eventBus: BlockEventBus
     ) {
         this._adapter = adapter;
         this._idb = initIndexIdb(workspace);
@@ -144,8 +144,8 @@ export class BlockIndexer<
             ttl: 1000 * 60 * 30,
         });
 
-        this._blockBuilder = block_builder;
-        this._eventBus = event_bus;
+        this._blockBuilder = blockBuilder;
+        this._eventBus = eventBus;
 
         this._delayIndex = { documents: new Map() };
 
