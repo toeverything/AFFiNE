@@ -25,8 +25,6 @@ const AffineBoard = ({
     editor,
 }: AffineBoardProps & { editor: BlockEditor }) => {
     const [app, set_app] = useState<TldrawApp>();
-    // const [flag, setFlag] = useState<boolean>(true);
-    // const [allShapes, setShapes] = useState<TDShape[]>();
     const [document] = useState(() => {
         return {
             ...deepCopy(TldrawApp.default_document),
@@ -72,7 +70,6 @@ const AffineBoard = ({
                 },
                 async onPaste(e, data) {
                     console.log('e,data: ', e, data);
-                    // console.log(123123);
                 },
                 async onCopy(e, groupIds) {
                     const clip = await getClipDataOfBlocksById(
