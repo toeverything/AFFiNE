@@ -1,7 +1,5 @@
-import { Route, Routes, useParams } from 'react-router';
-
 import { useUserAndSpaces } from '@toeverything/datasource/state';
-
+import { Route, Routes, useParams } from 'react-router';
 import { WorkspaceRootContainer } from './Container';
 import { Page } from './docs';
 import { Edgeless } from './Edgeless';
@@ -10,7 +8,7 @@ import Labels from './labels';
 import Pages from './pages';
 
 export function WorkspaceContainer() {
-    const { workspace_id } = useParams();
+    const { workspace_id, page_id } = useParams();
     const { user, currentSpaceId } = useUserAndSpaces();
 
     if (

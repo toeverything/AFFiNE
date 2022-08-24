@@ -192,9 +192,10 @@ export const DoubleLinkMenu = ({
                     anchorNode.id !== curBlockId &&
                     editor.blockHelper.isSelectionCollapsed(anchorNode.id))
             ) {
-                const text = editor.blockHelper.getBlockTextBeforeSelection(
-                    anchorNode.id
-                );
+                const text =
+                    editor.blockHelper.getBlockTextBeforeSelection(
+                        anchorNode.id
+                    ) || '';
                 if (text.endsWith('[[')) {
                     resetState(curBlockId, anchorNode.id);
                 }

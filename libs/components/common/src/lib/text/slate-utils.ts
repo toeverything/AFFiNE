@@ -713,7 +713,10 @@ class SlateUtils {
         if (!this.editor) {
             return undefined;
         }
-        const { selectionEnd } = this.getSelectionStartAndEnd();
+        const selectionEnd = this.getSelectionStartAndEnd()?.selectionEnd;
+        if (!selectionEnd) {
+            return undefined;
+        }
         return this.getStringBetween(this.getStart(), selectionEnd);
     }
 
