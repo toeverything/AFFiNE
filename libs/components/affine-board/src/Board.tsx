@@ -51,7 +51,7 @@ const AffineBoard = ({
         };
     });
 
-    const { shapes, bindings } = useShapes(workspace, rootBlockId);
+    const { shapes } = useShapes(workspace, rootBlockId);
     useEffect(() => {
         if (app) {
             app.replacePageContent(shapes || {}, {}, {});
