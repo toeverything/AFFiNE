@@ -25,32 +25,64 @@ const OneLevelBlockRender = ({ blockId }: RenderBlockProps) => {
     );
 };
 
-export const KanbanBlockRender = ({ blockId }: RenderBlockProps) => {
+export const KanbanParentBlockRender = ({
+    blockId,
+    active,
+}: RenderBlockProps & { active?: boolean }) => {
+    return (
+        <BlockBorder active={active}>
+            <BlockWithoutChildrenRender blockId={blockId} />
+        </BlockBorder>
+    );
+};
+
+const KanbanChildrenRender = ({
+    blockId,
+    activeBlock,
+}: RenderBlockProps & { activeBlock?: string | null }) => {
     const { block } = useBlock(blockId);
 
     if (!block) {
-        return (
-            <BlockRenderProvider blockRender={NullBlockRender}>
-                <RenderBlock blockId={blockId} />
-            </BlockRenderProvider>
-        );
+        return null;
     }
 
     return (
         <BlockRenderProvider blockRender={NullBlockRender}>
-            <RenderBlock blockId={blockId} />
             {block?.childrenIds.map(childId => (
-                <StyledBorder key={childId}>
+                <ChildBorder key={childId} active={activeBlock === childId}>
                     <RenderBlock blockId={childId} />
-                </StyledBorder>
+                </ChildBorder>
             ))}
         </BlockRenderProvider>
     );
 };
 
-const StyledBorder = styled('div')({
-    border: '1px solid #E0E6EB',
-    borderRadius: '5px',
-    margin: '4px',
-    padding: '0 4px',
-});
+export const KanbanBlockRender = ({
+    blockId,
+    activeBlock,
+}: RenderBlockProps & { activeBlock?: string | null }) => {
+    return (
+        <BlockRenderProvider blockRender={NullBlockRender}>
+            <KanbanParentBlockRender
+                blockId={blockId}
+                active={activeBlock === blockId}
+            />
+            <KanbanChildrenRender blockId={blockId} activeBlock={activeBlock} />
+        </BlockRenderProvider>
+    );
+};
+
+const BlockBorder = styled('div')<{ active?: boolean }>(
+    ({ theme, active }) => ({
+        borderRadius: '5px',
+        padding: '0 4px',
+        border: `1px solid ${
+            active ? theme.affine.palette.primary : 'transparent'
+        }`,
+    })
+);
+
+const ChildBorder = styled(BlockBorder)(({ active, theme }) => ({
+    border: `1px solid  ${active ? theme.affine.palette.primary : '#E0E6EB'}`,
+    margin: '4px 0',
+}));
