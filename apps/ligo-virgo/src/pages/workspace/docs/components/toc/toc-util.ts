@@ -1,25 +1,12 @@
 import { AsyncBlock } from '@toeverything/components/editor-core';
-
-export type TocType = {
-    id: string;
-    type: string;
-    text: string;
-};
-
-export const BLOCK_TYPES = {
-    GROUP: 'group',
-    HEADING1: 'heading1',
-    HEADING2: 'heading2',
-    HEADING3: 'heading3',
-};
-
-/* store page/block unmount-listener */
-export const listenerMap = new Map<string, () => void>();
+import { BLOCK_TYPES } from './toc-enum';
+import type { ListenerMap, TOCType } from './types';
 
 /* 😞😞sorry, I don't know how to define unlimited dimensions array */
 const getContentByAsyncBlocks = async (
     asyncBlocks: AsyncBlock[] = [],
-    callback: () => void
+    callback: () => void,
+    listenerMap: ListenerMap
 ): Promise<{
     tocContents: any[];
 }> => {
@@ -27,33 +14,39 @@ const getContentByAsyncBlocks = async (
         /* maybe should recast it to tail recursion */
         return await Promise.all(
             asyncBlocks.map(async (asyncBlock: AsyncBlock) => {
-                const asyncBlocks = await asyncBlock.children();
+                const asyncBlocks = await asyncBlock?.children();
 
                 if (asyncBlocks?.length) {
                     return collect(asyncBlocks);
                 }
 
                 /* add only once event listener for every block */
-                if (!listenerMap.has(asyncBlock.id)) {
+                if (!listenerMap.has(asyncBlock?.id)) {
                     /* get update notice */
-                    const destroyHandler = asyncBlock.onUpdate(callback);
+                    const destroyHandler = asyncBlock?.onUpdate(callback);
 
                     /* collect destroy handlers */
-                    listenerMap.set(asyncBlock.id, destroyHandler);
+                    listenerMap.set(asyncBlock?.id, destroyHandler);
                 }
 
                 const { id, type } = asyncBlock;
-                if (Object.values(BLOCK_TYPES).includes(type)) {
-                    const properties = await asyncBlock.getProperties();
 
-                    return {
-                        id,
-                        type,
-                        text: properties?.text?.value?.[0]?.text || '',
-                    };
+                switch (type) {
+                    case BLOCK_TYPES.GROUP:
+                    case BLOCK_TYPES.HEADING1:
+                    case BLOCK_TYPES.HEADING2:
+                    case BLOCK_TYPES.HEADING3: {
+                        const properties = await asyncBlock?.getProperties();
+
+                        return {
+                            id,
+                            type,
+                            text: properties?.text?.value?.[0]?.text || '',
+                        };
+                    }
+                    default:
+                        return null;
                 }
-
-                return null;
             })
         );
     };
@@ -68,7 +61,7 @@ const getContentByAsyncBlocks = async (
  * @param asyncBlocks
  * @param tocContents
  */
-const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents): TocType[] => {
+const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents): TOCType[] => {
     return tocContents
         .reduce((tocGroupContent, tocContent, index) => {
             const { id, type } = asyncBlocks[index];
@@ -91,15 +84,13 @@ const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents): TocType[] => {
 };
 
 /* destroy page/block update-listener */
-const destroyEventList = (): boolean => {
+const destroyEventList = (listenerMap: ListenerMap) => {
     const eventListeners = listenerMap.values();
     listenerMap.clear();
 
     for (const eventListener of eventListeners) {
         eventListener?.();
     }
-
-    return true;
 };
 
 export { getPageTOC, getContentByAsyncBlocks, destroyEventList };
