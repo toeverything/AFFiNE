@@ -33,7 +33,7 @@ export const EmbedLinkView = (props: EmbedLinkView) => {
     };
 
     return (
-        <BlockPendantProvider block={block}>
+        <BlockPendantProvider editor={editor} block={block}>
             <LinkContainer>
                 {embedLinkUrl ? (
                     <SourceView

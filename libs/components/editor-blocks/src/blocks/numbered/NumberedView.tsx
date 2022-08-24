@@ -183,7 +183,7 @@ export const NumberedView = ({ block, editor }: CreateView) => {
 
     return (
         <BlockContainer editor={editor} block={block} selected={isSelect}>
-            <BlockPendantProvider block={block}>
+            <BlockPendantProvider editor={editor} block={block}>
                 <List>
                     <div className={'checkBoxContainer'}>
                         {getNumber(properties.numberType, number)}.

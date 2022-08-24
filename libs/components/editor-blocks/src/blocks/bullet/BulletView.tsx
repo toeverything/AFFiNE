@@ -188,7 +188,7 @@ export const BulletView = ({ block, editor }: CreateView) => {
 
     return (
         <BlockContainer editor={editor} block={block} selected={isSelect}>
-            <BlockPendantProvider block={block}>
+            <BlockPendantProvider editor={editor} block={block}>
                 <List>
                     <BulletLeft>
                         <BulletIcon numberType={properties.numberType} />
