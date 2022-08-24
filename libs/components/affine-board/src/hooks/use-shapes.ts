@@ -43,11 +43,9 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                     return shapes;
                 }),
         ]).then(shapes => {
-            getBindings(workspace, rootBlockId).then(bindings => {
-                setBlocks({
-                    shapes,
-                    bindings: bindings,
-                });
+            setBlocks({
+                shapes: shapes,
+                bindings: '{}',
             });
         });
 
@@ -65,11 +63,9 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                         return childBlock;
                     })
                 ).then(shapes => {
-                    getBindings(workspace, rootBlockId).then(bindings => {
-                        setBlocks({
-                            shapes: [shapes],
-                            bindings: bindings,
-                        });
+                    setBlocks({
+                        shapes: [shapes],
+                        bindings: '{}',
                     });
                 });
             })

@@ -15,13 +15,13 @@ import {
     TLPointerEventHandler,
     TLShapeCloneHandler,
     TLWheelEventHandler,
-    Utils,
+    Utils
 } from '@tldraw/core';
 import { Vec } from '@tldraw/vec';
 import {
     clearPrevSize,
     defaultStyle,
-    shapeUtils,
+    shapeUtils
 } from '@toeverything/components/board-shapes';
 import {
     AlignType,
@@ -54,7 +54,7 @@ import {
     TDUser,
     TldrawCommand,
     USER_COLORS,
-    VIDEO_EXTENSIONS,
+    VIDEO_EXTENSIONS
 } from '@toeverything/components/board-types';
 import { MIN_PAGE_WIDTH } from '@toeverything/components/editor-core';
 import {
@@ -67,7 +67,7 @@ import {
     migrate,
     openAssetFromFileSystem,
     openFromFileSystem,
-    saveToFileSystem,
+    saveToFileSystem
 } from './data';
 import { getClipboard, setClipboard } from './idb-clipboard';
 import { StateManager } from './manager/state-manager';
@@ -175,6 +175,10 @@ interface TDCallbacks {
      * (optional) A callback to run when the shape is copied.
      */
     onCopy?: (e: ClipboardEvent, ids: string[]) => void;
+     /**
+     * (optional) A callback to run when the shape is paste.
+     */
+    onPaste?: (e: ClipboardEvent, data: any) => void;
 }
 
 export interface TldrawAppCtorProps {
@@ -1955,7 +1959,62 @@ export class TldrawApp extends StateManager<TDSnapshot> {
      */
     paste = async (point?: number[], e?: ClipboardEvent) => {
         if (this.readOnly) return;
+     
+        if (e) {
+            const data = e.clipboardData?.getData('text/html');
+            const paste_as_html = (html: string) => {
+                try {
+                    const maybeJson = html.match(/<tldraw>(.*)<\/tldraw>/)?.[1];
+    
+                    if (!maybeJson) return;
+    
+                    const json: {
+                        type: string;
+                        shapes: TDShape[];
+                        bindings: TDBinding[];
+                        assets: TDAsset[];
+                    } = JSON.parse(maybeJson);
+    
+                    // if (json.type === 'tldr/clipboard') {
+                       
+                        return json;
+                    // } else {
+                        // throw Error('Not tldraw data!');
+                    // }
+                } catch (e) {
+                    // pasteTextAsShape(html);
+                    return;
+                }
+            };
+            await this.callbacks.onPaste?.(e, paste_as_html(data));
+            return this
+        }
 
+
+        const paste_as_html = (html: string) => {
+            try {
+                const maybeJson = html.match(/<tldraw>(.*)<\/tldraw>/)?.[1];
+
+                if (!maybeJson) return;
+
+                const json: {
+                    type: string;
+                    shapes: TDShape[];
+                    bindings: TDBinding[];
+                    assets: TDAsset[];
+                } = JSON.parse(maybeJson);
+
+                if (json.type === 'tldr/clipboard') {
+                    pasteInCurrentPage(json.shapes, json.bindings, json.assets);
+                    return;
+                } else {
+                    throw Error('Not tldraw data!');
+                }
+            } catch (e) {
+                pasteTextAsShape(html);
+                return;
+            }
+        };
         const pasteInCurrentPage = (
             shapes: TDShape[],
             bindings: TDBinding[],
@@ -2107,30 +2166,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             // this.select(shapeId);
         };
 
-        const paste_as_html = (html: string) => {
-            try {
-                const maybeJson = html.match(/<tldraw>(.*)<\/tldraw>/)?.[1];
-
-                if (!maybeJson) return;
-
-                const json: {
-                    type: string;
-                    shapes: TDShape[];
-                    bindings: TDBinding[];
-                    assets: TDAsset[];
-                } = JSON.parse(maybeJson);
-
-                if (json.type === 'tldr/clipboard') {
-                    pasteInCurrentPage(json.shapes, json.bindings, json.assets);
-                    return;
-                } else {
-                    throw Error('Not tldraw data!');
-                }
-            } catch (e) {
-                pasteTextAsShape(html);
-                return;
-            }
-        };
+       
 
         if (e !== undefined) {
             const items: DataTransferItemList =
