@@ -12,7 +12,7 @@ const getBindings = (workspace: string, rootBlockId: string) => {
             ids: [rootBlockId],
         })
         .then(blcoks => {
-            return blcoks[0].properties.bindings?.value;
+            return blcoks[0]?.properties.bindings?.value;
         });
 };
 
@@ -104,6 +104,7 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
 
         return acc;
     }, {} as Record<string, TDShape>);
+
     return {
         shapes: blocksShapes,
         bindings: JSON.parse(blocks?.bindings ?? '{}'),

@@ -626,7 +626,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     private prev_bindings = this.page.bindings;
     private prev_assets = this.document.assets;
 
-    private _broadcastPageChanges = () => {
+    private _broadcastPageChanges = async () => {
         const visited = new Set<string>();
 
         const changedShapes: Record<string, TDShape | undefined> = {};
@@ -683,7 +683,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
             Object.keys(changedAssets).length > 0
         ) {
             this.just_sent = true;
-            this.callbacks.onChangePage?.(
+            await this.callbacks.onChangePage?.(
                 this,
                 changedShapes,
                 changedBindings,
