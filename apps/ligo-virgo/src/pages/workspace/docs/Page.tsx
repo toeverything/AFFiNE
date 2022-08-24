@@ -22,16 +22,29 @@ import { type BlockEditor } from '@toeverything/components/editor-core';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { CollapsiblePageTree } from './collapsible-page-tree';
 import { Tabs } from './components/tabs';
+import { TabMap, TAB_TITLE } from './components/tabs/Tabs';
+import { TOC } from './components/toc';
 import { WorkspaceName } from './workspace-name';
+
 type PageProps = {
     workspace: string;
 };
 
 export function Page(props: PageProps) {
+    const [activeTab, setActiveTab] = useState(
+        TabMap.get(TAB_TITLE.PAGES).value
+    );
     const { page_id } = useParams();
     const { showSpaceSidebar, fixedDisplay, setSpaceSidebarVisible } =
         useShowSpaceSidebar();
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
+    const editorRef = useRef(null);
+
+    const onTabChange = v => setActiveTab(v);
+
+    const getEditor = editor => {
+        editorRef.current = editor;
+    };
 
     return (
         <LigoApp>
@@ -50,35 +63,45 @@ export function Page(props: PageProps) {
                 >
                     <WorkspaceName />
 
-                    <Tabs />
+                    <Tabs activeTab={activeTab} onTabChange={onTabChange} />
 
                     <WorkspaceSidebarContent>
-                        <div>
-                            {dailyNotesFlag && (
+                        {activeTab === TabMap.get(TAB_TITLE.PAGES).value && (
+                            <div>
+                                {dailyNotesFlag && (
+                                    <div>
+                                        <CollapsibleTitle title="Daily Notes">
+                                            <CalendarHeatmap />
+                                        </CollapsibleTitle>
+                                    </div>
+                                )}
                                 <div>
-                                    <CollapsibleTitle title="Daily Notes">
-                                        <CalendarHeatmap />
+                                    <CollapsibleTitle
+                                        title="ACTIVITIES"
+                                        initialOpen={false}
+                                    >
+                                        <Activities />
                                     </CollapsibleTitle>
                                 </div>
-                            )}
-                            <div>
-                                <CollapsibleTitle
-                                    title="ACTIVITIES"
-                                    initialOpen={false}
-                                >
-                                    <Activities />
-                                </CollapsibleTitle>
+                                <div>
+                                    <CollapsiblePageTree title="PAGES">
+                                        {page_id ? <PageTree /> : null}
+                                    </CollapsiblePageTree>
+                                </div>
                             </div>
-                            <div>
-                                <CollapsiblePageTree title="PAGES">
-                                    {page_id ? <PageTree /> : null}
-                                </CollapsiblePageTree>
-                            </div>
-                        </div>
+                        )}
+
+                        {activeTab === TabMap.get(TAB_TITLE.TOC).value && (
+                            <TOC editor={editorRef.current}>TOC</TOC>
+                        )}
                     </WorkspaceSidebarContent>
                 </WorkspaceSidebar>
             </LigoLeftContainer>
-            <EditorContainer workspace={props.workspace} pageId={page_id} />
+            <EditorContainer
+                workspace={props.workspace}
+                pageId={page_id}
+                getEditor={getEditor}
+            />
         </LigoApp>
     );
 }
@@ -86,9 +109,11 @@ export function Page(props: PageProps) {
 const EditorContainer = ({
     pageId,
     workspace,
+    getEditor,
 }: {
     pageId: string;
     workspace: string;
+    getEditor: (editor: BlockEditor) => void;
 }) => {
     const [lockScroll, setLockScroll] = useState(false);
     const [scrollContainer, setScrollContainer] = useState<HTMLElement>();
@@ -105,6 +130,8 @@ const EditorContainer = ({
             const obv = new ResizeObserver(e => {
                 setPageClientWidth(e[0].contentRect.width);
             });
+
+            getEditor(editorRef.current);
             obv.observe(scrollContainer);
             return () => obv.disconnect();
         }
