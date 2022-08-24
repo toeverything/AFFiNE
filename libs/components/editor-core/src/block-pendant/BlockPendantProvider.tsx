@@ -1,10 +1,10 @@
-import type { PropsWithChildren } from 'react';
 import { styled } from '@toeverything/components/ui';
+import type { PropsWithChildren } from 'react';
+import { useRef } from 'react';
 import type { AsyncBlock } from '../editor';
+import { getRecastItemValue, useRecastBlockMeta } from '../recast-block';
 import { PendantPopover } from './pendant-popover';
 import { PendantRender } from './pendant-render';
-import { useRef } from 'react';
-import { getRecastItemValue, useRecastBlockMeta } from '../recast-block';
 /**
  * @deprecated
  */

@@ -10,13 +10,12 @@ import {
     MuiClickAwayListener,
     styled,
 } from '@toeverything/components/ui';
-import { useFlag } from '@toeverything/datasource/feature-flags';
 import { useState, type MouseEvent } from 'react';
 import { useRefPage } from './RefPage';
 
-const CardContent = styled('div')(({ theme }) => ({
+const CardContent = styled('div')({
     margin: '20px',
-}));
+});
 
 const CardActions = styled('div')({
     cursor: 'pointer',
@@ -86,7 +85,6 @@ export const CardItem = ({ block }: { block: KanbanCard['block'] }) => {
     const { addSubItem } = useKanban();
     const { openSubPage } = useRefPage();
     const [editableBlock, setEditableBlock] = useState<string | null>(null);
-    const showKanbanRefPageFlag = useFlag('ShowKanbanRefPage', false);
     const { editor } = useEditor();
 
     const onAddItem = async () => {
@@ -113,7 +111,7 @@ export const CardItem = ({ block }: { block: KanbanCard['block'] }) => {
                         activeBlock={editableBlock}
                     />
                 </CardContent>
-                {showKanbanRefPageFlag && !editableBlock && (
+                {!editableBlock && (
                     <Overlay onClick={onClickCard}>
                         <IconButton backgroundColor="#fff" onClick={onClickPen}>
                             <PenIcon />

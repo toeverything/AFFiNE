@@ -1,7 +1,7 @@
 import { Protocol } from '@toeverything/datasource/db-service';
 import type { AsyncBlock, BlockEditor } from '../editor';
-import type { RecastBlock } from '.';
 import { cloneRecastMetaTo, mergeRecastMeta } from './property';
+import type { RecastBlock } from './types';
 
 const mergeGroupProperties = async (...groups: RecastBlock[]) => {
     const [headGroup, ...restGroups] = groups;
