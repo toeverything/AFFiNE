@@ -5,24 +5,12 @@ import { services } from '@toeverything/datasource/db-service';
 import { usePageClientWidth } from '@toeverything/datasource/state';
 import { useEffect, useState } from 'react';
 
-const getBindings = (workspace: string, rootBlockId: string) => {
-    return services.api.editorBlock
-        .get({
-            workspace: workspace,
-            ids: [rootBlockId],
-        })
-        .then(blcoks => {
-            return blcoks[0]?.properties.bindings?.value;
-        });
-};
-
 export const useShapes = (workspace: string, rootBlockId: string) => {
     const { pageClientWidth } = usePageClientWidth();
     // page padding left and right total 300px
     const editorShapeInitSize = pageClientWidth - 300;
     const [blocks, setBlocks] = useState<{
         shapes: [ReturnEditorBlock[]];
-        bindings: string;
     }>();
     useEffect(() => {
         Promise.all([
@@ -43,11 +31,8 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                     return shapes;
                 }),
         ]).then(shapes => {
-            getBindings(workspace, rootBlockId).then(bindings => {
-                setBlocks({
-                    shapes,
-                    bindings: bindings,
-                });
+            setBlocks({
+                shapes: shapes,
             });
         });
 
@@ -65,11 +50,8 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                         return childBlock;
                     })
                 ).then(shapes => {
-                    getBindings(workspace, rootBlockId).then(bindings => {
-                        setBlocks({
-                            shapes: [shapes],
-                            bindings: bindings,
-                        });
+                    setBlocks({
+                        shapes: [shapes],
                     });
                 });
             })
@@ -107,6 +89,5 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
 
     return {
         shapes: blocksShapes,
-        bindings: JSON.parse(blocks?.bindings ?? '{}'),
     };
 };

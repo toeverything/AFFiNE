@@ -51,11 +51,10 @@ const AffineBoard = ({
         };
     });
 
-    const { shapes, bindings } = useShapes(workspace, rootBlockId);
-
+    const { shapes } = useShapes(workspace, rootBlockId);
     useEffect(() => {
         if (app) {
-            app.replacePageContent(shapes || {}, bindings, {});
+            app.replacePageContent(shapes || {}, {}, {});
         }
     }, [app, shapes]);
 
@@ -69,7 +68,9 @@ const AffineBoard = ({
                 onMount(app) {
                     set_app(app);
                 },
-
+                async onPaste(e, data) {
+                    console.log('e,data: ', e, data);
+                },
                 async onCopy(e, groupIds) {
                     const clip = await getClipDataOfBlocksById(
                         editor,
@@ -110,18 +111,6 @@ const AffineBoard = ({
                                         });
                                 }
                                 shape.affineId = block.id;
-                                Object.keys(bindings).forEach(bilingKey => {
-                                    if (
-                                        bindings[bilingKey]?.fromId === shape.id
-                                    ) {
-                                        bindings[bilingKey].fromId = block.id;
-                                    }
-                                    if (
-                                        bindings[bilingKey]?.toId === shape.id
-                                    ) {
-                                        bindings[bilingKey].toId = block.id;
-                                    }
-                                });
                                 return await services.api.editorBlock.update({
                                     workspace: shape.workspace,
                                     id: block.id,
@@ -134,30 +123,6 @@ const AffineBoard = ({
                             }
                         })
                     );
-                    const pageBindingsString = (
-                        await services.api.editorBlock.get({
-                            workspace: workspace,
-                            ids: [rootBlockId],
-                        })
-                    )?.[0].properties.bindings?.value;
-                    const pageBindings = JSON.parse(pageBindingsString ?? '{}');
-                    Object.keys(bindings).forEach(bindingsKey => {
-                        if (!bindings[bindingsKey]) {
-                            delete pageBindings[bindingsKey];
-                        } else {
-                            Object.assign(pageBindings, bindings);
-                        }
-                    });
-
-                    await services.api.editorBlock.update({
-                        workspace: workspace,
-                        id: rootBlockId,
-                        properties: {
-                            bindings: {
-                                value: JSON.stringify(pageBindings),
-                            },
-                        },
-                    });
                 },
             }}
         />
