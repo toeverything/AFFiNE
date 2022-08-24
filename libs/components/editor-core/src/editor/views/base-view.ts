@@ -1,20 +1,15 @@
 import { ComponentType, ReactElement } from 'react';
-
-import type {
-    Column,
-    DefaultColumnsValue,
-} from '@toeverything/datasource/db-service';
+import type { Column } from '@toeverything/datasource/db-service';
 import {
     ArrayOperation,
     BlockDecoration,
     MapOperation,
 } from '@toeverything/datasource/jwt';
-import { cloneDeep } from '@toeverything/utils';
 import type { EventData } from '../block';
 import { AsyncBlock } from '../block';
 import type { Editor } from '../editor';
 import { SelectBlock } from '../selection';
-
+import { HTML2BlockResult } from '../clipboard/types';
 export interface CreateView {
     block: AsyncBlock;
     editor: Editor;
@@ -132,6 +127,13 @@ export abstract class BaseView {
     }
 
     html2block(el: Element, parseEl: (el: Element) => any[]): any[] | null {
+        return null;
+    }
+
+    async html2block2(props: {
+        element: HTMLElement | Node;
+        editor: Editor;
+    }): Promise<HTML2BlockResult> {
         return null;
     }
 

@@ -1,7 +1,4 @@
-import ClipboardParseInner from './clipboard/clipboard-parse';
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const ClipboardParse = ClipboardParseInner;
-
+export { HTML2BlockResult, ClipBlockInfo } from './clipboard/types';
 export { AsyncBlock } from './block';
 export * from './commands/types';
 export { Editor as BlockEditor } from './editor';

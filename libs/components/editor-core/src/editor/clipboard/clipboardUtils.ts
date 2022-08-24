@@ -6,6 +6,7 @@ import {
 } from '@toeverything/components/editor-core';
 import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
+import { commonHTML2Block, commonHTML2Text } from './utils';
 
 export class ClipboardUtils {
     private _editor: Editor;
@@ -145,6 +146,65 @@ export class ClipboardUtils {
             )
         ).join('');
     }
+
+    async convertHTMLString2Blocks(html: string) {
+        const htmlEl = document.createElement('html');
+        htmlEl.innerHTML = html;
+        htmlEl.querySelector('head')?.remove();
+
+        return this.convertHtml2Block(htmlEl);
+    }
+    async convertHtml2Block(element: Element): Promise<ClipBlockInfo[]> {
+        const editableViews = this._editor.getEditableViews();
+        // 如果block能够捕捉htmlElement则返回block的html2block
+        const [clipBlockInfos] = (
+            await Promise.all(
+                editableViews.map(editableView => {
+                    return editableView?.html2block2?.({
+                        editor: this._editor,
+                        element: element,
+                    });
+                })
+            )
+        ).filter(v => v && v.length);
+
+        if (clipBlockInfos) {
+            return clipBlockInfos;
+        }
+        return (
+            await Promise.all(
+                Array.from(element.children).map(async childElement => {
+                    const clipBlockInfos = await this.convertHtml2Block(
+                        childElement
+                    );
+
+                    if (clipBlockInfos && clipBlockInfos.length) {
+                        return clipBlockInfos;
+                    }
+
+                    return this.commonHTML2Block(childElement);
+                })
+            )
+        )
+            .flat()
+            .filter(v => v);
+    }
+
+    commonHTML2Block = commonHTML2Block;
+
+    commonHTML2Text = commonHTML2Text;
+
+    textToBlock = (clipData: string = ''): ClipBlockInfo[] => {
+        return clipData.split('\n').map((str: string) => {
+            return {
+                type: 'text',
+                properties: {
+                    text: { value: [{ text: str }] },
+                },
+                children: [],
+            };
+        });
+    };
 
     async page2html() {
         const rootBlockId = this._editor.getRootBlockId();

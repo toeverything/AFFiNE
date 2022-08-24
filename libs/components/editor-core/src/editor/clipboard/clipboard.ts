@@ -3,29 +3,21 @@ import { HookType } from '@toeverything/components/editor-core';
 import { Editor } from '../editor';
 import { Copy } from './copy';
 import { Paste } from './paste';
-import ClipboardParse from './clipboard-parse';
-import { MarkdownParser } from './markdown-parse';
+
 import { ClipboardUtils } from './clipboardUtils';
 
 export class Clipboard {
     private _clipboardEventDispatcher: ClipboardEventDispatcher;
     private _copy: Copy;
     private _paste: Paste;
-    private _clipboardParse: ClipboardParse;
-    private _markdownParse: MarkdownParser;
+    private readonly _supportMarkdownPaste = true;
     public clipboardUtils: ClipboardUtils;
 
     constructor(editor: Editor, clipboardTarget: HTMLElement) {
-        this._clipboardParse = new ClipboardParse(editor);
-        this._markdownParse = new MarkdownParser();
         this.clipboardUtils = new ClipboardUtils(editor);
         this._copy = new Copy(editor);
 
-        this._paste = new Paste(
-            editor,
-            this._clipboardParse,
-            this._markdownParse
-        );
+        this._paste = new Paste(editor, this._supportMarkdownPaste);
 
         this._clipboardEventDispatcher = new ClipboardEventDispatcher(
             editor,

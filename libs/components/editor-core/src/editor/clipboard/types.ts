@@ -1,9 +1,13 @@
 import {
     BlockFlavorKeys,
     DefaultColumnsValue,
+    ReturnEditorBlock,
 } from '@toeverything/datasource/db-service';
 import { SelectInfo } from '../selection';
 
+// export type ClipBlockInfo = Partial<ReturnEditorBlock> & {
+//     children?: ClipBlockInfo[];
+// };
 export const OFFICE_CLIPBOARD_MIMETYPE = {
     DOCS_DOCUMENT_SLICE_CLIP_WRAPPED: 'affine/x-c+w',
     HTML: 'text/html',
@@ -20,8 +24,9 @@ export const OFFICE_CLIPBOARD_MIMETYPE = {
 export interface ClipBlockInfo {
     type: BlockFlavorKeys;
     properties?: Partial<DefaultColumnsValue>;
-    children: ClipBlockInfo[];
+    children?: ClipBlockInfo[];
 }
+export type HTML2BlockResult = ClipBlockInfo[] | null;
 
 export interface InnerClipInfo {
     select: SelectInfo;

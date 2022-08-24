@@ -2,15 +2,12 @@ import { Editor } from '../editor';
 import { SelectInfo } from '../selection';
 import { OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
-import ClipboardParse from './clipboard-parse';
 import { ClipboardUtils } from './clipboardUtils';
 class Copy {
     private _editor: Editor;
-    private _clipboardParse: ClipboardParse;
     private _utils: ClipboardUtils;
     constructor(editor: Editor) {
         this._editor = editor;
-        this._clipboardParse = new ClipboardParse(editor);
         this._utils = new ClipboardUtils(editor);
         this.handleCopy = this.handleCopy.bind(this);
     }
@@ -53,9 +50,6 @@ class Copy {
         const htmlClip = await this._getHtmlClip();
 
         clips.push(htmlClip);
-        // const htmlClip = await this._clipboardParse.generateHtml();
-        // htmlClip &&
-        //     clips.push(new Clip(OFFICE_CLIPBOARD_MIMETYPE.HTML, htmlClip));
 
         return clips;
     }

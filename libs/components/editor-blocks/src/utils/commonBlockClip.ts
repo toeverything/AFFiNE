@@ -1,8 +1,10 @@
 import {
     AsyncBlock,
     BlockEditor,
+    HTML2BlockResult,
     SelectBlock,
 } from '@toeverything/components/editor-core';
+import { BlockFlavorKeys } from '@toeverything/datasource/db-service';
 
 export type Block2HtmlProps = {
     editor: BlockEditor;
@@ -27,4 +29,29 @@ export const commonBlock2HtmlContent = async ({
             selectInfo?.children
         );
     return `${html}${childrenHtml}`;
+};
+
+export const commonHTML2block = ({
+    element,
+    editor,
+    tagName,
+    type,
+    ignoreEmptyElement = true,
+}: {
+    element: Element;
+    editor: BlockEditor;
+    tagName: string | string[];
+    type: BlockFlavorKeys;
+    ignoreEmptyElement?: boolean;
+}): HTML2BlockResult => {
+    const tagNames = typeof tagName === 'string' ? [tagName] : tagName;
+    if (tagNames.includes(element.tagName)) {
+        const res = editor.clipboard.clipboardUtils.commonHTML2Block(
+            element,
+            type,
+            ignoreEmptyElement
+        );
+        return res ? [res] : null;
+    }
+    return null;
 };

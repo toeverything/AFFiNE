@@ -1,9 +1,15 @@
-import { AsyncBlock, BaseView } from '@toeverything/framework/virgo';
+import {
+    AsyncBlock,
+    BaseView,
+    BlockEditor,
+    HTML2BlockResult,
+} from '@toeverything/framework/virgo';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { defaultBulletProps, BulletView } from './BulletView';
 import {
     Block2HtmlProps,
     commonBlock2HtmlContent,
+    commonHTML2block,
 } from '../../utils/commonBlockClip';
 export class BulletBlock extends BaseView {
     public type = Protocol.Block.Type.bullet;
@@ -18,49 +24,41 @@ export class BulletBlock extends BaseView {
         }
         return block;
     }
+    override async html2block2({
+        element,
+        editor,
+    }: {
+        element: Element;
+        editor: BlockEditor;
+    }): Promise<HTML2BlockResult> {
+        if (element.tagName === 'UL') {
+            const firstList = element.querySelector('li');
 
-    override html2block(
-        el: Element,
-        parseEl: (el: Element) => any[]
-    ): any[] | null {
-        const tag_name = el.tagName;
-        if (tag_name === 'UL') {
-            const result = [];
-            for (let i = 0; i < el.children.length; i++) {
-                const blocks_info = parseEl(el.children[i]);
-                result.push(...blocks_info);
+            if (!firstList || firstList.innerText.startsWith('[ ]  ')) {
+                return null;
             }
-            return result.length > 0 ? result : null;
+            const children = Array.from(element.children);
+            const childrenBlockInfos = (
+                await Promise.all(
+                    children.map(childElement =>
+                        this.html2block2({
+                            editor,
+                            element: childElement,
+                        })
+                    )
+                )
+            )
+                .flat()
+                .filter(v => v);
+            return childrenBlockInfos.length ? childrenBlockInfos : null;
         }
 
-        if (tag_name == 'LI' && !el.textContent.startsWith('[ ]  ')) {
-            const childNodes = el.childNodes;
-            const texts = [];
-            const children = [];
-            for (let i = 0; i < childNodes.length; i++) {
-                const blocks_info = parseEl(childNodes[i] as Element);
-                for (let j = 0; j < blocks_info.length; j++) {
-                    if (blocks_info[j].type === 'text') {
-                        const block_texts =
-                            blocks_info[j].properties.text.value;
-                        texts.push(...block_texts);
-                    } else {
-                        children.push(blocks_info[j]);
-                    }
-                }
-            }
-            return [
-                {
-                    type: this.type,
-                    properties: {
-                        text: { value: texts },
-                    },
-                    children: children,
-                },
-            ];
-        }
-
-        return null;
+        return commonHTML2block({
+            element,
+            editor,
+            type: this.type,
+            tagName: 'LI',
+        });
     }
 
     override async block2html(props: Block2HtmlProps) {

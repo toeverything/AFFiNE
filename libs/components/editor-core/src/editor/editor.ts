@@ -255,6 +255,14 @@ export class Editor implements Virgo {
     getView(type: string) {
         return this.views[type];
     }
+    getEditableViews() {
+        return Object.values(this.views)
+            .map(view => (view.activatable ? view : null))
+            .filter(v => v);
+    }
+    isEditableView(type: string) {
+        return this.views[type].activatable;
+    }
 
     private async _initBlock(
         blockData: ReturnEditorBlock

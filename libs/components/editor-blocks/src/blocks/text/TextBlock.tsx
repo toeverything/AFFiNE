@@ -2,14 +2,15 @@ import {
     BaseView,
     CreateView,
     AsyncBlock,
+    HTML2BlockResult,
+    BlockEditor,
 } from '@toeverything/framework/virgo';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { TextView } from './TextView';
-
-import { getRandomString } from '@toeverything/components/common';
 import {
     Block2HtmlProps,
     commonBlock2HtmlContent,
+    commonHTML2block,
 } from '../../utils/commonBlockClip';
 
 export class TextBlock extends BaseView {
@@ -26,92 +27,30 @@ export class TextBlock extends BaseView {
         return block;
     }
 
-    override html2block(
-        el: Element,
-        parseEl: (el: Element) => any[]
-    ): any[] | null {
-        if (el instanceof Text) {
-            // TODO: parsing style
-            return el.textContent.split('\n').map(text => {
-                return {
-                    type: this.type,
-                    properties: {
-                        text: { value: [{ text: text }] },
-                    },
-                    children: [],
-                };
-            });
-        }
-
-        const tag_name = el.tagName;
-        const block_style: any = {};
-        switch (tag_name) {
-            case 'STRONG':
-            case 'B':
-                block_style.bold = true;
-                break;
-            case 'A':
-                block_style.type = 'link';
-                block_style.url = el.getAttribute('href');
-                block_style.id = getRandomString('link');
-                block_style.children = [];
-                break;
-            case 'EM':
-                block_style.italic = true;
-                break;
-            case 'U':
-                block_style.underline = true;
-                break;
-            case 'CODE':
-                block_style.inlinecode = true;
-                break;
-            case 'S':
-            case 'DEL':
-                block_style.strikethrough = true;
-                break;
-            default:
-                break;
-        }
-
-        const child_nodes = el.childNodes;
-        let texts = [];
-        if (Object.keys(block_style).length > 0) {
-            for (let i = 0; i < child_nodes.length; i++) {
-                const blocks_info: any[] = parseEl(child_nodes[i] as Element);
-                for (let j = 0; j < blocks_info.length; j++) {
-                    const block = blocks_info[j];
-                    if (block.type === this.type) {
-                        const block_texts = block.properties.text.value.map(
-                            (text_value: any) => {
-                                return tag_name === 'A'
-                                    ? { ...text_value }
-                                    : { ...block_style, ...text_value };
-                            }
-                        );
-                        texts.push(...block_texts);
-                    }
-                }
-            }
-        }
-        if (tag_name === 'A') {
-            block_style.children.push(...texts);
-            texts = [block_style];
-        }
-        return texts.length > 0
-            ? [
-                  {
-                      type: this.type,
-                      properties: {
-                          text: { value: texts },
-                      },
-                      children: [],
-                  },
-              ]
-            : null;
-    }
-
-    override async block2html(props: Block2HtmlProps) {
-        return `<p>${await commonBlock2HtmlContent(props)}</p>`;
+    override async html2block2({
+        element,
+        editor,
+    }: {
+        element: Element;
+        editor: BlockEditor;
+    }): Promise<HTML2BlockResult> {
+        return commonHTML2block({
+            element,
+            editor,
+            type: this.type,
+            tagName: [
+                'DIV',
+                'P',
+                'PRE',
+                'B',
+                'A',
+                'EM',
+                'U',
+                'CODE',
+                'S',
+                'DEL',
+            ],
+        });
     }
 }
 
@@ -128,37 +67,19 @@ export class Heading1Block extends BaseView {
         }
         return block;
     }
-
-    override html2block(
-        el: Element,
-        parseEl: (el: Element) => any[]
-    ): any[] | null {
-        const tag_name = el.tagName;
-        if (tag_name === 'H1') {
-            const childNodes = el.childNodes;
-            const texts = [];
-            for (let i = 0; i < childNodes.length; i++) {
-                const blocks_info = parseEl(childNodes[i] as Element);
-                for (let j = 0; j < blocks_info.length; j++) {
-                    if (blocks_info[j].type === 'text') {
-                        const block_texts =
-                            blocks_info[j].properties.text.value;
-                        texts.push(...block_texts);
-                    }
-                }
-            }
-            return [
-                {
-                    type: this.type,
-                    properties: {
-                        text: { value: texts },
-                    },
-                    children: [],
-                },
-            ];
-        }
-
-        return null;
+    override async html2block2({
+        element,
+        editor,
+    }: {
+        element: Element;
+        editor: BlockEditor;
+    }): Promise<HTML2BlockResult> {
+        return commonHTML2block({
+            element,
+            editor,
+            type: this.type,
+            tagName: 'H1',
+        });
     }
 
     override async block2html(props: Block2HtmlProps) {
@@ -179,37 +100,19 @@ export class Heading2Block extends BaseView {
         }
         return block;
     }
-
-    override html2block(
-        el: Element,
-        parseEl: (el: Element) => any[]
-    ): any[] | null {
-        const tag_name = el.tagName;
-        if (tag_name === 'H2') {
-            const childNodes = el.childNodes;
-            const texts = [];
-            for (let i = 0; i < childNodes.length; i++) {
-                const blocks_info = parseEl(childNodes[i] as Element);
-                for (let j = 0; j < blocks_info.length; j++) {
-                    if (blocks_info[j].type === 'text') {
-                        const block_texts =
-                            blocks_info[j].properties.text.value;
-                        texts.push(...block_texts);
-                    }
-                }
-            }
-            return [
-                {
-                    type: this.type,
-                    properties: {
-                        text: { value: texts },
-                    },
-                    children: [],
-                },
-            ];
-        }
-
-        return null;
+    override async html2block2({
+        element,
+        editor,
+    }: {
+        element: Element;
+        editor: BlockEditor;
+    }): Promise<HTML2BlockResult> {
+        return commonHTML2block({
+            element,
+            editor,
+            type: this.type,
+            tagName: 'H2',
+        });
     }
 
     override async block2html(props: Block2HtmlProps) {
@@ -231,36 +134,19 @@ export class Heading3Block extends BaseView {
         return block;
     }
 
-    override html2block(
-        el: Element,
-        parseEl: (el: Element) => any[]
-    ): any[] | null {
-        const tag_name = el.tagName;
-        if (tag_name === 'H3') {
-            const childNodes = el.childNodes;
-            const texts = [];
-            for (let i = 0; i < childNodes.length; i++) {
-                const blocks_info = parseEl(childNodes[i] as Element);
-                for (let j = 0; j < blocks_info.length; j++) {
-                    if (blocks_info[j].type === 'text') {
-                        const block_texts =
-                            blocks_info[j].properties.text.value;
-                        texts.push(...block_texts);
-                    }
-                }
-            }
-            return [
-                {
-                    type: this.type,
-                    properties: {
-                        text: { value: texts },
-                    },
-                    children: [],
-                },
-            ];
-        }
-
-        return null;
+    override async html2block2({
+        element,
+        editor,
+    }: {
+        element: Element;
+        editor: BlockEditor;
+    }): Promise<HTML2BlockResult> {
+        return commonHTML2block({
+            element,
+            editor,
+            type: this.type,
+            tagName: 'H3',
+        });
     }
 
     override async block2html(props: Block2HtmlProps) {
