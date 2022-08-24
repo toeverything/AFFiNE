@@ -93,6 +93,7 @@ const getPageTOC = (asyncBlocks: AsyncBlock[], tocContents): TocType[] => {
 /* destroy page/block update-listener */
 const destroyEventList = (): boolean => {
     const eventListeners = listenerMap.values();
+    listenerMap.clear();
 
     for (const eventListener of eventListeners) {
         eventListener?.();
