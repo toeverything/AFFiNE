@@ -4,12 +4,12 @@ import {
     services,
     type ReturnUnobserve,
 } from '@toeverything/datasource/db-service';
-import type { PropsWithChildren } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorProvider } from './Contexts';
 import type { BlockEditor } from './editor';
 import { useIsOnDrag } from './hooks';
 import { addNewGroup, appendNewGroup } from './recast-block';
+import { BlockRenderProvider, RenderBlock } from './render-block';
 import { SelectionRect, SelectionRef } from './Selection';
 
 interface RenderRootProps {
@@ -24,11 +24,7 @@ interface RenderRootProps {
 const MAX_PAGE_WIDTH = 5000;
 export const MIN_PAGE_WIDTH = 1480;
 
-export const RenderRoot = ({
-    editor,
-    editorElement,
-    children,
-}: PropsWithChildren<RenderRootProps>) => {
+export const RenderRoot = ({ editor, editorElement }: RenderRootProps) => {
     const selectionRef = useRef<SelectionRef>(null);
     const triggeredBySelect = useRef(false);
     const [pageWidth, setPageWidth] = useState<number>(MIN_PAGE_WIDTH);
@@ -158,39 +154,43 @@ export const RenderRoot = ({
     };
 
     return (
-        <EditorProvider value={{ editor, editorElement }}>
-            <Container
-                isEdgeless={editor.isEdgeless}
-                ref={ref => {
-                    if (ref != null && ref !== editor.container) {
-                        editor.container = ref;
-                        editor.getHooks().render();
-                    }
-                }}
-                onMouseMove={onMouseMove}
-                onMouseDown={onMouseDown}
-                onMouseUp={onMouseUp}
-                onMouseLeave={onMouseLeave}
-                onMouseOut={onMouseOut}
-                onContextMenu={onContextmenu}
-                onKeyDown={onKeyDown}
-                onKeyDownCapture={onKeyDownCapture}
-                onKeyUp={onKeyUp}
-                onDragOver={onDragOver}
-                onDragLeave={onDragLeave}
-                onDragOverCapture={onDragOverCapture}
-                onDragEnd={onDragEnd}
-                onDrop={onDrop}
-                isOnDrag={isOnDrag}
-            >
-                <Content style={{ maxWidth: pageWidth + 'px' }}>
-                    {children}
-                </Content>
-                {/** TODO: remove selectionManager insert */}
-                {editor && <SelectionRect ref={selectionRef} editor={editor} />}
-                {editor.isEdgeless ? null : <ScrollBlank editor={editor} />}
-                {patchedNodes}
-            </Container>
+        <EditorProvider editor={editor} editorElement={editorElement}>
+            <BlockRenderProvider blockRender={RenderBlock}>
+                <Container
+                    isEdgeless={editor.isEdgeless}
+                    ref={ref => {
+                        if (ref != null && ref !== editor.container) {
+                            editor.container = ref;
+                            editor.getHooks().render();
+                        }
+                    }}
+                    onMouseMove={onMouseMove}
+                    onMouseDown={onMouseDown}
+                    onMouseUp={onMouseUp}
+                    onMouseLeave={onMouseLeave}
+                    onMouseOut={onMouseOut}
+                    onContextMenu={onContextmenu}
+                    onKeyDown={onKeyDown}
+                    onKeyDownCapture={onKeyDownCapture}
+                    onKeyUp={onKeyUp}
+                    onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                    onDragOverCapture={onDragOverCapture}
+                    onDragEnd={onDragEnd}
+                    onDrop={onDrop}
+                    isOnDrag={isOnDrag}
+                >
+                    <Content style={{ maxWidth: pageWidth + 'px' }}>
+                        <RenderBlock blockId={editor.getRootBlockId()} />
+                    </Content>
+                    {/** TODO: remove selectionManager insert */}
+                    {editor && (
+                        <SelectionRect ref={selectionRef} editor={editor} />
+                    )}
+                    {editor.isEdgeless ? null : <ScrollBlank editor={editor} />}
+                    {patchedNodes}
+                </Container>
+            </BlockRenderProvider>
         </EditorProvider>
     );
 };
@@ -251,7 +251,7 @@ function ScrollBlank({ editor }: { editor: BlockEditor }) {
     );
 
     return (
-        <ScrollBlankContainter
+        <ScrollBlankContainer
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onClick={onClick}
@@ -283,7 +283,7 @@ const Content = styled('div')({
     transitionTimingFunction: 'ease-in',
 });
 
-const ScrollBlankContainter = styled('div')({
+const ScrollBlankContainer = styled('div')({
     paddingBottom: '30vh',
     margin: `0 -${PADDING_X}px`,
 });

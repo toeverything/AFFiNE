@@ -4,7 +4,12 @@ import { useCallback, useMemo } from 'react';
 import { useEditor } from '../Contexts';
 import { useBlock } from '../hooks';
 
-interface RenderBlockProps {
+/**
+ * Render nothing
+ */
+export const NullBlockRender = (): null => null;
+
+export interface RenderBlockProps {
     blockId: string;
     hasContainer?: boolean;
 }
@@ -29,7 +34,7 @@ export function RenderBlock({
         if (block?.type) {
             return editor.getView(block.type).View;
         }
-        return () => null;
+        return (): null => null;
     }, [editor, block?.type]);
 
     if (!block) {
@@ -64,4 +69,5 @@ export function RenderBlock({
 
 const BlockContainer = styled('div')(({ theme }) => ({
     fontSize: theme.typography.body1.fontSize,
+    flex: 1,
 }));

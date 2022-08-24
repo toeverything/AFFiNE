@@ -1,18 +1,16 @@
 import {
-    BaseView,
-    getTextProperties,
     AsyncBlock,
-    SelectBlock,
+    BaseView,
     getTextHtml,
-} from '@toeverything/framework/virgo';
-// import type { CreateView } from '@toeverything/framework/virgo';
+    getTextProperties,
+    SelectBlock,
+    withTreeViewChildren,
+} from '@toeverything/components/editor-core';
 import {
-    Protocol,
     DefaultColumnsValue,
+    Protocol,
 } from '@toeverything/datasource/db-service';
-// import { withTreeViewChildren } from '../../utils/with-tree-view-children';
-import { withTreeViewChildren } from '../../utils/WithTreeViewChildren';
-import { TodoView, defaultTodoProps } from './TodoView';
+import { defaultTodoProps, TodoView } from './TodoView';
 import type { TodoAsyncBlock } from './types';
 
 export class TodoBlock extends BaseView {

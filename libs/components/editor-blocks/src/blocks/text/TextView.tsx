@@ -12,7 +12,6 @@ import { styled } from '@toeverything/components/ui';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { CreateView } from '@toeverything/framework/virgo';
 import { BlockContainer } from '../../components/BlockContainer';
-import { IndentWrapper } from '../../components/IndentWrapper';
 import { TextManage } from '../../components/text-manage';
 import { dedentBlock, tabBlock } from '../../utils/indent';
 interface CreateTextView extends CreateView {
@@ -255,9 +254,7 @@ export const TextView = ({
                     handleTab={onTab}
                 />
             </BlockPendantProvider>
-            <IndentWrapper>
-                <RenderBlockChildren block={block} />
-            </IndentWrapper>
+            <RenderBlockChildren block={block} />
         </BlockContainer>
     );
 };
