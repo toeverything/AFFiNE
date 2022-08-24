@@ -199,13 +199,11 @@ export class AbstractBlock<
         const states: Map<string, 'update' | 'delete'> = new Map([
             [parentId, type],
         ]);
-        for (const listener of this._listeners.parent.values()) {
-            listener(states);
-        }
+        this[_EMIT_EVENT]('parent', states);
     }
 
     [_EMIT_EVENT](
-        event: 'cascade' | 'content' | 'children',
+        event: 'cascade' | 'content' | 'children' | 'parent',
         states: Parameters<BlockListener>[0]
     ) {
         const listeners = this._listeners[event];
@@ -214,7 +212,10 @@ export class AbstractBlock<
                 listener(states);
             }
         }
-        this._parent?.[_EMIT_EVENT]('cascade', states);
+
+        if (['children', 'content'].includes(event)) {
+            this._parent?.[_EMIT_EVENT]('cascade', states);
+        }
     }
 
     private _refreshParent(parent: AbstractBlock<B, C>) {
