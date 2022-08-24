@@ -80,6 +80,7 @@ export class Editor implements Virgo {
         this._rootBlockId = props.rootBlockId;
         this.hooks = new Hooks();
         this.plugin_manager = new PluginManager(this, this.hooks);
+        this._clipboard = new Clipboard(this, this.ui_container);
         this.plugin_manager.registerAll(props.plugins);
         if (props.isEdgeless) {
             this.isEdgeless = true;
@@ -138,7 +139,7 @@ export class Editor implements Virgo {
 
     public set container(v: HTMLDivElement) {
         this.ui_container = v;
-        this._clipboard = new Clipboard(this, this.ui_container);
+        this._clipboard.clipboardTarget = v;
     }
 
     public get container() {
