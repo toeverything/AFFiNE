@@ -1,9 +1,12 @@
+import type { Virgo } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
+import { useCurrentEditors } from '@toeverything/datasource/state';
 import {
     createContext,
     useCallback,
     useContext,
     useEffect,
+    useMemo,
     useRef,
     useState,
 } from 'react';
@@ -14,7 +17,7 @@ import {
     getContentByAsyncBlocks,
     getPageTOC,
 } from './toc-util';
-import type { ListenerMap, TOCProps, TOCType } from './types';
+import type { ListenerMap, TOCType } from './types';
 
 const StyledTOCItem = styled('a')<{ type?: string; isActive?: boolean }>(
     ({ type, isActive }) => {
@@ -112,14 +115,18 @@ const renderTOCContent = tocDataSource => {
     );
 };
 
-export const TOC = (props: TOCProps) => {
-    const { editor } = props;
+export const TOC = () => {
     const { page_id } = useParams();
     const [tocDataSource, setTocDataSource] = useState<TOCType[]>([]);
     const [activeBlockId, setActiveBlockId] = useState('');
 
     /* store page/block unmount-listener */
     const listenerMapRef = useRef<ListenerMap>(new Map());
+
+    const { currentEditors } = useCurrentEditors();
+    const editor = useMemo(() => {
+        return currentEditors[page_id] as Virgo;
+    }, [currentEditors, page_id]);
 
     const updateTocDataSource = useCallback(async () => {
         if (!editor) {

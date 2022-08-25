@@ -9,7 +9,10 @@
  * 6. Dependencies between plugins are not supported for the time being
  */
 import type { PatchNode } from '@toeverything/components/ui';
-import type { BlockFlavors } from '@toeverything/datasource/db-service';
+import type {
+    BlockFlavors,
+    ReturnEditorBlock,
+} from '@toeverything/datasource/db-service';
 import type { IdList, SelectionInfo, SelectionManager } from './selection';
 
 import { Point } from '@toeverything/utils';
@@ -67,6 +70,8 @@ export interface Virgo {
     ) => Promise<AsyncBlock>;
     getRootBlockId: () => string;
     getBlockById(blockId: string): Promise<AsyncBlock | null>;
+    getBlockByIds(blockId: string[]): Promise<(AsyncBlock | null)[]>;
+    queryByPageId(pageId: string): Promise<(ReturnEditorBlock | null)[]>;
     setHotKeysScope(scope?: string): void;
     getBlockList: () => Promise<AsyncBlock[]>;
     getBlockListByLevelOrder: () => Promise<AsyncBlock[]>;

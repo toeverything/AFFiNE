@@ -38,13 +38,7 @@ export function Page(props: PageProps) {
     const { showSpaceSidebar, fixedDisplay, setSpaceSidebarVisible } =
         useShowSpaceSidebar();
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
-    const editorRef = useRef(null);
-
     const onTabChange = v => setActiveTab(v);
-
-    const getEditor = editor => {
-        editorRef.current = editor;
-    };
 
     return (
         <LigoApp>
@@ -92,16 +86,12 @@ export function Page(props: PageProps) {
                         )}
 
                         {activeTab === TabMap.get(TAB_TITLE.TOC).value && (
-                            <TOC editor={editorRef.current}>TOC</TOC>
+                            <TOC />
                         )}
                     </WorkspaceSidebarContent>
                 </WorkspaceSidebar>
             </LigoLeftContainer>
-            <EditorContainer
-                workspace={props.workspace}
-                pageId={page_id}
-                getEditor={getEditor}
-            />
+            <EditorContainer workspace={props.workspace} pageId={page_id} />
         </LigoApp>
     );
 }
@@ -109,11 +99,9 @@ export function Page(props: PageProps) {
 const EditorContainer = ({
     pageId,
     workspace,
-    getEditor,
 }: {
     pageId: string;
     workspace: string;
-    getEditor: (editor: BlockEditor) => void;
 }) => {
     const [lockScroll, setLockScroll] = useState(false);
     const [scrollContainer, setScrollContainer] = useState<HTMLElement>();
@@ -131,7 +119,6 @@ const EditorContainer = ({
                 setPageClientWidth(e[0].contentRect.width);
             });
 
-            getEditor(editorRef.current);
             obv.observe(scrollContainer);
             return () => obv.disconnect();
         }
