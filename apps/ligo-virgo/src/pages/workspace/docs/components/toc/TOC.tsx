@@ -124,9 +124,7 @@ export const TOC = () => {
     const listenerMapRef = useRef<ListenerMap>(new Map());
 
     const { currentEditors } = useCurrentEditors();
-    const editor = useMemo(() => {
-        return currentEditors[page_id] as Virgo;
-    }, [currentEditors, page_id]);
+    const editor = currentEditors[page_id] as Virgo;
 
     const updateTocDataSource = useCallback(async () => {
         if (!editor) {
