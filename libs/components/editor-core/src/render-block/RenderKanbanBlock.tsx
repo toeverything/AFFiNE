@@ -40,6 +40,8 @@ export const KanbanParentBlockRender = ({
 };
 
 const useBlockProgress = (block?: AsyncBlock) => {
+    // Progress of the progress bar. The range is between 0 and 1.
+    // Default progress is 1, that is 100%.
     const [progress, setProgress] = useState(1);
 
     useEffect(() => {
@@ -57,36 +59,13 @@ const useBlockProgress = (block?: AsyncBlock) => {
             setProgress(checkedTodoChildren.length / todoChildren.length);
         };
 
-        let childrenQueue: (() => void)[] = [];
-        const childrenUnobserve = () => {
-            childrenQueue.forEach(fn => fn());
-            childrenQueue = [];
-        };
-
-        const observeChildren = async () => {
-            const children = await block.children();
-
-            childrenUnobserve();
-            children.forEach(child => {
-                const unobserve = child.onUpdate(() => {
-                    updateProgress();
-                });
-                childrenQueue.push(unobserve);
-            });
-        };
-
-        observeChildren();
         updateProgress();
 
         const unobserve = block.onUpdate(() => {
-            observeChildren();
             updateProgress();
         });
 
-        return () => {
-            unobserve();
-            childrenUnobserve();
-        };
+        return unobserve;
     }, [block]);
 
     return progress;
