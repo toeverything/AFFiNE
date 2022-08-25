@@ -180,9 +180,49 @@ export class AsyncBlock {
         return this.event_emitter.emit(eventName, eventData);
     }
 
-    onUpdate(callback: (event: EventData) => void) {
-        this.on('update', callback);
+    /**
+     * @param deep observe deep
+     *
+     * NOTICE: the observe of children is async,
+     * so there maybe have some delay before observe done.
+     */
+    onUpdate(callback: (event: EventData) => void, deep = 0) {
+        let expired = false;
+        const unobserveMap: Record<string, () => void> = {};
+        const observeChildren = () => {
+            if (deep <= 0) {
+                return;
+            }
+            this.children().then(children => {
+                // Check current event listeners is not expired
+                if (expired) {
+                    return;
+                }
+                children.forEach(child => {
+                    if (unobserveMap[child.id]) return;
+                    const unobserve = child.onUpdate(callback, deep - 1);
+                    unobserveMap[child.id] = unobserve;
+                });
+            });
+        };
+
+        const unobserveChildren = () => {
+            Object.values(unobserveMap).forEach(unobserve => {
+                unobserve();
+            });
+        };
+
+        this.on('update', e => {
+            callback(e);
+            // Update children observe
+            observeChildren();
+        });
+
+        observeChildren();
+
         return () => {
+            expired = true;
+            unobserveChildren();
             this.off('update', callback);
         };
     }
