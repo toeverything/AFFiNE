@@ -6,7 +6,6 @@ import {
     useCallback,
     useContext,
     useEffect,
-    useMemo,
     useRef,
     useState,
 } from 'react';
@@ -168,12 +167,12 @@ export const TOC = () => {
     }, [updateTocDataSource]);
 
     const onClick = async (blockId?: string) => {
-        if (blockId === activeBlockId) {
-            return;
-        }
-
         setActiveBlockId(blockId);
-        await editor.scrollManager.scrollIntoViewByBlockId(blockId);
+        await editor.scrollManager.scrollIntoViewByBlockId(
+            blockId,
+            'smooth',
+            'primary'
+        );
     };
 
     return (

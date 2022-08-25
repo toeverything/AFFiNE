@@ -1,5 +1,5 @@
-import { CSSProperties, type UIEvent } from 'react';
 import EventEmitter from 'eventemitter3';
+import { type UIEvent } from 'react';
 
 import { domToRect, Rect } from '@toeverything/utils';
 import type { Editor as BlockEditor } from '../editor';
@@ -13,6 +13,8 @@ type ScrollController = {
     lockScroll: () => void;
     unLockScroll: () => void;
 };
+
+type ScrollPrimary = undefined | 'primary';
 
 export class ScrollManager {
     private _editor: BlockEditor;
@@ -150,20 +152,29 @@ export class ScrollManager {
 
     public async scrollIntoViewByBlockId(
         blockId: string,
-        behavior: ScrollBehavior = 'smooth'
+        behavior: ScrollBehavior = 'smooth',
+        ability?: ScrollPrimary
     ) {
         const block = await this._editor.getBlockById(blockId);
 
-        await this.scrollIntoViewByBlock(block, behavior);
+        await this.scrollIntoViewByBlock(block, behavior, ability);
     }
 
     public async scrollIntoViewByBlock(
         block: AsyncBlock,
-        behavior: ScrollBehavior = 'smooth'
+        behavior: ScrollBehavior = 'smooth',
+        ability?: ScrollPrimary
     ) {
         if (!block.dom) {
             return console.warn(`Block is not exist.`);
         }
+
+        /* use dom primary ability */
+        if (ability === 'primary') {
+            block.dom.scrollIntoView({ block: 'start', behavior });
+            return;
+        }
+
         const containerRect = domToRect(this._scrollContainer);
         const blockRect = domToRect(block.dom);
 
