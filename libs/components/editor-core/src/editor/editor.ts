@@ -460,7 +460,22 @@ export class Editor implements Virgo {
             return false;
         });
     }
-
+    public copyBlock = async (blockId: string, parentId: string) => {
+        let block = await this.getBlockById(blockId);
+        let newBlcok: AsyncBlock;
+        newBlcok = await this.createBlock(block.type, parentId);
+        let parentProperties = await block.getProperties();
+        newBlcok.setProperties(parentProperties);
+        let children = await block.children();
+        if (children.length) {
+            await Promise.all(
+                children.map(async child => {
+                    this.copyBlock(child.id, newBlcok.id);
+                })
+            );
+        }
+        return newBlcok;
+    };
     async undo() {
         await services.api.editorBlock.undo(this.workspace);
     }

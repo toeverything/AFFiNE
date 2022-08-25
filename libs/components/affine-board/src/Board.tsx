@@ -13,7 +13,10 @@ import {
     getClipDataOfBlocksById,
     RecastBlockProvider,
 } from '@toeverything/components/editor-core';
-import { services } from '@toeverything/datasource/db-service';
+import {
+    ReturnEditorBlock,
+    services,
+} from '@toeverything/datasource/db-service';
 import { AsyncBlock, BlockEditor } from '@toeverything/framework/virgo';
 import { useEffect, useState } from 'react';
 import { useShapes } from './hooks';
@@ -56,6 +59,7 @@ const AffineBoard = ({
     });
 
     const { shapes } = useShapes(workspace, rootBlockId);
+
     useEffect(() => {
         if (app) {
             app.replacePageContent(shapes || {}, {}, {});
@@ -73,7 +77,6 @@ const AffineBoard = ({
                     set_app(app);
                 },
                 async onPaste(e, data) {
-                    console.log('data: ', data);
                     if (!data) {
                         return;
                     }
@@ -89,22 +92,19 @@ const AffineBoard = ({
                                 size,
                                 childIndex,
                             } = item;
-                            // const childIndex = BaseTool.getNextChildIndex();
-                            const group = await services.api.editorBlock.create(
-                                {
+                            let group: ReturnEditorBlock | AsyncBlock;
+                            if (type !== TDShapeType.Editor) {
+                                group = await services.api.editorBlock.create({
                                     workspace,
-                                    type:
-                                        type === TDShapeType.Editor
-                                            ? 'group'
-                                            : 'shape',
+                                    type: 'shape',
                                     parentId: parentId,
-                                }
-                            );
-                            await services.api.editorBlock.create({
-                                workspace,
-                                type: 'text',
-                                parentId: group.id,
-                            });
+                                });
+                            } else {
+                                group = await editor.copyBlock(
+                                    item.id,
+                                    parentId
+                                );
+                            }
 
                             const newShape = TLDR.get_shape_util(
                                 item.type
@@ -123,7 +123,7 @@ const AffineBoard = ({
                         })
                     );
                     app.create(addShapes);
-                    console.log(app.page.shapes);
+                    // console.log(app.page.shapes);
                 },
                 async onCopy(e, groupIds) {
                     const clip = await getClipDataOfBlocksById(
