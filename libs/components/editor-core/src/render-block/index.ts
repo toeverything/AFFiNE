@@ -1,4 +1,5 @@
 export { BlockRenderProvider, useBlockRender } from './Context';
-export * from './RenderBlock';
-export * from './RenderBlockChildren';
+export { NullBlockRender, RenderBlock } from './RenderBlock';
+export { RenderBlockChildren } from './RenderBlockChildren';
+export { KanbanBlockRender } from './RenderKanbanBlock';
 export { withTreeViewChildren } from './WithTreeViewChildren';

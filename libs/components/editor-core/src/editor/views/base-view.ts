@@ -1,15 +1,15 @@
-import { ComponentType, ReactElement } from 'react';
 import type { Column } from '@toeverything/datasource/db-service';
 import {
     ArrayOperation,
     BlockDecoration,
     MapOperation,
 } from '@toeverything/datasource/jwt';
+import type { ComponentType, ReactElement } from 'react';
 import type { EventData } from '../block';
 import { AsyncBlock } from '../block';
+import { HTML2BlockResult } from '../clipboard';
 import type { Editor } from '../editor';
 import { SelectBlock } from '../selection';
-import { HTML2BlockResult } from '../clipboard';
 export interface CreateView {
     block: AsyncBlock;
     editor: Editor;
