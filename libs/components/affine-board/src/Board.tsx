@@ -123,7 +123,6 @@ const AffineBoard = ({
                         })
                     );
                     app.create(addShapes);
-                    // console.log(app.page.shapes);
                 },
                 async onCopy(e, groupIds) {
                     const clip = await getClipDataOfBlocksById(
