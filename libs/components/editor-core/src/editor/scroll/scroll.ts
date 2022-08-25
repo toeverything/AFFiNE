@@ -14,8 +14,6 @@ type ScrollController = {
     unLockScroll: () => void;
 };
 
-type ScrollPrimary = undefined | 'primary';
-
 export class ScrollManager {
     private _editor: BlockEditor;
     private _scrollContainer: HTMLElement;
@@ -152,45 +150,23 @@ export class ScrollManager {
 
     public async scrollIntoViewByBlockId(
         blockId: string,
-        behavior: ScrollBehavior = 'smooth',
-        ability?: ScrollPrimary
+        behavior: ScrollBehavior = 'smooth'
     ) {
         const block = await this._editor.getBlockById(blockId);
 
-        await this.scrollIntoViewByBlock(block, behavior, ability);
+        await this.scrollIntoViewByBlock(block, behavior);
     }
 
     public async scrollIntoViewByBlock(
         block: AsyncBlock,
-        behavior: ScrollBehavior = 'smooth',
-        ability?: ScrollPrimary
+        behavior: ScrollBehavior = 'smooth'
     ) {
         if (!block.dom) {
             return console.warn(`Block is not exist.`);
         }
 
         /* use dom primary ability */
-        if (ability === 'primary') {
-            block.dom.scrollIntoView({ block: 'start', behavior });
-            return;
-        }
-
-        const containerRect = domToRect(this._scrollContainer);
-        const blockRect = domToRect(block.dom);
-
-        const blockRelativeTopToEditor =
-            blockRect.top - containerRect.top - containerRect.height / 4;
-        const blockRelativeLeftToEditor = blockRect.left - containerRect.left;
-
-        this.scrollTo({
-            left: blockRelativeLeftToEditor,
-            top: blockRelativeTopToEditor,
-            behavior,
-        });
-        this._updateScrollInfo(
-            blockRelativeLeftToEditor,
-            blockRelativeTopToEditor
-        );
+        block.dom.scrollIntoView({ block: 'start', behavior });
     }
 
     public async keepBlockInView(

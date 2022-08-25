@@ -168,11 +168,7 @@ export const TOC = () => {
 
     const onClick = async (blockId?: string) => {
         setActiveBlockId(blockId);
-        await editor.scrollManager.scrollIntoViewByBlockId(
-            blockId,
-            'smooth',
-            'primary'
-        );
+        await editor.scrollManager.scrollIntoViewByBlockId(blockId);
     };
 
     return (
