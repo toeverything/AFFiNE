@@ -1,6 +1,5 @@
 import { styled } from '@toeverything/components/ui';
 import type { ValueOf } from '@toeverything/utils';
-import { useState } from 'react';
 
 const StyledTabs = styled('div')(({ theme }) => {
     return {
@@ -56,32 +55,35 @@ const StyledTabTitle = styled('div')<{
     }
 `;
 
-const TAB_TITLE = {
-    PAGES: 'pages',
-    GALLERY: 'gallery',
-    TOC: 'toc',
+export const TAB_TITLE = {
+    PAGES: 'PAGES',
+    GALLERY: 'GALLERY',
+    TOC: 'TOC',
 } as const;
 
-const TabMap = new Map<TabKey, { value: TabValue; disabled?: boolean }>([
-    ['PAGES', { value: 'pages' }],
-    ['GALLERY', { value: 'gallery', disabled: true }],
-    ['TOC', { value: 'toc' }],
+export const TabMap = new Map<
+    TabValue,
+    { value: TabValue; disabled?: boolean }
+>([
+    [TAB_TITLE.PAGES, { value: TAB_TITLE.PAGES }],
+    [TAB_TITLE.GALLERY, { value: TAB_TITLE.GALLERY, disabled: true }],
+    [TAB_TITLE.TOC, { value: TAB_TITLE.TOC }],
 ]);
 
-type TabKey = keyof typeof TAB_TITLE;
 type TabValue = ValueOf<typeof TAB_TITLE>;
 
-const Tabs = () => {
-    const [activeValue, setActiveTab] = useState<TabValue>(TAB_TITLE.PAGES);
+interface Props {
+    activeTab: TabValue;
+    onTabChange: (v: TabValue) => void;
+}
 
-    const onClick = (v: TabValue) => {
-        setActiveTab(v);
-    };
+const Tabs = (props: Props) => {
+    const { activeTab, onTabChange } = props;
 
     return (
         <StyledTabs>
             {[...TabMap.entries()].map(([k, { value, disabled = false }]) => {
-                const isActive = activeValue === value;
+                const isActive = activeTab === value;
 
                 return (
                     <StyledTabTitle
@@ -89,7 +91,7 @@ const Tabs = () => {
                         className={isActive ? 'active' : ''}
                         isActive={isActive}
                         isDisabled={disabled}
-                        onClick={() => onClick(value)}
+                        onClick={() => onTabChange(value)}
                     >
                         {k}
                     </StyledTabTitle>

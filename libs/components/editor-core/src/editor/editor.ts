@@ -346,6 +346,12 @@ export class Editor implements Virgo {
         return await this.getBlock({ workspace: this.workspace, id: blockId });
     }
 
+    async getBlockByIds(ids: string[]): Promise<Awaited<AsyncBlock | null>[]> {
+        return await Promise.all(
+            ids.map(id => this.getBlock({ workspace: this.workspace, id }))
+        );
+    }
+
     /**
      * TODO: to be optimized
      * get block`s dom by block`s id
@@ -488,6 +494,13 @@ export class Editor implements Virgo {
 
     async queryBlock(query: any) {
         return await services.api.editorBlock.query(this.workspace, query);
+    }
+
+    async queryByPageId(pageId: string) {
+        return await services.api.editorBlock.get({
+            workspace: this.workspace,
+            ids: [pageId],
+        });
     }
 
     /** Hooks */

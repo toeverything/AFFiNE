@@ -22,16 +22,23 @@ import { type BlockEditor } from '@toeverything/components/editor-core';
 import { useFlag } from '@toeverything/datasource/feature-flags';
 import { CollapsiblePageTree } from './collapsible-page-tree';
 import { Tabs } from './components/tabs';
+import { TabMap, TAB_TITLE } from './components/tabs/Tabs';
+import { TOC } from './components/toc';
 import { WorkspaceName } from './workspace-name';
+
 type PageProps = {
     workspace: string;
 };
 
 export function Page(props: PageProps) {
+    const [activeTab, setActiveTab] = useState(
+        TabMap.get(TAB_TITLE.PAGES).value
+    );
     const { page_id } = useParams();
     const { showSpaceSidebar, fixedDisplay, setSpaceSidebarVisible } =
         useShowSpaceSidebar();
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
+    const onTabChange = v => setActiveTab(v);
 
     return (
         <LigoApp>
@@ -50,31 +57,37 @@ export function Page(props: PageProps) {
                 >
                     <WorkspaceName />
 
-                    <Tabs />
+                    <Tabs activeTab={activeTab} onTabChange={onTabChange} />
 
                     <WorkspaceSidebarContent>
-                        <div>
-                            {dailyNotesFlag && (
+                        {activeTab === TabMap.get(TAB_TITLE.PAGES).value && (
+                            <div>
+                                {dailyNotesFlag && (
+                                    <div>
+                                        <CollapsibleTitle title="Daily Notes">
+                                            <CalendarHeatmap />
+                                        </CollapsibleTitle>
+                                    </div>
+                                )}
                                 <div>
-                                    <CollapsibleTitle title="Daily Notes">
-                                        <CalendarHeatmap />
+                                    <CollapsibleTitle
+                                        title="ACTIVITIES"
+                                        initialOpen={false}
+                                    >
+                                        <Activities />
                                     </CollapsibleTitle>
                                 </div>
-                            )}
-                            <div>
-                                <CollapsibleTitle
-                                    title="ACTIVITIES"
-                                    initialOpen={false}
-                                >
-                                    <Activities />
-                                </CollapsibleTitle>
+                                <div>
+                                    <CollapsiblePageTree title="PAGES">
+                                        {page_id ? <PageTree /> : null}
+                                    </CollapsiblePageTree>
+                                </div>
                             </div>
-                            <div>
-                                <CollapsiblePageTree title="PAGES">
-                                    {page_id ? <PageTree /> : null}
-                                </CollapsiblePageTree>
-                            </div>
-                        </div>
+                        )}
+
+                        {activeTab === TabMap.get(TAB_TITLE.TOC).value && (
+                            <TOC />
+                        )}
                     </WorkspaceSidebarContent>
                 </WorkspaceSidebar>
             </LigoLeftContainer>
@@ -105,6 +118,7 @@ const EditorContainer = ({
             const obv = new ResizeObserver(e => {
                 setPageClientWidth(e[0].contentRect.width);
             });
+
             obv.observe(scrollContainer);
             return () => obv.disconnect();
         }
