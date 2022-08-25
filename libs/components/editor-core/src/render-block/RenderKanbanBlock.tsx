@@ -63,7 +63,7 @@ const useBlockProgress = (block?: AsyncBlock) => {
 
         const unobserve = block.onUpdate(() => {
             updateProgress();
-        });
+        }, 1);
 
         return unobserve;
     }, [block]);
