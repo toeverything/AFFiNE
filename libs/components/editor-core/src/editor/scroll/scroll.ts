@@ -1,5 +1,5 @@
-import { CSSProperties, type UIEvent } from 'react';
 import EventEmitter from 'eventemitter3';
+import { type UIEvent } from 'react';
 
 import { domToRect, Rect } from '@toeverything/utils';
 import type { Editor as BlockEditor } from '../editor';
@@ -164,22 +164,9 @@ export class ScrollManager {
         if (!block.dom) {
             return console.warn(`Block is not exist.`);
         }
-        const containerRect = domToRect(this._scrollContainer);
-        const blockRect = domToRect(block.dom);
 
-        const blockRelativeTopToEditor =
-            blockRect.top - containerRect.top - containerRect.height / 4;
-        const blockRelativeLeftToEditor = blockRect.left - containerRect.left;
-
-        this.scrollTo({
-            left: blockRelativeLeftToEditor,
-            top: blockRelativeTopToEditor,
-            behavior,
-        });
-        this._updateScrollInfo(
-            blockRelativeLeftToEditor,
-            blockRelativeTopToEditor
-        );
+        /* use dom primary ability */
+        block.dom.scrollIntoView({ block: 'start', behavior });
     }
 
     public async keepBlockInView(
