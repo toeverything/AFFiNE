@@ -1,9 +1,6 @@
 import { Editor } from '../editor';
-import {
-    AsyncBlock,
-    SelectBlock,
-    SelectInfo,
-} from '@toeverything/components/editor-core';
+import { SelectBlock, SelectInfo } from '../selection';
+import { AsyncBlock } from '../block';
 import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
 import { commonHTML2Block, commonHTML2Text } from './utils';
@@ -14,7 +11,7 @@ export class ClipboardUtils {
         this._editor = editor;
     }
 
-    shouldHandlerContinue = (event: ClipboardEvent) => {
+    shouldHandlerContinue(event: ClipboardEvent) {
         const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
 
         if (event.defaultPrevented) {
@@ -25,7 +22,7 @@ export class ClipboardUtils {
         }
 
         return this._editor.selectionManager.currentSelectInfo.type !== 'None';
-    };
+    }
 
     async getClipInfoOfBlockById(blockId: string) {
         const block = await this._editor.getBlockById(blockId);
@@ -160,7 +157,7 @@ export class ClipboardUtils {
         const [clipBlockInfos] = (
             await Promise.all(
                 editableViews.map(editableView => {
-                    return editableView?.html2block2?.({
+                    return editableView?.html2block?.({
                         editor: this._editor,
                         element: element,
                     });
@@ -194,7 +191,7 @@ export class ClipboardUtils {
 
     commonHTML2Text = commonHTML2Text;
 
-    textToBlock = (clipData: string = ''): ClipBlockInfo[] => {
+    textToBlock(clipData = ''): ClipBlockInfo[] {
         return clipData.split('\n').map((str: string) => {
             return {
                 type: 'text',
@@ -204,7 +201,7 @@ export class ClipboardUtils {
                 children: [],
             };
         });
-    };
+    }
 
     async page2html() {
         const rootBlockId = this._editor.getRootBlockId();

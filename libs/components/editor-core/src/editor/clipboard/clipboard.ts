@@ -1,5 +1,5 @@
 import { ClipboardEventDispatcher } from './clipboardEventDispatcher';
-import { HookType } from '@toeverything/components/editor-core';
+import { HookType } from '../types';
 import { Editor } from '../editor';
 import { Copy } from './copy';
 import { Paste } from './paste';

@@ -25,7 +25,6 @@ import {
     MARKDOWN_STYLE_MAP,
     MatchRes,
 } from './utils';
-import { AsyncBlock, SelectBlock } from '@toeverything/components/editor-core';
 
 function isInlineAndVoid(editor: Editor, el: any) {
     return editor.isInline(el) && editor.isVoid(el);

@@ -142,6 +142,7 @@ export class Paste {
         const currentSelectInfo =
             await this._editor.selectionManager.getSelectInfo();
 
+        // TODO: Logic of insert blocks maybe should declare in blockHelper
         // When the selection is in one of the blocks, select?.type === 'Range'
         // Currently the selection does not support cross-blocking, so this case is not considered
         if (currentSelectInfo.type === 'Range') {

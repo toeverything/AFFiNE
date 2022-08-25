@@ -15,7 +15,7 @@ export class ImageBlock extends BaseView {
     View = ImageView;
 
     // TODO: needs to download the image and then upload it to get a new link and then assign it
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {

@@ -1,6 +1,6 @@
 import { getRandomString } from '@toeverything/components/common';
-import { ClipBlockInfo } from '@toeverything/components/editor-core';
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
+import { ClipBlockInfo } from './types';
 
 const getIsLink = (htmlElement: HTMLElement) => {
     return ['A', 'IMG'].includes(htmlElement.tagName);

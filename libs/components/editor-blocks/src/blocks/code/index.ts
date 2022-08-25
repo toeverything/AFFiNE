@@ -27,7 +27,7 @@ export class CodeBlock extends BaseView {
         return block;
     }
 
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {

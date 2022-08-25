@@ -27,7 +27,7 @@ export class TextBlock extends BaseView {
         return block;
     }
 
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {
@@ -67,7 +67,7 @@ export class Heading1Block extends BaseView {
         }
         return block;
     }
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {
@@ -100,7 +100,7 @@ export class Heading2Block extends BaseView {
         }
         return block;
     }
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {
@@ -134,7 +134,7 @@ export class Heading3Block extends BaseView {
         return block;
     }
 
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {

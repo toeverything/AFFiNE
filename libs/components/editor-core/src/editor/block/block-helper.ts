@@ -11,11 +11,8 @@ import {
     Selection as SlateSelection,
 } from 'slate';
 import { Editor } from '../editor';
-import {
-    AsyncBlock,
-    SelectBlock,
-    SelectInfo,
-} from '@toeverything/components/editor-core';
+import { AsyncBlock } from '../block';
+import { SelectBlock } from '../selection';
 
 type TextUtilsFunctions =
     | 'getString'
@@ -121,7 +118,7 @@ export class BlockHelper {
 
     public async getFlatBlocksUnderParent(
         parentBlockId: string,
-        includeParent: boolean = false
+        includeParent = false
     ): Promise<AsyncBlock[]> {
         const blocks = [];
         const block = await this._editor.getBlockById(parentBlockId);

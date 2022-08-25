@@ -9,7 +9,7 @@ import type { EventData } from '../block';
 import { AsyncBlock } from '../block';
 import type { Editor } from '../editor';
 import { SelectBlock } from '../selection';
-import { HTML2BlockResult } from '../clipboard/types';
+import { HTML2BlockResult } from '../clipboard';
 export interface CreateView {
     block: AsyncBlock;
     editor: Editor;
@@ -125,11 +125,7 @@ export abstract class BaseView {
         return result;
     }
 
-    html2block(el: Element, parseEl: (el: Element) => any[]): any[] | null {
-        return null;
-    }
-
-    async html2block2(props: {
+    async html2block(props: {
         element: HTMLElement | Node;
         editor: Editor;
     }): Promise<HTML2BlockResult> {
@@ -144,7 +140,6 @@ export abstract class BaseView {
         return '';
     }
 
-    // TODO: Try using new methods
     async block2html(props: {
         editor: Editor;
         block: AsyncBlock;

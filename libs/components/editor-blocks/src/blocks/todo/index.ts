@@ -28,7 +28,7 @@ export class TodoBlock extends BaseView {
         return block;
     }
 
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {
@@ -45,7 +45,7 @@ export class TodoBlock extends BaseView {
             const childrenBlockInfos = (
                 await Promise.all(
                     children.map(childElement =>
-                        this.html2block2({
+                        this.html2block({
                             editor,
                             element: childElement,
                         })

@@ -13,7 +13,7 @@ export class DividerBlock extends BaseView {
     type = Protocol.Block.Type.divider;
     View = DividerView;
 
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {

@@ -13,7 +13,7 @@ import HotKeys from 'hotkeys-js';
 import type { WorkspaceAndBlockId } from './block';
 import { AsyncBlock } from './block';
 import { BlockHelper } from './block/block-helper';
-import { Clipboard } from './clipboard/clipboard';
+import { Clipboard } from './clipboard';
 import { EditorCommands } from './commands';
 import { EditorConfig } from './config';
 import { DragDropManager } from './drag-drop';

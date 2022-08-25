@@ -1,7 +1,6 @@
 import {
     BlockFlavorKeys,
     DefaultColumnsValue,
-    ReturnEditorBlock,
 } from '@toeverything/datasource/db-service';
 import { SelectInfo } from '../selection';
 

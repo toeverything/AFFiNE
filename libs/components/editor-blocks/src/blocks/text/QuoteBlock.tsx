@@ -30,7 +30,7 @@ export class QuoteBlock extends BaseView {
         return block;
     }
 
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {
@@ -68,7 +68,7 @@ export class CalloutBlock extends BaseView {
         return block;
     }
 
-    override async html2block2({
+    override async html2block({
         element,
         editor,
     }: {
