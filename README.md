@@ -194,6 +194,10 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=toeverything/AFFiNE&type=Date)](https://star-history.com/#toeverything/AFFiNE&Date)
+
 # License
 
 AFFiNE is distributed under the terms of MIT license.
