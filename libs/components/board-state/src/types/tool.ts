@@ -2,11 +2,11 @@ import {
     TLKeyboardEventHandler,
     TLPinchEventHandler,
     TLPointerEventHandler,
-    Utils,
+    Utils
 } from '@tldraw/core';
 import {
     TDEventHandler,
-    TDToolType,
+    TDToolType
 } from '@toeverything/components/board-types';
 import type { TldrawApp } from '../tldraw-app';
 
@@ -51,7 +51,7 @@ export abstract class BaseTool<T extends string = any> extends TDEventHandler {
         this.app.cancelSession();
     };
 
-    getNextChildIndex = () => {
+    public getNextChildIndex = () => {
         const {
             shapes,
             appState: { currentPageId },

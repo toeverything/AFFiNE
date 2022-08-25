@@ -2,7 +2,11 @@ import { createEditor } from '@toeverything/components/affine-editor';
 import * as commands from '@toeverything/components/board-commands';
 import { Tldraw } from '@toeverything/components/board-draw';
 import { getSession } from '@toeverything/components/board-sessions';
-import { deepCopy, TldrawApp } from '@toeverything/components/board-state';
+import {
+    deepCopy,
+    TLDR,
+    TldrawApp,
+} from '@toeverything/components/board-state';
 import { tools } from '@toeverything/components/board-tools';
 import { TDShapeType } from '@toeverything/components/board-types';
 import {
@@ -69,7 +73,57 @@ const AffineBoard = ({
                     set_app(app);
                 },
                 async onPaste(e, data) {
-                    console.log('e,data: ', e, data);
+                    console.log('data: ', data);
+                    if (!data) {
+                        return;
+                    }
+
+                    const { shapes } = data;
+                    let addShapes = await Promise.all(
+                        shapes.map(async (item: any) => {
+                            const {
+                                type,
+                                point,
+                                style,
+                                parentId,
+                                size,
+                                childIndex,
+                            } = item;
+                            // const childIndex = BaseTool.getNextChildIndex();
+                            const group = await services.api.editorBlock.create(
+                                {
+                                    workspace,
+                                    type:
+                                        type === TDShapeType.Editor
+                                            ? 'group'
+                                            : 'shape',
+                                    parentId: parentId,
+                                }
+                            );
+                            await services.api.editorBlock.create({
+                                workspace,
+                                type: 'text',
+                                parentId: group.id,
+                            });
+
+                            const newShape = TLDR.get_shape_util(
+                                item.type
+                            ).create({
+                                id: group.id,
+                                rootBlockId: group.id,
+                                affineId: group.id,
+                                parentId: parentId,
+                                childIndex,
+                                point: [point[0] + 10, point[1] + 10],
+                                style,
+                                size,
+                                workspace,
+                            });
+                            return newShape;
+                        })
+                    );
+                    app.create(addShapes);
+                    console.log(app.page.shapes);
                 },
                 async onCopy(e, groupIds) {
                     const clip = await getClipDataOfBlocksById(

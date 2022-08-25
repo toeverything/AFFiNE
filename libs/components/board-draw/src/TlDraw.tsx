@@ -299,7 +299,6 @@ const InnerTldraw = memo(function InnerTldraw({
         selectedIds.length === 1 &&
         page.shapes[selectedIds[0]] &&
         TLDR.get_shape_util(page.shapes[selectedIds[0]].type).hideBounds;
-
     const isHideResizeHandlesShape =
         selectedIds.length === 1 &&
         page.shapes[selectedIds[0]] &&
