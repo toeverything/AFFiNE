@@ -9,10 +9,7 @@ import {
 } from '@toeverything/components/board-state';
 import { tools } from '@toeverything/components/board-tools';
 import { TDShapeType } from '@toeverything/components/board-types';
-import {
-    getClipDataOfBlocksById,
-    RecastBlockProvider,
-} from '@toeverything/components/editor-core';
+import { RecastBlockProvider } from '@toeverything/components/editor-core';
 import {
     ReturnEditorBlock,
     services,
@@ -125,10 +122,10 @@ const AffineBoard = ({
                     app.create(addShapes);
                 },
                 async onCopy(e, groupIds) {
-                    const clip = await getClipDataOfBlocksById(
-                        editor,
-                        groupIds
-                    );
+                    const clip =
+                        await editor.clipboard.clipboardUtils.getClipDataOfBlocksById(
+                            groupIds
+                        );
 
                     e.clipboardData?.setData(
                         clip.getMimeType(),

@@ -1,21 +1,9 @@
 import { withRecastBlock } from '@toeverything/components/editor-core';
-import {
-    Protocol,
-    DefaultColumnsValue,
-} from '@toeverything/datasource/db-service';
-import {
-    AsyncBlock,
-    BaseView,
-    ChildrenView,
-    getTextHtml,
-    getTextProperties,
-    SelectBlock,
-} from '@toeverything/framework/virgo';
+import { Protocol } from '@toeverything/datasource/db-service';
+import { AsyncBlock, BaseView } from '@toeverything/framework/virgo';
 
 import { PageView } from './PageView';
-
-export const PageChildrenView: (prop: ChildrenView) => JSX.Element = props =>
-    props.children;
+import { Block2HtmlProps } from '../../utils/commonBlockClip';
 
 export class PageBlock extends BaseView {
     type = Protocol.Block.Type.page;
@@ -35,21 +23,17 @@ export class PageBlock extends BaseView {
         return this.get_decoration<any>(content, 'text')?.value?.[0].text;
     }
 
-    override getSelProperties(
-        block: AsyncBlock,
-        selectInfo: any
-    ): DefaultColumnsValue {
-        const properties = super.getSelProperties(block, selectInfo);
-        return getTextProperties(properties, selectInfo);
-    }
-
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        const content = getTextHtml(block);
-        const childrenContent = await generateHtml(children);
-        return `<h1>${content}</h1> ${childrenContent}`;
+    override async block2html({ block, editor, selectInfo }: Block2HtmlProps) {
+        const header =
+            await editor.clipboard.clipboardUtils.convertTextValue2HtmlBySelectInfo(
+                block,
+                selectInfo
+            );
+        const childrenHtml =
+            await editor.clipboard.clipboardUtils.convertBlock2HtmlBySelectInfos(
+                block,
+                selectInfo?.children
+            );
+        return `<h1>${header}</h1>${childrenHtml}`;
     }
 }

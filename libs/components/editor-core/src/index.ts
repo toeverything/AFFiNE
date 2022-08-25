@@ -6,11 +6,6 @@ export * from './kanban';
 export * from './kanban/types';
 export * from './recast-block';
 export * from './recast-block/types';
-export {
-    BlockRenderProvider,
-    RenderBlockChildren,
-    useBlockRender,
-    withTreeViewChildren,
-} from './render-block';
+export * from './render-block';
 export { MIN_PAGE_WIDTH, RenderRoot } from './RenderRoot';
 export * from './utils';

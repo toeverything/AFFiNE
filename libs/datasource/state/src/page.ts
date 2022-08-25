@@ -1,5 +1,4 @@
 import { atom, useAtom } from 'jotai';
-import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 // import { Virgo } from '@toeverything/components/editor-core';
 
@@ -14,12 +13,13 @@ export const useCurrentEditors = () => {
     const { pathname } = useLocation();
     const [currentEditors, setCurrentEditors] = useAtom(_currentEditors);
 
-    useEffect(() => {
-        if (!workspaceId || !pageId) return;
-        if (pathname.split('/').length >= 3) {
-            setCurrentEditors({});
-        }
-    }, [pageId, pathname, setCurrentEditors, workspaceId]);
+    /* not useful: 2022.8.25 */
+    // useEffect(() => {
+    //     if (!workspaceId || !pageId) return;
+    //     if (pathname.split('/').length >= 3) {
+    //         setCurrentEditors({});
+    //     }
+    // }, [pageId, pathname, setCurrentEditors, workspaceId]);
 
     return {
         currentEditors,
