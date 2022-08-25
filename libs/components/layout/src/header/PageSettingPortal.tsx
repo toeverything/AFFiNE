@@ -153,9 +153,7 @@ function PageSettingPortal() {
 
     const handleExportHtml = async () => {
         //@ts-ignore
-        const htmlContent = await virgo.clipboard
-            .getClipboardParse()
-            .page2html();
+        const htmlContent = await virgo.clipboard.clipboardUtils.page2html();
         const htmlTitle = pageBlock.title;
 
         FileExporter.exportHtml(htmlTitle, htmlContent);
@@ -163,9 +161,7 @@ function PageSettingPortal() {
 
     const handleExportMarkdown = async () => {
         //@ts-ignore
-        const htmlContent = await virgo.clipboard
-            .getClipboardParse()
-            .page2html();
+        const htmlContent = await virgo.clipboard.clipboardUtils.page2html();
         const htmlTitle = pageBlock.title;
         FileExporter.exportMarkdown(htmlTitle, htmlContent);
     };

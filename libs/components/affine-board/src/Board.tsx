@@ -5,10 +5,7 @@ import { getSession } from '@toeverything/components/board-sessions';
 import { deepCopy, TldrawApp } from '@toeverything/components/board-state';
 import { tools } from '@toeverything/components/board-tools';
 import { TDShapeType } from '@toeverything/components/board-types';
-import {
-    getClipDataOfBlocksById,
-    RecastBlockProvider,
-} from '@toeverything/components/editor-core';
+import { RecastBlockProvider } from '@toeverything/components/editor-core';
 import { services } from '@toeverything/datasource/db-service';
 import { AsyncBlock, BlockEditor } from '@toeverything/framework/virgo';
 import { useEffect, useState } from 'react';
@@ -72,10 +69,10 @@ const AffineBoard = ({
                     console.log('e,data: ', e, data);
                 },
                 async onCopy(e, groupIds) {
-                    const clip = await getClipDataOfBlocksById(
-                        editor,
-                        groupIds
-                    );
+                    const clip =
+                        await editor.clipboard.clipboardUtils.getClipDataOfBlocksById(
+                            groupIds
+                        );
 
                     e.clipboardData?.setData(
                         clip.getMimeType(),

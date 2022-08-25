@@ -1,52 +1,150 @@
-import { Editor } from '../editor';
-import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
-import { Clip } from './clip';
+import { getRandomString } from '@toeverything/components/common';
+import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
+import { ClipBlockInfo } from './types';
 
-export const shouldHandlerContinue = (event: Event, editor: Editor) => {
-    const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
+const getIsLink = (htmlElement: HTMLElement) => {
+    return ['A', 'IMG'].includes(htmlElement.tagName);
+};
+const getTextStyle = (htmlElement: HTMLElement) => {
+    const tagName = htmlElement.tagName;
+    const textStyle: { [key: string]: any } = {};
 
-    if (event.defaultPrevented) {
-        return false;
+    const style = (htmlElement.getAttribute('style') || '')
+        .split(';')
+        .reduce((style: { [key: string]: any }, styleString) => {
+            const [key, value] = styleString.split(':');
+            if (key && value) {
+                style[key] = value;
+            }
+            return style;
+        }, {});
+
+    if (
+        style['font-weight'] === 'bold' ||
+        Number(style['font-weight']) > 400 ||
+        ['STRONG', 'B', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(
+            htmlElement.tagName
+        )
+    ) {
+        textStyle['bold'] = true;
     }
-    if (filterNodes.includes((event.target as HTMLElement)?.tagName)) {
-        return false;
+    if (getIsLink(htmlElement)) {
+        textStyle['type'] = 'link';
+        textStyle['url'] =
+            htmlElement.getAttribute('href') || htmlElement.getAttribute('src');
+        textStyle['id'] = getRandomString('link');
     }
 
-    return editor.selectionManager.currentSelectInfo.type !== 'None';
+    if (tagName === 'EM' || style['fontStyle'] === 'italic') {
+        textStyle['italic'] = true;
+    }
+    if (
+        tagName === 'U' ||
+        (style['text-decoration'] &&
+            style['text-decoration'].indexOf('underline') !== -1) ||
+        style['border-bottom']
+    ) {
+        textStyle['underline'] = true;
+    }
+    if (tagName === 'CODE') {
+        textStyle['inlinecode'] = true;
+    }
+    if (
+        tagName === 'S' ||
+        tagName === 'DEL' ||
+        (style['text-decoration'] &&
+            style['text-decoration'].indexOf('line-through') !== -1)
+    ) {
+        textStyle['strikethrough'] = true;
+    }
+
+    return textStyle;
 };
 
-export const getClipInfoOfBlockById = async (
-    editor: Editor,
-    blockId: string
-) => {
-    const block = await editor.getBlockById(blockId);
-    const blockView = editor.getView(block.type);
-    const blockInfo: ClipBlockInfo = {
-        type: block.type,
-        properties: blockView.getSelProperties(block, {}),
-        children: [] as ClipBlockInfo[],
+export const commonHTML2Block = (
+    element: HTMLElement | Node,
+    type: BlockFlavorKeys = Protocol.Block.Type.text,
+    ignoreEmptyElement = true
+): ClipBlockInfo => {
+    const textValue = commonHTML2Text(element, {}, ignoreEmptyElement);
+    if (!textValue.length && ignoreEmptyElement) {
+        return null;
+    }
+    return {
+        type,
+        properties: {
+            text: { value: textValue },
+        },
+        children: [],
     };
-    const children = (await block?.children()) ?? [];
-
-    for (let i = 0; i < children.length; i++) {
-        const childInfo = await getClipInfoOfBlockById(editor, children[i].id);
-        blockInfo.children.push(childInfo);
-    }
-    return blockInfo;
 };
 
-export const getClipDataOfBlocksById = async (
-    editor: Editor,
-    blockIds: string[]
+const getSingleLabelHTMLElementContent = (htmlElement: HTMLElement) => {
+    if (htmlElement.tagName === 'IMG') {
+        return (
+            htmlElement.getAttribute('alt') || htmlElement.getAttribute('src')
+        );
+    }
+    return '';
+};
+export const commonHTML2Text = (
+    element: HTMLElement | Node,
+    textStyle: { [key: string]: any } = {},
+    ignoreEmptyText = true
 ) => {
-    const clipInfos = await Promise.all(
-        blockIds.map(blockId => getClipInfoOfBlockById(editor, blockId))
-    );
+    if (element instanceof Text) {
+        return element.textContent.split('\n').map(text => {
+            return { text: text, ...textStyle };
+        });
+    }
+    const htmlElement = element as HTMLElement;
+    const childNodes = Array.from(htmlElement.childNodes);
 
-    return new Clip(
-        OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED,
-        JSON.stringify({
-            data: clipInfos,
-        })
-    );
+    const isLink = getIsLink(htmlElement);
+    const currentTextStyle = getTextStyle(htmlElement);
+
+    if (!childNodes.length) {
+        const singleLabelContent =
+            getSingleLabelHTMLElementContent(htmlElement);
+        if (isLink && singleLabelContent) {
+            return [
+                {
+                    children: [
+                        {
+                            text: singleLabelContent,
+                        },
+                    ],
+                    ...currentTextStyle,
+                },
+            ];
+        }
+        return ignoreEmptyText ? [] : [{ text: '', ...currentTextStyle }];
+    }
+
+    const childTexts = childNodes
+        .reduce((result, childNode) => {
+            const textBlocks = commonHTML2Text(
+                childNode,
+                isLink
+                    ? textStyle
+                    : {
+                          ...textStyle,
+                          ...currentTextStyle,
+                      },
+                ignoreEmptyText
+            );
+            result.push(...textBlocks);
+            return result;
+        }, [])
+        .filter(v => v);
+
+    if (isLink && childTexts.length) {
+        return [
+            {
+                children: childTexts,
+                ...currentTextStyle,
+            },
+        ];
+    }
+    return childTexts;
 };

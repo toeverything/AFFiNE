@@ -1,5 +1,4 @@
 import { createEditor } from '@toeverything/components/affine-editor';
-import { ClipboardParse } from '@toeverything/components/editor-core';
 import { fileExporter } from './file-exporter';
 
 interface CreateClipboardParseProps {
@@ -7,13 +6,12 @@ interface CreateClipboardParseProps {
     rootBlockId: string;
 }
 
-const createClipboardParse = ({
+const createClipboardUtils = ({
     workspaceId,
     rootBlockId,
 }: CreateClipboardParseProps) => {
     const editor = createEditor(workspaceId, rootBlockId);
-
-    return new ClipboardParse(editor);
+    return editor.clipboard.clipboardUtils;
 };
 
 interface ExportHandlerProps extends CreateClipboardParseProps {
@@ -25,9 +23,8 @@ export const exportHtml = async ({
     rootBlockId,
     title,
 }: ExportHandlerProps) => {
-    const clipboardParse = createClipboardParse({ workspaceId, rootBlockId });
-    const htmlContent = await clipboardParse.page2html();
-    fileExporter.exportHtml(title, htmlContent);
+    const clipboardUtils = createClipboardUtils({ workspaceId, rootBlockId });
+    fileExporter.exportHtml(title, await clipboardUtils.page2html());
 };
 
 export const exportMarkdown = async ({
@@ -35,7 +32,6 @@ export const exportMarkdown = async ({
     rootBlockId,
     title,
 }: ExportHandlerProps) => {
-    const clipboardParse = createClipboardParse({ workspaceId, rootBlockId });
-    const htmlContent = await clipboardParse.page2html();
-    fileExporter.exportMarkdown(title, htmlContent);
+    const clipboardUtils = createClipboardUtils({ workspaceId, rootBlockId });
+    fileExporter.exportMarkdown(title, await clipboardUtils.page2html());
 };

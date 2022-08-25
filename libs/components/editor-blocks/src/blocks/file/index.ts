@@ -9,25 +9,22 @@ import {
     services,
 } from '@toeverything/datasource/db-service';
 import { FileView } from './FileView';
+import { Block2HtmlProps } from '../../utils/commonBlockClip';
 
 export class FileBlock extends BaseView {
     public override selectable = true;
     public override editable = false;
     type = Protocol.Block.Type.file;
     View = FileView;
+    override async block2html({ block }: Block2HtmlProps) {
+        const fileProperty = block.getProperty('file');
+        const fileId = fileProperty?.value;
+        const fileInfo = fileId
+            ? await services.api.file.get(fileId, block.workspace)
+            : null;
 
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        const file_property =
-            block.getProperty('file') || ({} as FileColumnValue);
-        const file_id = file_property.value;
-        let file_info = null;
-        if (file_id) {
-            file_info = await services.api.file.get(file_id, block.workspace);
-        }
-        return `<p><a src=${file_info?.url}>${file_property?.name}</p>`;
+        return fileInfo
+            ? `<p><a href=${fileInfo?.url}>${fileProperty?.name}</a></p>`
+            : '';
     }
 }

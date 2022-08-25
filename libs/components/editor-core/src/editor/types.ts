@@ -174,8 +174,9 @@ export enum HookType {
     ON_ROOTNODE_DRAG_END = 'onRootNodeDragEnd',
     ON_ROOTNODE_DRAG_OVER_CAPTURE = 'onRootNodeDragOverCapture',
     ON_ROOTNODE_DROP = 'onRootNodeDrop',
-    BEFORE_COPY = 'beforeCopy',
-    BEFORE_CUT = 'beforeCut',
+    ON_COPY = 'onCopy',
+    ON_CUT = 'onCut',
+    ON_PASTE = 'onPaste',
     ON_ROOTNODE_SCROLL = 'onRootNodeScroll',
 }
 
@@ -207,8 +208,9 @@ export interface HooksRunner {
     onRootNodeDragEnd: (e: React.DragEvent<Element>) => void;
     onRootNodeDragLeave: (e: React.DragEvent<Element>) => void;
     onRootNodeDrop: (e: React.DragEvent<Element>) => void;
-    beforeCopy: (e: ClipboardEvent) => void;
-    beforeCut: (e: ClipboardEvent) => void;
+    onCopy: (e: ClipboardEvent) => void;
+    onCut: (e: ClipboardEvent) => void;
+    onPaste: (e: ClipboardEvent) => void;
     onRootNodeScroll: (e: React.UIEvent) => void;
 }
 
