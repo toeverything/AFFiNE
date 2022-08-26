@@ -1,19 +1,19 @@
 import {
-    useMemo,
     memo,
+    useCallback,
+    useLayoutEffect,
+    useMemo,
     useRef,
     useState,
-    useLayoutEffect,
-    useCallback,
 } from 'react';
 
-import { VariableSizeGrid, areEqual } from 'react-window';
 import type {
     GridChildComponentProps,
     GridItemKeySelector,
 } from 'react-window';
+import { VariableSizeGrid } from 'react-window';
 import style9 from 'style9';
-import './basic-table.scss';
+
 export interface TableColumn {
     dataKey: string;
     label: string;
