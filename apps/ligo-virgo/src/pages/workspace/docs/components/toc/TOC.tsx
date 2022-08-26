@@ -16,8 +16,8 @@ import {
     getContentByAsyncBlocks,
     getPageTOC,
 } from './toc-util';
+import './toc.css';
 import type { ListenerMap, TOCType } from './types';
-
 const StyledTOCItem = styled('a')<{ type?: string; isActive?: boolean }>(
     ({ type, isActive }) => {
         const common = {
@@ -168,6 +168,11 @@ export const TOC = () => {
 
     const onClick = async (blockId?: string) => {
         setActiveBlockId(blockId);
+        const block = await editor.getBlockById(blockId);
+        block.dom.classList.add('toc-scroll-item');
+        setTimeout(() => {
+            block.dom.classList.remove('toc-scroll-item');
+        }, 1000);
         await editor.scrollManager.scrollIntoViewByBlockId(blockId);
     };
 
