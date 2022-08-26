@@ -1,4 +1,4 @@
-import { useBlockRender } from '@toeverything/components/editor-core';
+import { RenderBlockChildren } from '@toeverything/components/editor-core';
 import { ChildrenView, CreateView } from '@toeverything/framework/virgo';
 
 export const GridItemRender = function (
@@ -6,14 +6,7 @@ export const GridItemRender = function (
 ) {
     const GridItem = function (props: CreateView) {
         const { block } = props;
-        const { BlockRender } = useBlockRender();
-        const children = (
-            <>
-                {block.childrenIds.map(id => {
-                    return <BlockRender key={id} blockId={id} />;
-                })}
-            </>
-        );
+        const children = <RenderBlockChildren block={block} indent={false} />;
         return <>{creator({ ...props, children })}</>;
     };
     return GridItem;
