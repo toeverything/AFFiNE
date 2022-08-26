@@ -3,9 +3,9 @@
     "version": "0.0.1",
     "license": "MIT",
     "dependencies": {
-        "jotai": "^1.7.4"
+        "jotai": "^1.8.1"
     },
     "devDependencies": {
-        "firebase": "^9.9.2"
+        "firebase": "^9.9.3"
     }
 }

@@ -1,2 +1,2 @@
-export { HTML2BlockResult, ClipBlockInfo } from './types';
 export { Clipboard } from './clipboard';
+export type { ClipBlockInfo, HTML2BlockResult } from './types';

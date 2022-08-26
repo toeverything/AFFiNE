@@ -4,7 +4,7 @@
     "license": "MIT",
     "dependencies": {
         "@mui/icons-material": "^5.8.4",
-        "date-fns": "^2.28.0",
-        "style9": "^0.13.3"
+        "date-fns": "^2.29.2",
+        "style9": "^0.14.0"
     }
 }
