@@ -503,7 +503,7 @@ Editor.after = function (
     return target;
 };
 
-type SelectionStartAndEnd = {
+export type SelectionStartAndEnd = {
     selectionStart: Point;
     selectionEnd: Point;
 };
@@ -514,6 +514,10 @@ export type Contents = {
         isEmpty: boolean;
     };
     contentAfterSelection: {
+        content: Descendant[];
+        isEmpty: boolean;
+    };
+    contentSelection: {
         content: Descendant[];
         isEmpty: boolean;
     };
@@ -572,6 +576,7 @@ class SlateUtils {
             anchor: point1,
             focus: point2,
         });
+
         if (!fragment.length) {
             console.error('Debug information:', point1, point2, fragment);
             throw new Error('Failed to get content between!');
@@ -602,7 +607,7 @@ class SlateUtils {
         for (let i = 0; i < fragmentChildren.length; i++) {
             const child = fragmentChildren[i];
             if ('type' in child && child.type === 'link') {
-                i !== fragmentChildren.length - 1 && textChildren.push(child);
+                textChildren.push(child);
                 continue;
             }
             if (!('text' in child)) {
@@ -637,6 +642,10 @@ class SlateUtils {
             contentAfterSelection: {
                 content: this.getContentBetween(selectionEnd, end),
                 isEmpty: Point.equals(end, selectionEnd),
+            },
+            contentSelection: {
+                content: this.getContentBetween(selectionStart, selectionEnd),
+                isEmpty: false,
             },
         } as Contents;
     }

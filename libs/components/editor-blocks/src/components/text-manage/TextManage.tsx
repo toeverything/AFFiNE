@@ -1,5 +1,6 @@
 /* eslint-disable max-lines */
 import {
+    CustomText,
     Text,
     type SlateUtils,
     type TextProps,
@@ -108,7 +109,7 @@ const findLowestCommonAncestor = async (
 
 export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
     (props, ref) => {
-        const { block, editor, ...otherOptions } = props;
+        const { block, editor, handleBackSpace, ...otherOptions } = props;
         const defaultRef = useRef<ExtendedTextUtils>(null);
         // Maybe there is a better way
         const textRef =
@@ -446,6 +447,61 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 }
             }
         };
+
+        const onBackspace: TextProps['handleBackSpace'] = async props => {
+            const { isCollAndStart, splitContents, selection } = props;
+            if (!isCollAndStart) {
+                const {
+                    contentBeforeSelection,
+                    contentAfterSelection,
+                    contentSelection,
+                } = splitContents;
+                const { selectionStart, selectionEnd } = selection;
+                let hasDeleteDoubleLink = false;
+
+                const beforeContent = [...contentBeforeSelection.content];
+                const lastItem = beforeContent[beforeContent.length - 1];
+                if (
+                    'linkType' in lastItem &&
+                    lastItem.linkType === 'doubleLink'
+                ) {
+                    if (
+                        selectionStart === selectionEnd ||
+                        selectionStart.offset
+                    ) {
+                        beforeContent.splice(beforeContent.length - 1, 1);
+                        hasDeleteDoubleLink = true;
+                    }
+                }
+
+                const afterContent = [...contentAfterSelection.content];
+                const beginItem = afterContent[0];
+                const lastSel = contentSelection.content[0];
+                if (
+                    selectionEnd.offset &&
+                    'linkType' in beginItem &&
+                    beginItem.linkType === 'doubleLink' &&
+                    'linkType' in lastSel &&
+                    lastSel.linkType === 'doubleLink'
+                ) {
+                    afterContent.splice(0, 1);
+                    hasDeleteDoubleLink = true;
+                }
+
+                if (hasDeleteDoubleLink) {
+                    await block.setProperty('text', {
+                        value: [
+                            ...beforeContent,
+                            ...afterContent,
+                        ] as CustomText[],
+                    });
+                    return true;
+                }
+            }
+
+            return (handleBackSpace && handleBackSpace(props)) || false;
+        };
+
         if (!properties || !properties.text) {
             return <></>;
         }
@@ -467,6 +523,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 handleUndo={onUndo}
                 handleRedo={onRedo}
                 handleEsc={onKeyboardEsc}
+                handleBackSpace={onBackspace}
                 {...otherOptions}
             />
         );
