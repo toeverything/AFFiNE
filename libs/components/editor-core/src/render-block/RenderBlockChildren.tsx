@@ -1,6 +1,6 @@
 import { styled } from '@toeverything/components/ui';
 import type { AsyncBlock } from '../editor';
-import { useBlockRender } from './Context';
+import { BlockRender } from './Context';
 import { NullBlockRender } from './RenderBlock';
 
 export interface RenderChildrenProps {
@@ -12,7 +12,6 @@ export const RenderBlockChildren = ({
     block,
     indent = true,
 }: RenderChildrenProps) => {
-    const { BlockRender } = useBlockRender();
     if (BlockRender === NullBlockRender) {
         return null;
     }

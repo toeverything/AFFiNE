@@ -20,7 +20,7 @@ export const ViewsMenu = () => {
         useRecastView();
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setViewName(e.target.value.trim());
+        setViewName(e.target.value);
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -36,7 +36,7 @@ export const ViewsMenu = () => {
         }
         await updateView({
             ...activeView,
-            name: viewName,
+            name: viewName.trim(),
             type: viewType,
         });
         setActiveView(null);
