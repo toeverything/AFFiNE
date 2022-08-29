@@ -1,3 +1,4 @@
+import { keyframes } from '@emotion/react';
 import type { Virgo } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { useCurrentEditors } from '@toeverything/datasource/state';
@@ -16,8 +17,21 @@ import {
     getContentByAsyncBlocks,
     getPageTOC,
 } from './toc-util';
-import './toc.css';
 import type { ListenerMap, TOCType } from './types';
+// import './toc.css';
+const blinker = keyframes`
+0% {
+    background: rgba(152, 172, 189, 0.1);
+}
+100% {
+    background: rgba(152, 172, 189, 0.1);
+}
+`;
+const toScrollItem = styled('div')`
+    animation: ${blinker} 1s linear;
+    animation-delay: 1s;
+`;
+const toScrollItemClassName = toScrollItem.toString().substring(1);
 const StyledTOCItem = styled('a')<{ type?: string; isActive?: boolean }>(
     ({ type, isActive }) => {
         const common = {
@@ -169,9 +183,9 @@ export const TOC = () => {
     const onClick = async (blockId?: string) => {
         setActiveBlockId(blockId);
         const block = await editor.getBlockById(blockId);
-        block.dom.classList.add('toc-scroll-item');
+        block.dom.classList.add(toScrollItemClassName);
         setTimeout(() => {
-            block.dom.classList.remove('toc-scroll-item');
+            block.dom.classList.remove(toScrollItemClassName);
         }, 1000);
         await editor.scrollManager.scrollIntoViewByBlockId(blockId);
     };
