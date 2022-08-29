@@ -405,11 +405,11 @@ Editor.before = function (
         if (element) {
             if (isInlineAndVoid(editor, element)) {
                 // Inline entities need to be drilled out
-                // target = Editor.before(editor, target);
-                target = {
-                    path: [0, path[1] - 1],
-                    offset: 0,
-                };
+                target = Editor.before(editor, target);
+                // target = {
+                //     path: [0, path[1] - 1],
+                //     offset: 0,
+                // };
             } else if (editor.isInline(element) && !editor.isVoid(element)) {
                 // Inline styles such as hyperlinks need to drill directly into it
                 const inlineTextLength = element?.children?.[0]?.text?.length;

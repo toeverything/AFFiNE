@@ -1,44 +1,42 @@
-import React, {
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    useCallback,
-    KeyboardEvent,
-    MouseEvent,
-    memo,
-} from 'react';
-import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
-
-import isUrl from 'is-url';
-import style9 from 'style9';
-import {
-    Editor,
-    Transforms,
-    Element as SlateElement,
-    Descendant,
-    Range as SlateRange,
-    Node,
-} from 'slate';
-import { ReactEditor } from 'slate-react';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { LinkIcon } from '@toeverything/components/icons';
 import {
     MuiTooltip as Tooltip,
-    styled,
     muiTooltipClasses,
+    styled,
     type MuiTooltipProps,
 } from '@toeverything/components/ui';
 import {
     getRelativeUrlForInternalPageUrl,
     isInternalPageUrl,
 } from '@toeverything/utils';
-
+import isUrl from 'is-url';
+import React, {
+    KeyboardEvent,
+    memo,
+    MouseEvent,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
+import {
+    Descendant,
+    Editor,
+    Element as SlateElement,
+    Node,
+    Range as SlateRange,
+    Transforms,
+} from 'slate';
+import { ReactEditor } from 'slate-react';
+import style9 from 'style9';
 import { getRandomString } from '../utils';
-import { colors } from '../../colors';
-import { LinkIcon } from '@toeverything/components/icons';
+
 export type LinkElement = {
     type: 'link';
     url: string;
@@ -47,11 +45,18 @@ export type LinkElement = {
 };
 
 export const withLinks = (editor: ReactEditor) => {
-    const { isInline } = editor;
+    const { isInline, isVoid } = editor;
 
     editor.isInline = element => {
         // @ts-ignore
         return element.type === 'link' ? true : isInline(element);
+    };
+
+    editor.isVoid = element => {
+        // @ts-ignore
+        return element.type === 'link' && element.linkType === 'doubleLink'
+            ? true
+            : isVoid(element);
     };
 
     return editor;

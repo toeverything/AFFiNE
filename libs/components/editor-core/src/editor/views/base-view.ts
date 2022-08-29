@@ -1,5 +1,3 @@
-import { ComponentType, ReactElement } from 'react';
-
 import type {
     Column,
     DefaultColumnsValue,
@@ -10,6 +8,7 @@ import {
     MapOperation,
 } from '@toeverything/datasource/jwt';
 import { cloneDeep } from '@toeverything/utils';
+import { ComponentType, ReactElement } from 'react';
 import type { EventData } from '../block';
 import { AsyncBlock } from '../block';
 import type { Editor } from '../editor';
@@ -113,7 +112,11 @@ export abstract class BaseView {
     // Whether the component is empty
     isEmpty(block: AsyncBlock): boolean {
         const text = block.getProperty('text');
-        const result = !text?.value?.[0]?.text;
+        // const result = !text?.value?.[0]?.text;
+        const result =
+            text?.value?.findIndex(
+                (item: any) => item.text || item.children?.length
+            ) === -1;
 
         // Assert that the text is really empty
         if (

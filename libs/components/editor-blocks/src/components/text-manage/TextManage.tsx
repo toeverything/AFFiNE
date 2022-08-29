@@ -1,6 +1,5 @@
 /* eslint-disable max-lines */
 import {
-    CustomText,
     Text,
     type SlateUtils,
     type TextProps,
@@ -109,7 +108,7 @@ const findLowestCommonAncestor = async (
 
 export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
     (props, ref) => {
-        const { block, editor, handleBackSpace, ...otherOptions } = props;
+        const { block, editor, handleEnter, ...otherOptions } = props;
         const defaultRef = useRef<ExtendedTextUtils>(null);
         // Maybe there is a better way
         const textRef =
@@ -448,58 +447,35 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
             }
         };
 
-        const onBackspace: TextProps['handleBackSpace'] = async props => {
-            const { isCollAndStart, splitContents, selection } = props;
-            if (!isCollAndStart) {
-                const {
-                    contentBeforeSelection,
-                    contentAfterSelection,
-                    contentSelection,
-                } = splitContents;
-                const { selectionStart, selectionEnd } = selection;
-                let hasDeleteDoubleLink = false;
-
-                const beforeContent = [...contentBeforeSelection.content];
-                const lastItem = beforeContent[beforeContent.length - 1];
-                if (
-                    'linkType' in lastItem &&
-                    lastItem.linkType === 'doubleLink'
-                ) {
-                    if (
-                        selectionStart === selectionEnd ||
-                        selectionStart.offset
-                    ) {
-                        beforeContent.splice(beforeContent.length - 1, 1);
-                        hasDeleteDoubleLink = true;
+        const onTextEnter: TextProps['handleEnter'] = async props => {
+            const { splitContents } = props;
+            if (splitContents) {
+                const { contentBeforeSelection, contentAfterSelection } =
+                    splitContents;
+                // after[after.length - 1];
+                if (!contentBeforeSelection.isEmpty) {
+                    const beforeSelection = contentBeforeSelection.content;
+                    const lastItem: any =
+                        beforeSelection.length > 0
+                            ? beforeSelection[beforeSelection.length - 1]
+                            : null;
+                    if (lastItem?.linkType === 'doubleLink') {
+                        contentBeforeSelection.content.push({ text: '' });
                     }
                 }
-
-                const afterContent = [...contentAfterSelection.content];
-                const beginItem = afterContent[0];
-                const lastSel = contentSelection.content[0];
-                if (
-                    selectionEnd.offset &&
-                    'linkType' in beginItem &&
-                    beginItem.linkType === 'doubleLink' &&
-                    'linkType' in lastSel &&
-                    lastSel.linkType === 'doubleLink'
-                ) {
-                    afterContent.splice(0, 1);
-                    hasDeleteDoubleLink = true;
-                }
-
-                if (hasDeleteDoubleLink) {
-                    await block.setProperty('text', {
-                        value: [
-                            ...beforeContent,
-                            ...afterContent,
-                        ] as CustomText[],
-                    });
-                    return true;
+                if (!contentAfterSelection.isEmpty) {
+                    const afterSelection = contentAfterSelection.content;
+                    const firstItem: any =
+                        afterSelection.length > 0 ? afterSelection[0] : null;
+                    if (firstItem?.linkType === 'doubleLink') {
+                        contentAfterSelection.content.splice(0, 0, {
+                            text: '',
+                        });
+                    }
                 }
             }
 
-            return (handleBackSpace && handleBackSpace(props)) || false;
+            return handleEnter && handleEnter(props);
         };
 
         if (!properties || !properties.text) {
@@ -523,7 +499,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 handleUndo={onUndo}
                 handleRedo={onRedo}
                 handleEsc={onKeyboardEsc}
-                handleBackSpace={onBackspace}
+                handleEnter={onTextEnter}
                 {...otherOptions}
             />
         );

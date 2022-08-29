@@ -26,15 +26,20 @@ export const DoubleLinkComponent = (props: RenderElementProps) => {
         [doubleLinkElement, navigate]
     );
 
+    const displayValue = doubleLinkElement.children
+        .map((item: any) => item.text)
+        .join('');
+
     return (
-        <span>
-            <PagesIcon style={{ verticalAlign: 'middle', height: '20px' }} />
-            <a
-                {...attributes}
-                style={{ cursor: 'pointer' }}
-                href={`/${doubleLinkElement.workspaceId}/${doubleLinkElement.blockId}`}
-            >
-                <span onClick={handleClickLinkText}>{children}</span>
+        <span onClick={handleClickLinkText}>
+            <a {...attributes} style={{ cursor: 'pointer' }}>
+                <PagesIcon
+                    style={{ verticalAlign: 'middle', height: '20px' }}
+                />
+                <span>
+                    {children}
+                    {displayValue}
+                </span>
             </a>
         </span>
     );
