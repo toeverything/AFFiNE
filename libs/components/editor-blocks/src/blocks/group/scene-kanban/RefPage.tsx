@@ -21,13 +21,17 @@ const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
     return createPortal(
         <MuiBackdrop
             open={open}
+            onMouseDown={(e: { stopPropagation: () => void }) => {
+                // Prevent trigger the bottom editor's selection
+                e.stopPropagation();
+            }}
+            onClick={closeSubPage}
             style={{
                 display: 'flex',
                 flexDirection: 'column',
                 background: 'rgba(58, 76, 92, 0.4)',
                 zIndex: theme.affine.zIndex.popover,
             }}
-            onClick={closeSubPage}
         >
             <Dialog
                 onClick={(e: { stopPropagation: () => void }) => {
