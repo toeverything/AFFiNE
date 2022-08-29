@@ -1,6 +1,6 @@
-import { keyframes } from '@emotion/react';
 import type { Virgo } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
+import { Protocol } from '@toeverything/datasource/db-service';
 import { useCurrentEditors } from '@toeverything/datasource/state';
 import {
     createContext,
@@ -18,20 +18,7 @@ import {
     getPageTOC,
 } from './toc-util';
 import type { ListenerMap, TOCType } from './types';
-// import './toc.css';
-const blinker = keyframes`
-0% {
-    background: rgba(152, 172, 189, 0.1);
-}
-100% {
-    background: rgba(152, 172, 189, 0.1);
-}
-`;
-const toScrollItem = styled('div')`
-    animation: ${blinker} 1s linear;
-    animation-delay: 1s;
-`;
-const toScrollItemClassName = toScrollItem.toString().substring(1);
+
 const StyledTOCItem = styled('a')<{ type?: string; isActive?: boolean }>(
     ({ type, isActive }) => {
         const common = {
@@ -183,11 +170,28 @@ export const TOC = () => {
     const onClick = async (blockId?: string) => {
         setActiveBlockId(blockId);
         const block = await editor.getBlockById(blockId);
-        block.dom.classList.add(toScrollItemClassName);
-        setTimeout(() => {
-            block.dom.classList.remove(toScrollItemClassName);
-        }, 1000);
         await editor.scrollManager.scrollIntoViewByBlockId(blockId);
+
+        if (!block || block.type === Protocol.Block.Type.group) {
+            // the group block has its own background
+            return;
+        }
+        // See https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+        block.dom?.animate(
+            [
+                {
+                    backgroundColor: 'rgba(152, 172, 189, 0.1)',
+                },
+                {
+                    backgroundColor: 'rgba(152, 172, 189, 0)',
+                },
+            ],
+            {
+                delay: 500,
+                duration: 700,
+                easing: 'linear',
+            }
+        );
     };
 
     return (
