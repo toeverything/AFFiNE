@@ -259,7 +259,7 @@ export function App() {
                         }}
                         size="lg"
                     >
-                        Blog
+                        {t('Blog')}
                     </Button>
                     <Button
                         onClick={() => navigate('/aboutus')}
@@ -274,7 +274,7 @@ export function App() {
                         }}
                         size="lg"
                     >
-                        About Us
+                        {t('AboutUs')}
                     </Button>
                     <Select defaultValue="en" onChange={changeLanguage}>
                         {options.map(option => (
