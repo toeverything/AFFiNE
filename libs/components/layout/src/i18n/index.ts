@@ -20,7 +20,7 @@ i18next.use(initReactI18next).init({
 export const options = [
     { value: 'en', text: 'English' },
     { value: 'zh', text: '简体中文' },
-];
+] as const;
 
 export { i18next };
 
