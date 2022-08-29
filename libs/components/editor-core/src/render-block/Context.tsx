@@ -27,7 +27,7 @@ export const BlockRenderProvider = ({
     );
 };
 
-const useBlockRender = () => {
+export const useBlockRender = () => {
     const { blockRender } = useContext(BlockRenderContext);
     return {
         BlockRender: blockRender,

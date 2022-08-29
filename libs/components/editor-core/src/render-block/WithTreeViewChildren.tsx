@@ -7,7 +7,7 @@ import type {
 } from 'react';
 import { forwardRef } from 'react';
 import { CreateView } from '../editor';
-import { BlockRender } from './Context';
+import { useBlockRender } from './Context';
 import { NullBlockRender } from './RenderBlock';
 
 type WithChildrenConfig = {
@@ -60,6 +60,7 @@ export const withTreeViewChildren = (
 
     return (props: CreateView) => {
         const { block } = props;
+        const { BlockRender } = useBlockRender();
         const collapsed = block.getProperty('collapsed')?.value;
         const childrenIds = block.childrenIds;
         const showChildren =
