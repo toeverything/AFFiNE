@@ -98,6 +98,13 @@ export const useSettings = (): SettingItem[] => {
             },
         },
         {
+            type: 'button',
+            name: 'Language',
+            onClick: () => {
+                console.log('Language is change');
+            },
+        },
+        {
             type: 'separator',
         },
         {

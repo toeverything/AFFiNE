@@ -5,6 +5,7 @@ import {
 } from '@toeverything/components/icons';
 import { styled } from '@toeverything/components/ui';
 import { cloneElement, useCallback, useMemo, type ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Comments } from '../Comments';
 import { useActiveComment } from '../Comments/use-comments';
 import { LayoutSettings } from '../Layout';
@@ -67,7 +68,7 @@ export const ContainerTabs = () => {
         _defaultTabsKeys as unknown as string[],
         'settings'
     );
-
+    const { t } = useTranslation();
     return (
         <>
             <StyledTabsTitlesContainer>
@@ -75,7 +76,7 @@ export const ContainerTabs = () => {
                     const { type, text, icon } = tab;
                     return (
                         <TabItemTitle
-                            title={text}
+                            title={t(`stetting.${text}.title`)}
                             icon={icon}
                             isActive={activeTab === type}
                             onClick={() => {

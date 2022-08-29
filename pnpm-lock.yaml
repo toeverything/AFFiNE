@@ -196,10 +196,14 @@ importers:
     specifiers:
       '@mui/icons-material': ^5.8.4
       firebase: ^9.9.3
+      i18next: ^21.9.1
       mini-css-extract-plugin: ^2.6.1
+      react-i18next: ^11.18.4
       webpack: ^5.74.0
     dependencies:
       '@mui/icons-material': 5.8.4
+      i18next: 21.9.1
+      react-i18next: 11.18.4_i18next@21.9.1
     devDependencies:
       firebase: 9.9.3
       mini-css-extract-plugin: 2.6.1_webpack@5.74.0
@@ -501,7 +505,9 @@ importers:
       '@types/turndown': ^5.0.1
       clsx: ^1.2.1
       date-fns: ^2.29.2
+      i18next: ^21.9.1
       jotai: ^1.8.1
+      react-i18next: ^11.18.4
       tinycolor2: ^1.4.2
       turndown: 7.1.1
     dependencies:
@@ -513,7 +519,9 @@ importers:
       '@mui/icons-material': 5.8.4
       clsx: 1.2.1
       date-fns: 2.29.2
+      i18next: 21.9.1
       jotai: 1.8.1
+      react-i18next: 11.18.4_i18next@21.9.1
       tinycolor2: 1.4.2
       turndown: 7.1.1
     devDependencies:
@@ -7383,10 +7391,8 @@ packages:
       indent-string: 4.0.0
     dev: true
 
-  /ajv-formats/2.1.1_ajv@8.11.0:
+  /ajv-formats/2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
     peerDependenciesMeta:
       ajv:
         optional: true
@@ -16953,7 +16959,7 @@ packages:
     dependencies:
       '@types/json-schema': 7.0.11
       ajv: 8.11.0
-      ajv-formats: 2.1.1_ajv@8.11.0
+      ajv-formats: 2.1.1
       ajv-keywords: 5.1.0_ajv@8.11.0
     dev: true
 
