@@ -9,7 +9,7 @@
             "isNotLocalWorkspace": "Welcome to the AFFiNE demo. To begin saving changes you can SYNC TO DISK.",
             "DoNotStore": "AFFiNE is under active development and the current version is UNSTABLE. Please DO NOT store information or data"
         },
-        "stetting": {
+        "setting": {
             "Layout": {
                 "title": "Layout"
             },
