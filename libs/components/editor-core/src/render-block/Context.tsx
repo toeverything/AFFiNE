@@ -3,7 +3,7 @@ import { createContext, PropsWithChildren, useContext } from 'react';
 import { RenderBlockProps } from './RenderBlock';
 
 type BlockRenderProps = {
-    blockRender: (args: RenderBlockProps) => JSX.Element | null;
+    blockRender: (args: RenderBlockProps) => JSX.Element;
 };
 
 export const BlockRenderContext = createContext<BlockRenderProps>(
@@ -32,4 +32,9 @@ export const useBlockRender = () => {
     return {
         BlockRender: blockRender,
     };
+};
+
+export const BlockRender = (props: RenderBlockProps) => {
+    const { BlockRender } = useBlockRender();
+    return <BlockRender {...props} />;
 };

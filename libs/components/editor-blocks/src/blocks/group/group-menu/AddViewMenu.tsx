@@ -41,7 +41,7 @@ export const AddViewMenu = () => {
                 onClick={() => setActivePanel(!activePanel)}
             >
                 <AddViewIcon fontSize="small" />
-                <span>Add View</span>
+                <span style={{ userSelect: 'none' }}>Add View</span>
                 {activePanel && (
                     <Panel>
                         <PanelItem>

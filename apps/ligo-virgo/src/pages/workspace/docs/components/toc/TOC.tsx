@@ -1,5 +1,6 @@
 import type { Virgo } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
+import { Protocol } from '@toeverything/datasource/db-service';
 import { useCurrentEditors } from '@toeverything/datasource/state';
 import {
     createContext,
@@ -168,7 +169,29 @@ export const TOC = () => {
 
     const onClick = async (blockId?: string) => {
         setActiveBlockId(blockId);
+        const block = await editor.getBlockById(blockId);
         await editor.scrollManager.scrollIntoViewByBlockId(blockId);
+
+        if (!block || block.type === Protocol.Block.Type.group) {
+            // the group block has its own background
+            return;
+        }
+        // See https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+        block.dom?.animate(
+            [
+                {
+                    backgroundColor: 'rgba(152, 172, 189, 0.1)',
+                },
+                {
+                    backgroundColor: 'rgba(152, 172, 189, 0)',
+                },
+            ],
+            {
+                delay: 500,
+                duration: 700,
+                easing: 'linear',
+            }
+        );
     };
 
     return (

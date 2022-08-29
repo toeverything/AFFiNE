@@ -1,4 +1,4 @@
-import { useBlockRender } from '@toeverything/components/editor-core';
+import { BlockRender } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import { Protocol } from '@toeverything/datasource/db-service';
 import { CreateView } from '@toeverything/framework/virgo';
@@ -31,7 +31,6 @@ export const Grid = function (props: CreateView) {
     const originalLeftWidth = useRef<number>(gridItemMinWidth);
     const originalRightWidth = useRef<number>(gridItemMinWidth);
     const [alertHandleId, setAlertHandleId] = useState<string>(null);
-    const { BlockRender } = useBlockRender();
 
     const getLeftRightGridItemDomByIndex = (index: number) => {
         const gridItems = Array.from(gridContainerRef.current?.children).filter(

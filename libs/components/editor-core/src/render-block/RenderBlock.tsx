@@ -7,7 +7,8 @@ import { useBlock } from '../hooks';
 /**
  * Render nothing
  */
-export const NullBlockRender = (): null => null;
+// eslint-disable-next-line react/jsx-no-useless-fragment
+export const NullBlockRender = () => <></>;
 
 export interface RenderBlockProps {
     blockId: string;
@@ -22,7 +23,7 @@ export function RenderBlock({
     const { block } = useBlock(blockId);
 
     const setRef = useCallback(
-        (dom: HTMLElement) => {
+        (dom: HTMLElement | null) => {
             if (block != null && dom != null) {
                 block.dom = dom;
             }
