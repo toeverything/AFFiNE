@@ -24,18 +24,3 @@ export const options = [
 ] as const;
 
 export { i18next };
-
-// import { useTranslation } from 'react-i18next';
-// import { options } from './i18n';
-// <Select defaultValue="en" onChange={changeLanguage}>
-// {options.map(option => (
-//     <Option key={option.value} value={option.value}>
-//         {option.text}
-//     </Option>
-// ))}
-// </Select>
-
-// const { t, i18n } = useTranslation();
-// const changeLanguage = (event: any) => {
-//     i18n.changeLanguage(event);
-// };
