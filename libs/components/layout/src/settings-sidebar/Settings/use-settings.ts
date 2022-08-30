@@ -82,7 +82,7 @@ export const useSettings = (): SettingItem[] => {
         // },
         {
             type: 'button',
-            name: t('Setting.Settings.Duplicate Page'),
+            name: t('Duplicate Page'),
             onClick: async () => {
                 const newPageInfo = await duplicatePage({
                     workspaceId,
@@ -93,7 +93,7 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
-            name: t('Setting.Settings.Copy Page Link'),
+            name: t('Copy Page Link'),
             onClick: () => {
                 copyToClipboard(window.location.href);
                 message.success('Page link copied successfully');
@@ -101,7 +101,7 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
-            name: t('Setting.Settings.Language'),
+            name: t('Language'),
             onClick: () => {
                 //Do noting
             },
@@ -150,7 +150,7 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
-            name: t('Setting.Settings.Clear Workspace'),
+            name: t('Clear Workspace'),
             onClick: () => clearWorkspace(workspaceId),
             flag: 'booleanClearWorkspace',
         },

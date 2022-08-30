@@ -23,7 +23,7 @@ export const ContainerTabs = () => {
         return [
             {
                 type: 'layout',
-                text: t('Setting.Layout'),
+                text: 'Layout',
                 icon: (
                     <IconWrapper>
                         <LayoutIcon />
@@ -33,7 +33,7 @@ export const ContainerTabs = () => {
             },
             {
                 type: 'comment',
-                text: t('Setting.Comment'),
+                text: 'Comment',
                 icon: (
                     <IconWrapper>
                         <CommentIcon />
@@ -50,7 +50,7 @@ export const ContainerTabs = () => {
             },
             {
                 type: 'settings',
-                text: t('Setting.Settings'),
+                text: 'Settings',
                 icon: (
                     <IconWrapper>
                         <SettingsIcon />
@@ -76,7 +76,7 @@ export const ContainerTabs = () => {
                     const { type, text, icon } = tab;
                     return (
                         <TabItemTitle
-                            title={text}
+                            title={t(text)}
                             icon={icon}
                             isActive={activeTab === type}
                             onClick={() => {

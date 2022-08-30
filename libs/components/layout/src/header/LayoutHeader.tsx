@@ -25,11 +25,11 @@ export const LayoutHeader = () => {
 
     const warningTips = useMemo(() => {
         if (!fsApiSupported()) {
-            return t('warningTips.isNotfsApiSupported');
+            return t('WarningTips.IsNotfsApiSupported');
         } else if (!isLocalWorkspace) {
-            return t('warningTips.isNotLocalWorkspace');
+            return t('WarningTips.IsNotLocalWorkspace');
         } else {
-            return t('warningTips.DoNotStore');
+            return t('WarningTips.DoNotStore');
         }
     }, [isLocalWorkspace, t]);
 

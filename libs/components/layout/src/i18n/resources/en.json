@@ -1,26 +1,21 @@
 {
-    "Sync to Disk": "Sync to Disk",
-    "Share": "Share",
-    "WarningTips": {
-        "IsNotfsApiSupported": "Welcome to the AFFiNE demo. To begin saving changes you can SYNC DATA TO DISK with the latest version of Chromium based browser like Chrome/Edge",
-        "IsNotLocalWorkspace": "Welcome to the AFFiNE demo. To begin saving changes you can SYNC TO DISK.",
-        "DoNotStore": "AFFiNE is under active development and the current version is UNSTABLE. Please DO NOT store information or data"
-    },
-    "Setting": {
-        "Layout": {
-            "Title": "Layout"
+    "translation": {
+        "Sync to Disk": "Sync to Disk",
+        "Share": "Share",
+        "WarningTips": {
+            "IsNotfsApiSupported": "Welcome to the AFFiNE demo. To begin saving changes you can SYNC DATA TO DISK with the latest version of Chromium based browser like Chrome/Edge",
+            "IsNotLocalWorkspace": "Welcome to the AFFiNE demo. To begin saving changes you can SYNC TO DISK.",
+            "DoNotStore": "AFFiNE is under active development and the current version is UNSTABLE. Please DO NOT store information or data"
         },
-        "Comment": {
-            "Title": "Comment"
-        },
-        "Settings": {
-            "Title": "Settings",
-            "Duplicate Page": "Duplicate Page",
-            "Copy Page Link": "Copy Page Link",
-            "Language": "Language",
-            "Clear Workspace": "Clear Workspace",
-            "Last edited by": "Last edited by ",
-            "Logout": "Logout"
-        }
+        "Layout": "Layout",
+        "Comment": "Comment",
+        "Settings": "Settings",
+
+        "Duplicate Page": "Duplicate Page",
+        "Copy Page Link": "Copy Page Link",
+        "Language": "Language",
+        "Clear Workspace": "Clear Workspace",
+        "Last edited by": "Last edited by ",
+        "Logout": "Logout"
     }
 }

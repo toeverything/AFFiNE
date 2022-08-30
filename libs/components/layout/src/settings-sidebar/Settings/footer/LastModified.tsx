@@ -15,7 +15,7 @@ export const LastModified = () => {
         <div>
             <div>
                 <ContentText type="xs">
-                    <span>{t('stetting.Settings.Last edited by')}</span>
+                    <span>{t('Last edited by')}</span>
                     <span>{username}</span>
                 </ContentText>
             </div>

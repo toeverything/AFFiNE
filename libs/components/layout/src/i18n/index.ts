@@ -4,15 +4,14 @@ import en_US from './resources/en.json';
 import zh_CN from './resources/zh.json';
 
 const resources = {
-    translation: {
-        en: en_US,
-        zh: zh_CN,
-    },
+    en: en_US,
+    zh: zh_CN,
 } as const;
 
 i18next.use(initReactI18next).init({
     lng: 'en',
     fallbackLng: 'en',
+
     resources,
     interpolation: {
         escapeValue: false, // not needed for react as it escapes by default

@@ -21,9 +21,7 @@ export const Logout = () => {
     return (
         <ListItem onClick={logout}>
             <StyledIcon />
-            <ContentText type="base">
-                {t('stetting.Settings.Logout')}
-            </ContentText>
+            <ContentText type="base">{t('Logout')}</ContentText>
         </ListItem>
     );
 };

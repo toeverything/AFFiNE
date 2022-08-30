@@ -62,6 +62,22 @@ export const SettingsList = () => {
                                     ))}
                                 </Select>
                             </div>
+                        ) : item.name === '当前语言' ? (
+                            <div style={{ marginLeft: '12em' }}>
+                                <Select
+                                    defaultValue="zh"
+                                    onChange={changeLanguage}
+                                >
+                                    {options.map(option => (
+                                        <Option
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.text}
+                                        </Option>
+                                    ))}
+                                </Select>
+                            </div>
                         ) : null}
                     </ListItem>
                 );

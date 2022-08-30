@@ -1,5 +1,4 @@
 import { styled } from '@toeverything/components/ui';
-import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { StatusText } from './StatusText';
 import { StatusTrack } from './StatusTrack';
@@ -11,7 +10,6 @@ export const Switcher = () => {
     const navigate = useNavigate();
     const params = useParams();
     const { pathname } = useLocation();
-    const { t } = useTranslation();
     const pageViewMode = isBoard(pathname) ? DocMode.board : DocMode.doc;
 
     const switchToPageView = (targetViewMode: DocMode) => {
