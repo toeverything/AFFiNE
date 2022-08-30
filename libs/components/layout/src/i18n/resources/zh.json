@@ -1,30 +1,26 @@
 {
-    "translation": {
-        "Paper": "页面",
-        "Edgeless": "无边缘",
-        "Sync to Disk": "同步到磁盘",
-        "Share": "分享",
-        "warningTips": {
-            "isNotfsApiSupported": "欢迎来到AFFiNE 的演示界面。您可以使用最新版本的基于Chrome的浏览器（如Chrome/Edge）将数据同步到磁盘来进行保存",
-            "isNotLocalWorkspace": "欢迎来到AFFiNE 的演示界面，您可以同步到磁盘来进行保存操作。",
-            "DoNotStore": "AFFINE 正在积极开发中，当前版本不稳定。请不要存储信息或数据。"
+    "Sync to Disk": "同步到磁盘",
+    "Share": "分享",
+    "WarningTips": {
+        "IsNotfsApiSupported": "欢迎来到AFFiNE 的演示界面。您可以使用最新版本的基于Chrome的浏览器（如Chrome/Edge）将数据同步到磁盘来进行保存",
+        "IsNotLocalWorkspace": "欢迎来到AFFiNE 的演示界面，您可以同步到磁盘来进行保存操作。",
+        "DoNotStore": "AFFINE 正在积极开发中，当前版本不稳定。请不要存储信息或数据。"
+    },
+    "Setting": {
+        "Layout": {
+            "Title": "布局"
         },
-        "stetting": {
-            "Layout": {
-                "title": "布局"
-            },
-            "Comment": {
-                "title": "评论"
-            },
-            "Settings": {
-                "title": "设置",
-                "Duplicate Page": "复制页面",
-                "Copy Page Link": "拷贝页面链接",
-                "Language": "当前语言",
-                "Clear Workspace": "清空工作区域",
-                "Last edited by": "最后编辑者为 ",
-                "Logout": "登出"
-            }
+        "Comment": {
+            "Title": "评论"
+        },
+        "Settings": {
+            "Title": "设置",
+            "Duplicate Page": "复制页面",
+            "Copy Page Link": "拷贝页面链接",
+            "Language": "当前语言",
+            "Clear Workspace": "清空工作区域",
+            "Last edited by": "最后编辑者为 ",
+            "Logout": "退出登录"
         }
     }
 }

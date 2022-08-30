@@ -17,12 +17,13 @@ const _defaultTabsKeys = ['layout', 'comment', 'settings'] as const;
 
 export const ContainerTabs = () => {
     const { activeCommentId, resolveComment } = useActiveComment();
+    const { t } = useTranslation();
 
     const getSettingsTabsData = useCallback((): SettingsTabItemType[] => {
         return [
             {
                 type: 'layout',
-                text: 'Layout',
+                text: t('Setting.Layout'),
                 icon: (
                     <IconWrapper>
                         <LayoutIcon />
@@ -32,7 +33,7 @@ export const ContainerTabs = () => {
             },
             {
                 type: 'comment',
-                text: 'Comment',
+                text: t('Setting.Comment'),
                 icon: (
                     <IconWrapper>
                         <CommentIcon />
@@ -49,7 +50,7 @@ export const ContainerTabs = () => {
             },
             {
                 type: 'settings',
-                text: 'Settings',
+                text: t('Setting.Settings'),
                 icon: (
                     <IconWrapper>
                         <SettingsIcon />
@@ -68,7 +69,6 @@ export const ContainerTabs = () => {
         _defaultTabsKeys as unknown as string[],
         'settings'
     );
-    const { t } = useTranslation();
     return (
         <>
             <StyledTabsTitlesContainer>
@@ -76,7 +76,7 @@ export const ContainerTabs = () => {
                     const { type, text, icon } = tab;
                     return (
                         <TabItemTitle
-                            title={t(`stetting.${text}.title`)}
+                            title={text}
                             icon={icon}
                             isActive={activeTab === type}
                             onClick={() => {

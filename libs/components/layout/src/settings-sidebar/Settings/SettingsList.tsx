@@ -12,8 +12,8 @@ import { useSettings } from './use-settings';
 
 export const SettingsList = () => {
     const settings = useSettings();
-    const { t, i18n } = useTranslation();
-    const changeLanguage = (event: any) => {
+    const { i18n } = useTranslation();
+    const changeLanguage = event => {
         i18n.changeLanguage(event);
     };
 
@@ -45,7 +45,7 @@ export const SettingsList = () => {
 
                 return (
                     <ListItem key={item.name} onClick={() => item.onClick()}>
-                        {t(`stetting.Settings.${item.name}`)}
+                        {item.name}
                         {item.name === 'Language' ? (
                             <div style={{ marginLeft: '12em' }}>
                                 <Select

@@ -1,9 +1,10 @@
 import { message } from '@toeverything/components/ui';
 import { copyToClipboard } from '@toeverything/utils';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useSettingFlags, type SettingFlags } from './use-setting-flags';
+
 import {
-    // useReadingMode,
     clearWorkspace,
     duplicatePage,
     exportHtml,
@@ -64,6 +65,7 @@ export const useSettings = (): SettingItem[] => {
     const { workspaceId, pageId } = useWorkspaceAndPageId();
     const navigate = useNavigate();
     const settingFlags = useSettingFlags();
+    const { t } = useTranslation();
     // const { toggleReadingMode, readingMode } = useReadingMode();
 
     const settings: SettingItem[] = [
@@ -80,7 +82,7 @@ export const useSettings = (): SettingItem[] => {
         // },
         {
             type: 'button',
-            name: 'Duplicate Page',
+            name: t('Setting.Settings.Duplicate Page'),
             onClick: async () => {
                 const newPageInfo = await duplicatePage({
                     workspaceId,
@@ -91,7 +93,7 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
-            name: 'Copy Page Link',
+            name: t('Setting.Settings.Copy Page Link'),
             onClick: () => {
                 copyToClipboard(window.location.href);
                 message.success('Page link copied successfully');
@@ -99,9 +101,9 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
-            name: 'Language',
+            name: t('Setting.Settings.Language'),
             onClick: () => {
-                console.log('Language is change');
+                //Do noting
             },
         },
         {
@@ -148,7 +150,7 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
-            name: 'Clear Workspace',
+            name: t('Setting.Settings.Clear Workspace'),
             onClick: () => clearWorkspace(workspaceId),
             flag: 'booleanClearWorkspace',
         },
