@@ -11,7 +11,7 @@ export class ClipboardUtils {
         this._editor = editor;
     }
 
-    shouldHandlerContinue(event: ClipboardEvent) {
+    async shouldHandlerContinue(event: ClipboardEvent) {
         const filterNodes = ['INPUT', 'SELECT', 'TEXTAREA'];
 
         if (event.defaultPrevented) {
@@ -20,8 +20,12 @@ export class ClipboardUtils {
         if (filterNodes.includes((event.target as HTMLElement)?.tagName)) {
             return false;
         }
+        const selectInfo = await this._editor.selectionManager.getSelectInfo();
 
-        return this._editor.selectionManager.currentSelectInfo.type !== 'None';
+        return (
+            selectInfo.blocks.length &&
+            this._editor.selectionManager.currentSelectInfo.type !== 'None'
+        );
     }
 
     async getClipInfoOfBlockById(blockId: string) {

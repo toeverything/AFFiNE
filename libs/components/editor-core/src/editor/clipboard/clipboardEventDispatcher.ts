@@ -72,21 +72,21 @@ export class ClipboardEventDispatcher {
         );
     }
 
-    private _copyHandler(e: ClipboardEvent) {
-        if (!this._utils.shouldHandlerContinue(e)) {
+    private async _copyHandler(e: ClipboardEvent) {
+        if (!(await this._utils.shouldHandlerContinue(e))) {
             return;
         }
         this._editor.getHooks().onCopy(e);
     }
 
-    private _cutHandler(e: ClipboardEvent) {
-        if (!this._utils.shouldHandlerContinue(e)) {
+    private async _cutHandler(e: ClipboardEvent) {
+        if (!(await this._utils.shouldHandlerContinue(e))) {
             return;
         }
         this._editor.getHooks().onCut(e);
     }
-    private _pasteHandler(e: ClipboardEvent) {
-        if (!this._utils.shouldHandlerContinue(e)) {
+    private async _pasteHandler(e: ClipboardEvent) {
+        if (!(await this._utils.shouldHandlerContinue(e))) {
             return;
         }
 
