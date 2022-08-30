@@ -17,6 +17,7 @@ import {
 
 interface BaseSettingItem {
     flag?: keyof SettingFlags;
+    key: string;
 }
 
 interface SwitchItem extends BaseSettingItem {
@@ -83,6 +84,7 @@ export const useSettings = (): SettingItem[] => {
         {
             type: 'button',
             name: t('Duplicate Page'),
+            key: 'Duplicate Page',
             onClick: async () => {
                 const newPageInfo = await duplicatePage({
                     workspaceId,
@@ -94,6 +96,7 @@ export const useSettings = (): SettingItem[] => {
         {
             type: 'button',
             name: t('Copy Page Link'),
+            key: 'Copy Page Link',
             onClick: () => {
                 copyToClipboard(window.location.href);
                 message.success('Page link copied successfully');
@@ -102,16 +105,19 @@ export const useSettings = (): SettingItem[] => {
         {
             type: 'button',
             name: t('Language'),
+            key: 'Language',
             onClick: () => {
-                //Do noting
+                // Do noting
             },
         },
         {
             type: 'separator',
+            key: 'separator1',
         },
         {
             type: 'button',
-            name: 'Export As Markdown',
+            name: t('Export As Markdown'),
+            key: 'Export As Markdown',
             onClick: async () => {
                 const title = await getPageTitle({ workspaceId, pageId });
                 exportMarkdown({ workspaceId, rootBlockId: pageId, title });
@@ -120,7 +126,8 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
-            name: 'Export As HTML',
+            name: t('Export As HTML'),
+            key: 'Export As HTML',
             onClick: async () => {
                 const title = await getPageTitle({ workspaceId, pageId });
                 exportHtml({ workspaceId, rootBlockId: pageId, title });
@@ -129,28 +136,33 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
-            name: 'Export As PDF (Unsupported)',
+            name: t('Export As PDF (Unsupported)'),
+            key: 'Export As PDF (Unsupported)',
             onClick: () => console.log('Export As PDF'),
             flag: 'booleanExportPdf',
         },
         {
             type: 'separator',
+            key: 'separator2',
         },
         {
             type: 'button',
-            name: 'Import Workspace',
+            name: t('Import Workspace'),
+            key: 'Import Workspace',
             onClick: () => importWorkspace(workspaceId),
             flag: 'booleanImportWorkspace',
         },
         {
             type: 'button',
-            name: 'Export Workspace',
+            name: t('Export Workspace'),
+            key: 'Export Workspace',
             onClick: () => exportWorkspace(),
             flag: 'booleanExportWorkspace',
         },
         {
             type: 'button',
             name: t('Clear Workspace'),
+            key: 'Clear Workspace',
             onClick: () => clearWorkspace(workspaceId),
             flag: 'booleanClearWorkspace',
         },

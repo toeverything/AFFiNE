@@ -10,12 +10,17 @@
         "Layout": "Layout",
         "Comment": "Comment",
         "Settings": "Settings",
-
+        "ComingSoon": "Layout Settings Coming Soon...",
         "Duplicate Page": "Duplicate Page",
         "Copy Page Link": "Copy Page Link",
         "Language": "Language",
         "Clear Workspace": "Clear Workspace",
-        "Last edited by": "Last edited by ",
+        "Export As Markdown": "Export As Markdown",
+        "Export As HTML": "Export As HTML",
+        "Export As PDF (Unsupported)": "Export As PDF (Unsupported)",
+        "Import Workspace": "Import Workspace",
+        "Export Workspace": "Export Workspace",
+        "Last edited by": "Last edited by {{name}}",
         "Logout": "Logout"
     }
 }

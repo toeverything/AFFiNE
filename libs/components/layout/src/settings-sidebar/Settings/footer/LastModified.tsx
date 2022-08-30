@@ -15,8 +15,7 @@ export const LastModified = () => {
         <div>
             <div>
                 <ContentText type="xs">
-                    <span>{t('Last edited by')}</span>
-                    <span>{username}</span>
+                    <span>{t('Last edited by', { name: username })}</span>
                 </ContentText>
             </div>
             <div>

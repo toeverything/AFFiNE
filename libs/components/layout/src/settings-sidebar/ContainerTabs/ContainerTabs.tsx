@@ -23,7 +23,7 @@ export const ContainerTabs = () => {
         return [
             {
                 type: 'layout',
-                text: 'Layout',
+                text: t('Layout'),
                 icon: (
                     <IconWrapper>
                         <LayoutIcon />
@@ -33,7 +33,7 @@ export const ContainerTabs = () => {
             },
             {
                 type: 'comment',
-                text: 'Comment',
+                text: t('Comment'),
                 icon: (
                     <IconWrapper>
                         <CommentIcon />
@@ -50,7 +50,7 @@ export const ContainerTabs = () => {
             },
             {
                 type: 'settings',
-                text: 'Settings',
+                text: t('Settings'),
                 icon: (
                     <IconWrapper>
                         <SettingsIcon />
@@ -59,7 +59,7 @@ export const ContainerTabs = () => {
                 panel: <SettingsPanel />,
             },
         ];
-    }, [activeCommentId, resolveComment]);
+    }, [activeCommentId, resolveComment, t]);
 
     const settingsTabsData = useMemo(() => {
         return getSettingsTabsData();
@@ -76,7 +76,7 @@ export const ContainerTabs = () => {
                     const { type, text, icon } = tab;
                     return (
                         <TabItemTitle
-                            title={t(text)}
+                            title={text}
                             icon={icon}
                             isActive={activeTab === type}
                             onClick={() => {

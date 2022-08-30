@@ -28,7 +28,7 @@ export const SettingsList = () => {
                 if (type === 'switch') {
                     return (
                         <SwitchItemContainer
-                            key={item.name}
+                            key={item.key}
                             onClick={() => {
                                 item.onChange(!item.value);
                             }}
@@ -44,28 +44,12 @@ export const SettingsList = () => {
                 }
 
                 return (
-                    <ListItem key={item.name} onClick={() => item.onClick()}>
+                    <ListItem key={item.key} onClick={() => item.onClick()}>
                         {item.name}
-                        {item.name === 'Language' ? (
+                        {item.key === 'Language' ? (
                             <div style={{ marginLeft: '12em' }}>
                                 <Select
                                     defaultValue="en"
-                                    onChange={changeLanguage}
-                                >
-                                    {options.map(option => (
-                                        <Option
-                                            key={option.value}
-                                            value={option.value}
-                                        >
-                                            {option.text}
-                                        </Option>
-                                    ))}
-                                </Select>
-                            </div>
-                        ) : item.name === '当前语言' ? (
-                            <div style={{ marginLeft: '12em' }}>
-                                <Select
-                                    defaultValue="zh"
                                     onChange={changeLanguage}
                                 >
                                     {options.map(option => (
