@@ -99,10 +99,10 @@ export const ViewsMenu = () => {
                                         key={name}
                                         active={viewType === scene}
                                         onClick={() => {
-                                            if (scene === RecastScene.Table) {
-                                                // The table view is under progress
-                                                return;
-                                            }
+                                            // if (scene === RecastScene.Table) {
+                                            //     // The table view is under progress
+                                            //     return;
+                                            // }
                                             setViewType(scene);
                                         }}
                                         style={{ textTransform: 'uppercase' }}
