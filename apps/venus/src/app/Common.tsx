@@ -350,6 +350,7 @@ export const AFFiNEHeader = () => {
     const changeLanguage = (event: any) => {
         i18n.changeLanguage(event);
     };
+    const matchesIPAD = useMediaQuery('(max-width: 768px)');
     return (
         <Grid
             container
@@ -408,7 +409,11 @@ export const AFFiNEHeader = () => {
                 >
                     About Us
                 </Button>
-                <Select defaultValue="en" onChange={changeLanguage}>
+                <Select
+                    defaultValue="en"
+                    sx={{ display: matchesIPAD ? 'none' : 'intial' }}
+                    onChange={changeLanguage}
+                >
                     {options.map(option => (
                         <Option key={option.value} value={option.value}>
                             {option.text}
