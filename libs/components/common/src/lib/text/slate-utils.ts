@@ -2,6 +2,7 @@
 import {
     Descendant,
     Editor,
+    Element as SlateElement,
     Location,
     Node as SlateNode,
     Path,
@@ -1227,6 +1228,57 @@ class SlateUtils {
         Transforms.insertNodes(this.editor, link);
         requestAnimationFrame(() => {
             ReactEditor.focus(this.editor);
+        });
+    }
+
+    public wrapLink(url: string, preSelection?: Location) {
+        if (!ReactEditor.isFocused(this.editor) && preSelection) {
+            Transforms.select(this.editor, preSelection);
+        }
+        if (this.isLinkActive()) {
+            this.unwrapLink();
+        }
+        const { selection } = this.editor;
+        const isCollapsed = selection && this.isCollapsed();
+        const link = {
+            type: 'link',
+            url: url,
+            children: isCollapsed ? [{ text: url }] : [],
+            id: getRandomString('link'),
+        };
+
+        if (isCollapsed) {
+            Transforms.insertNodes(this.editor, link);
+        } else {
+            Transforms.wrapNodes(this.editor, link, { split: true });
+            Transforms.collapse(this.editor, { edge: 'end' });
+        }
+        requestAnimationFrame(() => {
+            ReactEditor.focus(this.editor);
+        });
+    }
+
+    public isLinkActive() {
+        const [link] = Editor.nodes(this.editor, {
+            match: n =>
+                !Editor.isEditor(n) &&
+                SlateElement.isElement(n) &&
+                // @ts-expect-error
+                n.type === 'link',
+        });
+        return !!link;
+    }
+
+    public unwrapLink() {
+        Transforms.unwrapNodes(this.editor, {
+            match: n => {
+                return (
+                    !Editor.isEditor(n) &&
+                    SlateElement.isElement(n) &&
+                    // @ts-expect-error
+                    n.type === 'link'
+                );
+            },
         });
     }
 

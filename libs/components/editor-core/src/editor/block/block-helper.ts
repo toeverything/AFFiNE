@@ -5,6 +5,7 @@ import type {
 } from '@toeverything/components/common';
 import {
     BaseRange,
+    Location,
     Node,
     Path,
     Point,
@@ -41,7 +42,8 @@ type TextUtilsFunctions =
     | 'blur'
     | 'setSelection'
     | 'insertNodes'
-    | 'getNodeByPath';
+    | 'getNodeByPath'
+    | 'wrapLink';
 
 type ExtendedTextUtils = SlateUtils & {
     setLinkModalVisible: (visible: boolean) => void;
@@ -408,6 +410,15 @@ export class BlockHelper {
         const text_utils = this._blockTextUtilsMap[blockId];
         if (text_utils) {
             return text_utils.getCommentsIdsBySelection();
+        }
+        console.warn('Could find the block text utils');
+        return undefined;
+    }
+
+    public wrapLink(blockId: string, url: string, preSelection?: Location) {
+        const text_utils = this._blockTextUtilsMap[blockId];
+        if (text_utils) {
+            return text_utils.wrapLink(url, preSelection);
         }
         console.warn('Could find the block text utils');
         return undefined;
