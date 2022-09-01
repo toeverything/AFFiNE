@@ -1,12 +1,20 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+
+import { Box, Button, Grid, Typography } from '@mui/joy';
+import Option from '@mui/joy/Option';
+import Select from '@mui/joy/Select';
+import { styled } from '@mui/joy/styles';
+// eslint-disable-next-line no-restricted-imports
+import { useMediaQuery } from '@mui/material';
+
 import GitHubIcon from '@mui/icons-material/GitHub';
 import RedditIcon from '@mui/icons-material/Reddit';
 import TelegramIcon from '@mui/icons-material/Telegram';
-import { Box, Button, Grid, Typography } from '@mui/joy';
-import { styled } from '@mui/joy/styles';
-// eslint-disable-next-line no-restricted-imports
-import { useTranslation } from 'react-i18next';
+import { options } from './i18n';
 import { DiscordIcon, GitHub } from './Icons';
+// eslint-disable-next-line no-restricted-imports
 import LogoImage from './logo.png';
 
 export const AFFiNEImage = styled('img')({
@@ -331,5 +339,83 @@ export const AFFiNEFooter = ({
                 </Box>
             </Grid>
         </>
+    );
+};
+
+export const AFFiNEHeader = () => {
+    const matches = useMediaQuery('(max-width: 1024px)');
+    const navigate = useNavigate();
+    const { i18n } = useTranslation();
+
+    const changeLanguage = (event: any) => {
+        i18n.changeLanguage(event);
+    };
+    return (
+        <Grid
+            container
+            spacing={2}
+            sx={{
+                maxWidth: '1280px',
+                margin: 'auto',
+            }}
+        >
+            <Grid xs={6}>
+                <Button
+                    size="lg"
+                    variant="plain"
+                    sx={{
+                        padding: matches ? '0' : '0 0.5em',
+                        ':hover': { backgroundColor: 'unset' },
+                        fontSize: '24px',
+                        '@media (max-width: 1024px)': {
+                            fontSize: '16px',
+                        },
+                    }}
+                    onClick={() => navigate('/')}
+                >
+                    AFFiNE
+                </Button>
+            </Grid>
+            <Grid xs={6} sx={{ display: 'flex', justifyContent: 'right' }}>
+                <GitHub flat />
+                <Button
+                    onClick={() => window.open('https://blog.affine.pro')}
+                    variant="plain"
+                    sx={{
+                        padding: matches ? '0' : '0 0.5em',
+                        ':hover': { backgroundColor: 'unset' },
+                        fontSize: '24px',
+                        '@media (max-width: 1024px)': {
+                            fontSize: '16px',
+                        },
+                    }}
+                    size="lg"
+                >
+                    Blog
+                </Button>
+                <Button
+                    onClick={() => navigate('/aboutus')}
+                    variant="plain"
+                    sx={{
+                        padding: matches ? '0' : '0 0.5em',
+                        ':hover': { backgroundColor: 'unset' },
+                        fontSize: '24px',
+                        '@media (max-width: 1024px)': {
+                            fontSize: '16px',
+                        },
+                    }}
+                    size="lg"
+                >
+                    About Us
+                </Button>
+                <Select defaultValue="en" onChange={changeLanguage}>
+                    {options.map(option => (
+                        <Option key={option.value} value={option.value}>
+                            {option.text}
+                        </Option>
+                    ))}
+                </Select>
+            </Grid>
+        </Grid>
     );
 };
