@@ -71,11 +71,7 @@ const _useUserAndSpacesForFreeLogin = () => {
 
     useEffect(() => {
         if (loading) {
-            if (location.pathname.startsWith('/local')) {
-                navigate('/local');
-            } else {
-                navigate(`/${BRAND_ID}`);
-            }
+            navigate(`/${BRAND_ID}`);
             setLoading(false);
         }
     }, []);

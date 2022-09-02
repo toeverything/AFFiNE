@@ -6,8 +6,6 @@ export const importWorkspace = async () => {
         //@ts-ignore
         const status = await window.client.inspector().load();
 
-        console.log(status);
-
         if (status) {
             window.location.reload();
         }
