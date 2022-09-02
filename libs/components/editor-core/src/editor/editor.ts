@@ -45,7 +45,7 @@ export class Editor implements Virgo {
     private _cacheManager = new Map<string, Promise<AsyncBlock | null>>();
     public mouseManager = new MouseManager(this);
     public selectionManager = new SelectionManager(this);
-    public keyboardManager = new KeyboardManager(this);
+    public keyboardManager: KeyboardManager;
     public scrollManager = new ScrollManager(this);
     public dragDropManager = new DragDropManager(this);
     public commands = new EditorCommands(this);
@@ -83,6 +83,8 @@ export class Editor implements Virgo {
         if (props.isEdgeless) {
             this.isEdgeless = true;
         }
+        // Wait for rootId/isEdgeless set
+        this.keyboardManager = new KeyboardManager(this);
         for (const [name, block] of Object.entries(props.views)) {
             services.api.editorBlock.registerContentExporter(
                 this.workspace,
