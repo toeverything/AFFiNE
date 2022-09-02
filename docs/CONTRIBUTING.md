@@ -2,7 +2,7 @@
 
 Thank you for investing your time in contributing to our project! Any contribution you make will be reflected on our GitHub :sparkles:.
 
-Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approachable and respectable.
+Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approachable and respectable. Join our [dicord](https://discord.com/invite/yz6tGVsf5p) server for more.
 
 In this guide you will get an overview of the contribution workflow from opening an issue, creating a PR, reviewing, and merging the PR.
 
@@ -63,6 +63,8 @@ For more information about using a codespace for working on GitHub documentation
 
 Commit the changes once you are happy with them.
 
+Reach out the community members for necessary help.
+
 Once your changes are ready, don't forget to self-review to speed up the review process:zap:.
 
 ### Pull Request
@@ -81,6 +83,6 @@ When you're finished with the changes, create a pull request, also known as a PR
 
 Congratulations :tada::tada: The AFFiNE team thanks you :sparkles:.
 
-Once your PR is merged, your contributions will be publicly visible on the our GitHub.
+Once your PR is merged, your contributions will be publicly visible on our GitHub.
 
 Now that you are part of the AFFiNE community, see how else you can join and help over at [Gitbook](https://docs.affine.pro/affine/)

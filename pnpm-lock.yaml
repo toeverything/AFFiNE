@@ -196,14 +196,10 @@ importers:
     specifiers:
       '@mui/icons-material': ^5.8.4
       firebase: ^9.9.3
-      i18next: ^21.9.1
       mini-css-extract-plugin: ^2.6.1
-      react-i18next: ^11.18.4
       webpack: ^5.74.0
     dependencies:
       '@mui/icons-material': 5.8.4
-      i18next: 21.9.1
-      react-i18next: 11.18.4_i18next@21.9.1
     devDependencies:
       firebase: 9.9.3
       mini-css-extract-plugin: 2.6.1_webpack@5.74.0
@@ -362,7 +358,7 @@ importers:
       '@emotion/styled': 11.9.3_@emotion+react@11.9.3
       '@mui/icons-material': 5.8.4_@mui+material@5.8.7
       '@mui/material': 5.8.7_d6menda4vqwq6peqnkbe7mkj4i
-      '@mui/x-data-grid': 5.12.3_7ff6pt5vb3e5jymp4h3bl3mztq
+      '@mui/x-data-grid': 5.12.3_d23hrjcoore4j5fpg35ldaa7fa
       is-hotkey: 0.2.0
       is-url: 1.2.4
       slate: 0.81.1
@@ -417,18 +413,18 @@ importers:
     dependencies:
       '@codemirror/commands': 6.0.1
       '@codemirror/lang-cpp': 6.0.1
-      '@codemirror/lang-css': 6.0.0_bmjizg7gr5ieupmvn5u62mbipm
-      '@codemirror/lang-html': 6.1.0_@codemirror+view@6.2.0
+      '@codemirror/lang-css': 6.0.0
+      '@codemirror/lang-html': 6.1.0
       '@codemirror/lang-java': 6.0.0
       '@codemirror/lang-javascript': 6.0.2
       '@codemirror/lang-json': 6.0.0
       '@codemirror/lang-lezer': 6.0.0
       '@codemirror/lang-markdown': 6.0.1
-      '@codemirror/lang-php': 6.0.0_@codemirror+view@6.2.0
+      '@codemirror/lang-php': 6.0.0
       '@codemirror/lang-python': 6.0.1
       '@codemirror/lang-rust': 6.0.0
-      '@codemirror/lang-sql': 6.1.0_bmjizg7gr5ieupmvn5u62mbipm
-      '@codemirror/lang-xml': 6.0.0_@codemirror+view@6.2.0
+      '@codemirror/lang-sql': 6.1.0
+      '@codemirror/lang-xml': 6.0.0
       '@codemirror/language': 6.2.1
       '@codemirror/legacy-modes': 6.1.0
       '@codemirror/next': 0.16.0
@@ -442,7 +438,7 @@ importers:
       '@emotion/styled': 11.9.3_dc5dh2wp562rsjxvguwi2i3yzq
       '@mui/system': 5.8.7_d6menda4vqwq6peqnkbe7mkj4i
       code-example: 3.3.6
-      codemirror: 6.0.1_@lezer+common@1.0.0
+      codemirror: 6.0.1
       codemirror-lang-elixir: 3.0.0_@codemirror+language@6.2.1
       keymap: link:@codemirror/next/keymap
       nanoid: 4.0.0
@@ -577,6 +573,9 @@ importers:
       ffc-js-client-side-sdk: ^1.1.4
     dependencies:
       ffc-js-client-side-sdk: 1.1.5
+
+  libs/datasource/jwst/pkg:
+    specifiers: {}
 
   libs/datasource/jwt:
     specifiers:
@@ -2266,13 +2265,8 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@codemirror/autocomplete/6.0.3_nq4pwfkqi5icglf26kczcr4s2i:
+  /@codemirror/autocomplete/6.0.3:
     resolution: {integrity: sha512-JTSBDC4tUyR8iRmCwQJaYpTXtOZmRn4gKjw1Fu4xIatFPqTJ7m0QRCdkdbzlvMovzjTiuHp4a8WUEB1c/LtiHg==}
-    peerDependencies:
-      '@codemirror/language': ^6.0.0
-      '@codemirror/state': ^6.0.0
-      '@codemirror/view': ^6.0.0
-      '@lezer/common': ^1.0.0
     dependencies:
       '@codemirror/language': 6.2.1
       '@codemirror/state': 6.1.1
@@ -2296,30 +2290,25 @@ packages:
       '@lezer/cpp': 1.0.0
     dev: false
 
-  /@codemirror/lang-css/6.0.0_bmjizg7gr5ieupmvn5u62mbipm:
+  /@codemirror/lang-css/6.0.0:
     resolution: {integrity: sha512-jBqc+BTuwhNOTlrimFghLlSrN6iFuE44HULKWoR4qKYObhOIl9Lci1iYj6zMIte1XTQmZguNvjXMyr43LUKwSw==}
     dependencies:
-      '@codemirror/autocomplete': 6.0.3_nq4pwfkqi5icglf26kczcr4s2i
+      '@codemirror/autocomplete': 6.0.3
       '@codemirror/language': 6.2.1
       '@codemirror/state': 6.1.1
       '@lezer/css': 1.0.0
-    transitivePeerDependencies:
-      - '@codemirror/view'
-      - '@lezer/common'
     dev: false
 
-  /@codemirror/lang-html/6.1.0_@codemirror+view@6.2.0:
+  /@codemirror/lang-html/6.1.0:
     resolution: {integrity: sha512-gA7NmJxqvnhwza05CvR7W/39Ap9r/4Vs9uiC0IeFYo1hSlJzc/8N6Evviz6vTW1x8SpHcRYyqKOf6rpl6LfWtg==}
     dependencies:
-      '@codemirror/autocomplete': 6.0.3_nq4pwfkqi5icglf26kczcr4s2i
-      '@codemirror/lang-css': 6.0.0_bmjizg7gr5ieupmvn5u62mbipm
+      '@codemirror/autocomplete': 6.0.3
+      '@codemirror/lang-css': 6.0.0
       '@codemirror/lang-javascript': 6.0.2
       '@codemirror/language': 6.2.1
       '@codemirror/state': 6.1.1
       '@lezer/common': 1.0.0
       '@lezer/html': 1.0.0
-    transitivePeerDependencies:
-      - '@codemirror/view'
     dev: false
 
   /@codemirror/lang-java/6.0.0:
@@ -2332,7 +2321,7 @@ packages:
   /@codemirror/lang-javascript/6.0.2:
     resolution: {integrity: sha512-BZRJ9u/zl16hLkSpDAWm73mrfIR7HJrr0lvnhoSOCQVea5BglguWI/slxexhvUb0CB5cXgKWuo2bM+N9EhIaZw==}
     dependencies:
-      '@codemirror/autocomplete': 6.0.3_nq4pwfkqi5icglf26kczcr4s2i
+      '@codemirror/autocomplete': 6.0.3
       '@codemirror/language': 6.2.1
       '@codemirror/lint': 6.0.0
       '@codemirror/state': 6.1.1
@@ -2360,7 +2349,7 @@ packages:
   /@codemirror/lang-markdown/6.0.1:
     resolution: {integrity: sha512-pHPQuRwf9cUrmkmsTHRjtS9ZnGu3fA9YzAdh2++d+L9wbfnC2XbKh0Xvm/0YiUjdCnoCx9wDFEoCuAnkqKWLIw==}
     dependencies:
-      '@codemirror/lang-html': 6.1.0_@codemirror+view@6.2.0
+      '@codemirror/lang-html': 6.1.0
       '@codemirror/language': 6.2.1
       '@codemirror/state': 6.1.1
       '@codemirror/view': 6.2.0
@@ -2368,16 +2357,14 @@ packages:
       '@lezer/markdown': 1.0.1
     dev: false
 
-  /@codemirror/lang-php/6.0.0_@codemirror+view@6.2.0:
+  /@codemirror/lang-php/6.0.0:
     resolution: {integrity: sha512-96CEjq0xEgbzc6bdFPwILPfZ6m8917JRbh2oPszZJABlYxG4Y+eYjtYkUTDb4yuyjQKyigHoeGC6zoIOYA1NWA==}
     dependencies:
-      '@codemirror/lang-html': 6.1.0_@codemirror+view@6.2.0
+      '@codemirror/lang-html': 6.1.0
       '@codemirror/language': 6.2.1
       '@codemirror/state': 6.1.1
       '@lezer/common': 1.0.0
       '@lezer/php': 1.0.0
-    transitivePeerDependencies:
-      - '@codemirror/view'
     dev: false
 
   /@codemirror/lang-python/6.0.1:
@@ -2394,29 +2381,24 @@ packages:
       '@lezer/rust': 1.0.0
     dev: false
 
-  /@codemirror/lang-sql/6.1.0_bmjizg7gr5ieupmvn5u62mbipm:
+  /@codemirror/lang-sql/6.1.0:
     resolution: {integrity: sha512-eTNTP0+uNHqYClCvJ3QGE7mn1S96QJFNsK76dB4c1pYAQjbgVVjy5DqtD3//A44rp2kuRkgBccRaPKrWDzBdNQ==}
     dependencies:
-      '@codemirror/autocomplete': 6.0.3_nq4pwfkqi5icglf26kczcr4s2i
+      '@codemirror/autocomplete': 6.0.3
       '@codemirror/language': 6.2.1
       '@codemirror/state': 6.1.1
       '@lezer/highlight': 1.0.0
       '@lezer/lr': 1.2.0
-    transitivePeerDependencies:
-      - '@codemirror/view'
-      - '@lezer/common'
     dev: false
 
-  /@codemirror/lang-xml/6.0.0_@codemirror+view@6.2.0:
+  /@codemirror/lang-xml/6.0.0:
     resolution: {integrity: sha512-M/HLWxIiP956xGjtrxkeHkCmDGVQGKu782x8pOH5CLJIMkWtiB1DWfDoDHqpFjdEE9dkfcqPWvYfVi6GbhuXEg==}
     dependencies:
-      '@codemirror/autocomplete': 6.0.3_nq4pwfkqi5icglf26kczcr4s2i
+      '@codemirror/autocomplete': 6.0.3
       '@codemirror/language': 6.2.1
       '@codemirror/state': 6.1.1
       '@lezer/common': 1.0.0
       '@lezer/xml': 1.0.0
-    transitivePeerDependencies:
-      - '@codemirror/view'
     dev: false
 
   /@codemirror/language/6.2.1:
@@ -4612,6 +4594,29 @@ packages:
       prop-types: 15.8.1
     dev: false
 
+  /@mui/styled-engine/5.10.2_d6menda4vqwq6peqnkbe7mkj4i:
+    resolution: {integrity: sha512-YqnptNQ2E0cWwOTmLCEvrddiiR/neUfn2AD/4TDUXZu8B2n7NfDb9d3bAUfWZV+KmulQdAedoaZDqyXBFGLdbQ==}
+    engines: {node: '>=12.0.0'}
+    peerDependencies:
+      '@emotion/react': ^11.4.1
+      '@emotion/styled': ^11.3.0
+      react: ^17.0.0 || ^18.0.0 || 18
+    peerDependenciesMeta:
+      '@emotion/react':
+        optional: true
+      '@emotion/styled':
+        optional: true
+      react:
+        optional: true
+    dependencies:
+      '@babel/runtime': 7.18.6
+      '@emotion/cache': 11.10.1
+      '@emotion/react': 11.9.3
+      '@emotion/styled': 11.9.3_@emotion+react@11.9.3
+      csstype: 3.1.0
+      prop-types: 15.8.1
+    dev: false
+
   /@mui/styled-engine/5.8.7_d6menda4vqwq6peqnkbe7mkj4i:
     resolution: {integrity: sha512-tVqtowjbYmiRq+qcqXK731L9eWoL9H8xTRhuTgaDGKdch1zlt4I2UwInUe1w2N9N/u3/jHsFbLcl1Un3uOwpQg==}
     engines: {node: '>=12.0.0'}
@@ -4629,8 +4634,8 @@ packages:
     dependencies:
       '@babel/runtime': 7.18.6
       '@emotion/cache': 11.9.3
-      '@emotion/react': 11.9.3
-      '@emotion/styled': 11.9.3_@emotion+react@11.9.3
+      '@emotion/react': 11.9.3_@babel+core@7.18.6
+      '@emotion/styled': 11.9.3_dc5dh2wp562rsjxvguwi2i3yzq
       csstype: 3.1.0
       prop-types: 15.8.1
     dev: false
@@ -4682,6 +4687,36 @@ packages:
       '@emotion/styled': 11.10.0_@emotion+react@11.10.0
       '@mui/private-theming': 5.9.3
       '@mui/styled-engine': 5.10.2_72v32ofbtgpmxm7mhvtx474vfu
+      '@mui/types': 7.1.5
+      '@mui/utils': 5.9.3
+      clsx: 1.2.1
+      csstype: 3.1.0
+      prop-types: 15.8.1
+    dev: false
+
+  /@mui/system/5.10.2_d6menda4vqwq6peqnkbe7mkj4i:
+    resolution: {integrity: sha512-YudwJhLcEoQiwCAmzeMr9P3ISiVGNsxBIIPzFxaGwJ8+mMrx3qoPVOV2sfm0ZuNiQuABshEw4KqHa5ftNC+pOQ==}
+    engines: {node: '>=12.0.0'}
+    peerDependencies:
+      '@emotion/react': ^11.5.0
+      '@emotion/styled': ^11.3.0
+      '@types/react': ^17.0.0 || ^18.0.0 || 18
+      react: ^17.0.0 || ^18.0.0 || 18
+    peerDependenciesMeta:
+      '@emotion/react':
+        optional: true
+      '@emotion/styled':
+        optional: true
+      '@types/react':
+        optional: true
+      react:
+        optional: true
+    dependencies:
+      '@babel/runtime': 7.18.6
+      '@emotion/react': 11.9.3
+      '@emotion/styled': 11.9.3_@emotion+react@11.9.3
+      '@mui/private-theming': 5.9.3
+      '@mui/styled-engine': 5.10.2_d6menda4vqwq6peqnkbe7mkj4i
       '@mui/types': 7.1.5
       '@mui/utils': 5.9.3
       clsx: 1.2.1
@@ -4749,36 +4784,6 @@ packages:
       csstype: 3.1.0
       prop-types: 15.8.1
       react: 18.2.0
-    dev: false
-
-  /@mui/system/5.9.3_d6menda4vqwq6peqnkbe7mkj4i:
-    resolution: {integrity: sha512-EXQV2POwncstHLYII+G4VSYdEFun1TjBbQSBDK76DbIkug8nPjtjAZ+3Kgk3/NoFIigW+vQ9cDVUZtlbRH6YMQ==}
-    engines: {node: '>=12.0.0'}
-    peerDependencies:
-      '@emotion/react': ^11.5.0
-      '@emotion/styled': ^11.3.0
-      '@types/react': ^17.0.0 || ^18.0.0 || 18
-      react: ^17.0.0 || ^18.0.0 || 18
-    peerDependenciesMeta:
-      '@emotion/react':
-        optional: true
-      '@emotion/styled':
-        optional: true
-      '@types/react':
-        optional: true
-      react:
-        optional: true
-    dependencies:
-      '@babel/runtime': 7.18.6
-      '@emotion/react': 11.9.3
-      '@emotion/styled': 11.9.3_@emotion+react@11.9.3
-      '@mui/private-theming': 5.9.3
-      '@mui/styled-engine': 5.8.7_d6menda4vqwq6peqnkbe7mkj4i
-      '@mui/types': 7.1.5
-      '@mui/utils': 5.9.3
-      clsx: 1.2.1
-      csstype: 3.1.0
-      prop-types: 15.8.1
     dev: false
 
   /@mui/types/7.1.4:
@@ -4859,7 +4864,7 @@ packages:
       react-is: 18.2.0
     dev: false
 
-  /@mui/x-data-grid/5.12.3_7ff6pt5vb3e5jymp4h3bl3mztq:
+  /@mui/x-data-grid/5.12.3_d23hrjcoore4j5fpg35ldaa7fa:
     resolution: {integrity: sha512-57A2MkRR/uUNC/dECFV0YDJvi1Q+gQgmgw1OHmZ1uSnKh29PcHpswkdapO0LueLpxAy8tfH+fTtnnPDmYgJeUg==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
@@ -4877,7 +4882,7 @@ packages:
     dependencies:
       '@babel/runtime': 7.18.6
       '@mui/material': 5.8.7_d6menda4vqwq6peqnkbe7mkj4i
-      '@mui/system': 5.9.3_d6menda4vqwq6peqnkbe7mkj4i
+      '@mui/system': 5.10.2_d6menda4vqwq6peqnkbe7mkj4i
       '@mui/utils': 5.8.6
       clsx: 1.2.0
       prop-types: 15.8.1
@@ -8600,18 +8605,16 @@ packages:
       '@codemirror/language': 6.2.1
     dev: false
 
-  /codemirror/6.0.1_@lezer+common@1.0.0:
+  /codemirror/6.0.1:
     resolution: {integrity: sha512-J8j+nZ+CdWmIeFIGXEFbFPtpiYacFMDR8GlHK3IyHQJMCaVRfGx9NT+Hxivv1ckLWPvNdZqndbr/7lVhrf/Svg==}
     dependencies:
-      '@codemirror/autocomplete': 6.0.3_nq4pwfkqi5icglf26kczcr4s2i
+      '@codemirror/autocomplete': 6.0.3
       '@codemirror/commands': 6.0.1
       '@codemirror/language': 6.2.1
       '@codemirror/lint': 6.0.0
       '@codemirror/search': 6.0.0
       '@codemirror/state': 6.1.1
       '@codemirror/view': 6.2.0
-    transitivePeerDependencies:
-      - '@lezer/common'
     dev: false
 
   /collect-v8-coverage/1.0.1:
