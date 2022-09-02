@@ -80,34 +80,20 @@ export const FileSystem = () => {
 
     if (apiSupported && !selected) {
         return (
-            <>
-                <MuiSnackbar
-                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    open={error}
-                    message="Request File Permission failed, please check if you have permission"
-                    sx={{ marginTop: '3em' }}
-                    action={
-                        <IconButton
-                            aria-label="close"
-                            onClick={() => setError(false)}
-                        >
-                            <CloseIcon />
-                        </IconButton>
-                    }
-                />
-                <StyledFileSystem
-                    onClick={async () => {
-                        try {
-                            await requestPermission('AFFiNE');
-                            onSelected();
-                        } catch (e) {
-                            onError();
-                        }
-                    }}
-                >
-                    {t('Sync to Disk')}
-                </StyledFileSystem>
-            </>
+            <MuiSnackbar
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                open={error}
+                message="Request File Permission failed, please check if you have permission"
+                sx={{ marginTop: '3em' }}
+                action={
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setError(false)}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                }
+            />
         );
     }
     return null;

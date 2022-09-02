@@ -70,9 +70,6 @@ export const LayoutHeader = () => {
                     <EditorBoardSwitcher />
                 </StyledContainerForEditorBoardSwitcher>
             </StyledHeaderRoot>
-            <StyledUnstableTips>
-                <StyledUnstableTipsText>{warningTips}</StyledUnstableTipsText>
-            </StyledUnstableTips>
         </StyledContainerForHeaderRoot>
     );
 };

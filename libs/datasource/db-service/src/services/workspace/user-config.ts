@@ -36,7 +36,7 @@ export class UserConfig extends ServiceBaseClass {
         }
 
         const db = await this.database.getDatabase(workspace);
-        const newPage = await db.get('page');
+        const newPage = await db.get_named_block('start-page');
 
         await this.get_dependency(PageTree).addPage(workspace, newPage.id);
         await this.addRecentPage(workspace, userId, newPage.id);

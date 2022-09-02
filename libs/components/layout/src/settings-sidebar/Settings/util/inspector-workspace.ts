@@ -6,8 +6,12 @@ export const importWorkspace = (workspaceId: string) => {
     window.client
         .inspector()
         .load()
-        .then(() => {
-            window.location.href = `/${workspaceId}/`;
+        .then(status => {
+            if (status) {
+                if (window.confirm('Your currently open data will be lost.')) {
+                    window.location.href = `/${workspaceId}/`;
+                }
+            }
         });
 };
 

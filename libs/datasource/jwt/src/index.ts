@@ -357,7 +357,7 @@ export class BlockClient<
      * @param name block name
      * @returns block instance
      */
-    private async get_named_block(
+    public async get_named_block(
         name: string,
         options?: { workspace?: boolean }
     ): Promise<BaseBlock<B, C>> {

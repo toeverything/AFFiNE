@@ -147,10 +147,17 @@ export const useSettings = (): SettingItem[] => {
         },
         {
             type: 'button',
+            name: t('Clear Workspace'),
+            key: 'Clear Workspace',
+            onClick: () => clearWorkspace(workspaceId),
+            flag: 'booleanClearWorkspace',
+        },
+        {
+            type: 'button',
             name: t('Import Workspace'),
             key: 'Import Workspace',
             onClick: () => importWorkspace(workspaceId),
-            flag: 'booleanImportWorkspace',
+            flag: 'booleanClearWorkspace',
         },
         {
             type: 'button',
@@ -158,13 +165,6 @@ export const useSettings = (): SettingItem[] => {
             key: 'Export Workspace',
             onClick: () => exportWorkspace(),
             flag: 'booleanExportWorkspace',
-        },
-        {
-            type: 'button',
-            name: t('Clear Workspace'),
-            key: 'Clear Workspace',
-            onClick: () => clearWorkspace(workspaceId),
-            flag: 'booleanClearWorkspace',
         },
     ];
 
