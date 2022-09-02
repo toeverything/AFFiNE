@@ -1,18 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { Box, Button, Grid, Typography } from '@mui/joy';
-import Option from '@mui/joy/Option';
-import Select from '@mui/joy/Select';
+import { Box, Grid, Typography } from '@mui/joy';
 // eslint-disable-next-line no-restricted-imports
 import { useMediaQuery } from '@mui/material';
-
 import 'github-markdown-css';
 import AboutText from './about.mdx';
-import { AFFiNEFooter, AFFiNEImage } from './Common';
-import { options } from './i18n';
+import { AFFiNEFooter, AFFiNEHeader, AFFiNEImage } from './Common';
 import KeepUpdate from './keeupdate.png';
-
 export const AboutUs = () => {
     const matches = useMediaQuery('(max-width: 1024px)');
     const navigate = useNavigate();
@@ -23,58 +18,7 @@ export const AboutUs = () => {
     };
     return (
         <>
-            <Grid
-                container
-                spacing={2}
-                sx={{
-                    maxWidth: '1280px',
-                    margin: 'auto',
-                }}
-            >
-                <Grid xs={6}>
-                    <Button
-                        size="lg"
-                        variant="plain"
-                        onClick={() => navigate('/')}
-                        sx={{
-                            padding: matches ? '0' : '0 0.5em',
-                            ':hover': { backgroundColor: 'unset' },
-                            fontSize: '24px',
-                            '@media (max-width: 1024px)': {
-                                fontSize: '16px',
-                            },
-                        }}
-                    >
-                        AFFiNE
-                    </Button>
-                </Grid>
-                <Grid xs={6} sx={{ display: 'flex', justifyContent: 'right' }}>
-                    <Button
-                        onClick={() => {
-                            window.open('https://blog.affine.pro');
-                        }}
-                        variant="plain"
-                        sx={{
-                            padding: matches ? '0' : '0 0.5em',
-                            ':hover': { backgroundColor: 'unset' },
-                            fontSize: '24px',
-                            '@media (max-width: 1024px)': {
-                                fontSize: '16px',
-                            },
-                        }}
-                        size="lg"
-                    >
-                        Blog
-                    </Button>
-                    <Select defaultValue="en" onChange={changeLanguage}>
-                        {options.map(option => (
-                            <Option key={option.value} value={option.value}>
-                                {option.text}
-                            </Option>
-                        ))}
-                    </Select>
-                </Grid>
-            </Grid>
+            <AFFiNEHeader />
             <Grid xs={12} sx={{ display: 'flex', marginTop: '4vh!important' }}>
                 <Box
                     sx={{
