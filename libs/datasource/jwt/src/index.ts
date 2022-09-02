@@ -1,26 +1,7 @@
 /* eslint-disable max-lines */
 import { DocumentSearchOptions } from 'flexsearch';
 import LRUCache from 'lru-cache';
-import {
-    AsyncDatabaseAdapter,
-    BlockInstance,
-    BlockListener,
-    ChangedStates,
-    Connectivity,
-    ContentOperation,
-    ContentTypes,
-    DataExporter,
-    getDataExporter,
-    HistoryManager,
-    YjsAdapter,
-    YjsContentOperation,
-    YjsInitOptions,
-} from './adapter';
-import {
-    getYjsProviders,
-    YjsBlockInstance,
-    YjsProviderOptions,
-} from './adapter/yjs';
+
 import {
     BaseBlock,
     BlockIndexer,
@@ -39,6 +20,26 @@ import {
     UUID,
 } from './types';
 import { BlockEventBus, genUUID, getLogger } from './utils';
+import {
+    getYjsProviders,
+    YjsAdapter,
+    YjsBlockInstance,
+    YjsContentOperation,
+    YjsInitOptions,
+    YjsProviderOptions,
+} from './yjs';
+import {
+    AsyncDatabaseAdapter,
+    BlockInstance,
+    BlockListener,
+    ChangedStates,
+    Connectivity,
+    ContentOperation,
+    ContentTypes,
+    DataExporter,
+    getDataExporter,
+    HistoryManager,
+} from './yjs/types';
 
 declare const JWT_DEV: boolean;
 
@@ -157,8 +158,11 @@ export class BlockClient<
 
     public addBlockListener(tag: string, listener: BlockListener) {
         const bus = this._eventBus.topic<ChangedStates>('updated');
-        if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
-        else console.error(`block listener ${tag} is reserved or exists`);
+        if (tag !== 'index' || !bus.has(tag)) {
+            bus.on(tag, listener);
+        } else {
+            console.error(`block listener ${tag} is reserved or exists`);
+        }
     }
 
     public removeBlockListener(tag: string) {
@@ -170,8 +174,11 @@ export class BlockClient<
         listener: BlockListener<Set<string>>
     ) {
         const bus = this._eventBus.topic<ChangedStates<Set<string>>>('editing');
-        if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
-        else console.error(`editing listener ${tag} is reserved or exists`);
+        if (tag !== 'index' || !bus.has(tag)) {
+            bus.on(tag, listener);
+        } else {
+            console.error(`editing listener ${tag} is reserved or exists`);
+        }
     }
 
     public removeEditingListener(tag: string) {
@@ -184,15 +191,18 @@ export class BlockClient<
     ) {
         const bus =
             this._eventBus.topic<ChangedStates<Connectivity>>('connectivity');
-        if (tag !== 'index' || !bus.has(tag)) bus.on(tag, listener);
-        else
+        if (tag !== 'index' || !bus.has(tag)) {
+            bus.on(tag, listener);
+        } else {
             console.error(`connectivity listener ${tag} is reserved or exists`);
+        }
     }
 
     public removeConnectivityListener(tag: string) {
         this._eventBus.topic('connectivity').off(tag);
     }
 
+    // @ts-ignore
     private inspector() {
         return {
             ...this._adapter.inspector(),
@@ -220,7 +230,9 @@ export class BlockClient<
         this.addBlockListener('index', async states => {
             await Promise.allSettled(
                 Array.from(states.entries()).map(([id, state]) => {
-                    if (state === 'delete') this._blockCaches.delete(id);
+                    if (state === 'delete') {
+                        this._blockCaches.delete(id);
+                    }
                     return this._blockIndexer.refreshIndex(id, state);
                 })
             );
@@ -255,7 +267,7 @@ export class BlockClient<
     }
 
     /**
-     * research all
+     * Full text search
      * @param part_of_title_or_content Title or content keyword, support Chinese
      * @param part_of_title_or_content.index search range, optional values: title, ttl, content, reference
      * @param part_of_title_or_content.tag tag, string or array of strings, supports multiple tags
@@ -295,7 +307,9 @@ export class BlockClient<
                 this.search(part_of_title_or_content).flatMap(({ result }) =>
                     result.map(async id => {
                         const page = this._pageMapping.get(id as string);
-                        if (page) return page;
+                        if (page) {
+                            return page;
+                        }
                         const block = await this.get(id as BlockTypeKeys);
                         return this.set_page(block);
                     })
@@ -307,9 +321,10 @@ export class BlockClient<
         }
         return Promise.all(
             this._blockIndexer.getMetadata(pages).map(async page => ({
-                content: this.get_decoded_content(
-                    await this._adapter.getBlock(page.id)
-                ),
+                content:
+                    this.get_decoded_content(
+                        await this._adapter.getBlock(page.id)
+                    ) || '',
                 ...page,
             }))
         );
@@ -327,9 +342,10 @@ export class BlockClient<
         const ids = this.query(query);
         return Promise.all(
             this._blockIndexer.getMetadata(ids).map(async page => ({
-                content: this.get_decoded_content(
-                    await this._adapter.getBlock(page.id)
-                ),
+                content:
+                    this.get_decoded_content(
+                        await this._adapter.getBlock(page.id)
+                    ) || '',
                 ...page,
             }))
         );
@@ -378,7 +394,7 @@ export class BlockClient<
 
     private async get_parent(id: string) {
         const parents = this._parentMapping.get(id);
-        if (parents) {
+        if (parents && parents[0]) {
             const parent_block_id = parents[0];
             if (!this._blockCaches.has(parent_block_id)) {
                 this._blockCaches.set(
@@ -405,7 +421,9 @@ export class BlockClient<
 
     private set_page(block: BaseBlock<B, C>) {
         const page = this._pageMapping.get(block.id);
-        if (page) return page;
+        if (page) {
+            return page;
+        }
         const parent_page = block.parent_page;
         if (parent_page) {
             this._pageMapping.set(block.id, parent_page);
@@ -472,8 +490,9 @@ export class BlockClient<
                     matched += 1;
                 }
             }
-            if (matched === conditions.length)
+            if (matched === conditions.length) {
                 exporters.push([name, exporter] as const);
+            }
         }
 
         return exporters;
@@ -487,7 +506,9 @@ export class BlockClient<
             );
             if (exporter) {
                 const op = block.content.asMap();
-                if (op) return exporter[1](op);
+                if (op) {
+                    return exporter[1](op);
+                }
             }
         }
         return undefined;
@@ -566,7 +587,9 @@ export class BlockClient<
             this.set_page(abstract_block);
             abstract_block.on('parent', 'client_hook', state => {
                 const [parent] = state.keys();
-                this.set_parent(parent, abstract_block.id);
+                if (parent) {
+                    this.set_parent(parent, abstract_block.id);
+                }
                 this.set_page(abstract_block);
             });
             this._blockCaches.set(abstract_block.id, abstract_block);
@@ -651,18 +674,18 @@ export type BlockInitOptions = NonNullable<
 >;
 
 export type {
-    ArrayOperation,
-    ChangedStates,
-    Connectivity,
-    MapOperation,
-    TextOperation,
-} from './adapter';
-export type {
     BlockSearchItem,
     Decoration as BlockDecoration,
     ReadableContentExporter as BlockContentExporter,
 } from './block';
 export { BlockTypes, BucketBackend as BlockBackend } from './types';
-export type { BlockTypeKeys } from './types';
+export type { BlockFlavorKeys, BlockTypeKeys } from './types';
 export { isBlock } from './utils';
+export type {
+    ArrayOperation,
+    ChangedStates,
+    Connectivity,
+    MapOperation,
+    TextOperation,
+} from './yjs/types';
 export type { QueryIndexMetadata };

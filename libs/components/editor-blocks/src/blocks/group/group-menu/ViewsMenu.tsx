@@ -20,7 +20,7 @@ export const ViewsMenu = () => {
         useRecastView();
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setViewName(e.target.value.trim());
+        setViewName(e.target.value);
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -36,7 +36,7 @@ export const ViewsMenu = () => {
         }
         await updateView({
             ...activeView,
-            name: viewName,
+            name: viewName.trim(),
             type: viewType,
         });
         setActiveView(null);
@@ -99,10 +99,10 @@ export const ViewsMenu = () => {
                                         key={name}
                                         active={viewType === scene}
                                         onClick={() => {
-                                            if (scene === RecastScene.Table) {
-                                                // The table view is under progress
-                                                return;
-                                            }
+                                            // if (scene === RecastScene.Table) {
+                                            //     // The table view is under progress
+                                            //     return;
+                                            // }
                                             setViewType(scene);
                                         }}
                                         style={{ textTransform: 'uppercase' }}

@@ -13,7 +13,7 @@
         "@mui/x-date-pickers": "^5.0.0-alpha.7",
         "@mui/x-date-pickers-pro": "^5.0.0-alpha.7",
         "@types/react-date-range": "^1.4.4",
-        "clsx": "^1.2.0",
+        "clsx": "^1.2.1",
         "notistack": "^2.0.5",
         "react-date-range": "^1.4.0"
     }

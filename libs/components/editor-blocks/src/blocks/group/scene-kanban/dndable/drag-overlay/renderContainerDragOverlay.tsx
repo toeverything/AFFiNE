@@ -1,7 +1,6 @@
-import { CardItemWrapper } from '../wrapper/CardItemWrapper';
 import { CardItem } from '../../CardItem';
-import type { KanbanCard } from '@toeverything/components/editor-core';
 import type { DndableItems } from '../type';
+import { CardItemWrapper } from '../wrapper/CardItemWrapper';
 
 export function renderContainerDragOverlay({
     containerId,
@@ -18,7 +17,7 @@ export function renderContainerDragOverlay({
                 return (
                     <CardItemWrapper
                         key={id}
-                        card={<CardItem key={id} id={id} block={block} />}
+                        card={<CardItem key={id} block={block} />}
                         index={index}
                     />
                 );

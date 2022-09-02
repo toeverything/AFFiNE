@@ -6,17 +6,11 @@ import {
 } from './types';
 import { Editor } from '../editor';
 import { AsyncBlock } from '../block';
-import ClipboardParse from './clipboard-parse';
-import { SelectInfo } from '../selection';
-import {
-    Protocol,
-    BlockFlavorKeys,
-    services,
-} from '@toeverything/datasource/db-service';
+import { services } from '@toeverything/datasource/db-service';
 import { MarkdownParser } from './markdown-parse';
-import { shouldHandlerContinue } from './utils';
-const SUPPORT_MARKDOWN_PASTE = true;
-
+import { escape } from 'html-escaper';
+import { marked } from 'marked';
+import { ClipboardUtils } from './clipboardUtils';
 type TextValueItem = {
     text: string;
     [key: string]: any;
@@ -25,93 +19,89 @@ type TextValueItem = {
 export class Paste {
     private _editor: Editor;
     private _markdownParse: MarkdownParser;
-    private _clipboardParse: ClipboardParse;
-
-    constructor(
-        editor: Editor,
-        clipboardParse: ClipboardParse,
-        markdownParse: MarkdownParser
-    ) {
-        this._markdownParse = markdownParse;
-        this._clipboardParse = clipboardParse;
+    private _utils: ClipboardUtils;
+    constructor(editor: Editor) {
+        this._markdownParse = new MarkdownParser();
         this._editor = editor;
+
+        this._utils = new ClipboardUtils(editor);
         this.handlePaste = this.handlePaste.bind(this);
     }
-    private static _optimalMimeType: string[] = [
+    // The event handler will get the most needed clipboard data based on this array order
+    private static _optimalMimeTypes: string[] = [
         OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED,
         OFFICE_CLIPBOARD_MIMETYPE.HTML,
         OFFICE_CLIPBOARD_MIMETYPE.TEXT,
     ];
-    public handlePaste(e: Event) {
-        if (!shouldHandlerContinue(e, this._editor)) {
-            return;
-        }
+
+    public async handlePaste(e: ClipboardEvent) {
         e.stopPropagation();
 
-        const clipboardData = (e as ClipboardEvent).clipboardData;
-
-        const isPureFile = Paste._isPureFileInClipboard(clipboardData);
-        if (isPureFile) {
-            this._pasteFile(clipboardData);
-        } else {
-            this._pasteContent(clipboardData);
-        }
+        const blocks = await this.clipboardEvent2Blocks(e);
+        await this._insertBlocks(blocks);
     }
-    public getOptimalClip(clipboardData: any) {
-        const mimeTypeArr = Paste._optimalMimeType;
 
-        for (let i = 0; i < mimeTypeArr.length; i++) {
-            const data =
-                clipboardData[mimeTypeArr[i]] ||
-                clipboardData.getData(mimeTypeArr[i]);
+    public async clipboardEvent2Blocks(e: ClipboardEvent) {
+        const clipboardData = e.clipboardData;
+        const isPureFile = Paste._isPureFileInClipboard(clipboardData);
+
+        if (isPureFile) {
+            return this._file2Blocks(clipboardData);
+        }
+        return this._clipboardData2Blocks(clipboardData);
+    }
+    // Get the most needed clipboard data based on `_optimalMimeTypes` order
+    public getOptimalClip(clipboardData: ClipboardEvent['clipboardData']) {
+        for (let i = 0; i < Paste._optimalMimeTypes.length; i++) {
+            const mimeType = Paste._optimalMimeTypes[i];
+            const data = clipboardData.getData(mimeType);
 
             if (data) {
                 return {
-                    type: mimeTypeArr[i],
+                    type: mimeType,
                     data: data,
                 };
             }
         }
 
-        return '';
+        return null;
     }
 
-    private _pasteContent(clipboardData: any) {
-        const originClip: { data: any; type: any } = this.getOptimalClip(
-            clipboardData
-        ) as { data: any; type: any };
+    private async _clipboardData2Blocks(
+        clipboardData: ClipboardEvent['clipboardData']
+    ): Promise<ClipBlockInfo[]> {
+        const optimalClip = this.getOptimalClip(clipboardData);
+        if (
+            optimalClip?.type ===
+            OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED
+        ) {
+            const clipInfo: InnerClipInfo = JSON.parse(optimalClip.data);
+            return clipInfo.data;
+        }
 
-        const originTextClipData = clipboardData.getData(
-            OFFICE_CLIPBOARD_MIMETYPE.TEXT
+        const textClipData = escape(
+            clipboardData.getData(OFFICE_CLIPBOARD_MIMETYPE.TEXT)
         );
 
-        let clipData = originClip['data'];
+        const shouldConvertMarkdown =
+            this._markdownParse.checkIfTextContainsMd(textClipData);
 
-        if (originClip['type'] === OFFICE_CLIPBOARD_MIMETYPE.TEXT) {
-            clipData = Paste._excapeHtml(clipData);
+        if (
+            optimalClip?.type === OFFICE_CLIPBOARD_MIMETYPE.HTML &&
+            !shouldConvertMarkdown
+        ) {
+            return this._utils.convertHTMLString2Blocks(optimalClip.data);
         }
 
-        switch (originClip['type']) {
-            /** Protocol paste */
-            case OFFICE_CLIPBOARD_MIMETYPE.DOCS_DOCUMENT_SLICE_CLIP_WRAPPED:
-                this._firePasteEditAction(clipData);
-                break;
-            case OFFICE_CLIPBOARD_MIMETYPE.HTML:
-                this._pasteHtml(clipData, originTextClipData);
-                break;
-            case OFFICE_CLIPBOARD_MIMETYPE.TEXT:
-                this._pasteText(clipData, originTextClipData);
-                break;
-
-            default:
-                break;
+        if (shouldConvertMarkdown) {
+            const md2html = marked.parse(textClipData);
+            return this._utils.convertHTMLString2Blocks(md2html);
         }
+
+        return this._utils.textToBlock(textClipData);
     }
-    private async _firePasteEditAction(clipboardData: any) {
-        const clipInfo: InnerClipInfo = JSON.parse(clipboardData);
-        clipInfo && this._insertBlocks(clipInfo.data, clipInfo.select);
-    }
-    private async _pasteFile(clipboardData: any) {
+
+    private async _file2Blocks(clipboardData: any): Promise<ClipBlockInfo[]> {
         const file = Paste._getImageFile(clipboardData);
         if (file) {
             const result = await services.api.file.create({
@@ -130,8 +120,9 @@ export class Paste {
                 },
                 children: [] as ClipBlockInfo[],
             };
-            await this._insertBlocks([blockInfo]);
+            return [blockInfo];
         }
+        return [];
     }
     private static _isPureFileInClipboard(clipboardData: DataTransfer) {
         const types = clipboardData.types;
@@ -144,32 +135,14 @@ export class Paste {
         );
     }
 
-    private static _isTextEditBlock(type: BlockFlavorKeys) {
-        return (
-            type === Protocol.Block.Type.page ||
-            type === Protocol.Block.Type.text ||
-            type === Protocol.Block.Type.heading1 ||
-            type === Protocol.Block.Type.heading2 ||
-            type === Protocol.Block.Type.heading3 ||
-            type === Protocol.Block.Type.quote ||
-            type === Protocol.Block.Type.todo ||
-            type === Protocol.Block.Type.code ||
-            type === Protocol.Block.Type.callout ||
-            type === Protocol.Block.Type.numbered ||
-            type === Protocol.Block.Type.bullet
-        );
-    }
-
-    private async _insertBlocks(
-        blocks: ClipBlockInfo[],
-        pasteSelect?: SelectInfo
-    ) {
+    private async _insertBlocks(blocks: ClipBlockInfo[]) {
         if (blocks.length === 0) {
             return;
         }
         const currentSelectInfo =
             await this._editor.selectionManager.getSelectInfo();
 
+        // TODO: Logic of insert blocks maybe should declare in blockHelper
         // When the selection is in one of the blocks, select?.type === 'Range'
         // Currently the selection does not support cross-blocking, so this case is not considered
         if (currentSelectInfo.type === 'Range') {
@@ -177,15 +150,16 @@ export class Paste {
             const selectedBlock = await this._editor.getBlockById(
                 currentSelectInfo.blocks[0].blockId
             );
-            const isSelectedBlockCanEdit = Paste._isTextEditBlock(
-                selectedBlock.type
+            const isSelectedBlockCanEdit = this._editor.isEditableView(
+                selectedBlock?.type
             );
+
             const blockView = this._editor.getView(selectedBlock.type);
             const isSelectedBlockEmpty = blockView.isEmpty(selectedBlock);
             if (isSelectedBlockCanEdit && !isSelectedBlockEmpty) {
                 const shouldSplitBlock =
                     blocks.length > 1 ||
-                    !Paste._isTextEditBlock(blocks[0].type);
+                    !this._editor.isEditableView(blocks[0].type);
                 const pureText = !shouldSplitBlock
                     ? blocks[0].properties.text.value
                     : [{ text: '' }];
@@ -405,7 +379,7 @@ export class Paste {
     }
     private async _setEndSelectToBlock(blockId: string) {
         const block = await this._editor.getBlockById(blockId);
-        const isBlockCanEdit = Paste._isTextEditBlock(block.type);
+        const isBlockCanEdit = this._editor.isEditableView(block.type);
         if (!isBlockCanEdit) {
             return;
         }
@@ -450,51 +424,11 @@ export class Paste {
         );
     }
 
-    private async _pasteHtml(clipData: any, originTextClipData: any) {
-        if (SUPPORT_MARKDOWN_PASTE) {
-            const hasMarkdown =
-                this._markdownParse.checkIfTextContainsMd(originTextClipData);
-            if (hasMarkdown) {
-                try {
-                    const convertedDataObj =
-                        this._markdownParse.md2Html(originTextClipData);
-                    if (convertedDataObj.isConverted) {
-                        clipData = convertedDataObj.text;
-                    }
-                } catch (e) {
-                    console.error(e);
-                    clipData = originTextClipData;
-                }
-            }
-        }
-
-        const blocks = this._clipboardParse.html2blocks(clipData);
-
-        await this._insertBlocks(blocks);
-    }
-
-    private async _pasteText(clipData: any, originTextClipData: any) {
-        const blocks = this._clipboardParse.text2blocks(clipData);
-        await this._insertBlocks(blocks);
-    }
-
     private static _getImageFile(clipboardData: any) {
         const files = clipboardData.files;
         if (files && files[0] && files[0].type.indexOf('image') > -1) {
             return files[0];
         }
         return;
-    }
-
-    private static _excapeHtml(data: any, onlySpace?: any) {
-        if (!onlySpace) {
-            // TODO:
-            // data = string.htmlEscape(data);
-            // data = data.replace(/\n/g, '<br>');
-        }
-
-        // data = data.replace(/ /g, '&nbsp;');
-        // data = data.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
-        return data;
     }
 }

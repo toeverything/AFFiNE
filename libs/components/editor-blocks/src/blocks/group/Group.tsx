@@ -6,10 +6,14 @@ import {
     SelectBlock,
 } from '@toeverything/framework/virgo';
 import { GroupView } from './GroupView';
+import {
+    Block2HtmlProps,
+    commonBlock2HtmlContent,
+} from '../../utils/commonBlockClip';
 
 export class Group extends BaseView {
     public override selectable = true;
-    public override activatable = false;
+    public override editable = false;
     public override allowPendant = false;
 
     type = Protocol.Block.Type.group;
@@ -25,13 +29,12 @@ export class Group extends BaseView {
     override async onCreate(block: AsyncBlock): Promise<AsyncBlock> {
         return block;
     }
-
-    override async block2html(
-        block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
-    ): Promise<string> {
-        const content = await generateHtml(children);
-        return `<div>${content}<div>`;
+    override async block2html({ editor, selectInfo, block }: Block2HtmlProps) {
+        const childrenHtml =
+            await editor.clipboard.clipboardUtils.convertBlock2HtmlBySelectInfos(
+                block,
+                selectInfo?.children
+            );
+        return `<div>${childrenHtml}<code/>`;
     }
 }

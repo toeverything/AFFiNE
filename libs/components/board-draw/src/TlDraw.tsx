@@ -362,7 +362,7 @@ const InnerTldraw = memo(function InnerTldraw({
 
     // Hide bounds when not using the select tool, or when the only selected shape has handles
     const hideBounds =
-        (isInSession && app.session?.constructor.name !== 'BrushSession') ||
+        (isInSession && app.session?.constructor.name === 'BrushSession') ||
         !isSelecting ||
         isHideBoundsShape ||
         !!pageState.editingId;

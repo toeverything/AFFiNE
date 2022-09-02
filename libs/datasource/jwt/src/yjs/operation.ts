@@ -6,6 +6,7 @@ import {
     Text as YText,
 } from 'yjs';
 
+import { ChildrenListenerHandler, ContentListenerHandler } from './listener';
 import {
     ArrayOperation,
     BaseTypes,
@@ -16,21 +17,29 @@ import {
     Operable,
     TextOperation,
     TextToken,
-} from '../index';
-import { ChildrenListenerHandler, ContentListenerHandler } from './listener';
+} from './types';
 
 const INTO_INNER = Symbol('INTO_INNER');
 
 export const DO_NOT_USE_THIS_OR_YOU_WILL_BE_FIRED_SYMBOL_INTO_INNER: typeof INTO_INNER =
     INTO_INNER;
 
-function auto_get(root: ContentOperation, key: string): unknown | undefined {
+function auto_get(
+    root: ContentOperation,
+    key: string | undefined
+): unknown | undefined {
     const array = root.asArray();
-    if (array && !Number.isNaN(Number(key))) return array.get(Number(key));
+    if (array && !Number.isNaN(Number(key))) {
+        return array.get(Number(key));
+    }
     const map = root.asMap();
-    if (map) return map.get(key);
+    if (map && key) {
+        return map.get(key);
+    }
     const text = root.asText();
-    if (text) return text.toString();
+    if (text) {
+        return text.toString();
+    }
     console.error('auto_get unknown root', root, key);
     return undefined;
 }
@@ -150,7 +159,9 @@ export class YjsContentOperation implements ContentOperation {
             if (root instanceof YjsContentOperation) {
                 if (path.length === 1) {
                     const [key] = path;
-                    if (key) return auto_set(root, key, data);
+                    if (key) {
+                        return auto_set(root, key, data);
+                    }
                     console.error('autoSet unknown path', root, path, data);
                     return;
                 }
@@ -191,6 +202,7 @@ export class YjsContentOperation implements ContentOperation {
     }
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
+    // @ts-ignore
     private toJSON() {
         return this._content.toJSON();
     }
@@ -283,7 +295,9 @@ class YjsArrayOperation<T extends ContentTypes>
 
     get(index: number): Operable<T> | undefined {
         const content = this._arrayContent.get(index);
-        if (content) return this.to_operable(content);
+        if (content) {
+            return this.to_operable(content);
+        }
         return undefined;
     }
 
@@ -368,7 +382,9 @@ class YjsMapOperation<T extends ContentTypes>
     set(key: string, value: Operable<T>): void {
         if (value instanceof YjsContentOperation) {
             const content = value[INTO_INNER]();
-            if (content) this._mapContent.set(key, content as unknown as T);
+            if (content) {
+                this._mapContent.set(key, content as unknown as T);
+            }
         } else {
             this._mapContent.set(key, value as T);
         }
@@ -376,7 +392,9 @@ class YjsMapOperation<T extends ContentTypes>
 
     get(key: string): Operable<T> | undefined {
         const content = this._mapContent.get(key);
-        if (content) return this.to_operable(content);
+        if (content) {
+            return this.to_operable(content);
+        }
         return undefined;
     }
 

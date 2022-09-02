@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 import { AsyncBlock } from '../editor';
 import { useRecastBlock } from './Context';
+import { getHistory, removeHistory, setHistory } from './history';
 import type { RecastBlock, RecastItem, StatusProperty } from './types';
 import {
     META_PROPERTIES_KEY,
@@ -15,7 +16,6 @@ import {
     SelectProperty,
     TABLE_VALUES_KEY,
 } from './types';
-import { getHistory, removeHistory, setHistory } from './history';
 
 /**
  * Generate a unique id for a property
@@ -275,7 +275,7 @@ const isSelectLikeProperty = (
     metaProperty?: RecastMetaProperty
 ): metaProperty is SelectProperty | MultiSelectProperty | StatusProperty => {
     return (
-        metaProperty &&
+        !!metaProperty &&
         (metaProperty.type === PropertyType.Status ||
             metaProperty.type === PropertyType.Select ||
             metaProperty.type === PropertyType.MultiSelect)

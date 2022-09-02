@@ -1,20 +1,15 @@
-import { ComponentType, ReactElement } from 'react';
-
-import type {
-    Column,
-    DefaultColumnsValue,
-} from '@toeverything/datasource/db-service';
+import type { Column } from '@toeverything/datasource/db-service';
 import {
     ArrayOperation,
     BlockDecoration,
     MapOperation,
 } from '@toeverything/datasource/jwt';
-import { cloneDeep } from '@toeverything/utils';
+import type { ComponentType, ReactElement } from 'react';
 import type { EventData } from '../block';
 import { AsyncBlock } from '../block';
+import { HTML2BlockResult } from '../clipboard';
 import type { Editor } from '../editor';
 import { SelectBlock } from '../selection';
-
 export interface CreateView {
     block: AsyncBlock;
     editor: Editor;
@@ -36,10 +31,10 @@ export abstract class BaseView {
     abstract type: string;
 
     /**
-     * activatable means can be focused
+     * editable means can be focused
      * @memberof BaseView
      */
-    public activatable = true;
+    public editable = true;
 
     public selectable = true;
 
@@ -130,76 +125,27 @@ export abstract class BaseView {
         return result;
     }
 
-    getSelProperties(block: AsyncBlock, selectInfo: any): DefaultColumnsValue {
-        return cloneDeep(block.getProperties());
-    }
-
-    html2block(el: Element, parseEl: (el: Element) => any[]): any[] | null {
+    async html2block(props: {
+        element: HTMLElement | Node;
+        editor: Editor;
+    }): Promise<HTML2BlockResult> {
         return null;
     }
 
-    async block2html(
+    async block2Text(
         block: AsyncBlock,
-        children: SelectBlock[],
-        generateHtml: (el: any[]) => Promise<string>
+        // The selectInfo parameter is not passed when the block is selected in ful, the selectInfo.type is Range
+        selectInfo?: SelectBlock
     ): Promise<string> {
         return '';
     }
+
+    async block2html(props: {
+        editor: Editor;
+        block: AsyncBlock;
+        // The selectInfo parameter is not passed when the block is selected in ful, the selectInfo.type is Range
+        selectInfo?: SelectBlock;
+    }) {
+        return '';
+    }
 }
-
-export const getTextProperties = (
-    properties: DefaultColumnsValue,
-    selectInfo: any
-) => {
-    let text_value = properties.text.value;
-    if (text_value.length === 0) {
-        return properties;
-    }
-    if (selectInfo.endInfo) {
-        text_value = text_value.slice(0, selectInfo.endInfo.arrayIndex + 1);
-        text_value[text_value.length - 1].text = text_value[
-            text_value.length - 1
-        ].text.substring(0, selectInfo.endInfo.offset);
-    }
-    if (selectInfo.startInfo) {
-        text_value = text_value.slice(selectInfo.startInfo.arrayIndex);
-        text_value[0].text = text_value[0].text.substring(
-            selectInfo.startInfo.offset
-        );
-    }
-    properties.text.value = text_value;
-    return properties;
-};
-
-export const getTextHtml = (block: AsyncBlock) => {
-    const generate = (textList: any[]) => {
-        let content = '';
-        textList.forEach(text_obj => {
-            let text = text_obj.text || '';
-            if (text_obj.bold) {
-                text = `<strong>${text}</strong>`;
-            }
-            if (text_obj.italic) {
-                text = `<em>${text}</em>`;
-            }
-            if (text_obj.underline) {
-                text = `<u>${text}</u>`;
-            }
-            if (text_obj.inlinecode) {
-                text = `<code>${text}</code>`;
-            }
-            if (text_obj.strikethrough) {
-                text = `<s>${text}</s>`;
-            }
-            if (text_obj.type === 'link') {
-                text = `<a href='${text_obj.url}'>${generate(
-                    text_obj.children
-                )}</a>`;
-            }
-            content += text;
-        });
-        return content;
-    };
-    const text_list: any[] = block.getProperty('text').value;
-    return generate(text_list);
-};

@@ -12,12 +12,12 @@ import {
 import {
     IconButton,
     PopoverContainer,
+    styled,
     // MuiIconButton as IconButton,
     // MuiTooltip as Tooltip,
     Tooltip,
     useTheme,
 } from '@toeverything/components/ui';
-import style9 from 'style9';
 
 import { TldrawApp } from '@toeverything/components/board-state';
 import {
@@ -90,8 +90,8 @@ export const ToolsPanel = ({ app }: { app: TldrawApp }) => {
             }}
             direction="none"
         >
-            <div className={styles('container')}>
-                <div className={styles('toolBar')}>
+            <Container>
+                <ToolBar>
                     {tools.map(
                         ({
                             type,
@@ -127,24 +127,22 @@ export const ToolsPanel = ({ app }: { app: TldrawApp }) => {
                                 </Tooltip>
                             )
                     )}
-                </div>
-            </div>
+                </ToolBar>
+            </Container>
         </PopoverContainer>
     );
 };
 
-const styles = style9.create({
-    container: {
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        height: '100%',
-    },
-    toolBar: {
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#ffffff',
-        borderRadius: '10px',
-        padding: '4px 4px',
-    },
+const Container = styled('div')({
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    height: '100%',
+});
+const ToolBar = styled('div')({
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: '#ffffff',
+    borderRadius: '10px',
+    padding: '4px 4px',
 });

@@ -1,14 +1,14 @@
-import { useRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 
 import { BackLink, TextProps } from '@toeverything/components/common';
 import {
-    RenderBlockChildren,
     BlockPendantProvider,
+    RenderBlockChildren,
 } from '@toeverything/components/editor-core';
+import { styled } from '@toeverything/components/ui';
 import { ContentColumnValue } from '@toeverything/datasource/db-service';
 import { CreateView } from '@toeverything/framework/virgo';
-import { Theme, styled } from '@toeverything/components/ui';
 
 import {
     TextManage,
@@ -81,7 +81,7 @@ export const PageView = ({ block, editor }: CreateView) => {
 
     return (
         <PageTitleBlock>
-            <BlockPendantProvider block={block}>
+            <BlockPendantProvider editor={editor} block={block}>
                 <TextManage
                     alwaysShowPlaceholder
                     ref={textRef}

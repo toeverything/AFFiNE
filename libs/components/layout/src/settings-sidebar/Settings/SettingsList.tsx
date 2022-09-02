@@ -1,8 +1,21 @@
-import { Divider, ListItem, styled, Switch } from '@toeverything/components/ui';
+import {
+    Divider,
+    ListItem,
+    Option,
+    Select,
+    styled,
+    Switch,
+} from '@toeverything/components/ui';
+import { useTranslation } from 'react-i18next';
+import { options } from '../../i18n';
 import { useSettings } from './use-settings';
 
 export const SettingsList = () => {
     const settings = useSettings();
+    const { i18n } = useTranslation();
+    const changeLanguage = event => {
+        i18n.changeLanguage(event);
+    };
 
     return (
         <StyledSettingsList>
@@ -15,7 +28,7 @@ export const SettingsList = () => {
                 if (type === 'switch') {
                     return (
                         <SwitchItemContainer
-                            key={item.name}
+                            key={item.key}
                             onClick={() => {
                                 item.onChange(!item.value);
                             }}
@@ -31,8 +44,25 @@ export const SettingsList = () => {
                 }
 
                 return (
-                    <ListItem key={item.name} onClick={() => item.onClick()}>
+                    <ListItem key={item.key} onClick={() => item.onClick()}>
                         {item.name}
+                        {item.key === 'Language' ? (
+                            <div style={{ marginLeft: '12em' }}>
+                                <Select
+                                    defaultValue={options[0].value}
+                                    onChange={changeLanguage}
+                                >
+                                    {options.map(option => (
+                                        <Option
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.text}
+                                        </Option>
+                                    ))}
+                                </Select>
+                            </div>
+                        ) : null}
                     </ListItem>
                 );
             })}

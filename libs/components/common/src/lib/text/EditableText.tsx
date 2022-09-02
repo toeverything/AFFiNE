@@ -804,7 +804,7 @@ const EditorLeaf = ({ attributes, children, leaf }: any) => {
                         backgroundColor: '#F2F5F9',
                         borderRadius: '5px',
                         color: '#3A4C5C',
-                        padding: '3px 8px',
+                        padding: '1px 8px',
                         margin: '0 2px',
                     }}
                 >

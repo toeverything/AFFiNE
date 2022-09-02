@@ -968,7 +968,41 @@ class SlateUtils {
     }
 
     public getNodeByPath(path: Path) {
-        Editor.node(this.editor, path);
+        return Editor.node(this.editor, path);
+    }
+
+    public getNodeByRange(range: Range) {
+        return Editor.node(this.editor, range);
+    }
+
+    // This may should write with logic of render slate
+    public convertLeaf2Html(textValue: any) {
+        const { text, fontColor, fontBgColor } = textValue;
+
+        const style = `style="${fontColor ? `color: ${fontColor};` : ''}${
+            fontBgColor ? `backgroundColor: ${fontBgColor};` : ''
+        }"`;
+        if (textValue.bold) {
+            return `<strong ${style}>${text}</strong>`;
+        }
+        if (textValue.italic) {
+            return `<em ${style}>${text}</em>`;
+        }
+        if (textValue.underline) {
+            return `<u ${style}>${text}</u>`;
+        }
+        if (textValue.inlinecode) {
+            return `<code ${style}>${text}</code>`;
+        }
+        if (textValue.strikethrough) {
+            return `<s ${style}>${text}</s>`;
+        }
+        if (textValue.type === 'link') {
+            return `<a href='${textValue.url}' ${style}>${this.convertLeaf2Html(
+                textValue.children
+            )}</a>`;
+        }
+        return `<span ${style}>${text}</span>`;
     }
 
     public getStartSelection() {

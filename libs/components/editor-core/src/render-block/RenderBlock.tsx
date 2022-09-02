@@ -4,7 +4,13 @@ import { useCallback, useMemo } from 'react';
 import { useEditor } from '../Contexts';
 import { useBlock } from '../hooks';
 
-interface RenderBlockProps {
+/**
+ * Render nothing
+ */
+// eslint-disable-next-line react/jsx-no-useless-fragment
+export const NullBlockRender = () => <></>;
+
+export interface RenderBlockProps {
     blockId: string;
     hasContainer?: boolean;
 }
@@ -17,7 +23,7 @@ export function RenderBlock({
     const { block } = useBlock(blockId);
 
     const setRef = useCallback(
-        (dom: HTMLElement) => {
+        (dom: HTMLElement | null) => {
             if (block != null && dom != null) {
                 block.dom = dom;
             }
@@ -29,7 +35,7 @@ export function RenderBlock({
         if (block?.type) {
             return editor.getView(block.type).View;
         }
-        return () => null;
+        return (): null => null;
     }, [editor, block?.type]);
 
     if (!block) {
@@ -64,4 +70,5 @@ export function RenderBlock({
 
 const BlockContainer = styled('div')(({ theme }) => ({
     fontSize: theme.typography.body1.fontSize,
+    flex: 1,
 }));
