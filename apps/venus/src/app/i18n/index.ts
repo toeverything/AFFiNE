@@ -4,8 +4,8 @@ import en_US from './resources/en.json';
 import zh_CN from './resources/zh.json';
 
 const resources = {
-    en: en_US,
-    zh: zh_CN,
+    en: { translation: en_US },
+    zh: { translation: zh_CN },
 } as const;
 
 i18next.use(initReactI18next).init({

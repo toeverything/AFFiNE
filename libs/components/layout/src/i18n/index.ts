@@ -11,15 +11,15 @@ declare module 'react-i18next' {
         defaultNS: 'ns1';
         // custom resources type
         resources: {
-            en: typeof en_US.translation;
-            zh: typeof zh_CN.translation;
+            en: typeof en_US;
+            zh: typeof zh_CN;
         };
     }
 }
 
 const resources = {
-    en: en_US,
-    zh: zh_CN,
+    en: { translation: en_US },
+    zh: { translation: zh_CN },
 } as const;
 
 i18next.use(initReactI18next).init({

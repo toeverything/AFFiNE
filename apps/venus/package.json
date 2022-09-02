@@ -3,7 +3,9 @@
     "version": "1.0.0",
     "license": "MIT",
     "description": "",
-    "scripts": {},
+    "scripts": {
+        "scan": "i18next-scanner"
+    },
     "keywords": [],
     "author": "DarkSky <darksky2048@gmail.com>",
     "dependencies": {
