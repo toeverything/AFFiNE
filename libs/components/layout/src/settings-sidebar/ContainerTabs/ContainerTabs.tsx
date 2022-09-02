@@ -5,6 +5,7 @@ import {
 } from '@toeverything/components/icons';
 import { styled } from '@toeverything/components/ui';
 import { cloneElement, useCallback, useMemo, type ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Comments } from '../Comments';
 import { useActiveComment } from '../Comments/use-comments';
 import { LayoutSettings } from '../Layout';
@@ -16,12 +17,13 @@ const _defaultTabsKeys = ['layout', 'comment', 'settings'] as const;
 
 export const ContainerTabs = () => {
     const { activeCommentId, resolveComment } = useActiveComment();
+    const { t } = useTranslation();
 
     const getSettingsTabsData = useCallback((): SettingsTabItemType[] => {
         return [
             {
                 type: 'layout',
-                text: 'Layout',
+                text: t('Layout'),
                 icon: (
                     <IconWrapper>
                         <LayoutIcon />
@@ -31,7 +33,7 @@ export const ContainerTabs = () => {
             },
             {
                 type: 'comment',
-                text: 'Comment',
+                text: t('Comment'),
                 icon: (
                     <IconWrapper>
                         <CommentIcon />
@@ -48,7 +50,7 @@ export const ContainerTabs = () => {
             },
             {
                 type: 'settings',
-                text: 'Settings',
+                text: t('Settings'),
                 icon: (
                     <IconWrapper>
                         <SettingsIcon />
@@ -57,7 +59,7 @@ export const ContainerTabs = () => {
                 panel: <SettingsPanel />,
             },
         ];
-    }, [activeCommentId, resolveComment]);
+    }, [activeCommentId, resolveComment, t]);
 
     const settingsTabsData = useMemo(() => {
         return getSettingsTabsData();
@@ -67,7 +69,6 @@ export const ContainerTabs = () => {
         _defaultTabsKeys as unknown as string[],
         'settings'
     );
-
     return (
         <>
             <StyledTabsTitlesContainer>
