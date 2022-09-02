@@ -63,7 +63,7 @@ For more information about using a codespace for working on GitHub documentation
 
 Commit the changes once you are happy with them.
 
-Reach out the community members for necessary help. 
+Reach out the community members for necessary help.
 
 Once your changes are ready, don't forget to self-review to speed up the review process:zap:.
 
