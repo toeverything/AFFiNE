@@ -14,7 +14,7 @@ import {
 
 import { useTranslation } from 'react-i18next';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
-import { FileSystem, fsApiSupported } from './FileSystem';
+import { fsApiSupported } from './FileSystem';
 import { CurrentPageTitle } from './Title';
 
 export const LayoutHeader = () => {
@@ -44,7 +44,6 @@ export const LayoutHeader = () => {
                 </FlexContainer>
                 <FlexContainer>
                     <StyledHelper>
-                        <FileSystem />
                         <StyledShare disabled={true}>{t('Share')}</StyledShare>
                         <div style={{ margin: '0px 12px' }}>
                             <IconButton

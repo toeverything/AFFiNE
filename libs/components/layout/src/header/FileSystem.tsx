@@ -4,7 +4,7 @@ import { CloseIcon } from '@toeverything/components/common';
 import { IconButton, MuiSnackbar, styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
 import { useLocalTrigger } from '@toeverything/datasource/state';
-import { useTranslation } from 'react-i18next';
+
 const cleanupWorkspace = (workspace: string) =>
     new Promise((resolve, reject) => {
         const req = indexedDB.deleteDatabase(workspace);
@@ -75,25 +75,39 @@ export const FileSystem = () => {
         setError(true);
         setTimeout(() => setError(false), 3000);
     }, []);
-    const { t } = useTranslation();
+
     const apiSupported = useMemo(() => fsApiSupported(), []);
 
     if (apiSupported && !selected) {
         return (
-            <MuiSnackbar
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                open={error}
-                message="Request File Permission failed, please check if you have permission"
-                sx={{ marginTop: '3em' }}
-                action={
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => setError(false)}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                }
-            />
+            <>
+                <MuiSnackbar
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    open={error}
+                    message="Request File Permission failed, please check if you have permission"
+                    sx={{ marginTop: '3em' }}
+                    action={
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setError(false)}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    }
+                />
+                <StyledFileSystem
+                    onClick={async () => {
+                        try {
+                            await requestPermission('AFFiNE');
+                            onSelected();
+                        } catch (e) {
+                            onError();
+                        }
+                    }}
+                >
+                    Sync to Disk
+                </StyledFileSystem>
+            </>
         );
     }
     return null;

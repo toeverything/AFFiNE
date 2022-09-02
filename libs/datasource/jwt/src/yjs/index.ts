@@ -371,7 +371,6 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                         applyUpdate(doc, new Uint8Array(binary));
                         await update_check;
                     }
-                    console.log('load success');
 
                     return true;
                 } catch (err) {

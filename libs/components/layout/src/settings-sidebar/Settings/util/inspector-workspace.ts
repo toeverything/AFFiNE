@@ -1,18 +1,17 @@
 /**
  * @deprecated debugging method, deprecated
  */
-export const importWorkspace = (workspaceId: string) => {
-    //@ts-ignore
-    window.client
-        .inspector()
-        .load()
-        .then(status => {
-            if (status) {
-                if (window.confirm('Your currently open data will be lost.')) {
-                    window.location.href = `/${workspaceId}/`;
-                }
-            }
-        });
+export const importWorkspace = async () => {
+    if (window.confirm('Your currently open data will be lost.')) {
+        //@ts-ignore
+        const status = await window.client.inspector().load();
+
+        console.log(status);
+
+        if (status) {
+            window.location.reload();
+        }
+    }
 };
 
 /**
