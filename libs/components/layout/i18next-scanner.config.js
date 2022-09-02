@@ -22,7 +22,7 @@ module.exports = {
         resource: {
             loadPath: 'src/i18n/resources/{{ns}}.json',
             savePath: 'src/i18n/resources/{{ns}}.json',
-            jsonIndent: 2,
+            jsonIndent: 4,
             lineEnding: '\n',
         },
         nsSeparator: false, // namespace separator
