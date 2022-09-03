@@ -13,6 +13,16 @@
     "badgeTemplate": "\n[all-contributors-badge]: https://img.shields.io/badge/all_contributors-<%= contributors.length %>-orange.svg?style=flat-square\n",
     "contributors": [
         {
+            "login": "doodlewind",
+            "name": "Yifeng Wang",
+            "avatar_url": "https://avatars.githubusercontent.com/u/7312949?v=4",
+            "profile": "https://github.com/doodlewind",
+            "contributions": [
+                "code",
+                "doc"
+            ]
+        },
+        {
             "login": "darkskygit",
             "name": "DarkSky",
             "avatar_url": "https://avatars.githubusercontent.com/u/25152247?v=4",
@@ -300,6 +310,15 @@
             "name": "Wang Yu",
             "avatar_url": "https://avatars.githubusercontent.com/u/80874770?v=4",
             "profile": "https://wangyu-1999.github.io/",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "felixonmars",
+            "name": "Felix Yan",
+            "avatar_url": "https://avatars.githubusercontent.com/u/1006477?v=4",
+            "profile": "https://felixc.at/",
             "contributions": [
                 "code"
             ]
