@@ -204,7 +204,7 @@ export const LinkMenu = ({ editor, hooks }: LinkMenuProps) => {
                                         </LinkModalContainerIcon>
                                         <LinkModalContainerInput
                                             onKeyDown={handleKeyDown}
-                                            placeholder="Paste link url, like https://affine.pro"
+                                            placeholder="Paste link url"
                                             autoComplete="off"
                                             value={searchText}
                                             onChange={handleFilterChange}
@@ -240,7 +240,6 @@ const LinkModalContainer = styled('div')(({ theme }) => ({
     backgroundColor: '#fff',
     alignItems: 'center',
     zIndex: '1',
-    width: '354px',
 }));
 
 const LinkModalContainerIcon = styled('div')(({ theme }) => ({

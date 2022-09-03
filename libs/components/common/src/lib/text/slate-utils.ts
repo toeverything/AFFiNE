@@ -690,10 +690,7 @@ class SlateUtils {
     }
 
     public getStart() {
-        return Editor.start(this.editor, {
-            path: [0, 0],
-            offset: 0,
-        });
+        return Editor.start(this.editor, [0]);
     }
 
     public getEnd() {

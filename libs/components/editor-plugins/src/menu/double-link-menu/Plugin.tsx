@@ -3,7 +3,7 @@ import { BasePlugin } from '../../base-plugin';
 import { PluginRenderRoot } from '../../utils';
 import { DoubleLinkMenu } from './DoubleLinkMenu';
 
-const PLUGIN_NAME = 'reference-menu';
+const PLUGIN_NAME = 'doublelink-menu';
 
 export class DoubleLinkMenuPlugin extends BasePlugin {
     private _root?: PluginRenderRoot;

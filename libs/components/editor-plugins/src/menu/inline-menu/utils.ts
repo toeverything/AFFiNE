@@ -181,10 +181,10 @@ const common_handler_for_inline_menu: ClickItemHandler = ({
             });
             break;
         case inlineMenuNamesKeys.link:
-            add_link({
-                editor,
-                blockId: anchorNodeId,
-            });
+            // add_link({
+            //     editor,
+            //     blockId: anchorNodeId,
+            // });
             editor.plugins.emit('showAddLink');
             setShow(false);
             break;

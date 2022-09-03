@@ -185,10 +185,12 @@ export const DoubleLinkMenu = ({
                 }
             }
             const { type, anchorNode } = editor.selection.currentSelectInfo;
+            if (!anchorNode) {
+                return;
+            }
             if (
                 !isOpen ||
                 (type === 'Range' &&
-                    anchorNode &&
                     anchorNode.id !== curBlockId &&
                     editor.blockHelper.isSelectionCollapsed(anchorNode.id))
             ) {
