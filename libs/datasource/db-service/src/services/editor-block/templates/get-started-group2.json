@@ -111,7 +111,9 @@
             "type": "text",
             "properties": {
                 "text": {
-                    "value": [{ "text": "Type ＠ to mention people" }]
+                    "value": [
+                        { "text": " Open Tag App`AFFiNE`  to  mention people" }
+                    ]
                 },
                 "recastValues": {
                     "bNjVwBq8YLxvmvr7": {
