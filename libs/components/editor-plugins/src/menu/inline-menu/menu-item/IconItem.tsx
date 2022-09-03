@@ -2,8 +2,9 @@ import React, { useCallback } from 'react';
 import style9 from 'style9';
 
 import type { IconItemType, WithEditorSelectionType } from '../types';
-import { inlineMenuNamesKeys, inlineMenuShortcuts } from '../config';
+import { inlineMenuNamesKeys, MacInlineMenuShortcuts, WinInlineMenuShortcuts } from '../config';
 import { Tooltip } from '@toeverything/components/ui';
+import { uaHelper } from '@toeverything/utils';
 type MenuIconItemProps = IconItemType & WithEditorSelectionType;
 
 export const MenuIconItem = ({
@@ -35,7 +36,7 @@ export const MenuIconItem = ({
     );
 
     //@ts-ignore
-    const shortcut = inlineMenuShortcuts[nameKey];
+    const shortcut = uaHelper.isMacOs ? MacInlineMenuShortcuts[nameKey] : WinInlineMenuShortcuts[nameKey];
 
     return (
         <Tooltip

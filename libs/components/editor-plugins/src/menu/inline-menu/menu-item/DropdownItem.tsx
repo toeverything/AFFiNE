@@ -12,10 +12,12 @@ import {
 } from '@toeverything/components/common';
 import { ArrowDropDownIcon } from '@toeverything/components/icons';
 import type { DropdownItemType, WithEditorSelectionType } from '../types';
+import { uaHelper } from '@toeverything/utils';
 import {
     inlineMenuNamesKeys,
     inlineMenuNamesForFontColor,
-    inlineMenuShortcuts,
+    MacInlineMenuShortcuts,
+    WinInlineMenuShortcuts
 } from '../config';
 
 type MenuDropdownItemProps = DropdownItemType & WithEditorSelectionType;
@@ -37,7 +39,7 @@ export const MenuDropdownItem = ({
     }, []);
 
     //@ts-ignore
-    const shortcut = inlineMenuShortcuts[nameKey];
+    const shortcut = uaHelper.isMacOs ? MacInlineMenuShortcuts[nameKey] : WinInlineMenuShortcuts[nameKey];
 
     return (
         <>
