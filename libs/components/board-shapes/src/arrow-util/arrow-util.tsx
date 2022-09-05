@@ -42,7 +42,7 @@ type E = HTMLDivElement;
 export class ArrowUtil extends TDShapeUtil<T, E> {
     type = TDShapeType.Arrow as const;
 
-    override hideBounds = true;
+    override hideBounds = false;
 
     override canEdit = true;
 

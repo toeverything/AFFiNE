@@ -2,6 +2,7 @@ import { MoveToIcon } from '@toeverything/components/icons';
 import { ListItem, styled, Typography } from '@toeverything/components/ui';
 import { LOGOUT_COOKIES, LOGOUT_LOCAL_STORAGE } from '@toeverything/utils';
 import { getAuth, signOut } from 'firebase/auth';
+import { useTranslation } from 'react-i18next';
 
 const logout = () => {
     LOGOUT_LOCAL_STORAGE.forEach(name => localStorage.removeItem(name));
@@ -16,10 +17,11 @@ const logout = () => {
 };
 
 export const Logout = () => {
+    const { t } = useTranslation();
     return (
         <ListItem onClick={logout}>
             <StyledIcon />
-            <ContentText type="base">Logout</ContentText>
+            <ContentText type="base">{t('Logout')}</ContentText>
         </ListItem>
     );
 };

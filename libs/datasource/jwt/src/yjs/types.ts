@@ -139,8 +139,8 @@ interface AsyncDatabaseAdapter<C extends ContentOperation> {
     reload(): void;
     createBlock(
         options: Pick<BlockItem<C>, 'type' | 'flavor'> & {
-            binary?: ArrayBuffer;
-            uuid?: string;
+            binary: ArrayBuffer | undefined;
+            uuid: string | undefined;
         }
     ): Promise<BlockInstance<C>>;
     getBlock(id: string): Promise<BlockInstance<C> | undefined>;
@@ -184,8 +184,6 @@ export const getDataExporter = () => {
     return { importData, exportData, hasExporter, installExporter };
 };
 
-export { YjsAdapter } from './yjs';
-export type { YjsContentOperation, YjsInitOptions } from './yjs';
 export type {
     AsyncDatabaseAdapter,
     BlockPosition,

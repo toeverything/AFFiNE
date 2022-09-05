@@ -1,15 +1,16 @@
 import { Array as YArray, Map as YMap } from 'yjs';
 
-import { RemoteKvService } from '@toeverything/datasource/remote-kv';
+import type { RemoteKvService } from '@toeverything/datasource/remote-kv';
 
 export class YjsRemoteBinaries {
     private readonly _binaries: YMap<YArray<ArrayBuffer>>; // binary instance
     private readonly _remoteStorage?: RemoteKvService;
 
-    constructor(binaries: YMap<YArray<ArrayBuffer>>, remote_token?: string) {
+    constructor(binaries: YMap<YArray<ArrayBuffer>>, remoteToken?: string) {
         this._binaries = binaries;
-        if (remote_token) {
-            this._remoteStorage = new RemoteKvService(remote_token);
+        if (remoteToken) {
+            // TODO: remote kv need to refactor, we may use cloudflare kv
+            // this._remoteStorage = new RemoteKvService(remote_token);
         } else {
             console.warn(`Remote storage is not ready`);
         }
@@ -25,7 +26,7 @@ export class YjsRemoteBinaries {
         } else {
             // TODO: Remote Load
             try {
-                const file = await this._remoteStorage?.instance.getBuffData(
+                const file = await this._remoteStorage?.instance?.getBuffData(
                     name
                 );
                 console.log(file);
@@ -44,11 +45,11 @@ export class YjsRemoteBinaries {
                 this._binaries.set(name, binary);
                 if (this._remoteStorage) {
                     // TODO: Remote Save, if there is an object with the same name remotely, the upload is skipped, because the file name is the hash of the file content
-                    const has_file = this._remoteStorage.instance.exist(name);
+                    const has_file = this._remoteStorage.instance?.exist(name);
                     if (!has_file) {
                         const upload_file = new File(binary.toArray(), name);
                         await this._remoteStorage.instance
-                            .upload(upload_file)
+                            ?.upload(upload_file)
                             .catch(err => {
                                 throw new Error(`${err} upload error`);
                             });

@@ -35,6 +35,8 @@ export const Popper = ({
     offset = [0, 5],
     showArrow = false,
     popperHandlerRef,
+    onClick,
+    onClickAway,
     ...popperProps
 }: PopperProps) => {
     const [anchorEl, setAnchorEl] = useState<VirtualElement>(null);
@@ -97,15 +99,20 @@ export const Popper = ({
     return (
         <ClickAwayListener
             onClickAway={() => {
-                setVisible(false);
+                if (visibleControlledByParent) {
+                    onClickAway?.();
+                } else {
+                    setVisible(false);
+                }
             }}
         >
             <Container>
                 {isAnchorCustom ? null : (
                     <div
                         ref={(dom: HTMLDivElement) => setAnchorEl(dom)}
-                        onClick={() => {
+                        onClick={e => {
                             if (!hasClickTrigger || visibleControlledByParent) {
+                                onClick?.(e);
                                 return;
                             }
                             setVisible(!visible);

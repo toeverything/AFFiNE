@@ -2,19 +2,19 @@ import HotKeys from 'hotkeys-js';
 
 import { uaHelper } from '@toeverything/utils';
 
+import { Protocol } from '@toeverything/datasource/db-service';
 import { AsyncBlock, BlockEditor } from '../..';
+import { supportChildren } from '../../utils';
 import { SelectionManager } from '../selection';
 import {
-    HotKeyTypes,
-    HotkeyMap,
-    MacHotkeyMap,
-    WinHotkeyMap,
     GlobalHotkeyMap,
     GlobalMacHotkeyMap,
     GlobalWinHotkeyMap,
+    HotkeyMap,
+    HotKeyTypes,
+    MacHotkeyMap,
+    WinHotkeyMap,
 } from './hotkey-map';
-import { supportChildren } from '../../utils';
-import { Protocol } from '@toeverything/datasource/db-service';
 type KeyboardEventHandler = (event: KeyboardEvent) => void;
 export class KeyboardManager {
     private _editor: BlockEditor;
@@ -22,8 +22,20 @@ export class KeyboardManager {
     private hotkeys: HotkeyMap;
     private global_hotkeys: GlobalHotkeyMap;
     private handler_map: { [k: string]: Array<KeyboardEventHandler> };
+    /**
+     * Every editor should have its own hotkey scope,
+     * but edgeless had multiple editor instances,
+     * all edgeless editors should have shared scope
+     */
+    private hotkeyScope: string;
 
     constructor(editor: BlockEditor) {
+        if (editor.isEdgeless) {
+            // edgeless editors should have shared scope
+            this.hotkeyScope = 'whiteboard';
+        } else {
+            this.hotkeyScope = 'editor_' + editor.getRootBlockId();
+        }
         this._editor = editor;
         this.selection_manager = this._editor.selectionManager;
         if (uaHelper.isMacOs) {
@@ -35,7 +47,7 @@ export class KeyboardManager {
         }
         this.handler_map = {};
 
-        HotKeys.setScope('editor');
+        HotKeys.setScope(this.hotkeyScope);
 
         // this.init_common_shortcut_cb();
         this.bind_hot_key_handlers();
@@ -44,43 +56,63 @@ export class KeyboardManager {
     private bind_hot_key_handlers() {
         this.bind_hotkey(
             this.hotkeys.selectAll,
-            'editor',
+            this.hotkeyScope,
             this.handle_select_all
         );
 
-        this.bind_hotkey(this.hotkeys.undo, 'editor', this.handle_undo);
-        this.bind_hotkey(this.hotkeys.redo, 'editor', this.handle_redo);
-        this.bind_hotkey(this.hotkeys.remove, 'editor', this.handle_remove);
+        this.bind_hotkey(this.hotkeys.undo, this.hotkeyScope, this.handle_undo);
+        this.bind_hotkey(this.hotkeys.redo, this.hotkeyScope, this.handle_redo);
+        this.bind_hotkey(this.hotkeys.remove, 'all', this.handle_remove);
         this.bind_hotkey(
             this.hotkeys.checkUncheck,
-            'editor',
+            this.hotkeyScope,
             this.handle_check_uncheck
         );
         this.bind_hotkey(
             this.hotkeys.preExpendSelect,
-            'editor',
+            this.hotkeyScope,
             this.handle_pre_expend_select
         );
         this.bind_hotkey(
             this.hotkeys.nextExpendSelect,
-            'editor',
+            this.hotkeyScope,
             this.handle_next_expend_select
         );
-        this.bind_hotkey(this.hotkeys.up, 'editor', this.handle_click_up);
-        this.bind_hotkey(this.hotkeys.down, 'editor', this.handleClickDown);
-        this.bind_hotkey(this.hotkeys.left, 'editor', this.handle_click_up);
-        this.bind_hotkey(this.hotkeys.right, 'editor', this.handleClickDown);
-        this.bind_hotkey(this.hotkeys.mergeGroup, 'editor', this.mergeGroup);
+        this.bind_hotkey(
+            this.hotkeys.up,
+            this.hotkeyScope,
+            this.handle_click_up
+        );
+        this.bind_hotkey(
+            this.hotkeys.down,
+            this.hotkeyScope,
+            this.handleClickDown
+        );
+        this.bind_hotkey(
+            this.hotkeys.left,
+            this.hotkeyScope,
+            this.handle_click_up
+        );
+        this.bind_hotkey(
+            this.hotkeys.right,
+            this.hotkeyScope,
+            this.handleClickDown
+        );
+        this.bind_hotkey(
+            this.hotkeys.mergeGroup,
+            this.hotkeyScope,
+            this.mergeGroup
+        );
         this.bind_hotkey(this.hotkeys.enter, 'all', this.handleEnter);
         this.bind_hotkey(this.global_hotkeys.search, 'all', this.handle_search);
         this.bind_hotkey(
             this.hotkeys.mergeGroupDown,
-            'editor',
+            this.hotkeyScope,
             this.mergeGroupDown
         );
         this.bind_hotkey(
             this.hotkeys.mergeGroupUp,
-            'editor',
+            this.hotkeyScope,
             this.mergeGroupUp
         );
     }
@@ -93,22 +125,10 @@ export class KeyboardManager {
         handler.forEach(h => {
             HotKeys(key, scope, h);
             if (!this.handler_map[key]) {
-                this.handler_map[key] = [h];
-            } else {
-                this.handler_map[key].push(h);
+                this.handler_map[key] = [];
             }
+            this.handler_map[key].push(h);
         });
-    }
-
-    /**
-     *
-     * bind global shortcut event
-     * @param {HotkeyMapKeys} type
-     * @param {KeyboardEventHandler} handler
-     * @memberof KeyboardManager
-     */
-    public bind(type: HotKeyTypes, handler: KeyboardEventHandler) {
-        this.bind_hotkey(this.hotkeys[type], 'editor', handler);
     }
 
     /**
@@ -127,21 +147,12 @@ export class KeyboardManager {
         }
     }
 
-    /**
-     *
-     * unbind keyboard event
-     * @param {HotKeyTypes} key
-     * @param {KeyboardEventHandler} cb
-     * @memberof KeyboardManager
-     */
-    public unbind(key: HotKeyTypes, cb: KeyboardEventHandler) {
-        HotKeys.unbind(key, 'editor', cb);
-    }
-
     public dispose() {
-        Object.keys(this.handler_map).map(key => HotKeys.unbind(key, 'editor'));
-
+        Object.entries(this.handler_map).forEach(([key, fns]) =>
+            fns.forEach(fn => HotKeys.unbind(key, fn))
+        );
         this.handler_map = {};
+        HotKeys.deleteScope(this.hotkeyScope);
     }
 
     private handle_select_all = (event: KeyboardEvent) => {
@@ -228,20 +239,20 @@ export class KeyboardManager {
                 );
             } else {
                 // suspend(true)
-                let textBlock = await this._editor.createBlock('text');
+                const textBlock = await this._editor.createBlock('text');
                 await selectedNode.after(textBlock);
                 this._editor.selectionManager.setActivatedNodeId(textBlock.id);
             }
         }
     };
     private mergeGroup = async (event: Event) => {
-        let selectedGroup = await this.getSelectedGroups();
+        const selectedGroup = await this.getSelectedGroups();
         this._editor.commands.blockCommands.mergeGroup(...selectedGroup);
     };
     private mergeGroupDown = async (event: Event) => {
-        let selectedGroup = await this.getSelectedGroups();
+        const selectedGroup = await this.getSelectedGroups();
         if (selectedGroup.length) {
-            let nextGroup = await selectedGroup[
+            const nextGroup = await selectedGroup[
                 selectedGroup.length - 1
             ].nextSibling();
             if (nextGroup?.type === Protocol.Block.Type.group) {
@@ -253,9 +264,9 @@ export class KeyboardManager {
         }
     };
     private mergeGroupUp = async (event: Event) => {
-        let selectedGroup = await this.getSelectedGroups();
+        const selectedGroup = await this.getSelectedGroups();
         if (selectedGroup.length) {
-            let preGroup = await selectedGroup[0].previousSibling();
+            const preGroup = await selectedGroup[0].previousSibling();
             if (preGroup?.type === Protocol.Block.Type.group) {
                 this._editor.commands.blockCommands.mergeGroup(
                     preGroup,

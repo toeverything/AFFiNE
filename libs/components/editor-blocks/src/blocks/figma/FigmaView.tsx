@@ -1,13 +1,12 @@
-import { useState } from 'react';
-import { CreateView } from '@toeverything/framework/virgo';
 import {
-    useOnSelect,
     BlockPendantProvider,
+    useOnSelect,
 } from '@toeverything/components/editor-core';
-import { Upload } from '../../components/upload/upload';
+import { CreateView } from '@toeverything/framework/virgo';
+import { useState } from 'react';
 import { SourceView } from '../../components/source-view';
-import { styled } from '@toeverything/components/ui';
 import { LinkContainer } from '../../components/style-container';
+import { Upload } from '../../components/upload/upload';
 
 const MESSAGES = {
     ADD_FIGMA_LINK: 'Add figma link',
@@ -30,7 +29,7 @@ export const FigmaView = ({ block, editor }: FigmaView) => {
         setIsSelect(isSelect);
     });
     return (
-        <BlockPendantProvider block={block}>
+        <BlockPendantProvider editor={editor} block={block}>
             <LinkContainer>
                 {figmaUrl ? (
                     <SourceView

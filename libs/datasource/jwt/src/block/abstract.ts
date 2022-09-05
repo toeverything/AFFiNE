@@ -1,4 +1,11 @@
 import {
+    BlockFlavorKeys,
+    BlockFlavors,
+    BlockTypeKeys,
+    BlockTypes,
+} from '../types';
+import { getLogger } from '../utils';
+import {
     BlockInstance,
     BlockListener,
     BlockPosition,
@@ -6,14 +13,7 @@ import {
     ContentTypes,
     HistoryManager,
     MapOperation,
-} from '../adapter';
-import {
-    BlockFlavorKeys,
-    BlockFlavors,
-    BlockTypeKeys,
-    BlockTypes,
-} from '../types';
-import { getLogger } from '../utils';
+} from '../yjs/types';
 
 declare const JWT_DEV: boolean;
 const logger = getLogger('BlockDB:block');
@@ -21,6 +21,7 @@ const logger_debug = getLogger('debug:BlockDB:block');
 
 const _GET_BLOCK = Symbol('GET_BLOCK');
 const _SET_PARENT = Symbol('SET_PARENT');
+const _EMIT_EVENT = Symbol('EMIT_EVENT');
 
 export class AbstractBlock<
     B extends BlockInstance<C>,
@@ -29,10 +30,15 @@ export class AbstractBlock<
     private readonly _id: string;
     private readonly _block: BlockInstance<C>;
     private readonly _history: HistoryManager;
-    private readonly _root?: AbstractBlock<B, C>;
-    private readonly _parentListener: Map<string, BlockListener>;
+    private readonly _root: AbstractBlock<B, C> | undefined;
+    private readonly _listeners: {
+        cascade: Map<string, BlockListener>;
+        children: Map<string, BlockListener>;
+        content: Map<string, BlockListener>;
+        parent: Map<string, BlockListener>;
+    };
 
-    private _parent?: AbstractBlock<B, C>;
+    private _parent: AbstractBlock<B, C> | undefined;
     private _changeParent?: () => void;
 
     constructor(
@@ -45,10 +51,24 @@ export class AbstractBlock<
         this._history = this._block.scopedHistory([this._id]);
 
         this._root = root;
-        this._parentListener = new Map();
+        this._listeners = {
+            cascade: new Map(),
+            children: new Map(),
+            content: new Map(),
+            parent: new Map(),
+        };
+
+        this._block.on('content', 'internal', states =>
+            this[_EMIT_EVENT]('content', states)
+        );
+        this._block.on('children', 'internal', states =>
+            this[_EMIT_EVENT]('children', states)
+        );
 
         JWT_DEV && logger_debug(`init: exists ${this._id}`);
-        if (parent) this._refreshParent(parent);
+        if (parent) {
+            this._refreshParent(parent);
+        }
     }
 
     public get root() {
@@ -77,23 +97,18 @@ export class AbstractBlock<
     }
 
     public on(
-        event: 'content' | 'children' | 'parent',
+        event: 'cascade' | 'content' | 'children' | 'parent',
         name: string,
         callback: BlockListener
     ) {
-        if (event === 'parent') {
-            this._parentListener.set(name, callback);
-        } else {
-            this._block.on(event, name, callback);
-        }
+        this._listeners[event]?.set(name, callback);
     }
 
-    public off(event: 'content' | 'children' | 'parent', name: string) {
-        if (event === 'parent') {
-            this._parentListener.delete(name);
-        } else {
-            this._block.off(event, name);
-        }
+    public off(
+        event: 'cascade' | 'content' | 'children' | 'parent',
+        name: string
+    ) {
+        this._listeners[event]?.delete(name);
     }
 
     public addChildrenListener(name: string, listener: BlockListener) {
@@ -146,7 +161,7 @@ export class AbstractBlock<
                 return new Date(timestamp)
                     .toISOString()
                     .split('T')[0]
-                    .replace(/-/g, '');
+                    ?.replace(/-/g, '');
             }
             // eslint-disable-next-line no-empty
         } catch (e) {}
@@ -187,8 +202,22 @@ export class AbstractBlock<
         const states: Map<string, 'update' | 'delete'> = new Map([
             [parentId, type],
         ]);
-        for (const listener of this._parentListener.values()) {
-            listener(states);
+        this[_EMIT_EVENT]('parent', states);
+    }
+
+    [_EMIT_EVENT](
+        event: 'cascade' | 'content' | 'children' | 'parent',
+        states: Parameters<BlockListener>[0]
+    ) {
+        const listeners = this._listeners[event];
+        if (listeners) {
+            for (const listener of listeners.values()) {
+                listener(states);
+            }
+        }
+
+        if (['children', 'content'].includes(event)) {
+            this._parent?.[_EMIT_EVENT]('cascade', states);
         }
     }
 
@@ -259,7 +288,7 @@ export class AbstractBlock<
     }
 
     /**
-     * Insert sub-Block
+     * Insert children block
      * @param block Block instance
      * @param position Insertion position, if it is empty, it will be inserted at the end. If the block already exists, the position will be moved
      * @returns
@@ -270,9 +299,12 @@ export class AbstractBlock<
     ) {
         JWT_DEV && logger(`insertChildren: start`);
 
-        if (block.id === this._id) return; // avoid self-reference
+        if (block.id === this._id) {
+            // avoid self-reference
+            return;
+        }
         if (
-            this.type !== BlockTypes.block || // binary cannot insert subblocks
+            this.type !== BlockTypes.block || // binary cannot insert children blocks
             (block.type !== BlockTypes.block &&
                 this.flavor !== BlockFlavors.workspace) // binary can only be inserted into workspace
         ) {

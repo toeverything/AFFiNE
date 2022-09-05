@@ -9,7 +9,6 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
-const Style9Plugin = require('style9/webpack');
 
 const enableBundleAnalyzer = process.env.BUNDLE_ANALYZER;
 
@@ -18,15 +17,13 @@ module.exports = function (webpackConfig) {
 
     const isProd = config.mode === 'production';
 
-    const style9 = {
-        test: /\.(tsx|ts|js|mjs|jsx)$/,
+    const mdx = {
+        test: /\.mdx?$/,
         use: [
             {
-                loader: Style9Plugin.loader,
-                options: {
-                    minifyProperties: isProd,
-                    incrementalClassnames: isProd,
-                },
+                loader: '@mdx-js/loader',
+                /** @type {import('@mdx-js/loader').Options} */
+                options: {},
             },
         ],
     };
@@ -34,7 +31,6 @@ module.exports = function (webpackConfig) {
     config.experiments.topLevelAwait = true;
 
     if (isProd) {
-        config.module.rules.unshift(style9);
         config.entry = {
             main: [...config.entry.main, ...config.entry.polyfills],
         };
@@ -43,6 +39,7 @@ module.exports = function (webpackConfig) {
             ...config.output,
             filename: '[name].[contenthash:8].js',
             chunkFilename: '[name].[chunkhash:8].js',
+            hashDigestLength: 8,
             hashFunction: undefined,
         };
         config.optimization = {
@@ -102,24 +99,8 @@ module.exports = function (webpackConfig) {
                 },
             ],
         });
-        config.module.rules.unshift({
-            test: /\.scss$/i,
-            use: [
-                'style-loader',
-                {
-                    loader: 'css-loader',
-                    options: {
-                        sourceMap: false,
-                    },
-                },
-                {
-                    loader: 'postcss-loader',
-                },
-            ],
-        });
-        config.module.rules.splice(6);
+        config.module.rules.splice(4);
     } else {
-        config.module.rules.push(style9);
         config.output = {
             ...config.output,
             publicPath: '/',
@@ -137,6 +118,8 @@ module.exports = function (webpackConfig) {
             ];
         }
     }
+
+    config.module.rules.push(mdx);
 
     addEmotionBabelPlugin(config);
 
@@ -158,8 +141,11 @@ module.exports = function (webpackConfig) {
                 template: path.resolve(__dirname, './src/template.html'),
                 publicPath: '/',
             }),
-        new Style9Plugin(),
-        isProd && new MiniCssExtractPlugin(),
+        isProd &&
+            new MiniCssExtractPlugin({
+                filename: '[name].[contenthash:8].css',
+                chunkFilename: '[id].[chunkhash:8].css',
+            }),
         isProd &&
             new CompressionPlugin({
                 test: /\.(js|css|html|svg|ttf|woff)$/,
@@ -205,15 +191,6 @@ const addEmotionBabelPlugin = config => {
                 // See https://github.com/mui/material-ui/issues/27380#issuecomment-928973157
                 // See https://github.com/emotion-js/emotion/tree/main/packages/babel-plugin#importmap
                 importMap: {
-                    '@toeverything/components/ui': {
-                        styled: {
-                            canonicalImport: ['@emotion/styled', 'default'],
-                            styledBaseImport: [
-                                '@toeverything/components/ui',
-                                'styled',
-                            ],
-                        },
-                    },
                     '@mui/material': {
                         styled: {
                             canonicalImport: ['@emotion/styled', 'default'],

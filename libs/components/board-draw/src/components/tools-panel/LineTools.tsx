@@ -35,6 +35,7 @@ const activeToolSelector = (s: TDSnapshot) => s.appState.activeTool;
 
 export const LineTools = ({ app }: { app: TldrawApp }) => {
     const activeTool = app.useStore(activeToolSelector);
+    const [visible, setVisible] = useState(false);
 
     const [lastActiveTool, setLastActiveTool] = useState<ShapeTypes>(
         TDShapeType.Line
@@ -51,8 +52,10 @@ export const LineTools = ({ app }: { app: TldrawApp }) => {
 
     return (
         <Popover
+            visible={visible}
             placement="right-start"
-            trigger="click"
+            onClick={() => setVisible(prev => !prev)}
+            onClickAway={() => setVisible(false)}
             content={
                 <ShapesContainer>
                     {shapes.map(({ type, label, tooltip, icon: Icon }) => (
@@ -60,6 +63,7 @@ export const LineTools = ({ app }: { app: TldrawApp }) => {
                             <IconButton
                                 onClick={() => {
                                     app.selectTool(type);
+                                    setVisible(false);
                                     setLastActiveTool(type);
                                 }}
                             >

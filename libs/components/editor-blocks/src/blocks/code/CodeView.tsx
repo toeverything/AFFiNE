@@ -1,58 +1,54 @@
-import { useState, useRef, useEffect } from 'react';
-import { StyleWithAtRules } from 'style9';
-
-import { CreateView } from '@toeverything/framework/virgo';
-import CodeMirror, { ReactCodeMirrorRef } from './CodeMirror';
-import { styled } from '@toeverything/components/ui';
-
-import { javascript } from '@codemirror/lang-javascript';
-import { html } from '@codemirror/lang-html';
-import { css } from '@codemirror/lang-css';
-import { json } from '@codemirror/lang-json';
-import { python } from '@codemirror/lang-python';
-import { markdown } from '@codemirror/lang-markdown';
-import { xml } from '@codemirror/lang-xml';
-import { sql, MySQL, PostgreSQL } from '@codemirror/lang-sql';
-import { java } from '@codemirror/lang-java';
-import { rust } from '@codemirror/lang-rust';
 import { cpp } from '@codemirror/lang-cpp';
+import { css } from '@codemirror/lang-css';
+import { html } from '@codemirror/lang-html';
+import { java } from '@codemirror/lang-java';
+import { javascript } from '@codemirror/lang-javascript';
+import { json } from '@codemirror/lang-json';
 import { lezer } from '@codemirror/lang-lezer';
+import { markdown } from '@codemirror/lang-markdown';
 import { php } from '@codemirror/lang-php';
+import { python } from '@codemirror/lang-python';
+import { rust } from '@codemirror/lang-rust';
+import { MySQL, PostgreSQL, sql } from '@codemirror/lang-sql';
+import { xml } from '@codemirror/lang-xml';
 import { StreamLanguage } from '@codemirror/language';
-import { go } from '@codemirror/legacy-modes/mode/go';
-import { ruby } from '@codemirror/legacy-modes/mode/ruby';
-import { shell } from '@codemirror/legacy-modes/mode/shell';
-import { lua } from '@codemirror/legacy-modes/mode/lua';
-import { swift } from '@codemirror/legacy-modes/mode/swift';
-import { tcl } from '@codemirror/legacy-modes/mode/tcl';
-import { yaml } from '@codemirror/legacy-modes/mode/yaml';
-import { vb } from '@codemirror/legacy-modes/mode/vb';
-import { powerShell } from '@codemirror/legacy-modes/mode/powershell';
 import { brainfuck } from '@codemirror/legacy-modes/mode/brainfuck';
-import { stylus } from '@codemirror/legacy-modes/mode/stylus';
-import { erlang } from '@codemirror/legacy-modes/mode/erlang';
-import { elixir } from 'codemirror-lang-elixir';
-import { nginx } from '@codemirror/legacy-modes/mode/nginx';
-import { perl } from '@codemirror/legacy-modes/mode/perl';
-import { pascal } from '@codemirror/legacy-modes/mode/pascal';
-import { liveScript } from '@codemirror/legacy-modes/mode/livescript';
-import { scheme } from '@codemirror/legacy-modes/mode/scheme';
-import { toml } from '@codemirror/legacy-modes/mode/toml';
-import { vbScript } from '@codemirror/legacy-modes/mode/vbscript';
 import { clojure } from '@codemirror/legacy-modes/mode/clojure';
 import { coffeeScript } from '@codemirror/legacy-modes/mode/coffeescript';
 import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile';
+import { erlang } from '@codemirror/legacy-modes/mode/erlang';
+import { go } from '@codemirror/legacy-modes/mode/go';
 import { julia } from '@codemirror/legacy-modes/mode/julia';
+import { liveScript } from '@codemirror/legacy-modes/mode/livescript';
+import { lua } from '@codemirror/legacy-modes/mode/lua';
+import { nginx } from '@codemirror/legacy-modes/mode/nginx';
+import { pascal } from '@codemirror/legacy-modes/mode/pascal';
+import { perl } from '@codemirror/legacy-modes/mode/perl';
+import { powerShell } from '@codemirror/legacy-modes/mode/powershell';
 import { r } from '@codemirror/legacy-modes/mode/r';
+import { ruby } from '@codemirror/legacy-modes/mode/ruby';
+import { scheme } from '@codemirror/legacy-modes/mode/scheme';
+import { shell } from '@codemirror/legacy-modes/mode/shell';
+import { stylus } from '@codemirror/legacy-modes/mode/stylus';
+import { swift } from '@codemirror/legacy-modes/mode/swift';
+import { tcl } from '@codemirror/legacy-modes/mode/tcl';
+import { toml } from '@codemirror/legacy-modes/mode/toml';
+import { vb } from '@codemirror/legacy-modes/mode/vb';
+import { vbScript } from '@codemirror/legacy-modes/mode/vbscript';
+import { yaml } from '@codemirror/legacy-modes/mode/yaml';
 import { Extension } from '@codemirror/state';
-import { Option, Select } from '@toeverything/components/ui';
-
 import {
-    useOnSelect,
     BlockPendantProvider,
+    useOnSelect,
 } from '@toeverything/components/editor-core';
-import { copyToClipboard } from '@toeverything/utils';
 import { DuplicateIcon } from '@toeverything/components/icons';
+import { Option, Select, styled } from '@toeverything/components/ui';
+import { CreateView } from '@toeverything/framework/virgo';
+import { copyToClipboard } from '@toeverything/utils';
+import { elixir } from 'codemirror-lang-elixir';
+import { useEffect, useRef, useState } from 'react';
+import { StyleWithAtRules } from 'style9';
+import CodeMirror, { ReactCodeMirrorRef } from './CodeMirror';
 
 interface CreateCodeView extends CreateView {
     style9?: StyleWithAtRules;
@@ -110,13 +106,15 @@ const CodeBlock = styled('div')(({ theme }) => ({
     borderRadius: theme.affine.shape.borderRadius,
     '&:hover': {
         '.operation': {
-            display: 'flex',
+            opacity: 1,
         },
     },
     '.operation': {
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
+        opacity: 0,
+        transition: 'opacity 1.5s',
     },
     '.copy-block': {
         padding: '0px 10px',
@@ -172,7 +170,7 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
         editor.selectionManager.activePreviousNode(block.id, 'start');
     };
     return (
-        <BlockPendantProvider block={block}>
+        <BlockPendantProvider editor={editor} block={block}>
             <CodeBlock
                 onKeyDown={e => {
                     e.stopPropagation();
@@ -200,7 +198,8 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
                     </div>
                     <div>
                         <div className="copy-block" onClick={copyCode}>
-                            <DuplicateIcon></DuplicateIcon>Copy
+                            <DuplicateIcon />
+                            Copy
                         </div>
                     </div>
                 </div>

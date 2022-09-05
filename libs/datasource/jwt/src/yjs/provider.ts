@@ -7,13 +7,13 @@ import {
     WebsocketProvider,
 } from '@toeverything/datasource/jwt-rpc';
 
-import { Connectivity } from '../../adapter';
-import { BucketBackend } from '../../types';
+import { BucketBackend } from '../types';
+import { Connectivity } from './types';
 
 type YjsDefaultInstances = {
     awareness: Awareness;
     doc: Doc;
-    token?: string;
+    token?: string | undefined;
     workspace: string;
     emitState: (connectivity: Connectivity) => void;
 };

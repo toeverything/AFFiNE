@@ -39,7 +39,9 @@ export function getLogger(namespace: string) {
     if (JWT_DEV) {
         const logger = debug(namespace);
         logger.log = console.log.bind(console);
-        if (JWT_DEV === ('testing' as any)) logger.enabled = true;
+        if (JWT_DEV === ('testing' as any)) {
+            logger.enabled = true;
+        }
         return logger;
     } else {
         return () => {};

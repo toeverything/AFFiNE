@@ -1,11 +1,17 @@
 import { TextProps } from '@toeverything/components/common';
+import {
+    AsyncBlock,
+    BlockPendantProvider,
+    CreateView,
+    useOnSelect,
+} from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
 import {
     ContentColumnValue,
     Protocol,
 } from '@toeverything/datasource/db-service';
-import { AsyncBlock, type CreateView } from '@toeverything/framework/virgo';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { BlockContainer } from '../../components/BlockContainer';
 import {
     TextManage,
     type ExtendedTextUtils,
@@ -36,6 +42,10 @@ const todoIsEmpty = (contentValue: ContentColumnValue): boolean => {
 export const TodoView = ({ block, editor }: CreateView) => {
     const properties = { ...defaultTodoProps, ...block.getProperties() };
     const text_ref = useRef<ExtendedTextUtils>(null);
+    const [isSelect, setIsSelect] = useState<boolean>(false);
+    useOnSelect(block.id, (isSelect: boolean) => {
+        setIsSelect(isSelect);
+    });
 
     const turn_into_text_block = async () => {
         // Convert to text block
@@ -121,28 +131,34 @@ export const TodoView = ({ block, editor }: CreateView) => {
     };
 
     return (
-        <TodoBlock>
-            <div className={'checkBoxContainer'}>
-                <CheckBox
-                    checked={properties.checked?.value}
-                    onChange={on_checked_change}
-                />
-            </div>
+        <BlockContainer editor={editor} block={block} selected={isSelect}>
+            <BlockPendantProvider editor={editor} block={block}>
+                <TodoBlock>
+                    <div className={'checkBoxContainer'}>
+                        <CheckBox
+                            checked={properties.checked?.value}
+                            onChange={on_checked_change}
+                        />
+                    </div>
 
-            <div className={'textContainer'}>
-                <TextManage
-                    className={properties.checked?.value ? 'checked' : ''}
-                    ref={text_ref}
-                    editor={editor}
-                    block={block}
-                    supportMarkdown
-                    placeholder="To-do"
-                    handleEnter={on_text_enter}
-                    handleBackSpace={on_backspace}
-                    handleTab={on_tab}
-                />
-            </div>
-        </TodoBlock>
+                    <div className={'textContainer'}>
+                        <TextManage
+                            className={
+                                properties.checked?.value ? 'checked' : ''
+                            }
+                            ref={text_ref}
+                            editor={editor}
+                            block={block}
+                            supportMarkdown
+                            placeholder="To-do"
+                            handleEnter={on_text_enter}
+                            handleBackSpace={on_backspace}
+                            handleTab={on_tab}
+                        />
+                    </div>
+                </TodoBlock>
+            </BlockPendantProvider>
+        </BlockContainer>
     );
 };
 

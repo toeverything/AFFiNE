@@ -1,3 +1,5 @@
+import { BlockItem } from '../types';
+import { getLogger } from '../utils';
 import {
     ArrayOperation,
     BlockInstance,
@@ -5,9 +7,7 @@ import {
     ContentTypes,
     InternalPlainObject,
     MapOperation,
-} from '../adapter';
-import { BlockItem } from '../types';
-import { getLogger } from '../utils';
+} from '../yjs/types';
 
 import { AbstractBlock } from './abstract';
 import { BlockCapability } from './capability';
@@ -23,8 +23,8 @@ export interface Decoration extends InternalPlainObject {
 type Validator = <T>(value: T | undefined) => boolean | void;
 
 export type IndexMetadata = Readonly<{
-    content?: string;
-    reference?: string;
+    content: string | undefined;
+    reference: string | undefined;
     tags: string[];
 }>;
 export type QueryMetadata = Readonly<
@@ -51,7 +51,7 @@ export class BaseBlock<
     B extends BlockInstance<C>,
     C extends ContentOperation
 > extends AbstractBlock<B, C> {
-    private readonly _exporters?: Exporters;
+    private readonly _exporters: Exporters | undefined;
     private readonly _contentExportersGetter: () => Map<
         string,
         ReadableContentExporter<string, any>
@@ -68,7 +68,7 @@ export class BaseBlock<
         ReadableContentExporter<string[], any>
     >;
 
-    validators: Map<string, Validator> = new Map();
+    private readonly _validators: Map<string, Validator> = new Map();
 
     constructor(
         block: B,
@@ -157,14 +157,14 @@ export class BaseBlock<
 
     setValidator(key: string, validator?: Validator) {
         if (validator) {
-            this.validators.set(key, validator);
+            this._validators.set(key, validator);
         } else {
-            this.validators.delete(key);
+            this._validators.delete(key);
         }
     }
 
     private validate(key: string, value: unknown): boolean {
-        const validate = this.validators.get(key);
+        const validate = this._validators.get(key);
         if (validate) {
             return validate(value) === false ? false : true;
         }
@@ -179,7 +179,7 @@ export class BaseBlock<
     }
 
     /**
-     * Get an instance of the child Block
+     * Get an instance of the child block
      * @param blockId block id
      */
     private get_children_instance(blockId?: string): BaseBlock<B, C>[] {
@@ -201,9 +201,15 @@ export class BaseBlock<
         }
         try {
             const parent_page = this._getParentPage(false);
-            if (parent_page) metadata['page'] = parent_page;
-            if (this.group) metadata['group'] = this.group.id;
-            if (this.parent) metadata['parent'] = this.parent.id;
+            if (parent_page) {
+                metadata['page'] = parent_page;
+            }
+            if (this.group) {
+                metadata['group'] = this.group.id;
+            }
+            if (this.parent) {
+                metadata['parent'] = this.parent.id;
+            }
         } catch (e) {
             logger(`Failed to export default metadata`, e);
         }
@@ -228,7 +234,9 @@ export class BaseBlock<
         for (const [name, exporter] of this._contentExportersGetter()) {
             try {
                 const content = exporter(this.getContent());
-                if (content) contents.push(content);
+                if (content) {
+                    contents.push(content);
+                }
             } catch (err) {
                 logger(`Failed to export content: ${name}`, err);
             }

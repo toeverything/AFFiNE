@@ -41,7 +41,7 @@ export const AddViewMenu = () => {
                 onClick={() => setActivePanel(!activePanel)}
             >
                 <AddViewIcon fontSize="small" />
-                <span>Add View</span>
+                <span style={{ userSelect: 'none' }}>Add View</span>
                 {activePanel && (
                     <Panel>
                         <PanelItem>
@@ -66,10 +66,10 @@ export const AddViewMenu = () => {
                                     key={name}
                                     active={viewType === scene}
                                     onClick={() => {
-                                        if (scene === RecastScene.Table) {
-                                            // The table view is under progress
-                                            return;
-                                        }
+                                        // if (scene === RecastScene.Table) {
+                                        //     // The table view is under progress
+                                        //     return;
+                                        // }
                                         setViewType(scene);
                                     }}
                                     style={{ textTransform: 'uppercase' }}
