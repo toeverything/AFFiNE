@@ -56,6 +56,7 @@ type YjsProviders = {
     connListener: { listeners?: ConnectivityListener };
     userId: string;
     remoteToken: string | undefined; // remote storage token
+    providers: unknown[];
 };
 
 const _yjsDatabaseInstance = new Map<string, YjsProviders>();
@@ -107,19 +108,25 @@ async function _initYjsDatabase(
     );
 
     const connListener: { listeners?: ConnectivityListener } = {};
+    let providers: unknown[] = [];
     if (options.provider) {
         const emitState = (c: Connectivity) =>
             connListener.listeners?.(workspace, c);
-        await Promise.all(
-            Object.entries(options.provider).flatMap(([, p]) => [
-                p({ awareness, doc, token, workspace, emitState }),
+        providers = await Promise.all(
+            Object.entries(options.provider).flatMap(([name, p]) => [
+                p({ awareness, doc, token, workspace, emitState }).then(p => {
+                    console.log(p);
+                    return {
+                        [name]: p,
+                    };
+                }),
                 p({
                     awareness,
                     doc: binaries,
                     token,
                     workspace: `${workspace}_binaries`,
                     emitState,
-                }),
+                }).then(p => ({ [`${name}_binaries`]: p })),
             ])
         );
     }
@@ -128,7 +135,7 @@ async function _initYjsDatabase(
         binaries,
         doc,
         gatekeeper,
-
+        providers,
         connListener,
         userId,
         remoteToken: token,
@@ -342,7 +349,11 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                     });
                     const [file] = (await fromEvent(handles)) as File[];
                     const binary = await file?.arrayBuffer();
-                    // await this._provider.idb.clearData();
+                    console.log(this._provider.providers);
+                    let { indexeddb } = (
+                        this._provider.providers as any[]
+                    ).find(p => p.indexeddb);
+                    await indexeddb?.idb?.clearData();
                     const doc = new Doc({ autoLoad: true, shouldLoad: true });
                     let updated = 0;
                     let isUpdated = false;
@@ -365,8 +376,8 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                         };
                         check();
                     });
-                    // await new IndexedDBProvider(this._provider.idb.name, doc)
-                    //     .whenSynced;
+                    await new indexeddb.ctor(indexeddb.idb.name, doc)
+                        .whenSynced;
                     if (binary) {
                         applyUpdate(doc, new Uint8Array(binary));
                         await update_check;
@@ -374,6 +385,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
 
                     return true;
                 } catch (err) {
+                    console.log(err);
                     return false;
                 }
             },
