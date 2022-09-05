@@ -132,25 +132,31 @@ export const NumberedView = ({ block, editor }: CreateView) => {
 
         // Move children to new block
         const children = await block.children();
-        await block.removeChildren();
 
-        const next_node = await editor.createBlock(
+        const nextBlock = await editor.createBlock(
             Protocol.Block.Type.numbered
         );
-        if (!next_node) {
+        if (!nextBlock) {
             throw new Error('Failed to create todo block');
         }
-        await next_node.append(...children);
-        await next_node.setProperties({
+        if (editor.getRootBlockId() === block.id) {
+            // If the block is the root block,
+            // new block can not append as next sibling,
+            // all new blocks should be append as children.
+            await block.insert(0, [nextBlock]);
+            editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+            return true;
+        }
+        await block.removeChildren();
+        await nextBlock.append(...children);
+        await nextBlock.setProperties({
             text: { value: after } as ContentColumnValue,
         });
         await block.setProperties({
             text: { value: before } as ContentColumnValue,
         });
-        await block.after(next_node);
-
-        editor.selectionManager.activeNodeByNodeId(next_node.id);
-
+        await block.after(nextBlock);
+        editor.selectionManager.activeNodeByNodeId(nextBlock.id);
         return true;
     };
     const on_tab: TextProps['handleTab'] = async ({ isShiftKey }) => {
