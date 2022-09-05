@@ -49,7 +49,7 @@ export const SettingsList = () => {
                         {item.key === 'Language' ? (
                             <div style={{ marginLeft: '12em' }}>
                                 <Select
-                                    defaultValue={options[0].value}
+                                    defaultValue={i18n.language}
                                     onChange={changeLanguage}
                                 >
                                     {options.map(option => (

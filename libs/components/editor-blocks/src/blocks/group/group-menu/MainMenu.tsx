@@ -82,7 +82,7 @@ const GroupMenuWrapper = ({
             content={
                 <GroupPanel>
                     <ViewsMenu />
-                    <AddViewMenu />
+                    {/*<AddViewMenu />*/}
                     {
                         // // Closed beta period temporarily
                         // filterSorterFlag && (
