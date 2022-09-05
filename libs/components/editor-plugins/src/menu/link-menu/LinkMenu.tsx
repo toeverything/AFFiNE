@@ -128,18 +128,15 @@ export const LinkMenu = ({ editor, hooks }: LinkMenuProps) => {
     );
 
     useEffect(() => {
-        const showDoubleLink = () => {
+        const showLinkMenu = () => {
             const { anchorNode } = editor.selection.currentSelectInfo;
             resetState('', anchorNode.id);
         };
-        editor.plugins.observe('showAddLink', showDoubleLink);
-        return () => editor.plugins.unobserve('showAddLink', showDoubleLink);
+        editor.plugins.observe('showAddLink', showLinkMenu);
+        return () => editor.plugins.unobserve('showAddLink', showLinkMenu);
     }, [editor, resetState]);
 
-    const handleSelected = async (id: string) => {
-        if (curBlockId) {
-        }
-    };
+    const handleSelected = async (id: string) => {};
 
     const handleFilterChange = useCallback(
         async (e: ChangeEvent<HTMLInputElement>) => {
