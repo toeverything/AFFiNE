@@ -12,12 +12,19 @@ export const INLINE_MENU_UI_TYPES = {
 } as const;
 
 /** inline menu item { key : display-name } */
-export const inlineMenuShortcuts = {
+export const MacInlineMenuShortcuts = {
     textBold: '⌘+B',
     textItalic: '⌘+I',
     textStrikethrough: '⌘+S',
     link: '⌘+K',
     [Protocol.Block.Type.code]: '⌘+E',
+};
+export const WinInlineMenuShortcuts = {
+    textBold: 'Ctrl+B',
+    textItalic: 'Ctrl+I',
+    textStrikethrough: 'Ctrl+S',
+    link: 'Ctrl+K',
+    [Protocol.Block.Type.code]: 'Ctrl+E',
 };
 export const inlineMenuNames = {
     currentText: 'TEXT SIZE',
