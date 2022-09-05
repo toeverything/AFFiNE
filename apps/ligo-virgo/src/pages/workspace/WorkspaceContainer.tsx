@@ -8,7 +8,7 @@ import Labels from './labels';
 import Pages from './pages';
 
 export function WorkspaceContainer() {
-    const { workspace_id, page_id } = useParams();
+    const { workspace_id } = useParams();
     const { user, currentSpaceId } = useUserAndSpaces();
 
     if (
