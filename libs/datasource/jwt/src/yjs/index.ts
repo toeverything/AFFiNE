@@ -324,53 +324,58 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 const binary = encodeStateAsUpdate(this._doc);
                 saveAs(
                     new Blob([binary]),
-                    `affine_workspace_${new Date().toDateString()}.apk`
+                    `affine_workspace_${new Date().toDateString()}.affine`
                 );
             },
             load: async () => {
-                const handles = await window.showOpenFilePicker({
-                    types: [
-                        {
-                            description: 'AFFiNE Package',
-                            accept: {
-                                // eslint-disable-next-line @typescript-eslint/naming-convention
-                                'application/affine': ['.apk'],
+                try {
+                    const handles = await window.showOpenFilePicker({
+                        types: [
+                            {
+                                description: 'AFFiNE Package',
+                                accept: {
+                                    // eslint-disable-next-line @typescript-eslint/naming-convention
+                                    'application/affine': ['.affine'],
+                                },
                             },
-                        },
-                    ],
-                });
-                const [file] = (await fromEvent(handles)) as File[];
-                const binary = await file?.arrayBuffer();
-                // await this._provider.idb.clearData();
-                const doc = new Doc({ autoLoad: true, shouldLoad: true });
-                let updated = 0;
-                let isUpdated = false;
-                doc.on('update', () => {
-                    isUpdated = true;
-                    updated += 1;
-                });
-                setInterval(() => {
-                    if (updated > 0) {
-                        updated -= 1;
-                    }
-                }, 500);
-
-                const update_check = new Promise<void>(resolve => {
-                    const check = async () => {
-                        while (!isUpdated || updated > 0) {
-                            await sleep();
+                        ],
+                    });
+                    const [file] = (await fromEvent(handles)) as File[];
+                    const binary = await file?.arrayBuffer();
+                    // await this._provider.idb.clearData();
+                    const doc = new Doc({ autoLoad: true, shouldLoad: true });
+                    let updated = 0;
+                    let isUpdated = false;
+                    doc.on('update', () => {
+                        isUpdated = true;
+                        updated += 1;
+                    });
+                    setInterval(() => {
+                        if (updated > 0) {
+                            updated -= 1;
                         }
-                        resolve();
-                    };
-                    check();
-                });
-                // await new IndexedDBProvider(this._provider.idb.name, doc)
-                //     .whenSynced;
-                if (binary) {
-                    applyUpdate(doc, new Uint8Array(binary));
-                    await update_check;
+                    }, 500);
+
+                    const update_check = new Promise<void>(resolve => {
+                        const check = async () => {
+                            while (!isUpdated || updated > 0) {
+                                await sleep();
+                            }
+                            resolve();
+                        };
+                        check();
+                    });
+                    // await new IndexedDBProvider(this._provider.idb.name, doc)
+                    //     .whenSynced;
+                    if (binary) {
+                        applyUpdate(doc, new Uint8Array(binary));
+                        await update_check;
+                    }
+
+                    return true;
+                } catch (err) {
+                    return false;
                 }
-                console.log('load success');
             },
             parse: () => this._doc.toJSON(),
             // eslint-disable-next-line @typescript-eslint/naming-convention

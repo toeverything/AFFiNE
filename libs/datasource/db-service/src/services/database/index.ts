@@ -39,7 +39,7 @@ async function _getCurrentToken() {
 
 const _enabled = {
     demo: [],
-    AFFiNE: ['sqlite'],
+    AFFiNE: ['idb'],
 } as any;
 
 async function _getBlockDatabase(
