@@ -2,7 +2,7 @@
 
 Thank you for investing your time in contributing to our project! Any contribution you make will be reflected on our GitHub :sparkles:.
 
-Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approachable and respectable. Join our [dicord](https://discord.com/invite/yz6tGVsf5p) server for more.
+Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approachable and respectable. Join our [discord](https://discord.com/invite/yz6tGVsf5p) server for more.
 
 In this guide you will get an overview of the contribution workflow from opening an issue, creating a PR, reviewing, and merging the PR.
 
