@@ -32,4 +32,5 @@ const Container = styled(Clickable)({
     display: 'flex',
     alignItems: 'center',
     padding: '6px 12px',
+    whiteSpace: 'nowrap',
 });
