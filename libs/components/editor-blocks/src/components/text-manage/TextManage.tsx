@@ -6,7 +6,10 @@ import {
 } from '@toeverything/components/common';
 import { useOnSelectActive } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
-import { ContentColumnValue } from '@toeverything/datasource/db-service';
+import {
+    ContentColumnValue,
+    Protocol,
+} from '@toeverything/datasource/db-service';
 import {
     AsyncBlock,
     BlockEditor,
@@ -377,9 +380,36 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 return false;
             }
         };
-        const onSelectAll = () => {
+        const selectGroupBlocks = async (isSelectAll: boolean) => {
+            if (editor.selectionManager.currentSelectInfo.anchorNode) {
+                const block = await editor.getBlockById(
+                    editor.selectionManager.currentSelectInfo.anchorNode.id
+                );
+                if (isSelectAll) {
+                    if (
+                        Protocol.Block.Type.group !== block.type &&
+                        Protocol.Block.Type.page !== block.type
+                    ) {
+                        const paths = await editor.getBlockPath(block.id);
+                        paths &&
+                            paths[1] &&
+                            editor.selectionManager.setSelectedNodesIds([
+                                paths[1].id,
+                            ]);
+                        return true;
+                    }
+                }
+            }
+        };
+        const onSelectAll = async () => {
             const isSelectAll =
                 textRef.current.isEmpty() || textRef.current.isSelectAll();
+
+            const ifSelectGroup = await selectGroupBlocks(isSelectAll);
+            if (ifSelectGroup) {
+                return false;
+            }
+
             if (isSelectAll) {
                 editor.selectionManager.selectAllBlocks();
                 return true;

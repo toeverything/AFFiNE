@@ -256,6 +256,7 @@ export class SelectionManager implements VirgoSelection {
         const rootBlockId = this._editor.getRootBlockId();
         const rootBlock = await this._editor.getBlockById(rootBlockId);
         const children = await rootBlock?.children();
+
         if (children) {
             this.setSelectedNodesIds(children.map(({ id }) => id));
             // blur focused element and blur it

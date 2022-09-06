@@ -2,7 +2,11 @@ import { Tooltip } from '@toeverything/components/ui';
 import { uaHelper } from '@toeverything/utils';
 import React, { useCallback } from 'react';
 import style9 from 'style9';
-import { inlineMenuNamesKeys, WinInlineMenuShortcuts } from '../config';
+import {
+    inlineMenuNamesKeys,
+    MacInlineMenuShortcuts,
+    WinInlineMenuShortcuts,
+} from '../config';
 import type { IconItemType, WithEditorSelectionType } from '../types';
 
 type MenuIconItemProps = IconItemType & WithEditorSelectionType;
