@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 import {
     LogoIcon,
     SearchIcon,
@@ -8,10 +6,11 @@ import {
 } from '@toeverything/components/icons';
 import { IconButton, styled } from '@toeverything/components/ui';
 import {
+    useCurrentEditors,
     useLocalTrigger,
     useShowSettingsSidebar,
 } from '@toeverything/datasource/state';
-
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 import { fsApiSupported } from './FileSystem';
@@ -33,6 +32,14 @@ export const LayoutHeader = () => {
         }
     }, [isLocalWorkspace, t]);
 
+    const { currentEditors } = useCurrentEditors();
+
+    const handleSearch = useCallback(() => {
+        for (const key in currentEditors || {}) {
+            currentEditors[key].getHooks().onSearch();
+        }
+    }, [currentEditors]);
+
     return (
         <StyledContainerForHeaderRoot>
             <StyledHeaderRoot>
@@ -49,8 +56,8 @@ export const LayoutHeader = () => {
                             <IconButton
                                 size="large"
                                 hoverColor={'transparent'}
+                                onClick={handleSearch}
                                 disabled={true}
-                                style={{ cursor: 'not-allowed' }}
                             >
                                 <SearchIcon />
                             </IconButton>

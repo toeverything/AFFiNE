@@ -1,59 +1,40 @@
 import { StrictMode } from 'react';
-
-import { HookType } from '@toeverything/framework/virgo';
-
 import { BasePlugin } from '../base-plugin';
 import { PluginRenderRoot } from '../utils';
 import { Search } from './Search';
 
 export class FullTextSearchPlugin extends BasePlugin {
-    #root?: PluginRenderRoot;
+    private root?: PluginRenderRoot;
 
     public static override get pluginName(): string {
         return 'search';
     }
 
-    public override init(): void {
-        this.sub.add(
-            this.hooks.get(HookType.ON_SEARCH).subscribe(this._handleSearch)
-        );
-    }
-
     protected override _onRender(): void {
-        this.#root = new PluginRenderRoot({
+        this.root = new PluginRenderRoot({
             name: FullTextSearchPlugin.pluginName,
             render: this.editor.reactRenderRoot.render,
         });
+        this._renderSearch();
     }
 
-    private unmount() {
-        if (this.#root) {
-            this.editor.setHotKeysScope();
-            this.#root.unmount();
-            // this.#root = undefined;
-        }
-        this.sub.unsubscribe();
-    }
-
-    private _handleSearch = () => {
-        this.editor.setHotKeysScope('search');
-        this.render_search();
-    };
-    private render_search() {
-        if (this.#root) {
-            this.#root.mount();
-            this.#root.render(
+    private _renderSearch() {
+        if (this.root) {
+            this.root.mount();
+            this.root.render(
                 <StrictMode>
-                    <Search
-                        onClose={() => this.unmount()}
-                        editor={this.editor}
-                    />
+                    <Search editor={this.editor} hooks={this.hooks} />
                 </StrictMode>
             );
         }
     }
     public renderSearch() {
-        this.render_search();
+        this._renderSearch();
+    }
+
+    public override dispose() {
+        this.root?.unmount();
+        super.dispose();
     }
 }
 

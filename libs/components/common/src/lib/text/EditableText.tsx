@@ -41,7 +41,12 @@ import { InlineDate, withDate } from './plugins/date';
 import { DoubleLinkComponent } from './plugins/DoubleLink';
 import { LinkComponent, LinkModal, withLinks, wrapLink } from './plugins/link';
 import { InlineRefLink } from './plugins/reflink';
-import { Contents, isSelectAll, SlateUtils } from './slate-utils';
+import {
+    Contents,
+    isSelectAll,
+    SelectionStartAndEnd,
+    SlateUtils,
+} from './slate-utils';
 import {
     getCommentsIdsOnTextNode,
     getExtraPropertiesFromEditorOutmostNode,
@@ -88,8 +93,12 @@ export interface TextProps {
     /** Backspace event */
     handleBackSpace?: ({
         isCollAndStart,
+        splitContents,
+        selection,
     }: {
         isCollAndStart: boolean;
+        splitContents: Contents;
+        selection: SelectionStartAndEnd;
     }) => boolean | undefined | Promise<boolean | undefined>;
     /** Whether markdown is supported */
     supportMarkdown?: boolean;
@@ -464,7 +473,13 @@ export const Text = forwardRef<ExtendedTextUtils, TextProps>((props, ref) => {
         if (!isCool) {
             hideInlineMenu && hideInlineMenu();
         }
-        preventBindIfNeeded(handleBackSpace)(e, { isCollAndStart });
+        const selection = utils.current.getSelectionStartAndEnd();
+        const splitContents = utils.current.getSplitContentsBySelection();
+        preventBindIfNeeded(handleBackSpace)(e, {
+            isCollAndStart,
+            selection,
+            splitContents,
+        });
     };
 
     const onTab = (e: KeyboardEvent) => {

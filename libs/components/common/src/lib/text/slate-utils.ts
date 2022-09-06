@@ -2,6 +2,7 @@
 import {
     Descendant,
     Editor,
+    Element as SlateElement,
     Location,
     Node as SlateNode,
     Path,
@@ -405,11 +406,11 @@ Editor.before = function (
         if (element) {
             if (isInlineAndVoid(editor, element)) {
                 // Inline entities need to be drilled out
-                // target = Editor.before(editor, target);
-                target = {
-                    path: [0, path[1] - 1],
-                    offset: 0,
-                };
+                target = Editor.before(editor, target);
+                // target = {
+                //     path: [0, path[1] - 1],
+                //     offset: 0,
+                // };
             } else if (editor.isInline(element) && !editor.isVoid(element)) {
                 // Inline styles such as hyperlinks need to drill directly into it
                 const inlineTextLength = element?.children?.[0]?.text?.length;
@@ -503,7 +504,7 @@ Editor.after = function (
     return target;
 };
 
-type SelectionStartAndEnd = {
+export type SelectionStartAndEnd = {
     selectionStart: Point;
     selectionEnd: Point;
 };
@@ -514,6 +515,10 @@ export type Contents = {
         isEmpty: boolean;
     };
     contentAfterSelection: {
+        content: Descendant[];
+        isEmpty: boolean;
+    };
+    contentSelection: {
         content: Descendant[];
         isEmpty: boolean;
     };
@@ -572,6 +577,7 @@ class SlateUtils {
             anchor: point1,
             focus: point2,
         });
+
         if (!fragment.length) {
             console.error('Debug information:', point1, point2, fragment);
             throw new Error('Failed to get content between!');
@@ -602,7 +608,7 @@ class SlateUtils {
         for (let i = 0; i < fragmentChildren.length; i++) {
             const child = fragmentChildren[i];
             if ('type' in child && child.type === 'link') {
-                i !== fragmentChildren.length - 1 && textChildren.push(child);
+                textChildren.push(child);
                 continue;
             }
             if (!('text' in child)) {
@@ -637,6 +643,10 @@ class SlateUtils {
             contentAfterSelection: {
                 content: this.getContentBetween(selectionEnd, end),
                 isEmpty: Point.equals(end, selectionEnd),
+            },
+            contentSelection: {
+                content: this.getContentBetween(selectionStart, selectionEnd),
+                isEmpty: false,
             },
         } as Contents;
     }
@@ -680,10 +690,7 @@ class SlateUtils {
     }
 
     public getStart() {
-        return Editor.start(this.editor, {
-            path: [0, 0],
-            offset: 0,
-        });
+        return Editor.start(this.editor, [0]);
     }
 
     public getEnd() {
@@ -713,7 +720,10 @@ class SlateUtils {
         if (!this.editor) {
             return undefined;
         }
-        const { selectionEnd } = this.getSelectionStartAndEnd();
+        const selectionEnd = this.getSelectionStartAndEnd()?.selectionEnd;
+        if (!selectionEnd) {
+            return undefined;
+        }
         return this.getStringBetween(this.getStart(), selectionEnd);
     }
 
@@ -1249,6 +1259,57 @@ class SlateUtils {
         Transforms.insertNodes(this.editor, link);
         requestAnimationFrame(() => {
             ReactEditor.focus(this.editor);
+        });
+    }
+
+    public wrapLink(url: string, preSelection?: Location) {
+        if (!ReactEditor.isFocused(this.editor) && preSelection) {
+            Transforms.select(this.editor, preSelection);
+        }
+        if (this.isLinkActive()) {
+            this.unwrapLink();
+        }
+        const { selection } = this.editor;
+        const isCollapsed = selection && this.isCollapsed();
+        const link = {
+            type: 'link',
+            url: url,
+            children: isCollapsed ? [{ text: url }] : [],
+            id: getRandomString('link'),
+        };
+
+        if (isCollapsed) {
+            Transforms.insertNodes(this.editor, link);
+        } else {
+            Transforms.wrapNodes(this.editor, link, { split: true });
+            Transforms.collapse(this.editor, { edge: 'end' });
+        }
+        requestAnimationFrame(() => {
+            ReactEditor.focus(this.editor);
+        });
+    }
+
+    public isLinkActive() {
+        const [link] = Editor.nodes(this.editor, {
+            match: n =>
+                !Editor.isEditor(n) &&
+                SlateElement.isElement(n) &&
+                // @ts-expect-error
+                n.type === 'link',
+        });
+        return !!link;
+    }
+
+    public unwrapLink() {
+        Transforms.unwrapNodes(this.editor, {
+            match: n => {
+                return (
+                    !Editor.isEditor(n) &&
+                    SlateElement.isElement(n) &&
+                    // @ts-expect-error
+                    n.type === 'link'
+                );
+            },
         });
     }
 

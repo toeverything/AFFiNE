@@ -1,21 +1,12 @@
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-
 import { Box, Grid, Typography } from '@mui/joy';
-// eslint-disable-next-line no-restricted-imports
-import { useMediaQuery } from '@mui/material';
-import 'github-markdown-css';
-import AboutText from './about.mdx';
-import { AFFiNEFooter, AFFiNEHeader, AFFiNEImage } from './Common';
-import KeepUpdate from './keeupdate.png';
-export const AboutUs = () => {
-    const matches = useMediaQuery('(max-width: 1024px)');
-    const navigate = useNavigate();
-    const { i18n } = useTranslation();
 
-    const changeLanguage = (event: any) => {
-        i18n.changeLanguage(event);
-    };
+import 'github-markdown-css/github-markdown-light.css';
+
+import AboutText from './about.mdx';
+import { AFFiNEFooter, AFFiNEHeader, AFFiNEImage } from './common';
+import KeepUpdate from './keeupdate.png';
+
+export const AboutUs = () => {
     return (
         <>
             <AFFiNEHeader />

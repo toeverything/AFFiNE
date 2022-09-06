@@ -3,7 +3,6 @@ import * as encoding from 'lib0/encoding';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
-
 import { Message } from './handler';
 import { readMessage } from './processor';
 import { WebsocketProvider } from './provider';
@@ -14,7 +13,7 @@ export const registerBroadcastSubscriber = (
     document: Y.Doc
 ) => {
     const channel = provider.broadcastChannel;
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const subscriber = (data: ArrayBuffer, origin: any) => {
         if (origin !== provider) {
             const encoder = readMessage(provider, new Uint8Array(data), false);

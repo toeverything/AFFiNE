@@ -108,7 +108,7 @@ const findLowestCommonAncestor = async (
 
 export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
     (props, ref) => {
-        const { block, editor, ...otherOptions } = props;
+        const { block, editor, handleEnter, ...otherOptions } = props;
         const defaultRef = useRef<ExtendedTextUtils>(null);
         // Maybe there is a better way
         const textRef =
@@ -446,6 +446,38 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 }
             }
         };
+
+        const onTextEnter: TextProps['handleEnter'] = async props => {
+            const { splitContents } = props;
+            if (splitContents) {
+                const { contentBeforeSelection, contentAfterSelection } =
+                    splitContents;
+                // after[after.length - 1];
+                if (!contentBeforeSelection.isEmpty) {
+                    const beforeSelection = contentBeforeSelection.content;
+                    const lastItem: any =
+                        beforeSelection.length > 0
+                            ? beforeSelection[beforeSelection.length - 1]
+                            : null;
+                    if (lastItem?.linkType === 'doubleLink') {
+                        contentBeforeSelection.content.push({ text: '' });
+                    }
+                }
+                if (!contentAfterSelection.isEmpty) {
+                    const afterSelection = contentAfterSelection.content;
+                    const firstItem: any =
+                        afterSelection.length > 0 ? afterSelection[0] : null;
+                    if (firstItem?.linkType === 'doubleLink') {
+                        contentAfterSelection.content.splice(0, 0, {
+                            text: '',
+                        });
+                    }
+                }
+            }
+
+            return handleEnter && handleEnter(props);
+        };
+
         if (!properties || !properties.text) {
             return <></>;
         }
@@ -467,6 +499,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 handleUndo={onUndo}
                 handleRedo={onRedo}
                 handleEsc={onKeyboardEsc}
+                handleEnter={onTextEnter}
                 {...otherOptions}
             />
         );

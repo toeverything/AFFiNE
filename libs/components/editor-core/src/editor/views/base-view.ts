@@ -4,7 +4,7 @@ import {
     BlockDecoration,
     MapOperation,
 } from '@toeverything/datasource/jwt';
-import type { ComponentType, ReactElement } from 'react';
+import { ComponentType, ReactElement } from 'react';
 import type { EventData } from '../block';
 import { AsyncBlock } from '../block';
 import { HTML2BlockResult } from '../clipboard';
@@ -108,7 +108,11 @@ export abstract class BaseView {
     // Whether the component is empty
     isEmpty(block: AsyncBlock): boolean {
         const text = block.getProperty('text');
-        const result = !text?.value?.[0]?.text;
+        // const result = !text?.value?.[0]?.text;
+        const result =
+            text?.value?.findIndex(
+                (item: any) => item.text || item.children?.length
+            ) === -1;
 
         // Assert that the text is really empty
         if (

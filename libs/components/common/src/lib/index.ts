@@ -19,6 +19,7 @@ declare module 'slate' {
     }
 }
 
+export { default as isUrl } from 'is-url';
 export { BlockPreview, StyledBlockPreview } from './block-preview';
 export { default as Button } from './button';
 export { CollapsibleTitle } from './collapsible-title';
