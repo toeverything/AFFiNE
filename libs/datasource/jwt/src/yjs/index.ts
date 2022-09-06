@@ -56,6 +56,7 @@ type YjsProviders = {
     connListener: { listeners?: ConnectivityListener };
     userId: string;
     remoteToken: string | undefined; // remote storage token
+    providers: unknown[];
 };
 
 const _yjsDatabaseInstance = new Map<string, YjsProviders>();
@@ -107,19 +108,25 @@ async function _initYjsDatabase(
     );
 
     const connListener: { listeners?: ConnectivityListener } = {};
+    let providers: unknown[] = [];
     if (options.provider) {
         const emitState = (c: Connectivity) =>
             connListener.listeners?.(workspace, c);
-        await Promise.all(
-            Object.entries(options.provider).flatMap(([, p]) => [
-                p({ awareness, doc, token, workspace, emitState }),
+        providers = await Promise.all(
+            Object.entries(options.provider).flatMap(([name, p]) => [
+                p({ awareness, doc, token, workspace, emitState }).then(p => {
+                    console.log(p);
+                    return {
+                        [name]: p,
+                    };
+                }),
                 p({
                     awareness,
                     doc: binaries,
                     token,
                     workspace: `${workspace}_binaries`,
                     emitState,
-                }),
+                }).then(p => ({ [`${name}_binaries`]: p })),
             ])
         );
     }
@@ -128,7 +135,7 @@ async function _initYjsDatabase(
         binaries,
         doc,
         gatekeeper,
-
+        providers,
         connListener,
         userId,
         remoteToken: token,
@@ -324,53 +331,63 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                 const binary = encodeStateAsUpdate(this._doc);
                 saveAs(
                     new Blob([binary]),
-                    `affine_workspace_${new Date().toDateString()}.apk`
+                    `affine_workspace_${new Date().toDateString()}.affine`
                 );
             },
             load: async () => {
-                const handles = await window.showOpenFilePicker({
-                    types: [
-                        {
-                            description: 'AFFiNE Package',
-                            accept: {
-                                // eslint-disable-next-line @typescript-eslint/naming-convention
-                                'application/affine': ['.apk'],
+                try {
+                    const handles = await window.showOpenFilePicker({
+                        types: [
+                            {
+                                description: 'AFFiNE Package',
+                                accept: {
+                                    // eslint-disable-next-line @typescript-eslint/naming-convention
+                                    'application/affine': ['.affine'],
+                                },
                             },
-                        },
-                    ],
-                });
-                const [file] = (await fromEvent(handles)) as File[];
-                const binary = await file?.arrayBuffer();
-                // await this._provider.idb.clearData();
-                const doc = new Doc({ autoLoad: true, shouldLoad: true });
-                let updated = 0;
-                let isUpdated = false;
-                doc.on('update', () => {
-                    isUpdated = true;
-                    updated += 1;
-                });
-                setInterval(() => {
-                    if (updated > 0) {
-                        updated -= 1;
-                    }
-                }, 500);
-
-                const update_check = new Promise<void>(resolve => {
-                    const check = async () => {
-                        while (!isUpdated || updated > 0) {
-                            await sleep();
+                        ],
+                    });
+                    const [file] = (await fromEvent(handles)) as File[];
+                    const binary = await file?.arrayBuffer();
+                    console.log(this._provider.providers);
+                    let { indexeddb } = (
+                        this._provider.providers as any[]
+                    ).find(p => p.indexeddb);
+                    await indexeddb?.idb?.clearData();
+                    const doc = new Doc({ autoLoad: true, shouldLoad: true });
+                    let updated = 0;
+                    let isUpdated = false;
+                    doc.on('update', () => {
+                        isUpdated = true;
+                        updated += 1;
+                    });
+                    setInterval(() => {
+                        if (updated > 0) {
+                            updated -= 1;
                         }
-                        resolve();
-                    };
-                    check();
-                });
-                // await new IndexedDBProvider(this._provider.idb.name, doc)
-                //     .whenSynced;
-                if (binary) {
-                    applyUpdate(doc, new Uint8Array(binary));
-                    await update_check;
+                    }, 500);
+
+                    const update_check = new Promise<void>(resolve => {
+                        const check = async () => {
+                            while (!isUpdated || updated > 0) {
+                                await sleep();
+                            }
+                            resolve();
+                        };
+                        check();
+                    });
+                    await new indexeddb.ctor(indexeddb.idb.name, doc)
+                        .whenSynced;
+                    if (binary) {
+                        applyUpdate(doc, new Uint8Array(binary));
+                        await update_check;
+                    }
+
+                    return true;
+                } catch (err) {
+                    console.log(err);
+                    return false;
                 }
-                console.log('load success');
             },
             parse: () => this._doc.toJSON(),
             // eslint-disable-next-line @typescript-eslint/naming-convention

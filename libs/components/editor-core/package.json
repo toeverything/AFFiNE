@@ -13,5 +13,8 @@
         "nanoid": "^4.0.0",
         "slate": "^0.81.0",
         "style9": "^0.14.0"
+    },
+    "devDependencies": {
+        "@types/html-escaper": "^3.0.0"
     }
 }
