@@ -191,6 +191,9 @@ export const DoubleLinkMenu = ({
                     anchorNode.id !== curBlockId &&
                     editor.blockHelper.isSelectionCollapsed(anchorNode.id))
             ) {
+                if (!anchorNode) {
+                    return;
+                }
                 const text = editor.blockHelper.getBlockTextBeforeSelection(
                     anchorNode.id
                 );
