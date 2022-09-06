@@ -4,7 +4,6 @@ import { WorkspaceRootContainer } from './Container';
 import { Page } from './docs';
 import { Edgeless } from './Edgeless';
 import { WorkspaceHome } from './Home';
-import Labels from './labels';
 import Pages from './pages';
 
 export function WorkspaceContainer() {
@@ -21,7 +20,6 @@ export function WorkspaceContainer() {
     return (
         <Routes>
             <Route path="/" element={<WorkspaceRootContainer />}>
-                <Route path="/labels" element={<Labels />} />
                 <Route path="/pages" element={<Pages />} />
                 <Route
                     path="/:page_id/edgeless"
