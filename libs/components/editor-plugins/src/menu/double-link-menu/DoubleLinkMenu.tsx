@@ -103,18 +103,18 @@ export const DoubleLinkMenu = ({
         items.push({
             content: {
                 id: ADD_NEW_SUB_PAGE,
-                content: 'Add new sub-page',
+                content: 'Add new page',
                 icon: AddIcon,
             },
         });
-        !inAddNewPage &&
-            items.push({
-                content: {
-                    id: ADD_NEW_PAGE,
-                    content: 'Add new page in...',
-                    icon: AddIcon,
-                },
-            });
+        // !inAddNewPage &&
+        //     items.push({
+        //         content: {
+        //             id: ADD_NEW_PAGE,
+        //             content: 'Add new page in...',
+        //             icon: AddIcon,
+        //         },
+        //     });
         return items;
     }, [searchResultBlocks, inAddNewPage]);
 
