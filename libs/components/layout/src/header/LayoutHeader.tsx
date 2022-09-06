@@ -11,6 +11,7 @@ import {
     useLocalTrigger,
     useShowSettingsSidebar,
 } from '@toeverything/datasource/state';
+import { useCallback, useMemo } from 'react';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 import { fsApiSupported } from './FileSystem';
 import { CurrentPageTitle } from './Title';
