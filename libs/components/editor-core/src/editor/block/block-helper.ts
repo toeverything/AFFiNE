@@ -5,13 +5,14 @@ import type {
 } from '@toeverything/components/common';
 import {
     BaseRange,
+    Location,
     Node,
     Path,
     Point,
     Selection as SlateSelection,
 } from 'slate';
-import { Editor } from '../editor';
 import { AsyncBlock } from '../block';
+import { Editor } from '../editor';
 import { SelectBlock } from '../selection';
 
 type TextUtilsFunctions =
@@ -44,6 +45,7 @@ type TextUtilsFunctions =
     | 'setSelection'
     | 'insertNodes'
     | 'getNodeByPath'
+    | 'wrapLink'
     | 'getNodeByRange'
     | 'convertLeaf2Html';
 
@@ -160,7 +162,7 @@ export class BlockHelper {
         if (properties.text.value.length === 0) {
             return properties;
         }
-        let text_value = properties.text.value;
+        const text_value = properties.text.value;
 
         const {
             text: { value: originTextValue, ...otherTextProperties },
@@ -513,6 +515,15 @@ export class BlockHelper {
         const text_utils = this._blockTextUtilsMap[blockId];
         if (text_utils) {
             return text_utils.getCommentsIdsBySelection();
+        }
+        console.warn('Could find the block text utils');
+        return undefined;
+    }
+
+    public wrapLink(blockId: string, url: string, preSelection?: Location) {
+        const text_utils = this._blockTextUtilsMap[blockId];
+        if (text_utils) {
+            return text_utils.wrapLink(url, preSelection);
         }
         console.warn('Could find the block text utils');
         return undefined;

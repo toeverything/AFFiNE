@@ -5,7 +5,7 @@ import {
     styled,
     TransitionsModal,
 } from '@toeverything/components/ui';
-import { BlockEditor, Virgo } from '@toeverything/framework/virgo';
+import { BlockEditor, PluginHooks, Virgo } from '@toeverything/framework/virgo';
 import { throttle } from '@toeverything/utils';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -31,7 +31,7 @@ const styles = style9.create({
 
 export type QueryResult = Awaited<ReturnType<BlockEditor['search']>>;
 
-const query_blocks = (
+const queryBlocksExec = (
     editor: Virgo,
     search: string,
     callback: (result: QueryResult) => void
@@ -39,45 +39,58 @@ const query_blocks = (
     (editor as BlockEditor).search(search).then(pages => callback(pages));
 };
 
-export const QueryBlocks = throttle(query_blocks, 500);
+export const QueryBlocks = throttle(queryBlocksExec, 500);
 
 type SearchProps = {
-    onClose: () => void;
     editor: Virgo;
+    hooks: PluginHooks;
 };
 
 export const Search = (props: SearchProps) => {
-    const { workspace_id } = useParams();
+    const { workspace_id: workspaceId } = useParams();
     const navigate = useNavigate();
 
-    const [open, set_open] = useState(true);
-    const [search, set_search] = useState('');
-    const [result, set_result] = useState<QueryResult>([]);
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState<string>();
+    const [result, setResult] = useState<QueryResult>([]);
 
     useEffect(() => {
-        QueryBlocks(props.editor, search, result => {
-            set_result(result);
-        });
+        search !== undefined &&
+            QueryBlocks(props.editor, search, result => {
+                setResult(result);
+            });
     }, [props.editor, search]);
 
-    const handle_navigate = useCallback(
-        (id: string) => navigate(`/${workspace_id}/${id}`),
-        [navigate, workspace_id]
+    const handleNavigate = useCallback(
+        (id: string) => navigate(`/${workspaceId}/${id}`),
+        [navigate, workspaceId]
     );
+
+    const handleSearch = useCallback(() => {
+        setOpen(true);
+        setSearch('');
+    }, []);
+
+    // useEffect(() => {
+    //     const sub = props.hooks.get(HookType.ON_SEARCH).subscribe(handleSearch);
+
+    //     return () => {
+    //         sub.unsubscribe();
+    //     };
+    // }, [props, handleSearch]);
 
     return (
         <TransitionsModal
             open={open}
             onClose={() => {
-                set_open(false);
-                props.onClose();
+                setOpen(false);
             }}
         >
             <Box className={styles('wrapper')}>
                 <SearchInput
                     autoFocus
                     value={search}
-                    onChange={e => set_search(e.target.value)}
+                    onChange={e => setSearch(e.target.value)}
                 />
                 <ResultContainer
                     sx={{ maxHeight: `${result.length * 28 + 32 + 20}px` }}
@@ -89,10 +102,12 @@ export const Search = (props: SearchProps) => {
                         <BlockPreview
                             className={styles('resultItem')}
                             key={block.id}
-                            block={block}
+                            block={{
+                                ...block,
+                                content: block.content || 'Untitled',
+                            }}
                             onClick={() => {
-                                handle_navigate(block.id);
-                                props.onClose();
+                                handleNavigate(block.id);
                             }}
                         />
                     ))}

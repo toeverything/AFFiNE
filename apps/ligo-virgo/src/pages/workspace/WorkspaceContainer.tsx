@@ -1,7 +1,5 @@
-import { Route, Routes, useParams } from 'react-router';
-
 import { useUserAndSpaces } from '@toeverything/datasource/state';
-
+import { Route, Routes, useParams } from 'react-router';
 import { WorkspaceRootContainer } from './Container';
 import { Page } from './docs';
 import { Edgeless } from './Edgeless';

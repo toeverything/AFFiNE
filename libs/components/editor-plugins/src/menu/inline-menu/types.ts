@@ -1,5 +1,5 @@
 import type { SvgIconProps } from '@toeverything/components/ui';
-import type { Virgo, SelectionInfo } from '@toeverything/framework/virgo';
+import type { SelectionInfo, Virgo } from '@toeverything/framework/virgo';
 import { inlineMenuNames, INLINE_MENU_UI_TYPES } from './config';
 
 export type WithEditorSelectionType = {
@@ -14,10 +14,12 @@ export type ClickItemHandler = ({
     type,
     editor,
     anchorNodeId,
+    setShow,
 }: {
     type: InlineMenuNamesType;
     editor: Virgo;
     anchorNodeId: string;
+    setShow?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => void;
 
 export type IconItemType = {
