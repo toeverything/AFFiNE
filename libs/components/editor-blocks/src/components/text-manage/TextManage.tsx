@@ -389,11 +389,16 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                     editor.selectionManager.currentSelectInfo.anchorNode.id
                 );
                 if (isSelectAll) {
-                    if (Protocol.Block.Type.group !== block.type) {
+                    if (
+                        Protocol.Block.Type.group !== block.type &&
+                        Protocol.Block.Type.page !== block.type
+                    ) {
                         const paths = await editor.getBlockPath(block.id);
-                        editor.selectionManager.setSelectedNodesIds([
-                            paths[1].id,
-                        ]);
+                        paths &&
+                            paths[1] &&
+                            editor.selectionManager.setSelectedNodesIds([
+                                paths[1].id,
+                            ]);
                         return;
                     }
                 }
