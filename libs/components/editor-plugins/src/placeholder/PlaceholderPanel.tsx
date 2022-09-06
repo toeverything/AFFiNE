@@ -1,14 +1,12 @@
+import { Virgo } from '@toeverything/framework/virgo';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import { Virgo, BlockEditor } from '@toeverything/framework/virgo';
-import { debounce } from '@toeverything/utils';
 
-import { MuiBox as Box, styled, BaseButton } from '@toeverything/components/ui';
+import { BaseButton, styled } from '@toeverything/components/ui';
 import {
     services,
-    type ReturnUnobserve,
     TemplateFactory,
     TemplateMeta,
+    type ReturnUnobserve,
 } from '@toeverything/datasource/db-service';
 
 const PlaceholderPanelContainer = styled('div')({
@@ -48,7 +46,6 @@ export const PlaceholderPanel = (props: PlaceholderPanelProps) => {
         y: 0,
     });
     const [open, setOpen] = useState(false);
-    // const navigate = useNavigate();
 
     const ifPageChildrenExist = useCallback(async () => {
         const rootId = await editor.getRootBlockId();
