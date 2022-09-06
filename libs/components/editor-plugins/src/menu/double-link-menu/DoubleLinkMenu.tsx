@@ -103,7 +103,7 @@ export const DoubleLinkMenu = ({
         items.push({
             content: {
                 id: ADD_NEW_SUB_PAGE,
-                content: 'Add new page',
+                content: 'Add new sub-page',
                 icon: AddIcon,
             },
         });
