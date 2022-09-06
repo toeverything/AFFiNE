@@ -5,12 +5,7 @@ import {
     styled,
     TransitionsModal,
 } from '@toeverything/components/ui';
-import {
-    BlockEditor,
-    HookType,
-    PluginHooks,
-    Virgo,
-} from '@toeverything/framework/virgo';
+import { BlockEditor, PluginHooks, Virgo } from '@toeverything/framework/virgo';
 import { throttle } from '@toeverything/utils';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -76,13 +71,13 @@ export const Search = (props: SearchProps) => {
         setSearch('');
     }, []);
 
-    useEffect(() => {
-        const sub = props.hooks.get(HookType.ON_SEARCH).subscribe(handleSearch);
+    // useEffect(() => {
+    //     const sub = props.hooks.get(HookType.ON_SEARCH).subscribe(handleSearch);
 
-        return () => {
-            sub.unsubscribe();
-        };
-    }, [props, handleSearch]);
+    //     return () => {
+    //         sub.unsubscribe();
+    //     };
+    // }, [props, handleSearch]);
 
     return (
         <TransitionsModal

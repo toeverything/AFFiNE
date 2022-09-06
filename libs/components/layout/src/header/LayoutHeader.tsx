@@ -57,6 +57,7 @@ export const LayoutHeader = () => {
                                 size="large"
                                 hoverColor={'transparent'}
                                 onClick={handleSearch}
+                                disabled={true}
                             >
                                 <SearchIcon />
                             </IconButton>
