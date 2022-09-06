@@ -380,10 +380,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 return false;
             }
         };
-        const onSelectAll = async () => {
-            const isSelectAll =
-                textRef.current.isEmpty() || textRef.current.isSelectAll();
-
+        const selectGroupBlocks = async (isSelectAll: boolean) => {
             if (editor.selectionManager.currentSelectInfo.anchorNode) {
                 const block = await editor.getBlockById(
                     editor.selectionManager.currentSelectInfo.anchorNode.id
@@ -399,9 +396,18 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                             editor.selectionManager.setSelectedNodesIds([
                                 paths[1].id,
                             ]);
-                        return;
+                        return true;
                     }
                 }
+            }
+        };
+        const onSelectAll = async () => {
+            const isSelectAll =
+                textRef.current.isEmpty() || textRef.current.isSelectAll();
+
+            const ifSelectGroup = await selectGroupBlocks(isSelectAll);
+            if (ifSelectGroup) {
+                return false;
             }
 
             if (isSelectAll) {
