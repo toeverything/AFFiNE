@@ -88,13 +88,21 @@ export const TodoView = ({ block, editor }: CreateView) => {
             Boolean
         ) as AsyncBlock[];
 
-        const next_node = await editor.createBlock(Protocol.Block.Type.todo);
-        if (!next_node) {
+        const nextBlock = await editor.createBlock(Protocol.Block.Type.todo);
+        if (!nextBlock) {
             throw new Error('Failed to create todo block');
         }
+        if (editor.getRootBlockId() === block.id) {
+            // If the block is the root block,
+            // new block can not append as next sibling,
+            // all new blocks should be append as children.
+            await block.insert(0, [nextBlock]);
+            editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+            return true;
+        }
         await block.removeChildren();
-        await next_node.append(...children);
-        await next_node.setProperties({
+        await nextBlock.append(...children);
+        await nextBlock.setProperties({
             text: { value: after } as ContentColumnValue,
         });
 
@@ -102,9 +110,9 @@ export const TodoView = ({ block, editor }: CreateView) => {
             text: { value: before } as ContentColumnValue,
             collapsed: { value: false },
         });
-        await block.after(next_node);
+        await block.after(nextBlock);
 
-        editor.selectionManager.activeNodeByNodeId(next_node.id);
+        editor.selectionManager.activeNodeByNodeId(nextBlock.id);
 
         return true;
     };
