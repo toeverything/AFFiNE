@@ -1,15 +1,16 @@
 import { Array as YArray, Map as YMap } from 'yjs';
 
-import { RemoteKvService } from '@toeverything/datasource/remote-kv';
+import type { RemoteKvService } from '@toeverything/datasource/remote-kv';
 
 export class YjsRemoteBinaries {
     private readonly _binaries: YMap<YArray<ArrayBuffer>>; // binary instance
     private readonly _remoteStorage?: RemoteKvService;
 
-    constructor(binaries: YMap<YArray<ArrayBuffer>>, remote_token?: string) {
+    constructor(binaries: YMap<YArray<ArrayBuffer>>, remoteToken?: string) {
         this._binaries = binaries;
-        if (remote_token) {
-            this._remoteStorage = new RemoteKvService(remote_token);
+        if (remoteToken) {
+            // TODO: remote kv need to refactor, we may use cloudflare kv
+            // this._remoteStorage = new RemoteKvService(remote_token);
         } else {
             console.warn(`Remote storage is not ready`);
         }

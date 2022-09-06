@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './app/i18n';
 
-import App from './app';
+import { VenusRoutes } from './app';
 
 const container = document.getElementById('root');
 if (!container) {
@@ -13,7 +13,7 @@ const root = createRoot(container);
 root.render(
     <StrictMode>
         <BrowserRouter>
-            <App />
+            <VenusRoutes />
         </BrowserRouter>
     </StrictMode>
 );

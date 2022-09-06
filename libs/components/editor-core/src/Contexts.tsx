@@ -1,22 +1,34 @@
-import { createContext, useContext } from 'react';
-import type { BlockEditor, AsyncBlock } from './editor';
 import { genErrorObj } from '@toeverything/utils';
+import { createContext, PropsWithChildren, useContext } from 'react';
+import type { AsyncBlock, BlockEditor } from './editor';
 
-const RootContext = createContext<{
+type EditorProps = {
     editor: BlockEditor;
     // TODO: Temporary fix, dependencies in the new architecture are bottom-up, editors do not need to be passed down from the top
     editorElement: () => JSX.Element;
-}>(
+};
+
+const EditorContext = createContext<EditorProps>(
     genErrorObj(
-        'Failed to get context! The context only can use under the "render-root"'
+        'Failed to get EditorContext! The context only can use under the "render-root"'
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) as any
 );
 
-export const EditorProvider = RootContext.Provider;
-
 export const useEditor = () => {
-    return useContext(RootContext);
+    return useContext(EditorContext);
+};
+
+export const EditorProvider = ({
+    editor,
+    editorElement,
+    children,
+}: PropsWithChildren<EditorProps>) => {
+    return (
+        <EditorContext.Provider value={{ editor, editorElement }}>
+            {children}
+        </EditorContext.Provider>
+    );
 };
 
 /**

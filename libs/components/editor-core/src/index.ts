@@ -1,19 +1,11 @@
-export { RenderRoot, MIN_PAGE_WIDTH } from './RenderRoot';
-export * from './render-block';
-export * from './hooks';
-
-export { RenderBlock } from './render-block';
-
-export * from './recast-block';
-export * from './recast-block/types';
-
 export * from './block-pendant';
-
+export { useEditor } from './Contexts';
+export * from './editor';
+export * from './hooks';
 export * from './kanban';
 export * from './kanban/types';
-
+export * from './recast-block';
+export * from './recast-block/types';
+export * from './render-block';
+export { MIN_PAGE_WIDTH, RenderRoot } from './RenderRoot';
 export * from './utils';
-
-export * from './editor';
-
-export { useEditor } from './Contexts';

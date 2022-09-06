@@ -43,6 +43,7 @@ module.exports = function (webpackConfig) {
             ...config.output,
             filename: '[name].[contenthash:8].js',
             chunkFilename: '[name].[chunkhash:8].js',
+            hashDigestLength: 8,
             hashFunction: undefined,
         };
         config.optimization = {
@@ -67,21 +68,21 @@ module.exports = function (webpackConfig) {
                         chunks: 'all',
                         enforce: true,
                     },
-                    auth: {
-                        test: /[\\/]node_modules[\\/](@authing|@?firebase)/,
-                        name: 'auth',
-                        priority: -5,
-                        chunks: 'all',
-                    },
+                    // auth: {
+                    //     test: /[\\/]node_modules[\\/](@authing|@?firebase)/,
+                    //     name: 'auth',
+                    //     priority: -5,
+                    //     chunks: 'all',
+                    // },
                     edgeless: {
                         test: /(libs\/components\/board-|[\\/]node_modules[\\/]@tldraw)/,
                         name: 'edgeless',
                         priority: -7,
                         chunks: 'all',
                     },
-                    editor: {
+                    paper: {
                         test: /(libs\/framework\/(ligo|virgo|editor)|[\\/]node_modules[\\/](@codemirror|@lezer|slate))/,
-                        name: 'editor',
+                        name: 'paper',
                         priority: -8,
                         chunks: 'all',
                     },
@@ -176,7 +177,11 @@ module.exports = function (webpackConfig) {
                 publicPath: '/',
             }),
         new Style9Plugin(),
-        isProd && new MiniCssExtractPlugin(),
+        isProd &&
+            new MiniCssExtractPlugin({
+                filename: '[name].[contenthash:8].css',
+                chunkFilename: '[id].[chunkhash:8].css',
+            }),
         isProd &&
             new CompressionPlugin({
                 test: /\.(js|css|html|svg|ttf|woff)$/,

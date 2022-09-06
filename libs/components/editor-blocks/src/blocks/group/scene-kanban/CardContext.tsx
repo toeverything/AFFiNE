@@ -1,12 +1,12 @@
-import { useCallback } from 'react';
-import { CardItem } from './CardItem';
-import { styled } from '@toeverything/components/ui';
-import { useKanban } from '@toeverything/components/editor-core';
-import { CardItemPanelWrapper } from './dndable/wrapper/CardItemPanelWrapper';
 import type {
     KanbanCard,
     KanbanGroup,
 } from '@toeverything/components/editor-core';
+import { useKanban } from '@toeverything/components/editor-core';
+import { styled } from '@toeverything/components/ui';
+import { useCallback } from 'react';
+import { CardItem } from './CardItem';
+import { CardItemPanelWrapper } from './dndable/wrapper/CardItemPanelWrapper';
 
 const AddCardWrapper = styled('div')({
     display: 'flex',
@@ -48,7 +48,7 @@ export const CardContext = (props: Props) => {
                             item={item}
                             active={activeId === id}
                         >
-                            <CardItem id={id} block={block} />
+                            <CardItem block={block} />
                         </CardItemPanelWrapper>
                     </StyledCardContainer>
                 );

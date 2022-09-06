@@ -2,7 +2,6 @@ import { TLDR, TldrawApp } from '@toeverything/components/board-state';
 import { Divider, Popover, styled } from '@toeverything/components/ui';
 import { Fragment } from 'react';
 import { AlignOperation } from './AlignOperation';
-import { ArrowTo } from './ArrowTo';
 import { BorderColorConfig } from './BorderColorConfig';
 import { DeleteShapes } from './DeleteOperation';
 import { FillColorConfig } from './FillColorConfig';
@@ -107,12 +106,12 @@ export const CommandPanel = ({ app }: { app: TldrawApp }) => {
                 shapes={config.deleteShapes.selectedShapes}
             ></AlignOperation>
         ) : null,
-        toNextShap: (
-            <ArrowTo
-                app={app}
-                shapes={config.deleteShapes.selectedShapes}
-            ></ArrowTo>
-        ),
+        // toNextShap: (
+        //     <ArrowTo
+        //         app={app}
+        //         shapes={config.deleteShapes.selectedShapes}
+        //     ></ArrowTo>
+        // ),
     };
 
     const nodes = Object.entries(configNodes).filter(([key, node]) => !!node);

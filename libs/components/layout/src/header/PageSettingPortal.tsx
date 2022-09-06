@@ -58,8 +58,6 @@ function PageSettingPortal() {
     const navigate = useNavigate();
     const { user } = useUserAndSpaces();
     const BooleanFullWidthChecked = useFlag('BooleanFullWidthChecked', false);
-    const BooleanExportWorkspace = useFlag('BooleanExportWorkspace', false);
-    const BooleanImportWorkspace = useFlag('BooleanImportWorkspace', false);
     const BooleanExportHtml = useFlag('BooleanExportHtml', false);
     const BooleanExportPdf = useFlag('BooleanExportPdf', false);
     const BooleanExportMarkdown = useFlag('BooleanExportMarkdown', false);
@@ -153,9 +151,7 @@ function PageSettingPortal() {
 
     const handleExportHtml = async () => {
         //@ts-ignore
-        const htmlContent = await virgo.clipboard
-            .getClipboardParse()
-            .page2html();
+        const htmlContent = await virgo.clipboard.clipboardUtils.page2html();
         const htmlTitle = pageBlock.title;
 
         FileExporter.exportHtml(htmlTitle, htmlContent);
@@ -163,9 +159,7 @@ function PageSettingPortal() {
 
     const handleExportMarkdown = async () => {
         //@ts-ignore
-        const htmlContent = await virgo.clipboard
-            .getClipboardParse()
-            .page2html();
+        const htmlContent = await virgo.clipboard.clipboardUtils.page2html();
         const htmlTitle = pageBlock.title;
         FileExporter.exportMarkdown(htmlTitle, htmlContent);
     };
@@ -221,18 +215,14 @@ function PageSettingPortal() {
                             />
                         )}
                         <Divider />
-                        {BooleanImportWorkspace && (
-                            <ListButton
-                                content="Import Workspace"
-                                onClick={handleImportWorkspace}
-                            />
-                        )}
-                        {BooleanExportWorkspace && (
-                            <ListButton
-                                content="Export Workspace"
-                                onClick={handleExportWorkspace}
-                            />
-                        )}
+                        <ListButton
+                            content="Import Workspace"
+                            onClick={handleImportWorkspace}
+                        />
+                        <ListButton
+                            content="Export Workspace"
+                            onClick={handleExportWorkspace}
+                        />
 
                         <p className="textDescription">
                             Last edited by {user && user.nickname}

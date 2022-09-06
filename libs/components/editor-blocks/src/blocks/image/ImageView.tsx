@@ -165,12 +165,10 @@ export const ImageView = ({ block, editor }: ImageView) => {
     };
 
     return (
-        <BlockPendantProvider block={block}>
+        <BlockPendantProvider editor={editor} block={block}>
             <ImageBlock>
                 <div style={{ position: 'relative' }} ref={resizeBox}>
-                    {!isSelect ? (
-                        <ImageShade onClick={handleClick}></ImageShade>
-                    ) : null}
+                    {!isSelect ? <ImageShade onClick={handleClick} /> : null}
                     {imgUrl ? (
                         <div
                             onMouseDown={e => {

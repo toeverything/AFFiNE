@@ -13,8 +13,7 @@ import HotKeys from 'hotkeys-js';
 import type { WorkspaceAndBlockId } from './block';
 import { AsyncBlock } from './block';
 import { BlockHelper } from './block/block-helper';
-import { BrowserClipboard } from './clipboard/browser-clipboard';
-import { ClipboardPopulator } from './clipboard/clipboard-populator';
+import { Clipboard } from './clipboard';
 import { EditorCommands } from './commands';
 import { EditorConfig } from './config';
 import { DragDropManager } from './drag-drop';
@@ -46,7 +45,7 @@ export class Editor implements Virgo {
     private _cacheManager = new Map<string, Promise<AsyncBlock | null>>();
     public mouseManager = new MouseManager(this);
     public selectionManager = new SelectionManager(this);
-    public keyboardManager = new KeyboardManager(this);
+    public keyboardManager: KeyboardManager;
     public scrollManager = new ScrollManager(this);
     public dragDropManager = new DragDropManager(this);
     public commands = new EditorCommands(this);
@@ -63,8 +62,9 @@ export class Editor implements Virgo {
     readonly = false;
     private _rootBlockId: string;
     private storage_manager?: StorageManager;
-    private clipboard?: BrowserClipboard;
-    private clipboard_populator?: ClipboardPopulator;
+    private _clipboard: Clipboard;
+    // private clipboardActionDispacher?: ClipboardEventDispatcher;
+    // private clipboard_populator?: ClipboardPopulator;
     public reactRenderRoot: {
         render: PatchNode;
         has: (key: string) => boolean;
@@ -78,10 +78,13 @@ export class Editor implements Virgo {
         this._rootBlockId = props.rootBlockId;
         this.hooks = new Hooks();
         this.plugin_manager = new PluginManager(this, this.hooks);
+        this._clipboard = new Clipboard(this, this.ui_container);
         this.plugin_manager.registerAll(props.plugins);
         if (props.isEdgeless) {
             this.isEdgeless = true;
         }
+        // Wait for rootId/isEdgeless set
+        this.keyboardManager = new KeyboardManager(this);
         for (const [name, block] of Object.entries(props.views)) {
             services.api.editorBlock.registerContentExporter(
                 this.workspace,
@@ -136,11 +139,15 @@ export class Editor implements Virgo {
 
     public set container(v: HTMLDivElement) {
         this.ui_container = v;
-        this._initClipboard();
+        this._clipboard.clipboardTarget = v;
     }
 
     public get container() {
         return this.ui_container;
+    }
+
+    public get clipboard() {
+        return this._clipboard;
     }
 
     /**
@@ -189,26 +196,26 @@ export class Editor implements Virgo {
         };
     }
 
-    private _disposeClipboard() {
-        this.clipboard?.dispose();
-        this.clipboard_populator?.disposeInternal();
-    }
+    // private _disposeClipboard() {
+    //     this.clipboard?.dispose();
+    //     this.clipboard_populator?.disposeInternal();
+    // }
 
-    private _initClipboard() {
-        this._disposeClipboard();
-        if (this.ui_container && !this._isDisposed) {
-            this.clipboard = new BrowserClipboard(
-                this.ui_container,
-                this.hooks,
-                this
-            );
-            this.clipboard_populator = new ClipboardPopulator(
-                this,
-                this.hooks,
-                this.selectionManager
-            );
-        }
-    }
+    // private _initClipboard() {
+    //     this._disposeClipboard();
+    //     if (this.ui_container && !this._isDisposed) {
+    //         this.clipboardActionDispacher = new ClipboardEventDispatcher({
+    //             clipboardTarget: this.ui_container,
+    //             hooks: this.hooks,
+    //             editor: this,
+    //         });
+    //         this.clipboard_populator = new ClipboardPopulator(
+    //             this,
+    //             this.hooks,
+    //             this.selectionManager
+    //         );
+    //     }
+    // }
 
     /** Root Block Id */
     getRootBlockId() {
@@ -248,6 +255,14 @@ export class Editor implements Virgo {
 
     getView(type: string) {
         return this.views[type];
+    }
+    getEditableViews() {
+        return Object.values(this.views)
+            .map(view => (view.editable ? view : null))
+            .filter(v => v);
+    }
+    isEditableView(type: string) {
+        return this.views[type].editable;
     }
 
     private async _initBlock(
@@ -331,6 +346,12 @@ export class Editor implements Virgo {
 
     async getBlockById(blockId: string): Promise<AsyncBlock | null> {
         return await this.getBlock({ workspace: this.workspace, id: blockId });
+    }
+
+    async getBlockByIds(ids: string[]): Promise<Awaited<AsyncBlock | null>[]> {
+        return await Promise.all(
+            ids.map(id => this.getBlock({ workspace: this.workspace, id }))
+        );
     }
 
     /**
@@ -477,6 +498,13 @@ export class Editor implements Virgo {
         return await services.api.editorBlock.query(this.workspace, query);
     }
 
+    async queryByPageId(pageId: string) {
+        return await services.api.editorBlock.get({
+            workspace: this.workspace,
+            ids: [pageId],
+        });
+    }
+
     /** Hooks */
 
     public getHooks(): HooksRunner & PluginHooks {
@@ -496,12 +524,7 @@ export class Editor implements Virgo {
     }
 
     public async page2html(): Promise<string> {
-        const parse = this.clipboard?.getClipboardParse();
-        if (!parse) {
-            return '';
-        }
-        const html_str = await parse.page2html();
-        return html_str;
+        return this.clipboard?.clipboardUtils?.page2html?.();
     }
 
     dispose() {
@@ -517,6 +540,6 @@ export class Editor implements Virgo {
         this.plugin_manager.dispose();
         this.selectionManager.dispose();
         this.dragDropManager.dispose();
-        this._disposeClipboard();
+        this._clipboard?.dispose();
     }
 }

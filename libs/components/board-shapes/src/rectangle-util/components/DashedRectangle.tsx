@@ -1,6 +1,8 @@
 import { Utils } from '@tldraw/core';
-import type { ShapeStyles } from '@toeverything/components/board-types';
-import { BINDING_DISTANCE } from '@toeverything/components/board-types';
+import {
+    BINDING_DISTANCE,
+    ShapeStyles,
+} from '@toeverything/components/board-types';
 import * as React from 'react';
 import { getShapeStyle } from '../../shared';
 
@@ -56,23 +58,20 @@ export const DashedRectangle = React.memo(function DashedRectangle({
     return (
         <>
             <rect
-                className={
-                    isSelected || style.isFilled
-                        ? 'tl-fill-hitarea'
-                        : 'tl-stroke-hitarea'
-                }
+                className={'tl-fill-hitarea'}
                 x={sw / 2}
                 y={sw / 2}
                 width={w}
                 height={h}
+                opacity={1}
                 strokeWidth={BINDING_DISTANCE}
             />
             {style.isFilled && (
                 <rect
                     x={sw / 2}
                     y={sw / 2}
-                    width={w}
-                    height={h}
+                    width={w - sw / 2}
+                    height={h - sw / 2}
                     fill={fill}
                     pointerEvents="none"
                 />

@@ -23,7 +23,7 @@ export const BlockContainer = function ({
     );
 };
 
-export const Container = styled('div')<{ selected: boolean }>(
+export const Container = styled('div')<{ selected?: boolean }>(
     ({ selected, theme }) => ({
         backgroundColor: selected ? theme.affine.palette.textSelected : '',
         marginBottom: '2px',

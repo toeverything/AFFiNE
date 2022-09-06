@@ -357,7 +357,7 @@ export class BlockClient<
      * @param name block name
      * @returns block instance
      */
-    private async get_named_block(
+    public async getNamedBlock(
         name: string,
         options?: { workspace?: boolean }
     ): Promise<BaseBlock<B, C>> {
@@ -376,7 +376,7 @@ export class BlockClient<
      */
     public async getWorkspace() {
         if (!this._root.node) {
-            this._root.node = await this.get_named_block(this._workspace, {
+            this._root.node = await this.getNamedBlock(this._workspace, {
                 workspace: true,
             });
         }
@@ -679,7 +679,7 @@ export type {
     ReadableContentExporter as BlockContentExporter,
 } from './block';
 export { BlockTypes, BucketBackend as BlockBackend } from './types';
-export type { BlockTypeKeys } from './types';
+export type { BlockFlavorKeys, BlockTypeKeys } from './types';
 export { isBlock } from './utils';
 export type {
     ArrayOperation,

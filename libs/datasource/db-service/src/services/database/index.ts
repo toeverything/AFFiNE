@@ -39,7 +39,7 @@ async function _getCurrentToken() {
 
 const _enabled = {
     demo: [],
-    AFFiNE: ['sqlite'],
+    AFFiNE: ['idb'],
 } as any;
 
 async function _getBlockDatabase(
@@ -168,6 +168,7 @@ export class Database {
             block.on('children', observer_name, listener);
             block.on('content', observer_name, listener);
             block.on('parent', observer_name, listener);
+            // block.on('cascade', observer_name, listener);
         }
         this.#observers.setStatus(observer_name, 'observing');
 
@@ -188,6 +189,7 @@ export class Database {
                 block.off('children', observer_name);
                 block.off('content', observer_name);
                 block.off('parent', observer_name);
+                // block.off('cascade', observer_name);
             }
         }
     }

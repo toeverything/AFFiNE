@@ -1,4 +1,5 @@
 export const isYoutubeUrl = (url?: string): boolean => {
+    if (!url) return false;
     const allowedHosts = ['www.youtu.be', 'www.youtube.com'];
     const host = new URL(url).host;
     return allowedHosts.includes(host);

@@ -21,19 +21,6 @@ const SceneMap: Record<RecastScene, ComponentType<CreateView>> = {
     kanban: SceneKanban,
 } as const;
 
-const GroupBox = styled('div')(({ theme }) => {
-    return {
-        '&:hover': {
-            // Workaround referring to other components
-            // See https://emotion.sh/docs/styled#targeting-another-emotion-component
-            // [GroupActionWrapper.toString()]: {},
-            '& > *': {
-                visibility: 'visible',
-            },
-        },
-    };
-});
-
 const GroupActionWrapper = styled('div')(({ theme }) => ({
     height: '30px',
     display: 'flex',
@@ -58,6 +45,14 @@ const GroupActionWrapper = styled('div')(({ theme }) => ({
         },
     },
 }));
+
+const GroupBox = styled('div')({
+    '&:hover': {
+        [GroupActionWrapper.toString()]: {
+            visibility: 'visible',
+        },
+    },
+});
 
 const GroupContainer = styled('div')<{ isSelect?: boolean }>(
     ({ isSelect, theme }) => ({

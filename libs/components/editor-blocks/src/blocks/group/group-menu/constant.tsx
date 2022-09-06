@@ -1,9 +1,5 @@
 import { RecastScene } from '@toeverything/components/editor-core';
-import {
-    KanBanIcon,
-    TableIcon,
-    TodoListIcon,
-} from '@toeverything/components/icons';
+import { KanBanIcon, TodoListIcon } from '@toeverything/components/icons';
 
 export const VIEW_LIST = [
     {
@@ -16,9 +12,9 @@ export const VIEW_LIST = [
         scene: RecastScene.Kanban,
         icon: <KanBanIcon fontSize="small" />,
     },
-    {
-        name: 'Table',
-        scene: RecastScene.Table,
-        icon: <TableIcon fontSize="small" />,
-    },
+    // {
+    //     name: 'Table',
+    //     scene: RecastScene.Table,
+    //     icon: <TableIcon fontSize="small" />,
+    // },
 ] as const;

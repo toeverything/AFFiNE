@@ -358,6 +358,7 @@ export const useKanban = () => {
             }
             card.append(newBlock);
             editor.selectionManager.activeNodeByNodeId(newBlock.id);
+            return newBlock;
         },
         [editor]
     );

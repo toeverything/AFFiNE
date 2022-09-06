@@ -1,16 +1,16 @@
-import { RenderBlock } from '@toeverything/components/editor-core';
-import { CreateView } from '@toeverything/framework/virgo';
-import React, { useEffect, useRef, useState } from 'react';
-import { GridHandle } from './GirdHandle';
+import { BlockRender } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
+import { Protocol } from '@toeverything/datasource/db-service';
+import { CreateView } from '@toeverything/framework/virgo';
+import { debounce, domToRect, Point } from '@toeverything/utils';
+import clsx from 'clsx';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import {
     GRID_ITEM_CLASS_NAME,
     GRID_ITEM_CONTENT_CLASS_NAME,
 } from '../grid-item/GridItem';
-import { debounce, domToRect, Point } from '@toeverything/utils';
-import clsx from 'clsx';
-import { Protocol } from '@toeverything/datasource/db-service';
+import { GridHandle } from './GirdHandle';
 
 const DB_UPDATE_DELAY = 50;
 const GRID_ON_DRAG_CLASS = 'grid-layout-on-drag';
@@ -226,7 +226,7 @@ export const Grid = function (props: CreateView) {
                             key={id}
                             className={GRID_ITEM_CLASS_NAME}
                         >
-                            <RenderBlock hasContainer={false} blockId={id} />
+                            <BlockRender hasContainer={false} blockId={id} />
                             <GridHandle
                                 onDrag={event => handleDragGrid(event, i)}
                                 editor={editor}

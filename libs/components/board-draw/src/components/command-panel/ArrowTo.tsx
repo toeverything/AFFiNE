@@ -21,6 +21,9 @@ export const ArrowTo = ({ app, shapes }: GroupAndUnGroupProps) => {
         let activeShape = shapes[0];
         let toNextShapBindings: ArrowBinding[] = [];
         let bindingId = '';
+        if (!activeShape) {
+            return;
+        }
         Object.keys(bindings).forEach(key => {
             if (bindings[key].toId === activeShape.id) {
                 bindingId = bindings[key].fromId;
@@ -35,7 +38,6 @@ export const ArrowTo = ({ app, shapes }: GroupAndUnGroupProps) => {
         toNextShapBindings.forEach(binding => {
             if (binding.toId !== activeShape.id) {
                 allShape.forEach(item => {
-                    console.log(item);
                     if (item.id === binding.toId) {
                         ArrowToArr.push(item);
                     }
@@ -44,7 +46,7 @@ export const ArrowTo = ({ app, shapes }: GroupAndUnGroupProps) => {
         });
         setarrowToArr(ArrowToArr);
         return () => {};
-    }, [app.page.bindings, app.shapes]);
+    }, [app.page.bindings]);
     const jumpToNextShap = (shape: TDShape) => {
         app.zoomToShapes([shape]);
     };
@@ -68,7 +70,7 @@ export const ArrowTo = ({ app, shapes }: GroupAndUnGroupProps) => {
                 </div>
             }
         >
-            <Tooltip content="Font Size" placement="top-start">
+            <Tooltip content="ArrowToEditor" placement="top-start">
                 <IconButton>
                     <ConnectorIcon></ConnectorIcon>
                 </IconButton>

@@ -5,6 +5,7 @@
     "editor.codeActionsOnSave": ["source.fixAll", "source.organizeImports"],
     "prettier.prettierPath": "./node_modules/prettier",
     "cSpell.words": [
+        "aboutus",
         "AUTOINCREMENT",
         "Backlinks",
         "blockdb",

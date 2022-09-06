@@ -9,7 +9,10 @@
  * 6. Dependencies between plugins are not supported for the time being
  */
 import type { PatchNode } from '@toeverything/components/ui';
-import type { BlockFlavors } from '@toeverything/datasource/db-service';
+import type {
+    BlockFlavors,
+    ReturnEditorBlock,
+} from '@toeverything/datasource/db-service';
 import type { IdList, SelectionInfo, SelectionManager } from './selection';
 
 import { Point } from '@toeverything/utils';
@@ -67,6 +70,8 @@ export interface Virgo {
     ) => Promise<AsyncBlock>;
     getRootBlockId: () => string;
     getBlockById(blockId: string): Promise<AsyncBlock | null>;
+    getBlockByIds(blockId: string[]): Promise<(AsyncBlock | null)[]>;
+    queryByPageId(pageId: string): Promise<(ReturnEditorBlock | null)[]>;
     setHotKeysScope(scope?: string): void;
     getBlockList: () => Promise<AsyncBlock[]>;
     getBlockListByLevelOrder: () => Promise<AsyncBlock[]>;
@@ -174,8 +179,9 @@ export enum HookType {
     ON_ROOTNODE_DRAG_END = 'onRootNodeDragEnd',
     ON_ROOTNODE_DRAG_OVER_CAPTURE = 'onRootNodeDragOverCapture',
     ON_ROOTNODE_DROP = 'onRootNodeDrop',
-    BEFORE_COPY = 'beforeCopy',
-    BEFORE_CUT = 'beforeCut',
+    ON_COPY = 'onCopy',
+    ON_CUT = 'onCut',
+    ON_PASTE = 'onPaste',
     ON_ROOTNODE_SCROLL = 'onRootNodeScroll',
 }
 
@@ -207,8 +213,9 @@ export interface HooksRunner {
     onRootNodeDragEnd: (e: React.DragEvent<Element>) => void;
     onRootNodeDragLeave: (e: React.DragEvent<Element>) => void;
     onRootNodeDrop: (e: React.DragEvent<Element>) => void;
-    beforeCopy: (e: ClipboardEvent) => void;
-    beforeCut: (e: ClipboardEvent) => void;
+    onCopy: (e: ClipboardEvent) => void;
+    onCut: (e: ClipboardEvent) => void;
+    onPaste: (e: ClipboardEvent) => void;
     onRootNodeScroll: (e: React.UIEvent) => void;
 }
 

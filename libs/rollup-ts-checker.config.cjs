@@ -12,6 +12,12 @@ module.exports = config => {
         padding.push(postcss);
         nxConfig.plugins.splice(postcssIndex, 1);
 
+        const jsonIndex = nxConfig.plugins.findIndex(p => p?.name === 'json');
+        if (jsonIndex !== -1) {
+            padding.push(nxConfig.plugins[jsonIndex]);
+            nxConfig.plugins.splice(jsonIndex, 1);
+        }
+
         const style9Plugin = style9({
             minifyProperties: true,
             incrementalClassnames: true,
