@@ -12,6 +12,7 @@ import { useMediaQuery } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import RedditIcon from '@mui/icons-material/Reddit';
 import TelegramIcon from '@mui/icons-material/Telegram';
+import TwitterIcon from '@mui/icons-material/Twitter';
 import { options } from './i18n';
 import { DiscordIcon, GitHub } from './Icons';
 // eslint-disable-next-line no-restricted-imports
@@ -195,6 +196,52 @@ export const AFFiNEFooter = ({
                                 }}
                             >
                                 Reddit
+                            </Typography>
+                        </Grid>
+                    </Button>
+                </Box>
+                <Box sx={{ display: 'flex', width: '100%' }}>
+                    <Button
+                        variant="plain"
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            margin: 'auto',
+                            padding: '1em',
+                            minWidth: '6em',
+                        }}
+                        onClick={() =>
+                            window.open('https://twitter.com/AffineOfficial')
+                        }
+                    >
+                        <Grid
+                            xs={12}
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <TwitterIcon
+                                sx={{ width: '36px', height: '36px' }}
+                            />
+                        </Grid>
+
+                        <Grid
+                            xs={12}
+                            sx={{
+                                display: 'flex',
+                                margin: 'auto',
+                                marginTop: '1em',
+                            }}
+                        >
+                            <Typography
+                                sx={{
+                                    display: 'flex',
+                                    color: '#888',
+                                    fontSize: '0.5em',
+                                }}
+                            >
+                                Twitter
                             </Typography>
                         </Grid>
                     </Button>
