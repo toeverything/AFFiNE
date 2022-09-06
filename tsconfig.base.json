@@ -74,6 +74,9 @@
             "@toeverything/datasource/feature-flags": [
                 "libs/datasource/feature-flags/src/index.ts"
             ],
+            "@toeverything/datasource/i18n": [
+                "libs/datasource/i18n/src/index.ts"
+            ],
             "@toeverything/datasource/jwt": [
                 "libs/datasource/jwt/src/index.ts"
             ],

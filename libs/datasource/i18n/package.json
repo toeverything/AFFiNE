@@ -1,0 +1,9 @@
+{
+    "name": "@toeverything/datasource/i18n",
+    "version": "0.0.1",
+    "dependencies": {
+        "i18next": "^21.9.1",
+        "jotai": "^1.8.1",
+        "react-i18next": "^11.18.4"
+    }
+}
