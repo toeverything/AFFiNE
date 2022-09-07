@@ -18,7 +18,9 @@ type YjsDefaultInstances = {
     emitState: (connectivity: Connectivity) => void;
 };
 
-export type YjsProvider = (instances: YjsDefaultInstances) => Promise<void>;
+export type YjsProvider = (
+    instances: YjsDefaultInstances
+) => Promise<unknown | undefined>;
 
 type ProviderType = 'idb' | 'sqlite' | 'ws';
 
@@ -38,9 +40,12 @@ export const getYjsProviders = (
     return {
         indexeddb: async (instances: YjsDefaultInstances) => {
             if (options.enabled.includes('idb')) {
-                await new IndexedDBProvider(instances.workspace, instances.doc)
-                    .whenSynced;
+                return new IndexedDBProvider(
+                    instances.workspace,
+                    instances.doc
+                ).whenSynced.then(idb => ({ idb, ctor: IndexedDBProvider }));
             }
+            return undefined;
         },
         sqlite: async (instances: YjsDefaultInstances) => {
             if (options.enabled.includes('sqlite')) {

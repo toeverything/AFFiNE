@@ -71,44 +71,20 @@ const _useUserAndSpacesForFreeLogin = () => {
 
     useEffect(() => {
         if (loading) {
-            if (location.pathname.startsWith('/local')) {
-                navigate('/local');
-            } else {
-                navigate('/demo');
-            }
+            navigate(`/${BRAND_ID}`);
             setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        if (localTrigger) {
-            setUser({
-                photo: '',
-                id: BRAND_ID,
-                username: BRAND_ID,
-                nickname: BRAND_ID,
-                email: '',
-            });
-        } else {
-            if (location.pathname.startsWith('/local')) {
-                setUser({
-                    photo: '',
-                    id: 'local',
-                    username: 'local',
-                    nickname: 'local',
-                    email: '',
-                });
-            } else {
-                setUser({
-                    photo: '',
-                    id: 'demo',
-                    username: 'demo',
-                    nickname: 'demo',
-                    email: '',
-                });
-            }
-        }
-    }, [localTrigger, location, setLoading, setUser]);
+        setUser({
+            photo: '',
+            id: BRAND_ID,
+            username: BRAND_ID,
+            nickname: BRAND_ID,
+            email: '',
+        });
+    }, [setUser]);
 
     const currentSpaceId: string | undefined = useMemo(() => user?.id, [user]);
 

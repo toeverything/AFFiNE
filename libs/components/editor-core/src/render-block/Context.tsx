@@ -1,9 +1,10 @@
 import { genErrorObj } from '@toeverything/utils';
-import { createContext, PropsWithChildren, useContext } from 'react';
+import type { ComponentType, PropsWithChildren } from 'react';
+import { createContext, useContext } from 'react';
 import { RenderBlockProps } from './RenderBlock';
 
 type BlockRenderProps = {
-    blockRender: (args: RenderBlockProps) => JSX.Element;
+    blockRender: ComponentType<RenderBlockProps>;
 };
 
 export const BlockRenderContext = createContext<BlockRenderProps>(

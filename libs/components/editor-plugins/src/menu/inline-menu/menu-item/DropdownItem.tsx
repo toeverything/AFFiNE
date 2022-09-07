@@ -1,22 +1,24 @@
-import React, { useState, useCallback } from 'react';
-import style9 from 'style9';
-import {
-    Popover,
-    styled,
-    type SvgIconProps,
-    Tooltip,
-} from '@toeverything/components/ui';
 import {
     fontBgColorPalette,
     fontColorPalette,
 } from '@toeverything/components/common';
 import { ArrowDropDownIcon } from '@toeverything/components/icons';
-import type { DropdownItemType, WithEditorSelectionType } from '../types';
 import {
-    inlineMenuNamesKeys,
+    Popover,
+    styled,
+    Tooltip,
+    type SvgIconProps,
+} from '@toeverything/components/ui';
+import { uaHelper } from '@toeverything/utils';
+import { useCallback, useState } from 'react';
+import style9 from 'style9';
+import {
     inlineMenuNamesForFontColor,
-    inlineMenuShortcuts,
+    inlineMenuNamesKeys,
+    MacInlineMenuShortcuts,
+    WinInlineMenuShortcuts,
 } from '../config';
+import type { DropdownItemType, WithEditorSelectionType } from '../types';
 
 type MenuDropdownItemProps = DropdownItemType & WithEditorSelectionType;
 
@@ -36,102 +38,100 @@ export const MenuDropdownItem = ({
         set_anchor_ele(null);
     }, []);
 
-    //@ts-ignore
-    const shortcut = inlineMenuShortcuts[nameKey];
+    const shortcut = uaHelper.isMacOs
+        ? //@ts-ignore
+          MacInlineMenuShortcuts[nameKey]
+        : //@ts-ignore
+          WinInlineMenuShortcuts[nameKey];
 
     return (
-        <>
-            <Popover
-                trigger="click"
-                placement="bottom-start"
+        <Popover
+            trigger="click"
+            placement="bottom-start"
+            content={
+                <div className={styles('dropdownContainer')}>
+                    {children.map(item => {
+                        const {
+                            name,
+                            icon: ItemIcon,
+                            onClick,
+                            nameKey: itemNameKey,
+                        } = item;
+
+                        const StyledIcon = withStylesForIcon(ItemIcon);
+
+                        return (
+                            <button
+                                className={styles('dropdownItem')}
+                                key={name}
+                                onClick={() => {
+                                    if (
+                                        onClick &&
+                                        selectionInfo?.anchorNode?.id
+                                    ) {
+                                        onClick({
+                                            editor,
+                                            type: itemNameKey,
+                                            anchorNodeId:
+                                                selectionInfo?.anchorNode?.id,
+                                        });
+                                    }
+                                    handle_close_dropdown_menu();
+                                }}
+                            >
+                                <StyledIcon
+                                    fontColor={
+                                        nameKey ===
+                                        inlineMenuNamesKeys.currentFontColor
+                                            ? fontColorPalette[
+                                                  inlineMenuNamesForFontColor[
+                                                      itemNameKey as keyof typeof inlineMenuNamesForFontColor
+                                                  ]
+                                              ]
+                                            : nameKey ===
+                                              inlineMenuNamesKeys.currentFontBackground
+                                            ? fontBgColorPalette[
+                                                  inlineMenuNamesForFontColor[
+                                                      itemNameKey as keyof typeof inlineMenuNamesForFontColor
+                                                  ]
+                                              ]
+                                            : ''
+                                    }
+                                    // fontBgColor={
+                                    //     nameKey=== inlineMenuNamesKeys.currentFontBackground ?  fontBgColorPalette[
+                                    //         inlineMenuNamesForFontColor[itemNameKey] as keyof typeof fontBgColorPalette
+                                    //     ]:''
+                                    // }
+                                />
+                                {/* <ItemIcon sx={{ width: 20, height: 20 }} /> */}
+                                <span className={styles('dropdownItemItext')}>
+                                    {name}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            }
+        >
+            <Tooltip
                 content={
-                    <div className={styles('dropdownContainer')}>
-                        {children.map(item => {
-                            const {
-                                name,
-                                icon: ItemIcon,
-                                onClick,
-                                nameKey: itemNameKey,
-                            } = item;
-
-                            const StyledIcon = withStylesForIcon(ItemIcon);
-
-                            return (
-                                <button
-                                    className={styles('dropdownItem')}
-                                    key={name}
-                                    onClick={() => {
-                                        if (
-                                            onClick &&
-                                            selectionInfo?.anchorNode?.id
-                                        ) {
-                                            onClick({
-                                                editor,
-                                                type: itemNameKey,
-                                                anchorNodeId:
-                                                    selectionInfo?.anchorNode
-                                                        ?.id,
-                                            });
-                                        }
-                                        handle_close_dropdown_menu();
-                                    }}
-                                >
-                                    <StyledIcon
-                                        fontColor={
-                                            nameKey ===
-                                            inlineMenuNamesKeys.currentFontColor
-                                                ? fontColorPalette[
-                                                      inlineMenuNamesForFontColor[
-                                                          itemNameKey as keyof typeof inlineMenuNamesForFontColor
-                                                      ]
-                                                  ]
-                                                : nameKey ===
-                                                  inlineMenuNamesKeys.currentFontBackground
-                                                ? fontBgColorPalette[
-                                                      inlineMenuNamesForFontColor[
-                                                          itemNameKey as keyof typeof inlineMenuNamesForFontColor
-                                                      ]
-                                                  ]
-                                                : ''
-                                        }
-                                        // fontBgColor={
-                                        //     nameKey=== inlineMenuNamesKeys.currentFontBackground ?  fontBgColorPalette[
-                                        //         inlineMenuNamesForFontColor[itemNameKey] as keyof typeof fontBgColorPalette
-                                        //     ]:''
-                                        // }
-                                    />
-                                    {/* <ItemIcon sx={{ width: 20, height: 20 }} /> */}
-                                    <span
-                                        className={styles('dropdownItemItext')}
-                                    >
-                                        {name}
-                                    </span>
-                                </button>
-                            );
-                        })}
+                    <div style={{ padding: '2px 4px' }}>
+                        <p>{name}</p>
+                        {shortcut && <p>{shortcut}</p>}
                     </div>
                 }
+                placement="top"
+                trigger="hover"
             >
-                <Tooltip
-                    content={
-                        <div style={{ padding: '2px 4px' }}>
-                            <p>{name}</p>
-                            {shortcut && <p>{shortcut}</p>}
-                        </div>
-                    }
-                    placement="top"
-                    trigger="hover"
+                <button
+                    className={styles('currentDropdownButton')}
+                    aria-label={name}
                 >
-                    <button
-                        className={styles('currentDropdownButton')}
-                        aria-label={name}
-                    >
-                        <MenuIcon sx={{ width: 20, height: 20 }} />
-                        <ArrowDropDownIcon sx={{ width: 20, height: 20 }} />
-                    </button>
-                </Tooltip>
-            </Popover>
-        </>
+                    <MenuIcon sx={{ width: 20, height: 20 }} />
+                    <ArrowDropDownIcon sx={{ width: 20, height: 20 }} />
+                </button>
+            </Tooltip>
+        </Popover>
     );
 };
 

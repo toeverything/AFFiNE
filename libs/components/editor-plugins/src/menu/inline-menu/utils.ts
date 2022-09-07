@@ -107,6 +107,7 @@ const common_handler_for_inline_menu: ClickItemHandler = ({
     editor,
     anchorNodeId,
     type,
+    setShow,
 }) => {
     switch (type) {
         case inlineMenuNamesKeys.text:
@@ -184,6 +185,8 @@ const common_handler_for_inline_menu: ClickItemHandler = ({
                 editor,
                 blockId: anchorNodeId,
             });
+            // editor.plugins.emit('showAddLink');
+            // setShow(false);
             break;
         case inlineMenuNamesKeys.code:
             toggle_text_format({
@@ -437,6 +440,10 @@ const common_handler_for_inline_menu: ClickItemHandler = ({
                 blockId: anchorNodeId,
                 blockType: Protocol.Block.Type.file,
             });
+            break;
+        case inlineMenuNamesKeys.backlinks:
+            editor.plugins.emit('showDoubleLink');
+            setShow(false);
             break;
         default: // do nothing
     }

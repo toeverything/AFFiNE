@@ -6,7 +6,10 @@ import {
 } from '@toeverything/components/common';
 import { useOnSelectActive } from '@toeverything/components/editor-core';
 import { styled } from '@toeverything/components/ui';
-import { ContentColumnValue } from '@toeverything/datasource/db-service';
+import {
+    ContentColumnValue,
+    Protocol,
+} from '@toeverything/datasource/db-service';
 import {
     AsyncBlock,
     BlockEditor,
@@ -108,7 +111,7 @@ const findLowestCommonAncestor = async (
 
 export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
     (props, ref) => {
-        const { block, editor, ...otherOptions } = props;
+        const { block, editor, handleEnter, ...otherOptions } = props;
         const defaultRef = useRef<ExtendedTextUtils>(null);
         // Maybe there is a better way
         const textRef =
@@ -377,9 +380,36 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 return false;
             }
         };
-        const onSelectAll = () => {
+        const selectGroupBlocks = async (isSelectAll: boolean) => {
+            if (editor.selectionManager.currentSelectInfo.anchorNode) {
+                const block = await editor.getBlockById(
+                    editor.selectionManager.currentSelectInfo.anchorNode.id
+                );
+                if (isSelectAll) {
+                    if (
+                        Protocol.Block.Type.group !== block.type &&
+                        Protocol.Block.Type.page !== block.type
+                    ) {
+                        const paths = await editor.getBlockPath(block.id);
+                        paths &&
+                            paths[1] &&
+                            editor.selectionManager.setSelectedNodesIds([
+                                paths[1].id,
+                            ]);
+                        return true;
+                    }
+                }
+            }
+        };
+        const onSelectAll = async () => {
             const isSelectAll =
                 textRef.current.isEmpty() || textRef.current.isSelectAll();
+
+            const ifSelectGroup = await selectGroupBlocks(isSelectAll);
+            if (ifSelectGroup) {
+                return false;
+            }
+
             if (isSelectAll) {
                 editor.selectionManager.selectAllBlocks();
                 return true;
@@ -446,6 +476,38 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 }
             }
         };
+
+        const onTextEnter: TextProps['handleEnter'] = async props => {
+            const { splitContents } = props;
+            if (splitContents) {
+                const { contentBeforeSelection, contentAfterSelection } =
+                    splitContents;
+                // after[after.length - 1];
+                if (!contentBeforeSelection.isEmpty) {
+                    const beforeSelection = contentBeforeSelection.content;
+                    const lastItem: any =
+                        beforeSelection.length > 0
+                            ? beforeSelection[beforeSelection.length - 1]
+                            : null;
+                    if (lastItem?.linkType === 'doubleLink') {
+                        contentBeforeSelection.content.push({ text: '' });
+                    }
+                }
+                if (!contentAfterSelection.isEmpty) {
+                    const afterSelection = contentAfterSelection.content;
+                    const firstItem: any =
+                        afterSelection.length > 0 ? afterSelection[0] : null;
+                    if (firstItem?.linkType === 'doubleLink') {
+                        contentAfterSelection.content.splice(0, 0, {
+                            text: '',
+                        });
+                    }
+                }
+            }
+
+            return handleEnter && handleEnter(props);
+        };
+
         if (!properties || !properties.text) {
             return <></>;
         }
@@ -467,6 +529,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 handleUndo={onUndo}
                 handleRedo={onRedo}
                 handleEsc={onKeyboardEsc}
+                handleEnter={onTextEnter}
                 {...otherOptions}
             />
         );

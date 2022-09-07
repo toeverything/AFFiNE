@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 import {
     LogoIcon,
     SearchIcon,
@@ -8,13 +6,14 @@ import {
 } from '@toeverything/components/icons';
 import { IconButton, styled } from '@toeverything/components/ui';
 import {
+    useCurrentEditors,
     useLocalTrigger,
     useShowSettingsSidebar,
 } from '@toeverything/datasource/state';
-
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
-import { FileSystem, fsApiSupported } from './FileSystem';
+import { fsApiSupported } from './FileSystem';
 import { CurrentPageTitle } from './Title';
 
 export const LayoutHeader = () => {
@@ -33,6 +32,14 @@ export const LayoutHeader = () => {
         }
     }, [isLocalWorkspace, t]);
 
+    const { currentEditors } = useCurrentEditors();
+
+    const handleSearch = useCallback(() => {
+        for (const key in currentEditors || {}) {
+            currentEditors[key].getHooks().onSearch();
+        }
+    }, [currentEditors]);
+
     return (
         <StyledContainerForHeaderRoot>
             <StyledHeaderRoot>
@@ -44,14 +51,13 @@ export const LayoutHeader = () => {
                 </FlexContainer>
                 <FlexContainer>
                     <StyledHelper>
-                        <FileSystem />
                         <StyledShare disabled={true}>{t('Share')}</StyledShare>
                         <div style={{ margin: '0px 12px' }}>
                             <IconButton
                                 size="large"
                                 hoverColor={'transparent'}
+                                onClick={handleSearch}
                                 disabled={true}
-                                style={{ cursor: 'not-allowed' }}
                             >
                                 <SearchIcon />
                             </IconButton>
@@ -70,9 +76,6 @@ export const LayoutHeader = () => {
                     <EditorBoardSwitcher />
                 </StyledContainerForEditorBoardSwitcher>
             </StyledHeaderRoot>
-            <StyledUnstableTips>
-                <StyledUnstableTipsText>{warningTips}</StyledUnstableTipsText>
-            </StyledUnstableTips>
         </StyledContainerForHeaderRoot>
     );
 };

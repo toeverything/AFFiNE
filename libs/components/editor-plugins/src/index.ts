@@ -6,7 +6,7 @@ import {
     GroupMenuPlugin,
     InlineMenuPlugin,
     LeftMenuPlugin,
-    SelectionGroupPlugin,
+    LinkMenuPlugin,
 } from './menu';
 import { FullTextSearchPlugin } from './search';
 import { TemplatePlugin } from './template';
@@ -24,4 +24,5 @@ export const plugins: PluginCreator[] = [
     // SelectionGroupPlugin,
     AddCommentPlugin,
     GroupMenuPlugin,
+    LinkMenuPlugin,
 ];

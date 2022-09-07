@@ -12,7 +12,7 @@ import { LogoIcon } from '@toeverything/components/icons';
 import { useMediaQuery } from '@mui/material';
 
 import CollaborationImage from './collaboration.png';
-import { AFFiNEFooter, AFFiNEHeader, AFFiNEImage } from './Common';
+import { AFFiNEFooter, AFFiNEHeader, AFFiNEImage } from './common';
 import { GitHub } from './Icons';
 import PageImage from './page.png';
 import ShapeImage from './shape.png';

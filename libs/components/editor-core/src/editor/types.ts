@@ -13,8 +13,6 @@ import type {
     BlockFlavors,
     ReturnEditorBlock,
 } from '@toeverything/datasource/db-service';
-import type { IdList, SelectionInfo, SelectionManager } from './selection';
-
 import { Point } from '@toeverything/utils';
 import { Observable } from 'rxjs';
 import type { AsyncBlock } from './block';
@@ -23,6 +21,7 @@ import type { BlockCommands } from './commands/block-commands';
 import type { DragDropManager } from './drag-drop';
 import { MouseManager } from './mouse';
 import { ScrollManager } from './scroll';
+import type { IdList, SelectionInfo, SelectionManager } from './selection';
 
 // import { BrowserClipboard } from './clipboard/browser-clipboard';
 
@@ -114,6 +113,7 @@ export interface Virgo {
     getGroupBlockByPoint: (point: Point) => Promise<AsyncBlock>;
     isEdgeless: boolean;
     mouseManager: MouseManager;
+    getHooks: () => HooksRunner & PluginHooks;
 }
 
 export interface Plugin {

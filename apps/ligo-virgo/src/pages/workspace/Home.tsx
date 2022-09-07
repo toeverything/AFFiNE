@@ -31,6 +31,7 @@ export function WorkspaceHome() {
                     })
                 );
             }
+
             navigate(`/${workspace_id}/${user_initial_page_id}`);
         };
         navigate_to_user_initial_page();
