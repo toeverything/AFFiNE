@@ -12,6 +12,7 @@
         "start:venus": "nx serve venus",
         "build": "nx build ligo-virgo",
         "build:local": "env-cmd -f .github/env/.env.local-dev nx build ligo-virgo",
+        "build:local-keck": "env-cmd -f .github/env/.env.local-keck nx build ligo-virgo",
         "build:keck": "nx build keck",
         "build:venus": "nx build venus",
         "build:analytic": "cross-env BUNDLE_ANALYZER=true nx build --skip-nx-cache",
