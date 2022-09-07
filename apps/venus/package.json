@@ -7,6 +7,7 @@
     "keywords": [],
     "author": "DarkSky <darksky2048@gmail.com>",
     "dependencies": {
+        "@emotion/babel-plugin": "^11.10.2",
         "@emotion/react": "^11.10.0",
         "@emotion/styled": "^11.10.0",
         "@mui/joy": "^5.0.0-alpha.42",
