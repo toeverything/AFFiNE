@@ -47,8 +47,8 @@ export async function fetchActivitiesHeatmap(
     // const pages = await db.getByType('page');
     const pages_with_ids = (await Promise.all(
         flattenedItems.map(async (page_item: any) => {
-            const page_id = page_item.id;
-            return [page_id, await db.get(page_id as 'page')];
+            const pageId = page_item.id;
+            return [pageId, await db.get(pageId as 'page')];
         })
     )) as [string, BlockImplInstance][];
     const pages = new Map(pages_with_ids);

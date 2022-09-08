@@ -5,7 +5,6 @@ import {
 } from 'firebase/auth';
 import { atom, useAtom } from 'jotai';
 import { useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router';
 
 import { useIdentifyUser } from '@toeverything/datasource/feature-flags';
 import { UserInfo } from '@toeverything/utils';
@@ -63,15 +62,11 @@ const BRAND_ID = 'AFFiNE';
 
 const _localTrigger = atom<boolean>(false);
 const _useUserAndSpacesForFreeLogin = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
     const [user, setUser] = useAtom(_userAtom);
     const [loading, setLoading] = useAtom(_loadingAtom);
-    const [localTrigger] = useAtom(_localTrigger);
 
     useEffect(() => {
         if (loading) {
-            navigate(`/${BRAND_ID}`);
             setLoading(false);
         }
     }, []);

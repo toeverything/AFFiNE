@@ -116,7 +116,7 @@ const renderTOCContent = tocDataSource => {
 };
 
 export const TOC = () => {
-    const { page_id } = useParams();
+    const { pageId } = useParams();
     const [tocDataSource, setTocDataSource] = useState<TOCType[]>([]);
     const [activeBlockId, setActiveBlockId] = useState('');
 
@@ -124,7 +124,7 @@ export const TOC = () => {
     const listenerMapRef = useRef<ListenerMap>(new Map());
 
     const { currentEditors } = useCurrentEditors();
-    const editor = currentEditors[page_id] as Virgo;
+    const editor = currentEditors[pageId] as Virgo;
 
     const updateTocDataSource = useCallback(async () => {
         if (!editor) {
@@ -134,7 +134,7 @@ export const TOC = () => {
         const listenerMap = listenerMapRef.current;
 
         /* page listener: trigger update-notice when add new group */
-        const pageAsyncBlock = (await editor.getBlockByIds([page_id]))?.[0];
+        const pageAsyncBlock = (await editor.getBlockByIds([pageId]))?.[0];
         if (!listenerMap.has(pageAsyncBlock.id)) {
             listenerMap.set(
                 pageAsyncBlock.id,
@@ -144,7 +144,7 @@ export const TOC = () => {
 
         /* block listener: trigger update-notice when change block content */
         const { children = [] } =
-            (await editor.queryByPageId(page_id))?.[0] || {};
+            (await editor.queryByPageId(pageId))?.[0] || {};
         const asyncBlocks = (await editor.getBlockByIds(children)) || [];
         const { tocContents } = await getContentByAsyncBlocks(
             asyncBlocks,
@@ -155,7 +155,7 @@ export const TOC = () => {
         /* toc: flat content */
         const tocDataSource = getPageTOC(asyncBlocks, tocContents);
         setTocDataSource(tocDataSource);
-    }, [editor, page_id]);
+    }, [editor, pageId]);
 
     /* init toc and add page/block update-listener & unmount-listener */
     useEffect(() => {

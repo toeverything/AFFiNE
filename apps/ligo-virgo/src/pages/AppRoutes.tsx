@@ -21,7 +21,7 @@ export function LigoVirgoRoutes() {
                 />
                 <Route path="/ui" element={<UIPage />} />
                 <Route
-                    path="/:workspace_id/*"
+                    path="/:workspaceId/*"
                     element={
                         <RoutePrivate>
                             <WorkspaceContainer />

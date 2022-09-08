@@ -12,7 +12,7 @@ import { useUserAndSpaces } from '@toeverything/datasource/state';
 export const CurrentPageTitle = () => {
     const { user } = useUserAndSpaces();
     const params = useParams();
-    const { workspace_id } = params;
+    const { workspaceId } = params;
     const [pageId, setPageId] = useState<string>('');
     const [pageTitle, setPageTitle] = useState<string | undefined>();
     /* card.7 */
@@ -25,9 +25,9 @@ export const CurrentPageTitle = () => {
     }, [params]);
 
     const fetchPageTitle = useCallback(async () => {
-        if (!workspace_id || !pageId) return;
+        if (!workspaceId || !pageId) return;
         const [pageEditorBlock] = await services.api.editorBlock.get({
-            workspace: workspace_id,
+            workspace: workspaceId,
             ids: [pageId],
         });
         /* card.7 */
@@ -39,21 +39,21 @@ export const CurrentPageTitle = () => {
                 ?.map(v => v.text)
                 .join('') ?? 'Untitled'
         );
-    }, [pageId, workspace_id]);
+    }, [pageId, workspaceId]);
 
     useEffect(() => {
         if (user) fetchPageTitle();
     }, [fetchPageTitle, user]);
 
     useEffect(() => {
-        if (!user || !workspace_id || !pageId || pageTitle === undefined)
+        if (!user || !workspaceId || !pageId || pageTitle === undefined)
             return () => {};
 
         let unobserve: () => void;
         const auto_update_title = async () => {
             // console.log(';; title registration auto update');
             unobserve = await services.api.editorBlock.observe(
-                { workspace: workspace_id, id: pageId },
+                { workspace: workspaceId, id: pageId },
                 businessBlock => {
                     // console.log(';; auto_update_title', businessBlock);
                     fetchPageTitle();
@@ -65,7 +65,7 @@ export const CurrentPageTitle = () => {
         return () => {
             // unobserve?.();
         };
-    }, [fetchPageTitle, pageId, pageTitle, user, workspace_id]);
+    }, [fetchPageTitle, pageId, pageTitle, user, workspaceId]);
 
     useEffect(() => {
         document.title = pageTitle || '';

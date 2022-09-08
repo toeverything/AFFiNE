@@ -16,7 +16,7 @@ export const Switcher = () => {
         if (targetViewMode === pageViewMode) {
             return;
         }
-        const workspaceId = params['workspace_id'];
+        const workspaceId = params['workspaceId'];
         /**
          * There are two possible modes:
          * Page mode: /{workspaceId}/{pageId}

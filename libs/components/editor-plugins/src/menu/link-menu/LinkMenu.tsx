@@ -42,7 +42,7 @@ const normalizeUrl = (url: string) => {
 };
 
 export const LinkMenu = ({ editor, hooks }: LinkMenuProps) => {
-    const { page_id: curPageId } = useParams();
+    const { pageId: curPageId } = useParams();
     const [isOpen, setIsOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
     const dialogRef = useRef<HTMLDivElement>();
