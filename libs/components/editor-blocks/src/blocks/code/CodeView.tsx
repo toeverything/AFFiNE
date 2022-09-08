@@ -39,7 +39,7 @@ import { yaml } from '@codemirror/legacy-modes/mode/yaml';
 import { Extension } from '@codemirror/state';
 import {
     BlockPendantProvider,
-    useOnSelect,
+    useOnSelectActive,
 } from '@toeverything/components/editor-core';
 import { DuplicateIcon } from '@toeverything/components/icons';
 import { Option, Select, styled } from '@toeverything/components/ui';
@@ -147,7 +147,8 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
             codeMirror?.current?.view?.focus();
         }
     };
-    useOnSelect(block.id, (_is_select: boolean) => {
+    //TODO listen codeMirror.up down event , active
+    useOnSelectActive(block.id, () => {
         focusCode();
     });
     const onChange = (value: string) => {
@@ -161,9 +162,9 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     };
     useEffect(() => {
         handleLangChange(langType ? langType : DEFAULT_LANG);
-        setTimeout(() => {
-            focusCode();
-        }, 100);
+        // setTimeout(() => {
+        //     focusCode();
+        // }, 100);
     }, []);
 
     const copyCode = () => {

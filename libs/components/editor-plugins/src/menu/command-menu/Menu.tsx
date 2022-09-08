@@ -118,7 +118,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                                 ?.getRangeAt(0)
                                 ?.getBoundingClientRect();
                         if (rect) {
-                            let rectTop = rect.top;
+                            const rectTop = rect.top;
                             const clientHeight =
                                 document.documentElement.clientHeight;
 
@@ -224,8 +224,10 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
                 await commonCommandMenuHandler(blockId, type, editor);
             }
             const block = await editor.getBlockById(blockId);
-            let nextBlock = await block.nextSibling();
-            editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+            const nextBlock = await block.nextSibling();
+            setTimeout(() => {
+                editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+            });
             if (block.blockProvider.isEmpty()) {
                 block.remove();
             }
