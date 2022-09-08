@@ -4,8 +4,8 @@ import {
     SettingsIcon,
 } from '@toeverything/components/icons';
 import { styled } from '@toeverything/components/ui';
+import { useTranslation } from '@toeverything/datasource/i18n';
 import { cloneElement, useCallback, useMemo, type ReactElement } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Comments } from '../Comments';
 import { useActiveComment } from '../Comments/use-comments';
 import { LayoutSettings } from '../Layout';

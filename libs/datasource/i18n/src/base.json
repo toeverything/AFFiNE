@@ -1,0 +1,24 @@
+{
+    "Sync to Disk": "Sync to Disk",
+    "Share": "Share",
+    "WarningTips": {
+        "IsNotfsApiSupported": "Welcome to the AFFiNE demo. To begin saving changes you can SYNC DATA TO DISK with the latest version of Chromium based browser like Chrome/Edge",
+        "IsNotLocalWorkspace": "Welcome to the AFFiNE demo. To begin saving changes you can SYNC TO DISK.",
+        "DoNotStore": "AFFiNE is under active development and the current version is UNSTABLE. Please DO NOT store information or data"
+    },
+    "Layout": "Layout",
+    "Comment": "Comment",
+    "Settings": "Settings",
+    "ComingSoon": "Layout Settings Coming Soon...",
+    "Duplicate Page": "Duplicate Page",
+    "Copy Page Link": "Copy Page Link",
+    "Language": "Language",
+    "Clear Workspace": "Clear Workspace",
+    "Export As Markdown": "Export As Markdown",
+    "Export As HTML": "Export As HTML",
+    "Export As PDF (Unsupported)": "Export As PDF (Unsupported)",
+    "Import Workspace": "Import Workspace",
+    "Export Workspace": "Export Workspace",
+    "Last edited by": "Last edited by {{name}}",
+    "Logout": "Logout"
+}

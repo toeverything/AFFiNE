@@ -11,9 +11,7 @@
         "@mui/icons-material": "^5.8.4",
         "clsx": "^1.2.1",
         "date-fns": "^2.29.2",
-        "i18next": "^21.9.1",
         "jotai": "^1.8.1",
-        "react-i18next": "^11.18.4",
         "tinycolor2": "^1.4.2",
         "turndown": "7.1.1"
     },
