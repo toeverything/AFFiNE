@@ -5,13 +5,13 @@ import {
     SideBarViewIcon,
 } from '@toeverything/components/icons';
 import { IconButton, styled } from '@toeverything/components/ui';
+import { useTranslation } from '@toeverything/datasource/i18n';
 import {
     useCurrentEditors,
     useLocalTrigger,
     useShowSettingsSidebar,
 } from '@toeverything/datasource/state';
 import { useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 import { fsApiSupported } from './FileSystem';
 import { CurrentPageTitle } from './Title';

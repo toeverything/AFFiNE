@@ -6,8 +6,7 @@ import {
     styled,
     Switch,
 } from '@toeverything/components/ui';
-import { useTranslation } from 'react-i18next';
-import { options } from '../../i18n';
+import { LOCALES, useTranslation } from '@toeverything/datasource/i18n';
 import { useSettings } from './use-settings';
 
 export const SettingsList = () => {
@@ -52,7 +51,7 @@ export const SettingsList = () => {
                                     defaultValue={i18n.language}
                                     onChange={changeLanguage}
                                 >
-                                    {options.map(option => (
+                                    {LOCALES.map(option => (
                                         <Option
                                             key={option.value}
                                             value={option.value}

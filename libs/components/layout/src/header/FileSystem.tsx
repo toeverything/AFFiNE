@@ -3,8 +3,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { CloseIcon } from '@toeverything/components/common';
 import { IconButton, MuiSnackbar, styled } from '@toeverything/components/ui';
 import { services } from '@toeverything/datasource/db-service';
+import { useTranslation } from '@toeverything/datasource/i18n';
 import { useLocalTrigger } from '@toeverything/datasource/state';
-import { useTranslation } from 'react-i18next';
+
 const cleanupWorkspace = (workspace: string) =>
     new Promise((resolve, reject) => {
         const req = indexedDB.deleteDatabase(workspace);

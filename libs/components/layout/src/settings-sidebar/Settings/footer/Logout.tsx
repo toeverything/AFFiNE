@@ -1,8 +1,8 @@
 import { MoveToIcon } from '@toeverything/components/icons';
 import { ListItem, styled, Typography } from '@toeverything/components/ui';
+import { useTranslation } from '@toeverything/datasource/i18n';
 import { LOGOUT_COOKIES, LOGOUT_LOCAL_STORAGE } from '@toeverything/utils';
 import { getAuth, signOut } from 'firebase/auth';
-import { useTranslation } from 'react-i18next';
 
 const logout = () => {
     LOGOUT_LOCAL_STORAGE.forEach(name => localStorage.removeItem(name));

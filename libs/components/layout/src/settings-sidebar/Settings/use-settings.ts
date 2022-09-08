@@ -1,6 +1,6 @@
 import { message } from '@toeverything/components/ui';
+import { useTranslation } from '@toeverything/datasource/i18n';
 import { copyToClipboard } from '@toeverything/utils';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useSettingFlags, type SettingFlags } from './use-setting-flags';
 
