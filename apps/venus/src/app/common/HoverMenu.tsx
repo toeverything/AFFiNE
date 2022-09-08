@@ -18,6 +18,7 @@ export function HoverMenu({ title, options, onSelect }: HoverMenuProps) {
                             <ListItem
                                 key={option.value}
                                 href={option.value}
+                                target="_blank"
                                 title={option.value}
                                 onClick={() => {
                                     onSelect(option.value);

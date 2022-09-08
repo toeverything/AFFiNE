@@ -61,22 +61,30 @@ export const AFFiNEHeader = () => {
                 >
                     Blog
                 </Button>
-                <HoverMenu
-                    title="Docs"
-                    options={[
-                        {
-                            title: 'Contribution Guide',
-                            value: 'https://docs.affine.pro/',
-                        },
-                        {
-                            title: 'AFFiNE Ambassador',
-                            value: 'https://docs.affine.pro/affine-ambassadors/',
-                        },
-                    ]}
-                    onSelect={href => {
-                        window.open(href);
+                <Button
+                    onClick={() => window.open('https://docs.affine.pro/')}
+                    variant="plain"
+                    color="neutral"
+                    sx={{
+                        padding: matches ? '0' : '0 0.5em',
+                        fontSize: '16px',
                     }}
-                />
+                    size="md"
+                >
+                    Docs
+                </Button>
+                <Button
+                    onClick={() => window.open('https://feedback.affine.pro/')}
+                    variant="plain"
+                    color="neutral"
+                    sx={{
+                        padding: matches ? '0' : '0 0.5em',
+                        fontSize: '16px',
+                    }}
+                    size="md"
+                >
+                    Feedback
+                </Button>
             </Grid>
             <Grid xs={6} sx={{ display: 'flex', justifyContent: 'right' }}>
                 <Button

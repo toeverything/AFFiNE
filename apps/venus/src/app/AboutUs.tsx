@@ -10,7 +10,7 @@ export const AboutUs = () => {
     return (
         <>
             <AFFiNEHeader />
-            <Grid xs={12} sx={{ display: 'flex', marginTop: '4vh!important' }}>
+            <Grid xs={12} sx={{ display: 'flex', marginTop: '12vh!important' }}>
                 <Box
                     sx={{
                         display: 'inline-flex',

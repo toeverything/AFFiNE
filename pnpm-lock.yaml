@@ -194,11 +194,13 @@ importers:
 
   apps/ligo-virgo:
     specifiers:
+      '@emotion/babel-plugin': ^11.10.2
       '@mui/icons-material': ^5.8.4
       firebase: ^9.9.3
       mini-css-extract-plugin: ^2.6.1
       webpack: ^5.74.0
     dependencies:
+      '@emotion/babel-plugin': 11.10.2
       '@mui/icons-material': 5.8.4
     devDependencies:
       firebase: 9.9.3

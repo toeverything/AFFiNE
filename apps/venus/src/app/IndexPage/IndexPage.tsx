@@ -7,11 +7,11 @@ import { LogoIcon } from '@toeverything/components/icons';
 // eslint-disable-next-line no-restricted-imports
 import { useMediaQuery } from '@mui/material';
 
+import { AFFiNEFooter, AFFiNEHeader, AFFiNEImage } from '../common';
+import { GitHub } from '../Icons';
+import { AlternativesProduct } from './Alternatives';
 import CollaborationImage from './collaboration.png';
-import { AFFiNEFooter, AFFiNEHeader, AFFiNEImage } from './common';
-import { GitHub } from './Icons';
-import { AlternativesProduct } from './IndexPage/Alternatives';
-import { FunctionTabs } from './IndexPage/FunctionTabs';
+import { FunctionTabs } from './FunctionTabs';
 import PageImage from './page.png';
 
 const AFFiNEOnline = (props: { center?: boolean; flat?: boolean }) => {
@@ -57,7 +57,7 @@ const AFFiNEOnline = (props: { center?: boolean; flat?: boolean }) => {
     );
 };
 
-export function App() {
+export function IndexPage() {
     const matches = useMediaQuery('(max-width: 1024px)');
     const { t } = useTranslation();
 

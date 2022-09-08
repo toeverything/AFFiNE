@@ -4,7 +4,7 @@ import { Container } from '@mui/joy';
 import { CssVarsProvider } from '@mui/joy/styles';
 
 import { AboutUs } from './AboutUs';
-import { App } from './App';
+import { IndexPage } from './IndexPage';
 
 const VenusContainer = () => {
     return (
@@ -30,7 +30,7 @@ export function VenusRoutes() {
         <Routes>
             <Route element={<VenusContainer />}>
                 <Route path="/aboutus" element={<AboutUs />} />
-                <Route path="/" element={<App />} />
+                <Route path="/" element={<IndexPage />} />
             </Route>
         </Routes>
     );
