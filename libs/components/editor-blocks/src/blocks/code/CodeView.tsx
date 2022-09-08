@@ -162,9 +162,6 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     };
     useEffect(() => {
         handleLangChange(langType ? langType : DEFAULT_LANG);
-        // setTimeout(() => {
-        //     focusCode();
-        // }, 100);
     }, []);
 
     const copyCode = () => {
