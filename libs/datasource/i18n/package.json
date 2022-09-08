@@ -1,6 +1,9 @@
 {
     "name": "@toeverything/datasource/i18n",
     "version": "0.0.1",
+    "scripts": {
+        "sync": "NODE_OPTIONS=--experimental-fetch ts-node src/scripts/sync.ts"
+    },
     "dependencies": {
         "i18next": "^21.9.1",
         "jotai": "^1.8.1",

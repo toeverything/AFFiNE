@@ -33,10 +33,15 @@ const App = () => {
 };
 ```
 
-## TODO
+## How to sync translations
 
--   [ ] language detection
--   [ ] storage
+-   Set token as environment variable
+
+```shell
+export TOLGEE_API_KEY=tgpak_XXXXXXX
+```
+
+-   Run the `sync` script from package script
 
 ## References
 

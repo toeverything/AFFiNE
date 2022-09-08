@@ -11,7 +11,8 @@
         "noImplicitOverride": true,
         "noPropertyAccessFromIndexSignature": true,
         "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true
+        "noFallthroughCasesInSwitch": true,
+        "resolveJsonModule": true
     },
     "files": [],
     "include": [],
@@ -22,5 +23,11 @@
         {
             "path": "./tsconfig.spec.json"
         }
-    ]
+    ],
+    "ts-node": {
+        "compilerOptions": {
+            "module": "NodeNext"
+        },
+        "esm": true
+    }
 }
