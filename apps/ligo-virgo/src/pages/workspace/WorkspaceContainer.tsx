@@ -9,7 +9,6 @@ import Pages from './pages';
 export function WorkspaceContainer() {
     const { workspace_id } = useParams();
     const { user, currentSpaceId } = useUserAndSpaces();
-
     if (
         user &&
         ![currentSpaceId, 'affine2vin277tcmafwq'].includes(workspace_id)
