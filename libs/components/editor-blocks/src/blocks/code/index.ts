@@ -1,21 +1,21 @@
+import { Protocol } from '@toeverything/datasource/db-service';
 import {
-    BaseView,
     AsyncBlock,
+    BaseView,
     BlockEditor,
     HTML2BlockResult,
 } from '@toeverything/framework/virgo';
-import { Protocol } from '@toeverything/datasource/db-service';
-import { CodeView } from './CodeView';
 import {
     Block2HtmlProps,
     commonBlock2HtmlContent,
     commonHTML2block,
 } from '../../utils/commonBlockClip';
+import { CodeView } from './CodeView';
 
 export class CodeBlock extends BaseView {
     type = Protocol.Block.Type.code;
     public override selectable = true;
-    public override editable = false;
+    public override editable = true;
     // View = CodeView;
     View = CodeView;
     override async onCreate(block: AsyncBlock): Promise<AsyncBlock> {
