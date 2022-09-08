@@ -265,18 +265,18 @@ export class EditorBlock extends ServiceBaseClass {
         }
     }
     async copyPage(
-        workspace_id: string,
+        workspaceId: string,
         source_page_id: string,
         new_page_id: string
     ): Promise<boolean> {
-        const db = await this.database.getDatabase(workspace_id);
+        const db = await this.database.getDatabase(workspaceId);
 
         const source_page = await this.getBlock(
-            workspace_id,
+            workspaceId,
             source_page_id as 'block'
         );
         const new_page = await this.getBlock(
-            workspace_id,
+            workspaceId,
             new_page_id as 'block'
         );
         if (!source_page) {

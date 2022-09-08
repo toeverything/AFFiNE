@@ -57,7 +57,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         },
         ref
     ) => {
-        const { workspace_id, page_id } = useParams();
+        const { workspaceId, page_id } = useParams();
         const BooleanPageTreeItemMoreActions = useFlag(
             'BooleanPageTreeItemMoreActions',
             true
@@ -89,12 +89,12 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                 )}
 
                 <TreeItemContent {...handleProps}>
-                    <TextLink to={`/${workspace_id}/${pageId}`}>
+                    <TextLink to={`/${workspaceId}/${pageId}`}>
                         {value}
                     </TextLink>
                     {BooleanPageTreeItemMoreActions && (
                         <MoreActions
-                            workspaceId={workspace_id}
+                            workspaceId={workspaceId}
                             pageId={pageId}
                             onRemove={onRemove}
                         />

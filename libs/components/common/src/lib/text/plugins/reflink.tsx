@@ -2,8 +2,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Descendant } from 'slate';
 
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { BlockSearchItem } from '@toeverything/datasource/jwt';
 import { styled } from '@toeverything/components/ui';
+import { BlockSearchItem } from '@toeverything/datasource/jwt';
 
 import { BlockPreview } from '../../block-preview';
 
@@ -26,14 +26,14 @@ type InlineRefLinkProps = {
 };
 
 export const InlineRefLink = ({ block, pageId }: InlineRefLinkProps) => {
-    const { workspace_id } = useParams();
+    const { workspaceId } = useParams();
     const navigate = useNavigate();
 
     if (block) {
         return (
             <BlockPreviewContainer
                 block={block}
-                onClick={() => navigate(`/${workspace_id}/${pageId}`)}
+                onClick={() => navigate(`/${workspaceId}/${pageId}`)}
             />
         );
     }

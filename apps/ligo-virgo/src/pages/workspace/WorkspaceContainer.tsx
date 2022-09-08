@@ -7,14 +7,8 @@ import { WorkspaceHome } from './Home';
 import Pages from './pages';
 
 export function WorkspaceContainer() {
-    const { workspace_id } = useParams();
+    const { workspaceId } = useParams();
     const { user, currentSpaceId } = useUserAndSpaces();
-    if (
-        user &&
-        ![currentSpaceId, 'affine2vin277tcmafwq'].includes(workspace_id)
-    ) {
-        // return <Navigate to={`/${currentSpaceId}`} replace={true} />;
-    }
 
     return (
         <Routes>
@@ -22,11 +16,11 @@ export function WorkspaceContainer() {
                 <Route path="/pages" element={<Pages />} />
                 <Route
                     path="/:page_id/edgeless"
-                    element={<Edgeless workspace={workspace_id} />}
+                    element={<Edgeless workspace={workspaceId} />}
                 />
                 <Route
                     path="/:page_id"
-                    element={<Page workspace={workspace_id} />}
+                    element={<Page workspace={workspaceId} />}
                 />
                 <Route path="/" element={<WorkspaceHome />} />
             </Route>

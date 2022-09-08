@@ -9,7 +9,7 @@ const _currentEditors = atom<EditorsMap>({} as EditorsMap);
 
 /** hook for using editors outside page */
 export const useCurrentEditors = () => {
-    const { workspace_id: workspaceId, page_id: pageId } = useParams();
+    const { workspaceId, page_id: pageId } = useParams();
     const { pathname } = useLocation();
     const [currentEditors, setCurrentEditors] = useAtom(_currentEditors);
 

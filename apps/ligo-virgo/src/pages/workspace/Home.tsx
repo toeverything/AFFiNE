@@ -5,22 +5,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 export function WorkspaceHome() {
     const navigate = useNavigate();
-    const { workspace_id } = useParams();
+    const { workspaceId } = useParams();
     const { user } = useUserAndSpaces();
 
     useEffect(() => {
         const navigateToUserInitialPage = async () => {
             const [recentPages, userInitialPageId] = await Promise.all([
-                services.api.userConfig.getRecentPages(workspace_id, user.id),
+                services.api.userConfig.getRecentPages(workspaceId, user.id),
                 services.api.userConfig.getUserInitialPage(
-                    workspace_id,
+                    workspaceId,
                     user.id
                 ),
             ]);
             // if recent pages if null, run initialize task
             if (recentPages.length === 0) {
                 await services.api.editorBlock.copyTemplateToPage(
-                    workspace_id,
+                    workspaceId,
                     userInitialPageId,
                     TemplateFactory.generatePageTemplateByGroupKeys({
                         name: '👋 Get Started with AFFiNE',
@@ -33,11 +33,11 @@ export function WorkspaceHome() {
                 );
             }
             if (userInitialPageId) {
-                navigate(`/${workspace_id}/${userInitialPageId}`);
+                navigate(`/${workspaceId}/${userInitialPageId}`);
             }
         };
         navigateToUserInitialPage();
-    }, [navigate, user.id, workspace_id]);
+    }, [navigate, user.id, workspaceId]);
 
     return null;
 }

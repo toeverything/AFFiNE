@@ -19,7 +19,7 @@ import {
 const page_tree_atom = atom<TreeItems | undefined>([]);
 
 export const usePageTree = ({ indentationWidth = 16 }: DndTreeProps = {}) => {
-    const { workspace_id, page_id } = useParams();
+    const { workspaceId, page_id } = useParams();
     const navigate = useNavigate();
     const [items] = useAtom(page_tree_atom);
     const [activeId, setActiveId] = useState<string | undefined>(undefined);
@@ -56,11 +56,11 @@ export const usePageTree = ({ indentationWidth = 16 }: DndTreeProps = {}) => {
     const savePageTreeData = useCallback(
         async (treeData?: TreeItem[]) => {
             await services.api.pageTree.setPageTree<TreeItem>(
-                workspace_id,
+                workspaceId,
                 treeData || []
             );
         },
-        [workspace_id]
+        [workspaceId]
     );
 
     const resetState = useCallback(() => {
@@ -129,14 +129,14 @@ export const usePageTree = ({ indentationWidth = 16 }: DndTreeProps = {}) => {
     const handleRemove = useCallback(
         async (id: string) => {
             await savePageTreeData(removeItem(items, id));
-            await services.api.userConfig.removePage(workspace_id, id);
+            await services.api.userConfig.removePage(workspaceId, id);
             //remove page from jwst
-            await services.api.pageTree.removePage(workspace_id, id);
+            await services.api.pageTree.removePage(workspaceId, id);
             if (id === page_id) {
-                navigate(`/${workspace_id}`);
+                navigate(`/${workspaceId}`);
             }
         },
-        [items, savePageTreeData, workspace_id]
+        [items, savePageTreeData, workspaceId]
     );
 
     const handleAddPage = useCallback(
@@ -177,14 +177,14 @@ export const usePageTree = ({ indentationWidth = 16 }: DndTreeProps = {}) => {
 
 export const useDndTreeAutoUpdate = () => {
     const [, set_items] = useAtom(page_tree_atom);
-    const { workspace_id, page_id } = useParams();
+    const { workspaceId, page_id } = useParams();
 
     const fetch_page_tree_data = useCallback(async () => {
         const pages = await services.api.pageTree.getPageTree<TreeItem>(
-            workspace_id
+            workspaceId
         );
         set_items(pages);
-    }, [set_items, workspace_id]);
+    }, [set_items, workspaceId]);
 
     useEffect(() => {
         fetch_page_tree_data();
@@ -195,7 +195,7 @@ export const useDndTreeAutoUpdate = () => {
         let unobserve: () => void;
         const auto_update_page_tree = async () => {
             unobserve = await services.api.pageTree.observe(
-                { workspace: workspace_id, page: page_id },
+                { workspace: workspaceId, page: page_id },
                 () => {
                     fetch_page_tree_data();
                 }
@@ -206,5 +206,5 @@ export const useDndTreeAutoUpdate = () => {
         return () => {
             unobserve?.();
         };
-    }, [fetch_page_tree_data, page_id, workspace_id]);
+    }, [fetch_page_tree_data, page_id, workspaceId]);
 };
