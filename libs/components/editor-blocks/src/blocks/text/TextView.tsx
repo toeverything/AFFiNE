@@ -97,6 +97,23 @@ export const TextView = ({
     const onBackspace: TextProps['handleBackSpace'] = editor.withBatch(
         async props => {
             const { isCollAndStart } = props;
+            const activeBlockIds =
+                editor.selectionManager.getSelectedNodesIds();
+
+            // when only one group selected , remove this group block
+            if (activeBlockIds && activeBlockIds.length === 1) {
+                const activeBlock = await editor.getBlockById(
+                    activeBlockIds[0]
+                );
+
+                if (
+                    activeBlock &&
+                    activeBlock.type === Protocol.Block.Type.group
+                ) {
+                    await activeBlock.remove();
+                    return true;
+                }
+            }
             if (!isCollAndStart) {
                 return false;
             }
