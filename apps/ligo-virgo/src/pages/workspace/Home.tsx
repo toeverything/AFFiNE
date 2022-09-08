@@ -9,18 +9,19 @@ export function WorkspaceHome() {
     const { user } = useUserAndSpaces();
 
     useEffect(() => {
-        const navigate_to_user_initial_page = async () => {
-            const [recent_pages, user_initial_page_id] = await Promise.all([
+        const navigateToUserInitialPage = async () => {
+            const [recentPages, userInitialPageId] = await Promise.all([
                 services.api.userConfig.getRecentPages(workspace_id, user.id),
                 services.api.userConfig.getUserInitialPage(
                     workspace_id,
                     user.id
                 ),
             ]);
-            if (recent_pages.length === 0) {
+            // if recent pages if null, run initialize task
+            if (recentPages.length === 0) {
                 await services.api.editorBlock.copyTemplateToPage(
                     workspace_id,
-                    user_initial_page_id,
+                    userInitialPageId,
                     TemplateFactory.generatePageTemplateByGroupKeys({
                         name: '👋 Get Started with AFFiNE',
                         groupKeys: [
@@ -31,10 +32,11 @@ export function WorkspaceHome() {
                     })
                 );
             }
-
-            navigate(`/${workspace_id}/${user_initial_page_id}`);
+            if (userInitialPageId) {
+                navigate(`/${workspace_id}/${userInitialPageId}`);
+            }
         };
-        navigate_to_user_initial_page();
+        navigateToUserInitialPage();
     }, [navigate, user.id, workspace_id]);
 
     return null;
