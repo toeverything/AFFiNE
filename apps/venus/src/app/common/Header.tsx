@@ -9,6 +9,7 @@ import Select from '@mui/joy/Select';
 import GitHubIcon from '@mui/icons-material/GitHub';
 // eslint-disable-next-line no-restricted-imports
 import { styled, useMediaQuery } from '@mui/material';
+import AFFiNETextLogo from './affine-text-logo.png';
 import { HoverMenu } from './HoverMenu';
 
 import { options } from '../i18n';
@@ -16,7 +17,7 @@ import { options } from '../i18n';
 export const AFFiNEHeader = () => {
     const matches = useMediaQuery('(max-width: 1024px)');
     const navigate = useNavigate();
-    const { i18n } = useTranslation();
+    const { i18n, t } = useTranslation();
 
     const changeLanguage = (event: any) => {
         i18n.changeLanguage(event);
@@ -25,18 +26,11 @@ export const AFFiNEHeader = () => {
     return (
         <Container container spacing={2}>
             <Grid xs={6} sx={{ display: 'flex', alignItems: 'center' }}>
-                <Button
-                    size="lg"
-                    variant="plain"
-                    sx={{
-                        padding: matches ? '0' : '0 0.5em',
-                        ':hover': { backgroundColor: 'unset' },
-                        fontSize: '24px',
-                    }}
+                <StyledImage
+                    src={AFFiNETextLogo}
+                    alt="affine"
                     onClick={() => navigate('/')}
-                >
-                    AFFiNE
-                </Button>
+                />
                 <Button
                     onClick={() => navigate('/aboutus')}
                     variant="plain"
@@ -47,7 +41,7 @@ export const AFFiNEHeader = () => {
                     }}
                     size="md"
                 >
-                    About us
+                    {t('AboutUs')}
                 </Button>
                 <Button
                     onClick={() => window.open('https://blog.affine.pro')}
@@ -59,7 +53,7 @@ export const AFFiNEHeader = () => {
                     }}
                     size="md"
                 >
-                    Blog
+                    {t('Blog')}
                 </Button>
                 <Button
                     onClick={() => window.open('https://docs.affine.pro/')}
@@ -71,7 +65,7 @@ export const AFFiNEHeader = () => {
                     }}
                     size="md"
                 >
-                    Docs
+                    {t('Docs')}
                 </Button>
                 <Button
                     onClick={() => window.open('https://feedback.affine.pro/')}
@@ -83,7 +77,7 @@ export const AFFiNEHeader = () => {
                     }}
                     size="md"
                 >
-                    Feedback
+                    {t('Feedback')}
                 </Button>
             </Grid>
             <Grid xs={6} sx={{ display: 'flex', justifyContent: 'right' }}>
@@ -111,10 +105,10 @@ export const AFFiNEHeader = () => {
                     }}
                     size="md"
                 >
-                    Try it online
+                    {t('Try it Online')}
                 </Button>
                 <HoverMenu
-                    title="Contact us"
+                    title={t('ContactUs')}
                     options={[
                         {
                             title: 'Discord',
@@ -171,4 +165,10 @@ const Container = styled(Grid)({
     maxWidth: '1440px',
     margin: 'auto',
     marginTop: '0 !important',
+});
+
+const StyledImage = styled('img')({
+    height: '24px',
+    marginRight: '16px',
+    cursor: 'pointer',
 });
