@@ -99,7 +99,7 @@ const langs: Record<string, any> = {
     dockerfile: () => StreamLanguage.define(dockerFile),
     r: () => StreamLanguage.define(r),
 };
-const DEFAULT_LANG = 'javascript';
+const DEFAULT_LANG = 'markdown';
 const CodeBlock = styled('div')(({ theme }) => ({
     backgroundColor: '#F2F5F9',
     padding: '8px 24px',
@@ -142,10 +142,13 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     const langType: string = block.getProperty('lang');
     const [extensions, setExtensions] = useState<Extension[]>();
     const codeMirror = useRef<ReactCodeMirrorRef>();
-    useOnSelect(block.id, (_is_select: boolean) => {
+    const focusCode = () => {
         if (codeMirror.current) {
             codeMirror?.current?.view?.focus();
         }
+    };
+    useOnSelect(block.id, (_is_select: boolean) => {
+        focusCode();
     });
     const onChange = (value: string) => {
         block.setProperty('text', {
@@ -158,6 +161,9 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     };
     useEffect(() => {
         handleLangChange(langType ? langType : DEFAULT_LANG);
+        setTimeout(() => {
+            focusCode();
+        }, 100);
     }, []);
 
     const copyCode = () => {
