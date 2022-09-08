@@ -4,8 +4,8 @@ import {
     initReactI18next,
     useTranslation,
 } from 'react-i18next';
-import en_US from '../resources/en.json';
-import zh_CN from '../resources/zh.json';
+import en_US from './resources/en.json';
+import zh_CN from './resources/zh.json';
 
 // See https://react.i18next.com/latest/typescript
 declare module 'react-i18next' {
