@@ -406,6 +406,7 @@ export const TextManage = forwardRef<ExtendedTextUtils, CreateTextView>(
                 textRef.current.isEmpty() || textRef.current.isSelectAll();
 
             const ifSelectGroup = await selectGroupBlocks(isSelectAll);
+
             if (ifSelectGroup) {
                 return false;
             }
