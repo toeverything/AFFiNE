@@ -1,8 +1,11 @@
 {
     "translation": {
         "Blog": "Blog",
-        "AboutUs": "About AboutUs",
+        "AboutUs": "About Us",
         "Open Source": "Open Source",
+        "Docs": "Docs",
+        "Feedback": "Feedback",
+        "ContactUs": "Contact Us",
         "Privacy First": "Privacy First",
         "Alternative": "Alternative",
         "Check GitHub": "Check GitHub",

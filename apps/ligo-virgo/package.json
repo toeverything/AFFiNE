@@ -10,6 +10,7 @@
     "keywords": [],
     "author": "AFFiNE <developer@affine.pro>",
     "dependencies": {
+        "@emotion/babel-plugin": "^11.10.2",
         "@mui/icons-material": "^5.8.4"
     },
     "devDependencies": {
