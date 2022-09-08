@@ -8,7 +8,7 @@ export const useAddComment = ({
     selectionInfo,
     setShow,
 }: WithEditorSelectionType) => {
-    const { workspaceId, page_id: pageId } = useParams();
+    const { workspaceId, pageId } = useParams();
     const [currentComment, setCurrentComment] = useState('');
 
     const createComment = useCallback(async (): Promise<{

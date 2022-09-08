@@ -34,7 +34,7 @@ export function Page(props: PageProps) {
     const [activeTab, setActiveTab] = useState(
         TabMap.get(TAB_TITLE.PAGES).value
     );
-    const { page_id } = useParams();
+    const { pageId } = useParams();
     const { showSpaceSidebar, fixedDisplay, setSpaceSidebarVisible } =
         useShowSpaceSidebar();
     const dailyNotesFlag = useFlag('BooleanDailyNotes', false);
@@ -79,7 +79,7 @@ export function Page(props: PageProps) {
                                 </div>
                                 <div>
                                     <CollapsiblePageTree title="PAGES">
-                                        {page_id ? <PageTree /> : null}
+                                        {pageId ? <PageTree /> : null}
                                     </CollapsiblePageTree>
                                 </div>
                             </div>
@@ -91,7 +91,7 @@ export function Page(props: PageProps) {
                     </WorkspaceSidebarContent>
                 </WorkspaceSidebar>
             </LigoLeftContainer>
-            <EditorContainer workspace={props.workspace} pageId={page_id} />
+            <EditorContainer workspace={props.workspace} pageId={pageId} />
         </LigoApp>
     );
 }

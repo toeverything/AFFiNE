@@ -44,7 +44,7 @@ export const DoubleLinkMenu = ({
     hooks,
     style,
 }: DoubleLinkMenuProps) => {
-    const { page_id: curPageId } = useParams();
+    const { pageId: curPageId } = useParams();
     const [isOpen, setIsOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
     const dialogRef = useRef<HTMLDivElement>();

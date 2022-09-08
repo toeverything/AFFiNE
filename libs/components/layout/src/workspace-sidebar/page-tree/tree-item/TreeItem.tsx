@@ -57,7 +57,9 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         },
         ref
     ) => {
-        const { workspaceId, page_id } = useParams();
+        const params = useParams();
+        const workspaceId = params['workspaceId'];
+        const curPageId = params['pageId'];
         const BooleanPageTreeItemMoreActions = useFlag(
             'BooleanPageTreeItemMoreActions',
             true
@@ -71,7 +73,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                 disableSelection={disableSelection}
                 disableInteraction={disableInteraction}
                 spacing={`${indentationWidth * depth + 12}px`}
-                active={pageId === page_id}
+                active={pageId === curPageId}
                 {...props}
             >
                 {childCount !== 0 ? (

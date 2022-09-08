@@ -15,11 +15,11 @@ export function WorkspaceContainer() {
             <Route path="/" element={<WorkspaceRootContainer />}>
                 <Route path="/pages" element={<Pages />} />
                 <Route
-                    path="/:page_id/edgeless"
+                    path="/:pageId/edgeless"
                     element={<Edgeless workspace={workspaceId} />}
                 />
                 <Route
-                    path="/:page_id"
+                    path="/:pageId"
                     element={<Page workspace={workspaceId} />}
                 />
                 <Route path="/" element={<WorkspaceHome />} />

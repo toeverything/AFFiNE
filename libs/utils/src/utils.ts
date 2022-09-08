@@ -6,8 +6,8 @@ export function getUserDisplayName(user?: UserInfo) {
 }
 
 /**
- * Get page_id from URL
- * @returns page_id
+ * Get pageId from URL
+ * @returns pageId
  */
 export function getPageId() {
     const path = window.location.pathname.match(/\/(\w+)\/(\w+)/);
