@@ -90,7 +90,9 @@ export const TextView = ({
         await block.removeChildren();
         await block.after(nextBlock);
 
-        editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+        setTimeout(() => {
+            editor.selectionManager.activeNodeByNodeId(nextBlock.id, 'start');
+        });
         return true;
     };
 
