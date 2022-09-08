@@ -45,9 +45,11 @@ import { DuplicateIcon } from '@toeverything/components/icons';
 import { Option, Select, styled } from '@toeverything/components/ui';
 import { CreateView } from '@toeverything/framework/virgo';
 import { copyToClipboard } from '@toeverything/utils';
+
 import { elixir } from 'codemirror-lang-elixir';
 import { useEffect, useRef, useState } from 'react';
 import { StyleWithAtRules } from 'style9';
+
 import CodeMirror, { ReactCodeMirrorRef } from './CodeMirror';
 
 interface CreateCodeView extends CreateView {

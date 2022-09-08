@@ -194,11 +194,13 @@ importers:
 
   apps/ligo-virgo:
     specifiers:
+      '@emotion/babel-plugin': ^11.10.2
       '@mui/icons-material': ^5.8.4
       firebase: ^9.9.3
       mini-css-extract-plugin: ^2.6.1
       webpack: ^5.74.0
     dependencies:
+      '@emotion/babel-plugin': 11.10.2
       '@mui/icons-material': 5.8.4
     devDependencies:
       firebase: 9.9.3
@@ -213,6 +215,7 @@ importers:
 
   apps/venus:
     specifiers:
+      '@emotion/babel-plugin': ^11.10.2
       '@emotion/react': ^11.10.0
       '@emotion/styled': ^11.10.0
       '@mdx-js/loader': ^2.1.3
@@ -227,6 +230,7 @@ importers:
       react-i18next: ^11.18.4
       webpack: ^5.74.0
     dependencies:
+      '@emotion/babel-plugin': 11.10.2
       '@emotion/react': 11.10.0
       '@emotion/styled': 11.10.0_@emotion+react@11.10.0
       '@mui/joy': 5.0.0-alpha.42_72v32ofbtgpmxm7mhvtx474vfu
@@ -2813,8 +2817,8 @@ packages:
       tslib: 2.4.0
     dev: false
 
-  /@emotion/babel-plugin/11.10.0:
-    resolution: {integrity: sha512-xVnpDAAbtxL1dsuSelU5A7BnY/lftws0wUexNJZTPsvX/1tM4GZJbclgODhvW4E+NH7E5VFcH0bBn30NvniPJA==}
+  /@emotion/babel-plugin/11.10.2:
+    resolution: {integrity: sha512-xNQ57njWTFVfPAc3cjfuaPdsgLp5QOSuRsj9MA6ndEhH/AzuZM86qIQzt6rq+aGBwj3n5/TkLmU5lhAfdRmogA==}
     peerDependencies:
       '@babel/core': ^7.0.0
     peerDependenciesMeta:
@@ -2920,7 +2924,7 @@ packages:
         optional: true
     dependencies:
       '@babel/runtime': 7.18.6
-      '@emotion/babel-plugin': 11.10.0
+      '@emotion/babel-plugin': 11.10.2
       '@emotion/cache': 11.10.1
       '@emotion/serialize': 1.1.0
       '@emotion/utils': 1.2.0
@@ -3022,7 +3026,7 @@ packages:
         optional: true
     dependencies:
       '@babel/runtime': 7.18.6
-      '@emotion/babel-plugin': 11.10.0
+      '@emotion/babel-plugin': 11.10.2
       '@emotion/is-prop-valid': 1.2.0
       '@emotion/react': 11.10.0
       '@emotion/serialize': 1.1.0

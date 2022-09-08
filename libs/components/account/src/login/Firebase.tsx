@@ -25,9 +25,9 @@ const GoogleIcon = () => (
         <g
             id="Page-1"
             stroke="none"
-            stroke-width="1"
+            strokeWidth="1"
             fill="none"
-            fill-rule="evenodd"
+            fillRule="evenodd"
         >
             <g id="Artboard-1" transform="translate(-332.000000, -639.000000)">
                 <g

@@ -4,9 +4,12 @@
         "AboutUs": "关于我们",
         "Open Source": "开源",
         "Privacy First": "隐私第一",
+        "Docs": "文档",
+        "Feedback": "反馈",
+        "ContactUs": "联系我们",
         "Alternative": "的另一种选择",
         "Check GitHub": "GitHub中查看",
-        "Try it Online": "在线上试试",
+        "Try it Online": "在线试用",
         "description1": {
             "part1": "Affine是面向专业人士的下一代协同知识库",
             "part2": "它不仅仅是一个文档、白板和表格的集合。",

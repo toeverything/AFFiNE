@@ -1,0 +1,1 @@
+export { IndexPage } from './IndexPage';
