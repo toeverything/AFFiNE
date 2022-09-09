@@ -46,7 +46,7 @@ export const AffineHeader = () => {
     useUserAndSpaces();
 
     const showCenterTab =
-        (params['workspace_id'] || pathname.includes('/space/')) && params['*'];
+        (params['workspaceId'] || pathname.includes('/space/')) && params['*'];
 
     if (hideAffineHeader(pathname)) {
         return null;
@@ -82,7 +82,7 @@ export const AffineHeader = () => {
                                     isEdgelessView
                                         ? navigate(
                                               `/${
-                                                  params['workspace_id'] ||
+                                                  params['workspaceId'] ||
                                                   'space'
                                               }/${params['*'].slice(0, -11)}`
                                           )
@@ -108,7 +108,7 @@ export const AffineHeader = () => {
                                         ? null
                                         : navigate(
                                               `/${
-                                                  params['workspace_id'] ||
+                                                  params['workspaceId'] ||
                                                   'space'
                                               }/${params['*']}` + '/edgeless'
                                           )

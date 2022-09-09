@@ -38,7 +38,7 @@ export type CollapsiblePageTreeProps = {
 export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {
     const { className, style, children, title, initialOpen = true } = props;
     const navigate = useNavigate();
-    const { workspace_id, page_id } = useParams();
+    const { workspaceId, pageId } = useParams();
 
     const { handleAddPage } = usePageTree();
     const { addPageToday } = useCalendarHeatmap();
@@ -46,18 +46,18 @@ export function CollapsiblePageTree(props: CollapsiblePageTreeProps) {
     const [open, setOpen] = useState(initialOpen);
 
     const create_page = useCallback(async () => {
-        if (page_id) {
+        if (pageId) {
             const newPage = await services.api.editorBlock.create({
-                workspace: workspace_id,
+                workspace: workspaceId,
                 type: 'page' as const,
             });
 
             await handleAddPage(newPage.id);
             addPageToday();
 
-            navigate(`/${workspace_id}/${newPage.id}`);
+            navigate(`/${workspaceId}/${newPage.id}`);
         }
-    }, [addPageToday, handleAddPage, navigate, page_id, workspace_id]);
+    }, [addPageToday, handleAddPage, navigate, pageId, workspaceId]);
 
     const [newPageBtnVisible, setNewPageBtnVisible] = useState<boolean>(false);
 

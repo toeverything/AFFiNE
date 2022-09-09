@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
 import { services } from '@toeverything/datasource/db-service';
+import { useCallback, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { WithEditorSelectionType } from '../menu/inline-menu/types';
 
 export const useAddComment = ({
@@ -8,7 +8,7 @@ export const useAddComment = ({
     selectionInfo,
     setShow,
 }: WithEditorSelectionType) => {
-    const { workspace_id: workspaceId, page_id: pageId } = useParams();
+    const { workspaceId, pageId } = useParams();
     const [currentComment, setCurrentComment] = useState('');
 
     const createComment = useCallback(async (): Promise<{

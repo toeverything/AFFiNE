@@ -350,7 +350,7 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
                     const [file] = (await fromEvent(handles)) as File[];
                     const binary = await file?.arrayBuffer();
                     console.log(this._provider.providers);
-                    let { indexeddb } = (
+                    const { indexeddb } = (
                         this._provider.providers as any[]
                     ).find(p => p.indexeddb);
                     await indexeddb?.idb?.clearData();
@@ -391,9 +391,9 @@ export class YjsAdapter implements AsyncDatabaseAdapter<YjsContentOperation> {
             },
             parse: () => this._doc.toJSON(),
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            parse_page: (page_id: string) => {
+            parse_page: (pageId: string) => {
                 const blocks = this._blocks.toJSON();
-                return resolve_block(blocks, page_id);
+                return resolve_block(blocks, pageId);
             },
             // eslint-disable-next-line @typescript-eslint/naming-convention
             parse_pages: (resolve = false) => {

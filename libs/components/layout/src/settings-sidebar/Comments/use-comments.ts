@@ -9,7 +9,7 @@ import { useParams } from 'react-router-dom';
 import type { CommentInfo } from './type';
 
 export const useComments = () => {
-    const { workspace_id: workspaceId, page_id: pageId } = useParams();
+    const { workspaceId, pageId } = useParams();
 
     const [comments, setComments] = useState<CommentInfo[]>([]);
     const [observeIds, setObserveIds] = useState<string[]>([]);
@@ -71,7 +71,7 @@ export const useComments = () => {
 };
 
 export const useActiveComment = () => {
-    const { workspace_id: workspaceId, page_id: pageId } = useParams();
+    const { workspaceId, pageId } = useParams();
     const { currentEditors } = useCurrentEditors();
     const editor = useMemo(() => {
         return currentEditors[pageId] as Virgo;

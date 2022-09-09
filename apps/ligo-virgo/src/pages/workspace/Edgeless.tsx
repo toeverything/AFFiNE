@@ -14,7 +14,7 @@ type EdgelessProps = {
 };
 
 export const Edgeless = (props: EdgelessProps) => {
-    const { page_id } = useParams();
+    const { pageId } = useParams();
     const { user } = useUserAndSpaces();
 
     useEffect(() => {
@@ -31,7 +31,5 @@ export const Edgeless = (props: EdgelessProps) => {
         update_recent_pages();
     }, [user, props.workspace]);
 
-    return (
-        <MemoAffineBoard workspace={props.workspace} rootBlockId={page_id} />
-    );
+    return <MemoAffineBoard workspace={props.workspace} rootBlockId={pageId} />;
 };

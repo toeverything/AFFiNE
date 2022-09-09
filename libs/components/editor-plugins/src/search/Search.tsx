@@ -47,7 +47,7 @@ type SearchProps = {
 };
 
 export const Search = (props: SearchProps) => {
-    const { workspace_id: workspaceId } = useParams();
+    const { workspaceId } = useParams();
     const navigate = useNavigate();
 
     const [open, setOpen] = useState(false);
