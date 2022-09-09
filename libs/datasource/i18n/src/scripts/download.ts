@@ -86,7 +86,7 @@ const main = async () => {
                     },
                     null,
                     4
-                )
+                ) + '\n'
             );
         });
 
