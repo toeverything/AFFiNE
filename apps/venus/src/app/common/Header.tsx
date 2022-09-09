@@ -139,34 +139,6 @@ export const AFFiNEHeader = () => {
                         window.open(href);
                     }}
                 />
-                <HoverMenu
-                    title={t('ContactUs')}
-                    options={[
-                        {
-                            title: 'Discord',
-                            value: 'https://discord.gg/Arn7TqJBvG',
-                        },
-                        {
-                            title: 'Telegram',
-                            value: 'https://t.me/affineworkos',
-                        },
-                        {
-                            title: 'Reddit',
-                            value: 'https://www.reddit.com/r/Affine/',
-                        },
-                        {
-                            title: 'Medium',
-                            value: 'https://medium.com/@affineworkos',
-                        },
-                        {
-                            title: 'Email',
-                            value: 'mailto:contact@toeverything.info',
-                        },
-                    ]}
-                    onSelect={href => {
-                        window.open(href);
-                    }}
-                />
                 <Select
                     defaultValue="en"
                     sx={{ display: matchesIPAD ? 'none' : 'intial' }}
@@ -192,6 +164,7 @@ const Container = styled(Grid)({
     transform: 'translateX(-50%)',
     width: '100%',
     paddingTop: '1em',
+    paddingBottom: '1em',
     backgroundColor: '#fff',
     zIndex: 1500,
     maxWidth: '1440px',
