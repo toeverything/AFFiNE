@@ -16,7 +16,7 @@ import {
 } from '../../components/text-manage';
 
 export const PageView = ({ block, editor }: CreateView) => {
-    const { workspace_id } = useParams();
+    const { workspaceId } = useParams();
     const textRef = useRef<ExtendedTextUtils>(null);
     const [backLinks, setBackLinks] =
         useState<Awaited<ReturnType<typeof editor.search>>>();
@@ -100,7 +100,7 @@ export const PageView = ({ block, editor }: CreateView) => {
                 className={style9(styles.content)}
                 suppressContentEditableWarning
             > */}
-            <BackLink blocks={backLinks} workspaceId={workspace_id} />
+            <BackLink blocks={backLinks} workspaceId={workspaceId} />
             {/*{block.childrenIds.map(childId => (*/}
             {/*    <RenderBlock key={childId} blockId={childId} />*/}
             {/*))}*/}

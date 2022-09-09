@@ -265,37 +265,34 @@ export class EditorBlock extends ServiceBaseClass {
         }
     }
     async copyPage(
-        workspace_id: string,
-        source_page_id: string,
-        new_page_id: string
+        workspaceId: string,
+        sourcePageId: string,
+        newPageId: string
     ): Promise<boolean> {
-        const db = await this.database.getDatabase(workspace_id);
+        const db = await this.database.getDatabase(workspaceId);
 
-        const source_page = await this.getBlock(
-            workspace_id,
-            source_page_id as 'block'
+        const sourcePage = await this.getBlock(
+            workspaceId,
+            sourcePageId as 'block'
         );
-        const new_page = await this.getBlock(
-            workspace_id,
-            new_page_id as 'block'
-        );
-        if (!source_page) {
+        const newPage = await this.getBlock(workspaceId, newPageId as 'block');
+        if (!sourcePage) {
             return false;
         }
-        const source_page_children = source_page.children;
-        const decorations = source_page.getDecorations();
+        const sourcePageChildren = sourcePage.children;
+        const decorations = sourcePage.getDecorations();
         Object.entries(decorations).forEach(([key, value]) => {
-            new_page?.setDecoration(key, source_page.getDecoration(key));
+            newPage?.setDecoration(key, sourcePage.getDecoration(key));
         });
 
         //@ts-ignore
-        this.decorate_page_title(new_page, 'copy from ');
+        this.decorate_page_title(newPage, 'copy from ');
 
-        for (let i = 0; i < source_page_children.length; i++) {
-            const source_page_child = await db.get(
-                source_page_children[i] as 'block'
+        for (let i = 0; i < sourcePageChildren.length; i++) {
+            const sourcePageChild = await db.get(
+                sourcePageChildren[i] as 'block'
             );
-            new_page?.insertChildren(source_page_child);
+            newPage?.insertChildren(sourcePageChild);
         }
         return true;
     }

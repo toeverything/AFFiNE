@@ -50,7 +50,7 @@ const MESSAGES = {
 
 function PageSettingPortal() {
     const [alertOpen, setAlertOpen] = useState(false);
-    const { workspace_id } = useParams();
+    const { workspaceId } = useParams();
     const [pageBlock, setPageBlock] = useState<PageBlock>();
 
     const params = useParams();
@@ -64,7 +64,7 @@ function PageSettingPortal() {
 
     const fetchPageBlock = useCallback(async () => {
         const dbPageBlock = await services.api.editorBlock.getBlock(
-            workspace_id,
+            workspaceId,
             pageId
         );
         if (!dbPageBlock) return;
@@ -78,11 +78,11 @@ function PageSettingPortal() {
                 //@ts-ignore
                 text.value[0].text,
         });
-    }, [workspace_id, pageId]);
+    }, [workspaceId, pageId]);
 
     useEffect(() => {
         fetchPageBlock();
-    }, [workspace_id, pageId, fetchPageBlock]);
+    }, [workspaceId, pageId, fetchPageBlock]);
     const redirectToPage = (newWorkspaceId: string, newPageId: string) => {
         navigate('/' + newWorkspaceId + '/' + newPageId);
     };
@@ -90,23 +90,23 @@ function PageSettingPortal() {
     const handleDuplicatePage = async () => {
         //create page
         const newPage = await services.api.editorBlock.create({
-            workspace: workspace_id,
+            workspace: workspaceId,
             type: 'page' as const,
         });
         //add page to tree
         await services.api.pageTree.addNextPageToWorkspace(
-            workspace_id,
+            workspaceId,
             pageId,
             newPage.id
         );
         //copy source page to new page
         await services.api.editorBlock.copyPage(
-            workspace_id,
+            workspaceId,
             pageId,
             newPage.id
         );
 
-        redirectToPage(workspace_id, newPage.id);
+        redirectToPage(workspaceId, newPage.id);
     };
 
     const handleCopy = () => {
@@ -128,7 +128,7 @@ function PageSettingPortal() {
             .inspector()
             .load()
             .then(() => {
-                window.location.href = `/${workspace_id}/`;
+                window.location.href = `/${workspaceId}/`;
             });
     };
 
@@ -145,7 +145,7 @@ function PageSettingPortal() {
                 fullWidthChecked: checked,
             },
             id: pageId,
-            workspace: workspace_id,
+            workspace: workspaceId,
         });
     };
 

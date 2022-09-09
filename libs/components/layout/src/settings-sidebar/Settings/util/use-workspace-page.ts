@@ -7,7 +7,7 @@ interface UseWorkspaceAndPageIdReturn {
 
 export const useWorkspaceAndPageId = (): UseWorkspaceAndPageIdReturn => {
     const params = useParams();
-    const workspaceId = params['workspace_id'];
+    const workspaceId = params['workspaceId'];
     const pageId = params['*'].split('/')[0];
     return {
         workspaceId,

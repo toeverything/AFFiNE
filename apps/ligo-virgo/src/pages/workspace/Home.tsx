@@ -5,22 +5,23 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 export function WorkspaceHome() {
     const navigate = useNavigate();
-    const { workspace_id } = useParams();
+    const { workspaceId } = useParams();
     const { user } = useUserAndSpaces();
 
     useEffect(() => {
-        const navigate_to_user_initial_page = async () => {
-            const [recent_pages, user_initial_page_id] = await Promise.all([
-                services.api.userConfig.getRecentPages(workspace_id, user.id),
+        const navigateToUserInitialPage = async () => {
+            const [recentPages, userInitialPageId] = await Promise.all([
+                services.api.userConfig.getRecentPages(workspaceId, user.id),
                 services.api.userConfig.getUserInitialPage(
-                    workspace_id,
+                    workspaceId,
                     user.id
                 ),
             ]);
-            if (recent_pages.length === 0) {
+            // if recent pages if null, run initialize task
+            if (recentPages.length === 0) {
                 await services.api.editorBlock.copyTemplateToPage(
-                    workspace_id,
-                    user_initial_page_id,
+                    workspaceId,
+                    userInitialPageId,
                     TemplateFactory.generatePageTemplateByGroupKeys({
                         name: '👋 Get Started with AFFiNE',
                         groupKeys: [
@@ -31,11 +32,12 @@ export function WorkspaceHome() {
                     })
                 );
             }
-
-            navigate(`/${workspace_id}/${user_initial_page_id}`);
+            if (userInitialPageId) {
+                navigate(`/${workspaceId}/${userInitialPageId}`);
+            }
         };
-        navigate_to_user_initial_page();
-    }, [navigate, user.id, workspace_id]);
+        navigateToUserInitialPage();
+    }, [navigate, user.id, workspaceId]);
 
     return null;
 }
