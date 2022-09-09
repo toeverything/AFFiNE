@@ -7,7 +7,6 @@
     },
     "dependencies": {
         "i18next": "^21.9.1",
-        "jotai": "^1.8.1",
         "react-i18next": "^11.18.4"
     }
 }

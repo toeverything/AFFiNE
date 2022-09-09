@@ -79,8 +79,7 @@ const differenceObject = (
 };
 
 function warnDiff(diff: { add: string[]; remove: string[]; modify: string[] }) {
-    if (!diff.add.length) {
-    } else {
+    if (diff.add.length) {
         console.log('New keys found:', diff.add.join(', '));
         //See https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-notice-message
         process.env['CI'] &&
