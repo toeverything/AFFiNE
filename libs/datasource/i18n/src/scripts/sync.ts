@@ -78,6 +78,42 @@ const differenceObject = (
     return { add, remove, modify };
 };
 
+function warnDiff(diff: { add: string[]; remove: string[]; modify: string[] }) {
+    if (!diff.add.length) {
+    } else {
+        console.log('New keys found:', diff.add.join(', '));
+        //See https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-notice-message
+        process.env['CI'] &&
+            console.log(
+                `::notice file=${BASE_JSON_PATH},line=1,title=New keys::${diff.add.join(
+                    ', '
+                )}`
+            );
+    }
+    if (diff.remove.length) {
+        console.warn('[WARN]', 'Unused keys found:', diff.remove.join(', '));
+        process.env['CI'] &&
+            console.warn(
+                `::notice file=${BASE_JSON_PATH},line=1,title=Unused keys::${diff.remove.join(
+                    ', '
+                )}`
+            );
+    }
+    if (diff.modify.length) {
+        console.warn(
+            '[WARN]',
+            'Inconsistent keys found:',
+            diff.modify.join(', ')
+        );
+        process.env['CI'] &&
+            console.warn(
+                `::warning file=${BASE_JSON_PATH},line=1,title=Inconsistent keys::${diff.modify.join(
+                    ', '
+                )}`
+            );
+    }
+}
+
 const main = async () => {
     console.log('Loading local base translations...');
     const baseLocalTranslations = JSON.parse(
@@ -107,16 +143,13 @@ const main = async () => {
     );
 
     console.log(''); // new line
-    diff.add.length && console.log('New keys found:', diff.add.join(', '));
-    diff.remove.length &&
-        console.warn('[WARN]', 'Unused keys found:', diff.remove.join(', '));
-    diff.modify.length &&
-        console.warn(
-            '[WARN]',
-            'Inconsistent keys found:',
-            diff.modify.join(', ')
-        );
+    warnDiff(diff);
     console.log(''); // new line
+
+    if (process.argv.slice(2).includes('--check')) {
+        // check mode
+        return;
+    }
 
     diff.add.forEach(async key => {
         const val = flatLocalTranslations[key];
