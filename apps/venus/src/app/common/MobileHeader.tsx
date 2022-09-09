@@ -75,16 +75,28 @@ export const MobileHeader = () => {
             >
                 <StyledDrawerContainer>
                     <List>
-                        <ListItemButton>
+                        <ListItemButton onClick={() => navigate('/aboutus')}>
                             <ListItemText primary={t('AboutUs') as string} />
                         </ListItemButton>
-                        <ListItemButton>
+                        <ListItemButton
+                            onClick={() =>
+                                window.open('https://blog.affine.pro')
+                            }
+                        >
                             <ListItemText primary={t('Blog') as string} />
                         </ListItemButton>
-                        <ListItemButton>
+                        <ListItemButton
+                            onClick={() =>
+                                window.open('https://docs.affine.pro/')
+                            }
+                        >
                             <ListItemText primary={t('Docs') as string} />
                         </ListItemButton>
-                        <ListItemButton>
+                        <ListItemButton
+                            onClick={() =>
+                                window.open('https://feedback.affine.pro/')
+                            }
+                        >
                             <ListItemText primary={t('Feedback') as string} />
                         </ListItemButton>
                         <ListItemButton onClick={handleContactUsClick}>
