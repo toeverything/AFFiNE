@@ -5,15 +5,65 @@ import { fetchTolgee } from './request';
  * Returns all project languages
  *
  * See https://tolgee.io/api#operation/getAll_6
+ * @example
+ * ```ts
+ * const languages = [
+ *   {
+ *     id: 1000016008,
+ *     name: 'English',
+ *     tag: 'en',
+ *     originalName: 'English',
+ *     flagEmoji: '🇬🇧',
+ *     base: true
+ *   },
+ *   {
+ *     id: 1000016013,
+ *     name: 'Spanish',
+ *     tag: 'es',
+ *     originalName: 'español',
+ *     flagEmoji: '🇪🇸',
+ *     base: false
+ *   },
+ *   {
+ *     id: 1000016009,
+ *     name: 'Simplified Chinese',
+ *     tag: 'zh-Hans',
+ *     originalName: '简体中文',
+ *     flagEmoji: '🇨🇳',
+ *     base: false
+ *   },
+ *   {
+ *     id: 1000016012,
+ *     name: 'Traditional Chinese',
+ *     tag: 'zh-Hant',
+ *     originalName: '繁體中文',
+ *     flagEmoji: '🇭🇰',
+ *     base: false
+ *   }
+ * ]
+ * ```
  */
-export const getAllProjectLanguages = async () => {
-    const url = '/languages?size=1000';
+export const getAllProjectLanguages = async (size = 1000) => {
+    const url = `/languages?size=${size}`;
     const resp = await fetchTolgee(url);
     if (resp.status < 200 || resp.status >= 300) {
         throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
     }
-    const json = await resp.json();
-    return json;
+    const json: {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        _embedded: {
+            languages: {
+                id: number;
+                name: string;
+                tag: string;
+                originalName: string;
+                flagEmoji: string;
+                base: boolean;
+            }[];
+        };
+        page: unknown;
+    } = await resp.json();
+    return json._embedded.languages;
 };
 
 /**
@@ -46,6 +96,16 @@ export const getLanguagesTranslations = async <T extends string>(
     }
     const json: { [key in T]?: Record<string, string> } = await resp.json();
     return json;
+};
+
+export const getRemoteTranslations = async (languages: string) => {
+    const translations = await getLanguagesTranslations(languages);
+    if (!(languages in translations)) {
+        return {};
+    }
+    // The assert is safe because we checked above
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return translations[languages]!;
 };
 
 /**
@@ -108,4 +168,19 @@ export const addTagByKey = async (key: string, tag: string) => {
     // TODO get key id by key name
     // const keyId =
     // addTag(keyId, tag);
+};
+
+/**
+ * Exports data
+ *
+ * See https://tolgee.io/api#operation/export_1
+ */
+export const exportResources = async () => {
+    const url = `/export`;
+    const resp = await fetchTolgee(url);
+
+    if (resp.status < 200 || resp.status >= 300) {
+        throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
+    }
+    return resp;
 };

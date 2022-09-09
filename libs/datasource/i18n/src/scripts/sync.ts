@@ -1,29 +1,14 @@
+/* eslint-disable no-console */
 // cSpell:ignore Tolgee
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { addTagByKey, createsNewKey, getLanguagesTranslations } from './api';
+import { addTagByKey, createsNewKey, getRemoteTranslations } from './api';
+import type { TranslationRes } from './utils';
 
 const BASE_JSON_PATH = path.resolve(process.cwd(), 'src', 'base.json');
 const BASE_LANGUAGES = 'en' as const;
 
 const DEPRECATED_TAG_NAME = 'unused' as const;
-
-interface TranslationRes {
-    [x: string]: string | TranslationRes;
-}
-
-const getRemoteTranslations = async (languages: string) => {
-    const translations = await getLanguagesTranslations(languages);
-    if (!(languages in translations)) {
-        console.log(translations);
-        throw new Error(
-            'Failed to get base languages translation! base languages: ' +
-                languages
-        );
-    }
-    // The assert is safe because we checked above
-    return translations[languages]!;
-};
 
 /**
  *
