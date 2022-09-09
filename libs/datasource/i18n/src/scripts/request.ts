@@ -36,7 +36,7 @@ const withTolgee = (
             } else {
                 // URL or URLLike + ?RequestInit
                 if (typeof argArray[0] === 'string') {
-                    argArray[0] = TOLGEE_API_URL + argArray[0];
+                    argArray[0] = `${TOLGEE_API_URL}/v2/projects${argArray[0]}`;
                 }
                 if (!argArray[1]) {
                     argArray[1] = {};
