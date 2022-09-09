@@ -90,13 +90,14 @@ export const AFFiNEFooter = ({
                 sx={{
                     display: 'flex',
                     justifyContent: 'center',
-                    maxWidth: '400px',
+                    flexWrap: 'wrap',
+                    maxWidth: '420px',
                     margin: 'auto',
                     marginBottom: '2em',
                     '--joy-shadow-sm': 0,
                 }}
             >
-                <Box sx={{ display: 'flex', width: '100%' }}>
+                <Box sx={{ display: 'flex', width: '84px' }}>
                     <Button
                         variant="plain"
                         sx={{
@@ -144,7 +145,7 @@ export const AFFiNEFooter = ({
                         </Grid>
                     </Button>
                 </Box>
-                <Box sx={{ display: 'flex', width: '100%' }}>
+                <Box sx={{ display: 'flex', width: '84px' }}>
                     <Button
                         variant="plain"
                         sx={{
@@ -190,7 +191,7 @@ export const AFFiNEFooter = ({
                         </Grid>
                     </Button>
                 </Box>
-                <Box sx={{ display: 'flex', width: '100%' }}>
+                <Box sx={{ display: 'flex', width: '84px' }}>
                     <Button
                         variant="plain"
                         sx={{
@@ -239,7 +240,7 @@ export const AFFiNEFooter = ({
                 <Box
                     sx={{
                         display: 'flex',
-                        width: '100%',
+                        width: '84px',
                     }}
                 >
                     <Button
@@ -285,7 +286,7 @@ export const AFFiNEFooter = ({
                         </Grid>
                     </Button>
                 </Box>
-                <Box sx={{ display: 'flex', width: '100%' }}>
+                <Box sx={{ display: 'flex', width: '84px' }}>
                     <Button
                         variant="plain"
                         sx={{
