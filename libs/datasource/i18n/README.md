@@ -8,7 +8,7 @@ import { useTranslation } from '@toeverything/datasource/i18n';
 // base.json
 // {
 //     'Text': 'some text',
-//     'Switch to language': 'Switch to {language}',
+//     'Switch to language': 'Switch to {{language}}', // <- you can interpolation by curly brackets
 // };
 
 const App = () => {
@@ -41,10 +41,12 @@ const App = () => {
 export TOLGEE_API_KEY=tgpak_XXXXXXX
 ```
 
--   Run the `sync` script from package script
+-   Run the `sync-languages:check` to check all languages
+-   Run the `sync-languages` script to add new keys to the tolgee platform
 
 ## References
 
+-   [AFFiNE | Tolgee](https://i18n.affine.pro/)
+-   [Tolgee Documentation](https://tolgee.io/docs/)
 -   [i18next](https://www.i18next.com/)
 -   [react-i18next](https://react.i18next.com/)
--   [Tolgee](https://tolgee.io/docs/)

@@ -9,6 +9,7 @@ if (!TOLGEE_API_KEY) {
 const withTolgee = (
     fetch: typeof globalThis.fetch
 ): typeof globalThis.fetch => {
+    const baseUrl = `${TOLGEE_API_URL}/v2/projects`;
     const headers = new Headers({
         'X-API-Key': TOLGEE_API_KEY,
         'Content-Type': 'application/json',
@@ -29,14 +30,14 @@ const withTolgee = (
                 if (!argArray[0].headers) {
                     argArray[0] = {
                         ...argArray[0],
-                        url: `${TOLGEE_API_URL}/v2/projects${argArray[0].url}`,
+                        url: `${baseUrl}${argArray[0].url}`,
                         headers,
                     };
                 }
             } else {
                 // URL or URLLike + ?RequestInit
                 if (typeof argArray[0] === 'string') {
-                    argArray[0] = TOLGEE_API_URL + argArray[0];
+                    argArray[0] = `${baseUrl}${argArray[0]}`;
                 }
                 if (!argArray[1]) {
                     argArray[1] = {};

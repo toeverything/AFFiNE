@@ -1,10 +1,17 @@
-name: Lint
+name: Languages Sync
 
 on:
     push:
-        branches: [master]
-    # pull_request:
-    #     branches: [master]
+        branches: [ "develop", "master" ]
+        paths:
+            - 'libs/datasource/i18n/**'
+            - '.github/workflows/languages-sync.yml'
+    pull_request:
+        branches: [ "develop", "master" ]
+        paths:
+            - 'libs/datasource/i18n/**'
+            - '.github/workflows/languages-sync.yml'
+    workflow_dispatch:
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
@@ -18,11 +25,9 @@ jobs:
     main:
         strategy:
             matrix:
-                node-version: [16]
+                node-version: [18]
                 os: [ubuntu-latest]
         runs-on: ${{ matrix.os }}
-        # TODO Remove the next line after cleaning all errors
-        continue-on-error: true
 
         steps:
             - name: Checkout
@@ -43,20 +48,16 @@ jobs:
             - name: Install node modules
               run: pnpm install
 
-            - name: Lint
-              if: always()
-              run: pnpm run lint:with-cache
+            - name: Check Language Key
+              if: github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/master'
+              working-directory: ./libs/datasource/i18n
+              run: pnpm run sync-languages:check
+              env:
+                TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}
 
-            # - name: Check
-            #   if: always()
-            #   run: pnpm run check
-
-            # - name: Format Check
-            #   if: always()
-            #   run: pnpm run format:ci
-
-            # - name: Build
-            #  run: pnpm run build
-
-            # - name: Test
-            #   run: pnpm run test
+            - name: Sync Languages
+              if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master'
+              working-directory: ./libs/datasource/i18n
+              run: pnpm run sync-languages
+              env:
+                TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}
