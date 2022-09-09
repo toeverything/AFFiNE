@@ -5,7 +5,12 @@ import path from 'path';
 import { addTagByKey, createsNewKey, getRemoteTranslations } from './api';
 import type { TranslationRes } from './utils';
 
-const BASE_JSON_PATH = path.resolve(process.cwd(), 'src', 'base.json');
+const BASE_JSON_PATH = path.resolve(
+    process.cwd(),
+    'src',
+    'resources',
+    'en.json'
+);
 const BASE_LANGUAGES = 'en' as const;
 
 const DEPRECATED_TAG_NAME = 'unused' as const;
