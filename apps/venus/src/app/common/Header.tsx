@@ -18,7 +18,7 @@ import { options } from '../i18n';
 export const AFFiNEHeader = () => {
     const matches = useMediaQuery('(max-width: 1024px)');
     const navigate = useNavigate();
-    const { i18n, t } = useTranslation();
+    const { i18n, t, t } = useTranslation();
 
     const changeLanguage = (event: any) => {
         i18n.changeLanguage(event);
@@ -50,6 +50,7 @@ export const AFFiNEHeader = () => {
                 <Button
                     onClick={() => window.open('https://blog.affine.pro')}
                     variant="plain"
+                    color="neutral"
                     color="neutral"
                     sx={{
                         padding: matches ? '0' : '0 0.5em',
@@ -91,6 +92,10 @@ export const AFFiNEHeader = () => {
                     onClick={() =>
                         window.open('https://github.com/toeverything/AFFiNE')
                     }
+                    color="neutral"
+                    onClick={() =>
+                        window.open('https://github.com/toeverything/AFFiNE')
+                    }
                     sx={{
                         padding: matches ? '0' : '0 0.5em',
                         fontSize: '16px',
@@ -102,6 +107,7 @@ export const AFFiNEHeader = () => {
                 <Button
                     onClick={() => window.open('https://livedemo.affine.pro/')}
                     variant="plain"
+                    color="neutral"
                     color="neutral"
                     sx={{
                         padding: matches ? '0' : '0 0.5em',
@@ -139,10 +145,40 @@ export const AFFiNEHeader = () => {
                         window.open(href);
                     }}
                 />
+                <HoverMenu
+                    title={t('ContactUs')}
+                    options={[
+                        {
+                            title: 'Discord',
+                            value: 'https://discord.gg/Arn7TqJBvG',
+                        },
+                        {
+                            title: 'Telegram',
+                            value: 'https://t.me/affineworkos',
+                        },
+                        {
+                            title: 'Reddit',
+                            value: 'https://www.reddit.com/r/Affine/',
+                        },
+                        {
+                            title: 'Medium',
+                            value: 'https://medium.com/@affineworkos',
+                        },
+                        {
+                            title: 'Email',
+                            value: 'mailto:contact@toeverything.info',
+                        },
+                    ]}
+                    onSelect={href => {
+                        window.open(href);
+                    }}
+                />
                 <Select
                     defaultValue="en"
                     sx={{ display: matchesIPAD ? 'none' : 'intial' }}
                     onChange={changeLanguage}
+                    size="md"
+                    variant="plain"
                     size="md"
                     variant="plain"
                 >
@@ -156,6 +192,26 @@ export const AFFiNEHeader = () => {
         </Container>
     );
 };
+
+const Container = styled(Grid)({
+    position: 'fixed',
+    top: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '100%',
+    paddingTop: '1em',
+    backgroundColor: '#fff',
+    zIndex: 1500,
+    maxWidth: '1440px',
+    margin: 'auto',
+    marginTop: '0 !important',
+});
+
+const StyledImage = styled('img')({
+    height: '24px',
+    marginRight: '16px',
+    cursor: 'pointer',
+});
 
 const Container = styled(Grid)({
     position: 'fixed',

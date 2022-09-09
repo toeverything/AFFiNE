@@ -1,7 +1,7 @@
 import { styled, Typography } from '@toeverything/components/ui';
+import { useTranslation } from '@toeverything/datasource/i18n';
 import { useUserAndSpaces } from '@toeverything/datasource/state';
 import format from 'date-fns/format';
-import { useTranslation } from 'react-i18next';
 import { usePageLastUpdated, useWorkspaceAndPageId } from '../util';
 
 export const LastModified = () => {

@@ -21,6 +21,7 @@
         "datasource-commands": "libs/datasource/commands",
         "datasource-db-service": "libs/datasource/db-service",
         "datasource-feature-flags": "libs/datasource/feature-flags",
+        "datasource-i18n": "libs/datasource/i18n",
         "datasource-jwt": "libs/datasource/jwt",
         "datasource-jwt-rpc": "libs/datasource/jwt-rpc",
         "datasource-remote-kv": "libs/datasource/remote-kv",

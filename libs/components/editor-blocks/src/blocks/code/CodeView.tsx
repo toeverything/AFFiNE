@@ -39,15 +39,17 @@ import { yaml } from '@codemirror/legacy-modes/mode/yaml';
 import { Extension } from '@codemirror/state';
 import {
     BlockPendantProvider,
-    useOnSelect,
+    useOnSelectActive,
 } from '@toeverything/components/editor-core';
 import { DuplicateIcon } from '@toeverything/components/icons';
 import { Option, Select, styled } from '@toeverything/components/ui';
 import { CreateView } from '@toeverything/framework/virgo';
 import { copyToClipboard } from '@toeverything/utils';
+
 import { elixir } from 'codemirror-lang-elixir';
 import { useEffect, useRef, useState } from 'react';
 import { StyleWithAtRules } from 'style9';
+
 import CodeMirror, { ReactCodeMirrorRef } from './CodeMirror';
 
 interface CreateCodeView extends CreateView {
@@ -147,7 +149,8 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
             codeMirror?.current?.view?.focus();
         }
     };
-    useOnSelect(block.id, (_is_select: boolean) => {
+    //TODO listen codeMirror.up down event , active
+    useOnSelectActive(block.id, () => {
         focusCode();
     });
     const onChange = (value: string) => {
@@ -161,9 +164,9 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     };
     useEffect(() => {
         handleLangChange(langType ? langType : DEFAULT_LANG);
-        setTimeout(() => {
-            focusCode();
-        }, 100);
+        // setTimeout(() => {
+        //     focusCode();
+        // }, 100);
     }, []);
 
     const copyCode = () => {
