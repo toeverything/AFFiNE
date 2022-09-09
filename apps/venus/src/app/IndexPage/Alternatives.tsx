@@ -7,7 +7,7 @@ import { useMediaQuery } from '@mui/material';
 
 const Alternatives = styled(Box)<{ width: string }>(({ width }) => ({
     position: 'relative',
-    width: '20em',
+    width: '24em',
     height: '128px',
     transform: 'translateY(-8px)',
     overflowY: 'hidden',
@@ -21,7 +21,7 @@ const Alternatives = styled(Box)<{ width: string }>(({ width }) => ({
         height: 'inherit',
         position: 'absolute',
         left: '0',
-        top: '0',
+        top: '-23px',
         paddingTop: '22px',
         lineHeight: '96px',
         '@media (max-width: 1024px)': {
@@ -105,7 +105,7 @@ export const AlternativesProduct = () => {
                 )}
             >
                 <Typography
-                    fontSize="64px"
+                    fontSize="96px"
                     fontWeight={900}
                     sx={{
                         color: '#06449d',
@@ -135,7 +135,7 @@ export const AlternativesProduct = () => {
                 }}
             >
                 <Typography
-                    fontSize="64px"
+                    fontSize="96px"
                     fontWeight={900}
                     sx={{
                         color: '#06449d',
