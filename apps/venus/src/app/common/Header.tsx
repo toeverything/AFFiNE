@@ -11,6 +11,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import { styled, useMediaQuery } from '@mui/material';
 import AFFiNETextLogo from './affine-text-logo.png';
 import { HoverMenu } from './HoverMenu';
+import { MobileHeader } from './MobileHeader';
 
 import { options } from '../i18n';
 
@@ -22,7 +23,10 @@ export const AFFiNEHeader = () => {
     const changeLanguage = (event: any) => {
         i18n.changeLanguage(event);
     };
-    const matchesIPAD = useMediaQuery('(max-width: 768px)');
+    const matchesIPAD = useMediaQuery('(max-width: 1080px)');
+    if (matchesIPAD) {
+        return <MobileHeader />;
+    }
     return (
         <Container container spacing={2}>
             <Grid xs={6} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -107,6 +111,34 @@ export const AFFiNEHeader = () => {
                 >
                     {t('Try it Online')}
                 </Button>
+                <HoverMenu
+                    title={t('ContactUs')}
+                    options={[
+                        {
+                            title: 'Discord',
+                            value: 'https://discord.gg/Arn7TqJBvG',
+                        },
+                        {
+                            title: 'Telegram',
+                            value: 'https://t.me/affineworkos',
+                        },
+                        {
+                            title: 'Reddit',
+                            value: 'https://www.reddit.com/r/Affine/',
+                        },
+                        {
+                            title: 'Medium',
+                            value: 'https://medium.com/@affineworkos',
+                        },
+                        {
+                            title: 'Email',
+                            value: 'mailto:contact@toeverything.info',
+                        },
+                    ]}
+                    onSelect={href => {
+                        window.open(href);
+                    }}
+                />
                 <HoverMenu
                     title={t('ContactUs')}
                     options={[
