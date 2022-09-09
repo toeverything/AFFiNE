@@ -2,7 +2,8 @@
     "name": "@toeverything/datasource/i18n",
     "version": "0.0.1",
     "scripts": {
-        "sync": "NODE_OPTIONS=--experimental-fetch ts-node src/scripts/sync.ts"
+        "sync-languages": "NODE_OPTIONS=--experimental-fetch ts-node src/scripts/sync.ts",
+        "sync-languages:check": "pnpm run sync-languages --check"
     },
     "dependencies": {
         "i18next": "^21.9.1",
