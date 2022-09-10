@@ -580,11 +580,9 @@ importers:
   libs/datasource/i18n:
     specifiers:
       i18next: ^21.9.1
-      jotai: ^1.8.1
       react-i18next: ^11.18.4
     dependencies:
       i18next: 21.9.1
-      jotai: 1.8.1
       react-i18next: 11.18.4_i18next@21.9.1
 
   libs/datasource/jwt:

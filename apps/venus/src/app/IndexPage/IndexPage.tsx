@@ -64,7 +64,7 @@ export function IndexPage() {
     return (
         <>
             <AFFiNEHeader />
-            <Grid xs={12} sx={{ display: 'flex', marginTop: '12vh!important' }}>
+            <Grid xs={12} sx={{ display: 'flex', marginTop: '20vh!important' }}>
                 <Box
                     sx={{
                         display: 'inline-flex',
@@ -76,7 +76,7 @@ export function IndexPage() {
                     }}
                 >
                     <Typography
-                        fontSize="64px"
+                        fontSize="96px"
                         fontWeight={900}
                         sx={{
                             marginRight: '0.25em',
@@ -89,7 +89,7 @@ export function IndexPage() {
                         {t('Open Source')},
                     </Typography>
                     <Typography
-                        fontSize="64px"
+                        fontSize="96px"
                         fontWeight={900}
                         sx={{
                             '@media (max-width: 1024px)': {
@@ -120,7 +120,7 @@ export function IndexPage() {
                 >
                     <AlternativesProduct />
                     <Typography
-                        fontSize="64px"
+                        fontSize="96px"
                         fontWeight={900}
                         sx={{
                             color: '#06449d',

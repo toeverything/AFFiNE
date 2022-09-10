@@ -19,6 +19,8 @@ declare module 'react-i18next' {
     }
 }
 
+const STORAGE_KEY = 'i18n_lng';
+
 const LOCALES = [
     { value: 'en', text: 'English', res: en_US },
     { value: 'zh', text: '简体中文', res: zh_CN },
@@ -29,17 +31,36 @@ const resources = LOCALES.reduce<Resource>(
     {}
 );
 
+const fallbackLng = LOCALES[0].value;
+const standardizeLocale = (language: string) => {
+    if (LOCALES.find(locale => locale.value === language)) return language;
+    if (
+        LOCALES.find(
+            locale => locale.value === language.slice(0, 2).toLowerCase()
+        )
+    )
+        return language;
+    return fallbackLng;
+};
+
+const language = standardizeLocale(
+    localStorage.getItem(STORAGE_KEY) ?? navigator.language
+);
+
 const i18n = i18next.createInstance();
 i18n.use(initReactI18next).init({
-    // TODO auto detect
-    lng: LOCALES[0].value,
-    fallbackLng: LOCALES[0].value,
+    lng: language,
+    fallbackLng,
     debug: process.env['NODE_ENV'] === 'development',
 
     resources,
     interpolation: {
         escapeValue: false, // not needed for react as it escapes by default
     },
+});
+
+i18n.on('languageChanged', lng => {
+    localStorage.setItem(STORAGE_KEY, lng);
 });
 
 const I18nProvider = I18nextProvider;

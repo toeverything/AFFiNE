@@ -11,6 +11,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import { styled, useMediaQuery } from '@mui/material';
 import AFFiNETextLogo from './affine-text-logo.png';
 import { HoverMenu } from './HoverMenu';
+import { MobileHeader } from './MobileHeader';
 
 import { options } from '../i18n';
 
@@ -22,7 +23,10 @@ export const AFFiNEHeader = () => {
     const changeLanguage = (event: any) => {
         i18n.changeLanguage(event);
     };
-    const matchesIPAD = useMediaQuery('(max-width: 768px)');
+    const matchesIPAD = useMediaQuery('(max-width: 1080px)');
+    if (matchesIPAD) {
+        return <MobileHeader />;
+    }
     return (
         <Container container spacing={2}>
             <Grid xs={6} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -160,6 +164,7 @@ const Container = styled(Grid)({
     transform: 'translateX(-50%)',
     width: '100%',
     paddingTop: '1em',
+    paddingBottom: '1em',
     backgroundColor: '#fff',
     zIndex: 1500,
     maxWidth: '1440px',
