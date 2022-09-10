@@ -227,7 +227,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             const nextBlock = await block.nextSibling();
             setTimeout(() => {
                 editor.selectionManager.activeNodeByNodeId(nextBlock.id);
-            });
+            }, 100);
             if (block.blockProvider.isEmpty()) {
                 block.remove();
             }
