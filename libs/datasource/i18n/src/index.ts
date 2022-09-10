@@ -4,8 +4,8 @@ import {
     initReactI18next,
     useTranslation,
 } from 'react-i18next';
-import en_US from './resources/en.json';
-import zh_CN from './resources/zh.json';
+import { LOCALES } from './resources';
+import type en_US from './resources/en.json';
 
 // See https://react.i18next.com/latest/typescript
 declare module 'react-i18next' {
@@ -21,22 +21,19 @@ declare module 'react-i18next' {
 
 const STORAGE_KEY = 'i18n_lng';
 
-const LOCALES = [
-    { value: 'en', text: 'English', res: en_US },
-    { value: 'zh', text: '简体中文', res: zh_CN },
-] as const;
+export { i18n, useTranslation, I18nProvider, LOCALES };
 
 const resources = LOCALES.reduce<Resource>(
-    (acc, { value, res }) => ({ ...acc, [value]: { translation: res } }),
+    (acc, { tag, res }) => ({ ...acc, [tag]: { translation: res } }),
     {}
 );
 
-const fallbackLng = LOCALES[0].value;
+const fallbackLng = LOCALES[0].tag;
 const standardizeLocale = (language: string) => {
-    if (LOCALES.find(locale => locale.value === language)) return language;
+    if (LOCALES.find(locale => locale.tag === language)) return language;
     if (
         LOCALES.find(
-            locale => locale.value === language.slice(0, 2).toLowerCase()
+            locale => locale.tag === language.slice(0, 2).toLowerCase()
         )
     )
         return language;
@@ -64,5 +61,3 @@ i18n.on('languageChanged', lng => {
 });
 
 const I18nProvider = I18nextProvider;
-
-export { i18n, useTranslation, I18nProvider, LOCALES };
