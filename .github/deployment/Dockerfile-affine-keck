@@ -3,7 +3,7 @@ WORKDIR /app
 RUN apk add git && npm i -g pnpm@7
 COPY . .
 # RUN apk add g++ make python3 git libpng-dev
-RUN pnpm i --frozen-lockfile --store=node_modules/.pnpm-store --filter "!ligo-virgo-e2e" --filter "!keck" --filter "!venus" && pnpm run build:local-keck --skip-nx-cache
+RUN --mount=type=cache,target=/app/node_modules,rw,sharing=private pnpm i  --frozen-lockfile --store=node_modules/.pnpm-store --filter "!ligo-virgo-e2e" --filter "!keck" --filter "!venus" && pnpm run build:local-keck --skip-nx-cache
 
 FROM node:16-alpine as relocate
 WORKDIR /app
