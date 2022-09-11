@@ -46,6 +46,7 @@ const withTolgee = (
                     argArray[1].headers = headers;
                 }
             }
+            // console.log('fetch', argArray);
             return target.apply(thisArg, argArray);
         },
     });

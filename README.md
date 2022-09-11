@@ -138,6 +138,11 @@ We would also like to give thanks to open-source projects that make affine possi
 -   [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
 -   Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies)
 
+We use the following open source projects to help us build a better development experience:
+
+-   [nx](https://github.com/nrwl/nx) -- Awesome monorepo manager & build system
+-   [tolgee](https://github.com/tolgee/tolgee-platform) -- Elegant i18n collaborative editing platform
+
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 
 # Contributors

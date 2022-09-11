@@ -53,10 +53,10 @@ export const SettingsList = () => {
                                 >
                                     {LOCALES.map(option => (
                                         <Option
-                                            key={option.value}
-                                            value={option.value}
+                                            key={option.tag}
+                                            value={option.tag}
                                         >
-                                            {option.text}
+                                            {option.originalName}
                                         </Option>
                                     ))}
                                 </Select>
