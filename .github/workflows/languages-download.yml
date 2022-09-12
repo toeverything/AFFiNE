@@ -13,6 +13,12 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
     cancel-in-progress: true
 
+# This action need write permission to create pull requests
+# See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions
+permissions:
+    contents: write
+    pull-requests: write
+
 jobs:
     main:
         strategy:
@@ -41,7 +47,6 @@ jobs:
               run: pnpm install
 
             - name: Sync Languages
-              if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master'
               working-directory: ./libs/datasource/i18n
               run: pnpm run download-resources
               env:
@@ -61,11 +66,11 @@ jobs:
                 fi
                 git config user.name 'github-actions[bot]'
                 git config user.email 'github-actions[bot]@users.noreply.github.com'
-                git commit --message 'feat(i18n): new translations'
+                git commit --message 'feat(i18n): new translations' --no-verify
                 git remote set-url origin "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY"
                 git push --force origin HEAD:$TARGET_BRANCH
               env:
-                GITHUB_TOKEN: ${{ secrets.github_token }}
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 TARGET_BRANCH: bot/new-translations
 
             - name: Get current date
