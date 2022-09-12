@@ -2,7 +2,7 @@
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "libs/datasource/i18n/src",
     "projectType": "library",
-    "tags": ["datasource"],
+    "tags": ["datasource:i18n"],
     "targets": {
         "build": {
             "executor": "@nrwl/web:rollup",
