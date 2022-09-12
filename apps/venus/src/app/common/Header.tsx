@@ -13,7 +13,7 @@ import AFFiNETextLogo from './affine-text-logo.png';
 import { HoverMenu } from './HoverMenu';
 import { MobileHeader } from './MobileHeader';
 
-import { options } from '../i18n';
+import { LOCALES } from '../i18n';
 
 export const AFFiNEHeader = () => {
     const matches = useMediaQuery('(max-width: 1024px)');
@@ -140,15 +140,15 @@ export const AFFiNEHeader = () => {
                     }}
                 />
                 <Select
-                    defaultValue="en"
+                    defaultValue={i18n.language}
                     sx={{ display: matchesIPAD ? 'none' : 'intial' }}
                     onChange={changeLanguage}
                     size="md"
                     variant="plain"
                 >
-                    {options.map(option => (
-                        <Option key={option.value} value={option.value}>
-                            {option.text}
+                    {LOCALES.map(lang => (
+                        <Option key={lang.tag} value={lang.tag}>
+                            {lang.originalName}
                         </Option>
                     ))}
                 </Select>
