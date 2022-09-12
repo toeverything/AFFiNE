@@ -2,10 +2,13 @@
 
 ## Usages
 
+-   Update missing translations into the base resources, a.k.a the `src/resources/en.json`
+-   Replace literal text with translation keys
+
 ```tsx
 import { useTranslation } from '@toeverything/datasource/i18n';
 
-// base.json
+// src/resources/en.json
 // {
 //     'Text': 'some text',
 //     'Switch to language': 'Switch to {{language}}', // <- you can interpolation by curly brackets
@@ -33,7 +36,14 @@ const App = () => {
 };
 ```
 
-## How to sync translations
+## How the i18n workflow works?
+
+-   When the `src/resources/en.json`(base language) updated and merged to the develop branch, will trigger the `languages-sync` action.
+-   The `languages-sync` action will check the base language and add missing translations to the Tolgee platform.
+-   This way, partners from the community can update the translations.
+-   Finally, the `languages-download` action will regularly download the latest translation resources from the Tolgee platform.
+
+## How to sync translations manually
 
 -   Set token as environment variable
 
