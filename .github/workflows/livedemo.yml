@@ -1,4 +1,4 @@
-name: Build AFFiNE-Local
+name: Build AFFiNE-Livedemo
 
 on:
     push:
