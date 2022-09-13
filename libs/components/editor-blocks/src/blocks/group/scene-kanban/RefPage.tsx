@@ -1,6 +1,13 @@
 import { useEditor } from '@toeverything/components/editor-core';
 import { MuiBackdrop, styled, useTheme } from '@toeverything/components/ui';
-import { createContext, ReactNode, useContext, useState } from 'react';
+import {
+    createContext,
+    ReactNode,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 const Dialog = styled('div')({
@@ -11,7 +18,7 @@ const Dialog = styled('div')({
     boxShadow: '0px 1px 10px rgba(152, 172, 189, 0.6)',
     borderRadius: '10px',
     padding: '72px 120px',
-    overflow: 'scroll',
+    overflowY: 'auto',
 });
 
 const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
@@ -48,13 +55,20 @@ const Modal = ({ open, children }: { open: boolean; children?: ReactNode }) => {
 
 const ModalPage = ({ blockId }: { blockId: string | null }) => {
     const { editor, editorElement } = useEditor();
+    const editorRef = useRef<typeof editor>(null);
 
     const AffineEditor = editorElement as any;
+
+    // Active block after modal open
+    useEffect(() => {
+        editorRef.current?.selectionManager.activeNodeByNodeId(blockId);
+    }, [blockId]);
 
     return (
         <Modal open={!!blockId}>
             {blockId && (
                 <AffineEditor
+                    ref={editorRef}
                     workspace={editor.workspace}
                     rootBlockId={blockId}
                     scrollBlank={false}
