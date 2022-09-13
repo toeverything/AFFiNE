@@ -103,7 +103,8 @@
                                     "datasource:db-services",
                                     "components:ui",
                                     "components:icons",
-                                    "library:feature-flags"
+                                    "library:feature-flags",
+                                    "datasource:i18n"
                                 ]
                             },
                             {

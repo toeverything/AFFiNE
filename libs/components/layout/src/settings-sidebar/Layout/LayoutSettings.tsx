@@ -1,9 +1,11 @@
 import { styled } from '@toeverything/components/ui';
+import { useTranslation } from '@toeverything/datasource/i18n';
 
 export const LayoutSettings = () => {
+    const { t } = useTranslation();
     return (
         <StyledText>
-            <p>Layout Settings Coming Soon...</p>
+            <p>{t('ComingSoon')}</p>
         </StyledText>
     );
 };
