@@ -1,0 +1,32 @@
+{
+    "Alternative": "Alternativa",
+    "BuildFor": "Construir por un futuro abierto y semántico",
+    "Check GitHub": "Revisar en GitHub",
+    "Join": "Únete a nuestra comunidad",
+    "KeepUpdated": "Mantente actualizado",
+    "Open Source": "Código abierto",
+    "Privacy First": "La privacidad es lo primero",
+    "Try it Online": "Prueba Online",
+    "description1": {
+        "part1": "Affine es un base de conocimiento colaborativa de próxima generación para los profesionales.",
+        "part2": "Es más que una simple colección de Documentos, Pizarra y Tablas.",
+        "part3": "Transforma cualquier bloque como tu quieras. ",
+        "part4": "Dígale adios a la redundancia, Almacene sus datos una vez, y manténgalos como usted quiera."
+    },
+    "description2": {
+        "part1": "Dele forma a sus  páginas.",
+        "part2": "Los Documentos, Kanbans y Base de datos son completamente funcionales en cualquier lugar, en cualquier momento.  Un verdadero entorno de lo que ves y lo que obtienes para tus datos.",
+        "part3": "Todas las páginas tiene una vista de documento y de pizarra. "
+    },
+    "description3": {
+        "part1": "Programe sus tareas.",
+        "part2": "No más caos manejando múltiples vistas.",
+        "part3": "Establezca un TODO con Markdown, y edítelo sin problemas en un Kanban. ",
+        "part4": "La gestión de tablas multidimensionales debería ser así de fácil y ahora lo es."
+    },
+    "description4": {
+        "part1": "Privacidad en primer lugar, y colaboración sin compromiso. ",
+        "part2": "\nNo nos gusta estar encerrados, y a usted tampoco debería. La privacidad está en la base de todo lo que hacemos, pero no debe limitarnos, por eso no hay compromisos.",
+        "part3": "Sus datos son suyos; siempre están almacenados y protegidos de forma local, siempre disponibles para usted. Sin dejar de lado el poder disfrutar de funciones de colaboración como la edición en tiempo real y el uso compartido con otros, sin ninguna configuración en la nube."
+    }
+}
