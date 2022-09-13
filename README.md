@@ -145,6 +145,8 @@ We use the following open source projects to help us build a better development 
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 
+You enjoy AFFiNE? You are not alone. [Some amazing companies](./docs/Jobs.md) are looking for developers with some AFFiNE and/or AFFiNE technology experience.
+
 # Contributors
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
