@@ -211,6 +211,8 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
 
     const handleSelected = async (type: BlockFlavorKeys | string) => {
         const text = await editor.commands.textCommands.getBlockText(blockId);
+        const block = await editor.getBlockById(blockId);
+        let textValue = block.getProperty('text').value;
         editor.blockHelper.removeSearchSlash(blockId, true);
         if (type.startsWith('Virgo')) {
             const handler =
@@ -223,14 +225,18 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
             } else {
                 await commonCommandMenuHandler(blockId, type, editor);
             }
-            const block = await editor.getBlockById(blockId);
             const nextBlock = await block.nextSibling();
             setTimeout(() => {
                 editor.selectionManager.activeNodeByNodeId(nextBlock.id);
+                if (textValue.length === 1) {
+                    block.remove();
+                } else {
+                    block.setProperty('text', {
+                        //@ts-ignore
+                        value: textValue.filter(text => !text.search),
+                    });
+                }
             }, 100);
-            if (block.blockProvider.isEmpty()) {
-                block.remove();
-            }
         } else {
             if (Protocol.Block.Type[type as BlockFlavorKeys]) {
                 const block = await editor.commands.blockCommands.convertBlock(
