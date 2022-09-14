@@ -170,6 +170,9 @@ module.exports = function (webpackConfig) {
         ),
         new webpack.DefinePlugin({
             JWT_DEV: !isProd,
+            'process.env.AFFINE_FEATURE_FLAG_TOKEN': JSON.stringify(
+                process.env['AFFINE_FEATURE_FLAG_TOKEN']
+            ),
             global: {},
         }),
         isProd &&
