@@ -3,6 +3,7 @@ import { Doc } from 'yjs';
 
 import {
     IndexedDBProvider,
+    KeckProvider,
     SQLiteProvider,
     WebsocketProvider,
 } from '@toeverything/datasource/jwt-rpc';
@@ -22,7 +23,7 @@ export type YjsProvider = (
     instances: YjsDefaultInstances
 ) => Promise<unknown | undefined>;
 
-type ProviderType = 'idb' | 'sqlite' | 'ws';
+type ProviderType = 'idb' | 'sqlite' | 'ws' | 'keck';
 
 export type YjsProviderOptions = {
     enabled: ProviderType[];
@@ -100,9 +101,9 @@ export const getYjsProviders = (
             }
         },
         keck: async (instances: YjsDefaultInstances) => {
-            if (options.enabled.includes('ws')) {
+            if (options.enabled.includes('keck')) {
                 if (instances.token) {
-                    const ws = new WebsocketProvider(
+                    const ws = new KeckProvider(
                         instances.token,
                         options.backend,
                         instances.workspace,

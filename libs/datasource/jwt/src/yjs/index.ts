@@ -120,13 +120,13 @@ async function _initYjsDatabase(
                         [name]: p,
                     };
                 }),
-                // p({
-                //     awareness,
-                //     doc: binaries,
-                //     token,
-                //     workspace: `${workspace}_binaries`,
-                //     emitState,
-                // }).then(p => ({ [`${name}_binaries`]: p })),
+                p({
+                    awareness,
+                    doc: binaries,
+                    token,
+                    workspace: `${workspace}_binaries`,
+                    emitState,
+                }).then(p => ({ [`${name}_binaries`]: p })),
             ])
         );
     }
