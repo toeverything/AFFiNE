@@ -1,14 +1,15 @@
-import { useMemo } from 'react';
-import { Virgo, PluginHooks } from '@toeverything/framework/virgo';
-import { Cascader, CascaderItemProps } from '@toeverything/components/ui';
-import { Protocol } from '@toeverything/datasource/db-service';
-import { TurnIntoMenu } from './TurnIntoMenu';
 import {
     AddViewIcon,
     DeleteCashBinIcon,
     TurnIntoIcon,
     UngroupIcon,
 } from '@toeverything/components/icons';
+import { Cascader, CascaderItemProps } from '@toeverything/components/ui';
+import { Protocol } from '@toeverything/datasource/db-service';
+import { useTranslation } from '@toeverything/datasource/i18n';
+import { PluginHooks, Virgo } from '@toeverything/framework/virgo';
+import { useMemo } from 'react';
+import { TurnIntoMenu } from './TurnIntoMenu';
 
 interface LeftMenuProps {
     anchorEl?: Element;
@@ -21,10 +22,11 @@ interface LeftMenuProps {
 
 export function LeftMenu(props: LeftMenuProps) {
     const { editor, anchorEl, hooks, blockId, onClose } = props;
+    const { t } = useTranslation();
     const menu: CascaderItemProps[] = useMemo(
         () => [
             {
-                title: 'Delete',
+                title: t('Delete'),
                 callback: () => {
                     editor.commands.blockCommands.removeBlock(blockId);
                 },
@@ -32,7 +34,7 @@ export function LeftMenu(props: LeftMenuProps) {
                 icon: <DeleteCashBinIcon />,
             },
             {
-                title: 'Turn into',
+                title: t('Turn into'),
                 subItems: [],
                 children: (
                     <TurnIntoMenu
@@ -48,7 +50,7 @@ export function LeftMenu(props: LeftMenuProps) {
                 icon: <TurnIntoIcon />,
             },
             {
-                title: 'Add A Below Block',
+                title: t('Add A Below Block'),
                 icon: <AddViewIcon />,
                 callback: async () => {
                     const block = await editor.getBlockById(blockId);
@@ -66,14 +68,14 @@ export function LeftMenu(props: LeftMenuProps) {
                 },
             },
             {
-                title: 'Divide Here As A New Group',
+                title: t('Divide Here As A New Group'),
                 icon: <UngroupIcon />,
                 callback: () => {
                     editor.commands.blockCommands.splitGroupFromBlock(blockId);
                 },
             },
         ],
-        [editor, hooks, blockId, onClose]
+        [t, editor, hooks, blockId, onClose]
     );
 
     // const filterItems = (

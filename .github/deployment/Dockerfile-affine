@@ -1,4 +1,5 @@
 FROM node:16-alpine as builder
+ARG HUBSPOT_API_SECRET
 WORKDIR /app
 RUN apk add git && npm i -g pnpm@7
 COPY . .

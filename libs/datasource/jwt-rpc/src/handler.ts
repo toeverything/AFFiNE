@@ -4,7 +4,8 @@ import * as authProtocol from 'y-protocols/auth';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 
-import { WebsocketProvider } from './provider';
+import { KeckProvider } from './keckprovider';
+import { WebsocketProvider } from './wsprovider';
 
 const permissionDeniedHandler = (provider: WebsocketProvider, reason: string) =>
     console.warn(`Permission denied to access ${provider.url}.\n${reason}`);
@@ -19,7 +20,7 @@ export enum Message {
 export type MessageCallback = (
     encoder: encoding.Encoder,
     decoder: decoding.Decoder,
-    provider: WebsocketProvider,
+    provider: WebsocketProvider | KeckProvider,
     emitSynced: boolean,
     messageType: number
 ) => void;
@@ -48,14 +49,16 @@ export const handler: Record<Message, MessageCallback> = {
         emitSynced,
         messageType
     ) => {
-        encoding.writeVarUint(encoder, Message.queryAwareness);
-        encoding.writeVarUint8Array(
-            encoder,
-            awarenessProtocol.encodeAwarenessUpdate(
-                provider.awareness,
-                Array.from(provider.awareness.getStates().keys())
-            )
-        );
+        if (provider instanceof WebsocketProvider) {
+            encoding.writeVarUint(encoder, Message.queryAwareness);
+            encoding.writeVarUint8Array(
+                encoder,
+                awarenessProtocol.encodeAwarenessUpdate(
+                    provider.awareness,
+                    Array.from(provider.awareness.getStates().keys())
+                )
+            );
+        }
     },
 
     [Message.awareness]: (
@@ -65,11 +68,13 @@ export const handler: Record<Message, MessageCallback> = {
         emitSynced,
         messageType
     ) => {
-        awarenessProtocol.applyAwarenessUpdate(
-            provider.awareness,
-            decoding.readVarUint8Array(decoder),
-            provider
-        );
+        if (provider instanceof WebsocketProvider) {
+            awarenessProtocol.applyAwarenessUpdate(
+                provider.awareness,
+                decoding.readVarUint8Array(decoder),
+                provider
+            );
+        }
     },
 
     [Message.auth]: (encoder, decoder, provider, emitSynced, messageType) => {

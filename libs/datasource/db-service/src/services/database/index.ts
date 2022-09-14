@@ -33,13 +33,15 @@ async function _getCurrentToken() {
                 if (user) resolve(user.getIdToken());
             });
         });
+    } else if (process.env['NX_KECK']) {
+        return 'AFFiNE';
     }
     return undefined;
 }
 
 const _enabled = {
     demo: [],
-    AFFiNE: process.env['NX_KECK'] ? ['idb'] : ['idb', 'ws'],
+    AFFiNE: process.env['NX_KECK'] ? ['idb', 'keck'] : ['idb'],
 } as any;
 
 async function _getBlockDatabase(

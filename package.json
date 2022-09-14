@@ -9,6 +9,7 @@
         "start": "env-cmd -f .github/env/.env.local-dev nx serve ligo-virgo",
         "start:affine": "nx serve ligo-virgo",
         "start:keck": "nx serve keck",
+        "start:keck-dev": "env-cmd -f .github/env/.env.local-keck nx serve ligo-virgo",
         "start:venus": "nx serve venus",
         "build": "nx build ligo-virgo",
         "build:local": "env-cmd -f .github/env/.env.local-dev nx build ligo-virgo",

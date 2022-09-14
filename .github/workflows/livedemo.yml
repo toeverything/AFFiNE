@@ -1,4 +1,4 @@
-name: Build AFFiNE-Local
+name: Build AFFiNE-Livedemo
 
 on:
     push:
@@ -64,14 +64,14 @@ jobs:
 
             - name: Build and push Docker image (AFFINE-Local)
               uses: docker/build-push-action@v3
-              env:
-                HUBSPOT_API_SECRET: ${{ secrets.SuperSecret }}
               with:
                   context: .
                   push: true
                   file: ./.github/deployment/Dockerfile-affine
                   tags: ${{ env.LOCAL_CACHE }}
                   target: AFFiNE
+                  build-args: |
+                    HUBSPOT_API_SECRET=${{ secrets.HUBSPOT_API_SECRET }}
 
             - name: Build and push Docker image (AFFINE-Local)
               uses: docker/build-push-action@v3

@@ -21,5 +21,9 @@
     "Import Workspace": "导入 Workspace",
     "Export Workspace": "导出 Workspace",
     "Last edited by": "最后编辑者为 {{name}}",
-    "Logout": "退出登录"
+    "Logout": "退出登录",
+    "Delete": "删除",
+    "Turn into": "转换为",
+    "Add A Below Block": "在下方添加一个新块",
+    "Divide Here As A New Group": "从这里划分一个新组"
 }

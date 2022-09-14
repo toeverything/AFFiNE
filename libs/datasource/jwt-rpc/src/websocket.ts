@@ -5,8 +5,9 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 
 import { Message } from './handler';
+import { KeckProvider } from './keckprovider';
 import { readMessage } from './processor';
-import { WebsocketProvider } from './provider';
+import { WebsocketProvider } from './wsprovider';
 
 enum WebSocketState {
     disconnected = 0,
@@ -46,14 +47,14 @@ const _getToken = async (
     return resp.json();
 };
 
-const _getTimeout = (provider: WebsocketProvider) =>
+const _getTimeout = (provider: WebsocketProvider | KeckProvider) =>
     math.min(
         math.pow(2, provider.wsUnsuccessfulReconnects) * 100,
         provider.maxBackOffTime
     );
 
 export const registerWebsocket = (
-    provider: WebsocketProvider,
+    provider: WebsocketProvider | KeckProvider,
     token: string,
     resync = -1,
     reconnect = 3,
@@ -105,13 +106,19 @@ export const registerWebsocket = (
                     state = WebSocketState.disconnected;
                     provider.synced = false;
                     // update awareness (all users except local left)
-                    awarenessProtocol.removeAwarenessStates(
-                        provider.awareness,
-                        Array.from(
-                            provider.awareness.getStates().keys()
-                        ).filter(client => client !== provider.doc.clientID),
-                        provider
-                    );
+
+                    const awareness = (provider as any)['awareness'];
+                    if (awareness) {
+                        awarenessProtocol.removeAwarenessStates(
+                            awareness,
+                            Array.from(awareness.getStates().keys()).filter(
+                                (client): client is number =>
+                                    client !== provider.doc.clientID
+                            ),
+                            provider
+                        );
+                    }
+
                     provider.emit('status', [{ status: 'disconnected' }]);
                 } else {
                     provider.wsUnsuccessfulReconnects++;
@@ -139,8 +146,10 @@ export const registerWebsocket = (
                 encoding.writeVarUint(encoder, Message.sync);
                 syncProtocol.writeSyncStep1(encoder, provider.doc);
                 websocket?.send(encoding.toUint8Array(encoder));
+
+                const awareness = (provider as any)['awareness'];
                 // broadcast local awareness state
-                if (provider.awareness.getLocalState() !== null) {
+                if (awareness && awareness.getLocalState() !== null) {
                     const encoderAwarenessState = encoding.createEncoder();
                     encoding.writeVarUint(
                         encoderAwarenessState,
@@ -148,10 +157,9 @@ export const registerWebsocket = (
                     );
                     encoding.writeVarUint8Array(
                         encoderAwarenessState,
-                        awarenessProtocol.encodeAwarenessUpdate(
-                            provider.awareness,
-                            [provider.doc.clientID]
-                        )
+                        awarenessProtocol.encodeAwarenessUpdate(awareness, [
+                            provider.doc.clientID,
+                        ])
                     );
                     websocket?.send(
                         encoding.toUint8Array(encoderAwarenessState)
