@@ -64,7 +64,7 @@ jobs:
               with:
                   context: .
                   push: true
-                  file: ./.github/deployment/Dockerfile-affine
+                  file: ./.github/deployment/Dockerfile-affine-keck
                   tags: ${{ env.LOCAL_CACHE }}
                   target: AFFiNE
 
