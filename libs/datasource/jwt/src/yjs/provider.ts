@@ -99,5 +99,38 @@ export const getYjsProviders = (
                 }
             }
         },
+        keck: async (instances: YjsDefaultInstances) => {
+            if (options.enabled.includes('ws')) {
+                if (instances.token) {
+                    const ws = new WebsocketProvider(
+                        instances.token,
+                        options.backend,
+                        instances.workspace,
+                        instances.doc,
+                        {
+                            params: options.params,
+                        }
+                    ) as any; // TODO: type is erased after cascading references
+
+                    // Wait for ws synchronization to complete, otherwise the data will be modified in reverse, which can be optimized later
+                    return new Promise<void>((resolve, reject) => {
+                        // TODO: synced will also be triggered on reconnection after losing sync
+                        // There needs to be an event mechanism to emit the synchronization state to the upper layer
+                        ws.once('synced', () => resolve());
+                        ws.once('lost-connection', () => resolve());
+                        ws.once('connection-error', () => reject());
+                        ws.on('synced', () => instances.emitState('connected'));
+                        ws.on('lost-connection', () =>
+                            instances.emitState('retry')
+                        );
+                        ws.on('connection-error', () =>
+                            instances.emitState('retry')
+                        );
+                    });
+                } else {
+                    return;
+                }
+            }
+        },
     };
 };

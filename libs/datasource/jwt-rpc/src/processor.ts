@@ -5,10 +5,11 @@ import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 
 import { Message } from './handler';
-import { WebsocketProvider } from './provider';
+import { KeckProvider } from './keckprovider';
+import { WebsocketProvider } from './wsprovider';
 
 export const readMessage = (
-    provider: WebsocketProvider,
+    provider: WebsocketProvider | KeckProvider,
     buf: Uint8Array,
     emitSynced: boolean
 ): encoding.Encoder => {
@@ -24,7 +25,7 @@ export const readMessage = (
     return encoder;
 };
 
-export const registerUpdateHandler = (
+export const registerWsUpdateHandler = (
     provider: WebsocketProvider,
     awareness: awarenessProtocol.Awareness,
     doc: Y.Doc,
@@ -75,6 +76,27 @@ export const registerUpdateHandler = (
         }
 
         awareness.off('update', awarenessUpdateHandler);
+        doc.off('update', documentUpdateHandler);
+    };
+};
+
+export const registerKeckUpdateHandler = (
+    provider: KeckProvider,
+    doc: Y.Doc,
+    broadcastMessage: (buf: ArrayBuffer) => void
+) => {
+    //  Listens to Yjs updates and sends them to remote peers (ws and broadcastchannel)
+    const documentUpdateHandler = (update: Uint8Array, origin: any) => {
+        if (origin !== provider) {
+            const encoder = encoding.createEncoder();
+            encoding.writeVarUint(encoder, Message.sync);
+            syncProtocol.writeUpdate(encoder, update);
+            broadcastMessage(encoding.toUint8Array(encoder));
+        }
+    };
+
+    doc.on('update', documentUpdateHandler);
+    return () => {
         doc.off('update', documentUpdateHandler);
     };
 };

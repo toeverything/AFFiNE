@@ -3,10 +3,8 @@ import * as Y from 'yjs';
 import { Observable } from 'lib0/observable';
 import * as url from 'lib0/url';
 
-import * as awarenessProtocol from 'y-protocols/awareness';
-
 import { handler } from './handler';
-import { registerUpdateHandler } from './processor';
+import { registerKeckUpdateHandler } from './processor';
 import { registerWebsocket } from './websocket';
 
 /**
@@ -16,16 +14,15 @@ import { registerWebsocket } from './websocket';
  *
  * @example
  *   import * as Y from 'yjs'
- *   import { WebsocketProvider } from 'jwt-rpc'
+ *   import { KeckProvider } from 'jwt-rpc'
  *   const doc = new Y.Doc()
- *   const provider = new WebsocketProvider('http://localhost:3000', 'my-document-name', doc)
+ *   const provider = new KeckProvider('http://localhost:3000', 'my-document-name', doc)
  */
-export class WebsocketProvider extends Observable<string> {
+export class KeckProvider extends Observable<string> {
     maxBackOffTime: number;
     url: string;
     roomName: string;
 
-    awareness: awarenessProtocol.Awareness;
     doc: Y.Doc;
 
     wsUnsuccessfulReconnects: number;
@@ -49,12 +46,7 @@ export class WebsocketProvider extends Observable<string> {
         serverUrl: string,
         roomName: string,
         doc: Y.Doc,
-        {
-            awareness = new awarenessProtocol.Awareness(doc),
-            params = {},
-            resyncInterval = -1,
-            maxBackOffTime = 2500,
-        } = {}
+        { params = {}, resyncInterval = -1, maxBackOffTime = 2500 } = {}
     ) {
         super();
 
@@ -63,13 +55,12 @@ export class WebsocketProvider extends Observable<string> {
         while (serverUrl[serverUrl.length - 1] === '/') {
             serverUrl = serverUrl.slice(0, serverUrl.length - 1);
         }
-        this.broadcastChannel = serverUrl + '/' + roomName;
+        this.broadcastChannel = serverUrl + '/' + roomName + '/';
         const encodedParams = url.encodeQueryParams(params);
         this.url =
             this.broadcastChannel +
             (encodedParams.length === 0 ? '' : '?' + encodedParams);
 
-        this.awareness = awareness;
         this.doc = doc;
 
         this.maxBackOffTime = maxBackOffTime;
@@ -78,16 +69,9 @@ export class WebsocketProvider extends Observable<string> {
         this._synced = false;
 
         this._websocket = registerWebsocket(this, token, resyncInterval);
-        // TODO: The current implementation will cause a broadcast storm, and then re-implement one, or just go websocket synchronization
-        // this._broadcast = registerBroadcastSubscriber(
-        //     this,
-        //     this.awareness,
-        //     this.doc
-        // );
 
-        this._updateHandlerDestroy = registerUpdateHandler(
+        this._updateHandlerDestroy = registerKeckUpdateHandler(
             this,
-            awareness,
             doc,
             buf => {
                 this._websocket?.broadcastMessage(buf);
