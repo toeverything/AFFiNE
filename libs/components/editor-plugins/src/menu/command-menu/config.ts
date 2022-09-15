@@ -68,11 +68,12 @@ export const menuItemsMap: {
             type: Protocol.Block.Type.text,
             icon: TextIcon,
         },
-        {
-            text: 'Page',
-            type: 'page',
-            icon: PagesIcon,
-        },
+        // the Page block should not be inserted
+        // {
+        //     text: 'Page',
+        //     type: Protocol.Block.Type.page,
+        //     icon: PagesIcon,
+        // },
         {
             text: 'Heading 1',
             type: Protocol.Block.Type.heading1,

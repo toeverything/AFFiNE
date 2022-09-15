@@ -39,14 +39,6 @@ type MenuItemsProps = {
 
 export const CommonList = (props: MenuItemsProps) => {
     const { items, currentItem, setCurrentItem, onSelected } = props;
-    // const JSONUnsupportedBlockTypes = useFlag('JSONUnsupportedBlockTypes', [
-    //     'page',
-    // ]);
-    // TODO Insert bidirectional link to be developed
-    const JSONUnsupportedBlockTypes = ['page'];
-    const usedItems = items.filter(item => {
-        return !JSONUnsupportedBlockTypes.includes(item?.content?.id);
-    });
     return (
         <div className={clsx(styles('root_container'), props.className)}>
             <div
@@ -55,8 +47,8 @@ export const CommonList = (props: MenuItemsProps) => {
                     commonListContainer,
                 ])}
             >
-                {usedItems?.length ? (
-                    usedItems.map((item, idx) => {
+                {items?.length ? (
+                    items.map((item, idx) => {
                         if (item.renderCustom) {
                             return item.renderCustom(item);
                         } else if (item.block) {
