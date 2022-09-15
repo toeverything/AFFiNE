@@ -2,7 +2,7 @@
 import {
     fontBgColorPalette,
     fontColorPalette,
-    type TextAlignOptions,
+    type TextAlignOptions
 } from '@toeverything/components/common';
 import {
     BacklinksIcon,
@@ -21,9 +21,7 @@ import {
     HeadingThreeIcon,
     HeadingTwoIcon,
     ImageIcon,
-    LinkIcon,
-    MoreIcon,
-    NumberIcon,
+    LinkIcon, NumberIcon,
     PagesIcon,
     QuoteIcon,
     TextAlignCenterIcon,
@@ -31,7 +29,7 @@ import {
     TextAlignRightIcon,
     TextFontIcon,
     ToDoIcon,
-    TurnIntoIcon,
+    TurnIntoIcon
 } from '@toeverything/components/icons';
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
 import { Virgo } from '@toeverything/framework/virgo';
@@ -39,7 +37,7 @@ import {
     inlineMenuNames,
     inlineMenuNamesForFontColor,
     inlineMenuNamesKeys,
-    INLINE_MENU_UI_TYPES,
+    INLINE_MENU_UI_TYPES
 } from './config';
 import { ClickItemHandler, InlineMenuItem } from './types';
 
@@ -827,13 +825,13 @@ export const getInlineMenuData = ({
             nameKey: inlineMenuNamesKeys.backlinks,
             onClick: common_handler_for_inline_menu,
         },
-        {
-            type: INLINE_MENU_UI_TYPES.icon,
-            icon: MoreIcon,
-            name: inlineMenuNames.moreActions,
-            nameKey: inlineMenuNamesKeys.moreActions,
-            onClick: common_handler_for_inline_menu,
-        },
+        // {
+        //     type: INLINE_MENU_UI_TYPES.icon,
+        //     icon: MoreIcon,
+        //     name: inlineMenuNames.moreActions,
+        //     nameKey: inlineMenuNamesKeys.moreActions,
+        //     onClick: common_handler_for_inline_menu,
+        // },
     ];
 
     return inlineMenuData.filter(item => Boolean(item));

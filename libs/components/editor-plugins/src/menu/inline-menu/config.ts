@@ -2,8 +2,8 @@ import {
     fontBgColorPaletteKeys,
     fontColorPaletteKeys,
 } from '@toeverything/components/common';
-import type { InlineMenuNamesType } from './types';
 import { Protocol } from '@toeverything/datasource/db-service';
+import type { InlineMenuNamesType } from './types';
 
 export const INLINE_MENU_UI_TYPES = {
     icon: 'Icon',
