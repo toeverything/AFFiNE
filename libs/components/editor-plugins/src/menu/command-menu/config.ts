@@ -1,25 +1,24 @@
 import {
-    HeadingOneIcon,
-    HeadingTwoIcon,
-    HeadingThreeIcon,
-    ToDoIcon,
-    NumberIcon,
     BulletIcon,
-    CodeIcon,
-    TextIcon,
-    PagesIcon,
-    ImageIcon,
-    FileIcon,
-    QuoteIcon,
     CalloutIcon,
+    CodeIcon,
     DividerIcon,
-    FigmaIcon,
-    YoutubeIcon,
     EmbedIcon,
+    FigmaIcon,
+    FileIcon,
+    HeadingOneIcon,
+    HeadingThreeIcon,
+    HeadingTwoIcon,
+    ImageIcon,
+    NumberIcon,
+    QuoteIcon,
+    TextIcon,
+    ToDoIcon,
+    YoutubeIcon,
 } from '@toeverything/components/icons';
 import { SvgIconProps } from '@toeverything/components/ui';
-import { Virgo } from '@toeverything/framework/virgo';
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
+import { Virgo } from '@toeverything/framework/virgo';
 import { without } from '@toeverything/utils';
 
 export enum CommandMenuCategories {
@@ -92,7 +91,7 @@ export const menuItemsMap: {
     ],
     [CommandMenuCategories.lists]: [
         {
-            text: 'To do',
+            text: 'Todo',
             type: Protocol.Block.Type.todo,
             icon: ToDoIcon,
         },
