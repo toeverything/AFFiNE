@@ -1,17 +1,17 @@
-import {
-    BaseView,
-    CreateView,
-    AsyncBlock,
-    HTML2BlockResult,
-    BlockEditor,
-} from '@toeverything/framework/virgo';
 import { Protocol } from '@toeverything/datasource/db-service';
-import { TextView } from './TextView';
+import {
+    AsyncBlock,
+    BaseView,
+    BlockEditor,
+    CreateView,
+    HTML2BlockResult,
+} from '@toeverything/framework/virgo';
 import {
     Block2HtmlProps,
     commonBlock2HtmlContent,
     commonHTML2block,
 } from '../../utils/commonBlockClip';
+import { TextView } from './TextView';
 
 export class TextBlock extends BaseView {
     type = Protocol.Block.Type.text;
@@ -41,12 +41,12 @@ export class TextBlock extends BaseView {
             tagName: [
                 'DIV',
                 'P',
-                'PRE',
+                // 'PRE',
                 'B',
                 'A',
                 'EM',
                 'U',
-                'CODE',
+                // 'CODE',
                 'S',
                 'DEL',
             ],
