@@ -36,7 +36,6 @@ export class CodeBlock extends BaseView {
     }): Promise<HTML2BlockResult> {
         // debugger;
         if (element.tagName === 'CODE') {
-            debugger;
             return [
                 {
                     type: this.type,
@@ -50,7 +49,9 @@ export class CodeBlock extends BaseView {
                                 },
                             ],
                         },
-                        lang: element.classList[0].substr(9),
+                        lang:
+                            element.classList[0] &&
+                            element.classList[0].substr(9),
                     },
                     children: [],
                 },
