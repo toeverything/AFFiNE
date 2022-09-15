@@ -5,10 +5,10 @@ import {
     BlockEditor,
     HTML2BlockResult,
 } from '@toeverything/framework/virgo';
+import { unescape } from 'html-escaper';
 import {
     Block2HtmlProps,
     commonBlock2HtmlContent,
-    commonHTML2block,
 } from '../../utils/commonBlockClip';
 import { CodeView } from './CodeView';
 
@@ -34,12 +34,29 @@ export class CodeBlock extends BaseView {
         element: Element;
         editor: BlockEditor;
     }): Promise<HTML2BlockResult> {
-        return commonHTML2block({
-            element,
-            editor,
-            type: this.type,
-            tagName: 'CODE',
-        });
+        // debugger;
+        if (element.tagName === 'CODE') {
+            debugger;
+            return [
+                {
+                    type: this.type,
+                    properties: {
+                        text: {
+                            value: [
+                                {
+                                    text: unescape(
+                                        (element as HTMLElement).innerText
+                                    ),
+                                },
+                            ],
+                        },
+                        lang: element.classList[0].substr(9),
+                    },
+                    children: [],
+                },
+            ];
+        }
+        return null;
     }
 
     override async block2html(props: Block2HtmlProps) {
