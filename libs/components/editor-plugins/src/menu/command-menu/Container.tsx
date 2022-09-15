@@ -175,6 +175,9 @@ export const CommandMenuContainer = ({
             if (!isShow) {
                 return;
             }
+            if (event.nativeEvent.isComposing) {
+                return;
+            }
             if (types && event.code === 'ArrowUp') {
                 handleClickUp(event);
                 return;
