@@ -2,7 +2,7 @@
 import {
     fontBgColorPalette,
     fontColorPalette,
-    type TextAlignOptions
+    type TextAlignOptions,
 } from '@toeverything/components/common';
 import {
     BacklinksIcon,
@@ -21,7 +21,8 @@ import {
     HeadingThreeIcon,
     HeadingTwoIcon,
     ImageIcon,
-    LinkIcon, NumberIcon,
+    LinkIcon,
+    NumberIcon,
     PagesIcon,
     QuoteIcon,
     TextAlignCenterIcon,
@@ -29,7 +30,7 @@ import {
     TextAlignRightIcon,
     TextFontIcon,
     ToDoIcon,
-    TurnIntoIcon
+    TurnIntoIcon,
 } from '@toeverything/components/icons';
 import { BlockFlavorKeys, Protocol } from '@toeverything/datasource/db-service';
 import { Virgo } from '@toeverything/framework/virgo';
@@ -37,7 +38,7 @@ import {
     inlineMenuNames,
     inlineMenuNamesForFontColor,
     inlineMenuNamesKeys,
-    INLINE_MENU_UI_TYPES
+    INLINE_MENU_UI_TYPES,
 } from './config';
 import { ClickItemHandler, InlineMenuItem } from './types';
 
