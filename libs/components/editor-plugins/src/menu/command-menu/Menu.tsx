@@ -212,7 +212,7 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
     const handleSelected = async (type: BlockFlavorKeys | string) => {
         const text = await editor.commands.textCommands.getBlockText(blockId);
         const block = await editor.getBlockById(blockId);
-        let textValue = block.getProperty('text').value;
+        const textValue = block.getProperty('text').value;
         editor.blockHelper.removeSearchSlash(blockId, true);
         if (type.startsWith('Virgo')) {
             const handler =
@@ -261,23 +261,21 @@ export const CommandMenu = ({ editor, hooks, style }: CommandMenuProps) => {
         >
             {show ? (
                 <MuiClickAwayListener onClickAway={handleClickAway}>
-                    <div>
-                        <CommandMenuContainer
-                            editor={editor}
-                            hooks={hooks}
-                            style={{
-                                ...commandMenuPosition,
-                                ...style,
-                            }}
-                            isShow={show}
-                            blockId={blockId}
-                            onSelected={handleSelected}
-                            onclose={handleClose}
-                            searchBlocks={searchBlocks}
-                            types={types}
-                            categories={categories}
-                        />
-                    </div>
+                    <CommandMenuContainer
+                        editor={editor}
+                        hooks={hooks}
+                        style={{
+                            ...commandMenuPosition,
+                            ...style,
+                        }}
+                        isShow={show}
+                        blockId={blockId}
+                        onSelected={handleSelected}
+                        onclose={handleClose}
+                        searchBlocks={searchBlocks}
+                        types={types}
+                        categories={categories}
+                    />
                 </MuiClickAwayListener>
             ) : (
                 <></>
