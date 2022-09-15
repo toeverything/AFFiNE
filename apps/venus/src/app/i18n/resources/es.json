@@ -1,4 +1,10 @@
 {
+    "Blog": "Blog",
+    "AboutUs": "Acerca de nosotros.",
+    "Open Source": "Código abierto",
+    "Docs": "Documentos",
+    "Feedback": "Comentarios",
+    "ContactUs": "Contáctenos",
     "Alternative": "Alternativa",
     "BuildFor": "Construir por un futuro abierto y semántico",
     "Check GitHub": "Revisar en GitHub",
@@ -7,6 +13,7 @@
     "Open Source": "Código abierto",
     "Privacy First": "La privacidad es lo primero",
     "Try it Online": "Prueba Online",
+    "language": "Idioma",
     "description1": {
         "part1": "Affine es un base de conocimiento colaborativa de próxima generación para los profesionales.",
         "part2": "Es más que una simple colección de Documentos, Pizarra y Tablas.",
