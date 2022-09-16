@@ -171,7 +171,7 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     };
     const handleLangChange = (lang: string) => {
         block.setProperty('lang', lang);
-        setExtensions([langs[lang]()]);
+        langs[lang] && setExtensions([langs[lang]()]);
     };
     useEffect(() => {
         handleLangChange(langType ? langType : DEFAULT_LANG);

@@ -38,7 +38,8 @@
         "react-window": "^1.8.7",
         "slate": "^0.81.1",
         "slate-react": "^0.81.0",
-        "style9": "^0.14.0"
+        "style9": "^0.14.0",
+        "html-escaper": "^3.0.3"
     },
     "devDependencies": {
         "@types/codemirror": "^5.60.5",

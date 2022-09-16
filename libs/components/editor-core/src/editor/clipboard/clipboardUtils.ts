@@ -1,15 +1,15 @@
+import { Protocol } from '@toeverything/datasource/db-service';
+import { AsyncBlock } from '../block';
 import { Editor } from '../editor';
 import { SelectBlock, SelectInfo } from '../selection';
-import { AsyncBlock } from '../block';
-import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import { Clip } from './clip';
+import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
 import {
     commonHTML2Block,
     commonHTML2Text,
     getIsTextLink,
     linkText2Block,
 } from './utils';
-
 export class ClipboardUtils {
     private _editor: Editor;
     constructor(editor: Editor) {
@@ -161,12 +161,37 @@ export class ClipboardUtils {
         return this.convertHtml2Blocks(htmlEl);
     }
     async convertHtml2Blocks(element: Element): Promise<ClipBlockInfo[]> {
-        const editableViews = this._editor.getEditableViews();
+        // const editableViews = this._editor.getEditableViews();
         // 如果block能够捕捉htmlElement则返回block的html2block
+        const CONVERT_SORT_LIST = [
+            Protocol.Block.Type.page,
+            Protocol.Block.Type.reference,
+            Protocol.Block.Type.code,
+            Protocol.Block.Type.text,
+            Protocol.Block.Type.heading1,
+            Protocol.Block.Type.heading2,
+            Protocol.Block.Type.heading3,
+            Protocol.Block.Type.quote,
+            Protocol.Block.Type.todo,
+            Protocol.Block.Type.file,
+            Protocol.Block.Type.image,
+            Protocol.Block.Type.divider,
+            Protocol.Block.Type.callout,
+            Protocol.Block.Type.youtube,
+            Protocol.Block.Type.figma,
+            Protocol.Block.Type.group,
+            Protocol.Block.Type.embedLink,
+            Protocol.Block.Type.numbered,
+            Protocol.Block.Type.bullet,
+            Protocol.Block.Type.grid,
+            Protocol.Block.Type.gridItem,
+            Protocol.Block.Type.groupDivider,
+        ];
+
         const [clipBlockInfos] = (
             await Promise.all(
-                editableViews.map(editableView => {
-                    return editableView?.html2block?.({
+                CONVERT_SORT_LIST.map(type => {
+                    return this._editor.getView(type)?.html2block?.({
                         editor: this._editor,
                         element: element,
                     });
