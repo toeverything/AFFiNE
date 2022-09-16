@@ -1,12 +1,7 @@
-import { useState, useEffect } from 'react';
+import { MuiGrow as Grow, styled } from '@toeverything/components/ui';
 import { Protocol } from '@toeverything/datasource/db-service';
-import {
-    MuiClickAwayListener as ClickAwayListener,
-    MuiGrow as Grow,
-    styled,
-} from '@toeverything/components/ui';
-
-import { Virgo, SelectionInfo } from '@toeverything/framework/virgo';
+import { SelectionInfo, Virgo } from '@toeverything/framework/virgo';
+import { useEffect, useState } from 'react';
 import { InlineMenuToolbar } from './Toolbar';
 
 export type InlineMenuContainerProps = {
@@ -47,11 +42,18 @@ export const InlineMenuContainer = ({ editor }: InlineMenuContainerProps) => {
 
             // This is relative to window
             const rect = browserSelection.getRangeAt(0).getBoundingClientRect();
-            const { top, left } = editor.container.getBoundingClientRect();
+
+            const { top, left, right } =
+                editor.container.getBoundingClientRect();
+            let menuLeft = rect.left - left;
+            if (right - rect.right < 500) {
+                // If the inline-menu is further away from the right than the button itself, a scroll bar will appear
+                menuLeft -= 500;
+            }
             setSelectionInfo(info);
             setShowMenu(true);
             setContainerStyle({
-                left: rect.left - left,
+                left: menuLeft,
                 top: rect.top - top - 64,
             });
         });
@@ -89,6 +91,6 @@ const ToolbarContainer = styled('div')(({ theme }) => ({
     alignItems: 'center',
     padding: '0 12px',
     borderRadius: '10px',
-    boxShadow: theme.affine.shadows.shadow1,
+    boxShadow: theme.affine.shadows.shadow3,
     backgroundColor: '#fff',
 }));
