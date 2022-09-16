@@ -17,7 +17,7 @@ export const LOCALES = [
         res: zh_Hans,
     },
     {
-        name: '',
+        name: 'Traditional Chinese',
         tag: 'zh-Hant',
         originalName: '繁體中文',
         res: zh_Hant,
