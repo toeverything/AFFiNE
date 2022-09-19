@@ -1,9 +1,8 @@
 import { StrictMode } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
 
 import { BasePlugin } from '../../base-plugin';
-import { CommandMenu } from './Menu';
 import { PluginRenderRoot } from '../../utils';
+import { CommandMenu } from './Menu';
 
 const PLUGIN_NAME = 'command-menu';
 

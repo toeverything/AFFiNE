@@ -237,6 +237,8 @@ export const Theme = {
             '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
         shadow2:
             '0px 6px 16px -8px rgba(0,0,0,0.08), 0px 9px 14px 0px rgba(0,0,0,0.05), 0px 12px 24px 16px rgba(0,0,0,0.03)',
+        shadow3:
+            '0px 1px 10px -6px rgb(24 39 75 / 50%), 0px 3px 16px -6px rgb(24 39 75 / 30%)',
     },
     border: ['none'],
     spacing: {

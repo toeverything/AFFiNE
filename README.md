@@ -59,7 +59,10 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![affine.pro](https://img.shields.io/static/v1?label=Try%20it%20Online&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAhpJREFUWEdjZEACtnl3MxgY/0YzMjAaMzAwcCLLUYH9/T/D/7MM/5mXHp6kPANmHiOI4Zx9Xfg3C+tKBob/zlSwiAgjGPey/vkdvneq5luwA+zy7+yhn+Vwv+89NFHFhREU7IyM/6YT4WyqK/n/nymT0Tb/1mFGBkYbqptOhIH/Gf4fYbTLv/2NBgmOCOvBSr6DHPCfWNW0UEe2A2x1uRlakiXBbtpx6jND+7KXZLmPbAdURokzeJjxwi31rrzH8OX7P5IdQbYDtnUoMXBzMMEt7Fj2imH7qU/0cQBy8MNsPHL5K0P13Of0cQB68MNsJScaSI4CHk4mhq3tSnCf3n36k0FZmh3Mn7L+DcPqgx9ICgWSHeBpxsdQESUGtgRk+eqDH+H8O09/MiR3P6atA1qTJRlsdLnhPgYlPOQQCW96wPDi3R+iHUFSCKAHP8wydEeREg0kOQA9+JOgwR1qL8CQEygC9jWp0UCSA+aVysIT3JqDHxgmr38DtlRCiIVhZZ0CPNhB6QDkEGIA0Q4gZAkuxxFyBNEOQA7ml+/+MIQ1PUAxG1kelAhB6YMYQLQDCPmQUAjhcgxRDiDWcEKOxOYIohyQGyjCEGIvANaPLfhhBiNHA6hmBBXNhABRDgCV/aBQAAFQpYMrn4PUgNTCACiXEMoNRDmAkC8okR8UDhjYRumAN8sHvGMCSkAD2jUDOWDAO6ewbDQQ3XMAy/oxKownQR0AAAAASUVORK5CYII=&message=%E2%86%92&style=for-the-badge)](https://affine.pro) No installation or registration required! Head over to our website and try it out now.
 
 Want to deploy it yourself? AFFiNE can run just about anywhere. <br />
-You can refer to our documentation which can be found from the [useful links](#useful-links) section - where you will also find ways to help contribute to the project and join our communities.
+
+[AFFiNE Documentation](https://docs.affine.pro/affine/) - More detailed documentation on how to use and develop with AFFiNE
+
+AFFiNE Communities: [Discord](https://discord.gg/yz6tGVsf5p) | [Telegram](https://t.me/affineworkos) | [Twitter](https://twitter.com/AffineOfficial)
 <br /><br />
 ⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
 
@@ -79,19 +82,6 @@ And when it comes to collaboration, these features are not just necessarily for 
 ### Sort your knowledge
 
 ![c9e1ff46-cec2-411b-b89d-6727a5e6f6c3](https://user-images.githubusercontent.com/79301703/182366602-08e44d28-a031-4097-9904-52fb9b1e9e17.gif)
-
-# Useful Links
-
--   [AFFiNE Documentation](https://docs.affine.pro/affine/) - More detailed documentation on how to use and develop with AFFiNE
-
--   [Feature Roadmap](https://github.com/toeverything/AFFiNE/issues/293) - Looking for a feature? It might already be planned for release - you can check here
--   [Release Notes](https://github.com/toeverything/AFFiNE/wiki) - Find out what changes we are making and how we are improving AFFiNE
-
--   [Contributing Guide](/docs/CONTRIBUTING.md) - Want to help improve AFFiNE? You might not even need to write a line of code. Find out how you can contribute.
--   [Code of Conduct](/docs/CODE_OF_CONDUCT.md) - How we promote and maintain a harassment-free experience for everyone in our community.
-
--   AFFiNE Communities: [Discord](https://discord.gg/yz6tGVsf5p) | [Telegram](https://t.me/affineworkos) | [Twitter](https://twitter.com/AffineOfficial) |
-    [Medium](https://medium.com/@affineworkos) | [AFFiNE Blog](https://blog.affine.pro)
 
 # Contact Us
 

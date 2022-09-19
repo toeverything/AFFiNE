@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Descendant } from 'slate';
 import { RenderElementProps } from 'slate-react';
+import { styled } from '@toeverything/components/ui';
 
 export type DoubleLinkElement = {
     type: 'link';
@@ -12,6 +13,10 @@ export type DoubleLinkElement = {
     children: Descendant[];
     id: string;
 };
+
+const StyledLink = styled('a')({
+    cursor: 'pointer',
+});
 
 export const DoubleLinkComponent = (props: RenderElementProps) => {
     const { attributes, children, element } = props;
@@ -32,15 +37,20 @@ export const DoubleLinkComponent = (props: RenderElementProps) => {
 
     return (
         <span onClick={handleClickLinkText}>
-            <a {...attributes} style={{ cursor: 'pointer' }}>
+            <StyledLink {...attributes}>
                 <PagesIcon
-                    style={{ verticalAlign: 'middle', height: '20px' }}
+                    style={{
+                        verticalAlign: 'middle',
+                        height: '1em',
+                        fontSize: 'inherit',
+                        marginBottom: '.2em',
+                    }}
                 />
                 <span>
                     {children}
                     {displayValue}
                 </span>
-            </a>
+            </StyledLink>
         </span>
     );
 };

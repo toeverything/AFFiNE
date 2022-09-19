@@ -5,6 +5,34 @@ import { ClipBlockInfo } from './types';
 const getIsLink = (htmlElement: HTMLElement) => {
     return ['A', 'IMG'].includes(htmlElement.tagName);
 };
+export const getIsTextLink = (str: string) => {
+    const regex = new RegExp(
+        /https?:\/\/(www\.)?[-a-zA-Z\d@:%._+~#=]{1,256}\.[a-zA-Z\d()]{1,6}\b([-a-zA-Z\d()@:%_+.~#?&//=]*)/gi
+    );
+    return regex.test(str);
+};
+export const linkText2Block = (url: string) => {
+    return {
+        type: 'text',
+        properties: {
+            text: {
+                value: [
+                    {
+                        children: [
+                            {
+                                text: url,
+                            },
+                        ],
+                        type: 'link',
+                        url: url,
+                        id: getRandomString('link'),
+                    },
+                ],
+            },
+        },
+        children: [],
+    } as unknown as ClipBlockInfo;
+};
 const getTextStyle = (htmlElement: HTMLElement) => {
     const tagName = htmlElement.tagName;
     const textStyle: { [key: string]: any } = {};

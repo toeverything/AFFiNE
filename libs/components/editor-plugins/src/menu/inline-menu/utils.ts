@@ -22,7 +22,6 @@ import {
     HeadingTwoIcon,
     ImageIcon,
     LinkIcon,
-    MoreIcon,
     NumberIcon,
     PagesIcon,
     QuoteIcon,
@@ -827,13 +826,13 @@ export const getInlineMenuData = ({
             nameKey: inlineMenuNamesKeys.backlinks,
             onClick: common_handler_for_inline_menu,
         },
-        {
-            type: INLINE_MENU_UI_TYPES.icon,
-            icon: MoreIcon,
-            name: inlineMenuNames.moreActions,
-            nameKey: inlineMenuNamesKeys.moreActions,
-            onClick: common_handler_for_inline_menu,
-        },
+        // {
+        //     type: INLINE_MENU_UI_TYPES.icon,
+        //     icon: MoreIcon,
+        //     name: inlineMenuNames.moreActions,
+        //     nameKey: inlineMenuNamesKeys.moreActions,
+        //     onClick: common_handler_for_inline_menu,
+        // },
     ];
 
     return inlineMenuData.filter(item => Boolean(item));

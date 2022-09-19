@@ -1,28 +1,24 @@
 import React, {
-    useEffect,
-    useState,
-    useMemo,
     useCallback,
+    useEffect,
+    useMemo,
     useRef,
+    useState,
 } from 'react';
-import style9 from 'style9';
 
-import { BlockFlavorKeys } from '@toeverything/datasource/db-service';
-import { Virgo, PluginHooks, HookType } from '@toeverything/framework/virgo';
 import {
     CommonList,
-    CommonListItem,
     commonListContainer,
+    CommonListItem,
 } from '@toeverything/components/common';
+import { BlockFlavorKeys } from '@toeverything/datasource/db-service';
+import { HookType, PluginHooks, Virgo } from '@toeverything/framework/virgo';
 import { domToRect } from '@toeverything/utils';
 
-import { MenuCategories } from './Categories';
-import { menuItemsMap, CommandMenuCategories } from './config';
+import { styled } from '@toeverything/components/ui';
 import { QueryResult } from '../../search';
-import {
-    MuiClickAwayListener as ClickAwayListener,
-    styled,
-} from '@toeverything/components/ui';
+import { MenuCategories } from './Categories';
+import { CommandMenuCategories, menuItemsMap } from './config';
 
 const RootContainer = styled('div')(({ theme }) => {
     return {
@@ -134,59 +130,75 @@ export const CommandMenuContainer = ({
 
     const handleClickUp = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (isShow && types && event.code === 'ArrowUp') {
-                event.preventDefault();
-                if (!currentItem && types.length) {
-                    setCurrentItem(types[types.length - 1]);
-                }
-                if (currentItem) {
-                    const idx = types.indexOf(currentItem);
-                    if (idx > 0) {
-                        setNeedCheckIntoView(true);
-                        setCurrentItem(types[idx - 1]);
-                    }
+            event.preventDefault();
+            if (!currentItem && types.length) {
+                setCurrentItem(types[types.length - 1]);
+            }
+            if (currentItem) {
+                const idx = types.indexOf(currentItem);
+                if (idx > 0) {
+                    setNeedCheckIntoView(true);
+                    setCurrentItem(types[idx - 1]);
                 }
             }
         },
-        [isShow, types, currentItem]
+        [types, currentItem]
     );
 
     const handleClickDown = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (isShow && types && event.code === 'ArrowDown') {
-                event.preventDefault();
-                if (!currentItem && types.length) {
-                    setCurrentItem(types[0]);
-                }
-                if (currentItem) {
-                    const idx = types.indexOf(currentItem);
-                    if (idx < types.length - 1) {
-                        setNeedCheckIntoView(true);
-                        setCurrentItem(types[idx + 1]);
-                    }
+            event.preventDefault();
+            if (!currentItem && types.length) {
+                setCurrentItem(types[0]);
+            }
+            if (currentItem) {
+                const idx = types.indexOf(currentItem);
+                if (idx < types.length - 1) {
+                    setNeedCheckIntoView(true);
+                    setCurrentItem(types[idx + 1]);
                 }
             }
         },
-        [isShow, types, currentItem]
+        [types, currentItem]
     );
 
     const handleClickEnter = useCallback(
         async (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (isShow && event.code === 'Enter' && currentItem) {
-                event.preventDefault();
-                onSelected && onSelected(currentItem);
-            }
+            event.preventDefault();
+            onSelected && onSelected(currentItem);
         },
-        [isShow, currentItem, onSelected]
+        [currentItem, onSelected]
     );
 
     const handleKeyDown = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            handleClickUp(event);
-            handleClickDown(event);
-            handleClickEnter(event);
+            if (!isShow) {
+                return;
+            }
+            if (event.nativeEvent.isComposing) {
+                return;
+            }
+            if (types && event.code === 'ArrowUp') {
+                handleClickUp(event);
+                return;
+            }
+            if (types && event.code === 'ArrowDown') {
+                handleClickDown(event);
+                return;
+            }
+            if (event.code === 'Enter' && currentItem) {
+                handleClickEnter(event);
+                return;
+            }
         },
-        [handleClickUp, handleClickDown, handleClickEnter]
+        [
+            isShow,
+            types,
+            currentItem,
+            handleClickUp,
+            handleClickDown,
+            handleClickEnter,
+        ]
     );
 
     useEffect(() => {
