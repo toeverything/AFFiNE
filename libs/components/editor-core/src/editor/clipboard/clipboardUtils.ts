@@ -4,7 +4,12 @@ import { Editor } from '../editor';
 import { SelectBlock, SelectInfo } from '../selection';
 import { Clip } from './clip';
 import { ClipBlockInfo, OFFICE_CLIPBOARD_MIMETYPE } from './types';
-import { commonHTML2Block, commonHTML2Text } from './utils';
+import {
+    commonHTML2Block,
+    commonHTML2Text,
+    getIsTextLink,
+    linkText2Block,
+} from './utils';
 export class ClipboardUtils {
     private _editor: Editor;
     constructor(editor: Editor) {
@@ -222,6 +227,11 @@ export class ClipboardUtils {
 
     textToBlock(clipData = ''): ClipBlockInfo[] {
         return clipData.split('\n').map((str: string) => {
+            const isLink = getIsTextLink(str);
+            if (isLink) {
+                return linkText2Block(clipData);
+            }
+
             return {
                 type: 'text',
                 properties: {
