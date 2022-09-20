@@ -1,6 +1,6 @@
 ## Fullstack Engineer
 
-The **AFFiNE** platform empowers 100000+ organizations to help teams and business scale faster and more efficiently.
+The **AFFiNE** 's vision is to scale 100000+ organizations' teams and businesses faster and more efficiently.
 We're hiring for multiple Fullstack Engineer positions across the building-blocks sub-team. The **building-blocks** team works to create the best **block-editor** and **open-block** protocol for AFFiNE Customers. This means people can manage their businesses and teams by AFFiNE.
 
 ## The work
