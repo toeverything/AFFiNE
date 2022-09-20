@@ -44,6 +44,6 @@ We're hiring for multiple Fullstack Engineer positions across the building-block
 -   Statutory holidays are not commuted, and additional 7+ holidays are obtained every year;
 -   Free lunch with gradually increasing meal standard;
 -   Travel and rent subsidies are customized according to individual needs;
--   Happy water and seasonal office snacks;
+-   Unlimited drinks and snacks;
 -   Free IELTS test open to all employees;
 -   Flexible and optional social security and provident fund payment locations
