@@ -2,6 +2,7 @@ import en from './en.json';
 import es from './es.json';
 import zh_Hans from './zh.json';
 import zh_Hant from './zh-Hant.json';
+import sr from './sr.json';
 
 export const LOCALES = [
     {
@@ -27,5 +28,11 @@ export const LOCALES = [
         tag: 'es',
         originalName: 'español',
         res: es,
+    },
+    {
+        name: 'Serbian',
+        tag: 'sr',
+        originalName: 'српски',
+        res: sr,
     },
 ] as const;
