@@ -19,7 +19,7 @@ We're hiring for multiple Fullstack Engineer positions across the building-block
 -   Professional software engineering experience with **editor** or **graphics** in large production environments
 -   Experience and proficiency in Rust, Go, or Java
 -   Production experience with JavaScript
--   Significant experience with React (ideal), Vue, and/or Angular.
+-   Significant experience with **React (ideal)**, Vue, and/or Angular.
 -   Significant experience with CSS, HTML semantics, and accessibility
 -   You have strong written communication skills
 -   You have demonstrated the ability to onboard and integrate with an organization long-term.
@@ -31,11 +31,11 @@ We're hiring for multiple Fullstack Engineer positions across the building-block
 -   Experience with SaaS billing
 -   Experience or familiarity with open source
 -   Experience with the AFFiNE product as a user or contributor
--   Experience working with a remote team
+-   Experience working with **a remote team**
 -   Enterprise software company experience
--   Experience scaling a successful SaaS product
+-   Experience scaling **a successful SaaS product**
 -   Developer platform/tool industry experience
--   Experience working with a global team
+-   Experience working with **a global team**
 
 ### What we offer
 
