@@ -16,9 +16,7 @@ function getLocation() {
 function getCollaborationPoint() {
     const { protocol, host } = getLocation();
     const ws = protocol.startsWith('https') ? 'wss' : 'ws';
-    const isOnline = host.endsWith('affine.pro');
-    const site = isOnline ? host : 'localhost:3000';
-    return `${ws}://${site}/collaboration/`;
+    return `${ws}://${host}/collaboration/`;
 }
 
 export const BucketBackend = {
