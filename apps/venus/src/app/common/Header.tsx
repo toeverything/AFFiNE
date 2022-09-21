@@ -140,7 +140,7 @@ export const AFFiNEHeader = () => {
                     }}
                 />
                 <Select
-                    defaultValue={i18n.language}
+                    defaultValue={i18n.resolvedLanguage}
                     sx={{ display: matchesIPAD ? 'none' : 'intial' }}
                     onChange={changeLanguage}
                     size="md"
