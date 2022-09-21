@@ -11,13 +11,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const Style9Plugin = require('style9/webpack');
 
 const enableBundleAnalyzer = process.env.BUNDLE_ANALYZER;
-
-function generateHubspotScript() {
-    const hubspotApiSecret = process.env.HUBSPOT_API_SECRET;
-    if (hubspotApiSecret) {
-        return `<script type="text/javascript" id="hs-script-loader" async defer src="//js-na1.hs-scripts.com/${hubspotApiSecret}.js"></script>`;
-    }
-}
+const embedHeaderScript = process.env.AFFINE_EMBED_HEADER;
 
 module.exports = function (webpackConfig) {
     const config = getNxWebpackConfig(webpackConfig);
@@ -185,7 +179,7 @@ module.exports = function (webpackConfig) {
                 ), //favicon path
                 template: path.resolve(__dirname, './src/template.html'),
                 publicPath: '/',
-                hubspotScript: generateHubspotScript(),
+                embedHeaderScript,
             }),
         new Style9Plugin(),
         isProd &&
