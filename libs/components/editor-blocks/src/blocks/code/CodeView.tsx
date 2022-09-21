@@ -153,6 +153,7 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
     const langType: string = block.getProperty('lang');
     const [extensions, setExtensions] = useState<Extension[]>();
     const [showOperationPanel, setShowOperationPanel] = useState(false);
+    const [selectOpen, setSelectOpen] = useState(false);
     const isSelecting = useRef(false);
     const codeMirror = useRef<ReactCodeMirrorRef>();
     const focusCode = () => {
@@ -197,6 +198,7 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
                     setShowOperationPanel(true);
                 }}
                 onMouseLeave={() => {
+                    setSelectOpen(false);
                     !isSelecting.current && setShowOperationPanel(false);
                 }}
             >
@@ -210,9 +212,11 @@ export const CodeView = ({ block, editor }: CreateCodeView) => {
                             onChange={(selectedValue: string) => {
                                 handleLangChange(selectedValue);
                             }}
-                            onListboxOpenChange={() => {
+                            onListboxOpenChange={open => {
+                                setSelectOpen(open);
                                 isSelecting.current = true;
                             }}
+                            open={selectOpen}
                         >
                             {Object.keys(langs).map(item => {
                                 return (
