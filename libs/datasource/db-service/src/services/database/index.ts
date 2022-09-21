@@ -8,21 +8,12 @@ import {
     BlockMatcher,
     Connectivity,
 } from '@toeverything/datasource/jwt';
-import { sleep } from '@toeverything/utils';
 
 import type { ObserveCallback, ReturnUnobserve } from './observer';
 import { getObserverName, ObserverManager } from './observer';
 export type { ObserveCallback, ReturnUnobserve } from './observer';
 
-const workspaces: Record<string, BlockClientInstance> = {};
-
-const loading = new Set();
-
-const waitLoading = async (key: string) => {
-    while (loading.has(key)) {
-        await sleep(50);
-    }
-};
+const workspaces: Record<string, Promise<BlockClientInstance>> = {};
 
 async function _getCurrentToken() {
     if (!process.env['NX_LOCAL']) {
@@ -48,20 +39,15 @@ async function _getBlockDatabase(
     workspace: string,
     options?: BlockInitOptions
 ) {
-    if (loading.has(workspace)) {
-        await waitLoading(workspace);
-    }
-
     if (!workspaces[workspace]) {
-        loading.add(workspace);
-        workspaces[workspace] = await BlockClient.init(workspace, {
-            enabled: _enabled[workspace] || ['idb'],
-            ...options,
-            token: await _getCurrentToken(),
-        });
+        workspaces[workspace] = _getCurrentToken().then(token =>
+            BlockClient.init(workspace, {
+                enabled: _enabled[workspace] || ['idb'],
+                ...options,
+                token,
+            })
+        );
         (window as any).client = workspaces[workspace];
-        await workspaces[workspace].buildIndex();
-        loading.delete(workspace);
     }
     return workspaces[workspace];
 }
