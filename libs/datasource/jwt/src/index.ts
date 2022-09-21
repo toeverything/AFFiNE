@@ -641,7 +641,7 @@ export class BlockClient<
         const { importData, exportData, hasExporter, installExporter } =
             getDataExporter();
 
-        const instance = await YjsAdapter.init(workspace, {
+        const yjsAdapter = await YjsAdapter.init(workspace, {
             provider: getYjsProviders({
                 enabled: [],
                 backend: BucketBackend.YjsWebSocketAffine,
@@ -652,10 +652,17 @@ export class BlockClient<
             }),
             ...options,
         });
-        return new BlockClient(instance, workspace, {
-            ...options,
-            installExporter,
-        });
+
+        const blockClient: BlockClientInstance = new BlockClient(
+            yjsAdapter,
+            workspace,
+            {
+                ...options,
+                installExporter,
+            }
+        );
+        await blockClient.buildIndex();
+        return blockClient;
     }
 }
 
