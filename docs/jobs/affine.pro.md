@@ -47,3 +47,4 @@ We're hiring for multiple Fullstack Engineer positions across the building-block
 -   Unlimited drinks and snacks;
 -   Free IELTS test open to all employees;
 -   Flexible and optional social security and provident fund payment locations
+-   Become a maintainer of great open source projects and use Copilot powered by Github for free
