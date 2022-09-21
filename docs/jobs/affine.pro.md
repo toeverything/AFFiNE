@@ -1,50 +1,40 @@
+## What we do
+
+We **AFFiNE** hold a vision of shaping a world where all block components in modern applications are semantically connected.
+We're open for Fullstack Engineer positions across the building-blocks sub-team. The **building-blocks** team works to create the best **block-editor** and **open-block** protocol for use in AFFiNE. Paving the way for a new generation of SaaS software and developers.
+
 ## Fullstack Engineer
 
-The **AFFiNE** 's vision is to scale 100000+ organizations' teams and businesses faster and more efficiently.
-We're hiring for multiple Fullstack Engineer positions across the building-blocks sub-team. The **building-blocks** team works to create the best **block-editor** and **open-block** protocol for AFFiNE Customers. This means people can manage their businesses and teams by AFFiNE.
+### This position is for:
 
-## The work
+-   Develop AFFiNE **the open source way**, including coding and community engagement
+-   Researching and supporting onboarding of new use cases affine.com subscribers
+-   Improving our **block editor** and **graphic editor**
+-   Assist our subscribers in utilizing our product in a data-based way with help from the operational teams
+-   Research on better activation of potential subscribers. At AFFiNE, developers are self-organized individual engineers who are also responsible team members whether they are on-site or working remotely.
 
-### Below is a selection of the initiatives that you may work on:
+### What we are looking for:
 
--   Contribute to **AFFiNE Open-Source**, including documents and code
--   Improve provisioning and onboarding of new sales-assisted affine.com subscribers
--   Improvement to Pager Editor and Edgeless Editor
--   Improvement to Billable Members
--   Research feedback for future-dated amendments in Subscription Admin
-    At AFFiNE, developers are independent and self-organized individual contributors who work together as a tight team in a remote and agile way.
+-   Software engineering experience with **editor** or **graphics** with professional real-world use cases
+-   Experience and proficiency in **JavaScript** and a **second programming language** preferably **Rust**
+-   You have strong communication and writing skills in English.
+-   You are comfortable working in a diverse and cross-functional team
+-   You love the spirit of open source, share our visions and work under those values
 
-### What will you bring
+### It would be great if you have/are：
 
--   Professional software engineering experience with **editor** or **graphics** in large production environments
--   Experience and proficiency in Rust, Go, or Java
--   Production experience with JavaScript
--   Significant experience with **React (ideal)**, Vue, and/or Angular.
--   Significant experience with CSS, HTML semantics, and accessibility
--   You have strong written communication skills
--   You have demonstrated the ability to onboard and integrate with an organization long-term.
--   You are comfortable working in a cross-functional organization
--   You are able to use AFFiNE or productivity products
--   You share our values and work in accordance with those values
-    It would be great if you have
--   Experience with license or subscription management
--   Experience with SaaS billing
--   Experience or familiarity with open source
--   Experience with the AFFiNE product as a user or contributor
--   Experience working with **a remote team**
--   Enterprise software company experience
+-   Incredible **React** or **web components(lit)** experts
+-   Knowledge/project management tool enthusiast
+-   Licensing or subscription management or enterprise software company experience
 -   Experience scaling **a successful SaaS product**
 -   Developer platform/tool industry experience
--   Experience working with **a global team**
+-   Experience working with a **globally distributed team**
+-   Love AFFiNE products as a user or contributor
 
 ### What we offer
 
--   Humanized office equipment (MacBook pro + iPad Air + ergonomic chair, lift table), equipment purchase authorization of $2800
--   Except for public holidays, the annual paid annual leave is 12 working days, which can be increased year by year according to the working hours;
--   Statutory holidays are not commuted, and additional 7+ holidays are obtained every year;
--   Free lunch with gradually increasing meal standard;
--   Travel and rent subsidies are customized according to individual needs;
--   Unlimited drinks and snacks;
--   Free IELTS test open to all employees;
--   Flexible and optional social security and provident fund payment locations
--   Become a maintainer of great open source projects and use Copilot powered by Github for free
+-   $2800 vouchers for latest MacBook Pro or working equipment of your choice
+-   Public holidays and paid annual leave starting at 12 days
+-   Free lunch, unlimited drinks and snacks
+-   Free English language lessons (including free IELTS test) open to all employees
+-   Become a maintainer of great open source projects and use Copilot powered by GitHub for free if you want
