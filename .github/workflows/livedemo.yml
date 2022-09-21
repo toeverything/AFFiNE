@@ -71,7 +71,7 @@ jobs:
                   tags: ${{ env.LOCAL_CACHE }}
                   target: AFFiNE
                   build-args: |
-                    HUBSPOT_API_SECRET=${{ secrets.HUBSPOT_API_SECRET }}
+                    AFFINE_EMBED_HEADER=${{ secrets.AFFINE_EMBED_HEADER }}
 
             - name: Build and push Docker image (AFFINE-Local)
               uses: docker/build-push-action@v3
