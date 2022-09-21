@@ -22,6 +22,7 @@ We're open for Fullstack Engineer positions across the building-blocks sub-team.
 -   You love the spirit of open source, share our visions and work under those values
 
 ### It would be great if you have/are：
+
 -   Incredible **React** or **web components(lit)** experts
 -   Knowledge/project management tool enthusiast
 -   Licensing or subscription management or enterprise software company experience
@@ -32,7 +33,7 @@ We're open for Fullstack Engineer positions across the building-blocks sub-team.
 
 ### What we offer
 
--   $2800 vouchers for latest MacBook Pro or working equipment of your choice 
+-   $2800 vouchers for latest MacBook Pro or working equipment of your choice
 -   Public holidays and paid annual leave starting at 12 days
 -   Free lunch, unlimited drinks and snacks
 -   Free English language lessons (including free IELTS test) open to all employees
