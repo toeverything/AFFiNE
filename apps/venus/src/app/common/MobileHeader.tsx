@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { LOCALES } from '../i18n';
 import AFFiNETextLogo from './affine-text-logo.png';
 
 export const MobileHeader = () => {
@@ -163,18 +164,21 @@ export const MobileHeader = () => {
                             timeout="auto"
                             unmountOnExit
                         >
-                            <ListItemButton
-                                onClick={() => i18n.changeLanguage('en')}
-                            >
-                                <ListItemText primary="English" />
-                                <Checkbox checked={i18n.language === 'en'} />
-                            </ListItemButton>
-                            <ListItemButton
-                                onClick={() => i18n.changeLanguage('zh')}
-                            >
-                                <ListItemText primary="简体中文" />
-                                <Checkbox checked={i18n.language === 'zh'} />
-                            </ListItemButton>
+                            {LOCALES.map(lang => (
+                                <ListItemButton
+                                    key={lang.tag}
+                                    onClick={() =>
+                                        i18n.changeLanguage(lang.tag)
+                                    }
+                                >
+                                    <ListItemText primary={lang.originalName} />
+                                    <Checkbox
+                                        checked={
+                                            i18n.resolvedLanguage === lang.tag
+                                        }
+                                    />
+                                </ListItemButton>
+                            ))}
                         </Collapse>
                     </List>
                 </StyledDrawerContainer>
