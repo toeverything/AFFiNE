@@ -47,7 +47,7 @@ async function _getBlockDatabase(
                 token,
             })
         );
-        (window as any).client = workspaces[workspace];
+        (window as any).client = await workspaces[workspace];
     }
     return workspaces[workspace];
 }
