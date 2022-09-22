@@ -43,3 +43,5 @@ Thumbs.db
 *.env.local
 *.local.env
 .history
+
+.next
