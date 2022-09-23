@@ -32,7 +32,7 @@ async function _getCurrentToken() {
 
 const _enabled = {
     demo: [],
-    AFFiNE: process.env['NX_KECK'] ? ['idb', 'keck'] : ['idb'],
+    AFFiNE: process.env['NX_KECK'] ? ['keck'] : ['idb'],
 } as any;
 
 async function _getBlockDatabase(
