@@ -1,4 +1,4 @@
-import { Editor } from '@toeverything/components/board-shapes';
+import { defaultStyle, Editor } from '@toeverything/components/board-shapes';
 import type { TDShape } from '@toeverything/components/board-types';
 import type { ReturnEditorBlock } from '@toeverything/datasource/db-service';
 import { services } from '@toeverything/datasource/db-service';
@@ -12,7 +12,35 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
     const [blocks, setBlocks] = useState<{
         shapes: [ReturnEditorBlock[]];
     }>();
+
     useEffect(() => {
+        const unobservesMap = new Map();
+        const observeChild = async (childId: string) => {
+            unobservesMap.set(
+                childId,
+                await services.api.editorBlock.observe(
+                    { workspace, id: childId },
+                    blockData => {
+                        setBlocks(data => {
+                            const blockShapes = data?.shapes?.[0];
+                            const idx =
+                                blockShapes.findIndex(
+                                    s => s.id === blockData.id
+                                ) || -1;
+                            const newBlockShapes = [...blockShapes];
+                            if (idx > -1) {
+                                newBlockShapes[idx] = blockData;
+                            } else {
+                                newBlockShapes.push(blockData);
+                            }
+                            return {
+                                shapes: [newBlockShapes],
+                            };
+                        });
+                    }
+                )
+            );
+        };
         Promise.all([
             services.api.editorBlock
                 .get({ workspace, ids: [rootBlockId] })
@@ -25,6 +53,7 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                                     ids: [childId],
                                 })
                             )?.[0];
+                            observeChild(childBlock.id);
                             return childBlock;
                         })
                     );
@@ -47,6 +76,9 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                                 ids: [childId],
                             })
                         )?.[0];
+                        if (!unobservesMap.has(childBlock.id)) {
+                            observeChild(childBlock.id);
+                        }
                         return childBlock;
                     })
                 ).then(shapes => {
@@ -65,17 +97,27 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
     }, [workspace, rootBlockId]);
 
     let groupCount = 0;
-    let blocksShapes = blocks?.shapes[0]?.reduce((acc, block) => {
+    const blocksShapes = blocks?.shapes[0]?.reduce((acc, block) => {
         const shapeProps = block.properties.shapeProps?.value
             ? JSON.parse(block.properties.shapeProps.value)
             : {};
         if (block.type === 'shape') {
-            acc[block.id] = { ...shapeProps, id: block.id };
+            acc[block.id] = {
+                type: 'rectangle',
+                size: [0, 0],
+                point: [0, 0],
+                parentId: rootBlockId,
+                ...shapeProps,
+                id: block.id,
+                style: { ...defaultStyle },
+                workspace,
+            };
         } else {
             acc[block.id] = Editor.getShape({
                 point: [groupCount * editorShapeInitSize + 200, 200],
                 id: block.id,
                 size: [editorShapeInitSize, 200],
+                parentId: rootBlockId,
                 ...shapeProps,
                 affineId: shapeProps.affineId ?? block.id,
                 workspace: block.workspace,
