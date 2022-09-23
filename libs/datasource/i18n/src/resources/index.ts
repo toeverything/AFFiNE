@@ -3,6 +3,8 @@
 // To overwrite this, please overwrite download.ts
 import en from './en.json';
 import zh_Hans from './zh-Hans.json';
+import zh_Hant from './zh-Hant.json';
+import sr from './sr.json';
 
 export const LOCALES = [
     {
@@ -24,5 +26,25 @@ export const LOCALES = [
         base: false,
         completeRate: 1,
         res: zh_Hans,
+    },
+    {
+        id: 1000016012,
+        name: 'Traditional Chinese',
+        tag: 'zh-Hant',
+        originalName: '繁體中文',
+        flagEmoji: '🇭🇰',
+        base: false,
+        completeRate: 1,
+        res: zh_Hant,
+    },
+    {
+        id: 1000034005,
+        name: 'Serbian',
+        tag: 'sr',
+        originalName: 'српски',
+        flagEmoji: '🇷🇸',
+        base: false,
+        completeRate: 0.9166666666666666,
+        res: sr,
     },
 ] as const;

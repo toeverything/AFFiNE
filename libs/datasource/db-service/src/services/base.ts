@@ -35,8 +35,8 @@ export abstract class ServiceBaseClass {
         name: string,
         callback: (meta: Map<string, any>) => void
     ) {
-        const db = await this.database.getDatabase(workspace);
-        db.history.onPush(name, callback);
+        // const db = await this.database.getDatabase(workspace);
+        // db.history.onPush(name, callback);
     }
 
     async onHistoryRevoke(
@@ -44,8 +44,8 @@ export abstract class ServiceBaseClass {
         name: string,
         callback: (meta: Map<string, any>) => void
     ) {
-        const db = await this.database.getDatabase(workspace);
-        db.history.onPop(name, callback);
+        // const db = await this.database.getDatabase(workspace);
+        // db.history.onPop(name, callback);
     }
 
     async undo(workspace: string) {

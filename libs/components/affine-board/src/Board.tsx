@@ -80,7 +80,8 @@ const AffineBoard = ({
                     );
                 },
                 async onChangePage(app, shapes, bindings, assets) {
-                    Promise.all(
+                    await services.api.editorBlock.suspend(workspace, true);
+                    await Promise.all(
                         Object.entries(shapes).map(async ([id, shape]) => {
                             if (shape === undefined) {
                                 return services.api.editorBlock.delete({
@@ -120,6 +121,7 @@ const AffineBoard = ({
                             }
                         })
                     );
+                    await services.api.editorBlock.suspend(workspace, false);
                 },
             }}
         />
