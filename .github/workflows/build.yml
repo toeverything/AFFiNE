@@ -59,7 +59,7 @@ jobs:
         run: pnpm export
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           path: ./out
 
@@ -82,9 +82,10 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
 
-      - uses: actions/download-artifact@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
         with:
-          path: out
+          path: out/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -117,7 +118,6 @@ jobs:
 
   #   # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
   #   permissions:
-  #     contents: read
   #     pages: write
   #     id-token: write
 
