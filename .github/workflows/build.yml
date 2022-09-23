@@ -85,6 +85,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
+          name: artifact
           path: out/
 
       - name: Log in to Docker Hub
@@ -105,5 +106,6 @@ jobs:
         with:
           context: .
           push: true
+          file: ./.github/deployment/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
