@@ -203,10 +203,10 @@ module.exports = function (webpackConfig) {
             new BundleAnalyzerPlugin({ analyzerMode: 'static' }),
     ].filter(Boolean);
 
-    // Workaround for webpack infinite recompile errors
     config.watchOptions = {
         // followSymlinks: false,
-        ignored: ['**/*.css'],
+        // Ignore css to workaround webpack infinite recompile errors
+        ignored: ['**/node_modules', '**/*.css'],
     };
 
     return config;
