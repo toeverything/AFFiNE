@@ -35,7 +35,9 @@ export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
                 <pre>
                     <code>{error.message}</code>
                 </pre>
-                <div>
+                <div
+                    style={{ display: 'flex', justifyContent: 'space-evenly' }}
+                >
                     <button onClick={copyError}>Copy Error</button>
                     <button onClick={refreshPage}>Refresh Page</button>
                 </div>
