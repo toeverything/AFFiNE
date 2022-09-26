@@ -165,7 +165,6 @@ const Wrapper = styled('div')<{
 }>({
     pointerEvents: 'all',
     position: 'relative',
-    fontFamily: 'sans-serif',
     fontSize: '2em',
     height: '100%',
     width: '100%',

@@ -1,111 +1,3 @@
-// import { ThemeOptions } from '@mui/material/styles';
-/**
- * @deprecated Please use the new {@link ThemeOptions} type.
- */
-interface ThemeOptionsLegacy {
-    palette: Palette;
-    typography: Typography;
-    shadows?: Shadows;
-    border?: StringWithNone;
-    spacing?: Spacing;
-    shape?: Shape;
-}
-
-interface Shape {
-    xsBorderRadius?: string;
-    borderRadius?: string;
-    smBorderRadius?: string;
-    lgBorderRadius?: string;
-}
-interface Spacing {
-    xsSpacing: string;
-    smSpacing?: string;
-    main?: string;
-    lgSpacing?: string;
-}
-interface Palette {
-    primary?: Action;
-    success?: Action;
-    info?: Action;
-    error?: Action;
-    warning?: Action;
-    text?: Action;
-}
-interface Action {
-    main: string;
-    active?: string;
-    hover?: string;
-    hoverOpacity?: number;
-    selected?: string;
-    selectedOpacity?: number;
-    disabled?: string;
-    disabledOpacity?: number;
-    disabledBackground?: string;
-    focus?: string;
-    focusOpacity?: number;
-    activatedOpacity?: number;
-}
-interface Typography {
-    fontSize?: string;
-    fontFamily?: string;
-    xsFontSize?: string;
-    lgFontSize?: string;
-    fontWeight?: number;
-    xsFontWeight?: number;
-    lineHeight?: string;
-    lgFontWeight?: number;
-    button?: Font;
-    body1?: Font;
-    body2?: Font;
-    h1?: Font;
-    h2?: Font;
-    h3?: Font;
-    h4?: Font;
-    h5?: Font;
-    page?: Font;
-    quote?: Font;
-    callout?: Font;
-}
-
-interface Shadows {
-    none: 'none';
-    shadow1: string;
-}
-
-type StringWithNone = [
-    'none',
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?,
-    string?
-];
-interface Font {
-    fontSize?: string;
-    lineHeight?: string;
-    fontFamily?: string;
-    fontWeight?: number;
-}
-
 export const Theme = {
     palette: {
         /**
@@ -166,6 +58,24 @@ export const Theme = {
         textHover: '#ECF1FB',
     },
     typography: {
+        fontFamily: (
+            [
+                '-apple-system',
+                'BlinkMacSystemFont',
+                'Helvetica Neue',
+                'Tahoma',
+                'PingFang SC',
+                'Microsoft Yahei',
+                'Arial',
+                'Hiragino Sans GB',
+                'sans-serif',
+                'Apple Color Emoji',
+                'Segoe UI Emoji',
+                'Segoe UI Symbol',
+                'Noto Color Emoji',
+            ] as const
+        ).join(', '),
+
         button: {
             fontSize: '16px',
         },
@@ -173,7 +83,6 @@ export const Theme = {
             fontSize: '16px',
             lineHeight: '22px',
             fontWeight: 400,
-            fontFamily: 'PingFang SC',
             color: '#3A4C5C',
         },
         h1: {
