@@ -5,6 +5,7 @@ on:
         branches: [master]
         paths:
             - 'apps/venus/**'
+            - 'libs/datasource/i18n'
             - '.github/deployment'
             - '.github/workflows/venus.yml'
     # pull_request:
