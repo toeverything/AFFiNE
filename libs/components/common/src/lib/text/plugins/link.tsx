@@ -519,7 +519,6 @@ const styles = style9.create({
         outline: 'none',
         border: 'none',
         padding: '0',
-        fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
         '::-webkit-input-placeholder': {
             color: '#98acbd',
         },

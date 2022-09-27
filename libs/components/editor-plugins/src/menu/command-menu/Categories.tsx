@@ -81,7 +81,6 @@ const styles = style9.create({
         color: '#98ACBD',
         fontSize: '12px',
         lineHeight: '14px',
-        fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
         textAlign: 'justify',
         letterSpacing: '1.5px',
     },

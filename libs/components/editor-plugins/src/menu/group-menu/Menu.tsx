@@ -61,7 +61,6 @@ export const Menu = ({
 };
 
 const MenuUl = styled('ul')(({ theme }) => ({
-    fontFamily: 'PingFang SC',
     background: '#FFF',
     color: '#4C6275',
     fontWeight: '400',

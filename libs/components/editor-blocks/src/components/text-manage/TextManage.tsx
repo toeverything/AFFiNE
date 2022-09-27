@@ -39,7 +39,6 @@ export type ExtendedTextUtils = SlateUtils & {
 };
 const TextBlockContainer = styled(Text)(({ theme }) => ({
     lineHeight: theme.affine.typography.body1.lineHeight,
-    fontFamily: theme.affine.typography.body1.fontFamily,
     color: theme.affine.typography.body1.color,
     letterSpacing: '0.1px',
     a: {

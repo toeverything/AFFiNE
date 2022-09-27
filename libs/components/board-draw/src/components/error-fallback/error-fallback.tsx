@@ -35,7 +35,9 @@ export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
                 <pre>
                     <code>{error.message}</code>
                 </pre>
-                <div>
+                <div
+                    style={{ display: 'flex', justifyContent: 'space-evenly' }}
+                >
                     <button onClick={copyError}>Copy Error</button>
                     <button onClick={refreshPage}>Refresh Page</button>
                 </div>
@@ -76,7 +78,6 @@ const InnerContainer = styled('div')({
     boxShadow: '$panel',
     maxWidth: 320,
     color: '$text',
-    fontFamily: '$ui',
     fontSize: '$2',
     textAlign: 'center',
     display: 'flex',
@@ -90,11 +91,9 @@ const InnerContainer = styled('div')({
         backgroundColor: '$hover',
         padding: '$4',
         borderRadius: '$2',
-        fontFamily: '"Menlo", "Monaco", monospace',
         fontWeight: 500,
     },
     '& p': {
-        fontFamily: '$body',
         lineHeight: 1.7,
         padding: '$5',
         margin: 0,
