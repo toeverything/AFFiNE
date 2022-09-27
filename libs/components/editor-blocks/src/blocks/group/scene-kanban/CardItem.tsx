@@ -52,8 +52,6 @@ const CardContainer = styled('div')({
     backgroundColor: '#fff',
     border: '1px solid #E2E7ED',
     borderRadius: '5px',
-    overflow: 'hidden',
-
     [CardActions.toString()]: {
         opacity: '0',
     },
