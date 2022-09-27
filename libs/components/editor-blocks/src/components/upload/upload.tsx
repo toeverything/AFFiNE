@@ -1,21 +1,21 @@
-import {
-    useRef,
-    ChangeEvent,
-    ReactElement,
-    useState,
-    SyntheticEvent,
-} from 'react';
 import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
 import {
-    styled,
-    SxProps,
-    MuiTextField as TextField,
+    MuiBox as Box,
     MuiButton as Button,
     MuiClickAwayListener as ClickAwayListener,
-    MuiTabs as Tabs,
     MuiTab as Tab,
-    MuiBox as Box,
+    MuiTabs as Tabs,
+    MuiTextField as TextField,
+    styled,
+    SxProps,
 } from '@toeverything/components/ui';
+import {
+    ChangeEvent,
+    ReactElement,
+    SyntheticEvent,
+    useRef,
+    useState,
+} from 'react';
 
 const MESSAGES = {
     ADD_AN_FILE: 'Add an file',
@@ -36,8 +36,9 @@ interface Props {
 }
 const styles: SxProps = {
     position: 'absolute',
-    width: '600px',
-    zIndex: 99,
+    width: '70%',
+    // maxWidth:'100%',
+    zIndex: 999,
     marginLeft: '50px',
     p: 1,
     bgcolor: 'background.paper',
