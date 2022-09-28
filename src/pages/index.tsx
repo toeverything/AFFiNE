@@ -14,19 +14,27 @@ const Home: NextPage = () => {
     <div>
       <Button>A button use the theme styles</Button>
       <simple-counter name="A counter created by web component" />
+      <p>current mode {mode}</p>
       <button
         onClick={() => {
-          changeMode(mode === 'dark' ? 'light' : 'dark');
+          changeMode('light');
         }}
       >
-        current theme mode :{mode}(click to change)
+        light
+      </button>
+      <button
+        onClick={() => {
+          changeMode('dark');
+        }}
+      >
+        dark
       </button>
       <button
         onClick={() => {
           changeMode('auto');
         }}
       >
-        click to set "auto" mode
+        auto
       </button>
     </div>
   );

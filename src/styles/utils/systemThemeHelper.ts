@@ -1,6 +1,6 @@
-import { Theme, ThemeMode } from '@/styles/types';
+import { Theme } from '../types';
 
-export class SystemTheme {
+export class SystemThemeHelper {
   media: MediaQueryList = window.matchMedia('(prefers-color-scheme: light)');
   eventList: Array<(e: Event) => void> = [];
   eventHandler = (e: Event) => {
@@ -27,15 +27,3 @@ export class SystemTheme {
     this.media.removeEventListener('change', this.eventHandler);
   };
 }
-
-export class LocalStorageThemeMode {
-  name = 'Affine-theme-mode';
-  get = (): ThemeMode | null => {
-    return localStorage.getItem(this.name) as ThemeMode | null;
-  };
-  set = (mode: ThemeMode) => {
-    localStorage.setItem(this.name, mode);
-  };
-}
-
-export const localStorageThemeMode = new LocalStorageThemeMode();

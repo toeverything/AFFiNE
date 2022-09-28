@@ -12,7 +12,7 @@ import {
   ThemeProviderValue,
 } from './types';
 import { lightTheme, darkTheme, globalThemeConstant } from './theme';
-import { SystemTheme, localStorageThemeMode } from '@/styles/utils';
+import { SystemThemeHelper, localStorageThemeHelper } from './utils';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
@@ -31,30 +31,34 @@ export const ThemeProvider = ({
   const changeMode = (themeMode: ThemeMode) => {
     themeMode !== mode && setMode(themeMode);
     // Remember the theme mode which user selected for next time
-    localStorageThemeMode.set(themeMode);
+    localStorageThemeHelper.set(themeMode);
   };
 
   useEffect(() => {
-    const systemTheme = new SystemTheme();
-    const selectedThemeMode = localStorageThemeMode.get();
+    setMode(localStorageThemeHelper.get() || 'auto');
+  }, []);
+
+  useEffect(() => {
+    const systemThemeHelper = new SystemThemeHelper();
+    const selectedThemeMode = localStorageThemeHelper.get();
 
     const themeMode = selectedThemeMode || mode;
     if (themeMode === 'auto') {
-      setTheme(systemTheme.get());
+      setTheme(systemThemeHelper.get());
     } else {
       setTheme(themeMode);
     }
 
     // When system theme changed, change the theme mode
-    systemTheme.onChange(() => {
+    systemThemeHelper.onChange(() => {
       // TODO: There may be should be provided a way to let user choose whether to
       if (mode === 'auto') {
-        setTheme(systemTheme.get());
+        setTheme(systemThemeHelper.get());
       }
     });
 
     return () => {
-      systemTheme.dispose();
+      systemThemeHelper.dispose();
     };
   }, [mode]);
 
