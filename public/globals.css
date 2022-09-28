@@ -144,9 +144,13 @@ button,
 select,
 keygen,
 legend {
-  font: 18px/1.14 arial, \5b8b\4f53;
   color: #333;
   outline: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, Helvetica Neue, Tahoma,
+    PingFang SC, Microsoft Yahei, Arial, Hiragino Sans GB, sans-serif,
+    Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
 }
 body {
   background: #fff;
