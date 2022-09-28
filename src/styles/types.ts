@@ -1,7 +1,8 @@
-export type ThemeMode = 'light' | 'dark';
+export type Theme = 'light' | 'dark';
+export type ThemeMode = Theme | 'auto';
 
 export type ThemeProviderProps = {
-  defaultThemeMode?: ThemeMode;
+  defaultTheme?: Theme;
 };
 
 export type ThemeProviderValue = {

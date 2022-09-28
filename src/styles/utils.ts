@@ -1,4 +1,4 @@
-import { ThemeMode } from '@/styles/types';
+import { Theme, ThemeMode } from '@/styles/types';
 
 export class SystemTheme {
   media: MediaQueryList = window.matchMedia('(prefers-color-scheme: light)');
@@ -11,7 +11,7 @@ export class SystemTheme {
     this.media.addEventListener('change', this.eventHandler);
   }
 
-  get = (): ThemeMode => {
+  get = (): Theme => {
     if (typeof window === 'undefined') {
       return 'light';
     }
@@ -37,3 +37,5 @@ export class LocalStorageThemeMode {
     localStorage.setItem(this.name, mode);
   };
 }
+
+export const localStorageThemeMode = new LocalStorageThemeMode();

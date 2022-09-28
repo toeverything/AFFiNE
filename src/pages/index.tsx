@@ -21,6 +21,13 @@ const Home: NextPage = () => {
       >
         current theme mode :{mode}(click to change)
       </button>
+      <button
+        onClick={() => {
+          changeMode('auto');
+        }}
+      >
+        click to set "auto" mode
+      </button>
     </div>
   );
 };

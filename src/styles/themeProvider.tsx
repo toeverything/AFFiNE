@@ -3,11 +3,16 @@ import {
   Global,
   css,
 } from '@emotion/react';
-import { createContext, useEffect, useRef, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
-import { ThemeMode, ThemeProviderProps, ThemeProviderValue } from './types';
+import {
+  Theme,
+  ThemeMode,
+  ThemeProviderProps,
+  ThemeProviderValue,
+} from './types';
 import { lightTheme, darkTheme, globalThemeConstant } from './theme';
-import { SystemTheme, LocalStorageThemeMode } from '@/styles/utils';
+import { SystemTheme, localStorageThemeMode } from '@/styles/utils';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
@@ -16,57 +21,53 @@ export const ThemeContext = createContext<ThemeProviderValue>({
 });
 
 export const ThemeProvider = ({
-  defaultThemeMode = 'light',
+  defaultTheme = 'light',
   children,
 }: PropsWithChildren<ThemeProviderProps>) => {
-  const { current: localStorageThemeMode } = useRef(
-    new LocalStorageThemeMode()
-  );
+  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [mode, setMode] = useState<ThemeMode>('auto');
 
-  const [mode, setMode] = useState<ThemeMode>(defaultThemeMode);
-  const theme = mode === 'dark' ? darkTheme : lightTheme;
-
+  const themeStyle = theme === 'light' ? lightTheme : darkTheme;
   const changeMode = (themeMode: ThemeMode) => {
-    setMode(themeMode);
+    themeMode !== mode && setMode(themeMode);
     // Remember the theme mode which user selected for next time
     localStorageThemeMode.set(themeMode);
   };
 
   useEffect(() => {
     const systemTheme = new SystemTheme();
-
-    // TODO: System theme mode and user theme mode which selected need to be prioritized
-    // If user has selected a theme mode, use it
     const selectedThemeMode = localStorageThemeMode.get();
-    if (selectedThemeMode) {
-      defaultThemeMode !== selectedThemeMode && setMode(selectedThemeMode);
+
+    const themeMode = selectedThemeMode || mode;
+    if (themeMode === 'auto') {
+      setTheme(systemTheme.get());
     } else {
-      // If user has not selected a theme mode, use system theme
-      const systemThemeMode = systemTheme.get();
-      defaultThemeMode !== systemThemeMode && setMode(systemThemeMode);
+      setTheme(themeMode);
     }
 
     // When system theme changed, change the theme mode
     systemTheme.onChange(() => {
       // TODO: There may be should be provided a way to let user choose whether to
-      setMode(systemTheme.get());
+      if (mode === 'auto') {
+        setTheme(systemTheme.get());
+      }
     });
 
     return () => {
       systemTheme.dispose();
     };
-  }, []);
+  }, [mode]);
 
   return (
-    <ThemeContext.Provider value={{ mode, changeMode, theme }}>
+    <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
       <Global
         styles={css`
           :root {
-            ${globalThemeConstant(theme)}
+            ${globalThemeConstant(themeStyle)}
           }
         `}
       />
-      <EmotionThemeProvider theme={theme}>{children}</EmotionThemeProvider>
+      <EmotionThemeProvider theme={themeStyle}>{children}</EmotionThemeProvider>
     </ThemeContext.Provider>
   );
 };
