@@ -88,6 +88,11 @@ export function Page(props: PageProps) {
                         {activeTab === TabMap.get(TAB_TITLE.TOC).value && (
                             <TOC />
                         )}
+                        {activeTab === TabMap.get(TAB_TITLE.GALLERY).value && (
+                            <StyledTextForGallery>
+                                Gallery coming soon...
+                            </StyledTextForGallery>
+                        )}
                     </WorkspaceSidebarContent>
                 </WorkspaceSidebar>
             </LigoLeftContainer>
@@ -201,4 +206,13 @@ const WorkspaceSidebarContent = styled('div')({
     flex: 'auto',
     overflow: 'hidden auto',
     marginTop: '18px',
+});
+
+const StyledTextForGallery = styled('div')(({ theme }) => {
+    return {
+        display: 'flex',
+        justifyContent: 'center',
+        color: theme.affine.palette.menu,
+        marginTop: theme.affine.spacing.lgSpacing,
+    };
 });

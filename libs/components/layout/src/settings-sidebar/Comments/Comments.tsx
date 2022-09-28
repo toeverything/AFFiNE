@@ -7,7 +7,20 @@ type CommentsProps = {
     resolveComment: (blockId: string, commentId: string) => void;
 };
 
-export const Comments = ({
+export const Comments = (props: CommentsProps) => {
+    return <StyledText>Comment coming soon...</StyledText>;
+};
+
+const StyledText = styled('div')(({ theme }) => {
+    return {
+        display: 'flex',
+        justifyContent: 'center',
+        color: theme.affine.palette.menu,
+        marginTop: theme.affine.spacing.lgSpacing,
+    };
+});
+
+export const BakComments = ({
     activeCommentId,
     resolveComment,
 }: CommentsProps) => {

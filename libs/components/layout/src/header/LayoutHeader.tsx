@@ -4,7 +4,7 @@ import {
     SideBarViewCloseIcon,
     SideBarViewIcon,
 } from '@toeverything/components/icons';
-import { IconButton, styled } from '@toeverything/components/ui';
+import { IconButton, styled, Tooltip } from '@toeverything/components/ui';
 import { useTranslation } from '@toeverything/datasource/i18n';
 import {
     useCurrentEditors,
@@ -51,16 +51,28 @@ export const LayoutHeader = () => {
                 </FlexContainer>
                 <FlexContainer>
                     <StyledHelper>
-                        <StyledShare disabled={true}>{t('Share')}</StyledShare>
+                        <Tooltip
+                            placement="bottom-end"
+                            content="Share function coming soon"
+                        >
+                            <StyledShare disabled={true}>
+                                {t('Share')}
+                            </StyledShare>
+                        </Tooltip>
                         <div style={{ margin: '0px 12px' }}>
-                            <IconButton
-                                size="large"
-                                hoverColor={'transparent'}
-                                onClick={handleSearch}
-                                disabled={true}
+                            <Tooltip
+                                placement="bottom-end"
+                                content="Search function coming soon"
                             >
-                                <SearchIcon />
-                            </IconButton>
+                                <IconButton
+                                    size="large"
+                                    hoverColor={'transparent'}
+                                    onClick={handleSearch}
+                                    disabled={true}
+                                >
+                                    <SearchIcon />
+                                </IconButton>
+                            </Tooltip>
                         </div>
 
                         <IconButton onClick={toggleInfoSidebar} size="large">
