@@ -8,7 +8,7 @@ type CommentsProps = {
 };
 
 export const Comments = (props: CommentsProps) => {
-    return <StyledText>Comment coming soon...</StyledText>;
+    return <StyledText>Comment function coming soon...</StyledText>;
 };
 
 const StyledText = styled('div')(({ theme }) => {

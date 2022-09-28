@@ -90,7 +90,7 @@ export function Page(props: PageProps) {
                         )}
                         {activeTab === TabMap.get(TAB_TITLE.GALLERY).value && (
                             <StyledTextForGallery>
-                                Gallery coming soon...
+                                Gallery function coming soon...
                             </StyledTextForGallery>
                         )}
                     </WorkspaceSidebarContent>
