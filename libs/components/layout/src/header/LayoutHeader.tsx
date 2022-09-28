@@ -121,7 +121,7 @@ const StyledHeaderRoot = styled('div')(({ theme }) => {
     };
 });
 
-const FlexContainer = styled('div')({ display: 'flex' });
+const FlexContainer = styled('div')({ display: 'flex', alignItems: 'center' });
 
 const TitleContainer = styled('div')(({ theme }) => {
     return {

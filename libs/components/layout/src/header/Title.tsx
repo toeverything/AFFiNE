@@ -72,7 +72,11 @@ export const CurrentPageTitle = () => {
     }, [pageTitle]);
 
     return pageTitle ? (
-        <ContentText type="sm" title={pageTitle}>
+        <ContentText
+            type="sm"
+            onClick={() => window.location.reload()}
+            title={pageTitle}
+        >
             {pageTitle}
         </ContentText>
     ) : null;
@@ -85,5 +89,12 @@ const ContentText = styled(Typography)(({ theme }) => {
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        padding: '6px 12px',
+        cursor: 'pointer',
+        borderRadius: '5px',
+
+        '&:hover': {
+            backgroundColor: '#F5F7F8',
+        },
     };
 });
