@@ -14,6 +14,7 @@ import {
 import { useCallback, useMemo } from 'react';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 import { fsApiSupported } from './FileSystem';
+import { Logo } from './Logo';
 import { CurrentPageTitle } from './Title';
 
 export const LayoutHeader = () => {
@@ -44,7 +45,7 @@ export const LayoutHeader = () => {
         <StyledContainerForHeaderRoot>
             <StyledHeaderRoot>
                 <FlexContainer>
-                    <StyledLogoIcon />
+                    <Logo />
                     <TitleContainer>
                         <CurrentPageTitle />
                     </TitleContainer>
