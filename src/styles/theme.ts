@@ -1,17 +1,20 @@
 import '@emotion/react';
+import { AffineTheme } from './types';
 
-interface AffineTheme {
-  colors: {
-    primary: string;
-  };
-}
-
-export const theme: AffineTheme = {
+export const lightTheme: AffineTheme = {
   colors: {
     primary: '#0070f3',
   },
 };
 
-declare module '@emotion/react' {
-  export interface Theme extends AffineTheme {}
-}
+export const darkTheme: AffineTheme = {
+  colors: {
+    primary: '#000',
+  },
+};
+
+export const globalThemeConstant = (theme: AffineTheme) => {
+  return {
+    '--color-primary': theme.colors.primary,
+  };
+};

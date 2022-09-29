@@ -1,7 +1,6 @@
-import { LitElement, css, html, unsafeCSS } from 'lit';
+import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import * as React from 'react';
-import { theme } from '@/styles';
 
 export const tagName = 'simple-counter';
 
@@ -28,7 +27,7 @@ export class Counter extends LitElement {
   static styles = css`
     .counter-container {
       display: flex;
-      color: ${unsafeCSS(theme.colors.primary)};
+      color: var(--color-primary);
     }
     button {
       margin: 0 5px;

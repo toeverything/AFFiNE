@@ -12,6 +12,7 @@
   "dependencies": {
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
+    "@emotion/server": "^11.10.0",
     "@emotion/styled": "^11.10.4",
     "lit": "^2.3.1",
     "next": "12.3.1",
