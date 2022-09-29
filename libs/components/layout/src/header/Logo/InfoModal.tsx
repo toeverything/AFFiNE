@@ -82,7 +82,7 @@ const CloseContainer = styled('div')(({ theme }) => ({
     borderRadius: '6px',
 
     '&:hover': {
-        backgroundColor: theme.affine.palette.tagHover,
+        backgroundColor: '#EDF3FF',
     },
 }));
 

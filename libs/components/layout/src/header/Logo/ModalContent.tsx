@@ -123,9 +123,13 @@ const LeftButtonContainer = styled('a')(({ theme }) => ({
     color: theme.affine.palette.primary,
     height: '110px',
     cursor: 'pointer',
-    padding: '6px 12px',
+    padding: '6px 24px 6px 28px',
     borderRadius: '10px',
     textDecoration: 'none',
+
+    '&:hover': {
+        backgroundColor: 'rgba(68, 97, 242, 0.1)',
+    },
 
     '& + &': {
         marginTop: '50px',
@@ -146,7 +150,7 @@ const LeftButtonText = styled('span')({
     color: '#000',
     fontSize: '24px',
     lineHeight: '36px',
-    width: '200px',
+    width: '180px',
     marginLeft: '40px',
     cursor: 'pointer',
 });

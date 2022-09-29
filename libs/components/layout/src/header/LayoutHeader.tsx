@@ -54,7 +54,7 @@ export const LayoutHeader = () => {
                     <StyledHelper>
                         <Tooltip
                             placement="bottom-end"
-                            content="Share function coming soon"
+                            content="Share function coming soon..."
                         >
                             <StyledShare disabled={true}>
                                 {t('Share')}
@@ -63,7 +63,7 @@ export const LayoutHeader = () => {
                         <div style={{ margin: '0px 12px' }}>
                             <Tooltip
                                 placement="bottom-end"
-                                content="Search function coming soon"
+                                content="Search function coming soon..."
                             >
                                 <IconButton
                                     size="large"
