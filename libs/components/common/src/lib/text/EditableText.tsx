@@ -552,8 +552,8 @@ export const Text = forwardRef<ExtendedTextUtils, TextProps>((props, ref) => {
         }
         // markdown interception
         if (supportMarkdown && handleMarkdown(e)) {
-            const start_selection = utils.current.getStartSelection();
-            utils.current.setSelection(start_selection);
+            const endOfMarkdown = utils.current.getEndSelection();
+            utils.current.setSelection(endOfMarkdown);
             e.preventDefault();
             return true;
         }
