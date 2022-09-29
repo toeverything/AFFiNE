@@ -1,21 +1,23 @@
-import {
-    useRef,
-    ChangeEvent,
-    ReactElement,
-    useState,
-    SyntheticEvent,
-} from 'react';
 import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
 import {
-    styled,
-    SxProps,
-    MuiTextField as TextField,
+    MuiBox as Box,
     MuiButton as Button,
     MuiClickAwayListener as ClickAwayListener,
-    MuiTabs as Tabs,
+    MuiPopper,
     MuiTab as Tab,
-    MuiBox as Box,
+    MuiTabs as Tabs,
+    MuiTextField as TextField,
+    styled,
+    SxProps,
 } from '@toeverything/components/ui';
+import {
+    ChangeEvent,
+    ReactElement,
+    SyntheticEvent,
+    useRef,
+    useState,
+    type MouseEvent,
+} from 'react';
 
 const MESSAGES = {
     ADD_AN_FILE: 'Add an file',
@@ -37,9 +39,10 @@ interface Props {
 const styles: SxProps = {
     position: 'absolute',
     width: '600px',
-    zIndex: 99,
-    marginLeft: '50px',
-    p: 1,
+    // maxWidth:'100%',
+    // The z-index of refPage is 200,
+    // so the z-index of upload need to be greater than it
+    zIndex: 201,
     bgcolor: 'background.paper',
     borderRadius: '4px',
     textAlign: 'center',
@@ -84,21 +87,22 @@ export const Upload = (props: Props) => {
     } = props;
     const input_ref = useRef<HTMLInputElement>(null);
     const [upload_link, set_upload_link] = useState('');
-
-    const [open, setOpen] = useState<boolean>(firstCreate);
     const type = ['file', 'image'].includes(uploadType) ? 'file' : 'link';
     const [value, setValue] = useState(type);
+
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
 
     const handleChange = (event: SyntheticEvent, newValue: string) => {
         setValue(newValue);
     };
 
-    const handleClick = () => {
-        setOpen(prev => !prev);
+    const handleClick = (event: MouseEvent<HTMLElement>) => {
+        setAnchorEl(anchorEl ? null : event.currentTarget);
     };
 
     const handleClickAway = () => {
-        setOpen(false);
+        setAnchorEl(null);
     };
     const choose_file = () => {
         if (input_ref.current) {
@@ -126,128 +130,126 @@ export const Upload = (props: Props) => {
         savaLink(upload_link);
     };
     return (
-        <div>
-            <Box sx={{ position: 'relative' }}>
-                <UploadBox onClick={handleClick} isSelected={isSelected}>
-                    {defaultAddBtnText
-                        ? defaultAddBtnText
-                        : MESSAGES.ADD_AN_FILE}
-                    <span
-                        className="delete"
+        <Box sx={{ position: 'relative' }}>
+            <UploadBox onClick={handleClick} isSelected={isSelected}>
+                {defaultAddBtnText ? defaultAddBtnText : MESSAGES.ADD_AN_FILE}
+                <span
+                    className="delete"
+                    onClick={e => {
+                        e.stopPropagation();
+                        deleteFile();
+                    }}
+                >
+                    <DeleteSweepOutlinedIcon
+                        className="delete-icon"
+                        fontSize="small"
+                        sx={{
+                            color: 'rgba(0,0,0,.5)',
+                            cursor: 'pointer',
+                            '&:hover': { color: 'rgba(0,0,0,.9)' },
+                        }}
+                    />
+                </span>
+            </UploadBox>
+            {open && (
+                <ClickAwayListener onClickAway={handleClickAway}>
+                    <MuiPopper
+                        open={open}
+                        anchorEl={anchorEl}
                         onClick={e => {
                             e.stopPropagation();
-                            deleteFile();
                         }}
+                        sx={styles}
                     >
-                        <DeleteSweepOutlinedIcon
-                            className="delete-icon"
-                            fontSize="small"
+                        <Tabs
                             sx={{
-                                color: 'rgba(0,0,0,.5)',
-                                cursor: 'pointer',
-                                '&:hover': { color: 'rgba(0,0,0,.9)' },
+                                borderBottom: '1px solid #ccc',
+                                minHeight: '36px',
                             }}
-                        />
-                    </span>
-                </UploadBox>
-                {open && (
-                    <ClickAwayListener onClickAway={handleClickAway}>
-                        <Box
-                            onClick={e => {
-                                e.stopPropagation();
-                            }}
-                            sx={styles}
+                            value={value}
+                            onChange={handleChange}
                         >
-                            <Tabs
-                                sx={{
-                                    borderBottom: '1px solid #ccc',
-                                    minHeight: '36px',
-                                }}
-                                value={value}
-                                onChange={handleChange}
-                            >
-                                {['file', 'image'].includes(uploadType) ? (
-                                    <Tab
-                                        sx={{
-                                            fontSize: '12px',
-                                            minHeight: '36px',
-                                        }}
-                                        value="file"
-                                        label="Upload"
-                                    />
-                                ) : (
-                                    ''
-                                )}
-                                {!['file', 'image'].includes(uploadType) ? (
-                                    <Tab
-                                        sx={{
-                                            fontSize: '12px',
-                                            minHeight: '36px',
-                                        }}
-                                        value="link"
-                                        label="Embed Link"
-                                    />
-                                ) : (
-                                    ''
-                                )}
-                            </Tabs>
-
-                            {value === 'file' ? (
-                                <Box sx={{ padding: '10px' }}>
-                                    <Button
-                                        variant="outlined"
-                                        sx={button_styles}
-                                        onClick={choose_file}
-                                        size="small"
-                                    >
-                                        {defaultAddBtnText
-                                            ? defaultAddBtnText
-                                            : MESSAGES.ADD_AN_FILE}
-                                    </Button>
-                                    <input
-                                        ref={input_ref}
-                                        type="file"
-                                        style={{ display: 'none' }}
-                                        onChange={handle_input_change}
-                                        accept={accept}
-                                    />
-                                </Box>
+                            {['file', 'image'].includes(uploadType) ? (
+                                <Tab
+                                    sx={{
+                                        fontSize: '12px',
+                                        minHeight: '36px',
+                                    }}
+                                    value="file"
+                                    label="Upload"
+                                />
                             ) : (
-                                <Box>
-                                    <Box
-                                        sx={{
-                                            '.MuiTextField-root': {
-                                                width: '100%',
-                                            },
-                                        }}
-                                    >
-                                        <TextField
-                                            value={upload_link}
-                                            hiddenLabel
-                                            margin={'dense'}
-                                            sx={{
-                                                fontSize: '12px',
-                                                padding: 0,
-                                            }}
-                                            onChange={on_link_input_change}
-                                            variant="outlined"
-                                            size="small"
-                                        />
-                                    </Box>
-                                    <Button
-                                        variant="outlined"
-                                        sx={button_styles}
-                                        onClick={handle_sava_link}
-                                        size="small"
-                                    >
-                                        embed link
-                                    </Button>
-                                </Box>
+                                ''
                             )}
-                        </Box>
-                    </ClickAwayListener>
-                )}
-            </Box>
-        </div>
+                            {!['file', 'image'].includes(uploadType) ? (
+                                <Tab
+                                    sx={{
+                                        fontSize: '12px',
+                                        minHeight: '36px',
+                                    }}
+                                    value="link"
+                                    label="Embed Link"
+                                />
+                            ) : (
+                                ''
+                            )}
+                        </Tabs>
+
+                        {value === 'file' ? (
+                            <Box sx={{ padding: '10px' }}>
+                                <Button
+                                    variant="outlined"
+                                    sx={button_styles}
+                                    onClick={choose_file}
+                                    size="small"
+                                >
+                                    {defaultAddBtnText
+                                        ? defaultAddBtnText
+                                        : MESSAGES.ADD_AN_FILE}
+                                </Button>
+                                <input
+                                    ref={input_ref}
+                                    type="file"
+                                    style={{ display: 'none' }}
+                                    onChange={handle_input_change}
+                                    accept={accept}
+                                />
+                            </Box>
+                        ) : (
+                            <Box>
+                                <Box
+                                    sx={{
+                                        '.MuiTextField-root': {
+                                            width: '100%',
+                                        },
+                                    }}
+                                >
+                                    <TextField
+                                        value={upload_link}
+                                        hiddenLabel
+                                        margin={'dense'}
+                                        sx={{
+                                            fontSize: '12px',
+                                            padding: 0,
+                                        }}
+                                        onChange={on_link_input_change}
+                                        variant="outlined"
+                                        size="small"
+                                    />
+                                </Box>
+                                <Button
+                                    variant="outlined"
+                                    sx={button_styles}
+                                    onClick={handle_sava_link}
+                                    size="small"
+                                >
+                                    embed link
+                                </Button>
+                            </Box>
+                        )}
+                    </MuiPopper>
+                </ClickAwayListener>
+            )}
+        </Box>
     );
 };

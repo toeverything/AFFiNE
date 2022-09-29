@@ -23,7 +23,6 @@ const StyledLoadingPanelContainer = styled('div')({
     borderBottomLeftRadius: '12px',
     borderBottomRightRadius: '12px',
     padding: '8px 16px',
-    fontFamily: 'var(--fonts-ui)',
     fontSize: 'var(--fontSizes-1)',
     boxShadow: 'var(--shadows-panel)',
     backgroundColor: 'white',

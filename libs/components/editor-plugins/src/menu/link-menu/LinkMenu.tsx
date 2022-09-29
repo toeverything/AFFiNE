@@ -251,7 +251,6 @@ const LinkModalContainerInput = styled('input')(({ theme }) => ({
     outline: 'none',
     border: 'none',
     padding: '8px',
-    fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
     '::-webkit-input-placeholder': {
         color: '#98acbd',
     },

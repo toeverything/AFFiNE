@@ -4,7 +4,7 @@ import {
     SideBarViewCloseIcon,
     SideBarViewIcon,
 } from '@toeverything/components/icons';
-import { IconButton, styled } from '@toeverything/components/ui';
+import { IconButton, styled, Tooltip } from '@toeverything/components/ui';
 import { useTranslation } from '@toeverything/datasource/i18n';
 import {
     useCurrentEditors,
@@ -14,6 +14,7 @@ import {
 import { useCallback, useMemo } from 'react';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 import { fsApiSupported } from './FileSystem';
+import { Logo } from './Logo';
 import { CurrentPageTitle } from './Title';
 
 export const LayoutHeader = () => {
@@ -44,23 +45,35 @@ export const LayoutHeader = () => {
         <StyledContainerForHeaderRoot>
             <StyledHeaderRoot>
                 <FlexContainer>
-                    <StyledLogoIcon />
+                    <Logo />
                     <TitleContainer>
                         <CurrentPageTitle />
                     </TitleContainer>
                 </FlexContainer>
                 <FlexContainer>
                     <StyledHelper>
-                        <StyledShare disabled={true}>{t('Share')}</StyledShare>
+                        <Tooltip
+                            placement="bottom-end"
+                            content="Share function coming soon..."
+                        >
+                            <StyledShare disabled={true}>
+                                {t('Share')}
+                            </StyledShare>
+                        </Tooltip>
                         <div style={{ margin: '0px 12px' }}>
-                            <IconButton
-                                size="large"
-                                hoverColor={'transparent'}
-                                onClick={handleSearch}
-                                disabled={true}
+                            <Tooltip
+                                placement="bottom-end"
+                                content="Search function coming soon..."
                             >
-                                <SearchIcon />
-                            </IconButton>
+                                <IconButton
+                                    size="large"
+                                    hoverColor={'transparent'}
+                                    onClick={handleSearch}
+                                    disabled={true}
+                                >
+                                    <SearchIcon />
+                                </IconButton>
+                            </Tooltip>
                         </div>
 
                         <IconButton onClick={toggleInfoSidebar} size="large">
@@ -121,7 +134,7 @@ const StyledHeaderRoot = styled('div')(({ theme }) => {
     };
 });
 
-const FlexContainer = styled('div')({ display: 'flex' });
+const FlexContainer = styled('div')({ display: 'flex', alignItems: 'center' });
 
 const TitleContainer = styled('div')(({ theme }) => {
     return {

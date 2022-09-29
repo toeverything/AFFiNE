@@ -4,7 +4,6 @@ import ButtonUnstyled, {
 import { styled } from '../styled';
 
 export const BaseButton = styled(ButtonUnstyled)`
-    fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
     font-size: 0.875rem;
     border-radius: 8px;
     padding: 4px 8px;

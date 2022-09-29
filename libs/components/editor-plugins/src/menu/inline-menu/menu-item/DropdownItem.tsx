@@ -177,6 +177,5 @@ const styles = style9.create({
     },
     dropdownItemItext: {
         color: '#4C6275',
-        fontFamily: 'Helvetica,Arial,"Microsoft Yahei",SimHei,sans-serif',
     },
 });

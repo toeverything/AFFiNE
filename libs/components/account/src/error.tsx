@@ -1,7 +1,6 @@
 import style9 from 'style9';
 
-import { keyframes } from '@emotion/react';
-import { MuiBox as Box } from '@toeverything/components/ui';
+import { keyframes, MuiBox as Box } from '@toeverything/components/ui';
 
 const styles = style9.create({
     container: {

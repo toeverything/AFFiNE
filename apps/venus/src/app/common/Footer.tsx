@@ -9,9 +9,10 @@ import RedditIcon from '@mui/icons-material/Reddit';
 import TelegramIcon from '@mui/icons-material/Telegram';
 import TwitterIcon from '@mui/icons-material/Twitter';
 
+import { LogoIcon } from '@toeverything/components/icons';
 import { DiscordIcon, GitHub } from '../Icons';
-import LogoImage from '../logo.png';
-import { AFFiNEImage } from './index';
+// import LogoImage from '../logo.png';
+// import { AFFiNEImage } from './index';
 
 export const AFFiNEFooter = ({
     keepupdate = true,
@@ -30,9 +31,12 @@ export const AFFiNEFooter = ({
                                 display: 'flex',
                                 justifyContent: 'center',
                                 margin: 'auto',
+                                color: '#3E6FDB',
+                                marginBottom: '60px',
                             }}
                         >
-                            <AFFiNEImage src={LogoImage} alt="AFFiNE Logo" />
+                            <LogoIcon style={{ fontSize: '160px' }} />
+                            {/* <AFFiNEImage src={LogoImage} alt="AFFiNE Logo" /> */}
                         </Box>
                     </Grid>
                     <Grid xs={12} sx={{ display: 'flex' }}>
