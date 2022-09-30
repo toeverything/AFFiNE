@@ -165,6 +165,10 @@ export const LeftMenuDraggable = (props: LeftMenuProps) => {
         setAnchorEl(currentTarget);
     };
 
+    const onDelete = useCallback(() => {
+        setBlock(undefined);
+    }, []);
+
     const onClose = useCallback(() => setAnchorEl(undefined), [setAnchorEl]);
 
     useEffect(() => {
@@ -241,6 +245,7 @@ export const LeftMenuDraggable = (props: LeftMenuProps) => {
                             editor={props.editor}
                             hooks={props.hooks}
                             onClose={onClose}
+                            onDelete={onDelete}
                             blockId={block.block.id}
                         >
                             <Draggable onClick={onClick}>

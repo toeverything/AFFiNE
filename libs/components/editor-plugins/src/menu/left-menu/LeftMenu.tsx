@@ -18,17 +18,21 @@ interface LeftMenuProps {
     editor?: Virgo;
     hooks: PluginHooks;
     blockId: string;
+    onDelete: () => void;
 }
 
 export function LeftMenu(props: LeftMenuProps) {
-    const { editor, anchorEl, hooks, blockId, onClose } = props;
+    const { editor, anchorEl, hooks, blockId, onClose, onDelete } = props;
     const { t } = useTranslation();
     const menu: CascaderItemProps[] = useMemo(
         () => [
             {
                 title: t('Delete'),
-                callback: () => {
-                    editor.commands.blockCommands.removeBlock(blockId);
+                callback: async () => {
+                    await editor.commands.blockCommands.removeBlock(
+                        blockId,
+                        onDelete
+                    );
                 },
                 shortcut: 'Del',
                 icon: <DeleteCashBinIcon />,

@@ -46,12 +46,14 @@ export class BlockCommands {
      *
      * remove block by block id
      * @param {string} blockId
+     * @param onDelete Delete Block's LeftMenuDraggable
      * @memberof BlockCommands
      */
-    public async removeBlock(blockId: string) {
+    public async removeBlock(blockId: string, onDelete?: () => void) {
         const block = await this._editor.getBlockById(blockId);
         if (block) {
-            block.remove();
+            onDelete();
+            await block.remove();
         }
     }
 
