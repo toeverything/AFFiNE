@@ -75,3 +75,5 @@ export const ThemeProvider = ({
     </ThemeContext.Provider>
   );
 };
+
+export default ThemeProvider;
