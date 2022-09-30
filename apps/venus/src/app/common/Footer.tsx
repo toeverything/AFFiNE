@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { useTranslation } from 'react-i18next';
 
-import { Box, Button, Grid, Typography } from '@mui/joy';
+import { Box, Button, Grid, styled, Typography } from '@mui/joy';
 
 import GitHubIcon from '@mui/icons-material/GitHub';
 import RedditIcon from '@mui/icons-material/Reddit';
@@ -361,7 +361,14 @@ export const AFFiNEFooter = ({
                         >
                             #OpenSource
                         </span>
-                        company
+                        <span>software, built with&nbsp;</span>
+                        <StyledLink
+                            href="https://block-suite.com"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            BlockSuite
+                        </StyledLink>
                     </Typography>
                 </Box>
             </Grid>
@@ -383,3 +390,13 @@ export const AFFiNEFooter = ({
         </>
     );
 };
+
+const StyledLink = styled('a')({
+    fontWeight: '900',
+    color: '#000',
+    textDecoration: 'none',
+
+    '&:hover': {
+        textDecoration: 'underline',
+    },
+});
