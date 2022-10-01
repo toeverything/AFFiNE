@@ -197,6 +197,15 @@
             ]
         },
         {
+            "login": "JimmFly",
+            "name": "JimmFly",
+            "avatar_url": "https://avatars.githubusercontent.com/u/102217452?v=4",
+            "profile": "https://github.com/JimmFly",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
             "login": "CarlosZoft",
             "name": "Carlos Rafael ",
             "avatar_url": "https://avatars.githubusercontent.com/u/62192072?v=4",
@@ -210,15 +219,6 @@
             "name": "Caleb OLeary",
             "avatar_url": "https://avatars.githubusercontent.com/u/12816579?v=4",
             "profile": "https://github.com/caleboleary",
-            "contributions": [
-                "code"
-            ]
-        },
-        {
-            "login": "JimmFly",
-            "name": "JimmFly",
-            "avatar_url": "https://avatars.githubusercontent.com/u/102217452?v=4",
-            "profile": "https://github.com/JimmFly",
             "contributions": [
                 "code"
             ]
