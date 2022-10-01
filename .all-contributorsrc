@@ -322,6 +322,51 @@
             "contributions": [
                 "code"
             ]
+        },
+        {
+            "login": "lynettelopez",
+            "name": "Lynette Lopez",
+            "avatar_url": "https://avatars.githubusercontent.com/u/32908859?v=4",
+            "profile": "https://github.com/lynettelopez",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "Zheaoli",
+            "name": "Manjusaka",
+            "avatar_url": "https://avatars.githubusercontent.com/u/7054676?v=4",
+            "profile": "http://manjusaka.itscoder.com/",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "sudongyuer",
+            "name": "Frozen FIsh",
+            "avatar_url": "https://avatars.githubusercontent.com/u/76603360?v=4",
+            "profile": "https://juejin.cn/user/2867982785579102/posts?sort=popular",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "MuhammedFaraz",
+            "name": "Mohammed Faraz",
+            "avatar_url": "https://avatars.githubusercontent.com/u/92734739?v=4",
+            "profile": "https://github.com/MuhammedFaraz",
+            "contributions": [
+                "doc"
+            ]
+        },
+        {
+            "login": "Pranav4399",
+            "name": "Pranav Sriram ",
+            "avatar_url": "https://avatars.githubusercontent.com/u/28348429?v=4",
+            "profile": "https://pranavsriram.dev/",
+            "contributions": [
+                "code"
+            ]
         }
     ]
 }
