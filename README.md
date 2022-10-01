@@ -19,7 +19,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-33-orange.svg?style=flat-square
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-38-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
@@ -167,11 +167,11 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
     <td align="center"><a href="http://xell.me/"><img src="https://avatars.githubusercontent.com/u/132558?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Guozhu Liu</b></sub></a><br /><a href="#design-xell" title="Design">🎨</a></td>
     <td align="center"><a href="https://github.com/fyZheng07"><img src="https://avatars.githubusercontent.com/u/63830919?v=4?s=50" width="50px;" alt=""/><br /><sub><b>fyZheng07</b></sub></a><br /><a href="#eventOrganizing-fyZheng07" title="Event Organizing">📋</a> <a href="#userTesting-fyZheng07" title="User Testing">📓</a></td>
     <td align="center"><a href="https://github.com/CJSS"><img src="https://avatars.githubusercontent.com/u/4605025?v=4?s=50" width="50px;" alt=""/><br /><sub><b>CJSS</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=CJSS" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/JimmFly"><img src="https://avatars.githubusercontent.com/u/102217452?v=4?s=50" width="50px;" alt=""/><br /><sub><b>JimmFly</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=JimmFly" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/clean-software"><img src="https://avatars.githubusercontent.com/u/62192072?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Carlos Rafael </b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=CarlosZoft" title="Code">💻</a></td>
-    <td align="center"><a href="https://github.com/caleboleary"><img src="https://avatars.githubusercontent.com/u/12816579?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Caleb OLeary</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=caleboleary" title="Code">💻</a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/JimmFly"><img src="https://avatars.githubusercontent.com/u/102217452?v=4?s=50" width="50px;" alt=""/><br /><sub><b>JimmFly</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=JimmFly" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/caleboleary"><img src="https://avatars.githubusercontent.com/u/12816579?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Caleb OLeary</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=caleboleary" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/westongraham"><img src="https://avatars.githubusercontent.com/u/89493023?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Weston Graham</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=westongraham" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/pointmax"><img src="https://avatars.githubusercontent.com/u/49361135?v=4?s=50" width="50px;" alt=""/><br /><sub><b>pointmax</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=pointmax" title="Documentation">📖</a></td>
     <td align="center"><a href="https://liby.github.io/notes"><img src="https://avatars.githubusercontent.com/u/38807139?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Bryan Lee</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=liby" title="Code">💻</a></td>
@@ -185,6 +185,13 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
     <td align="center"><a href="https://segmentfault.com/u/qzuser_584786517d31a"><img src="https://avatars.githubusercontent.com/u/15103283?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Super.x</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=fanshyiis" title="Code">💻</a></td>
     <td align="center"><a href="https://wangyu-1999.github.io/"><img src="https://avatars.githubusercontent.com/u/80874770?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Wang Yu</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=wangyu-1999" title="Code">💻</a></td>
     <td align="center"><a href="https://felixc.at/"><img src="https://avatars.githubusercontent.com/u/1006477?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Felix Yan</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=felixonmars" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/lynettelopez"><img src="https://avatars.githubusercontent.com/u/32908859?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Lynette Lopez</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=lynettelopez" title="Code">💻</a></td>
+    <td align="center"><a href="http://manjusaka.itscoder.com/"><img src="https://avatars.githubusercontent.com/u/7054676?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Manjusaka</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Zheaoli" title="Code">💻</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://juejin.cn/user/2867982785579102/posts?sort=popular"><img src="https://avatars.githubusercontent.com/u/76603360?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Frozen FIsh</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=sudongyuer" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/MuhammedFaraz"><img src="https://avatars.githubusercontent.com/u/92734739?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Mohammed Faraz</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=MuhammedFaraz" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://pranavsriram.dev/"><img src="https://avatars.githubusercontent.com/u/28348429?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Pranav Sriram </b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Pranav4399" title="Code">💻</a></td>
   </tr>
 </table>
 
