@@ -66,7 +66,7 @@ export const LOCALES = [
         originalName: 'বাংলা',
         flagEmoji: '🇧🇩',
         base: false,
-        completeRate: 0.625,
+        completeRate: 0.7083333333333334,
         res: bn,
     },
 ] as const;
