@@ -25,8 +25,11 @@ export const placementToContainerDirection: Record<
     'auto-end': 'none',
 };
 
-export const Popover = (props: PropsWithChildren<PopoverProps>) => {
-    const { popoverDirection, placement, content, children, style } = props;
+export const Popover = ({
+    popoverDirection,
+    ...props
+}: PropsWithChildren<PopoverProps>) => {
+    const { placement, content, children, style } = props;
     return (
         <Popper
             {...props}
