@@ -8,7 +8,7 @@ We're open for Fullstack Engineer positions across the building-blocks sub-team.
 ### This position is for:
 
 -   Develop AFFiNE **the open source way**, including coding and community engagement
--   Researching and supporting onboarding of new use cases affine.com subscribers
+-   Researching and supporting onboarding of new use cases AFFiNE.pro subscribers
 -   Improving our **block editor** and **graphic editor**
 -   Assist our subscribers in utilizing our product in a data-based way with help from the operational teams
 -   Research on better activation of potential subscribers. At AFFiNE, developers are self-organized individual engineers who are also responsible team members whether they are on-site or working remotely.
@@ -21,7 +21,7 @@ We're open for Fullstack Engineer positions across the building-blocks sub-team.
 -   You are comfortable working in a diverse and cross-functional team
 -   You love the spirit of open source, share our visions and work under those values
 
-### It would be great if you have/are：
+### It would be great if you have/are:
 
 -   Incredible **React** or **web components(lit)** experts
 -   Knowledge/project management tool enthusiast
@@ -31,10 +31,16 @@ We're open for Fullstack Engineer positions across the building-blocks sub-team.
 -   Experience working with a **globally distributed team**
 -   Love AFFiNE products as a user or contributor
 
-### What we offer
+### What we offer:
 
 -   $2800 vouchers for latest MacBook Pro or working equipment of your choice
 -   Public holidays and paid annual leave starting at 12 days
 -   Free lunch, unlimited drinks and snacks
 -   Free English language lessons (including free IELTS test) open to all employees
 -   Become a maintainer of great open source projects and use Copilot powered by GitHub for free if you want
+
+### Contact us:
+
+Interested? Send us your CV to [contact@toeverything.info](contact@toeverything.info).
+
+Feel free to include any extra information (GitHub link, previous projects, personal blog etc.)
