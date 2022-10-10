@@ -1,7 +1,7 @@
 ## What we do
 
 We **AFFiNE** hold a vision of shaping a world where all block components in modern applications are semantically connected.
-We're open for Fullstack Engineer positions across the building-blocks sub-team. The **building-blocks** team works to create the best **block-editor** and **open-block** protocol for use in AFFiNE. Paving the way for a new generation of SaaS software and developers.
+We're open for Fullstack Engineer positions across the BlockSuite sub-team. The **BlockSuite** team works to create the best **block-editor** and **open-block** protocol for use in AFFiNE. Paving the way for a new generation of SaaS software and developers.
 
 ## Fullstack Engineer (Fully-Remote)
 
