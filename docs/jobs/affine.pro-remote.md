@@ -3,7 +3,7 @@
 We **AFFiNE** hold a vision of shaping a world where all block components in modern applications are semantically connected.
 We're open for Fullstack Engineer positions across the BlockSuite sub-team. The **BlockSuite** team works to create the best **block-editor** and **open-block** protocol for use in AFFiNE. Paving the way for a new generation of SaaS software and developers.
 
-## Fullstack Engineer
+## Fullstack Engineer (Fully-Remote)
 
 ### This position is for:
 
@@ -35,12 +35,10 @@ We're open for Fullstack Engineer positions across the BlockSuite sub-team. The 
 
 -   $2800 vouchers for latest MacBook Pro or working equipment of your choice.
 -   Public holidays and paid annual leave starting at 12 days.
--   Free lunch, unlimited drinks and snacks.
--   Free English language lessons (including free IELTS test) open to all employees.
 -   Become a maintainer of great open source projects and use Copilot powered by GitHub for free if you want.
 
 ### Contact us:
 
 Interested? Send us your CV to [contact@toeverything.info](mailto:contact@toeverything.info).
 
-Feel free to include any extra information (GitHub link, previous projects, personal blog etc.).
+Feel free to include any extra information (GitHub link, previous projects, personal blog etc.)

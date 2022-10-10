@@ -5,6 +5,8 @@ import en from './en.json';
 import zh_Hans from './zh-Hans.json';
 import zh_Hant from './zh-Hant.json';
 import sr from './sr.json';
+import fr from './fr.json';
+import bn from './bn.json';
 
 export const LOCALES = [
     {
@@ -46,5 +48,25 @@ export const LOCALES = [
         base: false,
         completeRate: 0.9166666666666666,
         res: sr,
+    },
+    {
+        id: 1000034008,
+        name: 'French',
+        tag: 'fr',
+        originalName: 'français',
+        flagEmoji: '🇫🇷',
+        base: false,
+        completeRate: 1,
+        res: fr,
+    },
+    {
+        id: 1000034010,
+        name: 'Bangla',
+        tag: 'bn',
+        originalName: 'বাংলা',
+        flagEmoji: '🇧🇩',
+        base: false,
+        completeRate: 0.7083333333333334,
+        res: bn,
     },
 ] as const;
