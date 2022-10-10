@@ -23,7 +23,7 @@ We're open for Fullstack Engineer positions across the building-blocks sub-team.
 
 ### It would be great if you have/are:
 
--   Incredible **React** or **web components(lit)** experts
+-   Incredible **React** or **web components (lit)** experts
 -   Knowledge/project management tool enthusiast
 -   Licensing or subscription management or enterprise software company experience
 -   Experience scaling **a successful SaaS product**
@@ -41,6 +41,6 @@ We're open for Fullstack Engineer positions across the building-blocks sub-team.
 
 ### Contact us:
 
-Interested? Send us your CV to [contact@toeverything.info](contact@toeverything.info).
+Interested? Send us your CV to [contact@toeverything.info](mailto:contact@toeverything.info).
 
 Feel free to include any extra information (GitHub link, previous projects, personal blog etc.)
