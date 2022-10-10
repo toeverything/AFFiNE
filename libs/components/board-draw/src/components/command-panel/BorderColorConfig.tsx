@@ -35,6 +35,8 @@ const _getIconRenderColor = (shapes: TDShape[]) => {
 
 export const BorderColorConfig = ({ app, shapes }: BorderColorConfigProps) => {
     const setBorderColor = (color: string) => {
+        console.log('shapes', shapes, color);
+
         app.style({ stroke: color }, getShapeIds(shapes));
     };
 
