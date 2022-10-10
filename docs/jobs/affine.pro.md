@@ -8,7 +8,7 @@ We're open for Fullstack Engineer positions across the BlockSuite sub-team. The 
 ### This position is for:
 
 -   Develop AFFiNE in **the open source way**, including code and community engagement.
--   Research and support **onboarding process** of new use cases for affine.com subscribers.
+-   Research and support **onboarding process** of new use cases for AFFiNE.pro subscribers.
 -   Improve our **block editor** and **graphic editor** experience.
 -   Assist our subscribers in utilizing our product in a data-based way with help from the operational teams.
 -   Research on activation of potential subscribers in a better way.
@@ -16,21 +16,21 @@ We're open for Fullstack Engineer positions across the BlockSuite sub-team. The 
 
 ### What we are looking for:
 
--   Software engineering experience with **editor** or **graphics** with professional real-world knowledge.
+-   Software engineering experience with **editor** or **graphics** with professional real-world use cases.
 -   Experience and proficiency in **JavaScript** and a **second programming language** preferably **Rust**.
 -   Strong communication and writing skills in English.
 -   Work in a diverse and cross-functional team with skill and ease.
--   Love open source spirit, sharing our visions and working under those values.
+-   Love open source spirit, share our visions and work under those values.
 
 ### It would be great if you have/are:
 
--   Incredible **React** or **web components(lit)** experts.
+-   Incredible **React** or **web components (lit)** experts.
 -   Knowledge/Project management tool enthusiast.
 -   Licensing or subscription management or enterprise software company experience.
 -   Experience in scaling **a successful SaaS product**.
 -   Experience in developer platform/tool industry.
 -   Experience in working with a **globally distributed team**.
--   Love AFFiNE products as a user or a contributor.
+-   Love AFFiNE products as a user or contributor.
 
 ### What we offer:
 
