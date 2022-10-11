@@ -128,7 +128,6 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
 
         return acc;
     }, {} as Record<string, TDShape>);
-    console.log('useShapes', blocksShapes);
 
     return {
         shapes: blocksShapes,
