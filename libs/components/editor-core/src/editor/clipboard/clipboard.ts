@@ -1,7 +1,8 @@
-import { ClipboardEventDispatcher } from './clipboardEventDispatcher';
-import { HookType } from '../types';
 import { Editor } from '../editor';
+import { HookType } from '../types';
+import { ClipboardEventDispatcher } from './clipboardEventDispatcher';
 import { Copy } from './copy';
+import { Cut } from './cut';
 import { Paste } from './paste';
 
 import { ClipboardUtils } from './clipboardUtils';
@@ -9,6 +10,7 @@ import { ClipboardUtils } from './clipboardUtils';
 export class Clipboard {
     private _clipboardEventDispatcher: ClipboardEventDispatcher;
     private _copy: Copy;
+    private _cut: Cut;
     private _paste: Paste;
     public clipboardUtils: ClipboardUtils;
     private _clipboardTarget: HTMLElement;
@@ -17,7 +19,7 @@ export class Clipboard {
         this.clipboardUtils = new ClipboardUtils(editor);
         this._clipboardTarget = clipboardTarget;
         this._copy = new Copy(editor);
-
+        this._cut = new Cut(editor);
         this._paste = new Paste(editor);
 
         this._clipboardEventDispatcher = new ClipboardEventDispatcher(
@@ -30,7 +32,7 @@ export class Clipboard {
             .get(HookType.ON_COPY)
             .subscribe(this._copy.handleCopy);
 
-        editor.getHooks().get(HookType.ON_CUT).subscribe(this._copy.handleCopy);
+        editor.getHooks().get(HookType.ON_CUT).subscribe(this._cut.handleCut);
 
         editor
             .getHooks()
