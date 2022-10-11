@@ -7,29 +7,28 @@ We're open for Fullstack Engineer positions across the BlockSuite sub-team. The 
 
 ### This position is for:
 
--   Develop AFFiNE **the open source way**, including coding and community engagement.
+-   Developing AFFiNE **the open source way**, including coding and community engagement.
 -   Researching and supporting onboarding of new use cases AFFiNE.pro subscribers.
--   Improving our **block editor** and **graphic editor**.
--   Assist our subscribers in utilizing our product in a data-based way with help from the operational teams.
--   Research on better activation of potential subscribers. At AFFiNE, developers are self-organized individual engineers who are also responsible team members whether they are on-site or working remotely.
+-   Improving our **block editor** and **graphics editor**.
+-   Assisting our subscribers in utilizing our product in a data-based way with help from the operational teams.
+-   Researching on better activation of potential subscribers. At AFFiNE, developers are self-organized individual engineers who are also responsible team members whether they are on-site or working remotely.
 
 ### What we are looking for:
 
 -   Software engineering experience with **editor** or **graphics** with professional real-world use cases.
--   Experience and proficiency in **JavaScript** and a **second programming language** preferably **Rust**.
+-   Experience and proficiency in **TypeScript** and a **second programming language** preferably **Rust**.
 -   You have strong communication and writing skills in English.
 -   You are comfortable working in a diverse and cross-functional team.
 -   You love the spirit of open source, share our visions and work under those values.
 
-### It would be great if you have/are:
+### It would be great if you are:
 
--   Incredible **React** or **web components (lit)** experts.
--   Knowledge/project management tool enthusiast.
--   Licensing or subscription management or enterprise software company experience.
--   Experience scaling **a successful SaaS product**.
--   Developer platform/tool industry experience.
--   Experience working with a **globally distributed team**.
--   Love AFFiNE products as a user or contributor.
+-   Skillful in building UI with different Web frameworks or native web components.
+-   Heavy user of knowledge/project management tools.
+-   Experienced in scaling **a successful SaaS product**.
+-   Experienced in developing platforms or tools for developers.
+-   Experienced in working with a **globally distributed team**.
+-   Enthusiastic in AFFiNE products as a user or contributor.
 
 ### What we offer:
 
