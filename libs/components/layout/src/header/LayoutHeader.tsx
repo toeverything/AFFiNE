@@ -37,6 +37,7 @@ export const LayoutHeader = () => {
                 observer.disconnect();
             };
         }
+        return undefined;
     }, [rootEle]);
 
     const warningTips = useMemo(() => {
