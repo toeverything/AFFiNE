@@ -32,11 +32,13 @@ export const TransitionsModal = (props: TransitionsModalProps) => {
             onClose={props.onClose}
             closeAfterTransition
         >
-            <MuiClickAwayListener onClickAway={props.onClose}>
-                <Fade in={props.open} timeout={300}>
-                    {props.children}
-                </Fade>
-            </MuiClickAwayListener>
+            <div>
+                <MuiClickAwayListener onClickAway={props.onClose}>
+                    <Fade in={props.open} timeout={300}>
+                        {props.children}
+                    </Fade>
+                </MuiClickAwayListener>
+            </div>
         </Modal>
     );
 };

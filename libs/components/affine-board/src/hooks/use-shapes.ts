@@ -109,7 +109,7 @@ export const useShapes = (workspace: string, rootBlockId: string) => {
                 parentId: rootBlockId,
                 ...shapeProps,
                 id: block.id,
-                style: { ...defaultStyle },
+                style: { ...defaultStyle, ...(shapeProps.style || {}) },
                 workspace,
             };
         } else {

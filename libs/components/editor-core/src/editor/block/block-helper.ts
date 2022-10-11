@@ -13,7 +13,7 @@ import {
 } from 'slate';
 import { AsyncBlock } from '../block';
 import { Editor } from '../editor';
-import { SelectBlock } from '../selection';
+import { SelectBlock, type SelectInfo } from '../selection';
 
 type TextUtilsFunctions =
     | 'getString'
@@ -40,6 +40,7 @@ type TextUtilsFunctions =
     | 'getCommentsIdsBySelection'
     | 'getCurrentSelection'
     | 'removeSelection'
+    | 'removeBetweenPoints'
     | 'isCollapsed'
     | 'blur'
     | 'setSelection'
@@ -527,5 +528,33 @@ export class BlockHelper {
         }
         console.warn('Could find the block text utils');
         return undefined;
+    }
+
+    public removeSelection(selection: SelectInfo) {
+        if (selection.type === 'Range') {
+            selection.blocks.forEach(async selectBlockInfo => {
+                const text_utils =
+                    this._blockTextUtilsMap[selectBlockInfo.blockId];
+                text_utils.removeBetweenPoints(
+                    {
+                        path: [0, selectBlockInfo.startInfo.arrayIndex],
+                        offset: selectBlockInfo.startInfo.offset,
+                    },
+                    {
+                        path: [0, selectBlockInfo.endInfo.arrayIndex],
+                        offset: selectBlockInfo.endInfo.offset,
+                    }
+                );
+            });
+        } else if (selection.type === 'Block') {
+            selection.blocks.forEach(async selectBlockInfo => {
+                (
+                    await this._editor.getBlock({
+                        workspace: this._editor.workspace,
+                        id: selectBlockInfo.blockId,
+                    })
+                ).remove();
+            });
+        }
     }
 }

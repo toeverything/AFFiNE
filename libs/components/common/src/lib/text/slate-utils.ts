@@ -1138,6 +1138,15 @@ class SlateUtils {
         });
     }
 
+    public removeBetweenPoints(startPoint: Point, endPoint: Point) {
+        const at = {
+            anchor: startPoint,
+            focus: endPoint,
+        };
+        Transforms.select(this.editor, at);
+        this.editor.deleteFragment();
+    }
+
     public setDoubleLinkSearchSlash(point: Point) {
         const str = Editor.string(this.editor, {
             anchor: this.getStart(),

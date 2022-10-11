@@ -11,7 +11,7 @@ import {
     useLocalTrigger,
     useShowSettingsSidebar,
 } from '@toeverything/datasource/state';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EditorBoardSwitcher } from './EditorBoardSwitcher';
 import { fsApiSupported } from './FileSystem';
 import { Logo } from './Logo';
@@ -22,6 +22,23 @@ export const LayoutHeader = () => {
     const { toggleSettingsSidebar: toggleInfoSidebar, showSettingsSidebar } =
         useShowSettingsSidebar();
     const { t } = useTranslation();
+
+    // because of header not compatible with small screen, hide the mode switcher in that case, this will be optimize in future.
+    const [hideSwitcher, setHideSwither] = useState(false);
+    const [rootEle, setRootEle] = useState<HTMLDivElement>();
+    useEffect(() => {
+        if (rootEle) {
+            const observer = new ResizeObserver(entries => {
+                setHideSwither(entries[0].contentRect.width < 970);
+            });
+            observer.observe(rootEle);
+
+            return () => {
+                observer.disconnect();
+            };
+        }
+        return undefined;
+    }, [rootEle]);
 
     const warningTips = useMemo(() => {
         if (!fsApiSupported()) {
@@ -42,7 +59,7 @@ export const LayoutHeader = () => {
     }, [currentEditors]);
 
     return (
-        <StyledContainerForHeaderRoot>
+        <StyledContainerForHeaderRoot ref={setRootEle}>
             <StyledHeaderRoot>
                 <FlexContainer>
                     <Logo />
@@ -85,9 +102,11 @@ export const LayoutHeader = () => {
                         </IconButton>
                     </StyledHelper>
                 </FlexContainer>
-                <StyledContainerForEditorBoardSwitcher>
-                    <EditorBoardSwitcher />
-                </StyledContainerForEditorBoardSwitcher>
+                {hideSwitcher ? null : (
+                    <StyledContainerForEditorBoardSwitcher>
+                        <EditorBoardSwitcher />
+                    </StyledContainerForEditorBoardSwitcher>
+                )}
             </StyledHeaderRoot>
         </StyledContainerForHeaderRoot>
     );
