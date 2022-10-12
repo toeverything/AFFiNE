@@ -3,13 +3,14 @@ import '@blocksuite/blocks';
 import '@blocksuite/editor';
 import '@blocksuite/blocks/style';
 
+declare global {
+  interface Window {
+    editor: EditorContainer;
+  }
+}
+
 export const Editor = () => {
-  return (
-    <div>
-      Editor
-      <editor-container />
-    </div>
-  );
+  return <editor-container />;
 };
 
 declare global {
