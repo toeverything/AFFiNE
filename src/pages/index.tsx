@@ -1,11 +1,18 @@
 import type { NextPage } from 'next';
+import dynamic from 'next/dynamic';
 import { styled, useTheme } from '@/styles';
+
 import '@/components/simple-counter';
 
 const Button = styled('div')(({ theme }) => {
   return {
     color: theme.colors.primary,
   };
+});
+
+const DynamicEditor = dynamic(() => import('../components/editor'), {
+  loading: () => <div>Loading...</div>,
+  ssr: false,
 });
 
 const Home: NextPage = () => {
@@ -36,6 +43,7 @@ const Home: NextPage = () => {
       >
         auto
       </button>
+      <DynamicEditor />
     </div>
   );
 };
