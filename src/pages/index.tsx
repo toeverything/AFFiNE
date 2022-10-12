@@ -7,9 +7,15 @@ import '@/components/simple-counter';
 
 const StyledEditorContainer = styled('div')(({ theme }) => {
   return {
-    width: '720px',
-    margin: '78px auto 0',
+    flexGrow: 1,
+    paddingTop: '78px',
   };
+});
+
+const StyledPage = styled('div')({
+  height: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
 });
 
 const DynamicEditor = dynamic(() => import('../components/editor'), {
@@ -20,9 +26,11 @@ const DynamicEditor = dynamic(() => import('../components/editor'), {
 const Home: NextPage = () => {
   const { changeMode, mode } = useTheme();
   return (
-    <div>
+    <StyledPage>
       <Header />
-      <StyledEditorContainer></StyledEditorContainer>
+      <StyledEditorContainer>
+        <DynamicEditor />
+      </StyledEditorContainer>
       {/*<Button>A button use the theme styles</Button>*/}
       {/*<simple-counter name="A counter created by web component" />*/}
       {/*<p>current mode {mode}</p>*/}
@@ -47,8 +55,7 @@ const Home: NextPage = () => {
       {/*>*/}
       {/*  auto*/}
       {/*</button>*/}
-      <DynamicEditor />
-    </div>
+    </StyledPage>
   );
 };
 

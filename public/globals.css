@@ -144,20 +144,18 @@ button,
 select,
 keygen,
 legend {
-  color: #333;
+  color: var(--affine-primary-color);
   outline: 0;
   font-size: 18px;
   line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, Helvetica Neue, Tahoma,
-    PingFang SC, Microsoft Yahei, Arial, Hiragino Sans GB, sans-serif,
-    Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  font-family: var(--affine-font-family);
 }
 body {
   background: #fff;
 }
 a,
 a:hover {
-  color: #333;
+  color: var(--affine-primary-color);
 }
 
 input {
