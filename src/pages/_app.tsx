@@ -1,6 +1,5 @@
 import type { AppProps } from 'next/app';
 import dynamic from 'next/dynamic';
-
 import '../../public/globals.css';
 
 const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {

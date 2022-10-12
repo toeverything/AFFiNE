@@ -1,10 +1,13 @@
 import type { NextPage } from 'next';
 import { styled, useTheme } from '@/styles';
+import { Header } from '@/components/Header';
+
 import '@/components/simple-counter';
 
-const Button = styled('div')(({ theme }) => {
+const StyledEditorContainer = styled('div')(({ theme }) => {
   return {
-    color: theme.colors.primary,
+    width: '720px',
+    margin: '78px auto 0',
   };
 });
 
@@ -12,30 +15,8 @@ const Home: NextPage = () => {
   const { changeMode, mode } = useTheme();
   return (
     <div>
-      <Button>A button use the theme styles</Button>
-      <simple-counter name="A counter created by web component" />
-      <p>current mode {mode}</p>
-      <button
-        onClick={() => {
-          changeMode('light');
-        }}
-      >
-        light
-      </button>
-      <button
-        onClick={() => {
-          changeMode('dark');
-        }}
-      >
-        dark
-      </button>
-      <button
-        onClick={() => {
-          changeMode('auto');
-        }}
-      >
-        auto
-      </button>
+      <Header />
+      <StyledEditorContainer></StyledEditorContainer>
     </div>
   );
 };
