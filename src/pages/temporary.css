@@ -36,3 +36,9 @@ s {
 .affine-block-children-container.edgeless {
   height: 100% !important;
 }
+.affine-list-rich-text-wrapper > div {
+  box-sizing: content-box;
+  color: var(--affine-highlight-color);
+  min-width: unset !important;
+  max-width: 26px;
+}
