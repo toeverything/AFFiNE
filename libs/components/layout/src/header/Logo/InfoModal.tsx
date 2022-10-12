@@ -22,7 +22,7 @@ export const InfoModal = ({ open, onClose }: ModalProps) => {
                     </CloseContainer>
                 </Header>
                 <ModalContent />
-                <Footer>Copyright &copy; 2022 TOEVERYTHING PTE.LTD</Footer>
+                <Footer>Copyright &copy; 2022 Toeverything</Footer>
             </Container>
         </MuiModal>
     );

@@ -383,7 +383,7 @@ export const AFFiNEFooter = ({
                     }}
                 >
                     <Typography sx={{ display: 'flex', color: '#888' }}>
-                        Copyright © 2022 TOEVERYTHING PTE.LTD.
+                        Copyright &copy; 2022 Toeverything
                     </Typography>
                 </Box>
             </Grid>
