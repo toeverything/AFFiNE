@@ -22,7 +22,7 @@ export const InfoModal = ({ open, onClose }: ModalProps) => {
                     </CloseContainer>
                 </Header>
                 <ModalContent />
-                <Footer>Copyright &copy; 2022 AFFINE</Footer>
+                <Footer>Copyright &copy; 2022 TOEVERYTHING PTE.LTD</Footer>
             </Container>
         </MuiModal>
     );
@@ -35,7 +35,7 @@ const Container = styled('div')({
     transform: 'translate(-50%, -50%)',
     width: '60%',
     maxWidth: '1000px',
-    minWidth: '840px',
+    minWidth: '860px',
     borderRadius: '28px',
     backgroundColor: '#fff',
     padding: '48px 48px 40px 48px',
