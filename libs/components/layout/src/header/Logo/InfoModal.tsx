@@ -35,7 +35,7 @@ const Container = styled('div')({
     transform: 'translate(-50%, -50%)',
     width: '60%',
     maxWidth: '1000px',
-    minWidth: '840px',
+    minWidth: '860px',
     borderRadius: '28px',
     backgroundColor: '#fff',
     padding: '48px 48px 40px 48px',
