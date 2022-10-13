@@ -23,7 +23,7 @@ export const Editor = () => {
     store.addBlock({ flavour: 'paragraph', text }, groupId);
 
     // store._history.clear();
-  }, []);
+  }, [setEditor]);
 
   return (
     <Suspense fallback={<div>Error!</div>}>
