@@ -90,11 +90,11 @@ export const Header = () => {
   useEffect(() => {
     setTimeout(() => {
       const editor = window.editor;
-      setTitle(editor.model.title);
+      setTitle(editor.model.title || '');
       editor.model.propsUpdated.on(() => {
         setTitle(editor.model.title);
       });
-    }, 1000);
+    }, 500);
   }, []);
 
   return (
