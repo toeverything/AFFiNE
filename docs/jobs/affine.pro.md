@@ -12,25 +12,24 @@ We're open for Fullstack Engineer positions across the BlockSuite sub-team. The 
 -   Improving our **block editor** and **graphic editor** experience.
 -   Assisting our subscribers in utilizing our product in a data-based way with help from the operational teams.
 -   Researching on better activation of potential subscribers.
--   In AFFiNE, developers are self-organized individual engineers who are also responsible team members no matter they are on-site or on remote.
+-   In AFFiNE, developers are self-organized individual engineers who are also responsible team members no matter they are on-site or working remotely.
 
 ### What we are looking for:
 
 -   Software engineering experience with **editor** or **graphics** with professional real-world use cases.
 -   Experience and proficiency in **TypeScript** and a **second programming language** preferably **Rust**.
 -   Strong communication and writing skills in English.
--   Working in a diverse and cross-functional team with skill and ease.
+-   Ability to work in a diverse and cross-functional team with skill and ease.
 -   A love of open source spirit, share our visions and work under those values.
 
-### It would be great if you have/are:
+### It would be great if you are:
 
--   Incredible **React** or **web components (lit)** experts.
--   Knowledge/Project management tool enthusiast.
--   Licensing or subscription management or enterprise software company experience.
--   Experience in scaling **a successful SaaS product**.
--   Experience in developer platform/tool industry.
--   Experience in working with a **globally distributed team**.
--   Love AFFiNE products as a user or contributor.
+-   Skillful in building UI with different web frameworks or native web components.	
+-   Heavy user of knowledge/project management tools.	
+-   Experienced in scaling a **successful SaaS product**.	
+-   Experienced in developing platforms or tools for developers.	
+-   Experienced in working with a **globally distributed team**.	
+-   Enthusiastic about AFFiNE products as a user or contributor.
 
 ### What we offer:
 
