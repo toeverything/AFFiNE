@@ -25,7 +25,7 @@ export const Editor = () => {
     const text = new Text('Legend from here ...');
     store.addBlock({ flavour: 'paragraph', text }, groupId);
 
-    store._history.clear();
+    // store._history.clear();
   }, []);
 
   return (
