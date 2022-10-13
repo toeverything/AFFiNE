@@ -1,26 +1,26 @@
 ## What we do
 
-**AFFiNE** holds a vision that shaping a world semantically connected through block components in modern applications.
-We're open for Fullstack Engineer positions across the BlockSuite sub-team. The **BlockSuite** team works on creating the best **block-editor** and **open-block** protocol for usage in AFFiNE. Paving the way for a new generation of SaaS software and developers.
+We **AFFiNE** hold a vision of shaping a world semantically connected through block components in modern applications.
+We're open for Fullstack Engineer positions across the BlockSuite sub-team. The **BlockSuite** team works on creating the best **block-editor** and **open-block** protocol for use in AFFiNE. Paving the way for a new generation of SaaS software and developers.
 
 ## Fullstack Engineer (Fully-Remote)
 
 ### This position is for:
 
--   Develop AFFiNE in **the open source way**, including code and community engagement.
--   Research and support **onboarding process** of new use cases for AFFiNE.pro subscribers.
--   Improve our **block editor** and **graphic editor** experience.
--   Assist our subscribers in utilizing our product in a data-based way with help from the operational teams.
--   Research on activation of potential subscribers in a better way.
+-   Developing AFFiNE **the open source way**, including coding and community engagement.
+-   Researching and supporting **onboarding process** of new use cases for AFFiNE.pro subscribers.
+-   Improving our **block editor** and **graphic editor** experience.
+-   Assisting our subscribers in utilizing our product in a data-based way with help from the operational teams.
+-   Researching on better activation of potential subscribers.
 -   In AFFiNE, developers are self-organized individual engineers who are also responsible team members no matter they are on-site or working remotely.
 
 ### What we are looking for:
 
 -   Software engineering experience with **editor** or **graphics** with professional real-world use cases.
--   Experience and proficiency in **JavaScript** and a **second programming language** preferably **Rust**.
+-   Experience and proficiency in **TypeScript** and a **second programming language** preferably **Rust**.
 -   Strong communication and writing skills in English.
 -   Work in a diverse and cross-functional team with skill and ease.
--   Love open source spirit, share our visions and work under those values.
+-   A love of open source spirit, share our visions and work under those values.
 
 ### It would be great if you are:
 
