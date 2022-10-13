@@ -1,51 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { styled } from '@/styles';
-import { LogoIcon, PaperIcon, EdgelessIcon, SunIcon, MoonIcon } from './icons';
+import {
+  LogoIcon,
+  PaperIcon,
+  EdgelessIcon,
+  SunIcon,
+  MoonIcon,
+  MoreIcon,
+  ExportIcon,
+} from './icons';
+import {
+  StyledHeader,
+  StyledTitle,
+  StyledTitleWrapper,
+  StyledLogo,
+  StyledModeSwitch,
+  StyledHeaderRightSide,
+  StyledMoreMenuItem,
+} from './styles';
+import { Popover } from '@/components/popover';
+import { useTheme } from '@/styles';
+import { useEditor } from '@/components/editor-provider';
 
-const StyledHeader = styled('div')({
-  height: '60px',
-  width: '100vw',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  position: 'relative',
-  padding: '0 22px',
-});
-
-const StyledTitle = styled('div')({
-  width: '720px',
-  height: '100%',
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  top: 0,
-  margin: 'auto',
-
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  fontWeight: '600',
-  fontSize: '20px',
-});
-
-const StyledTitleWrapper = styled('div')({
-  maxWidth: '720px',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-  position: 'relative',
-});
-
-const StyledLogo = styled('div')({});
-
-const StyledModeSwitch = styled('div')({
-  height: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  marginRight: '15px',
-});
-
-const ModeSwitch = () => {
+const EditorModeSwitch = () => {
   const [mode, setMode] = useState<'page' | 'edgeless'>('page');
 
   const handleModeSwitch = (mode: 'page' | 'edgeless') => {
@@ -75,27 +51,67 @@ const ModeSwitch = () => {
 };
 
 const DarkModeSwitch = () => {
-  const [darkMode, setDarkMode] = useState(false);
+  const { changeMode, mode } = useTheme();
+
+  return (
+    <>
+      {mode === 'dark' ? (
+        <SunIcon
+          color="#9096A5"
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            changeMode('light');
+          }}
+        ></SunIcon>
+      ) : (
+        <MoonIcon
+          color="#9096A5"
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            changeMode('dark');
+          }}
+        ></MoonIcon>
+      )}
+    </>
+  );
+};
+
+const PopoverContent = () => {
+  const { editor } = useEditor();
   return (
     <div>
-      <SunIcon></SunIcon>
-      <MoonIcon></MoonIcon>
+      <StyledMoreMenuItem
+        onClick={() => {
+          editor && editor.contentParser.onExportHtml();
+        }}
+      >
+        <ExportIcon />
+        Export to HTML
+      </StyledMoreMenuItem>
+      <StyledMoreMenuItem
+        onClick={() => {
+          editor && editor.contentParser.onExportMarkdown();
+        }}
+      >
+        <ExportIcon />
+        Export to markdown
+      </StyledMoreMenuItem>
     </div>
   );
 };
 
 export const Header = () => {
   const [title, setTitle] = useState('');
+  const { editor } = useEditor();
 
   useEffect(() => {
-    setTimeout(() => {
-      const editor = window.editor;
+    if (editor) {
       setTitle(editor.model.title || '');
       editor.model.propsUpdated.on(() => {
         setTitle(editor.model.title);
       });
-    }, 500);
-  }, []);
+    }
+  }, [editor]);
 
   return (
     <StyledHeader>
@@ -103,9 +119,16 @@ export const Header = () => {
         <LogoIcon color={'#6880FF'} onClick={() => {}} />
       </StyledLogo>
       <StyledTitle>
-        <ModeSwitch />
+        <EditorModeSwitch />
         <StyledTitleWrapper>{title}</StyledTitleWrapper>
       </StyledTitle>
+
+      <StyledHeaderRightSide>
+        <DarkModeSwitch />
+        <Popover popoverContent={<PopoverContent />}>
+          <MoreIcon color="#9096A5" style={{ marginLeft: '20px' }} />
+        </Popover>
+      </StyledHeaderRightSide>
     </StyledHeader>
   );
 };
