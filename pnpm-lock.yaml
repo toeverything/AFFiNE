@@ -1,9 +1,9 @@
 lockfileVersion: 5.4
 
 specifiers:
-  '@blocksuite/blocks': ^0.2.1
-  '@blocksuite/editor': ^0.2.1
-  '@blocksuite/shared': ^0.2.1
+  '@blocksuite/blocks': ^0.2.4
+  '@blocksuite/editor': ^0.2.4
+  '@blocksuite/store': ^0.2.4
   '@emotion/css': ^11.10.0
   '@emotion/react': ^11.10.4
   '@emotion/server': ^11.10.0
@@ -25,9 +25,9 @@ specifiers:
   typescript: 4.8.3
 
 dependencies:
-  '@blocksuite/blocks': 0.2.1
-  '@blocksuite/editor': 0.2.1
-  '@blocksuite/shared': 0.2.1
+  '@blocksuite/blocks': 0.2.4
+  '@blocksuite/editor': 0.2.4
+  '@blocksuite/store': 0.2.4
   '@emotion/css': 11.10.0
   '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
   '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -122,11 +122,11 @@ packages:
       to-fast-properties: 2.0.0
     dev: false
 
-  /@blocksuite/blocks/0.2.1:
-    resolution: {integrity: sha512-IBUsuc+GeG12KGHXwY7tqA4QDWDnn33sIllWPCnDgnRcBnklAC4b8D+C3Iltn5LGkJ6/y5sujO563i8HTdWqFA==}
+  /@blocksuite/blocks/0.2.4:
+    resolution: {integrity: sha512-d8mBKt3Skk/fHR1i8tLzEYfkXUblEuuJXtQ6GrAdaU/yHwiM7R7+ZdO6AFOnJYPszX17AxQ4428ERe5qRhCDCA==}
     dependencies:
-      '@blocksuite/shared': 0.2.1
-      '@blocksuite/store': 0.2.1
+      '@blocksuite/shared': 0.2.4
+      '@blocksuite/store': 0.2.4
       lit: 2.3.1
       quill: 1.3.7
       quill-cursors: 4.0.0
@@ -136,24 +136,25 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/editor/0.2.1:
-    resolution: {integrity: sha512-OUHRojBGprVFfadWEy8qoKo8C53uCDjuCGQX1Ek3BjwznQFeaw8qiJ1EKzVxtJZw2v1tb1ZB1vQ6Oo8oRZSkOA==}
+  /@blocksuite/editor/0.2.4:
+    resolution: {integrity: sha512-f+BpetqzeTwZAxXfwKdH86xZw3XOnKokfhsOMVkK3PJnaWiNn2Kn9jJ0DkqAAwltWscReK5PQW7/D32gdsj7OA==}
     dependencies:
-      '@blocksuite/blocks': 0.2.1
-      '@blocksuite/shared': 0.2.1
-      '@blocksuite/store': 0.2.1
+      '@blocksuite/blocks': 0.2.4
+      '@blocksuite/shared': 0.2.4
+      '@blocksuite/store': 0.2.4
       lit: 2.3.1
       marked: 4.1.1
+      turndown: 7.1.1
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
     dev: false
 
-  /@blocksuite/shared/0.2.1:
-    resolution: {integrity: sha512-wdSfYIVj1sT5T9UxwgiECNEbkQVJnDonyoyz/3O8zznPvwB9wknLBEfvI5w/K0Orr9Nypzc7gaErz1bck7aECQ==}
+  /@blocksuite/shared/0.2.4:
+    resolution: {integrity: sha512-lc9J+Lty61V6w9xZ/KEj3CrMMRzwL2OfKQfAyrUErnzaTOUQj13CF1+yIfLSW4Ymu0BchU7mXDzMZIToeDOnEQ==}
     dependencies:
-      '@blocksuite/store': 0.2.1
+      '@blocksuite/store': 0.2.4
       hotkeys-js: 3.10.0
     transitivePeerDependencies:
       - bufferutil
@@ -161,8 +162,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/store/0.2.1:
-    resolution: {integrity: sha512-EagjMW7YRZ6Tj4ipr/Z+kcXU7B3k22OC0WatRml+Pu/p1vyHVPMUsRynh5PLx+EmLkigI26P8bP1aJ70W9ilOw==}
+  /@blocksuite/store/0.2.4:
+    resolution: {integrity: sha512-SuUCvxzXaUWa5CLkRhXCbHRLYQo8r1G4VG4aKlhX3P4krrzAa5x77VxZ5qnvi9OHOxSHkeJ+oZdFbh1avtfHgw==}
     dependencies:
       lib0: 0.2.52
       y-protocols: 1.0.5
@@ -947,6 +948,10 @@ packages:
     dependencies:
       esutils: 2.0.3
     dev: true
+
+  /domino/2.1.6:
+    resolution: {integrity: sha512-3VdM/SXBZX2omc9JF9nOPCtDaYQ67BGp5CoLpIQlO2KCAPETs8TcDHacF26jXadGbvUteZzRTeos2fhID5+ucQ==}
+    dev: false
 
   /duplexer2/0.1.4:
     resolution: {integrity: sha512-asLFVfWWtJ90ZyOUHMqk7/S2w2guQKxUI2itj3d92ADHhxUSbCMGi1f1cBcJ7xM1To+pE/Khbwo1yuNbMEPKeA==}
@@ -2487,6 +2492,12 @@ packages:
       tslib: 1.14.1
       typescript: 4.8.3
     dev: true
+
+  /turndown/7.1.1:
+    resolution: {integrity: sha512-BEkXaWH7Wh7e9bd2QumhfAXk5g34+6QUmmWx+0q6ThaVOLuLUqsnkq35HQ5SBHSaxjSfSM7US5o4lhJNH7B9MA==}
+    dependencies:
+      domino: 2.1.6
+    dev: false
 
   /type-check/0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
