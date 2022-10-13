@@ -4,16 +4,13 @@ import { Text } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import '@blocksuite/editor';
 import '@blocksuite/blocks/style';
+import { useEditor } from '@/components/editor-provider';
 
-declare global {
-  interface Window {
-    editor: EditorContainer;
-  }
-}
 export const Editor = () => {
   const editorRef = useRef<EditorContainer>();
-
+  const { setEditor } = useEditor();
   useEffect(() => {
+    setEditor(editorRef.current!);
     const { store } = editorRef.current as EditorContainer;
 
     const pageId = store.addBlock({

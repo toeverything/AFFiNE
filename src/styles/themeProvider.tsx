@@ -67,7 +67,7 @@ export const ThemeProvider = ({
       <Global
         styles={css`
           :root {
-            ${globalThemeConstant(themeStyle)}
+            ${globalThemeConstant(mode, themeStyle)}
           }
         `}
       />

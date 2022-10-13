@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import '../../public/globals.css';
 import '../../public/variable.css';
 import './temporary.css';
+import { EditorProvider } from '@/components/editor-provider';
 
 const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {
   ssr: false,
@@ -11,7 +12,9 @@ const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider>
-      <Component {...pageProps} />
+      <EditorProvider>
+        <Component {...pageProps} />
+      </EditorProvider>
     </ThemeProvider>
   );
 }
