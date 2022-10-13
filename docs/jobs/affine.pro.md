@@ -13,7 +13,8 @@ We're open for Fullstack Engineer positions across the BlockSuite sub-team. The 
 -   Assisting our subscribers in utilizing our product in a data-based way with help from the operational teams.
 -   Researching on better activation of potential subscribers.
 -   Engineers who are self-organized individuals and also responsible team members, no matter they are on-site or working remotely.
--   
+-
+
 ### What we are looking for:
 
 -   Software engineering experience with **editor** or **graphics** and professional real-world use cases.
@@ -24,10 +25,10 @@ We're open for Fullstack Engineer positions across the BlockSuite sub-team. The 
 
 ### It would be great if you are:
 
--   Skillful in building UI with different web frameworks or native web components.	
--   Heavy user of knowledge/project management tools.	
--   Experienced in scaling **a successful SaaS product**.	
--   Experienced in developing platforms or tools for developers.	
+-   Skillful in building UI with different web frameworks or native web components.
+-   Heavy user of knowledge/project management tools.
+-   Experienced in scaling **a successful SaaS product**.
+-   Experienced in developing platforms or tools for developers.
 -   Experienced in working with a **globally distributed team**.
 -   Enthusiastic about AFFiNE products as a user or contributor.
 
