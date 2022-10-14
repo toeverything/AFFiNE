@@ -18,9 +18,9 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': ^0.2.4
-      '@blocksuite/editor': ^0.2.4
-      '@blocksuite/store': ^0.2.4
+      '@blocksuite/blocks': ^0.2.5
+      '@blocksuite/editor': ^0.2.5
+      '@blocksuite/store': ^0.2.5
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
