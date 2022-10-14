@@ -5,10 +5,14 @@
 
 /** @type { import('eslint').Linter.Config } */
 module.exports = {
-  extends: ['plugin:prettier/recommended'],
-  rules: {
-    'prettier/prettier': 'warn',
-  },
+    extends: [
+        'next/core-web-vitals',
+        'plugin:@next/next/recommended',
+        'plugin:prettier/recommended',
+    ],
+    rules: {
+        'prettier/prettier': 'warn',
+    },
 
-  reportUnusedDisableDirectives: true,
+    reportUnusedDisableDirectives: true,
 };
