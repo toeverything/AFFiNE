@@ -5,6 +5,7 @@ import '@blocksuite/blocks';
 import '@blocksuite/editor';
 import '@blocksuite/blocks/style';
 import { useEditor } from '@/components/editor-provider';
+import pkg from '../../package.json';
 
 export const Editor = () => {
   const editorRef = useRef<EditorContainer>();
@@ -13,16 +14,17 @@ export const Editor = () => {
     setEditor(editorRef.current!);
     const { store } = editorRef.current as EditorContainer;
 
+    const version = pkg.dependencies['@blocksuite/editor'].substring(1);
     const pageId = store.addBlock({
       flavour: 'page',
-      title: 'Blocksuite live demo 0.2.6',
+      title: `BlockSuite live demo ${version}`,
     });
     const groupId = store.addBlock({ flavour: 'group' }, pageId);
 
-    const text = new Text('Legend from here ...');
+    const text = new Text('Legend from here...');
     store.addBlock({ flavour: 'paragraph', text }, groupId);
 
-    // store._history.clear();
+    // store.resetHistory();
   }, [setEditor]);
 
   return (
