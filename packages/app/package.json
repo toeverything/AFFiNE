@@ -10,9 +10,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@blocksuite/blocks": "^0.2.5",
-    "@blocksuite/editor": "^0.2.5",
-    "@blocksuite/store": "^0.2.5",
+    "@blocksuite/blocks": "^0.2.6",
+    "@blocksuite/editor": "^0.2.6",
+    "@blocksuite/store": "^0.2.6",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",

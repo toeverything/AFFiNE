@@ -15,7 +15,7 @@ export const Editor = () => {
 
     const pageId = store.addBlock({
       flavour: 'page',
-      title: 'Blocksuite live demo',
+      title: 'Blocksuite live demo 0.2.6',
     });
     const groupId = store.addBlock({ flavour: 'group' }, pageId);
 
