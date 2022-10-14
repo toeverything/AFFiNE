@@ -32,7 +32,7 @@ export const StyledAnimateRadio = styled('div')<{ shrink: boolean }>(
       background: '#F1F3FF',
       position: 'relative',
       display: 'flex',
-      transition:'all .3s',
+      transition: 'all .3s',
       '::after': {
         content: '""',
         width: '1px',
