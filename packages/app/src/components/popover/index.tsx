@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import type { CSSProperties, PropsWithChildren } from 'react';
+import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
+import Grow from '@mui/material/Grow';
+
 import { styled } from '@/styles';
 
 type PopoverProps = {
-  popoverContent?: React.ReactNode;
+  popoverContent?: ReactNode;
   style?: CSSProperties;
 };
 
@@ -17,8 +19,9 @@ const StyledPopoverWrapper = styled('div')({
   bottom: '0',
   right: '0',
   paddingTop: '46px',
+  zIndex: 1000,
 });
-const StyledPopover = styled('div')<{ show: boolean }>(({ show }) => {
+const StyledPopover = styled('div')(() => {
   return {
     width: '248px',
     background: '#fff',
@@ -26,7 +29,6 @@ const StyledPopover = styled('div')<{ show: boolean }>(({ show }) => {
       '0px 1px 10px -6px rgba(24, 39, 75, 0.5), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
     borderRadius: '10px 0px 10px 10px',
     padding: '8px 4px',
-    display: show ? 'block' : 'none',
     position: 'absolute',
     top: '46px',
     right: '0',
@@ -52,9 +54,11 @@ export const Popover = ({
       style={style}
     >
       {children}
-      <StyledPopoverWrapper>
-        <StyledPopover show={show}>{popoverContent}</StyledPopover>
-      </StyledPopoverWrapper>
+      <Grow in={show}>
+        <StyledPopoverWrapper>
+          <StyledPopover>{popoverContent}</StyledPopover>
+        </StyledPopoverWrapper>
+      </Grow>
     </StyledPopoverContainer>
   );
 };

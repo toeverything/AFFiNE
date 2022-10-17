@@ -22,7 +22,6 @@ export const StyledTitle = styled('div')({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  fontWeight: '600',
   fontSize: '20px',
 });
 
