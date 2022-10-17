@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter @pathfinder/app dev",
-    "build": "pnpm --filter @pathfinder/app build",
+    "build": "pnpm -r build",
     "export": "pnpm --filter @pathfinder/app export",
     "start": "pnpm --filter @pathfinder/app start",
     "lint": "pnpm --filter @pathfinder/app lint"

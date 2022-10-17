@@ -46,3 +46,5 @@ Thumbs.db
 
 .next
 out/
+
+module-resolve.js
