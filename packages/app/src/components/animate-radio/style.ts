@@ -1,4 +1,5 @@
 import { keyframes, styled } from '@/styles';
+// @ts-ignore
 import spring, { toString } from 'css-spring';
 import type { ItemStatus } from './type';
 
