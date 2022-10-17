@@ -8,9 +8,15 @@ export const lightTheme: AffineTheme = {
     disabled: '#9096A5',
     background: '#fff',
   },
+  font: {
+    xs: '12px',
+    sm: '16px',
+    base: '18px',
+  },
 };
 
 export const darkTheme: AffineTheme = {
+  ...lightTheme,
   colors: {
     primary: '#fff',
     highlight: '#7389FD',

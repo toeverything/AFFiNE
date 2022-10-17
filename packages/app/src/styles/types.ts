@@ -18,6 +18,11 @@ export interface AffineTheme {
     disabled: string;
     background: string;
   };
+  font: {
+    xs: string; // tiny
+    sm: string; // small
+    base: string;
+  };
 }
 
 declare module '@emotion/react' {

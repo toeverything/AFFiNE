@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { styled } from '@/styles';
-import { PaperIcon, EdgelessIcon } from '../components/Header/icons';
+import { PaperIcon, EdgelessIcon } from '@/components/Header/icons';
 export const StyledHeader = styled('div')({
   height: '60px',
   width: '100vw',

@@ -96,7 +96,6 @@ export const Popper = ({
   });
 
   // @ts-ignore
-  // @ts-ignore
   return (
     <ClickAwayListener
       onClickAway={() => {

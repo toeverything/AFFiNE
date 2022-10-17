@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import type { PropsWithChildren } from 'react';
+import type { CSSProperties, PropsWithChildren } from 'react';
 import { styled } from '@/styles';
 
 type PopoverProps = {
   popoverContent?: React.ReactNode;
+  style?: CSSProperties;
 };
 
 const StyledPopoverContainer = styled('div')({
@@ -34,6 +35,7 @@ const StyledPopover = styled('div')<{ show: boolean }>(({ show }) => {
 export const Popover = ({
   children,
   popoverContent,
+  style = {},
 }: PropsWithChildren<PopoverProps>) => {
   const [show, setShow] = useState(false);
   return (
@@ -47,6 +49,7 @@ export const Popover = ({
       onMouseLeave={() => {
         setShow(false);
       }}
+      style={style}
     >
       {children}
       <StyledPopoverWrapper>

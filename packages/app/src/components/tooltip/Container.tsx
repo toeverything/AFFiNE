@@ -19,18 +19,11 @@ const border_radius_map: Record<PopoverContainerProps['direction'], string> = {
 
 export const PopoverContainer = styled('div')<
   Pick<PopoverContainerProps, 'direction'>
->(({ theme, direction, style }) => {
-  return '';
-  // const shadow = theme.affine.shadows.shadow1;
-  // const white = theme.affine.palette.white;
-  //
-  // const borderRadius =
-  //   border_radius_map[direction] || border_radius_map['left-top'];
-  // return {
-  //   boxShadow: shadow,
-  //   borderRadius: borderRadius,
-  //   padding: '8px 4px',
-  //   backgroundColor: white,
-  //   ...style,
-  // };
+>(({ direction, style }) => {
+  const borderRadius =
+    border_radius_map[direction] || border_radius_map['left-top'];
+  return {
+    borderRadius: borderRadius,
+    ...style,
+  };
 });

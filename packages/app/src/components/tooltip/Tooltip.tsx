@@ -26,14 +26,14 @@ export const placementToContainerDirection: Record<
 };
 
 const useTooltipStyle = (): CSSProperties => {
-  const theme = useTheme();
-  return {};
-  // return {
-  //     backgroundColor: theme.affine.palette.icons,
-  //     color: theme.affine.palette.white,
-  //     ...theme.affine.typography.tooltip,
-  //     padding: '4px 8px',
-  // };
+  const { theme } = useTheme();
+  return {
+    boxShadow: '1px 1px 4px rgba(0, 0, 0, 0.14)',
+    padding: '4px 12px',
+    backgroundColor: theme.colors.highlight,
+    color: '#fff',
+    fontSize: theme.font.xs,
+  };
 };
 
 export const Tooltip = (

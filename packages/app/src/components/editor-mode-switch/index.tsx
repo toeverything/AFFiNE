@@ -1,4 +1,4 @@
-import { useState, useEffect, cloneElement } from 'react';
+import React, { useState, useEffect, cloneElement } from 'react';
 import {
   StyledAnimateRadioContainer,
   StyledRadioMiddle,
@@ -7,12 +7,34 @@ import {
   StyledLabel,
   StyledIcon,
 } from './style';
-import { ArrowIcon } from './icons';
 import type {
   RadioItemStatus,
   AnimateRadioProps,
   AnimateRadioItemProps,
 } from './type';
+import { useTheme } from '@/styles';
+import { EdgelessIcon, PaperIcon } from './icons';
+import { useEditor } from '@/components/editor-provider';
+
+const PaperItem = ({ active }: { active?: boolean }) => {
+  const {
+    theme: {
+      colors: { highlight, disabled },
+    },
+  } = useTheme();
+
+  return <PaperIcon style={{ color: active ? highlight : disabled }} />;
+};
+
+const EdgelessItem = ({ active }: { active?: boolean }) => {
+  const {
+    theme: {
+      colors: { highlight, disabled },
+    },
+  } = useTheme();
+
+  return <EdgelessIcon style={{ color: active ? highlight : disabled }} />;
+};
 
 const AnimateRadioItem = ({
   active,
@@ -24,7 +46,7 @@ const AnimateRadioItem = ({
 }: AnimateRadioItemProps) => {
   return (
     <StyledRadioItem active={active} status={status} {...props}>
-      <StyledIcon shrink={status === 'stretch'} isLeft={isLeft}>
+      <StyledIcon shrink={status === 'shrink'} isLeft={isLeft}>
         {cloneElement(icon, {
           active,
         })}
@@ -44,37 +66,32 @@ const RadioMiddle = ({
 }) => {
   return (
     <StyledRadioMiddle hidden={!isHover}>
-      <StyledMiddleLine hidden={direction !== 'middle'} />
-      <ArrowIcon
-        direction={direction}
-        style={{
-          position: 'absolute',
-          left: '0',
-          right: '0',
-          top: '0',
-          bottom: '0',
-          margin: 'auto',
-        }}
-      ></ArrowIcon>
+      <StyledMiddleLine hidden={false} />
     </StyledRadioMiddle>
   );
 };
 
-export const AnimateRadio = ({
-  labelLeft,
-  labelRight,
-  iconLeft,
-  iconRight,
+export const EditorModeSwitch = ({
   isHover,
   style = {},
-  onChange,
-  initialValue = 'left',
 }: AnimateRadioProps) => {
-  const [active, setActive] = useState(initialValue);
+  const { mode, setMode } = useEditor();
   const modifyRadioItemStatus = (): RadioItemStatus => {
     return {
-      left: !isHover && active === 'right' ? 'shrink' : 'normal',
-      right: !isHover && active === 'left' ? 'shrink' : 'normal',
+      left: isHover
+        ? mode === 'page'
+          ? 'stretch'
+          : 'normal'
+        : mode === 'page'
+        ? 'shrink'
+        : 'hidden',
+      right: isHover
+        ? mode === 'edgeless'
+          ? 'stretch'
+          : 'normal'
+        : mode === 'edgeless'
+        ? 'shrink'
+        : 'hidden',
     };
   };
   const [radioItemStatus, setRadioItemStatus] = useState<RadioItemStatus>(
@@ -84,19 +101,18 @@ export const AnimateRadio = ({
   useEffect(() => {
     setRadioItemStatus(modifyRadioItemStatus());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHover, active]);
+  }, [isHover, mode]);
 
   return (
     <StyledAnimateRadioContainer shrink={!isHover} style={style}>
       <AnimateRadioItem
         isLeft={true}
-        label={labelLeft}
-        icon={iconLeft}
-        active={active === 'left'}
+        label="Paper"
+        icon={<PaperItem />}
+        active={mode === 'page'}
         status={radioItemStatus.left}
         onClick={() => {
-          setActive('left');
-          onChange?.('left');
+          setMode('page');
         }}
         onMouseEnter={() => {
           setRadioItemStatus({
@@ -105,31 +121,18 @@ export const AnimateRadio = ({
           });
         }}
         onMouseLeave={() => {
-          setRadioItemStatus({
-            ...radioItemStatus,
-            left: 'normal',
-          });
+          setRadioItemStatus(modifyRadioItemStatus());
         }}
       />
-      <RadioMiddle
-        isHover={isHover}
-        direction={
-          radioItemStatus.left === 'stretch'
-            ? 'left'
-            : radioItemStatus.right === 'stretch'
-            ? 'right'
-            : 'middle'
-        }
-      />
+      <StyledMiddleLine hidden={!isHover} />
       <AnimateRadioItem
         isLeft={false}
-        label={labelRight}
-        icon={iconRight}
-        active={active === 'right'}
+        label="Edgeless"
+        icon={<EdgelessItem />}
+        active={mode === 'edgeless'}
         status={radioItemStatus.right}
         onClick={() => {
-          setActive('right');
-          onChange?.('right');
+          setMode('edgeless');
         }}
         onMouseEnter={() => {
           setRadioItemStatus({
@@ -138,14 +141,11 @@ export const AnimateRadio = ({
           });
         }}
         onMouseLeave={() => {
-          setRadioItemStatus({
-            ...radioItemStatus,
-            right: 'normal',
-          });
+          setRadioItemStatus(modifyRadioItemStatus());
         }}
       />
     </StyledAnimateRadioContainer>
   );
 };
 
-export default AnimateRadio;
+export default EditorModeSwitch;
