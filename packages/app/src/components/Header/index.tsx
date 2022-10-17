@@ -13,6 +13,7 @@ import { Popover } from '@/components/popover';
 import { useTheme } from '@/styles';
 import { useEditor } from '@/components/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
+import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/icons';
 
 const DarkModeSwitch = () => {
   const { changeMode, mode } = useTheme();
@@ -39,9 +40,17 @@ const DarkModeSwitch = () => {
 };
 
 const PopoverContent = () => {
-  const { editor } = useEditor();
+  const { editor, mode, setMode } = useEditor();
   return (
-    <div>
+    <>
+      <StyledMoreMenuItem
+        onClick={() => {
+          setMode(mode === 'page' ? 'edgeless' : 'page');
+        }}
+      >
+        {mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
+        Convert to {mode === 'page' ? 'edgeless' : 'page'}
+      </StyledMoreMenuItem>
       <StyledMoreMenuItem
         onClick={() => {
           editor && editor.contentParser.onExportHtml();
@@ -58,7 +67,7 @@ const PopoverContent = () => {
         <ExportIcon />
         Export to markdown
       </StyledMoreMenuItem>
-    </div>
+    </>
   );
 };
 
