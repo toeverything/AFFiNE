@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  LogoIcon,
-  SunIcon,
-  MoonIcon,
-  MoreIcon,
-  ExportIcon,
-} from './icons';
+import { LogoIcon, SunIcon, MoonIcon, MoreIcon, ExportIcon } from './icons';
 import {
   StyledHeader,
   StyledTitle,

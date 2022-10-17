@@ -42,7 +42,6 @@ export const MoonIcon = ({ style = {}, ...props }: IconProps) => {
   );
 };
 
-
 export const SunIcon = ({ style = {}, ...props }: IconProps) => {
   return (
     <svg
