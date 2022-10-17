@@ -71,3 +71,20 @@ export const StyledMoreMenuItem = styled('div')({
     },
   },
 });
+
+export const IconButton = styled('div')(({ theme }) => {
+  return {
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    color: theme.colors.disabled,
+    background: 'transparent',
+    borderRadius: '5px',
+    ':hover': {
+      color: theme.colors.highlight,
+      background: '#F1F3FF',
+    },
+  };
+});

@@ -1,20 +1,14 @@
 import { CSSProperties, DOMAttributes, ReactElement } from 'react';
 
-export type ItemStatus = 'normal' | 'stretch' | 'shrink';
+export type ItemStatus = 'normal' | 'stretch' | 'shrink' | 'hidden';
 
 export type RadioItemStatus = {
   left: ItemStatus;
   right: ItemStatus;
 };
 export type AnimateRadioProps = {
-  labelLeft: string;
-  labelRight: string;
-  iconLeft: ReactElement;
-  iconRight: ReactElement;
   isHover: boolean;
-  initialValue?: 'left' | 'right';
-  style?: CSSProperties;
-  onChange?: (value: 'left' | 'right') => void;
+  style: CSSProperties;
 };
 export type AnimateRadioItemProps = {
   active: boolean;

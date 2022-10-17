@@ -2,7 +2,7 @@ import type { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import { styled, useTheme } from '@/styles';
 import { Header } from '@/components/Header';
-
+import { FAQ } from '@/components/faq';
 import '@/components/simple-counter';
 
 const StyledEditorContainer = styled('div')(({ theme }) => {
@@ -56,6 +56,7 @@ const Home: NextPage = () => {
       {/*>*/}
       {/*  auto*/}
       {/*</button>*/}
+      <FAQ />
     </StyledPage>
   );
 };

@@ -8,11 +8,11 @@ const ANIMATE_DURATION = 300;
 export const StyledAnimateRadioContainer = styled('div')<{ shrink: boolean }>(
   ({ shrink }) => {
     const animateScaleStretch = keyframes`${toString(
-      spring({ width: '66px' }, { width: '132px' }, { preset: 'gentle' })
+      spring({ width: '36px' }, { width: '160px' }, { preset: 'gentle' })
     )}`;
     const animateScaleShrink = keyframes(
       `${toString(
-        spring({ width: '132px' }, { width: '66px' }, { preset: 'gentle' })
+        spring({ width: '160px' }, { width: '36px' }, { preset: 'gentle' })
       )}`
     );
     const shrinkStyle = shrink
@@ -40,7 +40,7 @@ export const StyledRadioMiddle = styled('div')<{
   hidden: boolean;
 }>(({ hidden }) => {
   return {
-    width: '6px',
+    width: '1px',
     height: '100%',
     position: 'relative',
     opacity: hidden ? '0' : '1',
@@ -53,9 +53,6 @@ export const StyledMiddleLine = styled('div')<{ hidden: boolean }>(
       width: '1px',
       height: '16px',
       background: '#D0D7E3',
-      position: 'absolute',
-      left: '0',
-      right: '0',
       top: '0',
       bottom: '0',
       margin: 'auto',
@@ -69,13 +66,13 @@ export const StyledRadioItem = styled('div')<{
   active: boolean;
 }>(({ status, active, theme }) => {
   const animateScaleStretch = keyframes`${toString(
-    spring({ width: '66px' }, { width: '116px' })
+    spring({ width: '44px' }, { width: '112px' })
   )}`;
   const animateScaleOrigin = keyframes(
-    `${toString(spring({ width: '116px' }, { width: '66px' }))}`
+    `${toString(spring({ width: '112px' }, { width: '44px' }))}`
   );
   const animateScaleShrink = keyframes(
-    `${toString(spring({ width: '66px' }, { width: '0px' }))}`
+    `${toString(spring({ width: '0px' }, { width: '36px' }))}`
   );
   const dynamicStyle =
     status === 'stretch'
@@ -86,14 +83,16 @@ export const StyledRadioItem = styled('div')<{
       : status === 'shrink'
       ? {
           animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
-          opacity: '0',
         }
-      : { animation: `${animateScaleOrigin} ${ANIMATE_DURATION}ms forwards` };
+      : status === 'normal'
+      ? { animation: `${animateScaleOrigin} ${ANIMATE_DURATION}ms forwards` }
+      : {};
 
   const {
     colors: { highlight, disabled },
   } = theme;
   return {
+    width: '0',
     height: '100%',
     display: 'flex',
     cursor: 'pointer',
@@ -135,19 +134,14 @@ export const StyledIcon = styled('div')<{
   shrink: boolean;
   isLeft: boolean;
 }>(({ shrink, isLeft }) => {
-  const shrinkStyle = shrink
-    ? {
-        width: '24px',
-        margin: isLeft ? '0 12px' : '0 5px',
-      }
-    : {
-        width: '66px',
-      };
+  const dynamicStyle = shrink
+    ? { width: '36px' }
+    : { width: isLeft ? '44px' : '34px' };
   return {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: '0',
-    ...shrinkStyle,
+    ...dynamicStyle,
   };
 });
