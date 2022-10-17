@@ -18,9 +18,9 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': ^0.2.7
-      '@blocksuite/editor': ^0.2.7
-      '@blocksuite/store': ^0.2.7
+      '@blocksuite/blocks': ^0.2.8
+      '@blocksuite/editor': ^0.2.8
+      '@blocksuite/store': ^0.2.8
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -42,9 +42,9 @@ importers:
       react-dom: 18.2.0
       typescript: 4.8.3
     dependencies:
-      '@blocksuite/blocks': 0.2.7
-      '@blocksuite/editor': 0.2.7
-      '@blocksuite/store': 0.2.7
+      '@blocksuite/blocks': 0.2.8
+      '@blocksuite/editor': 0.2.8
+      '@blocksuite/store': 0.2.8
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -139,10 +139,10 @@ packages:
       to-fast-properties: 2.0.0
     dev: false
 
-  /@blocksuite/blocks/0.2.7:
-    resolution: {integrity: sha512-OY6QoLCJjq6aOT8t5c0TFcwHdmJ+2FE3GoGaQyXhKuj0Cp4XrNMRUH+8IKpLVYoe+HnosU5Geo9FU5wdhMG9Hg==}
+  /@blocksuite/blocks/0.2.8:
+    resolution: {integrity: sha512-gx0jQ608oqRaZzraf4P72sHLUurdv8Ig8TDGEegqMXIDeZV8vvLIqX7WDI3XG183phtl5yxJzO2PtCvTCoNLPQ==}
     dependencies:
-      '@blocksuite/store': 0.2.7
+      '@blocksuite/store': 0.2.8
       hotkeys-js: 3.10.0
       lit: 2.4.0
       quill: 1.3.7
@@ -153,11 +153,11 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/editor/0.2.7:
-    resolution: {integrity: sha512-M+DQAsGfUl5rpnuL/o7s0LPN1HEXpQnI9IF6rAw+QAUMZzmynckWzC8tn5ORTUEPmEk4TuSvFFA5HkQKr+gh+w==}
+  /@blocksuite/editor/0.2.8:
+    resolution: {integrity: sha512-E1znJSDNjQGtMl9VKgGSaCNwkvlbNCgYxb4zqQJu+Vmt3fM9MXsjjVX7hRJ43qKK3v+kZdTEi4pRLk4hUDPdnw==}
     dependencies:
-      '@blocksuite/blocks': 0.2.7
-      '@blocksuite/store': 0.2.7
+      '@blocksuite/blocks': 0.2.8
+      '@blocksuite/store': 0.2.8
       lit: 2.4.0
       marked: 4.1.1
       turndown: 7.1.1
@@ -167,8 +167,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/store/0.2.7:
-    resolution: {integrity: sha512-O4yfUmhR8IODyyqRuwcL9BaDRQTR8+rIOJjV2sD/na+jwieBR/kU9hWQLejbQJmzlUjHrcSEsNyOasn7iGMp6w==}
+  /@blocksuite/store/0.2.8:
+    resolution: {integrity: sha512-7SbVwUycxjICytZmXKzAreIbYqp8g18C+rdS+z6z/IfN5n3iSwAK5m44yMFToBw1RZFqNyu4n0jJlcsM7cFK4Q==}
     dependencies:
       lib0: 0.2.52
       y-protocols: 1.0.5
