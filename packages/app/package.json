@@ -17,6 +17,7 @@
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
     "@emotion/styled": "^11.10.4",
+    "css-spring": "^4.1.0",
     "lit": "^2.3.1",
     "next": "12.3.1",
     "prettier": "^2.7.1",

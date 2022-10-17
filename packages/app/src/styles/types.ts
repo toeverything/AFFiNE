@@ -14,6 +14,9 @@ export type ThemeProviderValue = {
 export interface AffineTheme {
   colors: {
     primary: string;
+    highlight: string;
+    disabled: string;
+    background: string;
   };
 }
 

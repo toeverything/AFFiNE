@@ -28,6 +28,7 @@ importers:
       '@types/node': 18.7.18
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
+      css-spring: ^4.1.0
       eslint: 8.22.0
       eslint-config-next: 12.3.1
       eslint-config-prettier: ^8.5.0
@@ -48,6 +49,7 @@ importers:
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
       '@emotion/styled': 11.10.4_yiaqs725o7pcd7rteavrnhgj4y
+      css-spring: 4.1.0
       lit: 2.4.0
       next: 12.3.1_biqbaboplfbrettd7655fr4n2y
       prettier: 2.7.1
@@ -906,6 +908,12 @@ packages:
       which: 2.0.2
     dev: true
 
+  /css-spring/4.1.0:
+    resolution: {integrity: sha512-RdA4NuRNk2xChTSo+52P2jlfr+rUgNY94mV7uHrCeDPvaUtFZgW6LMoCy4xEX3HphZ7LLkCHiUY5PBSegFBE3A==}
+    dependencies:
+      lodash: 4.17.21
+    dev: false
+
   /csstype/3.1.1:
     resolution: {integrity: sha512-DJR/VvkAvSZW9bTouZue2sSxDwdTN92uHjqeKVm+0dAqdfNykRzQ95tay8aXMBAAPpUiq4Qcug2L7neoRh2Egw==}
 
@@ -1172,7 +1180,7 @@ packages:
       eslint-import-resolver-webpack:
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
+      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
       debug: 3.2.7
       eslint: 8.22.0
       eslint-import-resolver-node: 0.3.6
@@ -1191,7 +1199,7 @@ packages:
       '@typescript-eslint/parser':
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
+      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
       array-includes: 3.1.5
       array.prototype.flat: 1.3.0
       debug: 2.6.9
@@ -1890,6 +1898,10 @@ packages:
   /lodash.merge/4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
     dev: true
+
+  /lodash/4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+    dev: false
 
   /loose-envify/1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
