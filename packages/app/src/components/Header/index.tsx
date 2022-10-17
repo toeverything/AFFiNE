@@ -20,33 +20,47 @@ import {
 import { Popover } from '@/components/popover';
 import { useTheme } from '@/styles';
 import { useEditor } from '@/components/editor-provider';
+import { AnimateRadio } from '@/components/animate-radio';
 
-const EditorModeSwitch = () => {
-  const [mode, setMode] = useState<'page' | 'edgeless'>('page');
+const PaperItem = ({ active }: { active?: boolean }) => {
+  const {
+    theme: {
+      colors: { highlight, disabled },
+    },
+  } = useTheme();
 
+  return <PaperIcon color={active ? highlight : disabled} />;
+};
+
+const EdgelessItem = ({ active }: { active?: boolean }) => {
+  const {
+    theme: {
+      colors: { highlight, disabled },
+    },
+  } = useTheme();
+
+  return <EdgelessIcon color={active ? highlight : disabled} />;
+};
+const EditorModeSwitch = ({ isHover }: { isHover: boolean }) => {
   const handleModeSwitch = (mode: 'page' | 'edgeless') => {
     const event = new CustomEvent('affine.switch-mode', { detail: mode });
     window.dispatchEvent(event);
-
-    setMode(mode);
   };
   return (
-    <StyledModeSwitch>
-      <PaperIcon
-        color={mode === 'page' ? '#6880FF' : '#a6abb7'}
-        onClick={() => {
-          handleModeSwitch('page');
-        }}
-        style={{ cursor: 'pointer' }}
-      ></PaperIcon>
-      <EdgelessIcon
-        color={mode === 'edgeless' ? '#6880FF' : '#a6abb7'}
-        onClick={() => {
-          handleModeSwitch('edgeless');
-        }}
-        style={{ cursor: 'pointer' }}
-      ></EdgelessIcon>
-    </StyledModeSwitch>
+    <AnimateRadio
+      isHover={isHover}
+      labelLeft="Paper"
+      iconLeft={<PaperItem />}
+      labelRight="Edgeless"
+      iconRight={<EdgelessItem />}
+      style={{
+        marginRight: '12px',
+      }}
+      initialValue="left"
+      onChange={value => {
+        handleModeSwitch(value === 'left' ? 'page' : 'edgeless');
+      }}
+    />
   );
 };
 
@@ -102,6 +116,8 @@ const PopoverContent = () => {
 
 export const Header = () => {
   const [title, setTitle] = useState('');
+  const [isHover, setIsHover] = useState(false);
+
   const { editor } = useEditor();
 
   useEffect(() => {
@@ -114,12 +130,19 @@ export const Header = () => {
   }, [editor]);
 
   return (
-    <StyledHeader>
+    <StyledHeader
+      onMouseEnter={() => {
+        setIsHover(true);
+      }}
+      onMouseLeave={() => {
+        setIsHover(false);
+      }}
+    >
       <StyledLogo>
         <LogoIcon color={'#6880FF'} onClick={() => {}} />
       </StyledLogo>
       <StyledTitle>
-        <EditorModeSwitch />
+        <EditorModeSwitch isHover={isHover} />
         <StyledTitleWrapper>{title}</StyledTitleWrapper>
       </StyledTitle>
 
