@@ -1,0 +1,67 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: affine
+    namespace: default
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: affine
+    template:
+        metadata:
+            labels:
+                app: affine
+        spec:
+            containers:
+                - image: 'ghcr.io/toeverything/affine:nightly-server-latest'
+                  imagePullPolicy: Always
+                  name: affine
+                  ports:
+                      - containerPort: 3000
+                        name: affine
+                        protocol: TCP
+            restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+    annotations: {}
+    labels:
+        app: affine
+    name: affine
+    namespace: default
+spec:
+    selector:
+        app: affine
+    ports:
+        - name: tesnc3
+          nodePort: 30300
+          port: 3000
+          protocol: TCP
+          targetPort: 3000
+    type: NodePort
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    annotations: {}
+    name: affine
+    namespace: default
+spec:
+    ingressClassName: nginx
+    rules:
+        - host: docs.affine-inc.com
+          http:
+              paths:
+                  - backend:
+                        service:
+                            name: affine
+                            port:
+                                number: 3000
+                    path: /
+                    pathType: Prefix
+
