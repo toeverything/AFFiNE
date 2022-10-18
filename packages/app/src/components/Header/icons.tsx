@@ -22,46 +22,6 @@ export const LogoIcon = ({ style = {}, ...props }: IconProps) => {
   );
 };
 
-export const MoonIcon = ({ style = {}, ...props }: IconProps) => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width="24"
-      height="24"
-      fill="currentColor"
-      style={style}
-      {...props}
-    >
-      <path
-        fillRule="evenodd"
-        d="M9.549 3.314a.775.775 0 0 1-.136-.855.801.801 0 0 1 .746-.46c3.287.078 6.352 2.081 7.577 5.292 1.608 4.215-.569 8.911-4.862 10.49a8.407 8.407 0 0 1-9.044-2.138.775.775 0 0 1-.137-.855.802.802 0 0 1 .747-.46c.832.02 1.684-.11 2.51-.414 3.465-1.275 5.222-5.066 3.924-8.469a6.6 6.6 0 0 0-1.325-2.13Z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-};
-
-export const SunIcon = ({ style = {}, ...props }: IconProps) => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width="24"
-      height="24"
-      fill="currentColor"
-      style={style}
-      {...props}
-    >
-      <path
-        fillRule="evenodd"
-        d="M10.8 2.5a.8.8 0 0 0-1.6 0v.834a.8.8 0 1 0 1.6 0V2.5ZM5.15 4.018a.8.8 0 1 0-1.132 1.131l.678.679a.8.8 0 1 0 1.132-1.132l-.679-.678Zm10.832 1.131a.8.8 0 0 0-1.13-1.131l-.68.678a.8.8 0 1 0 1.132 1.132l.678-.679ZM10 5.867a4.133 4.133 0 1 0 0 8.267 4.133 4.133 0 0 0 0-8.267ZM2.5 9.2a.8.8 0 1 0 0 1.6h.834a.8.8 0 0 0 0-1.6H2.5Zm14.167 0a.8.8 0 1 0 0 1.6h.833a.8.8 0 0 0 0-1.6h-.833ZM5.827 15.31a.8.8 0 0 0-1.13-1.134l-.678.675a.8.8 0 0 0 1.129 1.134l.678-.675Zm9.476-1.134a.8.8 0 1 0-1.129 1.134l.679.675a.8.8 0 1 0 1.128-1.134l-.678-.675ZM10.8 16.667a.8.8 0 1 0-1.6 0v.833a.8.8 0 0 0 1.6 0v-.833Z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-};
-
 export const MoreIcon = ({ style = {}, ...props }: IconProps) => {
   return (
     <svg

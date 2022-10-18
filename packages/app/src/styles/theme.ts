@@ -7,6 +7,7 @@ export const lightTheme: AffineTheme = {
     highlight: '#7389FD',
     disabled: '#9096A5',
     background: '#fff',
+    hoverBackground: '#F1F3FF',
   },
   font: {
     xs: '12px',
@@ -22,6 +23,7 @@ export const darkTheme: AffineTheme = {
     highlight: '#7389FD',
     disabled: '#9096A5',
     background: '#3d3c3f',
+    hoverBackground: '#F1F3FF',
   },
 };
 

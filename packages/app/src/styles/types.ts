@@ -17,6 +17,7 @@ export interface AffineTheme {
     highlight: string;
     disabled: string;
     background: string;
+    hoverBackground: string;
   };
   font: {
     xs: string; // tiny

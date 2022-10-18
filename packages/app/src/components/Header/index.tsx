@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LogoIcon, SunIcon, MoonIcon, MoreIcon, ExportIcon } from './icons';
+import { LogoIcon, MoreIcon, ExportIcon } from './icons';
 import {
   StyledHeader,
   StyledTitle,
@@ -10,34 +10,10 @@ import {
   IconButton,
 } from './styles';
 import { Popover } from '@/components/popover';
-import { useTheme } from '@/styles';
 import { useEditor } from '@/components/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/icons';
-
-const DarkModeSwitch = () => {
-  const { changeMode, mode } = useTheme();
-
-  return (
-    <>
-      {mode === 'dark' ? (
-        <SunIcon
-          style={{ cursor: 'pointer', color: '#9096A5' }}
-          onClick={() => {
-            changeMode('light');
-          }}
-        ></SunIcon>
-      ) : (
-        <MoonIcon
-          style={{ cursor: 'pointer', color: '#9096A5' }}
-          onClick={() => {
-            changeMode('dark');
-          }}
-        ></MoonIcon>
-      )}
-    </>
-  );
-};
+import ThemeModeSwitch from '@/components/theme-mode-switch';
 
 const PopoverContent = () => {
   const { editor, mode, setMode } = useEditor();
@@ -109,7 +85,7 @@ export const Header = () => {
       </StyledTitle>
 
       <StyledHeaderRightSide>
-        <DarkModeSwitch />
+        <ThemeModeSwitch />
         <Popover
           popoverContent={<PopoverContent />}
           style={{ marginLeft: '20px' }}
