@@ -145,7 +145,7 @@ button,
 select,
 keygen,
 legend {
-  color: var(--page-text-color);
+  color: var(--affine-text-color);
   outline: 0;
   font-size: 18px;
   line-height: 1.5;
@@ -156,7 +156,7 @@ body {
 }
 a,
 a:hover {
-  color: var(--page-text-color);
+  color: var(--affine-link-color);
 }
 
 input {

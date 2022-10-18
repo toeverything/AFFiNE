@@ -27,7 +27,7 @@ export class Counter extends LitElement {
   static styles = css`
     .counter-container {
       display: flex;
-      color: var(--color-primary);
+      color: var(--affine-text-color);
     }
     button {
       margin: 0 5px;

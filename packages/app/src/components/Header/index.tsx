@@ -65,7 +65,7 @@ export const Header = () => {
   return (
     <StyledHeader>
       <StyledLogo>
-        <LogoIcon style={{ color: '#6880FF' }} onClick={() => {}} />
+        <LogoIcon onClick={() => {}} />
       </StyledLogo>
       <StyledTitle
         onMouseEnter={() => {

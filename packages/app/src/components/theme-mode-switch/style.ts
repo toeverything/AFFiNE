@@ -32,7 +32,7 @@ export const StyledSwitchItem = styled('div')<{
   )}`;
   const activeStyle = active
     ? {
-        color: theme.colors.disabled,
+        color: theme.colors.iconColor,
         top: '0',
         animation: firstTrigger
           ? `${
@@ -43,7 +43,7 @@ export const StyledSwitchItem = styled('div')<{
       }
     : ({
         top: '100%',
-        color: theme.colors.highlight,
+        color: theme.colors.primaryColor,
         backgroundColor: theme.colors.hoverBackground,
         animation: firstTrigger
           ? `${

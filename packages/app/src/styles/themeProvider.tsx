@@ -11,7 +11,7 @@ import {
   ThemeProviderProps,
   ThemeProviderValue,
 } from './types';
-import { lightTheme, darkTheme, globalThemeConstant } from './theme';
+import { lightTheme, darkTheme, globalThemeVariables } from './theme';
 import { SystemThemeHelper, localStorageThemeHelper } from './utils';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
@@ -67,7 +67,7 @@ export const ThemeProvider = ({
       <Global
         styles={css`
           :root {
-            ${globalThemeConstant(mode, themeStyle)}
+            ${globalThemeVariables(mode, themeStyle) as {}}
           }
         `}
       />

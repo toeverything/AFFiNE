@@ -5,22 +5,22 @@ export const StyledFAQ = styled('div')(({ theme }) => {
     width: '32px',
     height: '32px',
     backgroundColor: '#fff',
-    color: theme.colors.disabled,
+    color: theme.colors.iconColor,
     position: 'fixed',
     right: '30px',
     bottom: '30px',
     borderRadius: '50%',
     zIndex: 1000,
     ':hover': {
-      backgroundColor: '#F1F3FF',
-      color: theme.colors.highlight,
+      backgroundColor: theme.colors.popoverBackground,
+      color: theme.colors.primaryColor,
     },
   };
 });
 
 export const StyledIconWrapper = styled('div')(({ theme }) => {
   return {
-    color: theme.colors.disabled,
+    color: theme.colors.iconColor,
     marginBottom: '24px',
     display: 'flex',
     justifyContent: 'center',
@@ -31,8 +31,8 @@ export const StyledIconWrapper = styled('div')(({ theme }) => {
     width: '32px',
     height: '32px',
     ':hover': {
-      color: theme.colors.highlight,
-      backgroundColor: '#F1F3FF',
+      color: theme.colors.primaryColor,
+      backgroundColor: theme.colors.hoverBackground,
     },
   };
 });
@@ -43,12 +43,9 @@ export const StyledFAQWrapper = styled('div')(({ theme }) => {
     bottom: '100%',
     left: '0',
     width: '100%',
-    color: theme.colors.disabled,
+    color: theme.colors.iconColor,
     ':hover': {
-      '> svg': {
-        color: theme.colors.highlight,
-      },
-      color: theme.colors.highlight,
+      color: theme.colors.popoverColor,
     },
   };
 });

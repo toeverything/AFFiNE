@@ -1,7 +1,6 @@
 import React, { useState, useEffect, cloneElement } from 'react';
 import {
   StyledAnimateRadioContainer,
-  StyledRadioMiddle,
   StyledMiddleLine,
   StyledRadioItem,
   StyledLabel,
@@ -19,21 +18,21 @@ import { useEditor } from '@/components/editor-provider';
 const PaperItem = ({ active }: { active?: boolean }) => {
   const {
     theme: {
-      colors: { highlight, disabled },
+      colors: { iconColor, primaryColor },
     },
   } = useTheme();
 
-  return <PaperIcon style={{ color: active ? highlight : disabled }} />;
+  return <PaperIcon style={{ color: active ? primaryColor : iconColor }} />;
 };
 
 const EdgelessItem = ({ active }: { active?: boolean }) => {
   const {
     theme: {
-      colors: { highlight, disabled },
+      colors: { iconColor, primaryColor },
     },
   } = useTheme();
 
-  return <EdgelessIcon style={{ color: active ? highlight : disabled }} />;
+  return <EdgelessIcon style={{ color: active ? primaryColor : iconColor }} />;
 };
 
 const AnimateRadioItem = ({
@@ -57,24 +56,11 @@ const AnimateRadioItem = ({
   );
 };
 
-const RadioMiddle = ({
-  isHover,
-  direction,
-}: {
-  isHover: boolean;
-  direction: 'left' | 'right' | 'middle';
-}) => {
-  return (
-    <StyledRadioMiddle hidden={!isHover}>
-      <StyledMiddleLine hidden={false} />
-    </StyledRadioMiddle>
-  );
-};
-
 export const EditorModeSwitch = ({
   isHover,
   style = {},
 }: AnimateRadioProps) => {
+  const { mode: themeMode } = useTheme();
   const { mode, setMode } = useEditor();
   const modifyRadioItemStatus = (): RadioItemStatus => {
     return {
@@ -124,7 +110,7 @@ export const EditorModeSwitch = ({
           setRadioItemStatus(modifyRadioItemStatus());
         }}
       />
-      <StyledMiddleLine hidden={!isHover} />
+      <StyledMiddleLine hidden={!isHover} dark={themeMode === 'dark'} />
       <AnimateRadioItem
         isLeft={false}
         label="Edgeless"

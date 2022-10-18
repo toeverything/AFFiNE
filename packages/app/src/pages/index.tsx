@@ -12,12 +12,14 @@ const StyledEditorContainer = styled('div')(({ theme }) => {
   };
 });
 
-const StyledPage = styled('div')({
-  height: '100vh',
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: 'var(--page-background-color)',
-  transition: 'background-color .5s',
+const StyledPage = styled('div')(({ theme }) => {
+  return {
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: theme.colors.pageBackground,
+    transition: 'background-color .5s',
+  };
 });
 
 const DynamicEditor = dynamic(() => import('../components/editor'), {

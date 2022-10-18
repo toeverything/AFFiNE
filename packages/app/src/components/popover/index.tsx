@@ -21,12 +21,12 @@ const StyledPopoverWrapper = styled('div')({
   paddingTop: '46px',
   zIndex: 1000,
 });
-const StyledPopover = styled('div')(() => {
+const StyledPopover = styled('div')(({ theme }) => {
   return {
     width: '248px',
-    background: '#fff',
-    boxShadow:
-      '0px 1px 10px -6px rgba(24, 39, 75, 0.5), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
+    background: theme.colors.popoverBackground,
+    boxShadow: theme.colors.boxShadow,
+    color: theme.colors.popoverColor,
     borderRadius: '10px 0px 10px 10px',
     padding: '8px 4px',
     position: 'absolute',
