@@ -82,9 +82,9 @@ jobs:
 
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
-      IMAGE_TAG: canary-pro-${{ github.sha }}
-      IMAGE_TAG_LATEST: nightly-pro-latest
+      IMAGE_NAME: ${{ github.repository }}-pro
+      IMAGE_TAG: canary-${{ github.sha }}
+      IMAGE_TAG_LATEST: nightly-latest
 
     steps:
       - name: Check out the repo
