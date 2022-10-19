@@ -111,14 +111,14 @@ export const StyledSmallLink = styled('a')(({ theme }) => {
     },
   };
 });
-export const StyledSubTitle = styled('div')(({theme}) => {
-  return ({
+export const StyledSubTitle = styled('div')(({ theme }) => {
+  return {
     width: '189px',
     fontSize: '18px',
     fontWeight: '600',
     color: theme.colors.textColor,
     marginBottom: '24px',
-  })
+  };
 });
 
 export const StyledLeftContainer = styled('div')({
