@@ -2,7 +2,7 @@ name: Build With Module Resolve
 
 on:
   push:
-    branches: [feat/track]
+    branches: [master]
   pull_request:
     branches: [master]
 
