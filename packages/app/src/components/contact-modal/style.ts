@@ -1,5 +1,5 @@
 import { styled } from '@/styles';
-
+import bg from './bg.png';
 export const StyledModalContainer = styled('div')(({ theme }) => {
   return {
     width: '100vw',
@@ -15,7 +15,8 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
     width: '1000px',
     height: '626px',
-    background: theme.colors.popoverBackground,
+    backgroundColor: theme.colors.popoverBackground,
+    backgroundImage: `url(${bg.src})`,
     padding: '0 48px',
     borderRadius: '20px',
     position: 'absolute',
@@ -26,29 +27,6 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
     margin: 'auto',
   };
 });
-
-export const StyledYellowBall = styled('div')`
-  position: absolute;
-  top: 189px;
-  left: 186px;
-  display: block;
-  width: 122px;
-  height: 122px;
-  background-color: #dda82a;
-  opacity: 0.45;
-  filter: blur(78px);
-`;
-export const StyledBlueBall = styled('div')`
-  content: '';
-  position: absolute;
-  top: 332px;
-  left: 296px;
-  display: block;
-  width: 122px;
-  height: 122px;
-  background-color: #4461f2;
-  filter: blur(78px);
-`;
 
 export const StyledBigLink = styled('a')(({ theme }) => {
   return {

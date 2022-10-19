@@ -11,8 +11,6 @@ import logo from './affine-text-logo.png';
 import {
   StyledModalContainer,
   StyledModalWrapper,
-  StyledYellowBall,
-  StyledBlueBall,
   StyledBigLink,
   StyledSmallLink,
   StyledSubTitle,
@@ -78,9 +76,6 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
       <StyledModalContainer>
         <StyledBackdrop onClick={onClose} />
         <StyledModalWrapper>
-          <StyledYellowBall />
-          <StyledBlueBall />
-
           <StyledModalHeader>
             <StyledModalHeaderLeft>
               <StyledLogo src={logo.src} alt="" />
