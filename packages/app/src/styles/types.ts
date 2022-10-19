@@ -42,6 +42,10 @@ export interface AffineTheme {
     family: string;
     family2: string;
   };
+  zIndex: {
+    modal: number;
+    popover: number;
+  };
 }
 
 export interface AffineThemeCSSVariables {

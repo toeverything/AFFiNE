@@ -34,6 +34,10 @@ export const lightTheme: AffineTheme = {
     family: `Avenir Next, ${basicFontFamily}`,
     family2: `Roboto Mono, ${basicFontFamily}`,
   },
+  zIndex: {
+    modal: 1000,
+    popover: 100,
+  },
 };
 
 export const darkTheme: AffineTheme = {
