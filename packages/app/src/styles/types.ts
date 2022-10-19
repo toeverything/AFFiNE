@@ -31,8 +31,6 @@ export interface AffineTheme {
     quoteColor: string;
     placeHolderColor: string;
     selectedColor: string;
-
-    boxShadow: string;
   };
   font: {
     xs: string; // tiny
@@ -45,6 +43,10 @@ export interface AffineTheme {
   zIndex: {
     modal: number;
     popover: number;
+  };
+  shadow: {
+    modal: string;
+    popover: string;
   };
 }
 
@@ -67,7 +69,8 @@ export interface AffineThemeCSSVariables {
   '--affine-placeholder-color': AffineTheme['colors']['placeHolderColor'];
   '--affine-selected-color': AffineTheme['colors']['selectedColor'];
 
-  '--affine-box-shadow': AffineTheme['colors']['boxShadow'];
+  '--affine-modal-shadow': AffineTheme['shadow']['popover'];
+  '--affine-popover-shadow': AffineTheme['shadow']['modal'];
 
   '--affine-font-xs': AffineTheme['font']['xs']; // tiny
   '--affine-font-sm': AffineTheme['font']['sm']; // small

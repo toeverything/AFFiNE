@@ -23,9 +23,6 @@ export const lightTheme: AffineTheme = {
     quoteColor: '#4C6275',
     placeHolderColor: '#C7C7C7',
     selectedColor: 'rgba(104, 128, 255, 0.1)',
-
-    boxShadow:
-      ' 0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04);',
   },
   font: {
     xs: '12px',
@@ -37,6 +34,12 @@ export const lightTheme: AffineTheme = {
   zIndex: {
     modal: 1000,
     popover: 100,
+  },
+  shadow: {
+    popover:
+      '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
+    modal:
+      '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
   },
 };
 
@@ -60,8 +63,11 @@ export const darkTheme: AffineTheme = {
     quoteColor: '#A9B1C6',
     placeHolderColor: '#C7C7C7',
     selectedColor: 'rgba(240, 242, 255, 0.8)',
-
-    boxShadow:
+  },
+  shadow: {
+    popover:
+      '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
+    modal:
       '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
   },
 };
@@ -90,7 +96,8 @@ export const globalThemeVariables: (
     '--affine-selected-color': theme.colors.selectedColor,
     '--affine-placeholder-color': theme.colors.placeHolderColor,
 
-    '--affine-box-shadow': theme.colors.boxShadow,
+    '--affine-modal-shadow': theme.shadow.modal,
+    '--affine-popover-shadow': theme.shadow.popover,
 
     '--affine-font-xs': theme.font.xs, // tiny
     '--affine-font-sm': theme.font.sm, // small

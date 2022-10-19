@@ -15,7 +15,7 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
     width: '1000px',
     height: '626px',
-    background: ' #FFFFFF',
+    background: theme.colors.popoverBackground,
     padding: '0 48px',
     borderRadius: '20px',
     position: 'absolute',
@@ -111,12 +111,14 @@ export const StyledSmallLink = styled('a')(({ theme }) => {
     },
   };
 });
-export const StyledSubTitle = styled('div')({
-  width: '189px',
-  fontSize: '18px',
-  fontWeight: '600',
-  color: '#3A4C5C',
-  marginBottom: '24px',
+export const StyledSubTitle = styled('div')(({theme}) => {
+  return ({
+    width: '189px',
+    fontSize: '18px',
+    fontWeight: '600',
+    color: theme.colors.textColor,
+    marginBottom: '24px',
+  })
 });
 
 export const StyledLeftContainer = styled('div')({

@@ -25,7 +25,7 @@ const StyledPopover = styled('div')(({ theme }) => {
   return {
     width: '248px',
     background: theme.colors.popoverBackground,
-    boxShadow: theme.colors.boxShadow,
+    boxShadow: theme.shadow.popover,
     color: theme.colors.popoverColor,
     borderRadius: '10px 0px 10px 10px',
     padding: '8px 4px',
