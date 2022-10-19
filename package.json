@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @pathfinder/app dev",
+    "dev": "pnpm --filter=!@pathfinder/app build && pnpm --filter @pathfinder/app dev",
     "build": "pnpm -r build",
     "export": "pnpm --filter @pathfinder/app export",
     "start": "pnpm --filter @pathfinder/app start",
