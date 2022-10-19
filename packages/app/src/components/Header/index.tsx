@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LogoIcon, SunIcon, MoonIcon, MoreIcon, ExportIcon } from './icons';
+import { LogoIcon, MoreIcon, ExportIcon } from './icons';
 import {
   StyledHeader,
   StyledTitle,
@@ -10,34 +10,11 @@ import {
   IconButton,
 } from './styles';
 import { Popover } from '@/components/popover';
-import { useTheme } from '@/styles';
 import { useEditor } from '@/components/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/icons';
-
-const DarkModeSwitch = () => {
-  const { changeMode, mode } = useTheme();
-
-  return (
-    <>
-      {mode === 'dark' ? (
-        <SunIcon
-          style={{ cursor: 'pointer', color: '#9096A5' }}
-          onClick={() => {
-            changeMode('light');
-          }}
-        ></SunIcon>
-      ) : (
-        <MoonIcon
-          style={{ cursor: 'pointer', color: '#9096A5' }}
-          onClick={() => {
-            changeMode('dark');
-          }}
-        ></MoonIcon>
-      )}
-    </>
-  );
-};
+import ThemeModeSwitch from '@/components/theme-mode-switch';
+import ContactModal from '@/components/contact-modal';
 
 const PopoverContent = () => {
   const { editor, mode, setMode } = useEditor();
@@ -74,6 +51,7 @@ const PopoverContent = () => {
 export const Header = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const { editor } = useEditor();
 
@@ -87,38 +65,48 @@ export const Header = () => {
   }, [editor]);
 
   return (
-    <StyledHeader>
-      <StyledLogo>
-        <LogoIcon style={{ color: '#6880FF' }} onClick={() => {}} />
-      </StyledLogo>
-      <StyledTitle
-        onMouseEnter={() => {
-          setIsHover(true);
-        }}
-        onMouseLeave={() => {
-          setIsHover(false);
-        }}
-      >
-        <EditorModeSwitch
-          isHover={isHover}
-          style={{
-            marginRight: '12px',
+    <>
+      <ContactModal
+        open={showContactModal}
+        onClose={() => setShowContactModal(false)}
+      />
+      <StyledHeader>
+        <StyledLogo>
+          <LogoIcon
+            onClick={() => {
+              setShowContactModal(true);
+            }}
+          />
+        </StyledLogo>
+        <StyledTitle
+          onMouseEnter={() => {
+            setIsHover(true);
           }}
-        />
-        <StyledTitleWrapper>{title}</StyledTitleWrapper>
-      </StyledTitle>
-
-      <StyledHeaderRightSide>
-        <DarkModeSwitch />
-        <Popover
-          popoverContent={<PopoverContent />}
-          style={{ marginLeft: '20px' }}
+          onMouseLeave={() => {
+            setIsHover(false);
+          }}
         >
-          <IconButton>
-            <MoreIcon />
-          </IconButton>
-        </Popover>
-      </StyledHeaderRightSide>
-    </StyledHeader>
+          <EditorModeSwitch
+            isHover={isHover}
+            style={{
+              marginRight: '12px',
+            }}
+          />
+          <StyledTitleWrapper>{title}</StyledTitleWrapper>
+        </StyledTitle>
+
+        <StyledHeaderRightSide>
+          <ThemeModeSwitch />
+          <Popover
+            popoverContent={<PopoverContent />}
+            style={{ marginLeft: '20px' }}
+          >
+            <IconButton>
+              <MoreIcon />
+            </IconButton>
+          </Popover>
+        </StyledHeaderRightSide>
+      </StyledHeader>
+    </>
   );
 };

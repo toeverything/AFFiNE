@@ -3,10 +3,10 @@ import { keyframes, styled } from '@/styles';
 import spring, { toString } from 'css-spring';
 import type { ItemStatus } from './type';
 
-const ANIMATE_DURATION = 300;
+const ANIMATE_DURATION = 400;
 
 export const StyledAnimateRadioContainer = styled('div')<{ shrink: boolean }>(
-  ({ shrink }) => {
+  ({ shrink, theme }) => {
     const animateScaleStretch = keyframes`${toString(
       spring({ width: '36px' }, { width: '160px' }, { preset: 'gentle' })
     )}`;
@@ -27,7 +27,7 @@ export const StyledAnimateRadioContainer = styled('div')<{ shrink: boolean }>(
     return {
       height: '36px',
       borderRadius: '18px',
-      background: '#F1F3FF',
+      background: theme.colors.hoverBackground,
       position: 'relative',
       display: 'flex',
       transition: `background ${ANIMATE_DURATION}ms`,
@@ -36,30 +36,20 @@ export const StyledAnimateRadioContainer = styled('div')<{ shrink: boolean }>(
   }
 );
 
-export const StyledRadioMiddle = styled('div')<{
+export const StyledMiddleLine = styled('div')<{
   hidden: boolean;
-}>(({ hidden }) => {
+  dark: boolean;
+}>(({ hidden, dark }) => {
   return {
     width: '1px',
-    height: '100%',
-    position: 'relative',
+    height: '16px',
+    background: dark ? '#4d4c53' : '#D0D7E3',
+    top: '0',
+    bottom: '0',
+    margin: 'auto',
     opacity: hidden ? '0' : '1',
   };
 });
-
-export const StyledMiddleLine = styled('div')<{ hidden: boolean }>(
-  ({ hidden }) => {
-    return {
-      width: '1px',
-      height: '16px',
-      background: '#D0D7E3',
-      top: '0',
-      bottom: '0',
-      margin: 'auto',
-      opacity: hidden ? '0' : '1',
-    };
-  }
-);
 
 export const StyledRadioItem = styled('div')<{
   status: ItemStatus;
@@ -89,7 +79,7 @@ export const StyledRadioItem = styled('div')<{
       : {};
 
   const {
-    colors: { highlight, disabled },
+    colors: { iconColor, primaryColor },
   } = theme;
   return {
     width: '0',
@@ -97,7 +87,7 @@ export const StyledRadioItem = styled('div')<{
     display: 'flex',
     cursor: 'pointer',
     overflow: 'hidden',
-    color: active ? highlight : disabled,
+    color: active ? primaryColor : iconColor,
     ...dynamicStyle,
   };
 });

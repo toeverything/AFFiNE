@@ -33,14 +33,10 @@ export const StyledTitleWrapper = styled('div')({
   position: 'relative',
 });
 
-export const StyledLogo = styled('div')({});
-
-export const StyledModeSwitch = styled('div')({
-  height: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  marginRight: '12px',
-});
+export const StyledLogo = styled('div')(({ theme }) => ({
+  color: theme.colors.primaryColor,
+  cursor: 'pointer',
+}));
 
 export const StyledHeaderRightSide = styled('div')({
   height: '100%',
@@ -48,27 +44,25 @@ export const StyledHeaderRightSide = styled('div')({
   alignItems: 'center',
 });
 
-export const StyledMoreMenuItem = styled('div')({
-  height: '32px',
-  display: 'flex',
-  alignItems: 'center',
-  borderRadius: '5px',
-  fontSize: '14px',
-  color: '#4C6275',
-  padding: '0 14px',
-  svg: {
-    fill: '#4C6275',
-    width: '16px',
-    height: '16px',
-    marginRight: '14px',
-  },
-  ':hover': {
-    color: 'var(--affine-highlight-color)',
-    background: '#F1F3FF',
+export const StyledMoreMenuItem = styled('div')(({ theme }) => {
+  return {
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    borderRadius: '5px',
+    fontSize: '14px',
+    color: theme.colors.popoverColor,
+    padding: '0 14px',
     svg: {
-      fill: 'var(--affine-highlight-color)',
+      width: '16px',
+      height: '16px',
+      marginRight: '14px',
     },
-  },
+    ':hover': {
+      color: theme.colors.primaryColor,
+      background: theme.colors.hoverBackground,
+    },
+  };
 });
 
 export const IconButton = styled('div')(({ theme }) => {
@@ -78,12 +72,11 @@ export const IconButton = styled('div')(({ theme }) => {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    color: theme.colors.disabled,
-    background: 'transparent',
+    color: theme.colors.iconColor,
     borderRadius: '5px',
     ':hover': {
-      color: theme.colors.highlight,
-      background: '#F1F3FF',
+      color: theme.colors.primaryColor,
+      background: theme.colors.hoverBackground,
     },
   };
 });
