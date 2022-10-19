@@ -1,4 +1,4 @@
-name: Build
+name: Build With Module Resolve
 
 on:
   push:
@@ -32,6 +32,8 @@ jobs:
         with:
           node-version: 18.x
           cache: 'pnpm'
+      
+      - run: node scripts/module-resolve/ci.js
 
       - name: Restore cache
         uses: actions/cache@v3
@@ -45,7 +47,7 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
@@ -81,8 +83,8 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
-      IMAGE_TAG: canary-${{ github.sha }}
-      IMAGE_TAG_LATEST: nightly-latest
+      IMAGE_TAG: canary-pro-${{ github.sha }}
+      IMAGE_TAG_LATEST: nightly-pro-latest
 
     steps:
       - name: Check out the repo
