@@ -103,6 +103,9 @@ export const globalThemeVariables: (
     '--affine-font-sm': theme.font.sm, // small
     '--affine-font-base': theme.font.base,
 
+    '--affine-z-index-modal': theme.zIndex.modal,
+    '--affine-z-index-popover': theme.zIndex.popover,
+
     '--affine-font-family': theme.font.family,
     '--affine-font-family2': theme.font.family2,
   };
