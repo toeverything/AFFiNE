@@ -1,10 +1,12 @@
-name: Build
+name: Build LiveDemo Test Version
 
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Custom Tag. Set nightly-latest will publish to development."
+        required: false
+        type: string
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
@@ -72,7 +74,6 @@ jobs:
   push_to_registry:
     # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
     name: Push Docker image to Docker Hub
-    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs: build
 
@@ -82,9 +83,9 @@ jobs:
 
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+      IMAGE_NAME: ${{ github.repository }}-testing
       IMAGE_TAG: canary-${{ github.sha }}
-      IMAGE_TAG_LATEST: nightly-latest
+      # IMAGE_TAG_LATEST: nightly-latest
 
     steps:
       - name: Check out the repo
@@ -110,7 +111,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             ${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE_TAG_LATEST }}
+            ${{ inputs.tag || github.ref_name }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
