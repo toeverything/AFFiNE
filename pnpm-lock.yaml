@@ -18,9 +18,9 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': ^0.2.10
-      '@blocksuite/editor': ^0.2.10
-      '@blocksuite/store': ^0.2.10
+      '@blocksuite/blocks': ^0.2.11
+      '@blocksuite/editor': ^0.2.11
+      '@blocksuite/store': ^0.2.11
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -47,9 +47,9 @@ importers:
       react-dom: 18.2.0
       typescript: 4.8.3
     dependencies:
-      '@blocksuite/blocks': 0.2.10
-      '@blocksuite/editor': 0.2.10
-      '@blocksuite/store': 0.2.10
+      '@blocksuite/blocks': 0.2.11
+      '@blocksuite/editor': 0.2.11
+      '@blocksuite/store': 0.2.11
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -164,8 +164,8 @@ packages:
       to-fast-properties: 2.0.0
     dev: false
 
-  /@blocksuite/blocks/0.2.10:
-    resolution: {integrity: sha512-CitedKH0jzfiIeHxz8lJfjUyO+8hsA+KBmMymMiAvyj0l3ZSX5v22Pb5ERAu22dJCBEQpIFKwIapgxt49GfIoA==}
+  /@blocksuite/blocks/0.2.11:
+    resolution: {integrity: sha512-LzdIGWMinW2thUSijG+TpgM2ol03KsJp5DED8ikq1gQ5zf14beB0Ri5Ci9ZMf5SBv5um95KEzAHChoRZi/jw+g==}
     dependencies:
       '@blocksuite/store': 0.2.10
       hotkeys-js: 3.10.0
@@ -178,10 +178,10 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/editor/0.2.10:
-    resolution: {integrity: sha512-Ec5+ZDc3cfozJyAnjGef7j2slMZVctCWiSnZ9vQRRn5hfLZmYyGe1BjtxP+VzNLiDoV3KinNFkj7NkDRylsXCw==}
+  /@blocksuite/editor/0.2.11:
+    resolution: {integrity: sha512-0r0W0x0Icti+pnpIynYCGa/FKJuGl3fbyBXW14LMH+W4tqopS1+RQ5ADofkOtRD/hvEPVH1/OffwnjLhTotMOw==}
     dependencies:
-      '@blocksuite/blocks': 0.2.10
+      '@blocksuite/blocks': 0.2.11
       '@blocksuite/store': 0.2.10
       lit: 2.4.0
       marked: 4.1.1
@@ -194,6 +194,19 @@ packages:
 
   /@blocksuite/store/0.2.10:
     resolution: {integrity: sha512-8JPCMrx+PiK+fS4EqLmlVdCqF3k/UY3ABXNtfJwGiHGUGsSO64M9JOgCiC+uvwj4M9TdsClZORipod+o6EqRbQ==}
+    dependencies:
+      lib0: 0.2.52
+      y-protocols: 1.0.5
+      y-webrtc: 10.2.3
+      yjs: 13.5.41
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    dev: false
+
+  /@blocksuite/store/0.2.11:
+    resolution: {integrity: sha512-/TJXN6A92N8hS7LhkH0DNb2l3x/xjOTxf3HDMX4yAl46X/Hze9Ajh2cCGN3l1lhffArrbt/30H2XVIfK61mLxg==}
     dependencies:
       lib0: 0.2.52
       y-protocols: 1.0.5
@@ -2166,6 +2179,7 @@ packages:
   /marked/4.1.1:
     resolution: {integrity: sha512-0cNMnTcUJPxbA6uWmCmjWz4NJRe/0Xfk2NhXCUHjew9qJzFN20krFnsUe7QynwqOwa5m1fZ4UDg0ycKFVC0ccw==}
     engines: {node: '>= 12'}
+    hasBin: true
     dev: false
 
   /merge2/1.4.1:
@@ -2975,6 +2989,7 @@ packages:
   /y-webrtc/10.2.3:
     resolution: {integrity: sha512-X7a6c56/jWhEI8LHLmT3LgzwbPA4r8h46pdVvV+55EQJhi+K6RfmisWgj7h6/2gkB0yveq7iDxlmyrYGnAKW/Q==}
     engines: {node: '>=12'}
+    hasBin: true
     dependencies:
       lib0: 0.2.52
       simple-peer: 9.11.1
