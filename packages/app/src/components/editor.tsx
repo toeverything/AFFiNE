@@ -21,7 +21,7 @@ export const Editor = () => {
     });
     const groupId = store.addBlock({ flavour: 'group' }, pageId);
 
-    const text = new Text('Legend from here...');
+    const text = new Text(store, 'Legend from here...');
     store.addBlock({ flavour: 'paragraph', text }, groupId);
 
     // store.resetHistory();
