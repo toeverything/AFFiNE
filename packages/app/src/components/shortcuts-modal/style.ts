@@ -35,6 +35,7 @@ export const StyledSubTitle = styled.div(({ theme }) => ({
   fontSize: '12px',
   height: '36px',
   lineHeight: '36px',
+  marginTop: '28px',
 }));
 export const StyledModalHeader = styled.div(({ theme }) => ({
   display: 'flex',

@@ -14,7 +14,7 @@ import { useEditor } from '@/components/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/icons';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
-import ContactModal from '@/components/contact-modal';
+import { useModal } from '@/components/global-modal-provider';
 
 const PopoverContent = () => {
   const { editor, mode, setMode } = useEditor();
@@ -51,8 +51,7 @@ const PopoverContent = () => {
 export const Header = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
-  const [showContactModal, setShowContactModal] = useState(false);
-
+  const { contactModalHandler } = useModal();
   const { editor } = useEditor();
 
   useEffect(() => {
@@ -66,15 +65,11 @@ export const Header = () => {
 
   return (
     <>
-      <ContactModal
-        open={showContactModal}
-        onClose={() => setShowContactModal(false)}
-      />
       <StyledHeader>
         <StyledLogo>
           <LogoIcon
             onClick={() => {
-              setShowContactModal(true);
+              contactModalHandler(true);
             }}
           />
         </StyledLogo>

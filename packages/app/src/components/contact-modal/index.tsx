@@ -79,7 +79,7 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
           <StyledModalHeader>
             <StyledModalHeaderLeft>
               <StyledLogo src={logo.src} alt="" />
-              <span>2.0</span>
+              <span>Alpha</span>
               <span>live demo</span>
             </StyledModalHeaderLeft>
             <CloseButton
