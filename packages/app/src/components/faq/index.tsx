@@ -32,20 +32,22 @@ export const FAQ = () => {
       >
         <Grow in={showContent}>
           <StyledFAQWrapper>
-            <Tooltip content="Contact with us" placement="left-end">
+            <Tooltip content="Contact Us" placement="left-end">
               <StyledIconWrapper
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
+                  setShowContent(false);
                   contactModalHandler(true);
                 }}
               >
                 <ContactIcon />
               </StyledIconWrapper>
             </Tooltip>
-            <Tooltip content="Keyboard shorts" placement="left-end">
+            <Tooltip content="Keyboard Shortcuts" placement="left-end">
               <StyledIconWrapper
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
+                  setShowContent(false);
                   shortcutsModalHandler(true);
                 }}
               >
@@ -67,3 +69,14 @@ export const FAQ = () => {
     </>
   );
 };
+
+const routesLIst: any = [
+  {
+    path: '/',
+    children: [
+      {
+        element: <HelpIcon />,
+      },
+    ],
+  },
+];

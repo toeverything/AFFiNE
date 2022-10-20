@@ -6,8 +6,13 @@ export const StyledHeader = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  position: 'relative',
+  background: 'var(--affine-page-background)',
+  transition: 'background-color 0.5s',
+  position: 'fixed',
+  left: '0',
+  top: '0',
   padding: '0 22px',
+  zIndex: '10',
 });
 
 export const StyledTitle = styled('div')({

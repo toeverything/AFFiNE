@@ -51,7 +51,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
             </CloseButton>
           </StyledModalHeader>
           <StyledSubTitle style={{ marginTop: 0 }}>
-            Keyboard shortcuts
+            Keyboard Shortcuts
           </StyledSubTitle>
           {Object.entries(keyboardShortcuts).map(([title, shortcuts]) => {
             return (
@@ -61,7 +61,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
               </StyledListItem>
             );
           })}
-          <StyledSubTitle>Markdown shortcuts</StyledSubTitle>
+          <StyledSubTitle>Markdown Syntax</StyledSubTitle>
           {Object.entries(markdownShortcuts).map(([title, shortcuts]) => {
             return (
               <StyledListItem key={title}>

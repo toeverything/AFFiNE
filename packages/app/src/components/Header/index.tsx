@@ -26,7 +26,7 @@ const PopoverContent = () => {
         }}
       >
         {mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
-        Convert to {mode === 'page' ? 'edgeless' : 'page'}
+        Convert to {mode === 'page' ? 'Edgeless' : 'Page'}
       </StyledMoreMenuItem>
       <StyledMoreMenuItem
         onClick={() => {
@@ -42,7 +42,7 @@ const PopoverContent = () => {
         }}
       >
         <ExportIcon />
-        Export to markdown
+        Export to Markdown
       </StyledMoreMenuItem>
     </>
   );

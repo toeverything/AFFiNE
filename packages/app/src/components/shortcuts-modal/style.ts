@@ -6,7 +6,6 @@ export const StyledShortcutsModal = styled.div(({ theme }) => ({
   backgroundColor: theme.colors.popoverBackground,
   boxShadow: theme.shadow.popover,
   color: theme.colors.popoverColor,
-  padding: '8px 16px',
   overflow: 'auto',
   boxRadius: '10px',
   position: 'fixed',
@@ -36,12 +35,21 @@ export const StyledSubTitle = styled.div(({ theme }) => ({
   height: '36px',
   lineHeight: '36px',
   marginTop: '28px',
+  padding: '0 16px',
 }));
 export const StyledModalHeader = styled.div(({ theme }) => ({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
   height: '36px',
+  width: '100%',
+  padding: '8px 16px 0 16px',
+  position: 'sticky',
+  left: '0',
+  top: '0',
+  background: 'var(--affine-popover-background)',
+
+  transition: 'background-color 0.5s',
 }));
 
 export const StyledListItem = styled.div(({ theme }) => ({
@@ -50,6 +58,7 @@ export const StyledListItem = styled.div(({ theme }) => ({
   justifyContent: 'space-between',
   alignItems: 'center',
   fontSize: theme.font.xs,
+  padding: '0 16px',
 }));
 
 export const CloseButton = styled('div')(({ theme }) => {
