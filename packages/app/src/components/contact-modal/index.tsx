@@ -1,12 +1,16 @@
 import { createPortal } from 'react-dom';
 import Fade from '@mui/material/Fade';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import RedditIcon from '@mui/icons-material/Reddit';
-import TelegramIcon from '@mui/icons-material/Telegram';
-import TwitterIcon from '@mui/icons-material/Twitter';
 import CloseIcon from '@mui/icons-material/Close';
-
-import { LogoIcon, DiscordIcon } from './icons';
+import {
+  LogoIcon,
+  DocIcon,
+  TwitterIcon,
+  GithubIcon,
+  DiscordIcon,
+  TelegramIcon,
+  RedditIcon,
+  LinkIcon,
+} from './icons';
 import logo from './affine-text-logo.png';
 import {
   StyledModalContainer,
@@ -27,7 +31,7 @@ import {
 
 const linkList = [
   {
-    icon: <GitHubIcon />,
+    icon: <GithubIcon />,
     title: 'Github',
     link: 'https://github.com/toeverything/AFFiNE',
   },
@@ -55,12 +59,14 @@ const linkList = [
 const rightLinkList = [
   {
     icon: <LogoIcon />,
-    title: 'Official Website AFFiNE.pro',
+    title: 'Official Website ',
+    subTitle: 'AFFiNE.pro',
     link: 'https://affine.pro',
   },
   {
-    icon: <GitHubIcon />,
-    title: 'Check Our Docs Open Source',
+    icon: <DocIcon />,
+    title: 'Check Our Docs',
+    subTitle: 'Open Source',
     link: 'https://github.com/toeverything/AFFiNE',
   },
 ];
@@ -80,24 +86,27 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
             <StyledModalHeaderLeft>
               <StyledLogo src={logo.src} alt="" />
               <span>Alpha</span>
-              <span>live demo</span>
             </StyledModalHeaderLeft>
             <CloseButton
               onClick={() => {
                 onClose();
               }}
             >
-              <CloseIcon />
+              <CloseIcon width={12} height={12} />
             </CloseButton>
           </StyledModalHeader>
 
           <StyledContent>
             <StyledLeftContainer>
-              {rightLinkList.map(({ icon, title, link }) => {
+              {rightLinkList.map(({ icon, title, subTitle, link }) => {
                 return (
                   <StyledBigLink key={title} href={link} target="_blank">
                     {icon}
-                    {title}
+                    <p>{title}</p>
+                    <p>
+                      {subTitle}
+                      <LinkIcon />
+                    </p>
                   </StyledBigLink>
                 );
               })}
@@ -120,9 +129,7 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
 
           <StyledModalFooter>
             <p>
-              <a href="javascript:;">
-                What is the different from the affine 1.0?
-              </a>
+              <a href="">How is AFFiNE Alpha different？</a>
             </p>
             <p>Copyright &copy; 2022 Toeverything</p>
           </StyledModalFooter>

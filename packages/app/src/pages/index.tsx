@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { styled } from '@/styles';
 import { Header } from '@/components/Header';
 import { FAQ } from '@/components/faq';
+import EdgelessToolbar from '@/components/edgeless-toolbar';
 import '@/components/simple-counter';
 
 const StyledEditorContainer = styled('div')(({ theme }) => {
@@ -33,6 +34,7 @@ const Home: NextPage = () => {
         <DynamicEditor />
       </StyledEditorContainer>
       <FAQ />
+      <EdgelessToolbar />
     </StyledPage>
   );
 };

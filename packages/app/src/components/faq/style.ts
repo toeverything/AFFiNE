@@ -1,4 +1,4 @@
-import { styled } from '@/styles';
+import { displayFlex, styled } from '@/styles';
 
 export const StyledFAQ = styled('div')(({ theme }) => {
   return {
@@ -23,9 +23,7 @@ export const StyledTransformIcon = styled.div<{ in: boolean }>(
     bottom: '0',
     top: '0',
     margin: 'auto',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...displayFlex('center', 'center'),
     opacity: isIn ? 1 : 0,
     backgroundColor: isIn
       ? theme.colors.hoverBackground
@@ -39,9 +37,7 @@ export const StyledIconWrapper = styled('div')<{ isEdgelessDark: boolean }>(
         ? theme.colors.popoverBackground
         : theme.colors.iconColor,
       marginBottom: '24px',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
+      ...displayFlex('center', 'center'),
       cursor: 'pointer',
       backgroundColor: isEdgelessDark
         ? 'transparent'
