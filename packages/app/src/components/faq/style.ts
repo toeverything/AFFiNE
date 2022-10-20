@@ -1,4 +1,4 @@
-import { styled } from '@/styles';
+import { displayFlex, styled } from '@/styles';
 
 export const StyledFAQ = styled('div')(({ theme }) => {
   return {
@@ -10,10 +10,6 @@ export const StyledFAQ = styled('div')(({ theme }) => {
     bottom: '30px',
     borderRadius: '50%',
     zIndex: theme.zIndex.popover,
-    ':hover': {
-      backgroundColor: theme.colors.popoverBackground,
-      color: theme.colors.primaryColor,
-    },
   };
 });
 export const StyledTransformIcon = styled.div<{ in: boolean }>(
@@ -27,35 +23,39 @@ export const StyledTransformIcon = styled.div<{ in: boolean }>(
     bottom: '0',
     top: '0',
     margin: 'auto',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...displayFlex('center', 'center'),
     opacity: isIn ? 1 : 0,
     backgroundColor: isIn
       ? theme.colors.hoverBackground
       : theme.colors.pageBackground,
   })
 );
-export const StyledIconWrapper = styled('div')(({ theme }) => {
-  return {
-    color: theme.colors.iconColor,
-    marginBottom: '24px',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    cursor: 'pointer',
-    backgroundColor: theme.colors.pageBackground,
-    borderRadius: '50%',
-    width: '32px',
-    height: '32px',
-    transition: 'background-color 0.3s',
-    position: 'relative',
-    ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
-    },
-  };
-});
+export const StyledIconWrapper = styled('div')<{ isEdgelessDark: boolean }>(
+  ({ theme, isEdgelessDark }) => {
+    return {
+      color: isEdgelessDark
+        ? theme.colors.popoverBackground
+        : theme.colors.iconColor,
+      marginBottom: '24px',
+      ...displayFlex('center', 'center'),
+      cursor: 'pointer',
+      backgroundColor: isEdgelessDark
+        ? 'transparent'
+        : theme.colors.pageBackground,
+      borderRadius: '50%',
+      width: '32px',
+      height: '32px',
+      transition: 'background-color 0.3s',
+      position: 'relative',
+      ':hover': {
+        color: isEdgelessDark
+          ? theme.colors.iconColor
+          : theme.colors.primaryColor,
+        backgroundColor: theme.colors.hoverBackground,
+      },
+    };
+  }
+);
 
 export const StyledFAQWrapper = styled('div')(({ theme }) => {
   return {

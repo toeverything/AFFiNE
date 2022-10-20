@@ -26,11 +26,14 @@ export const placementToContainerDirection: Record<
 };
 
 const useTooltipStyle = (): CSSProperties => {
-  const { theme } = useTheme();
+  const { theme, mode } = useTheme();
   return {
     boxShadow: '1px 1px 4px rgba(0, 0, 0, 0.14)',
     padding: '4px 12px',
-    backgroundColor: theme.colors.primaryColor,
+    backgroundColor:
+      mode === 'dark'
+        ? theme.colors.popoverBackground
+        : theme.colors.primaryColor,
     color: '#fff',
     fontSize: theme.font.xs,
   };

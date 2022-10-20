@@ -4,6 +4,7 @@ import '../../public/globals.css';
 import '../../public/variable.css';
 import './temporary.css';
 import { EditorProvider } from '@/components/editor-provider';
+import { ModalProvider } from '@/components/global-modal-provider';
 import { Logger } from '@toeverything/pathfinder-logger';
 
 const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {
@@ -15,9 +16,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     <>
       <Logger />
       <ThemeProvider>
-        <EditorProvider>
-          <Component {...pageProps} />
-        </EditorProvider>
+        <ModalProvider>
+          <EditorProvider>
+            <Component {...pageProps} />
+          </EditorProvider>
+        </ModalProvider>
       </ThemeProvider>
     </>
   );

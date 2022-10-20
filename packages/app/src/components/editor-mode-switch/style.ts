@@ -1,4 +1,4 @@
-import { keyframes, styled } from '@/styles';
+import { displayFlex, keyframes, styled } from '@/styles';
 // @ts-ignore
 import spring, { toString } from 'css-spring';
 import type { ItemStatus } from './type';
@@ -128,9 +128,7 @@ export const StyledIcon = styled('div')<{
     ? { width: '36px' }
     : { width: isLeft ? '44px' : '34px' };
   return {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...displayFlex('center', 'center'),
     flexShrink: '0',
     ...dynamicStyle,
   };

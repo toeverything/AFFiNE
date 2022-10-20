@@ -1,4 +1,4 @@
-import { styled } from '@/styles';
+import { displayFlex, styled } from '@/styles';
 
 export const StyledShortcutsModal = styled.div(({ theme }) => ({
   width: '268px',
@@ -6,7 +6,6 @@ export const StyledShortcutsModal = styled.div(({ theme }) => ({
   backgroundColor: theme.colors.popoverBackground,
   boxShadow: theme.shadow.popover,
   color: theme.colors.popoverColor,
-  padding: '8px 16px',
   overflow: 'auto',
   boxRadius: '10px',
   position: 'fixed',
@@ -20,9 +19,7 @@ export const StyledTitle = styled.div(({ theme }) => ({
   color: theme.colors.textColor,
   fontWeight: '600',
   fontSize: theme.font.sm,
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  ...displayFlex('center', 'center'),
   svg: {
     width: '20px',
     marginRight: '14px',
@@ -35,20 +32,27 @@ export const StyledSubTitle = styled.div(({ theme }) => ({
   fontSize: '12px',
   height: '36px',
   lineHeight: '36px',
+  marginTop: '28px',
+  padding: '0 16px',
 }));
 export const StyledModalHeader = styled.div(({ theme }) => ({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
+  ...displayFlex('space-between', 'center'),
   height: '36px',
+  width: '100%',
+  padding: '8px 16px 0 16px',
+  position: 'sticky',
+  left: '0',
+  top: '0',
+  background: 'var(--affine-popover-background)',
+
+  transition: 'background-color 0.5s',
 }));
 
 export const StyledListItem = styled.div(({ theme }) => ({
   height: '32px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
+  ...displayFlex('space-between', 'center'),
   fontSize: theme.font.xs,
+  padding: '0 16px',
 }));
 
 export const CloseButton = styled('div')(({ theme }) => {
@@ -58,6 +62,11 @@ export const CloseButton = styled('div')(({ theme }) => {
     borderRadius: '5px',
     color: theme.colors.iconColor,
     cursor: 'pointer',
+    ...displayFlex('center', 'center'),
+    svg: {
+      width: '15px',
+      height: '15px',
+    },
     ':hover': {
       background: theme.colors.hoverBackground,
     },

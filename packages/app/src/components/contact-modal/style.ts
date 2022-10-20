@@ -1,5 +1,5 @@
-import { styled } from '@/styles';
-
+import { absoluteCenter, displayFlex, styled } from '@/styles';
+import bg from './bg.png';
 export const StyledModalContainer = styled('div')(({ theme }) => {
   return {
     width: '100vw',
@@ -13,10 +13,10 @@ export const StyledModalContainer = styled('div')(({ theme }) => {
 
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
-    width: '1000px',
+    width: '860px',
     height: '626px',
-    background: theme.colors.popoverBackground,
-    padding: '0 48px',
+    backgroundColor: theme.colors.popoverBackground,
+    backgroundImage: `url(${bg.src})`,
     borderRadius: '20px',
     position: 'absolute',
     left: 0,
@@ -27,49 +27,26 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledYellowBall = styled('div')`
-  position: absolute;
-  top: 189px;
-  left: 186px;
-  display: block;
-  width: 122px;
-  height: 122px;
-  background-color: #dda82a;
-  opacity: 0.45;
-  filter: blur(78px);
-`;
-export const StyledBlueBall = styled('div')`
-  content: '';
-  position: absolute;
-  top: 332px;
-  left: 296px;
-  display: block;
-  width: 122px;
-  height: 122px;
-  background-color: #4461f2;
-  filter: blur(78px);
-`;
-
 export const StyledBigLink = styled('a')(({ theme }) => {
   return {
-    width: '335px',
-    height: '110px',
-    marginBottom: '52px',
-    display: 'flex',
-    alignItems: 'center',
+    width: '320px',
+    height: '100px',
+    marginBottom: '48px',
+    paddingLeft: '114px',
     fontSize: '24px',
     lineHeight: '36px',
-    padding: '0 24px',
     fontWeight: '600',
     color: theme.colors.textColor,
     borderRadius: '10px',
-
+    flexDirection: 'column',
+    ...displayFlex('center'),
+    position: 'relative',
+    transition: 'background .15s',
     ':visited': {
       color: theme.colors.textColor,
     },
     ':hover': {
-      color: theme.colors.primaryColor,
-      background: theme.colors.hoverBackground,
+      background: 'rgba(68, 97, 242, 0.1)',
     },
     ':last-of-type': {
       marginBottom: 0,
@@ -79,10 +56,30 @@ export const StyledBigLink = styled('a')(({ theme }) => {
       height: '50px',
       marginRight: '40px',
       color: theme.colors.primaryColor,
+      ...absoluteCenter({ vertical: true, position: { left: '32px' } }),
     },
     p: {
-      width: '197px',
-      height: '73px',
+      width: '100%',
+      height: '30px',
+      lineHeight: '30px',
+      ...displayFlex('flex-start', 'center'),
+      ':not(:last-of-type)': {
+        marginBottom: '4px',
+      },
+      ':first-of-type': {
+        fontSize: '22px',
+      },
+      ':last-of-type': {
+        fontSize: '20px',
+        color: theme.colors.primaryColor,
+      },
+      svg: {
+        width: '15px',
+        height: '15px',
+        position: 'static',
+        transform: 'translate(0,0)',
+        marginLeft: '5px',
+      },
     },
   };
 });
@@ -97,6 +94,8 @@ export const StyledSmallLink = styled('a')(({ theme }) => {
     paddingLeft: '24px',
     borderRadius: '5px',
     color: theme.colors.textColor,
+    transition: 'background .15s, color .15s',
+
     ':visited': {
       color: theme.colors.textColor,
     },
@@ -122,25 +121,19 @@ export const StyledSubTitle = styled('div')(({ theme }) => {
 });
 
 export const StyledLeftContainer = styled('div')({
-  // height: '100%',
-  display: 'flex',
   flexDirection: 'column',
-  justifyContent: 'space-between',
+  ...displayFlex('space-between', 'center'),
 });
 export const StyledRightContainer = styled('div')({
-  display: 'flex',
   flexDirection: 'column',
-  justifyContent: 'center',
-  alignItems: 'flex-end',
+  ...displayFlex('center', 'flex-end'),
 });
 
 export const StyledContent = styled('div')({
   height: '276px',
   width: '100%',
-  padding: '0 160px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
+  padding: '0 145px',
+  ...displayFlex('space-between', 'center'),
   color: '#3A4C5C',
   marginTop: '100px',
 });
@@ -149,7 +142,7 @@ export const StyledBackdrop = styled('div')(({ theme }) => {
   return { width: '100%', height: '100%', background: 'rgba(58, 76, 92, 0.2)' };
 });
 export const StyledLogo = styled('img')({
-  height: '22px',
+  height: '18px',
   width: 'auto',
 });
 
@@ -158,44 +151,41 @@ export const StyledModalHeader = styled('div')(({ theme }) => {
     height: '30px',
     marginTop: '54px',
     padding: '0 48px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    ...displayFlex('space-between', 'center'),
   };
 });
 
 export const StyledModalHeaderLeft = styled('div')(({ theme }) => {
   return {
-    display: 'flex',
-    alignItems: 'center',
     color: theme.colors.primaryColor,
-
-    'span:first-of-type': {
-      fontSize: '28px',
-      lineHeight: 1,
-      fontWeight: '600',
-      margin: '0 12px',
-    },
-    'span:last-of-type': {
-      height: '26px',
+    ...displayFlex('flex-end', 'flex-end'),
+    span: {
+      height: '20px',
       border: `1px solid ${theme.colors.primaryColor}`,
       borderRadius: '10px',
-      padding: '0 10px',
+      padding: '0 8px',
       lineHeight: '26px',
-      fontSize: '16px',
+      fontSize: '14px',
+      marginLeft: '12px',
+      ...displayFlex('center', 'center'),
     },
   };
 });
 
 export const CloseButton = styled('div')(({ theme }) => {
   return {
-    width: '24px',
-    height: '24px',
-    borderRadius: '5px',
+    width: '30px',
+    height: '30px',
+    borderRadius: '6px',
     color: theme.colors.iconColor,
     cursor: 'pointer',
+    ...displayFlex('center', 'center'),
     ':hover': {
       background: theme.colors.hoverBackground,
+    },
+    svg: {
+      width: '20px',
+      height: '20px',
     },
   };
 });

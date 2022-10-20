@@ -1,4 +1,4 @@
-import { keyframes, styled } from '@/styles';
+import { displayFlex, keyframes, styled } from '@/styles';
 import { CSSProperties } from 'react';
 // @ts-ignore
 import spring, { toString } from 'css-spring';
@@ -56,11 +56,9 @@ export const StyledSwitchItem = styled('div')<{
   return {
     width: '32px',
     height: '32px',
-    display: 'flex',
     position: 'absolute',
     left: '0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...displayFlex('center', 'center'),
     cursor: 'pointer',
     ...activeStyle,
   };

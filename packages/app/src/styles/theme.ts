@@ -29,7 +29,7 @@ export const lightTheme: AffineTheme = {
     sm: '16px',
     base: '18px',
     family: `Avenir Next, ${basicFontFamily}`,
-    family2: `Roboto Mono, ${basicFontFamily}`,
+    family2: `Roboto, ${basicFontFamily}`,
   },
   zIndex: {
     modal: 1000,
@@ -55,8 +55,8 @@ export const darkTheme: AffineTheme = {
 
     textColor: '#fff',
     iconColor: '#9096A5',
-    linkColor: '#6880FF',
-    linkColor2: '#7D91FF',
+    linkColor: '#7D91FF',
+    linkColor2: '#6880FF',
     linkVisitedColor: '#505FAB',
     popoverColor: '#A9B1C6',
     codeColor: '#BDDBFD',
@@ -102,6 +102,9 @@ export const globalThemeVariables: (
     '--affine-font-xs': theme.font.xs, // tiny
     '--affine-font-sm': theme.font.sm, // small
     '--affine-font-base': theme.font.base,
+
+    '--affine-z-index-modal': theme.zIndex.modal,
+    '--affine-z-index-popover': theme.zIndex.popover,
 
     '--affine-font-family': theme.font.family,
     '--affine-font-family2': theme.font.family2,

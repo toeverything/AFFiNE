@@ -1,13 +1,16 @@
-import { styled } from '@/styles';
+import { displayFlex, styled } from '@/styles';
 
 export const StyledHeader = styled('div')({
   height: '60px',
   width: '100vw',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  position: 'relative',
+  ...displayFlex('space-between', 'center'),
+  background: 'var(--affine-page-background)',
+  transition: 'background-color 0.5s',
+  position: 'fixed',
+  left: '0',
+  top: '0',
   padding: '0 22px',
+  zIndex: '10',
 });
 
 export const StyledTitle = styled('div')({
@@ -19,9 +22,7 @@ export const StyledTitle = styled('div')({
   top: 0,
   margin: 'auto',
 
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  ...displayFlex('center', 'center'),
   fontSize: '20px',
 });
 
@@ -69,9 +70,7 @@ export const IconButton = styled('div')(({ theme }) => {
   return {
     width: '32px',
     height: '32px',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...displayFlex('center', 'center'),
     color: theme.colors.iconColor,
     borderRadius: '5px',
     ':hover': {

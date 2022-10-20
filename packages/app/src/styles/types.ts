@@ -76,6 +76,9 @@ export interface AffineThemeCSSVariables {
   '--affine-font-sm': AffineTheme['font']['sm']; // small
   '--affine-font-base': AffineTheme['font']['base'];
 
+  '--affine-z-index-modal': AffineTheme['zIndex']['modal'];
+  '--affine-z-index-popover': AffineTheme['zIndex']['popover'];
+
   '--affine-font-family': AffineTheme['font']['family'];
   '--affine-font-family2': AffineTheme['font']['family2'];
 }
