@@ -34,33 +34,49 @@ export const ThemeProvider = ({
     localStorageThemeHelper.set(themeMode);
   };
 
+  // ===================== A temporary solution, just use system theme and not remember the user selected ====================
   useEffect(() => {
-    setMode(localStorageThemeHelper.get() || 'auto');
+    const systemThemeHelper = new SystemThemeHelper();
+    const systemTheme = systemThemeHelper.get();
+    setMode(systemTheme);
+
+    systemThemeHelper.onChange(() => {
+      setMode(systemThemeHelper.get());
+    });
   }, []);
 
   useEffect(() => {
-    const systemThemeHelper = new SystemThemeHelper();
-    const selectedThemeMode = localStorageThemeHelper.get();
+    setTheme(mode === 'auto' ? theme : mode);
+  }, [mode, setTheme, theme]);
+  // =====================  ====================
 
-    const themeMode = selectedThemeMode || mode;
-    if (themeMode === 'auto') {
-      setTheme(systemThemeHelper.get());
-    } else {
-      setTheme(themeMode);
-    }
-
-    // When system theme changed, change the theme mode
-    systemThemeHelper.onChange(() => {
-      // TODO: There may be should be provided a way to let user choose whether to
-      if (mode === 'auto') {
-        setTheme(systemThemeHelper.get());
-      }
-    });
-
-    return () => {
-      systemThemeHelper.dispose();
-    };
-  }, [mode]);
+  // useEffect(() => {
+  //   setMode(localStorageThemeHelper.get() || 'auto');
+  // }, []);
+  //
+  // useEffect(() => {
+  //   const systemThemeHelper = new SystemThemeHelper();
+  //   const selectedThemeMode = localStorageThemeHelper.get();
+  //
+  //   const themeMode = selectedThemeMode || mode;
+  //   if (themeMode === 'auto') {
+  //     setTheme(systemThemeHelper.get());
+  //   } else {
+  //     setTheme(themeMode);
+  //   }
+  //
+  //   // When system theme changed, change the theme mode
+  //   systemThemeHelper.onChange(() => {
+  //     // TODO: There may be should be provided a way to let user choose whether to
+  //     if (mode === 'auto') {
+  //       setTheme(systemThemeHelper.get());
+  //     }
+  //   });
+  //
+  //   return () => {
+  //     systemThemeHelper.dispose();
+  //   };
+  // }, [mode]);
 
   return (
     <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
