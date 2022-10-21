@@ -23,13 +23,15 @@ export const lightTheme: AffineTheme = {
     quoteColor: '#4C6275',
     placeHolderColor: '#C7C7C7',
     selectedColor: 'rgba(104, 128, 255, 0.1)',
+    borderColor: '#D0D7E3',
   },
   font: {
     xs: '12px',
     sm: '16px',
     base: '18px',
     family: `Avenir Next, ${basicFontFamily}`,
-    family2: `Roboto Mono, ${basicFontFamily}`,
+    family2: `Space Mono, ${basicFontFamily}`,
+    lineHeightBase: '26px',
   },
   zIndex: {
     modal: 1000,
@@ -40,6 +42,9 @@ export const lightTheme: AffineTheme = {
       '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
     modal:
       '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
+  },
+  space: {
+    paragraph: '18px',
   },
 };
 
@@ -63,6 +68,7 @@ export const darkTheme: AffineTheme = {
     quoteColor: '#A9B1C6',
     placeHolderColor: '#C7C7C7',
     selectedColor: 'rgba(240, 242, 255, 0.8)',
+    borderColor: '#4D4C53',
   },
   shadow: {
     popover:
@@ -95,6 +101,7 @@ export const globalThemeVariables: (
     '--affine-quote-color': theme.colors.quoteColor,
     '--affine-selected-color': theme.colors.selectedColor,
     '--affine-placeholder-color': theme.colors.placeHolderColor,
+    '--affine-border-color': theme.colors.borderColor,
 
     '--affine-modal-shadow': theme.shadow.modal,
     '--affine-popover-shadow': theme.shadow.popover,
@@ -102,11 +109,14 @@ export const globalThemeVariables: (
     '--affine-font-xs': theme.font.xs, // tiny
     '--affine-font-sm': theme.font.sm, // small
     '--affine-font-base': theme.font.base,
+    '--affine-line-height-base': theme.font.lineHeightBase,
 
     '--affine-z-index-modal': theme.zIndex.modal,
     '--affine-z-index-popover': theme.zIndex.popover,
 
     '--affine-font-family': theme.font.family,
     '--affine-font-family2': theme.font.family2,
+
+    '--affine-paragraph-space': theme.space.paragraph,
   };
 };

@@ -17,7 +17,7 @@
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
     "@emotion/styled": "^11.10.4",
-    "@fontsource/roboto-mono": "^4.5.8",
+    "@fontsource/space-mono": "^4.5.10",
     "@mui/base": "^5.0.0-alpha.87",
     "@mui/icons-material": "^5.10.9",
     "@mui/material": "^5.8.6",

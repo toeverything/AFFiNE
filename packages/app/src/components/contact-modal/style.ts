@@ -14,7 +14,7 @@ export const StyledModalContainer = styled('div')(({ theme }) => {
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
     width: '860px',
-    height: '626px',
+    height: '540px',
     backgroundColor: theme.colors.popoverBackground,
     backgroundImage: `url(${bg.src})`,
     borderRadius: '20px',
@@ -112,7 +112,6 @@ export const StyledSmallLink = styled('a')(({ theme }) => {
 });
 export const StyledSubTitle = styled('div')(({ theme }) => {
   return {
-    width: '189px',
     fontSize: '18px',
     fontWeight: '600',
     color: theme.colors.textColor,
@@ -121,10 +120,13 @@ export const StyledSubTitle = styled('div')(({ theme }) => {
 });
 
 export const StyledLeftContainer = styled('div')({
+  width: '320px',
   flexDirection: 'column',
   ...displayFlex('space-between', 'center'),
 });
 export const StyledRightContainer = styled('div')({
+  width: '214px',
+  flexShrink: '0',
   flexDirection: 'column',
   ...displayFlex('center', 'flex-end'),
 });
@@ -132,10 +134,11 @@ export const StyledRightContainer = styled('div')({
 export const StyledContent = styled('div')({
   height: '276px',
   width: '100%',
-  padding: '0 145px',
+  padding: '0 140px',
   ...displayFlex('space-between', 'center'),
   color: '#3A4C5C',
-  marginTop: '100px',
+  marginTop: '58px',
+  letterSpacing: '0.06em',
 });
 
 export const StyledBackdrop = styled('div')(({ theme }) => {
@@ -148,8 +151,8 @@ export const StyledLogo = styled('img')({
 
 export const StyledModalHeader = styled('div')(({ theme }) => {
   return {
-    height: '30px',
-    marginTop: '54px',
+    height: '20px',
+    marginTop: '36px',
     padding: '0 48px',
     ...displayFlex('space-between', 'center'),
   };
@@ -197,10 +200,16 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     textAlign: 'center',
     color: theme.colors.textColor,
 
-    marginTop: '75px',
+    marginTop: '40px',
     'p:first-of-type': {
       color: theme.colors.primaryColor,
-      marginBottom: '10px',
+      letterSpacing: '0.06em',
+      marginBottom: '25px',
+      a: {
+        ':visited': {
+          color: theme.colors.linkColor,
+        },
+      },
     },
   };
 });

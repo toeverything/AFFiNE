@@ -30,8 +30,13 @@ export const StyledAnimateRadioContainer = styled('div')<{ shrink: boolean }>(
       background: theme.colors.hoverBackground,
       position: 'relative',
       display: 'flex',
-      transition: `background ${ANIMATE_DURATION}ms`,
+      transition: `background ${ANIMATE_DURATION}ms, border ${ANIMATE_DURATION}ms`,
+      border: '1px solid transparent',
+
       ...shrinkStyle,
+      ':hover': {
+        border: `1px solid ${theme.colors.primaryColor}`,
+      },
     };
   }
 );

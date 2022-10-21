@@ -31,6 +31,7 @@ export interface AffineTheme {
     quoteColor: string;
     placeHolderColor: string;
     selectedColor: string;
+    borderColor: string;
   };
   font: {
     xs: string; // tiny
@@ -39,6 +40,8 @@ export interface AffineTheme {
 
     family: string;
     family2: string;
+
+    lineHeightBase: string | number;
   };
   zIndex: {
     modal: number;
@@ -47,6 +50,9 @@ export interface AffineTheme {
   shadow: {
     modal: string;
     popover: string;
+  };
+  space: {
+    paragraph: string;
   };
 }
 
@@ -68,6 +74,7 @@ export interface AffineThemeCSSVariables {
   '--affine-quote-color': AffineTheme['colors']['quoteColor'];
   '--affine-placeholder-color': AffineTheme['colors']['placeHolderColor'];
   '--affine-selected-color': AffineTheme['colors']['selectedColor'];
+  '--affine-border-color': AffineTheme['colors']['borderColor'];
 
   '--affine-modal-shadow': AffineTheme['shadow']['popover'];
   '--affine-popover-shadow': AffineTheme['shadow']['modal'];
@@ -75,12 +82,15 @@ export interface AffineThemeCSSVariables {
   '--affine-font-xs': AffineTheme['font']['xs']; // tiny
   '--affine-font-sm': AffineTheme['font']['sm']; // small
   '--affine-font-base': AffineTheme['font']['base'];
+  '--affine-line-height-base': AffineTheme['font']['lineHeightBase'];
 
   '--affine-z-index-modal': AffineTheme['zIndex']['modal'];
   '--affine-z-index-popover': AffineTheme['zIndex']['popover'];
 
   '--affine-font-family': AffineTheme['font']['family'];
   '--affine-font-family2': AffineTheme['font']['family2'];
+
+  '--affine-paragraph-space': AffineTheme['space']['paragraph'];
 }
 
 declare module '@emotion/react' {
