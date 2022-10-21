@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { styled } from '@/styles';
 import { Header } from '@/components/Header';
 import { FAQ } from '@/components/faq';
+import Loading from '@/components/loading';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import '@/components/simple-counter';
 
@@ -21,8 +22,30 @@ const StyledPage = styled('div')(({ theme }) => {
   };
 });
 
+const StyledLoadingContainer = styled('div')(({ theme }) => {
+  return {
+    height: '100vh',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    color: theme.colors.primaryColor,
+    h1: {
+      fontSize: '2em',
+      marginTop: '150px',
+      fontWeight: '600',
+    },
+  };
+});
+
 const DynamicEditor = dynamic(() => import('../components/editor'), {
-  loading: () => <div style={{ textAlign: 'center' }}>Loading...</div>,
+  loading: () => (
+    <StyledLoadingContainer>
+      <div className="wrapper">
+        <Loading />
+        <h1>Loading...</h1>
+      </div>
+    </StyledLoadingContainer>
+  ),
   ssr: false,
 });
 

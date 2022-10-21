@@ -1,5 +1,6 @@
 import { displayFlex, styled } from '@/styles';
 import { ThemeModeSwitch } from '@/components/theme-mode-switch';
+import { Loading } from '@/components/loading';
 
 export const StyledHeader = styled('div')({
   height: '60px',
@@ -12,9 +13,12 @@ export const StyledHeader = styled('div')({
 
 const Affine = () => {
   return (
-    <StyledHeader>
-      <ThemeModeSwitch></ThemeModeSwitch>
-    </StyledHeader>
+    <>
+      <StyledHeader>
+        <ThemeModeSwitch></ThemeModeSwitch>
+      </StyledHeader>
+      <Loading />
+    </>
   );
 };
 

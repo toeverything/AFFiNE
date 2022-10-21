@@ -19,11 +19,11 @@ export const macKeyboardShortcuts = {
 };
 
 export const macMarkdownShortcuts = {
-  Bold: '**Text**',
-  Italic: '*Text*',
-  Underline: '~Text~',
-  Strikethrough: '~~Text~~',
-  'Inline code': '`Code`',
+  Bold: '**Text** Space',
+  Italic: '*Text* Space',
+  Underline: '~Text~ Space',
+  Strikethrough: '~~Text~~ Space',
+  'Inline code': '`Code` Space',
   'Heading 1': '# Space',
   'Heading 2': '## Space',
   'Heading 3': '### Space',
@@ -38,7 +38,7 @@ export const windowsKeyboardShortcuts = {
   Bold: 'Ctrl + B',
   Italic: 'Ctrl + I',
   Underline: 'Ctrl + U',
-  Strikethrough: 'Ctrl + ⇧ + S',
+  Strikethrough: 'Ctrl + Shift + S',
   'Inline code': ' Ctrl + E',
   Link: 'Ctrl + K',
   'Body text': 'Ctrl + Shift + 0',

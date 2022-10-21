@@ -44,7 +44,7 @@ export const lightTheme: AffineTheme = {
       '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
   },
   space: {
-    paragraph: '18px',
+    paragraph: '8px',
   },
 };
 

@@ -73,22 +73,24 @@ export const Header = () => {
         >
           <LogoIcon />
         </StyledLogo>
-        <StyledTitle
-          onMouseEnter={() => {
-            setIsHover(true);
-          }}
-          onMouseLeave={() => {
-            setIsHover(false);
-          }}
-        >
-          <EditorModeSwitch
-            isHover={isHover}
-            style={{
-              marginRight: '12px',
+        {title ? (
+          <StyledTitle
+            onMouseEnter={() => {
+              setIsHover(true);
             }}
-          />
-          <StyledTitleWrapper>{title}</StyledTitleWrapper>
-        </StyledTitle>
+            onMouseLeave={() => {
+              setIsHover(false);
+            }}
+          >
+            <EditorModeSwitch
+              isHover={isHover}
+              style={{
+                marginRight: '12px',
+              }}
+            />
+            <StyledTitleWrapper>{title}</StyledTitleWrapper>
+          </StyledTitle>
+        ) : null}
 
         <StyledHeaderRightSide>
           <ThemeModeSwitch />
