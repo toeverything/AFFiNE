@@ -36,7 +36,11 @@ export const StyledTitleWrapper = styled('div')({
 
 export const StyledLogo = styled('div')(({ theme }) => ({
   color: theme.colors.primaryColor,
+  width: '60px',
+  height: '60px',
   cursor: 'pointer',
+  marginLeft: '-22px',
+  ...displayFlex('center', 'center'),
 }));
 
 export const StyledHeaderRightSide = styled('div')({

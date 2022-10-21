@@ -66,29 +66,31 @@ export const Header = () => {
   return (
     <>
       <StyledHeader>
-        <StyledLogo>
-          <LogoIcon
-            onClick={() => {
-              contactModalHandler(true);
-            }}
-          />
-        </StyledLogo>
-        <StyledTitle
-          onMouseEnter={() => {
-            setIsHover(true);
-          }}
-          onMouseLeave={() => {
-            setIsHover(false);
+        <StyledLogo
+          onClick={() => {
+            contactModalHandler(true);
           }}
         >
-          <EditorModeSwitch
-            isHover={isHover}
-            style={{
-              marginRight: '12px',
+          <LogoIcon />
+        </StyledLogo>
+        {title ? (
+          <StyledTitle
+            onMouseEnter={() => {
+              setIsHover(true);
             }}
-          />
-          <StyledTitleWrapper>{title}</StyledTitleWrapper>
-        </StyledTitle>
+            onMouseLeave={() => {
+              setIsHover(false);
+            }}
+          >
+            <EditorModeSwitch
+              isHover={isHover}
+              style={{
+                marginRight: '12px',
+              }}
+            />
+            <StyledTitleWrapper>{title}</StyledTitleWrapper>
+          </StyledTitle>
+        ) : null}
 
         <StyledHeaderRightSide>
           <ThemeModeSwitch />
