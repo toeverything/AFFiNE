@@ -5,19 +5,7 @@ debug-menu {
   background-color: #fff;
 }
 
-.affine-editor-container {
-  background: var(--affine-page-background);
-  transition: background-color 0.5s;
-  overflow-y: auto !important;
-  overflow-x: hidden;
-}
-
 .affine-default-page-block-title-container {
   margin-top: 78px;
-}
-.affine-default-page-block-container {
-  min-height: calc(100% - 78px);
-  height: auto !important;
-  overflow: hidden;
-  padding-bottom: 150px !important;
+  margin-bottom: 40px;
 }
