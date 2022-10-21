@@ -29,7 +29,7 @@ export const lightTheme: AffineTheme = {
     sm: '16px',
     base: '18px',
     family: `Avenir Next, ${basicFontFamily}`,
-    family2: `Roboto, ${basicFontFamily}`,
+    family2: `Roboto Mono, ${basicFontFamily}`,
   },
   zIndex: {
     modal: 1000,

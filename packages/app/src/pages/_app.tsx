@@ -7,6 +7,8 @@ import { EditorProvider } from '@/components/editor-provider';
 import { ModalProvider } from '@/components/global-modal-provider';
 import { Logger } from '@toeverything/pathfinder-logger';
 
+import '@fontsource/roboto-mono';
+
 const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {
   ssr: false,
 });

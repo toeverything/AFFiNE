@@ -66,12 +66,12 @@ export const Header = () => {
   return (
     <>
       <StyledHeader>
-        <StyledLogo>
-          <LogoIcon
-            onClick={() => {
-              contactModalHandler(true);
-            }}
-          />
+        <StyledLogo
+          onClick={() => {
+            contactModalHandler(true);
+          }}
+        >
+          <LogoIcon />
         </StyledLogo>
         <StyledTitle
           onMouseEnter={() => {
