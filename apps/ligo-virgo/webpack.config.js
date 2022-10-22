@@ -9,6 +9,8 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const Style9Plugin = require('style9/webpack');
+const CopyPlugin = require('copy-webpack-plugin');
+const WorkboxPlugin = require('workbox-webpack-plugin');
 
 const enableBundleAnalyzer = process.env.BUNDLE_ANALYZER;
 const embedHeaderScript = process.env.AFFINE_EMBED_HEADER;
@@ -180,6 +182,38 @@ module.exports = function (webpackConfig) {
                 template: path.resolve(__dirname, './src/template.html'),
                 publicPath: '/',
                 embedHeaderScript,
+            }),
+        // isProd &&
+        !isE2E &&
+            new CopyPlugin({
+                patterns: [
+                    {
+                        from: path.resolve(
+                            __dirname,
+                            './src/assets/manifest.json'
+                        ),
+                    },
+                    {
+                        from: path.resolve(
+                            __dirname,
+                            './src/assets/images/logo.png'
+                        ),
+                    },
+                ],
+            }),
+        // isProd &&
+        !isE2E &&
+            new WorkboxPlugin.GenerateSW({
+                // these options encourage the ServiceWorkers to get in there fast
+                // and not allow any straggling "old" SWs to hang around
+                clientsClaim: true,
+                skipWaiting: true,
+                runtimeCaching: [
+                    {
+                        handler: 'NetworkFirst',
+                        urlPattern: /.*/,
+                    },
+                ],
             }),
         new Style9Plugin(),
         isProd &&

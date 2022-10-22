@@ -1,0 +1,14 @@
+{
+    "display": "standalone",
+    "icons": [
+        {
+            "sizes": "192x192",
+            "src": "logo.png",
+            "type": "image/png"
+        }
+    ],
+    "lang": "en-US",
+    "name": "AFFiNE",
+    "short_name": "AFFiNE",
+    "start_url": "/"
+}
