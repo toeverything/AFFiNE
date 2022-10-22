@@ -183,8 +183,8 @@ module.exports = function (webpackConfig) {
                 publicPath: '/',
                 embedHeaderScript,
             }),
-        // isProd &&
-        !isE2E &&
+        isProd &&
+            !isE2E &&
             new CopyPlugin({
                 patterns: [
                     {
@@ -201,8 +201,8 @@ module.exports = function (webpackConfig) {
                     },
                 ],
             }),
-        // isProd &&
-        !isE2E &&
+        isProd &&
+            !isE2E &&
             new WorkboxPlugin.GenerateSW({
                 // these options encourage the ServiceWorkers to get in there fast
                 // and not allow any straggling "old" SWs to hang around
