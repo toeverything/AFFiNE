@@ -26,23 +26,23 @@ There also somethings you should consider about this AFFiNE Alpha including some
 
 **Keyboard Shortcuts:**
 
-1.  Undo: \`⌘ + Z\` or \`Ctrl+Z\`
-2.  Redo: \`⌘ + ⇧ + Z\` or \`Ctrl+Shift+Z\`
-3.  Bold: \`⌘ + B\` or \`Ctrl+B\`
-4.  Italic: \`⌘ + I\` or \`Ctrl+I\`
-5.  Underline: \`⌘ + U\` or \`Ctrl+U\`
-6.  Strikethrough: \`⌘ + ⇧ + S\` or \`Ctrl+Shift+S\`
-7.  Inline code: \`⌘ + E\` or \`Ctrl+E\`
-8.  Link: \`⌘ + K\` or \`Ctrl+K\`
-9.  Body text: \`⌘ + ⌥ + 0\` or \`Ctrl+Shift+0\`
-10.  Heading 1: \`⌘ + ⌥ + 1\` or \`Ctrl+Shift+1\`
-11.  Heading 2: \`⌘ + ⌥ + 2\` or \`Ctrl+Shift+2\`
-12.  Heading 3: \`⌘ + ⌥ + 3\` or \`Ctrl+Shift+3\`
-13.  Heading 4: \`⌘ + ⌥ + 4\` or \`Ctrl+Shift+4\`
-14.  Heading 5: \`⌘ + ⌥ + 5\` or \`Ctrl+Shift+5\`
-15.  Heading 6: \`⌘ + ⌥ + 6\` or \`Ctrl+Shift+6\`
+1.  Undo: \`⌘+Z\` or \`Ctrl+Z\`
+2.  Redo: \`⌘+⇧+Z\` or \`Ctrl+Shift+Z\`
+3.  Bold: \`⌘+B\` or \`Ctrl+B\`
+4.  Italic: \`⌘+I\` or \`Ctrl+I\`
+5.  Underline: \`⌘+U\` or \`Ctrl+U\`
+6.  Strikethrough: \`⌘+⇧+S\` or \`Ctrl+Shift+S\`
+7.  Inline code: \`⌘+E\` or \`Ctrl+E\`
+8.  Link: \`⌘+K\` or \`Ctrl+K\`
+9.  Body text: \`⌘+⌥+0\` or \`Ctrl+Shift+0\`
+10.  Heading 1: \`⌘+⌥+1\` or \`Ctrl+Shift+1\`
+11.  Heading 2: \`⌘+⌥+2\` or \`Ctrl+Shift+2\`
+12.  Heading 3: \`⌘+⌥+3\` or \`Ctrl+Shift+3\`
+13.  Heading 4: \`⌘+⌥+4\` or \`Ctrl+Shift+4\`
+14.  Heading 5: \`⌘+⌥+5\` or \`Ctrl+Shift+5\`
+15.  Heading 6: \`⌘+⌥+6\` or \`Ctrl+Shift+6\`
 16.  Increase indent: \`Tab\`
-17.  Reduce indent: \`⇧ + Tab\` or \`Shift+Tab\`
+17.  Reduce indent: \`⇧+Tab\` or \`Shift+Tab\`
 
 _Markdown Syntax:_
 
