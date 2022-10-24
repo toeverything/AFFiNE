@@ -14,6 +14,7 @@ export const lightTheme: AffineTheme = {
     codeBackground: '#f2f5f9',
 
     textColor: '#3A4C5C',
+    edgelessTextColor: '#3A4C5C',
     iconColor: '#9096A5',
     linkColor: '#6880FF',
     linkColor2: '#6880FF',
@@ -59,6 +60,7 @@ export const darkTheme: AffineTheme = {
     codeBackground: '#505662',
 
     textColor: '#fff',
+    edgelessTextColor: '#3A4C5C',
     iconColor: '#9096A5',
     linkColor: '#7D91FF',
     linkColor2: '#6880FF',
@@ -91,6 +93,7 @@ export const globalThemeVariables: (
     '--affine-code-background': theme.colors.codeBackground,
 
     '--affine-text-color': theme.colors.textColor,
+    '--affine-edgeless-text-color': theme.colors.edgelessTextColor,
     '--affine-link-color': theme.colors.linkColor,
     // In dark mode, normal text`s (not bold) color
     '--affine-link-color2': theme.colors.linkColor2,

@@ -19,59 +19,59 @@ import { useEditor } from '@/components/editor-provider';
 
 const toolbarList1 = [
   {
+    flavor: 'select',
     icon: <SelectIcon />,
     toolTip: 'Select',
-    onClick: () => {},
     disable: false,
   },
   {
+    flavor: 'text',
     icon: <TextIcon />,
     toolTip: 'Text(coming soon)',
-    onClick: () => {},
     disable: true,
   },
   {
+    flavor: 'shape',
     icon: <ShapeIcon />,
     toolTip: 'Shape(coming soon)',
-    onClick: () => {},
     disable: true,
   },
   {
+    flavor: 'sticky',
     icon: <StickerIcon />,
-    toolTip: 'Sticker(coming soon)',
-    onClick: () => {},
+    toolTip: 'Sticky(coming soon)',
     disable: true,
   },
   {
+    flavor: 'pen',
     icon: <PenIcon />,
     toolTip: 'Pen(coming soon)',
-    onClick: () => {},
     disable: true,
   },
 
   {
+    flavor: 'connector',
     icon: <ConnectorIcon />,
     toolTip: 'Connector(coming soon)',
-    onClick: () => {},
     disable: true,
   },
 ];
 const toolbarList2 = [
   {
+    flavor: 'undo',
     icon: <UndoIcon />,
-    toolTip: 'Undo(coming soon)',
-    onClick: () => {},
-    disable: true,
+    toolTip: 'Undo',
+    disable: false,
   },
   {
+    flavor: 'redo',
     icon: <RedoIcon />,
-    toolTip: 'Redo(coming soon)',
-    onClick: () => {},
-    disable: true,
+    toolTip: 'Redo',
+    disable: false,
   },
 ];
 export const EdgelessToolbar = () => {
-  const { mode } = useEditor();
+  const { mode, editor } = useEditor();
   return (
     <Slide
       direction="right"
@@ -81,10 +81,15 @@ export const EdgelessToolbar = () => {
     >
       <StyledEdgelessToolbar>
         <StyledToolbarWrapper>
-          {toolbarList1.map(({ icon, toolTip, onClick, disable }, index) => {
+          {toolbarList1.map(({ icon, toolTip, flavor, disable }, index) => {
             return (
               <Tooltip key={index} content={toolTip} placement="right-start">
-                <StyledToolbarItem disable={disable} onClick={onClick}>
+                <StyledToolbarItem
+                  disable={disable}
+                  onClick={() => {
+                    console.log('flavor', flavor);
+                  }}
+                >
                   {icon}
                 </StyledToolbarItem>
               </Tooltip>
@@ -92,10 +97,22 @@ export const EdgelessToolbar = () => {
           })}
         </StyledToolbarWrapper>
         <StyledToolbarWrapper>
-          {toolbarList2.map(({ icon, toolTip, onClick, disable }, index) => {
+          {toolbarList2.map(({ icon, toolTip, flavor, disable }, index) => {
             return (
               <Tooltip key={index} content={toolTip} placement="right-start">
-                <StyledToolbarItem disable={disable} onClick={onClick}>
+                <StyledToolbarItem
+                  disable={disable}
+                  onClick={() => {
+                    switch (flavor) {
+                      case 'undo':
+                        editor?.store?.undo();
+                        break;
+                      case 'redo':
+                        editor?.store?.redo();
+                        break;
+                    }
+                  }}
+                >
                   {icon}
                 </StyledToolbarItem>
               </Tooltip>

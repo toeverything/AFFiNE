@@ -3,7 +3,7 @@ import { displayFlex, keyframes, styled } from '@/styles';
 import spring, { toString } from 'css-spring';
 import type { ItemStatus } from './type';
 
-const ANIMATE_DURATION = 400;
+const ANIMATE_DURATION = 500;
 
 export const StyledAnimateRadioContainer = styled('div')<{ shrink: boolean }>(
   ({ shrink, theme }) => {

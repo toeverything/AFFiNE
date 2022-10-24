@@ -1,5 +1,6 @@
 import { styled } from '@/styles';
 
+// Inspired by https://codepen.io/graphilla/pen/rNvBMYY
 const loadingItemSize = '40px';
 export const StyledLoading = styled.div`
   position: relative;
