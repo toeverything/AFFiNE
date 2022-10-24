@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   StyledEdgelessToolbar,
   StyledToolbarWrapper,
@@ -19,59 +20,101 @@ import { useEditor } from '@/components/editor-provider';
 
 const toolbarList1 = [
   {
+    flavor: 'select',
     icon: <SelectIcon />,
     toolTip: 'Select',
-    onClick: () => {},
     disable: false,
   },
   {
+    flavor: 'text',
     icon: <TextIcon />,
     toolTip: 'Text(coming soon)',
-    onClick: () => {},
     disable: true,
   },
   {
+    flavor: 'shape',
     icon: <ShapeIcon />,
     toolTip: 'Shape(coming soon)',
-    onClick: () => {},
     disable: true,
   },
   {
+    flavor: 'sticky',
     icon: <StickerIcon />,
-    toolTip: 'Sticker(coming soon)',
-    onClick: () => {},
+    toolTip: 'Sticky(coming soon)',
     disable: true,
   },
   {
+    flavor: 'pen',
     icon: <PenIcon />,
     toolTip: 'Pen(coming soon)',
-    onClick: () => {},
     disable: true,
   },
 
   {
+    flavor: 'connector',
     icon: <ConnectorIcon />,
     toolTip: 'Connector(coming soon)',
-    onClick: () => {},
     disable: true,
   },
 ];
 const toolbarList2 = [
   {
+    flavor: 'undo',
     icon: <UndoIcon />,
-    toolTip: 'Undo(coming soon)',
-    onClick: () => {},
-    disable: true,
+    toolTip: 'Undo',
+    disable: false,
   },
   {
+    flavor: 'redo',
     icon: <RedoIcon />,
-    toolTip: 'Redo(coming soon)',
-    onClick: () => {},
-    disable: true,
+    toolTip: 'Redo',
+    disable: false,
   },
 ];
+
+const UndoRedo = () => {
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const { editor } = useEditor();
+  useEffect(() => {
+    if (!editor) return;
+    const { store } = editor;
+
+    store.signals.historyUpdated.on(() => {
+      setCanUndo(store.canUndo);
+      setCanRedo(store.canRedo);
+    });
+  }, [editor]);
+
+  return (
+    <StyledToolbarWrapper>
+      <Tooltip content="undo" placement="right-start">
+        <StyledToolbarItem
+          disable={!canUndo}
+          onClick={() => {
+            editor?.store?.undo();
+          }}
+        >
+          <UndoIcon />
+        </StyledToolbarItem>
+      </Tooltip>
+      <Tooltip content="redo" placement="right-start">
+        <StyledToolbarItem
+          disable={!canRedo}
+          onClick={() => {
+            editor?.store?.redo();
+          }}
+        >
+          <RedoIcon />
+        </StyledToolbarItem>
+      </Tooltip>
+    </StyledToolbarWrapper>
+  );
+};
+
 export const EdgelessToolbar = () => {
   const { mode } = useEditor();
+
   return (
     <Slide
       direction="right"
@@ -81,27 +124,22 @@ export const EdgelessToolbar = () => {
     >
       <StyledEdgelessToolbar>
         <StyledToolbarWrapper>
-          {toolbarList1.map(({ icon, toolTip, onClick, disable }, index) => {
+          {toolbarList1.map(({ icon, toolTip, flavor, disable }, index) => {
             return (
               <Tooltip key={index} content={toolTip} placement="right-start">
-                <StyledToolbarItem disable={disable} onClick={onClick}>
+                <StyledToolbarItem
+                  disable={disable}
+                  onClick={() => {
+                    console.log('flavor', flavor);
+                  }}
+                >
                   {icon}
                 </StyledToolbarItem>
               </Tooltip>
             );
           })}
         </StyledToolbarWrapper>
-        <StyledToolbarWrapper>
-          {toolbarList2.map(({ icon, toolTip, onClick, disable }, index) => {
-            return (
-              <Tooltip key={index} content={toolTip} placement="right-start">
-                <StyledToolbarItem disable={disable} onClick={onClick}>
-                  {icon}
-                </StyledToolbarItem>
-              </Tooltip>
-            );
-          })}
-        </StyledToolbarWrapper>
+        <UndoRedo />
       </StyledEdgelessToolbar>
     </Slide>
   );

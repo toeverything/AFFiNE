@@ -6,25 +6,28 @@ import '@blocksuite/editor';
 import '@blocksuite/blocks/style';
 import { useEditor } from '@/components/editor-provider';
 import pkg from '../../package.json';
-
+import exampleMarkdown from './example-markdown';
 export const Editor = () => {
   const editorRef = useRef<EditorContainer>();
   const { setEditor } = useEditor();
   useEffect(() => {
     setEditor(editorRef.current!);
     const { store } = editorRef.current as EditorContainer;
-
-    const version = pkg.dependencies['@blocksuite/editor'].substring(1);
     const pageId = store.addBlock({
       flavour: 'page',
-      title: `BlockSuite live demo ${version}`,
+      title: 'Welcome to the AFFiNE Alpha',
     });
     const groupId = store.addBlock({ flavour: 'group' }, pageId);
-
-    const text = new Text(store, 'Legend from here...');
-    store.addBlock({ flavour: 'paragraph', text }, groupId);
+    // const text = new Text(store, 'Legend from here...');
+    // store.addBlock({ flavour: 'paragraph', text }, groupId);
+    editorRef.current!.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
     store.resetHistory();
   }, [setEditor]);
+
+  useEffect(() => {
+    const version = pkg.dependencies['@blocksuite/editor'].substring(1);
+    console.log(`BlockSuite live demo ${version}`);
+  }, []);
 
   return (
     <Suspense fallback={<div>Error!</div>}>

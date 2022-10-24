@@ -20,7 +20,10 @@ export interface AffineTheme {
     hoverBackground: string;
     codeBackground: string;
 
+    // Use for the page`s text
     textColor: string;
+    // Use for the editor`s text, because in edgeless mode text is different form other
+    edgelessTextColor: string;
     linkColor: string;
     // In dark mode, normal text`s (not bold) color
     linkColor2: string;
@@ -64,6 +67,7 @@ export interface AffineThemeCSSVariables {
   '--affine-code-background': AffineTheme['colors']['codeBackground'];
 
   '--affine-text-color': AffineTheme['colors']['textColor'];
+  '--affine-edgeless-text-color': AffineTheme['colors']['edgelessTextColor'];
   '--affine-link-color': AffineTheme['colors']['linkColor'];
   // In dark mode, normal text`s (not bold) color
   '--affine-link-color2': AffineTheme['colors']['linkColor2'];

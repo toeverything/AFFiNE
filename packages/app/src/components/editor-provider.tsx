@@ -9,6 +9,7 @@ type EditorContextValue = {
   setEditor: (editor: EditorContainer) => void;
   setMode: (mode: EditorContainer['mode']) => void;
 };
+
 type EditorContextProps = PropsWithChildren<{}>;
 
 export const EditorContext = createContext<EditorContextValue>({
