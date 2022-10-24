@@ -1,18 +1,18 @@
-const exampleMarkdown = `The [AFFiNE Alpha](https://pathfinder.affine.systems/) is here! 👏
+const exampleMarkdown = `The AFFiNE Alpha is here! You can also view our [Official Website](https://affine.pro/)!
 
 **What's different in AFFiNE Alpha?**
 
 1.  A much ~smoother editing~ experience, with much ~greater stability~;
 2.  More complete ~Markdown~ support and improved ~keyboard shortcuts~;
-3.  New features such as ~dark mode~
+3.  New features such as ~dark mode~;
     *   **Switch between view styles using the** ☀ **and** 🌙.
 4.  ~Clean and modern UI/UX~ design.
 
 **Looking for Markdown syntax or keyboard shortcuts?**
 
-*   Find the (?) in the bottom right, then the ️, to view a full list. of \`Keyboard Shortcuts\`
+*   Find the (?) in the bottom right, then the ️⌨️, to view a full list of \`Keyboard Shortcuts\`
 
-**Have an enjoyable editing experience !!!** **😃**
+**Have an enjoyable editing experience !!!** 😃
 
 Have some feedback or just want to get in touch? Use the (?), then 🎧 to get in touch and join our communities.
 
@@ -21,7 +21,7 @@ Have some feedback or just want to get in touch? Use the (?), then 🎧 to get i
 There also somethings you should consider about this AFFiNE Alpha including some ~limitations~:
 
 *   Single page editing - currently editing multiple docs/pages is not supported;
-*   Changes are not automatically stored, to save changes you should export your data. Options can be found by going to the top right and finding the \`⋮\` icon.
+*   Changes are not automatically stored, to save changes you should export your data. Options can be found by going to the top right and finding the \`⋮\` icon；
 *   Without an import/open feature you are still able to access your data by copying it back in.
 
 **Keyboard Shortcuts:**
@@ -44,7 +44,7 @@ There also somethings you should consider about this AFFiNE Alpha including some
 16.  Increase indent: \`Tab\`
 17.  Reduce indent: \`⇧+Tab\` or \`Shift+Tab\`
 
-_Markdown Syntax:_
+**Markdown Syntax:**
 
 1.  Bold: \`**text**\`
 2.  Italic: \`*text*\`
