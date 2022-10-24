@@ -18,7 +18,7 @@ Have some feedback or just want to get in touch? Use the (?), then 🎧 to get i
 
 **Still in development**
 
-There also somethings you should consider about this AFFiNE Alpha including some ~limitations~:
+There are also some things you should consider about this AFFiNE Alpha including some ~limitations~:
 
 *   Single page editing - currently editing multiple docs/pages is not supported;
 *   Changes are not automatically stored, to save changes you should export your data. Options can be found by going to the top right and finding the \`⋮\` icon；
