@@ -23,8 +23,7 @@ export const Editor = () => {
 
     const text = new Text(store, 'Legend from here...');
     store.addBlock({ flavour: 'paragraph', text }, groupId);
-
-    // store.resetHistory();
+    store.resetHistory();
   }, [setEditor]);
 
   return (
