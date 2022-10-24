@@ -1,6 +1,5 @@
 import { Suspense, useEffect, useRef } from 'react';
 import type { EditorContainer } from '@blocksuite/editor';
-import { Text } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import '@blocksuite/editor';
 import '@blocksuite/blocks/style';
@@ -18,8 +17,6 @@ export const Editor = () => {
       title: 'Welcome to the AFFiNE Alpha',
     });
     const groupId = store.addBlock({ flavour: 'group' }, pageId);
-    // const text = new Text(store, 'Legend from here...');
-    // store.addBlock({ flavour: 'paragraph', text }, groupId);
     editorRef.current!.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
     store.resetHistory();
   }, [setEditor]);
