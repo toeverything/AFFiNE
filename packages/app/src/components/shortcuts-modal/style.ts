@@ -1,8 +1,9 @@
 import { displayFlex, styled } from '@/styles';
 
 export const StyledShortcutsModal = styled.div(({ theme }) => ({
-  width: '268px',
-  height: '66vh',
+  width: '288px',
+  height: '74vh',
+  paddingBottom: '28px',
   backgroundColor: theme.colors.popoverBackground,
   boxShadow: theme.shadow.popover,
   color: theme.colors.popoverColor,
@@ -17,8 +18,9 @@ export const StyledShortcutsModal = styled.div(({ theme }) => ({
 }));
 export const StyledTitle = styled.div(({ theme }) => ({
   color: theme.colors.textColor,
-  fontWeight: '600',
+  fontWeight: '500',
   fontSize: theme.font.sm,
+  height: '44px',
   ...displayFlex('center', 'center'),
   svg: {
     width: '20px',
@@ -27,17 +29,17 @@ export const StyledTitle = styled.div(({ theme }) => ({
   },
 }));
 export const StyledSubTitle = styled.div(({ theme }) => ({
-  color: theme.colors.textColor,
+  color: theme.colors.popoverColor,
   fontWeight: '500',
-  fontSize: '12px',
-  height: '36px',
+  fontSize: theme.font.sm,
+  height: '34px',
   lineHeight: '36px',
   marginTop: '28px',
   padding: '0 16px',
 }));
 export const StyledModalHeader = styled.div(({ theme }) => ({
   ...displayFlex('space-between', 'center'),
-  height: '36px',
+  paddingTop: '8px 4px 0 4px',
   width: '100%',
   padding: '8px 16px 0 16px',
   position: 'sticky',
@@ -49,9 +51,9 @@ export const StyledModalHeader = styled.div(({ theme }) => ({
 }));
 
 export const StyledListItem = styled.div(({ theme }) => ({
-  height: '32px',
+  height: '34px',
   ...displayFlex('space-between', 'center'),
-  fontSize: theme.font.xs,
+  fontSize: theme.font.sm,
   padding: '0 16px',
 }));
 

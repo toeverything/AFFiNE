@@ -19,17 +19,17 @@ export const macKeyboardShortcuts = {
 };
 
 export const macMarkdownShortcuts = {
-  Bold: '**Text** Space',
-  Italic: '*Text* Space',
-  Underline: '~Text~ Space',
-  Strikethrough: '~~Text~~ Space',
-  'Inline code': '`Code` Space',
-  'Heading 1': '# Space',
-  'Heading 2': '## Space',
-  'Heading 3': '### Space',
-  'Heading 4': '#### Space',
-  'Heading 5': '##### Space',
-  'Heading 6': '###### Space',
+  Bold: '**Text** ',
+  Italic: '*Text* ',
+  Underline: '~Text~ ',
+  Strikethrough: '~~Text~~ ',
+  'Inline code': '`Code` ',
+  'Heading 1': '# ',
+  'Heading 2': '## ',
+  'Heading 3': '### ',
+  'Heading 4': '#### ',
+  'Heading 5': '##### ',
+  'Heading 6': '###### ',
 };
 
 export const windowsKeyboardShortcuts = {
@@ -52,15 +52,15 @@ export const windowsKeyboardShortcuts = {
   'Reduce indent': 'Shift + Tab',
 };
 export const winMarkdownShortcuts = {
-  Bold: '**Text** Space',
-  Italic: '*Text* Space',
-  Underline: '~Text~ Space',
-  Strikethrough: '~~Text~~ Space',
-  'Inline code': '`Code` Space',
-  'Heading 1': '# Space',
-  'Heading 2': '## Space',
-  'Heading 3': '### Space',
-  'Heading 4': '#### Space',
-  'Heading 5': '##### Space',
-  'Heading 6': '###### Space',
+  Bold: '**Text** ',
+  Italic: '*Text* ',
+  Underline: '~Text~ ',
+  Strikethrough: '~~Text~~ ',
+  'Inline code': '`Code` ',
+  'Heading 1': '# ',
+  'Heading 2': '## ',
+  'Heading 3': '### ',
+  'Heading 4': '#### ',
+  'Heading 5': '##### ',
+  'Heading 6': '###### ',
 };
