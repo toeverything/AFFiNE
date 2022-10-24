@@ -20,22 +20,22 @@ export const StyledToolbarWrapper = styled.div(({ theme }) => ({
   marginBottom: '12px',
 }));
 
-export const StyledToolbarItem = styled.div<{ disable: boolean }>(
-  ({ theme, disable }) => ({
+export const StyledToolbarItem = styled.div<{
+  disable?: boolean;
+}>(({ theme, disable = false }) => ({
+  width: '36px',
+  height: '36px',
+  ...displayFlex('center', 'center'),
+  color: disable ? '#C0C0C0' : theme.colors.iconColor,
+  cursor: 'pointer',
+  svg: {
     width: '36px',
     height: '36px',
-    ...displayFlex('center', 'center'),
-    color: disable ? '#C0C0C0' : theme.colors.iconColor,
-    cursor: 'pointer',
-    svg: {
-      width: '36px',
-      height: '36px',
-    },
-    ':hover': disable
-      ? {}
-      : {
-          color: theme.colors.primaryColor,
-          background: theme.colors.hoverBackground,
-        },
-  })
-);
+  },
+  ':hover': disable
+    ? {}
+    : {
+        color: theme.colors.primaryColor,
+        background: theme.colors.hoverBackground,
+      },
+}));

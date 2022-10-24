@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   StyledEdgelessToolbar,
   StyledToolbarWrapper,
@@ -70,8 +71,50 @@ const toolbarList2 = [
     disable: false,
   },
 ];
+
+const UndoRedo = () => {
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const { editor } = useEditor();
+  useEffect(() => {
+    if (!editor) return;
+    const { store } = editor;
+
+    store.signals.historyUpdated.on(() => {
+      setCanUndo(store.canUndo);
+      setCanRedo(store.canRedo);
+    });
+  }, [editor]);
+
+  return (
+    <StyledToolbarWrapper>
+      <Tooltip content="undo" placement="right-start">
+        <StyledToolbarItem
+          disable={!canUndo}
+          onClick={() => {
+            editor?.store?.undo();
+          }}
+        >
+          <UndoIcon />
+        </StyledToolbarItem>
+      </Tooltip>
+      <Tooltip content="redo" placement="right-start">
+        <StyledToolbarItem
+          disable={!canRedo}
+          onClick={() => {
+            editor?.store?.redo();
+          }}
+        >
+          <RedoIcon />
+        </StyledToolbarItem>
+      </Tooltip>
+    </StyledToolbarWrapper>
+  );
+};
+
 export const EdgelessToolbar = () => {
-  const { mode, editor } = useEditor();
+  const { mode } = useEditor();
+
   return (
     <Slide
       direction="right"
@@ -96,29 +139,7 @@ export const EdgelessToolbar = () => {
             );
           })}
         </StyledToolbarWrapper>
-        <StyledToolbarWrapper>
-          {toolbarList2.map(({ icon, toolTip, flavor, disable }, index) => {
-            return (
-              <Tooltip key={index} content={toolTip} placement="right-start">
-                <StyledToolbarItem
-                  disable={disable}
-                  onClick={() => {
-                    switch (flavor) {
-                      case 'undo':
-                        editor?.store?.undo();
-                        break;
-                      case 'redo':
-                        editor?.store?.redo();
-                        break;
-                    }
-                  }}
-                >
-                  {icon}
-                </StyledToolbarItem>
-              </Tooltip>
-            );
-          })}
-        </StyledToolbarWrapper>
+        <UndoRedo />
       </StyledEdgelessToolbar>
     </Slide>
   );
