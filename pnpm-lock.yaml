@@ -18,9 +18,8 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': ^0.2.15
-      '@blocksuite/editor': ^0.2.15
-      '@blocksuite/store': ^0.2.15
+      '@blocksuite/blocks': ^0.2.16
+      '@blocksuite/editor': ^0.2.16
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -48,9 +47,8 @@ importers:
       react-dom: 18.2.0
       typescript: 4.8.3
     dependencies:
-      '@blocksuite/blocks': 0.2.15
-      '@blocksuite/editor': 0.2.15
-      '@blocksuite/store': 0.2.15
+      '@blocksuite/blocks': 0.2.16
+      '@blocksuite/editor': 0.2.16
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -166,10 +164,10 @@ packages:
       to-fast-properties: 2.0.0
     dev: false
 
-  /@blocksuite/blocks/0.2.15:
-    resolution: {integrity: sha512-out76i3+ykhIyM/QJglDocGZ8zcnbWLhY73+I/CKEKlbG5Ujj9bsnPGbXRz1gWB0XDjDUqw/dZJPIQGUu5qieA==}
+  /@blocksuite/blocks/0.2.16:
+    resolution: {integrity: sha512-WJn7EQRlT/llQmFVmp3kgSx2+yCy0ogs0eUZZRR0Hlp6igk6LxVZnHW70QMJOPXVTmMMeDEvoNQvDmDnA+kryw==}
     dependencies:
-      '@blocksuite/store': 0.2.15
+      '@blocksuite/store': 0.2.16
       hotkeys-js: 3.10.0
       lit: 2.4.0
       quill: 1.3.7
@@ -180,11 +178,11 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/editor/0.2.15:
-    resolution: {integrity: sha512-Q8Tdf50MuPvyzwriHd78nUhiX3iImmNsQWZOPvEB1wwW6hPz/bAJzxYy7SshVFC5Nq++xeNO20CyqSqT4zUpbQ==}
+  /@blocksuite/editor/0.2.16:
+    resolution: {integrity: sha512-Ccw2dHaJF/GKqSa22dDZ3LrHH1NzOpgGBonaqf0/KooBuQs0vlvpnyfFL2iqBHwLQ4rFNN77jUfUbd/VYAjxhQ==}
     dependencies:
-      '@blocksuite/blocks': 0.2.15
-      '@blocksuite/store': 0.2.15
+      '@blocksuite/blocks': 0.2.16
+      '@blocksuite/store': 0.2.16
       lit: 2.4.0
       marked: 4.1.1
       turndown: 7.1.1
@@ -194,8 +192,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/store/0.2.15:
-    resolution: {integrity: sha512-KM2//LBT5UrfdAN5ByKngALxayileBcknYbvhdjPtPUoyjkTPa0O8LFMUc5fkV8lowDdwgjyS8zu+MG7rd2sdw==}
+  /@blocksuite/store/0.2.16:
+    resolution: {integrity: sha512-80ksZF5rWXrPYw2znk2HyNs5KPCrnE31pv6IishndR8hXn/JUA0nj60ZS7GnL19hgnwG8naqh8aQSoxPGqyF/A==}
     dependencies:
       lib0: 0.2.52
       y-protocols: 1.0.5
