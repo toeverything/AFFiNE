@@ -32,7 +32,7 @@ import {
 const linkList = [
   {
     icon: <GithubIcon />,
-    title: 'Github',
+    title: 'GitHub',
     link: 'https://github.com/toeverything/AFFiNE',
   },
   {
@@ -66,8 +66,8 @@ const rightLinkList = [
   {
     icon: <DocIcon />,
     title: 'Check Our Docs',
-    subTitle: 'Open Source',
-    link: 'https://github.com/toeverything/AFFiNE',
+    subTitle: 'docs.AFFiNE.pro',
+    link: 'https://docs.affine.pro',
   },
 ];
 
