@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    name: Lint nad Build
+    name: Lint and Build
     runs-on: ubuntu-latest
 
     steps:
@@ -34,7 +34,7 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
           cache: 'pnpm'
-      
+
       - run: node scripts/module-resolve/ci.js
 
       - name: Restore cache
@@ -83,7 +83,7 @@ jobs:
 
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}-testing
+      IMAGE_NAME: affine-pathfinder-testing
       IMAGE_TAG: canary-${{ github.sha }}
       IMAGE_TAG_LATEST: nightly-latest
 
