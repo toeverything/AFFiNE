@@ -1,10 +1,10 @@
-name: Build LiveDemo Version
+name: Build Pathfinder LiveDemo Version
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
@@ -72,7 +72,7 @@ jobs:
   push_to_registry:
     # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
     name: Push Docker image to Docker Hub
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: build
 

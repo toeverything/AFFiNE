@@ -1,4 +1,4 @@
-name: Build LiveDemo Test Version
+name: Build Pathfinder LiveDemo Test Version
 
 on:
   workflow_dispatch:
@@ -7,6 +7,8 @@ on:
         description: "Custom Tag. Set nightly-latest will publish to development."
         required: false
         type: string
+  push:
+    branches: [develop]
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
@@ -85,7 +87,7 @@ jobs:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}-testing
       IMAGE_TAG: canary-${{ github.sha }}
-      # IMAGE_TAG_LATEST: nightly-latest
+      IMAGE_TAG_LATEST: nightly-latest
 
     steps:
       - name: Check out the repo
@@ -111,7 +113,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             ${{ env.IMAGE_TAG }}
-            ${{ inputs.tag || github.ref_name }}
+            ${{ inputs.tag || (github.ref_name == 'develop' && env.IMAGE_TAG_LATEST) || github.ref_name }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
