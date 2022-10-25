@@ -50,7 +50,7 @@ There are also some things you should consider about this AFFiNE Alpha including
 2.  Italic: \`*text*\`
 3.  Underline: \`~text~\`
 4.  Strikethrough: \`~~text~~\`
-5.  Inline code: \`\` \`code\` \`\`
+5.  Inline code: \`\` \`text\` \`\`
 6.  Heading 1: \`# text\`
 7.  Heading 2: \`## text\`
 8.  Heading 3: \`### text\`
