@@ -7,7 +7,7 @@ import {
 } from './style';
 import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import Grow from '@mui/material/Grow';
-import { Tooltip } from '../tooltip';
+import { Tooltip } from '@/ui/tooltip';
 import { useEditor } from '@/components/editor-provider';
 import { useModal } from '@/components/global-modal-provider';
 import { useTheme } from '@/styles';

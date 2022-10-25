@@ -1,4 +1,4 @@
-import { styled, displayFlex, fixedCenter } from '@/styles';
+import { styled, displayFlex } from '@/styles';
 
 export const StyledEdgelessToolbar = styled.div(({ theme }) => ({
   height: '320px',
@@ -26,7 +26,7 @@ export const StyledToolbarItem = styled.div<{
   width: '36px',
   height: '36px',
   ...displayFlex('center', 'center'),
-  color: disable ? '#C0C0C0' : theme.colors.iconColor,
+  color: disable ? theme.colors.disableColor : theme.colors.iconColor,
   cursor: 'pointer',
   svg: {
     width: '36px',

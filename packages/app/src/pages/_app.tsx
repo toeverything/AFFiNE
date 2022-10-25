@@ -17,13 +17,13 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Logger />
-      <ThemeProvider>
-        <ModalProvider>
-          <EditorProvider>
+      <EditorProvider>
+        <ThemeProvider>
+          <ModalProvider>
             <Component {...pageProps} />
-          </EditorProvider>
-        </ModalProvider>
-      </ThemeProvider>
+          </ModalProvider>
+        </ThemeProvider>
+      </EditorProvider>
     </>
   );
 }

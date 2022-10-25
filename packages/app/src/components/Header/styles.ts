@@ -13,7 +13,7 @@ export const StyledHeader = styled('div')({
   zIndex: '10',
 });
 
-export const StyledTitle = styled('div')({
+export const StyledTitle = styled('div')(({ theme }) => ({
   width: '720px',
   height: '100%',
   position: 'absolute',
@@ -23,8 +23,8 @@ export const StyledTitle = styled('div')({
   margin: 'auto',
 
   ...displayFlex('center', 'center'),
-  fontSize: '20px',
-});
+  fontSize: theme.font.base,
+}));
 
 export const StyledTitleWrapper = styled('div')({
   maxWidth: '720px',
