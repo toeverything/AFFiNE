@@ -11,13 +11,14 @@ import {
   ThemeProviderProps,
   ThemeProviderValue,
 } from './types';
-import { lightTheme, darkTheme, globalThemeVariables } from './theme';
+import { getLightTheme, getDarkTheme, globalThemeVariables } from './theme';
 import { SystemThemeHelper, localStorageThemeHelper } from './utils';
+import { useEditor } from '@/components/editor-provider';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
   changeMode: () => {},
-  theme: lightTheme,
+  theme: getLightTheme('page'),
 });
 
 export const ThemeProvider = ({
@@ -26,8 +27,9 @@ export const ThemeProvider = ({
 }: PropsWithChildren<ThemeProviderProps>) => {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
   const [mode, setMode] = useState<ThemeMode>('auto');
-
-  const themeStyle = theme === 'light' ? lightTheme : darkTheme;
+  const { mode: editorMode } = useEditor();
+  const themeStyle =
+    theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode);
   const changeMode = (themeMode: ThemeMode) => {
     themeMode !== mode && setMode(themeMode);
     // Remember the theme mode which user selected for next time

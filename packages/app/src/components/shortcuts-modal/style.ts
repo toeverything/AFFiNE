@@ -6,6 +6,7 @@ export const StyledShortcutsModal = styled.div(({ theme }) => ({
   paddingBottom: '28px',
   backgroundColor: theme.colors.popoverBackground,
   boxShadow: theme.shadow.popover,
+  borderRadius: `${theme.radius.popover} 0 ${theme.radius.popover} ${theme.radius.popover}`,
   color: theme.colors.popoverColor,
   overflow: 'auto',
   boxRadius: '10px',
@@ -71,6 +72,7 @@ export const CloseButton = styled('div')(({ theme }) => {
     },
     ':hover': {
       background: theme.colors.hoverBackground,
+      color: theme.colors.primaryColor,
     },
   };
 });

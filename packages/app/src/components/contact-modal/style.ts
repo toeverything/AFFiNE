@@ -1,5 +1,7 @@
 import { absoluteCenter, displayFlex, styled } from '@/styles';
 import bg from './bg.png';
+import CloseIcon from '@mui/icons-material/Close';
+
 export const StyledModalContainer = styled('div')(({ theme }) => {
   return {
     width: '100vw',
@@ -175,20 +177,36 @@ export const StyledModalHeaderLeft = styled('div')(({ theme }) => {
   };
 });
 
-export const CloseButton = styled('div')(({ theme }) => {
+export const StyledCloseButton = styled('div')(({ theme }) => {
   return {
-    width: '30px',
-    height: '30px',
-    borderRadius: '6px',
+    width: '60px',
+    height: '60px',
     color: theme.colors.iconColor,
     cursor: 'pointer',
     ...displayFlex('center', 'center'),
+    position: 'absolute',
+    right: '0',
+    top: '0',
+
+    // TODO: we need to add @emotion/babel-plugin
+    '::after': {
+      content: '""',
+      width: '30px',
+      height: '30px',
+      borderRadius: '6px',
+      ...absoluteCenter({ horizontal: true, vertical: true }),
+    },
     ':hover': {
-      background: theme.colors.hoverBackground,
+      color: theme.colors.primaryColor,
+      '::after': {
+        background: theme.colors.hoverBackground,
+      },
     },
     svg: {
       width: '20px',
       height: '20px',
+      position: 'relative',
+      zIndex: 1,
     },
   };
 });

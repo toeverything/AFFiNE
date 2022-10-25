@@ -38,20 +38,25 @@ const EdgelessItem = ({ active }: { active?: boolean }) => {
 const AnimateRadioItem = ({
   active,
   status,
-  icon,
+  icon: propsIcon,
   label,
   isLeft,
   ...props
 }: AnimateRadioItemProps) => {
+  const icon = (
+    <StyledIcon shrink={status === 'shrink'} isLeft={isLeft}>
+      {cloneElement(propsIcon, {
+        active,
+      })}
+    </StyledIcon>
+  );
   return (
     <StyledRadioItem active={active} status={status} {...props}>
-      <StyledIcon shrink={status === 'shrink'} isLeft={isLeft}>
-        {cloneElement(icon, {
-          active,
-        })}
-      </StyledIcon>
-
-      <StyledLabel shrink={status !== 'stretch'}>{label}</StyledLabel>
+      {isLeft ? icon : null}
+      <StyledLabel shrink={status !== 'stretch'} isLeft={isLeft}>
+        {label}
+      </StyledLabel>
+      {isLeft ? null : icon}
     </StyledRadioItem>
   );
 };

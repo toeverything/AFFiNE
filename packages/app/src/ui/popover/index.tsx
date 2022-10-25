@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 import Grow from '@mui/material/Grow';
+import ClickAwayListener from '@mui/base/ClickAwayListener';
 
 import { styled } from '@/styles';
 
@@ -41,24 +42,24 @@ export const Popover = ({
 }: PropsWithChildren<PopoverProps>) => {
   const [show, setShow] = useState(false);
   return (
-    <StyledPopoverContainer
-      onClick={() => {
-        setShow(!show);
-      }}
-      onMouseEnter={() => {
-        setShow(true);
-      }}
-      onMouseLeave={() => {
+    <ClickAwayListener
+      onClickAway={() => {
         setShow(false);
       }}
-      style={style}
     >
-      {children}
-      <Grow in={show}>
-        <StyledPopoverWrapper>
-          <StyledPopover>{popoverContent}</StyledPopover>
-        </StyledPopoverWrapper>
-      </Grow>
-    </StyledPopoverContainer>
+      <StyledPopoverContainer
+        onClick={() => {
+          setShow(!show);
+        }}
+        style={style}
+      >
+        {children}
+        <Grow in={show}>
+          <StyledPopoverWrapper>
+            <StyledPopover>{popoverContent}</StyledPopover>
+          </StyledPopoverWrapper>
+        </Grow>
+      </StyledPopoverContainer>
+    </ClickAwayListener>
   );
 };

@@ -25,7 +25,7 @@ import {
   StyledLogo,
   StyledModalHeader,
   StyledModalHeaderLeft,
-  CloseButton,
+  StyledCloseButton,
   StyledModalFooter,
 } from './style';
 
@@ -87,13 +87,13 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
               <StyledLogo src={logo.src} alt="" />
               <span>Alpha</span>
             </StyledModalHeaderLeft>
-            <CloseButton
+            <StyledCloseButton
               onClick={() => {
                 onClose();
               }}
             >
               <CloseIcon width={12} height={12} />
-            </CloseButton>
+            </StyledCloseButton>
           </StyledModalHeader>
 
           <StyledContent>

@@ -99,12 +99,23 @@ export const StyledRadioItem = styled('div')<{
 
 export const StyledLabel = styled('div')<{
   shrink: boolean;
-}>(({ shrink }) => {
+  isLeft: boolean;
+}>(({ shrink, isLeft }) => {
   const animateScaleStretch = keyframes`${toString(
-    spring({ scale: 0 }, { scale: 1 }, { preset: 'gentle' })
+    spring(
+      { width: '0px' },
+      { width: isLeft ? '65px' : '75px' },
+      { preset: 'gentle' }
+    )
   )}`;
   const animateScaleShrink = keyframes(
-    `${toString(spring({ scale: 1 }, { scale: 0 }, { preset: 'gentle' }))}`
+    `${toString(
+      spring(
+        { width: isLeft ? '65px' : '75px' },
+        { width: '0px' },
+        { preset: 'gentle' }
+      )
+    )}`
   );
   const shrinkStyle = shrink
     ? {
@@ -117,10 +128,12 @@ export const StyledLabel = styled('div')<{
   return {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: isLeft ? 'flex-start' : 'flex-end',
     fontSize: '16px',
     flexShrink: '0',
     transition: `transform ${ANIMATE_DURATION}ms`,
     fontWeight: 'normal',
+    overflow: 'hidden',
     ...shrinkStyle,
   };
 });

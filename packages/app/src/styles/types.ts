@@ -1,3 +1,5 @@
+import { EditorContainer } from '@blocksuite/editor';
+
 export type Theme = 'light' | 'dark';
 export type ThemeMode = Theme | 'auto';
 
@@ -13,6 +15,7 @@ export type ThemeProviderValue = {
 
 export interface AffineTheme {
   mode: Theme;
+  editorMode: EditorContainer['mode'];
   colors: {
     primaryColor: string;
 
@@ -36,6 +39,7 @@ export interface AffineTheme {
     placeHolderColor: string;
     selectedColor: string;
     borderColor: string;
+    disableColor: string;
   };
   font: {
     xs: string; // tiny
@@ -65,6 +69,9 @@ export interface AffineTheme {
 }
 
 export interface AffineThemeCSSVariables {
+  '--affine-theme-mode': Theme;
+  '--affine-editor-mode': EditorContainer['mode'];
+
   '--affine-primary-color': AffineTheme['colors']['primaryColor'];
   '--affine-page-background': AffineTheme['colors']['pageBackground'];
   '--affine-popover-background': AffineTheme['colors']['popoverBackground'];
@@ -84,6 +91,7 @@ export interface AffineThemeCSSVariables {
   '--affine-placeholder-color': AffineTheme['colors']['placeHolderColor'];
   '--affine-selected-color': AffineTheme['colors']['selectedColor'];
   '--affine-border-color': AffineTheme['colors']['borderColor'];
+  '--affine-disable-color': AffineTheme['colors']['disableColor'];
 
   '--affine-modal-shadow': AffineTheme['shadow']['modal'];
   '--affine-popover-shadow': AffineTheme['shadow']['popover'];

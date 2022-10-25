@@ -28,32 +28,32 @@ const toolbarList1 = [
   {
     flavor: 'text',
     icon: <TextIcon />,
-    toolTip: 'Text(coming soon)',
+    toolTip: 'Text (coming soon)',
     disable: true,
   },
   {
     flavor: 'shape',
     icon: <ShapeIcon />,
-    toolTip: 'Shape(coming soon)',
+    toolTip: 'Shape (coming soon)',
     disable: true,
   },
   {
     flavor: 'sticky',
     icon: <StickerIcon />,
-    toolTip: 'Sticky(coming soon)',
+    toolTip: 'Sticky (coming soon)',
     disable: true,
   },
   {
     flavor: 'pen',
     icon: <PenIcon />,
-    toolTip: 'Pen(coming soon)',
+    toolTip: 'Pen (coming soon)',
     disable: true,
   },
 
   {
     flavor: 'connector',
     icon: <ConnectorIcon />,
-    toolTip: 'Connector(coming soon)',
+    toolTip: 'Connector (coming soon)',
     disable: true,
   },
 ];
@@ -88,7 +88,7 @@ const UndoRedo = () => {
 
   return (
     <StyledToolbarWrapper>
-      <Tooltip content="undo" placement="right-start">
+      <Tooltip content="Undo" placement="right-start">
         <StyledToolbarItem
           disable={!canUndo}
           onClick={() => {
@@ -98,7 +98,7 @@ const UndoRedo = () => {
           <UndoIcon />
         </StyledToolbarItem>
       </Tooltip>
-      <Tooltip content="redo" placement="right-start">
+      <Tooltip content="Redo" placement="right-start">
         <StyledToolbarItem
           disable={!canRedo}
           onClick={() => {
