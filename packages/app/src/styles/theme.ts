@@ -5,6 +5,7 @@ const basicFontFamily =
   'apple-system, BlinkMacSystemFont,Helvetica Neue, Tahoma, PingFang SC, Microsoft Yahei, Arial,Hiragino Sans GB, sans-serif, Apple Color Emoji, Segoe UI Emoji,Segoe UI Symbol, Noto Color Emoji';
 
 export const lightTheme: AffineTheme = {
+  mode: 'light',
   colors: {
     primaryColor: '#6880FF',
 
@@ -43,14 +44,19 @@ export const lightTheme: AffineTheme = {
       '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
     modal:
       '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
+    tooltip: '1px 1px 4px rgba(0, 0, 0, 0.14)',
   },
   space: {
     paragraph: '8px',
+  },
+  radius: {
+    popover: '10px',
   },
 };
 
 export const darkTheme: AffineTheme = {
   ...lightTheme,
+  mode: 'dark',
   colors: {
     primaryColor: '#6880FF',
 
@@ -77,6 +83,7 @@ export const darkTheme: AffineTheme = {
       '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
     modal:
       '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
+    tooltip: '1px 1px 4px rgba(0, 0, 0, 0.14)',
   },
 };
 
@@ -108,6 +115,7 @@ export const globalThemeVariables: (
 
     '--affine-modal-shadow': theme.shadow.modal,
     '--affine-popover-shadow': theme.shadow.popover,
+    '--affine-tooltip-shadow': theme.shadow.tooltip,
 
     '--affine-font-xs': theme.font.xs, // tiny
     '--affine-font-sm': theme.font.sm, // small
@@ -121,5 +129,6 @@ export const globalThemeVariables: (
     '--affine-font-family2': theme.font.family2,
 
     '--affine-paragraph-space': theme.space.paragraph,
+    '--affine-popover-radius': theme.radius.popover,
   };
 };

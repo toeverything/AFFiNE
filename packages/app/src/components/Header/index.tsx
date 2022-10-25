@@ -9,7 +9,7 @@ import {
   StyledMoreMenuItem,
   IconButton,
 } from './styles';
-import { Popover } from '@/components/popover';
+import { Popover } from '@/ui/popover';
 import { useEditor } from '@/components/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/icons';

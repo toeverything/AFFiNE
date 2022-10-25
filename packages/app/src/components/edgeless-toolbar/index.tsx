@@ -14,7 +14,7 @@ import {
   UndoIcon,
   RedoIcon,
 } from './icons';
-import { Tooltip } from '@/components/tooltip';
+import { Tooltip } from '@/ui/tooltip';
 import Slide from '@mui/material/Slide';
 import { useEditor } from '@/components/editor-provider';
 

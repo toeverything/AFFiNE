@@ -12,6 +12,7 @@ export type ThemeProviderValue = {
 };
 
 export interface AffineTheme {
+  mode: Theme;
   colors: {
     primaryColor: string;
 
@@ -53,9 +54,13 @@ export interface AffineTheme {
   shadow: {
     modal: string;
     popover: string;
+    tooltip: string;
   };
   space: {
     paragraph: string;
+  };
+  radius: {
+    popover: string;
   };
 }
 
@@ -80,8 +85,9 @@ export interface AffineThemeCSSVariables {
   '--affine-selected-color': AffineTheme['colors']['selectedColor'];
   '--affine-border-color': AffineTheme['colors']['borderColor'];
 
-  '--affine-modal-shadow': AffineTheme['shadow']['popover'];
-  '--affine-popover-shadow': AffineTheme['shadow']['modal'];
+  '--affine-modal-shadow': AffineTheme['shadow']['modal'];
+  '--affine-popover-shadow': AffineTheme['shadow']['popover'];
+  '--affine-tooltip-shadow': AffineTheme['shadow']['tooltip'];
 
   '--affine-font-xs': AffineTheme['font']['xs']; // tiny
   '--affine-font-sm': AffineTheme['font']['sm']; // small
@@ -95,6 +101,8 @@ export interface AffineThemeCSSVariables {
   '--affine-font-family2': AffineTheme['font']['family2'];
 
   '--affine-paragraph-space': AffineTheme['space']['paragraph'];
+
+  '--affine-popover-radius': AffineTheme['radius']['popover'];
 }
 
 declare module '@emotion/react' {
