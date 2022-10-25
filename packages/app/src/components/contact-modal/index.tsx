@@ -129,7 +129,13 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
 
           <StyledModalFooter>
             <p>
-              <a href="">How is AFFiNE Alpha different？</a>
+              <a
+                href="https://affine.pro/content/blog/affine-alpha-is-coming/index"
+                target="_blank"
+                rel="noreferrer"
+              >
+                How is AFFiNE Alpha different？
+              </a>
             </p>
             <p>Copyright &copy; 2022 Toeverything</p>
           </StyledModalFooter>
