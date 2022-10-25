@@ -15,10 +15,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/toeverything/AFFINE-pathfinder.git"
+    "url": "git+https://github.com/toeverything/AFFINE.git"
   },
   "dependencies": {
     "next": "^12.3.1",
