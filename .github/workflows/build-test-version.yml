@@ -5,10 +5,8 @@ on:
     inputs:
       tag:
         description: "Custom Tag. Set nightly-latest will publish to development."
-        required: false
+        required: true
         type: string
-  push:
-    branches: [develop]
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
@@ -31,10 +29,10 @@ jobs:
 
       - name: Use Node.js
         uses: actions/setup-node@v2
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
         with:
           node-version: 18.x
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
           cache: 'pnpm'
       
       - run: node scripts/module-resolve/ci.js
@@ -113,7 +111,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             ${{ env.IMAGE_TAG }}
-            ${{ inputs.tag || (github.ref_name == 'develop' && env.IMAGE_TAG_LATEST) || github.ref_name }}
+            ${{ inputs.tag }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3

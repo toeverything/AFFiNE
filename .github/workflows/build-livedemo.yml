@@ -27,10 +27,10 @@ jobs:
 
       - name: Use Node.js
         uses: actions/setup-node@v2
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
         with:
           node-version: 18.x
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
           cache: 'pnpm'
       
       - run: node scripts/module-resolve/ci.js
