@@ -60,7 +60,7 @@ If you have questions, join us across various [social platforms](https://docs.af
 
 ## Thanks
 
-We would also like to give thanks to open-source projects that make affine possible:
+We would also like to give thanks to open-source projects that make AFFiNE possible:
 
 -   [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
 -   [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
