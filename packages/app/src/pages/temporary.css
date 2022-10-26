@@ -9,3 +9,6 @@ debug-menu {
   margin-top: 78px;
   margin-bottom: 40px;
 }
+.affine-editor-container {
+  background: transparent !important;
+}
