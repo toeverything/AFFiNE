@@ -1,23 +1,50 @@
-import { Suspense, useEffect, useRef } from 'react';
-import type { EditorContainer } from '@blocksuite/editor';
-import '@blocksuite/blocks';
-import '@blocksuite/editor';
-import '@blocksuite/blocks/style';
 import { useEditor } from '@/components/editor-provider';
+import '@blocksuite/blocks';
+import '@blocksuite/blocks/style';
+import type { EditorContainer } from '@blocksuite/editor';
+import { createEditor } from '@blocksuite/editor';
+import { forwardRef, Suspense, useEffect, useRef } from 'react';
 import pkg from '../../package.json';
 import exampleMarkdown from './example-markdown';
+
+// eslint-disable-next-line react/display-name
+const BlockSuiteEditor = forwardRef<EditorContainer>(({}, ref) => {
+  const containerElement = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!containerElement.current) {
+      return;
+    }
+    const editor = createEditor();
+    containerElement.current.appendChild(editor);
+    if (ref) {
+      if ('current' in ref) {
+        ref.current = editor;
+      } else {
+        ref(editor);
+      }
+    }
+    return () => {
+      editor.remove();
+    };
+  }, [ref]);
+  return <div ref={containerElement} />;
+});
+
 export const Editor = () => {
-  const editorRef = useRef<EditorContainer>();
+  const editorRef = useRef<EditorContainer>(null);
   const { setEditor } = useEditor();
   useEffect(() => {
-    setEditor(editorRef.current!);
+    if (!editorRef.current) {
+      return;
+    }
+    setEditor(editorRef.current);
     const { store } = editorRef.current as EditorContainer;
     const pageId = store.addBlock({
       flavour: 'page',
       title: 'Welcome to the AFFiNE Alpha',
     });
     const groupId = store.addBlock({ flavour: 'group' }, pageId);
-    editorRef.current!.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
+    editorRef.current.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
     store.resetHistory();
   }, [setEditor]);
 
@@ -28,7 +55,7 @@ export const Editor = () => {
 
   return (
     <Suspense fallback={<div>Error!</div>}>
-      <editor-container ref={editorRef} />
+      <BlockSuiteEditor ref={editorRef} />
     </Suspense>
   );
 };
@@ -40,8 +67,7 @@ declare global {
 
   namespace JSX {
     interface IntrinsicElements {
-      // TODO fix type error
-      'editor-container': any; // EditorContainer
+      'editor-container': EditorContainer;
     }
   }
 }
