@@ -36,7 +36,7 @@
 
 ## Get Involved
 
-Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities! Once you’re familiar with using the software, maybe you will share your wisdom with others and join the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome).
+Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities across [official social platforms](https://docs.affine.pro/affine/community-links/official-communities) ! Once you’re familiar with using the software, maybe you will share your wisdom with others and join the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome).
 
 ### Contributing
 
@@ -46,7 +46,7 @@ For bug reports, feature requests and other suggestions you can also [create a n
 
 For translation and language support you can visit our docs for the [internationalization guide](https://docs.affine.pro/affine/internationalization/welcome)
 
-If you have questions, join [our social platforms](https://docs.affine.pro/affine/community-links/official-communities) where our friendly community can help provide the answers.
+If you have questions, join us across various [social platforms](https://docs.affine.pro/affine/community-links/official-communities) where our friendly community can help provide the answers.
 
 ## Getting Started
 
@@ -56,7 +56,7 @@ If you have questions, join [our social platforms](https://docs.affine.pro/affin
 
 [AFFiNE Documentation](https://docs.affine.pro/affine/) - More detailed documentation on how to use and develop with AFFiNE
 
-[Our social platforms](https://docs.affine.pro/affine/community-links/official-communities) - Join our friendly communities for more support and discussions
+[Our official communities](https://docs.affine.pro/affine/community-links/official-communities) - Join our friendly communities for more support and discussions
 
 ## Thanks
 
