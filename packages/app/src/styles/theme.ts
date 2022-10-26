@@ -37,7 +37,7 @@ export const getLightTheme = (
       xs: '12px',
       sm: '16px',
       base: '18px',
-      family: `Avenir Next, ${basicFontFamily}`,
+      family: `Avenir Next, Poppins, ${basicFontFamily}`,
       family2: `Space Mono, ${basicFontFamily}`,
       lineHeightBase: '26px',
     },

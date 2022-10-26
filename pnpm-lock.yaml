@@ -24,6 +24,7 @@ importers:
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
       '@emotion/styled': ^11.10.4
+      '@fontsource/poppins': ^4.5.10
       '@fontsource/space-mono': ^4.5.10
       '@mui/base': ^5.0.0-alpha.87
       '@mui/icons-material': ^5.10.9
@@ -53,6 +54,7 @@ importers:
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
       '@emotion/styled': 11.10.4_yiaqs725o7pcd7rteavrnhgj4y
+      '@fontsource/poppins': 4.5.10
       '@fontsource/space-mono': 4.5.10
       '@mui/base': 5.0.0-alpha.101_7ey2zzynotv32rpkwno45fsx4e
       '@mui/icons-material': 5.10.9_5fncb4nagb4cvvcnwamw2rozfa
@@ -376,6 +378,10 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
+
+  /@fontsource/poppins/4.5.10:
+    resolution: {integrity: sha512-oYZVHsnlwV3VWM1SE/m6SUxVh0QLk5+2wB+lBiXcI7N/0KVQWmV9YykaPqfJHBLvmdya+MAOnv+BQHeLU1vOOw==}
+    dev: false
 
   /@fontsource/space-mono/4.5.10:
     resolution: {integrity: sha512-OTrWNdcPp01bZjEbSu52vMu9PaReUFylHAMI4lctKVbYUnm+e7a4eG6YcnRvDrJEMYHBDtEWLAsqGVldV5r1EQ==}
@@ -1432,7 +1438,7 @@ packages:
       eslint-import-resolver-webpack:
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
+      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
       debug: 3.2.7
       eslint: 8.22.0
       eslint-import-resolver-node: 0.3.6
@@ -1451,7 +1457,7 @@ packages:
       '@typescript-eslint/parser':
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
+      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
       array-includes: 3.1.5
       array.prototype.flat: 1.3.0
       debug: 2.6.9
