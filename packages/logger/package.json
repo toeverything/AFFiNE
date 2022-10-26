@@ -14,7 +14,6 @@
     "build": "tsc --project ./tsconfig.json"
   },
   "keywords": [],
-  "author": "",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/toeverything/AFFINE.git"
