@@ -80,7 +80,7 @@ jobs:
 
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: affine-pathfinder-community
+      IMAGE_NAME: 'toeverything/affine-pathfinder-community'
       IMAGE_TAG: canary-${{ github.sha }}
       IMAGE_TAG_LATEST: nightly-latest
 
