@@ -80,6 +80,7 @@ If you have questions, join us across various [**social platforms**](https://doc
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
 
+-   [BlockSuite](https://github.com/toeverything/BlockSuite) - AFFiNE is built with and powered by BlockSuite.
 -   [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
 -   [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
 -   [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
