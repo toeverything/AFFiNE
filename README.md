@@ -43,9 +43,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
     <a href="https://medium.com/@affineworkos"><img src="https://img.shields.io/badge/-Medium-red?style=social&logo=medium" height=25></a>
 </p>
 
-<br />
-
-<p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/21084335/182552060-972cac0e-6258-4ccb-85bd-3bb466c30ccd.png"><p/>
+<p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/4605025/198174913-d4f90da8-ae2a-4eb6-8424-55c94de432a1.jpeg"><p/>
 
 ## Join our community
 
