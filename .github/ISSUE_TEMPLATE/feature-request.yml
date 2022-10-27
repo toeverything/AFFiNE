@@ -1,0 +1,31 @@
+name: ✨ Feature request
+description: An idea or request for new functionality
+title: "[feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to fill out this feature request!
+  - type: textarea
+    id: description
+    attributes:
+      label: 1~3 main use cases of the proposed feature
+      description: e.g. As a ..., I have many tasks scattered across documents, and I want to have a unified entry to view these tasks.
+      placeholder: e.g. As a ...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Ideas for solution
+      placeholder: e.g. A task view can be added to view all tasks.
+  - type: input
+    id: userType
+    attributes:
+      label: what types of users can benefit from using your proposed feature
+      placeholder: busy student
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      placeholder: Add any other context or screenshots about the feature request here.
