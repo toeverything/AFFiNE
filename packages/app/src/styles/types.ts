@@ -23,6 +23,7 @@ export interface AffineTheme {
     popoverBackground: string;
     hoverBackground: string;
     codeBackground: string;
+    toolTipBackground: string;
 
     // Use for the page`s text
     textColor: string;
@@ -77,6 +78,7 @@ export interface AffineThemeCSSVariables {
   '--affine-popover-background': AffineTheme['colors']['popoverBackground'];
   '--affine-hover-background': AffineTheme['colors']['hoverBackground'];
   '--affine-code-background': AffineTheme['colors']['codeBackground'];
+  '--affine-tooltip-background': AffineTheme['colors']['toolTipBackground'];
 
   '--affine-text-color': AffineTheme['colors']['textColor'];
   '--affine-edgeless-text-color': AffineTheme['colors']['edgelessTextColor'];

@@ -17,6 +17,7 @@ export const getLightTheme = (
       pageBackground: '#fff',
       hoverBackground: '#F1F3FF',
       popoverBackground: '#fff',
+      toolTipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
 
       textColor: '#3A4C5C',
@@ -79,6 +80,7 @@ export const getDarkTheme = (
         editorMode === 'edgeless'
           ? lightTheme.colors.codeBackground
           : '#505662',
+      toolTipBackground: '#1F2021',
 
       textColor: '#fff',
       edgelessTextColor: '#3A4C5C',
@@ -119,6 +121,7 @@ export const globalThemeVariables: (
     '--affine-popover-background': theme.colors.popoverBackground,
     '--affine-hover-background': theme.colors.hoverBackground,
     '--affine-code-background': theme.colors.codeBackground,
+    '--affine-tooltip-background': theme.colors.toolTipBackground,
 
     '--affine-text-color': theme.colors.textColor,
     '--affine-edgeless-text-color': theme.colors.edgelessTextColor,

@@ -8,10 +8,7 @@ const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   return {
     boxShadow: theme.shadow.tooltip,
     padding: '4px 12px',
-    backgroundColor:
-      theme.mode === 'dark'
-        ? theme.colors.popoverBackground
-        : theme.colors.primaryColor,
+    backgroundColor: theme.colors.toolTipBackground,
     color: '#fff',
     fontSize: theme.font.xs,
   };
