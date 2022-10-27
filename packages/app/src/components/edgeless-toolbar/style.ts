@@ -27,7 +27,7 @@ export const StyledToolbarItem = styled.div<{
   height: '36px',
   ...displayFlex('center', 'center'),
   color: disable ? theme.colors.disableColor : theme.colors.iconColor,
-  cursor: 'pointer',
+  cursor: disable ? 'not-allowed' : 'pointer',
   svg: {
     width: '36px',
     height: '36px',
