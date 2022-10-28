@@ -17,6 +17,7 @@ export const getLightTheme = (
       pageBackground: '#fff',
       hoverBackground: '#F1F3FF',
       popoverBackground: '#fff',
+      tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
 
       textColor: '#3A4C5C',
@@ -26,6 +27,7 @@ export const getLightTheme = (
       linkColor2: '#6880FF',
       linkVisitedColor: '#ABB8FE',
       popoverColor: '#4C6275',
+      tooltipColor: '#fff',
       codeColor: '#517ea6',
       quoteColor: '#4C6275',
       placeHolderColor: '#C7C7C7',
@@ -75,6 +77,7 @@ export const getDarkTheme = (
       pageBackground: '#2c2c2c',
       hoverBackground: '#3C3C42',
       popoverBackground: '#1F2021',
+      tooltipBackground: '#1F2021',
       codeBackground:
         editorMode === 'edgeless'
           ? lightTheme.colors.codeBackground
@@ -87,6 +90,7 @@ export const getDarkTheme = (
       linkColor2: '#6880FF',
       linkVisitedColor: '#505FAB',
       popoverColor: '#C6CBD9',
+      tooltipColor: '#fff',
       codeColor:
         editorMode === 'edgeless' ? lightTheme.colors.codeColor : '#BDDBFD',
       quoteColor: '#C6CBD9',
@@ -152,5 +156,9 @@ export const globalThemeVariables: (
 
     '--affine-paragraph-space': theme.space.paragraph,
     '--affine-popover-radius': theme.radius.popover,
+
+    '--affine-tooltip-color': theme.colors.tooltipColor,
+    '--affine-tooltip-background': theme.colors.tooltipBackground,
+
   };
 };
