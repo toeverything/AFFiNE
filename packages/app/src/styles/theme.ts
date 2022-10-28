@@ -159,6 +159,5 @@ export const globalThemeVariables: (
 
     '--affine-tooltip-color': theme.colors.tooltipColor,
     '--affine-tooltip-background': theme.colors.tooltipBackground,
-
   };
 };
