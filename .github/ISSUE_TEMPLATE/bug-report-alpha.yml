@@ -1,7 +1,7 @@
-name: 🐛 Bug report
-description: Report a reproducible bug or regression
+name: 🐛 Bug report (Alpha)
+description: "Report a reproducible bug or regression for https://pathfinder.affine.pro"
 title: "[bug]: "
-labels: ["bug"]
+labels: ["bug", "alpha"]
 body:
   - type: markdown
     attributes:
