@@ -23,7 +23,7 @@ export const StyledModal = styled(ModalUnstyled)(({ theme }) => {
     zIndex: theme.zIndex.modal,
     ...displayFlex('center', 'center'),
     '*': {
-      '-webkit-tap-highlight-color': 'transparent',
+      WebkitTapHighlightColor: 'transparent',
       outline: 'none',
     },
   };
