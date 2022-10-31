@@ -66,10 +66,10 @@ const BrowserWarning = ({ onClose }: { onClose: () => void }) => {
 export const Header = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
+  const [showWarning, setShowWarning] = useState(shouldShowWarning());
+
   const { contactModalHandler } = useModal();
   const { editor } = useEditor();
-
-  const [showWarning, setShowWarning] = useState(shouldShowWarning());
 
   useEffect(() => {
     if (editor) {

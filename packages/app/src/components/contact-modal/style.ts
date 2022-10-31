@@ -2,17 +2,6 @@ import { absoluteCenter, displayFlex, styled } from '@/styles';
 import bg from './bg.png';
 import CloseIcon from '@mui/icons-material/Close';
 
-export const StyledModalContainer = styled('div')(({ theme }) => {
-  return {
-    width: '100vw',
-    height: '100vh',
-    position: 'fixed',
-    left: '0',
-    top: '0',
-    zIndex: theme.zIndex.modal,
-  };
-});
-
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
     width: '860px',
@@ -143,9 +132,6 @@ export const StyledContent = styled('div')({
   letterSpacing: '0.06em',
 });
 
-export const StyledBackdrop = styled('div')(({ theme }) => {
-  return { width: '100%', height: '100%', background: 'rgba(58, 76, 92, 0.2)' };
-});
 export const StyledLogo = styled('img')({
   height: '18px',
   width: 'auto',
