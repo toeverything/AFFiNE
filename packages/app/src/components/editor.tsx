@@ -27,7 +27,7 @@ const BlockSuiteEditor = forwardRef<EditorContainer>(({}, ref) => {
       editor.remove();
     };
   }, [ref]);
-  return <div ref={containerElement} />;
+  return <div id="editor" style={{ height: '100%' }} ref={containerElement} />;
 });
 
 export const Editor = () => {
@@ -67,6 +67,7 @@ declare global {
 
   namespace JSX {
     interface IntrinsicElements {
+      // TODO fix types on react
       'editor-container': EditorContainer;
     }
   }

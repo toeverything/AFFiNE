@@ -18,8 +18,8 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': ^0.2.19
-      '@blocksuite/editor': ^0.2.19
+      '@blocksuite/blocks': ^0.2.22
+      '@blocksuite/editor': ^0.2.22
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -48,8 +48,8 @@ importers:
       react-dom: 18.2.0
       typescript: 4.8.3
     dependencies:
-      '@blocksuite/blocks': 0.2.19
-      '@blocksuite/editor': 0.2.19
+      '@blocksuite/blocks': 0.2.22
+      '@blocksuite/editor': 0.2.22
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -166,10 +166,10 @@ packages:
       to-fast-properties: 2.0.0
     dev: false
 
-  /@blocksuite/blocks/0.2.19:
-    resolution: {integrity: sha512-Xg1d8dIOb4qCYJ1u63zfgGdYfrV7S926srflCzbWuJOMAQ1auRPypHVCxidOir/S583B3l6t80vIhy0Xmu3+2Q==}
+  /@blocksuite/blocks/0.2.22:
+    resolution: {integrity: sha512-66HqtUlXI44MZSffxF3uCDhaoMsMBABw4WKZxjCwFYxa2eeddm2Vl6+qNDrmsOK6ype5uVzY2u3BBis3k8A0Cw==}
     dependencies:
-      '@blocksuite/store': 0.2.19
+      '@blocksuite/store': 0.2.22
       hotkeys-js: 3.10.0
       lit: 2.4.0
       quill: 1.3.7
@@ -180,11 +180,11 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/editor/0.2.19:
-    resolution: {integrity: sha512-KYgn+fvBSCEbo8XBVQd/NNSTw2xV+Ysyec1l+Jv6ukW22ezf05HZlG+tMgg2JDLEsiDHgVhqvqBAZA8BtYF6qw==}
+  /@blocksuite/editor/0.2.22:
+    resolution: {integrity: sha512-TgJTNeNXynbYZW39hYBs/Z84Cha3wuNm2AngSa1f/GQV8Bbi0Q1C8KtBXATQ+WkHAAfZ7K1HXx0jrFbsiLk1sg==}
     dependencies:
-      '@blocksuite/blocks': 0.2.19
-      '@blocksuite/store': 0.2.19
+      '@blocksuite/blocks': 0.2.22
+      '@blocksuite/store': 0.2.22
       lit: 2.4.0
       marked: 4.1.1
       turndown: 7.1.1
@@ -194,8 +194,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/store/0.2.19:
-    resolution: {integrity: sha512-/MSuLTd9zNJj7Mxmj6GC1NMzSQ6HHZJdbevn3/o3Sp41KKI2TYygmk26xwvi5duaNgw2GQISWDdHuHnweh8p8w==}
+  /@blocksuite/store/0.2.22:
+    resolution: {integrity: sha512-sc85o52s3ga3ZtOXzqkRUw763+JxQsvPnVK905QaQyoQLcbtfJx3yx0iVUGcturGaNCkiUFwJsUQHLOiDvRTMA==}
     dependencies:
       lib0: 0.2.52
       y-protocols: 1.0.5
@@ -1438,7 +1438,7 @@ packages:
       eslint-import-resolver-webpack:
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
+      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
       debug: 3.2.7
       eslint: 8.22.0
       eslint-import-resolver-node: 0.3.6
@@ -1457,7 +1457,7 @@ packages:
       '@typescript-eslint/parser':
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
+      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
       array-includes: 3.1.5
       array.prototype.flat: 1.3.0
       debug: 2.6.9

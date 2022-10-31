@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     name: Lint and Build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
