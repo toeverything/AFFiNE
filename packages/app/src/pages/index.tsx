@@ -16,7 +16,6 @@ const StyledEditorContainer = styled('div')(({ theme }) => {
 const StyledPage = styled('div')(({ theme }) => {
   return {
     height: '100vh',
-    paddingTop: '60px',
     backgroundColor: theme.colors.pageBackground,
     transition: 'background-color .5s',
   };

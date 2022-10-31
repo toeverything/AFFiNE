@@ -1,17 +1,29 @@
-import { displayFlex, styled } from '@/styles';
+import { absoluteCenter, displayFlex, styled } from '@/styles';
 
-export const StyledHeader = styled('div')({
-  height: '60px',
-  width: '100vw',
-  ...displayFlex('space-between', 'center'),
-  background: 'var(--affine-page-background)',
-  transition: 'background-color 0.5s',
-  position: 'fixed',
-  left: '0',
-  top: '0',
-  padding: '0 22px',
-  zIndex: '10',
-});
+export const StyledHeaderContainer = styled.div<{ hasWarning: boolean }>(
+  ({ hasWarning }) => {
+    return {
+      position: 'relative',
+      height: hasWarning ? '96px' : '60px',
+    };
+  }
+);
+export const StyledHeader = styled.div<{ hasWarning: boolean }>(
+  ({ hasWarning, theme }) => {
+    return {
+      height: '60px',
+      width: '100vw',
+      ...displayFlex('space-between', 'center'),
+      background: 'var(--affine-page-background)',
+      transition: 'background-color 0.5s',
+      position: 'fixed',
+      left: '0',
+      top: hasWarning ? '36px' : '0',
+      padding: '0 22px',
+      zIndex: theme.zIndex.modal,
+    };
+  }
+);
 
 export const StyledTitle = styled('div')(({ theme }) => ({
   width: '720px',
@@ -80,6 +92,40 @@ export const IconButton = styled('div')(({ theme }) => {
     ':hover': {
       color: theme.colors.primaryColor,
       background: theme.colors.hoverBackground,
+    },
+  };
+});
+
+export const StyledBrowserWarning = styled.div(({ theme }) => {
+  return {
+    backgroundColor: theme.colors.warningBackground,
+    color: theme.colors.warningColor,
+    height: '36px',
+    width: '100vw',
+    fontSize: theme.font.sm,
+    position: 'fixed',
+    left: '0',
+    top: '0',
+    ...displayFlex('center', 'center'),
+  };
+});
+
+export const StyledCloseButton = styled.div(({ theme }) => {
+  return {
+    width: '36px',
+    height: '36px',
+    color: theme.colors.iconColor,
+    cursor: 'pointer',
+    ...displayFlex('center', 'center'),
+    position: 'absolute',
+    right: '15px',
+    top: '0',
+
+    svg: {
+      width: '15px',
+      height: '15px',
+      position: 'relative',
+      zIndex: 1,
     },
   };
 });

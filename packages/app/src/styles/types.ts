@@ -24,7 +24,7 @@ export interface AffineTheme {
     hoverBackground: string;
     codeBackground: string;
     toolTipBackground: string;
-
+    warningBackground: string;
     // Use for the page`s text
     textColor: string;
     // Use for the editor`s text, because in edgeless mode text is different form other
@@ -41,6 +41,7 @@ export interface AffineTheme {
     selectedColor: string;
     borderColor: string;
     disableColor: string;
+    warningColor: string;
   };
   font: {
     xs: string; // tiny

@@ -19,6 +19,7 @@ export const getLightTheme = (
       popoverBackground: '#fff',
       toolTipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
+      warningBackground: '#FFF9C7',
 
       textColor: '#3A4C5C',
       edgelessTextColor: '#3A4C5C',
@@ -33,6 +34,7 @@ export const getLightTheme = (
       selectedColor: 'rgba(104, 128, 255, 0.1)',
       borderColor: '#D0D7E3',
       disableColor: '#C0C0C0',
+      warningColor: '#906616',
     },
     font: {
       xs: '12px',
@@ -81,6 +83,7 @@ export const getDarkTheme = (
           ? lightTheme.colors.codeBackground
           : '#505662',
       toolTipBackground: '#1F2021',
+      warningBackground: '#FFF9C7',
 
       textColor: '#fff',
       edgelessTextColor: '#3A4C5C',
@@ -96,6 +99,7 @@ export const getDarkTheme = (
       selectedColor: 'rgba(104, 128, 255, 0.1)',
       borderColor: '#4D4C53',
       disableColor: '#4b4b4b',
+      warningColor: '#906616',
     },
     shadow: {
       popover:
