@@ -1,6 +1,5 @@
 import { absoluteCenter, displayFlex, styled } from '@/styles';
 import bg from './bg.png';
-import CloseIcon from '@mui/icons-material/Close';
 
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {

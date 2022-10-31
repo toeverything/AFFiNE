@@ -1,3 +1,4 @@
+import getIsMobile from '@/utils/get-is-mobile';
 // Inspire by https://stackoverflow.com/a/4900484/8415727
 const getChromeVersion = () => {
   const raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
@@ -11,7 +12,10 @@ const getIsChrome = () => {
 const minimumChromeVersion = 102;
 
 export const shouldShowWarning = () => {
-  return !getIsChrome() || getChromeVersion() < minimumChromeVersion;
+  return (
+    !getIsMobile &&
+    (!getIsChrome() || getChromeVersion() < minimumChromeVersion)
+  );
 };
 
 export const getWarningMessage = () => {

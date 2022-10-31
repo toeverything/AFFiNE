@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { FAQ } from '@/components/faq';
 import Loading from '@/components/loading';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
+import MobileModal from '@/components/mobile-modal';
 import '@/components/simple-counter';
 
 const StyledEditorContainer = styled('div')(({ theme }) => {
@@ -52,6 +53,7 @@ const Home: NextPage = () => {
   return (
     <StyledPage>
       <Header />
+      <MobileModal />
       <StyledEditorContainer>
         <DynamicEditor />
       </StyledEditorContainer>
