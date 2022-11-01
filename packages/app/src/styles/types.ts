@@ -21,6 +21,7 @@ export interface AffineTheme {
 
     pageBackground: string;
     popoverBackground: string;
+    tooltipBackground: string;
     hoverBackground: string;
     codeBackground: string;
 
@@ -34,6 +35,7 @@ export interface AffineTheme {
     linkVisitedColor: string;
     iconColor: string;
     popoverColor: string;
+    tooltipColor: string;
     codeColor: string;
     quoteColor: string;
     placeHolderColor: string;
@@ -111,6 +113,9 @@ export interface AffineThemeCSSVariables {
   '--affine-paragraph-space': AffineTheme['space']['paragraph'];
 
   '--affine-popover-radius': AffineTheme['radius']['popover'];
+
+  '--affine-tooltip-color': AffineTheme['colors']['tooltipColor'];
+  '--affine-tooltip-background': AffineTheme['colors']['tooltipBackground'];
 }
 
 declare module '@emotion/react' {
