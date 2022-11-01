@@ -17,7 +17,7 @@ export const getLightTheme = (
       pageBackground: '#fff',
       hoverBackground: '#F1F3FF',
       popoverBackground: '#fff',
-      toolTipBackground: '#6880FF',
+      tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
       warningBackground: '#FFF9C7',
 
@@ -28,6 +28,7 @@ export const getLightTheme = (
       linkColor2: '#6880FF',
       linkVisitedColor: '#ABB8FE',
       popoverColor: '#4C6275',
+      tooltipColor: '#fff',
       codeColor: '#517ea6',
       quoteColor: '#4C6275',
       placeHolderColor: '#C7C7C7',
@@ -78,11 +79,11 @@ export const getDarkTheme = (
       pageBackground: '#2c2c2c',
       hoverBackground: '#3C3C42',
       popoverBackground: '#1F2021',
+      tooltipBackground: '#1F2021',
       codeBackground:
         editorMode === 'edgeless'
           ? lightTheme.colors.codeBackground
           : '#505662',
-      toolTipBackground: '#1F2021',
       warningBackground: '#FFF9C7',
 
       textColor: '#fff',
@@ -92,6 +93,7 @@ export const getDarkTheme = (
       linkColor2: '#6880FF',
       linkVisitedColor: '#505FAB',
       popoverColor: '#C6CBD9',
+      tooltipColor: '#fff',
       codeColor:
         editorMode === 'edgeless' ? lightTheme.colors.codeColor : '#BDDBFD',
       quoteColor: '#C6CBD9',
@@ -125,7 +127,7 @@ export const globalThemeVariables: (
     '--affine-popover-background': theme.colors.popoverBackground,
     '--affine-hover-background': theme.colors.hoverBackground,
     '--affine-code-background': theme.colors.codeBackground,
-    '--affine-tooltip-background': theme.colors.toolTipBackground,
+    '--affine-tooltip-background': theme.colors.tooltipBackground,
 
     '--affine-text-color': theme.colors.textColor,
     '--affine-edgeless-text-color': theme.colors.edgelessTextColor,
@@ -141,6 +143,7 @@ export const globalThemeVariables: (
     '--affine-placeholder-color': theme.colors.placeHolderColor,
     '--affine-border-color': theme.colors.borderColor,
     '--affine-disable-color': theme.colors.disableColor,
+    '--affine-tooltip-color': theme.colors.tooltipColor,
 
     '--affine-modal-shadow': theme.shadow.modal,
     '--affine-popover-shadow': theme.shadow.popover,
