@@ -13,7 +13,7 @@ const minimumChromeVersion = 102;
 
 export const shouldShowWarning = () => {
   return (
-    !getIsMobile &&
+    !getIsMobile() &&
     (!getIsChrome() || getChromeVersion() < minimumChromeVersion)
   );
 };
