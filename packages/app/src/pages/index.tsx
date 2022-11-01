@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { FAQ } from '@/components/faq';
 import Loading from '@/components/loading';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
+import MobileModal from '@/components/mobile-modal';
 import '@/components/simple-counter';
 
 const StyledEditorContainer = styled('div')(({ theme }) => {
@@ -16,7 +17,6 @@ const StyledEditorContainer = styled('div')(({ theme }) => {
 const StyledPage = styled('div')(({ theme }) => {
   return {
     height: '100vh',
-    paddingTop: '60px',
     backgroundColor: theme.colors.pageBackground,
     transition: 'background-color .5s',
   };
@@ -53,6 +53,7 @@ const Home: NextPage = () => {
   return (
     <StyledPage>
       <Header />
+      <MobileModal />
       <StyledEditorContainer>
         <DynamicEditor />
       </StyledEditorContainer>

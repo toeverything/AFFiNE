@@ -64,28 +64,28 @@ export const StyledLoadingItem = styled.div`
     right: 50%;
   }
 
-  &:nth-child(1) {
+  &:nth-of-type(1) {
     --sx: 50%;
     --sy: -50%;
     --ex: 150%;
     --ey: 50%;
   }
 
-  &:nth-child(2) {
+  &:nth-of-type(2) {
     --sx: -50%;
     --sy: -50%;
     --ex: 50%;
     --ey: -50%;
   }
 
-  &:nth-child(3) {
+  &:nth-of-type(3) {
     --sx: 150%;
     --sy: 50%;
     --ex: 50%;
     --ey: 50%;
   }
 
-  &:nth-child(4) {
+  &:nth-of-type(4) {
     --sx: 50%;
     --sy: 50%;
     --ex: -50%;

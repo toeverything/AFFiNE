@@ -24,7 +24,7 @@ export interface AffineTheme {
     tooltipBackground: string;
     hoverBackground: string;
     codeBackground: string;
-
+    warningBackground: string;
     // Use for the page`s text
     textColor: string;
     // Use for the editor`s text, because in edgeless mode text is different form other
@@ -42,6 +42,7 @@ export interface AffineTheme {
     selectedColor: string;
     borderColor: string;
     disableColor: string;
+    warningColor: string;
   };
   font: {
     xs: string; // tiny
@@ -79,6 +80,7 @@ export interface AffineThemeCSSVariables {
   '--affine-popover-background': AffineTheme['colors']['popoverBackground'];
   '--affine-hover-background': AffineTheme['colors']['hoverBackground'];
   '--affine-code-background': AffineTheme['colors']['codeBackground'];
+  '--affine-tooltip-background': AffineTheme['colors']['tooltipBackground'];
 
   '--affine-text-color': AffineTheme['colors']['textColor'];
   '--affine-edgeless-text-color': AffineTheme['colors']['edgelessTextColor'];
@@ -94,6 +96,7 @@ export interface AffineThemeCSSVariables {
   '--affine-selected-color': AffineTheme['colors']['selectedColor'];
   '--affine-border-color': AffineTheme['colors']['borderColor'];
   '--affine-disable-color': AffineTheme['colors']['disableColor'];
+  '--affine-tooltip-color': AffineTheme['colors']['tooltipColor'];
 
   '--affine-modal-shadow': AffineTheme['shadow']['modal'];
   '--affine-popover-shadow': AffineTheme['shadow']['popover'];
@@ -113,9 +116,6 @@ export interface AffineThemeCSSVariables {
   '--affine-paragraph-space': AffineTheme['space']['paragraph'];
 
   '--affine-popover-radius': AffineTheme['radius']['popover'];
-
-  '--affine-tooltip-color': AffineTheme['colors']['tooltipColor'];
-  '--affine-tooltip-background': AffineTheme['colors']['tooltipBackground'];
 }
 
 declare module '@emotion/react' {

@@ -19,6 +19,7 @@ export const getLightTheme = (
       popoverBackground: '#fff',
       tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
+      warningBackground: '#FFF9C7',
 
       textColor: '#3A4C5C',
       edgelessTextColor: '#3A4C5C',
@@ -34,6 +35,7 @@ export const getLightTheme = (
       selectedColor: 'rgba(104, 128, 255, 0.1)',
       borderColor: '#D0D7E3',
       disableColor: '#C0C0C0',
+      warningColor: '#906616',
     },
     font: {
       xs: '12px',
@@ -82,6 +84,7 @@ export const getDarkTheme = (
         editorMode === 'edgeless'
           ? lightTheme.colors.codeBackground
           : '#505662',
+      warningBackground: '#FFF9C7',
 
       textColor: '#fff',
       edgelessTextColor: '#3A4C5C',
@@ -98,6 +101,7 @@ export const getDarkTheme = (
       selectedColor: 'rgba(104, 128, 255, 0.1)',
       borderColor: '#4D4C53',
       disableColor: '#4b4b4b',
+      warningColor: '#906616',
     },
     shadow: {
       popover:
@@ -123,6 +127,7 @@ export const globalThemeVariables: (
     '--affine-popover-background': theme.colors.popoverBackground,
     '--affine-hover-background': theme.colors.hoverBackground,
     '--affine-code-background': theme.colors.codeBackground,
+    '--affine-tooltip-background': theme.colors.tooltipBackground,
 
     '--affine-text-color': theme.colors.textColor,
     '--affine-edgeless-text-color': theme.colors.edgelessTextColor,
@@ -138,6 +143,7 @@ export const globalThemeVariables: (
     '--affine-placeholder-color': theme.colors.placeHolderColor,
     '--affine-border-color': theme.colors.borderColor,
     '--affine-disable-color': theme.colors.disableColor,
+    '--affine-tooltip-color': theme.colors.tooltipColor,
 
     '--affine-modal-shadow': theme.shadow.modal,
     '--affine-popover-shadow': theme.shadow.popover,
@@ -156,8 +162,5 @@ export const globalThemeVariables: (
 
     '--affine-paragraph-space': theme.space.paragraph,
     '--affine-popover-radius': theme.radius.popover,
-
-    '--affine-tooltip-color': theme.colors.tooltipColor,
-    '--affine-tooltip-background': theme.colors.tooltipBackground,
   };
 };

@@ -1,5 +1,4 @@
-import { createPortal } from 'react-dom';
-import Fade from '@mui/material/Fade';
+import Modal from '@/ui/modal';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   LogoIcon,
@@ -13,7 +12,6 @@ import {
 } from './icons';
 import logo from './affine-text-logo.png';
 import {
-  StyledModalContainer,
   StyledModalWrapper,
   StyledBigLink,
   StyledSmallLink,
@@ -21,7 +19,6 @@ import {
   StyledLeftContainer,
   StyledRightContainer,
   StyledContent,
-  StyledBackdrop,
   StyledLogo,
   StyledModalHeader,
   StyledModalHeaderLeft,
@@ -77,72 +74,68 @@ type TransitionsModalProps = {
 };
 
 export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
-  return createPortal(
-    <Fade in={open}>
-      <StyledModalContainer>
-        <StyledBackdrop onClick={onClose} />
-        <StyledModalWrapper>
-          <StyledModalHeader>
-            <StyledModalHeaderLeft>
-              <StyledLogo src={logo.src} alt="" />
-              <span>Alpha</span>
-            </StyledModalHeaderLeft>
-            <StyledCloseButton
-              onClick={() => {
-                onClose();
-              }}
+  return (
+    <Modal open={open} onClose={onClose}>
+      <StyledModalWrapper>
+        <StyledModalHeader>
+          <StyledModalHeaderLeft>
+            <StyledLogo src={logo.src} alt="" />
+            <span>Alpha</span>
+          </StyledModalHeaderLeft>
+          <StyledCloseButton
+            onClick={() => {
+              onClose();
+            }}
+          >
+            <CloseIcon width={12} height={12} />
+          </StyledCloseButton>
+        </StyledModalHeader>
+
+        <StyledContent>
+          <StyledLeftContainer>
+            {rightLinkList.map(({ icon, title, subTitle, link }) => {
+              return (
+                <StyledBigLink key={title} href={link} target="_blank">
+                  {icon}
+                  <p>{title}</p>
+                  <p>
+                    {subTitle}
+                    <LinkIcon />
+                  </p>
+                </StyledBigLink>
+              );
+            })}
+          </StyledLeftContainer>
+          <StyledRightContainer>
+            <StyledSubTitle>
+              Get in touch! <br />
+              Join our community.
+            </StyledSubTitle>
+            {linkList.map(({ icon, title, link }) => {
+              return (
+                <StyledSmallLink key={title} href={link} target="_blank">
+                  {icon}
+                  {title}
+                </StyledSmallLink>
+              );
+            })}
+          </StyledRightContainer>
+        </StyledContent>
+
+        <StyledModalFooter>
+          <p>
+            <a
+              href="https://affine.pro/content/blog/affine-alpha-is-coming/index"
+              target="_blank"
+              rel="noreferrer"
             >
-              <CloseIcon width={12} height={12} />
-            </StyledCloseButton>
-          </StyledModalHeader>
-
-          <StyledContent>
-            <StyledLeftContainer>
-              {rightLinkList.map(({ icon, title, subTitle, link }) => {
-                return (
-                  <StyledBigLink key={title} href={link} target="_blank">
-                    {icon}
-                    <p>{title}</p>
-                    <p>
-                      {subTitle}
-                      <LinkIcon />
-                    </p>
-                  </StyledBigLink>
-                );
-              })}
-            </StyledLeftContainer>
-            <StyledRightContainer>
-              <StyledSubTitle>
-                Get in touch! <br />
-                Join our community.
-              </StyledSubTitle>
-              {linkList.map(({ icon, title, link }) => {
-                return (
-                  <StyledSmallLink key={title} href={link} target="_blank">
-                    {icon}
-                    {title}
-                  </StyledSmallLink>
-                );
-              })}
-            </StyledRightContainer>
-          </StyledContent>
-
-          <StyledModalFooter>
-            <p>
-              <a
-                href="https://affine.pro/content/blog/affine-alpha-is-coming/index"
-                target="_blank"
-                rel="noreferrer"
-              >
-                How is AFFiNE Alpha different？
-              </a>
-            </p>
-            <p>Copyright &copy; 2022 Toeverything</p>
-          </StyledModalFooter>
-        </StyledModalWrapper>
-      </StyledModalContainer>
-    </Fade>,
-    document.body
+              How is AFFiNE Alpha different？
+            </a>
+          </p>
+          <p>Copyright &copy; 2022 Toeverything</p>
+        </StyledModalFooter>
+      </StyledModalWrapper>
+    </Modal>
   );
 };
 
