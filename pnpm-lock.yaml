@@ -1438,7 +1438,7 @@ packages:
       eslint-import-resolver-webpack:
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
+      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
       debug: 3.2.7
       eslint: 8.22.0
       eslint-import-resolver-node: 0.3.6
@@ -1457,7 +1457,7 @@ packages:
       '@typescript-eslint/parser':
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
+      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
       array-includes: 3.1.5
       array.prototype.flat: 1.3.0
       debug: 2.6.9
