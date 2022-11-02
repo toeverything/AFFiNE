@@ -15,7 +15,7 @@ export const InfoModal = ({ open, onClose }: ModalProps) => {
                 <Header>
                     <HeaderLeft>
                         <StyledImg src={affineTextLogo} />
-                        <LivedemoContainer>live demo</LivedemoContainer>
+                        <LivedemoContainer>Pre-Alpha</LivedemoContainer>
                     </HeaderLeft>
                     <CloseContainer onClick={() => onClose?.()}>
                         <CloseIcon />
