@@ -104,7 +104,7 @@ jobs:
         run: |
           echo "::set-output name=name::$([[ -f ./yarn.lock ]] && echo "yarn" || ([[ -f ./pnpm-lock.yaml ]] && echo "pnpm") || echo "npm")"
       # Set node/npm/yarn versions using volta, with optional overrides provided by the consumer
-      - uses: volta-cli/action@fdf4cf319494429a105efaa71d0e5ec67f338c6e
+      - uses: volta-cli/action@v3
         with:
           node-version: "${{ inputs.node-version }}"
           npm-version: "${{ inputs.npm-version }}"
