@@ -24,7 +24,6 @@
     "css-spring": "^4.1.0",
     "lit": "^2.3.1",
     "next": "13.0.1",
-    "next-transpile-modules": "^9.1.0",
     "prettier": "^2.7.1",
     "quill": "^1.3.7",
     "quill-cursors": "^4.0.0",
