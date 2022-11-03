@@ -9,6 +9,7 @@ import { Logger } from '@toeverything/pathfinder-logger';
 
 import '@fontsource/space-mono';
 import '@fontsource/poppins';
+import '../utils/print-build-info';
 
 const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {
   ssr: false,
