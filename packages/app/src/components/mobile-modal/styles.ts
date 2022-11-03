@@ -5,7 +5,7 @@ export const ModalWrapper = styled.div(({ theme }) => {
   return {
     width: '348px',
     height: '388px',
-    background: '#FFFFFF',
+    background: theme.colors.popoverBackground,
     borderRadius: '28px',
     position: 'relative',
     backgroundImage: `url(${bg.src})`,
