@@ -2,7 +2,6 @@
   "name": "@pathfinder/logger",
   "version": "0.0.1",
   "description": "",
-  "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "exports": {
