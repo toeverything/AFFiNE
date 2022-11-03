@@ -1,4 +1,5 @@
-import { absoluteCenter, displayFlex, styled } from '@/styles';
+import { displayFlex, styled } from '@/styles';
+import { MenuItem } from '@/ui/menu';
 
 export const StyledHeaderContainer = styled.div<{ hasWarning: boolean }>(
   ({ hasWarning }) => {
@@ -20,7 +21,7 @@ export const StyledHeader = styled.div<{ hasWarning: boolean }>(
       left: '0',
       top: hasWarning ? '36px' : '0',
       padding: '0 22px',
-      zIndex: theme.zIndex.modal,
+      zIndex: 99,
     };
   }
 );
@@ -61,23 +62,23 @@ export const StyledHeaderRightSide = styled('div')({
   alignItems: 'center',
 });
 
-export const StyledMoreMenuItem = styled('div')(({ theme }) => {
+export const StyledMenuItemWrapper = styled.div(({ theme }) => {
   return {
     height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    borderRadius: '5px',
-    fontSize: '14px',
-    color: theme.colors.popoverColor,
-    padding: '0 14px',
+    position: 'relative',
+    cursor: 'pointer',
+    ...displayFlex('flex-start', 'center'),
     svg: {
       width: '16px',
       height: '16px',
       marginRight: '14px',
     },
-    ':hover': {
-      color: theme.colors.primaryColor,
-      background: theme.colors.hoverBackground,
+    'svg:nth-child(2)': {
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      bottom: 0,
+      margin: 'auto',
     },
   };
 });
