@@ -1,12 +1,8 @@
 // @ts-check
-const withTM = require('next-transpile-modules')([
-  '@toeverything/pathfinder-logger',
-]);
-
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
 
 /** @type {import('next').NextConfig} */
-const nextConfig = withTM({
+const nextConfig = {
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
   swcMinify: false,
@@ -18,6 +14,6 @@ const nextConfig = withTM({
     VERSION: getGitVersion(),
     COMMIT_HASH: getCommitHash(),
   },
-});
+};
 
 module.exports = nextConfig;
