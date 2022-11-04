@@ -38,14 +38,14 @@ export const Editor = () => {
       return;
     }
     setEditor(editorRef.current);
-    const { store } = editorRef.current as EditorContainer;
-    const pageId = store.addBlock({
-      flavour: 'page',
+    const { space } = editorRef.current as EditorContainer;
+    const pageId = space.addBlock({
+      flavour: 'affine:page',
       title: 'Welcome to the AFFiNE Alpha',
     });
-    const groupId = store.addBlock({ flavour: 'group' }, pageId);
+    const groupId = space.addBlock({ flavour: 'affine:group' }, pageId);
     editorRef.current.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
-    store.resetHistory();
+    space.resetHistory();
   }, [setEditor]);
 
   useEffect(() => {
