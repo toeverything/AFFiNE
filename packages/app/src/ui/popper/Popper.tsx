@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  cloneElement,
 } from 'react';
 import PopperUnstyled from '@mui/base/PopperUnstyled';
 import ClickAwayListener from '@mui/base/ClickAwayListener';
@@ -26,7 +27,6 @@ export const Popper = ({
   onVisibleChange,
   popoverStyle,
   popoverClassName,
-  anchorStyle,
   anchorClassName,
   zIndex,
   offset = [0, 5],
@@ -36,12 +36,9 @@ export const Popper = ({
   onClickAway,
   ...popperProps
 }: PopperProps) => {
-  // @ts-ignore
-  const [anchorEl, setAnchorEl] = useState<VirtualElement>(null);
+  const [anchorEl, setAnchorEl] = useState<VirtualElement>();
   const [visible, setVisible] = useState(defaultVisible);
-  // @ts-ignore
-  const [arrowRef, setArrowRef] = useState<HTMLElement>(null);
-  const popperRef = useRef();
+  const [arrowRef, setArrowRef] = useState<HTMLElement>();
   const pointerLeaveTimer = useRef<number>();
   const pointerEnterTimer = useRef<number>();
 
@@ -95,7 +92,6 @@ export const Popper = ({
     };
   });
 
-  // @ts-ignore
   return (
     <ClickAwayListener
       onClickAway={() => {
@@ -107,66 +103,63 @@ export const Popper = ({
       }}
     >
       <Container>
-        {isAnchorCustom ? null : (
-          <div
-            ref={(dom: HTMLDivElement) => setAnchorEl(dom)}
-            onClick={e => {
-              if (!hasClickTrigger || visibleControlledByParent) {
-                onClick?.(e);
-                return;
-              }
-              setVisible(!visible);
-            }}
-            onPointerEnter={onPointerEnterHandler}
-            onPointerLeave={onPointerLeaveHandler}
-            style={anchorStyle}
-            className={anchorClassName}
+        {cloneElement(children, {
+          ref: (dom: HTMLDivElement) => setAnchorEl(dom),
+          onClick: (e: MouseEvent) => {
+            if (!hasClickTrigger || visibleControlledByParent) {
+              // @ts-ignore
+              onClick?.(e);
+              return;
+            }
+            setVisible(!visible);
+          },
+          onPointerEnter: onPointerEnterHandler,
+          onPointerLeave: onPointerLeaveHandler,
+          className: anchorClassName,
+          popperVisible: visible,
+        })}
+        {content && (
+          <BasicStyledPopper
+            open={visibleControlledByParent ? propsVisible : visible}
+            zIndex={zIndex}
+            anchorEl={isAnchorCustom ? propsAnchorEl : anchorEl}
+            placement={placement}
+            transition
+            modifiers={[
+              {
+                name: 'offset',
+                options: {
+                  offset,
+                },
+              },
+              {
+                name: 'arrow',
+                enabled: showArrow,
+                options: {
+                  element: arrowRef,
+                },
+              },
+            ]}
+            {...popperProps}
           >
-            {children}
-          </div>
+            {({ TransitionProps }) => (
+              <Grow {...TransitionProps}>
+                <div
+                  onPointerEnter={onPointerEnterHandler}
+                  onPointerLeave={onPointerLeaveHandler}
+                  style={popoverStyle}
+                  className={popoverClassName}
+                >
+                  {showArrow && (
+                    // @ts-ignore
+                    <PopperArrow placement={placement} ref={setArrowRef} />
+                  )}
+                  {content}
+                </div>
+              </Grow>
+            )}
+          </BasicStyledPopper>
         )}
-        <BasicStyledPopper
-          // @ts-ignore
-          popperRef={popperRef}
-          open={visibleControlledByParent ? propsVisible : visible}
-          zIndex={zIndex}
-          anchorEl={isAnchorCustom ? propsAnchorEl : anchorEl}
-          placement={placement}
-          transition
-          modifiers={[
-            {
-              name: 'offset',
-              options: {
-                offset,
-              },
-            },
-            {
-              name: 'arrow',
-              enabled: showArrow,
-              options: {
-                element: arrowRef,
-              },
-            },
-          ]}
-          {...popperProps}
-        >
-          {({ TransitionProps }) => (
-            <Grow {...TransitionProps}>
-              <div
-                onPointerEnter={onPointerEnterHandler}
-                onPointerLeave={onPointerLeaveHandler}
-                style={popoverStyle}
-                className={popoverClassName}
-              >
-                {showArrow && (
-                  // @ts-ignore
-                  <PopperArrow placement={placement} ref={setArrowRef} />
-                )}
-                {content}
-              </div>
-            </Grow>
-          )}
-        </BasicStyledPopper>
       </Container>
     </ClickAwayListener>
   );
@@ -184,6 +177,6 @@ const BasicStyledPopper = styled(PopperUnstyled, {
   zIndex?: number;
 }>(({ zIndex, theme }) => {
   return {
-    zIndex: zIndex,
+    zIndex: zIndex ?? theme.zIndex.popover,
   };
 });

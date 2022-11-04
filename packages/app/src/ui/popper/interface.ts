@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, Ref } from 'react';
+import type { CSSProperties, ReactNode, Ref, ReactElement } from 'react';
 import {
   type PopperPlacementType,
   type PopperUnstyledProps,
@@ -18,10 +18,10 @@ export type PopperArrowProps = {
 
 export type PopperProps = {
   // Popover content
-  content: ReactNode;
+  content?: ReactNode;
 
   // Popover trigger
-  children?: ReactNode;
+  children: ReactElement;
 
   // Whether the default is implicit
   defaultVisible?: boolean;
@@ -47,9 +47,6 @@ export type PopperProps = {
   // Popover container class name
   popoverClassName?: string;
 
-  // Anchor style
-  anchorStyle?: CSSProperties;
-
   // Anchor class name
   anchorClassName?: string;
 
@@ -63,4 +60,4 @@ export type PopperProps = {
   popperHandlerRef?: Ref<PopperHandler>;
 
   onClickAway?: () => void;
-} & Omit<PopperUnstyledProps, 'open' | 'ref'>;
+} & Omit<PopperUnstyledProps, 'open'>;

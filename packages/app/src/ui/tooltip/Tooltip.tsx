@@ -1,4 +1,3 @@
-import { type PropsWithChildren } from 'react';
 import StyledPopperContainer from '../shared/Container';
 import { Popper, type PopperProps } from '../popper';
 import { styled } from '@/styles';
@@ -14,16 +13,15 @@ const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   };
 });
 
-export const Tooltip = (
-  props: PropsWithChildren<PopperProps & Omit<TooltipProps, 'title'>>
-) => {
-  const { content, placement = 'top-start' } = props;
-  // If there is no content, hide forever
-  return content ? (
+export const Tooltip = (props: PopperProps & Omit<TooltipProps, 'title'>) => {
+  const { content, placement = 'top-start', children } = props;
+  return (
     <Popper
       {...props}
       showArrow={false}
       content={<StyledTooltip placement={placement}>{content}</StyledTooltip>}
-    />
-  ) : null;
+    >
+      {children}
+    </Popper>
+  );
 };
