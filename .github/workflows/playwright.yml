@@ -1,0 +1,44 @@
+name: Playwright Tests
+on:
+  push:
+    branches: [pathfinder]
+  pull_request:
+    branches: [pathfinder]
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 'latest'
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+          cache: 'pnpm'
+
+      - run: node scripts/module-resolve/ci.js
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: pnpm dlx playwright test
+
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30

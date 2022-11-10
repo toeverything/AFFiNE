@@ -7,14 +7,16 @@
     "build": "pnpm -r build",
     "export": "pnpm --filter @pathfinder/app export",
     "start": "pnpm --filter @pathfinder/app start",
-    "lint": "pnpm --filter @pathfinder/app lint"
+    "lint": "pnpm --filter @pathfinder/app lint",
+    "test:e2e": "playwright test"
   },
-  "dependencies": {},
   "devDependencies": {
-    "prettier": "^2.7.1",
+    "@playwright/test": "^1.27.1",
+    "@types/node": "18.7.18",
     "eslint": "8.22.0",
     "eslint-config-next": "12.3.1",
     "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1"
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1"
   }
 }

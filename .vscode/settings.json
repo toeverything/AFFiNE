@@ -2,5 +2,6 @@
   "eslint.packageManager": "pnpm",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
-  "editor.formatOnSaveMode": "file"
+  "editor.formatOnSaveMode": "file",
+  "cSpell.words": ["testid"]
 }
