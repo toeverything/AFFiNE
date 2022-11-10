@@ -106,6 +106,7 @@ export const Popper = ({
         {cloneElement(children, {
           ref: (dom: HTMLDivElement) => setAnchorEl(dom),
           onClick: (e: MouseEvent) => {
+            children.props.onClick?.(e);
             if (!hasClickTrigger || visibleControlledByParent) {
               // @ts-ignore
               onClick?.(e);
