@@ -9,6 +9,7 @@ export const ThemeModeSwitch = () => {
   const [firstTrigger, setFirstTrigger] = useState(false);
   return (
     <StyledThemeModeSwitch
+      data-testid="change-theme-container"
       onMouseEnter={() => {
         setIsHover(true);
         if (!firstTrigger) {
@@ -20,6 +21,7 @@ export const ThemeModeSwitch = () => {
       }}
     >
       <StyledSwitchItem
+        data-testid="change-theme-light"
         active={mode === 'light'}
         isHover={isHover}
         firstTrigger={firstTrigger}
@@ -30,6 +32,7 @@ export const ThemeModeSwitch = () => {
         <SunIcon />
       </StyledSwitchItem>
       <StyledSwitchItem
+        data-testid="change-theme-dark"
         active={mode === 'dark'}
         isHover={isHover}
         firstTrigger={firstTrigger}

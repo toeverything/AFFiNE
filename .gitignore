@@ -48,3 +48,6 @@ Thumbs.db
 out/
 
 module-resolve.js
+/test-results/
+/playwright-report/
+/playwright/.cache/
