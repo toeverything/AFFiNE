@@ -1,16 +1,17 @@
-<h1 align="center" style="border-bottom: none">
+<div align="center">
+
+<h1 style="border-bottom: none">
     <b><a href="https://affine.pro">AFFiNE.PRO</a></b><br />
     The Next-Gen Collaborative Knowledge Base
     <br>
 </h1>
 
-<p align="center">
+<p>
     AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.<br />
     Privacy first, open-source, customizable and ready to use - a free replacement for Notion & Miro. <br />
 </p>
 
-<div align="center">
-
+<div>
 <!--
 Make New Badge Pattern badges inline
 See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
@@ -28,10 +29,9 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![React](https://img.shields.io/badge/TypeScript-4.7-3178c6)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18-61dafb)](https://reactjs.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.62-dea584)](https://www.rust-lang.org/)
-
 </div>
 
-<p align="center">
+<div>
     <a href="http://affine.pro"><img src="https://img.shields.io/badge/-AFFiNE-06449d?style=social&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAMAAAAPkIrYAAAAP1BMVEU8b9w8b9w+b947cNw7b9w6b908b909b9w8b9w7b9w8b9w7cN08b9w7b908b9w7b9w8b907cNw8b9w8b91HcEx3NJCJAAAAFXRSTlP/3QWSgA+lHPlu6Di4XtIrxk/xRADGudUoAAAB9UlEQVR42tWYwbKjIBREG0GJKkRj/v9bZ1ZvRC99rzib11tTB9qqnKoW3/+X38vy7ifzQ1b/wk/8Q1bCv3y6Z6wFh2x2llIRGB6xRhzz6p+wVhRJD1gRZZYHrADYSyqsjFPGZtYbuFESesUysZXlcMnYyJpxTW5keQh5N7G6CUJCE2uHFNfEGiBmbmB1H4jxDawNcqbuPmtAJTtj6RZ0lpIwiR5jNmgfNtHHwLXPWfFYcS2NMdxkjac/dNaNCJPo3yf9pFuseHbDrBsRFguGs8te8Q4rXzTjVSPCIHp3FePKWbzi30xE+4zlBMmoJaGLfpLUmAmLiN4Xyibahy76WZRQMLJ2WX27on2oFvQVac8yi4p+J2forA0V8W1c++AVS1f1H6p9KKLHxk9RWKmsyB+VLC76gV65DLjokdg5KmsEMXsiDwXWSmTc9ezSoKJHoi9zUVihbMHfQOSsXB7Mrz1S1huKPde69sEsiKgNt8hYTjiWlAyENeu7IFe1D15RSEBN+yCiXw17K1RZm/w7UtJVWYN8f1ZyLlkVb2bT4vIVVrINH1dqX2YttkHmIWsfVWs646wcRFYis6fIVGpfYq1kjpGSW8kSRD+xYSmXRM0Ang9eSZioVdy/5pWaLqzIRyIpuVxYozvGf1m67I7pf/s3UXv+AP61NI2Y+BbSAAAAAElFTkSuQmCC" height=25></a>
     &nbsp;
     <a href="https://discord.com/invite/yz6tGVsf5p"><img src="https://img.shields.io/badge/-Discord-424549?style=social&logo=discord" height=25></a>
@@ -41,9 +41,15 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
     <a href="https://twitter.com/AffineOfficial"><img src="https://img.shields.io/badge/-Twitter-red?style=social&logo=twitter" height=25></a>
     &nbsp;
     <a href="https://medium.com/@affineworkos"><img src="https://img.shields.io/badge/-Medium-red?style=social&logo=medium" height=25></a>
-</p>
+</div>
 
-<p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/4605025/198174913-d4f90da8-ae2a-4eb6-8424-55c94de432a1.jpeg"><p/>
+<br />
+<div>
+<em>AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
+</div>
+<br />
+
+<img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/4605025/198174913-d4f90da8-ae2a-4eb6-8424-55c94de432a1.jpeg"></div>
 
 ## Join our community
 
