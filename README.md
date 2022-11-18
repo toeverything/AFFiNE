@@ -81,6 +81,8 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 
 [Our official communities](https://docs.affine.pro/affine/community-links/official-communities) - Join our friendly communities for more support and discussions
 
+[Install AFFiNE with docker](https://docs.affine.pro/affine/getting-started/install-affine-with-docker) - This guide assumes you already have an environment setup running docker
+
 ## Contributing
 
 Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to get stuck in to show us what you’re made of.
