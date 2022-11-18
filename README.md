@@ -66,6 +66,8 @@ AFFiNE Communities: [Discord](https://discord.gg/yz6tGVsf5p) | [Telegram](https:
 <br /><br />
 ⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
 
+[Install AFFiNE with docker](https://docs.affine.pro/affine/getting-started/install-affine-with-docker) - This guide assumes you already have an environment setup running docker
+
 ## Create your story
 
 There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together. Privacy first, open-source, customizable and ready to use, built with web technologies to ensure consistency and accessibility on Mac, Windows and Linux. We want your data always to be yours, without any sacrifice to your accessibility. Your data is always stored local first, with full support for real-time collaboration through peer-to-peer technology. We don't think "privacy-first" is a good excuse for not supporting modern web features.
