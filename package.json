@@ -11,7 +11,7 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.27.1",
+    "@playwright/test": "^1.28.1",
     "@types/node": "18.7.18",
     "eslint": "8.22.0",
     "eslint-config-next": "12.3.1",
