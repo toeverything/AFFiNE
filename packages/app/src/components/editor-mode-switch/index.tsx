@@ -51,7 +51,7 @@ const AnimateRadioItem = ({
     </StyledIcon>
   );
   return (
-    <StyledRadioItem active={active} status={status} {...props}>
+    <StyledRadioItem title={label} active={active} status={status} {...props}>
       {isLeft ? icon : null}
       <StyledLabel shrink={status !== 'stretch'} isLeft={isLeft}>
         {label}
@@ -95,7 +95,11 @@ export const EditorModeSwitch = ({
   }, [isHover, mode]);
 
   return (
-    <StyledAnimateRadioContainer shrink={!isHover} style={style}>
+    <StyledAnimateRadioContainer
+      data-testid="editor-mode-switcher"
+      shrink={!isHover}
+      style={style}
+    >
       <AnimateRadioItem
         isLeft={true}
         label="Paper"
