@@ -117,6 +117,7 @@ export const Header = () => {
       />
       <StyledHeader hasWarning={showWarning}>
         <StyledLogo
+          data-testid="left-top-corner-logo"
           onClick={() => {
             contactModalHandler(true);
           }}

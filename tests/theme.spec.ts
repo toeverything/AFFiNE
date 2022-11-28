@@ -1,8 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
+import { loadPage } from './libs/load-page';
 
-test.beforeEach(async ({ page }) => {
-  await page.goto('http://localhost:3000');
-});
+loadPage();
 
 test.describe('Change Theme', () => {
   test('default white', async ({ page }) => {
@@ -28,7 +27,7 @@ test.describe('Change Theme', () => {
     await expect(box?.x).not.toBeUndefined();
     await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
 
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
 
     const darkButton = page.locator('[data-testid=change-theme-dark]');
     const darkButtonPositionTop = await darkButton.evaluate(

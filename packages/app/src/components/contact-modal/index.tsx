@@ -76,7 +76,7 @@ type TransitionsModalProps = {
 export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
   return (
     <Modal open={open} onClose={onClose}>
-      <StyledModalWrapper>
+      <StyledModalWrapper data-testid="contact-us-modal-content">
         <StyledModalHeader>
           <StyledModalHeaderLeft>
             <StyledLogo src={logo.src} alt="" />
