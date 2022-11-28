@@ -46,6 +46,7 @@ export const FAQ = () => {
             </Tooltip>
             <Tooltip content="Keyboard Shortcuts" placement="left-end">
               <StyledIconWrapper
+                data-testid="shortcuts-icon"
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
                   setShowContent(false);
