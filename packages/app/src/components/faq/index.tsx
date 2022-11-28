@@ -34,6 +34,7 @@ export const FAQ = () => {
           <StyledFAQWrapper>
             <Tooltip content="Contact Us" placement="left-end">
               <StyledIconWrapper
+                data-testid="right-bottom-contact-us-icon"
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
                   setShowContent(false);
@@ -45,6 +46,7 @@ export const FAQ = () => {
             </Tooltip>
             <Tooltip content="Keyboard Shortcuts" placement="left-end">
               <StyledIconWrapper
+                data-testid="shortcuts-icon"
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
                   setShowContent(false);
@@ -58,7 +60,10 @@ export const FAQ = () => {
         </Grow>
 
         <div style={{ position: 'relative' }}>
-          <StyledIconWrapper isEdgelessDark={isEdgelessDark}>
+          <StyledIconWrapper
+            data-testid="faq-icon"
+            isEdgelessDark={isEdgelessDark}
+          >
             <HelpIcon />
           </StyledIconWrapper>
           <StyledTransformIcon in={showContent}>

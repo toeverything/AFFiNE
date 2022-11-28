@@ -34,7 +34,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
     : windowsKeyboardShortcuts;
   return createPortal(
     <Slide direction="left" in={open} mountOnEnter unmountOnExit>
-      <StyledShortcutsModal>
+      <StyledShortcutsModal data-testid="shortcuts-modal">
         <>
           <StyledModalHeader>
             <StyledTitle>
