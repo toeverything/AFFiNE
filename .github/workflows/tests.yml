@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: E2E & Unit Tests
 on:
   push:
     branches: [pathfinder]
@@ -33,5 +33,8 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright tests
+      - name: Run E2E tests
         run: pnpm run test:e2e
+
+      - name: Run Unit tests
+        run: pnpm run test:unit
