@@ -6,26 +6,57 @@ import './temporary.css';
 import { EditorProvider } from '@/components/editor-provider';
 import { ModalProvider } from '@/components/global-modal-provider';
 import { Logger } from '@toeverything/pathfinder-logger';
-
+import { WorkSpaceSliderBar } from '@/components/workspace-slider-bar';
 import '@fontsource/space-mono';
 import '@fontsource/poppins';
 import '../utils/print-build-info';
+import { styled } from '@/styles';
+import type { ReactNode, PropsWithChildren, FC } from 'react';
+import { cloneElement } from 'react';
 
 const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {
   ssr: false,
 });
 
+const StyledPage = styled('div')(({ theme }) => {
+  return {
+    height: '100vh',
+    backgroundColor: theme.colors.pageBackground,
+    transition: 'background-color .5s',
+    display: 'flex',
+  };
+});
+
+const ProviderComposer: FC<
+  PropsWithChildren<{
+    contexts: any;
+  }>
+> = ({ contexts, children }) =>
+  contexts.reduceRight(
+    (kids: ReactNode, parent: any) =>
+      cloneElement(parent, {
+        children: kids,
+      }),
+    children
+  );
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Logger />
-      <EditorProvider>
-        <ThemeProvider>
-          <ModalProvider>
-            <Component {...pageProps} />
-          </ModalProvider>
-        </ThemeProvider>
-      </EditorProvider>
+      <ProviderComposer
+        contexts={[
+          <EditorProvider key="EditorProvider" />,
+          <ThemeProvider key="ThemeProvider" />,
+          <ModalProvider key="ModalProvider" />,
+        ]}
+      >
+        <StyledPage>
+          {/*<TestEditor />*/}
+          <WorkSpaceSliderBar />
+          <Component {...pageProps} />
+        </StyledPage>
+      </ProviderComposer>
     </>
   );
 }

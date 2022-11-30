@@ -82,3 +82,21 @@ export const fixedCenter = ({
     })`,
   };
 };
+
+export const textEllipsis = (lineNum: number = 1): CSSProperties => {
+  if (lineNum > 1) {
+    return {
+      display: '-webkit-box',
+      wordBreak: 'break-all',
+      WebkitBoxOrient: 'vertical',
+      WebkitLineClamp: '$lineNum', //需要显示的行数
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    };
+  }
+  return {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  };
+};

@@ -13,11 +13,11 @@ export const StyledHeader = styled.div<{ hasWarning: boolean }>(
   ({ hasWarning, theme }) => {
     return {
       height: '60px',
-      width: '100vw',
-      ...displayFlex('space-between', 'center'),
+      width: '100%',
+      ...displayFlex('flex-end', 'center'),
       background: 'var(--affine-page-background)',
       transition: 'background-color 0.5s',
-      position: 'fixed',
+      position: 'absolute',
       left: '0',
       top: hasWarning ? '36px' : '0',
       padding: '0 22px',
@@ -97,19 +97,23 @@ export const IconButton = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledBrowserWarning = styled.div(({ theme }) => {
-  return {
-    backgroundColor: theme.colors.warningBackground,
-    color: theme.colors.warningColor,
-    height: '36px',
-    width: '100vw',
-    fontSize: theme.font.sm,
-    position: 'fixed',
-    left: '0',
-    top: '0',
-    ...displayFlex('center', 'center'),
-  };
-});
+export const StyledBrowserWarning = styled.div<{ show: boolean }>(
+  ({ theme, show }) => {
+    return {
+      backgroundColor: theme.colors.warningBackground,
+      color: theme.colors.warningColor,
+      height: '36px',
+      width: '100vw',
+      fontSize: theme.font.sm,
+      position: 'fixed',
+      left: '0',
+      top: '0',
+      display: show ? 'flex' : 'none',
+      justifyContent: 'center',
+      alignItems: 'center',
+    };
+  }
+);
 
 export const StyledCloseButton = styled.div(({ theme }) => {
   return {

@@ -14,11 +14,12 @@ const StyledEditorContainer = styled('div')(({ theme }) => {
   };
 });
 
-const StyledPage = styled('div')(({ theme }) => {
+const StyledWrapper = styled('div')(({ theme }) => {
   return {
     height: '100vh',
     backgroundColor: theme.colors.pageBackground,
     transition: 'background-color .5s',
+    flexGrow: 1,
   };
 });
 
@@ -51,7 +52,7 @@ const DynamicEditor = dynamic(() => import('../components/editor'), {
 
 const Home: NextPage = () => {
   return (
-    <StyledPage>
+    <StyledWrapper>
       <Header />
       <MobileModal />
       <StyledEditorContainer>
@@ -59,7 +60,7 @@ const Home: NextPage = () => {
       </StyledEditorContainer>
       <FAQ />
       <EdgelessToolbar />
-    </StyledPage>
+    </StyledWrapper>
   );
 };
 

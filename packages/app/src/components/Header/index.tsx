@@ -81,9 +81,15 @@ const PopoverContent = () => {
   );
 };
 
-const BrowserWarning = ({ onClose }: { onClose: () => void }) => {
+const BrowserWarning = ({
+  show,
+  onClose,
+}: {
+  show: boolean;
+  onClose: () => void;
+}) => {
   return (
-    <StyledBrowserWarning>
+    <StyledBrowserWarning show={show}>
       {getWarningMessage()}
       <StyledCloseButton onClick={onClose}>
         <CloseIcon />
@@ -101,8 +107,10 @@ export const Header = () => {
   const { editor } = useEditor();
 
   useEffect(() => {
-    if (editor) {
-      setTitle(editor.model.title || '');
+    console.log('header', editor);
+
+    if (editor?.model) {
+      setTitle(editor.model.title ?? '');
       editor.model.propsUpdated.on(() => {
         setTitle(editor.model.title);
       });
@@ -111,19 +119,19 @@ export const Header = () => {
   return (
     <StyledHeaderContainer hasWarning={showWarning}>
       <BrowserWarning
+        show={showWarning}
         onClose={() => {
           setShowWarning(false);
         }}
       />
       <StyledHeader hasWarning={showWarning}>
-        <StyledLogo
-          data-testid="left-top-corner-logo"
-          onClick={() => {
-            contactModalHandler(true);
-          }}
-        >
-          <LogoIcon />
-        </StyledLogo>
+        {/*<StyledLogo*/}
+        {/*  onClick={() => {*/}
+        {/*    contactModalHandler(true);*/}
+        {/*  }}*/}
+        {/*>*/}
+        {/*  <LogoIcon />*/}
+        {/*</StyledLogo>*/}
         {title ? (
           <StyledTitle
             onMouseEnter={() => {

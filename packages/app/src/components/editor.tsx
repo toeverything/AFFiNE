@@ -2,10 +2,11 @@ import { useEditor } from '@/components/editor-provider';
 import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
 import type { EditorContainer } from '@blocksuite/editor';
-import { createEditor } from '@blocksuite/editor';
+import { BlockSchema, createEditor } from '@blocksuite/editor';
 import { forwardRef, Suspense, useEffect, useRef } from 'react';
 import pkg from '../../package.json';
 import exampleMarkdown from './example-markdown';
+import { Store } from '@blocksuite/store';
 
 // eslint-disable-next-line react/display-name
 const BlockSuiteEditor = forwardRef<EditorContainer>(({}, ref) => {
@@ -14,7 +15,13 @@ const BlockSuiteEditor = forwardRef<EditorContainer>(({}, ref) => {
     if (!containerElement.current) {
       return;
     }
-    const editor = createEditor();
+
+    const store = new Store({
+      // ...getEditorParams(),
+    });
+    const space = store.createSpace('page0').register(BlockSchema);
+    const editor = createEditor(space);
+
     containerElement.current.appendChild(editor);
     if (ref) {
       if ('current' in ref) {
