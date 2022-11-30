@@ -1,83 +1,21 @@
-import { useEditor } from '@/components/editor-provider';
-import '@blocksuite/blocks';
-import '@blocksuite/blocks/style';
-import type { EditorContainer } from '@blocksuite/editor';
-import { BlockSchema, createEditor } from '@blocksuite/editor';
-import { forwardRef, Suspense, useEffect, useRef } from 'react';
-import pkg from '../../package.json';
-import exampleMarkdown from './example-markdown';
-import { Store } from '@blocksuite/store';
-
-// eslint-disable-next-line react/display-name
-const BlockSuiteEditor = forwardRef<EditorContainer>(({}, ref) => {
-  const containerElement = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!containerElement.current) {
-      return;
-    }
-
-    const store = new Store({
-      // ...getEditorParams(),
-    });
-    const space = store.createSpace('page0').register(BlockSchema);
-    const editor = createEditor(space);
-
-    containerElement.current.appendChild(editor);
-    if (ref) {
-      if ('current' in ref) {
-        ref.current = editor;
-      } else {
-        ref(editor);
-      }
-    }
-    return () => {
-      editor.remove();
-    };
-  }, [ref]);
-  return <div id="editor" style={{ height: '100%' }} ref={containerElement} />;
-});
+import React, { useEffect, useRef } from 'react';
+import { useEditor, initDefaultContent } from '@/providers/editor-provider';
 
 export const Editor = () => {
-  const editorRef = useRef<EditorContainer>(null);
-  const { setEditor } = useEditor();
+  const editorContainer = useRef<HTMLDivElement>(null);
+  const { editor } = useEditor();
+  const ref = useRef<any>();
   useEffect(() => {
-    if (!editorRef.current) {
-      return;
+    if (editor && ref.current?.space.id !== editor?.space.id) {
+      ref.current?.remove();
+      ref.current = editor;
+
+      editorContainer.current?.appendChild(editor);
+
+      initDefaultContent(editor);
     }
-    setEditor(editorRef.current);
-    const { space } = editorRef.current as EditorContainer;
-    const pageId = space.addBlock({
-      flavour: 'affine:page',
-      title: 'Welcome to the AFFiNE Alpha',
-    });
-    const groupId = space.addBlock({ flavour: 'affine:group' }, pageId);
-    editorRef.current.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
-    space.resetHistory();
-  }, [setEditor]);
-
-  useEffect(() => {
-    const version = pkg.dependencies['@blocksuite/editor'].substring(1);
-    console.log(`BlockSuite live demo ${version}`);
-  }, []);
-
-  return (
-    <Suspense fallback={<div>Error!</div>}>
-      <BlockSuiteEditor ref={editorRef} />
-    </Suspense>
-  );
+  }, [editor]);
+  return <div id="editor" ref={editorContainer}></div>;
 };
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'editor-container': EditorContainer;
-  }
-
-  namespace JSX {
-    interface IntrinsicElements {
-      // TODO fix types on react
-      'editor-container': EditorContainer;
-    }
-  }
-}
 
 export default Editor;

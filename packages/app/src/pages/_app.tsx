@@ -3,8 +3,8 @@ import dynamic from 'next/dynamic';
 import '../../public/globals.css';
 import '../../public/variable.css';
 import './temporary.css';
-import { EditorProvider } from '@/components/editor-provider';
-import { ModalProvider } from '@/components/global-modal-provider';
+import { EditorProvider } from '@/providers/editor-provider';
+import { ModalProvider } from '@/providers/global-modal-provider';
 import { Logger } from '@toeverything/pathfinder-logger';
 import { WorkSpaceSliderBar } from '@/components/workspace-slider-bar';
 import '@fontsource/space-mono';
@@ -14,7 +14,7 @@ import { styled } from '@/styles';
 import type { ReactNode, PropsWithChildren, FC } from 'react';
 import { cloneElement } from 'react';
 
-const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {
+const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
 });
 
@@ -52,7 +52,6 @@ function MyApp({ Component, pageProps }: AppProps) {
         ]}
       >
         <StyledPage>
-          {/*<TestEditor />*/}
           <WorkSpaceSliderBar />
           <Component {...pageProps} />
         </StyledPage>

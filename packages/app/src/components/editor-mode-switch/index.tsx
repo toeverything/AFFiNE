@@ -11,9 +11,9 @@ import type {
   AnimateRadioProps,
   AnimateRadioItemProps,
 } from './type';
-import { useTheme } from '@/styles';
+import { useTheme } from '@/providers/themeProvider';
 import { EdgelessIcon, PaperIcon } from './icons';
-import { useEditor } from '@/components/editor-provider';
+import { useEditor } from '@/providers/editor-provider';
 
 const PaperItem = ({ active }: { active?: boolean }) => {
   const {

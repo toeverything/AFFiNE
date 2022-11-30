@@ -19,11 +19,11 @@ import {
   StyledCloseButton,
   StyledMenuItemWrapper,
 } from './styles';
-import { useEditor } from '@/components/editor-provider';
+import { useEditor } from '@/providers/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/icons';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
-import { useModal } from '@/components/global-modal-provider';
+import { useModal } from '@/providers/global-modal-provider';
 import CloseIcon from '@mui/icons-material/Close';
 import { getWarningMessage, shouldShowWarning } from './utils';
 import { Menu, MenuItem } from '@/ui/menu';

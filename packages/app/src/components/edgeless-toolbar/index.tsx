@@ -16,7 +16,7 @@ import {
 } from './icons';
 import { Tooltip } from '@/ui/tooltip';
 import Slide from '@mui/material/Slide';
-import { useEditor } from '@/components/editor-provider';
+import { useEditor } from '@/providers/editor-provider';
 
 const toolbarList1 = [
   {

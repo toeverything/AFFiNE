@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import type { PropsWithChildren } from 'react';
-import ShortcutsModal from './shortcuts-modal';
+import ShortcutsModal from '@/components/shortcuts-modal';
 import ContactModal from '@/components/contact-modal';
 
 type ModalContextValue = {

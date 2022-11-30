@@ -3,23 +3,29 @@ import {
   Global,
   css,
 } from '@emotion/react';
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import {
   Theme,
   ThemeMode,
   ThemeProviderProps,
   ThemeProviderValue,
-} from './types';
-import { getLightTheme, getDarkTheme, globalThemeVariables } from './theme';
-import { SystemThemeHelper, localStorageThemeHelper } from './utils';
-import { useEditor } from '@/components/editor-provider';
+} from '@/styles/types';
+import {
+  getLightTheme,
+  getDarkTheme,
+  globalThemeVariables,
+} from '@/styles/theme';
+import { SystemThemeHelper, localStorageThemeHelper } from '@/styles/utils';
+import { useEditor } from '@/providers/editor-provider';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
   changeMode: () => {},
   theme: getLightTheme('page'),
 });
+
+export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({
   defaultTheme = 'light',

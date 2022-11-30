@@ -8,9 +8,9 @@ import {
 import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import Grow from '@mui/material/Grow';
 import { Tooltip } from '@/ui/tooltip';
-import { useEditor } from '@/components/editor-provider';
-import { useModal } from '@/components/global-modal-provider';
-import { useTheme } from '@/styles';
+import { useEditor } from '@/providers/editor-provider';
+import { useModal } from '@/providers/global-modal-provider';
+import { useTheme } from '@/providers/themeProvider';
 
 export const FAQ = () => {
   const [showContent, setShowContent] = useState(false);
