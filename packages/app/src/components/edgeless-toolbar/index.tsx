@@ -78,11 +78,11 @@ const UndoRedo = () => {
   const { editor } = useEditor();
   useEffect(() => {
     if (!editor) return;
-    const { space } = editor;
+    const { page } = editor;
 
-    space.signals.historyUpdated.on(() => {
-      setCanUndo(space.canUndo);
-      setCanRedo(space.canRedo);
+    page.signals.historyUpdated.on(() => {
+      setCanUndo(page.canUndo);
+      setCanRedo(page.canRedo);
     });
   }, [editor]);
 
