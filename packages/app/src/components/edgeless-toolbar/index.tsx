@@ -92,7 +92,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canUndo}
           onClick={() => {
-            editor?.space?.undo();
+            editor?.page?.undo();
           }}
         >
           <UndoIcon />
@@ -102,7 +102,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canRedo}
           onClick={() => {
-            editor?.space?.redo();
+            editor?.page?.redo();
           }}
         >
           <RedoIcon />
