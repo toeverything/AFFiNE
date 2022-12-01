@@ -1,7 +1,7 @@
 import { useRef } from 'react';
-import { createInstance } from '@pathfinder/auth';
+import { createFirebaseAuthInstance } from '@pathfinder/data-services';
 
-const auth = createInstance({
+const auth = createFirebaseAuthInstance({
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,

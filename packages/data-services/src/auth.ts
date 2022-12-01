@@ -13,7 +13,7 @@ import {
  * @param firebaseConfig reference: https://firebase.google.com/docs/web/setup#add_firebase_to_your_app
  * @returns
  */
-export const createInstance = (firebaseConfig: FirebaseOptions) => {
+export const createFirebaseAuthInstance = (firebaseConfig: FirebaseOptions) => {
   const app = initializeApp(firebaseConfig);
 
   const firebaseAuth = getAuth(app);

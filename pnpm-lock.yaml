@@ -41,7 +41,7 @@ importers:
       '@mui/base': ^5.0.0-alpha.87
       '@mui/icons-material': ^5.10.9
       '@mui/material': ^5.8.6
-      '@pathfinder/auth': workspace:@pathfinder/auth@*
+      '@pathfinder/data-services': workspace:@pathfinder/data-services@*
       '@toeverything/pathfinder-logger': workspace:@pathfinder/logger@*
       '@types/node': 18.7.18
       '@types/react': 18.0.20
@@ -71,7 +71,7 @@ importers:
       '@mui/base': 5.0.0-alpha.101_7ey2zzynotv32rpkwno45fsx4e
       '@mui/icons-material': 5.10.9_5fncb4nagb4cvvcnwamw2rozfa
       '@mui/material': 5.10.9_af5ln35zuaotaffazii6n6bke4
-      '@pathfinder/auth': link:../auth
+      '@pathfinder/data-services': link:../data-services
       '@toeverything/pathfinder-logger': link:../logger
       css-spring: 4.1.0
       lit: 2.4.0
@@ -91,14 +91,14 @@ importers:
       eslint-plugin-prettier: 4.2.1_i2cojdczqdiurzgttlwdgf764e
       typescript: 4.8.3
 
-  packages/auth:
+  packages/data-services:
     specifiers:
       firebase: ^9.13.0
       typescript: ^4.8.4
     dependencies:
       firebase: 9.13.0
     devDependencies:
-      typescript: 4.8.4
+      typescript: 4.9.3
 
   packages/logger:
     specifiers:

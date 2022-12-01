@@ -21,7 +21,7 @@
     "@mui/icons-material": "^5.10.9",
     "@mui/material": "^5.8.6",
     "@toeverything/pathfinder-logger": "workspace:@pathfinder/logger@*",
-    "@pathfinder/auth": "workspace:@pathfinder/auth@*",
+    "@pathfinder/data-services": "workspace:@pathfinder/data-services@*",
     "css-spring": "^4.1.0",
     "lit": "^2.3.1",
     "next": "13.0.1",

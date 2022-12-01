@@ -1,1 +1,0 @@
-export { createInstance } from './auth';
