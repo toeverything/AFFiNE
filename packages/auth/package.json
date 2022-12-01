@@ -1,0 +1,27 @@
+{
+  "name": "@pathfinder/auth",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    "./src/*": "./dist/src/*.js",
+    ".": "./dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc --project ./tsconfig.json"
+  },
+  "keywords": [],
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFINE.git"
+  },
+  "devDependencies": {
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "firebase": "^9.13.0"
+  }
+}
