@@ -2,7 +2,8 @@ import { useEditor } from '@/components/editor-provider';
 import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
 import type { EditorContainer } from '@blocksuite/editor';
-import { createEditor } from '@blocksuite/editor';
+import { createEditor, BlockSchema } from '@blocksuite/editor';
+import { Workspace } from '@blocksuite/store';
 import { forwardRef, Suspense, useEffect, useRef } from 'react';
 import pkg from '../../package.json';
 import exampleMarkdown from './example-markdown';
@@ -14,7 +15,9 @@ const BlockSuiteEditor = forwardRef<EditorContainer>(({}, ref) => {
     if (!containerElement.current) {
       return;
     }
-    const editor = createEditor();
+    const workspace = new Workspace({});
+    const page = workspace.createPage('page0').register(BlockSchema);
+    const editor = createEditor(page);
     containerElement.current.appendChild(editor);
     if (ref) {
       if ('current' in ref) {
@@ -38,14 +41,14 @@ export const Editor = () => {
       return;
     }
     setEditor(editorRef.current);
-    const { space } = editorRef.current as EditorContainer;
-    const pageId = space.addBlock({
+    const { page } = editorRef.current as EditorContainer;
+    const pageId = page.addBlock({
       flavour: 'affine:page',
       title: 'Welcome to the AFFiNE Alpha',
     });
-    const groupId = space.addBlock({ flavour: 'affine:group' }, pageId);
+    const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
     editorRef.current.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
-    space.resetHistory();
+    page.resetHistory();
   }, [setEditor]);
 
   useEffect(() => {
