@@ -34,24 +34,23 @@ export async function createWorkspace(req: RequestCreateWorkspace) {
 
 async function updateWorkspaceFetcher(
   url: string,
-  id: string,
   req: RequestUpdateWorkspace
 ) {
-  const { data } = await axios.post<MayError>(`${url}${id}`, req);
+  const { data } = await axios.post<MayError>(url, req);
   return data;
 }
 
 export function updateWorkspace(id: string, req: RequestUpdateWorkspace) {
-  return updateWorkspaceFetcher(WORKSPACE_URL, id, req);
+  return updateWorkspaceFetcher(`${WORKSPACE_URL}${id}`, req);
 }
 
-async function deleteWorkspaceFetcher(url: string, id: string) {
-  const { data } = await axios.delete<MayError>(`${url}${id}`);
+async function deleteWorkspaceFetcher(url: string) {
+  const { data } = await axios.delete<MayError>(url);
   return data;
 }
 
 export function deleteWorkspace(id: string) {
-  return deleteWorkspaceFetcher(WORKSPACE_URL, id);
+  return deleteWorkspaceFetcher(`${WORKSPACE_URL}${id}`);
 }
 
 export function useGetWorkspaces(config?: SWRConfiguration) {
@@ -89,7 +88,7 @@ export function useUpdateWorkspace(
   config?: SWRConfiguration
 ) {
   const { data, error } = useSWR<MayError, ServicesError>(
-    [WORKSPACE_URL, id, req],
+    [`${WORKSPACE_URL}${id}`, req],
     updateWorkspaceFetcher,
     config
   );
@@ -102,7 +101,7 @@ export function useUpdateWorkspace(
 
 export function useDeleteWorkspace(id: string, config?: SWRConfiguration) {
   const { data, error } = useSWR<MayError, ServicesError>(
-    [WORKSPACE_URL, id],
+    `${WORKSPACE_URL}${id}`,
     deleteWorkspaceFetcher,
     config
   );
