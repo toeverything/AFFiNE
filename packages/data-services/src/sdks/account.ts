@@ -1,9 +1,8 @@
 import useSWR, { SWRConfiguration } from 'swr';
-import axios from './axios';
+import { request, ServiceError } from '../request';
 import type {
   RequestInviteCollaborator,
   ResponseInviteCollaborator,
-  ServicesError,
 } from './types';
 
 const COLLABORATOR_INVITE_URL = '/api/account/invite';
@@ -12,7 +11,7 @@ async function inviteCollaboratorFetcher(
   url: string,
   req: RequestInviteCollaborator
 ) {
-  const { data } = await axios.post<ResponseInviteCollaborator>(url, req);
+  const { data } = await request.post<ResponseInviteCollaborator>(url, req);
   return data;
 }
 
@@ -24,7 +23,7 @@ export function useInviteCollaborator(
   req: RequestInviteCollaborator,
   config?: SWRConfiguration
 ) {
-  const { data, error } = useSWR<ResponseInviteCollaborator, ServicesError>(
+  const { data, error } = useSWR<ResponseInviteCollaborator, ServiceError>(
     [COLLABORATOR_INVITE_URL, req],
     inviteCollaboratorFetcher,
     config
