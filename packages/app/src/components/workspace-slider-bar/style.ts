@@ -12,16 +12,11 @@ export const StyledSliderBar = styled.div<{ show: boolean }>(
       zIndex: theme.zIndex.modal,
       padding: show ? '24px 12px' : '24px 0',
       overflowX: 'hidden',
+      flexShrink: 0,
     };
   }
 );
-export const StyledWrapper = styled.div(() => {
-  return {
-    // padding: '24px 12px',
-    // height: '100%',
-    // overflowY: 'auto',
-  };
-});
+
 export const StyledArrowButton = styled.button<{ isShow: boolean }>(
   ({ theme, isShow }) => {
     return {
@@ -54,11 +49,23 @@ export const StyledListItem = styled.button(({ theme }) => {
     marginTop: '12px',
     fontSize: theme.font.sm,
     color: theme.colors.popoverColor,
+    padding: '0 12px',
+    borderRadius: '5px',
     ...displayFlex('flex-start', 'center'),
     ':hover': {
       color: theme.colors.primaryColor,
       backgroundColor: theme.colors.hoverBackground,
     },
+  };
+});
+
+export const StyledNewPageButton = styled(StyledListItem)(({ theme }) => {
+  return {
+    position: 'absolute',
+    bottom: '24px',
+    left: '0',
+    right: '0',
+    margin: 'auto',
   };
 });
 
@@ -68,7 +75,6 @@ export const StyledSubListItem = styled.button(({ theme }) => {
     height: '32px',
     marginTop: '4px',
     fontSize: theme.font.sm,
-    fontWeight: 400,
     color: theme.colors.popoverColor,
     paddingLeft: '45px',
     lineHeight: '32px',
@@ -77,7 +83,6 @@ export const StyledSubListItem = styled.button(({ theme }) => {
     ':hover': {
       color: theme.colors.primaryColor,
       backgroundColor: theme.colors.hoverBackground,
-      fontWeight: 500,
     },
   };
 });

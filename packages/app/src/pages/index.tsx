@@ -1,6 +1,6 @@
 import type { NextPage } from 'next';
 import { styled } from '@/styles';
-import { Header } from '@/components/Header';
+import { PageHeader } from '@/components/Header';
 import { FAQ } from '@/components/faq';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
@@ -14,26 +14,17 @@ const StyledEditorContainer = styled('div')(({ theme }) => {
   };
 });
 
-const StyledWrapper = styled('div')(({ theme }) => {
-  return {
-    height: '100vh',
-    backgroundColor: theme.colors.pageBackground,
-    transition: 'background-color .5s',
-    flexGrow: 1,
-  };
-});
-
 const Home: NextPage = () => {
   return (
-    <StyledWrapper>
-      <Header />
+    <>
+      <PageHeader />
       <MobileModal />
       <StyledEditorContainer>
         <Editor />
       </StyledEditorContainer>
       <FAQ />
       <EdgelessToolbar />
-    </StyledWrapper>
+    </>
   );
 };
 

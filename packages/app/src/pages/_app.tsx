@@ -11,9 +11,8 @@ import '@fontsource/space-mono';
 import '@fontsource/poppins';
 import '../utils/print-build-info';
 import { styled } from '@/styles';
-import type { ReactNode, PropsWithChildren, FC } from 'react';
-import { cloneElement } from 'react';
-
+import ProviderComposer from '@/components/provider-composer';
+import ConfirmProvider from '@/providers/confirm-provider';
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
 });
@@ -24,21 +23,15 @@ const StyledPage = styled('div')(({ theme }) => {
     backgroundColor: theme.colors.pageBackground,
     transition: 'background-color .5s',
     display: 'flex',
+    flexGrow: '1',
   };
 });
 
-const ProviderComposer: FC<
-  PropsWithChildren<{
-    contexts: any;
-  }>
-> = ({ contexts, children }) =>
-  contexts.reduceRight(
-    (kids: ReactNode, parent: any) =>
-      cloneElement(parent, {
-        children: kids,
-      }),
-    children
-  );
+const StyledWrapper = styled('div')(({ theme }) => {
+  return {
+    flexGrow: 1,
+  };
+});
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -49,11 +42,14 @@ function MyApp({ Component, pageProps }: AppProps) {
           <EditorProvider key="EditorProvider" />,
           <ThemeProvider key="ThemeProvider" />,
           <ModalProvider key="ModalProvider" />,
+          <ConfirmProvider key="ConfirmProvider" />,
         ]}
       >
         <StyledPage>
           <WorkSpaceSliderBar />
-          <Component {...pageProps} />
+          <StyledWrapper>
+            <Component {...pageProps} />
+          </StyledWrapper>
         </StyledPage>
       </ProviderComposer>
     </>
