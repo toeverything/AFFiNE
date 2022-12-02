@@ -12,26 +12,6 @@ export const ModalWrapper = styled.div(({ theme }) => {
   };
 });
 
-export const StyledCloseButton = styled.div(({ theme }) => {
-  return {
-    width: '66px',
-    height: '66px',
-    color: theme.colors.iconColor,
-    cursor: 'pointer',
-    ...displayFlex('center', 'center'),
-    position: 'absolute',
-    right: '0',
-    top: '0',
-
-    svg: {
-      width: '15px',
-      height: '15px',
-      position: 'relative',
-      zIndex: 1,
-    },
-  };
-});
-
 export const StyledTitle = styled.div(({ theme }) => {
   return {
     ...displayFlex('center', 'center'),

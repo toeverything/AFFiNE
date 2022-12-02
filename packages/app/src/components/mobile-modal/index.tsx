@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import Modal from '@/ui/modal';
+import Modal, { ModalCloseButton } from '@/ui/modal';
 import getIsMobile from '@/utils/get-is-mobile';
 import {
   ModalWrapper,
   StyledButton,
-  StyledCloseButton,
   StyledContent,
   StyledTitle,
 } from './styles';
-import CloseIcon from '@mui/icons-material/Close';
 export const MobileModal = () => {
   const [showModal, setShowModal] = useState(getIsMobile());
   return (
@@ -19,13 +17,13 @@ export const MobileModal = () => {
       }}
     >
       <ModalWrapper>
-        <StyledCloseButton
+        <ModalCloseButton
+          size={[30, 30]}
+          iconSize={[20, 20]}
           onClick={() => {
             setShowModal(false);
           }}
-        >
-          <CloseIcon />
-        </StyledCloseButton>
+        />
 
         <StyledTitle>Ooops!</StyledTitle>
         <StyledContent>

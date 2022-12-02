@@ -57,22 +57,3 @@ export const StyledListItem = styled.div(({ theme }) => ({
   fontSize: theme.font.sm,
   padding: '0 16px',
 }));
-
-export const CloseButton = styled('div')(({ theme }) => {
-  return {
-    width: '24px',
-    height: '24px',
-    borderRadius: '5px',
-    color: theme.colors.iconColor,
-    cursor: 'pointer',
-    ...displayFlex('center', 'center'),
-    svg: {
-      width: '15px',
-      height: '15px',
-    },
-    ':hover': {
-      background: theme.colors.hoverBackground,
-      color: theme.colors.primaryColor,
-    },
-  };
-});

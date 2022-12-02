@@ -15,7 +15,10 @@ export const Editor = () => {
       initDefaultContent(editor);
     }
   }, [editor]);
-  return <div id="editor" ref={editorContainer}></div>;
+
+  return (
+    <div id="editor" style={{ height: '100%' }} ref={editorContainer}></div>
+  );
 };
 
 export default Editor;

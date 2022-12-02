@@ -1,5 +1,4 @@
-import Modal from '@/ui/modal';
-import CloseIcon from '@mui/icons-material/Close';
+import { Modal, ModalCloseButton } from '@/ui/modal';
 import {
   LogoIcon,
   DocIcon,
@@ -22,7 +21,6 @@ import {
   StyledLogo,
   StyledModalHeader,
   StyledModalHeaderLeft,
-  StyledCloseButton,
   StyledModalFooter,
 } from './style';
 
@@ -82,13 +80,15 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
             <StyledLogo src={logo.src} alt="" />
             <span>Alpha</span>
           </StyledModalHeaderLeft>
-          <StyledCloseButton
+          <ModalCloseButton
+            top={6}
+            right={6}
+            size={[30, 30]}
+            iconSize={[20, 20]}
             onClick={() => {
               onClose();
             }}
-          >
-            <CloseIcon width={12} height={12} />
-          </StyledCloseButton>
+          />
         </StyledModalHeader>
 
         <StyledContent>

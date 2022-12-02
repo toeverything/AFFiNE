@@ -162,40 +162,6 @@ export const StyledModalHeaderLeft = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledCloseButton = styled('div')(({ theme }) => {
-  return {
-    width: '60px',
-    height: '60px',
-    color: theme.colors.iconColor,
-    cursor: 'pointer',
-    ...displayFlex('center', 'center'),
-    position: 'absolute',
-    right: '0',
-    top: '0',
-
-    // TODO: we need to add @emotion/babel-plugin
-    '::after': {
-      content: '""',
-      width: '30px',
-      height: '30px',
-      borderRadius: '6px',
-      ...absoluteCenter({ horizontal: true, vertical: true }),
-    },
-    ':hover': {
-      color: theme.colors.primaryColor,
-      '::after': {
-        background: theme.colors.hoverBackground,
-      },
-    },
-    svg: {
-      width: '20px',
-      height: '20px',
-      position: 'relative',
-      zIndex: 1,
-    },
-  };
-});
-
 export const StyledModalFooter = styled('div')(({ theme }) => {
   return {
     fontSize: '14px',

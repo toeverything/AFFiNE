@@ -24,6 +24,7 @@ importers:
     specifiers:
       '@blocksuite/blocks': 0.3.0-alpha.3
       '@blocksuite/editor': 0.3.0-alpha.3
+      '@blocksuite/icons': ^1.0.3
       '@blocksuite/store': 0.3.0-alpha.3
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
@@ -54,6 +55,7 @@ importers:
     dependencies:
       '@blocksuite/blocks': 0.3.0-alpha.3
       '@blocksuite/editor': 0.3.0-alpha.3
+      '@blocksuite/icons': 1.0.3_w5j4k42lgipnm43s3brx6h3c34
       '@blocksuite/store': 0.3.0-alpha.3
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
@@ -196,6 +198,16 @@ packages:
       - bufferutil
       - supports-color
       - utf-8-validate
+    dev: false
+
+  /@blocksuite/icons/1.0.3_w5j4k42lgipnm43s3brx6h3c34:
+    resolution: {integrity: sha512-wcptCjIaL3M6bSVLLTVEfqlIGTrRR7qJBp9Oacr947TR9ACIACEd1E1FRu0yyDhcouw2BcY2A0Wi6LF0xpe6mw==}
+    peerDependencies:
+      '@types/react': ^18.0.25
+      react: ^18.2.0
+    dependencies:
+      '@types/react': 18.0.20
+      react: 18.2.0
     dev: false
 
   /@blocksuite/store/0.3.0-alpha.3:
