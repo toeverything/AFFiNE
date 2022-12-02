@@ -22,6 +22,8 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "firebase": "^9.13.0"
+    "axios": "^1.2.0",
+    "firebase": "^9.13.0",
+    "swr": "^1.3.0"
   }
 }
