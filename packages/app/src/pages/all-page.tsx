@@ -3,6 +3,10 @@ import { Header } from '@/components/Header';
 import { styled } from '@/styles';
 import { Table, TableCell, TableHead, TableRow, TableBody } from '../ui/table';
 import { useConfirm } from '@/providers/confirm-provider';
+import { IconButton } from '@/ui/button';
+import { MoreVerticalIcon } from '@blocksuite/icons';
+import { Menu, MenuItem } from '@/ui/menu';
+
 const StyledTableContainer = styled.div(() => {
   return {
     height: 'calc(100vh - 60px)',
@@ -10,6 +14,17 @@ const StyledTableContainer = styled.div(() => {
     overflowY: 'auto',
   };
 });
+
+const OperationMenu = () => {
+  return (
+    <>
+      <MenuItem>Add to favourites</MenuItem>
+      <MenuItem>Open in new tab</MenuItem>
+      <MenuItem>Delete</MenuItem>
+    </>
+  );
+};
+
 export const AllPage = () => {
   const { confirm } = useConfirm();
   return (
@@ -47,7 +62,17 @@ export const AllPage = () => {
                   </TableCell>
                   <TableCell ellipsis={true}>2022-11-02 18:30</TableCell>
                   <TableCell ellipsis={true}>2022-11-02 18:30</TableCell>
-                  <TableCell>...</TableCell>
+                  <TableCell>
+                    <Menu
+                      content={<OperationMenu />}
+                      placement="bottom-end"
+                      disablePortal={true}
+                    >
+                      <IconButton hoverBackground="#E0E6FF">
+                        <MoreVerticalIcon />
+                      </IconButton>
+                    </Menu>
+                  </TableCell>
                 </TableRow>
               );
             })}

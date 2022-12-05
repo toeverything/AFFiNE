@@ -1,29 +1,22 @@
-import React, { PropsWithChildren, useEffect, useState } from 'react';
-import {
-  LogoIcon,
-  MoreIcon,
-  ExportIcon,
-  Export2Markdown,
-  Export2HTML,
-  RightArrow,
-} from './icons';
+import React, { PropsWithChildren, useState } from 'react';
 import {
   StyledHeader,
-  StyledTitle,
-  StyledTitleWrapper,
-  StyledLogo,
   StyledHeaderRightSide,
-  IconButton,
   StyledHeaderContainer,
   StyledBrowserWarning,
   StyledCloseButton,
-  StyledMenuItemWrapper,
 } from './styles';
+import {
+  MiddleExportIcon,
+  EdgelessIcon,
+  PaperIcon,
+  MiddleExportToHtmlIcon,
+  MiddleExportToMarkdownIcon,
+  MoreVerticalIcon,
+} from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
-import EditorModeSwitch from '@/components/editor-mode-switch';
-import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/icons';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
-import { useModal } from '@/providers/global-modal-provider';
+import { IconButton } from '@/ui/button';
 import CloseIcon from '@mui/icons-material/Close';
 import { getWarningMessage, shouldShowWarning } from './utils';
 import { Menu, MenuItem } from '@/ui/menu';
@@ -33,14 +26,12 @@ const PopoverContent = () => {
   return (
     <>
       <MenuItem
+        icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
         onClick={() => {
           setMode(mode === 'page' ? 'edgeless' : 'page');
         }}
       >
-        <StyledMenuItemWrapper>
-          {mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
-          Convert to {mode === 'page' ? 'Edgeless' : 'Page'}
-        </StyledMenuItemWrapper>
+        Convert to {mode === 'page' ? 'Edgeless' : 'Page'}
       </MenuItem>
       <Menu
         placement="left-start"
@@ -50,31 +41,23 @@ const PopoverContent = () => {
               onClick={() => {
                 editor && editor.contentParser.onExportHtml();
               }}
+              icon={<MiddleExportToHtmlIcon />}
             >
-              <StyledMenuItemWrapper>
-                <Export2HTML />
-                Export to HTML
-              </StyledMenuItemWrapper>
+              Export to HTML
             </MenuItem>
             <MenuItem
               onClick={() => {
                 editor && editor.contentParser.onExportMarkdown();
               }}
+              icon={<MiddleExportToMarkdownIcon />}
             >
-              <StyledMenuItemWrapper>
-                <Export2Markdown />
-                Export to Markdown
-              </StyledMenuItemWrapper>
+              Export to Markdown
             </MenuItem>
           </>
         }
       >
-        <MenuItem>
-          <StyledMenuItemWrapper>
-            <ExportIcon />
-            Export
-            <RightArrow />
-          </StyledMenuItemWrapper>
+        <MenuItem icon={<MiddleExportIcon />} isDir={true}>
+          Export
         </MenuItem>
       </Menu>
     </>
@@ -115,7 +98,7 @@ export const Header = ({ children }: PropsWithChildren<{}>) => {
           <ThemeModeSwitch />
           <Menu content={<PopoverContent />} placement="bottom-end">
             <IconButton>
-              <MoreIcon />
+              <MoreVerticalIcon />
             </IconButton>
           </Menu>
         </StyledHeaderRightSide>
