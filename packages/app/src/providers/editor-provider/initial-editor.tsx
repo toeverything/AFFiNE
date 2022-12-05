@@ -4,7 +4,7 @@ import type { EditorContainer } from '@blocksuite/editor';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
 import { useEffect } from 'react';
 import pkg from '../../../package.json';
-import { createWebsocketDocProvider, Store } from '@blocksuite/store';
+import { createWebsocketDocProvider, Workspace } from '@blocksuite/store';
 
 const getEditorParams = () => {
   const providers = [];
@@ -27,11 +27,11 @@ const InitialEditor = ({
   setEditor: (editor: EditorContainer) => void;
 }) => {
   useEffect(() => {
-    const store = new Store({
+    const store = new Workspace({
       ...getEditorParams(),
     });
-    const space = store.createSpace('page0').register(BlockSchema);
-    const editor = createEditor(space);
+    const page = store.createPage('page0').register(BlockSchema);
+    const editor = createEditor(page);
 
     setEditor(editor);
 

@@ -6,7 +6,7 @@ export const Editor = () => {
   const { editor } = useEditor();
   const ref = useRef<any>();
   useEffect(() => {
-    if (editor && ref.current?.space.id !== editor?.space.id) {
+    if (editor && ref.current?.page.id !== editor?.page.id) {
       ref.current?.remove();
       ref.current = editor;
 
