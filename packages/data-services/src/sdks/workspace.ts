@@ -10,52 +10,46 @@ import { request, ServiceError } from '../request';
 
 const WORKSPACE_URL = '/api/workspace';
 
-async function getWorkSpacesFetcher(url: string) {
+async function doGetWorkSpaces(url: string) {
   const { data } = await request.get<ResponseGetWorkspaces>(url);
   return data;
 }
 
 export async function getWorkSpaces() {
-  return await getWorkSpacesFetcher(WORKSPACE_URL);
+  return await doGetWorkSpaces(WORKSPACE_URL);
 }
 
-async function createWorkspaceFetcher(
-  url: string,
-  req: RequestCreateWorkspace
-) {
+async function doCreateWorkspace(url: string, req: RequestCreateWorkspace) {
   const { data } = await request.put<ResponseCreateWorkspace>(url, req);
   return data;
 }
 
 export async function createWorkspace(req: RequestCreateWorkspace) {
-  createWorkspaceFetcher(WORKSPACE_URL, req);
+  doCreateWorkspace(WORKSPACE_URL, req);
 }
 
-async function updateWorkspaceFetcher(
-  url: string,
-  req: RequestUpdateWorkspace
-) {
+async function doUpdateWorkspace(url: string, req: RequestUpdateWorkspace) {
   const { data } = await request.post<MayError>(url, req);
   return data;
 }
 
 export function updateWorkspace(id: string, req: RequestUpdateWorkspace) {
-  return updateWorkspaceFetcher(`${WORKSPACE_URL}${id}`, req);
+  return doUpdateWorkspace(`${WORKSPACE_URL}${id}`, req);
 }
 
-async function deleteWorkspaceFetcher(url: string) {
+async function doDeleteWorkspace(url: string) {
   const { data } = await request.delete<MayError>(url);
   return data;
 }
 
 export function deleteWorkspace(id: string) {
-  return deleteWorkspaceFetcher(`${WORKSPACE_URL}${id}`);
+  return doDeleteWorkspace(`${WORKSPACE_URL}${id}`);
 }
 
 export function useGetWorkspaces(config?: SWRConfiguration) {
   const { data, error } = useSWR<ResponseGetWorkspaces, ServiceError, string>(
     WORKSPACE_URL,
-    getWorkSpacesFetcher,
+    doGetWorkSpaces,
     config
   );
   return {
@@ -71,7 +65,7 @@ export function useCreateWorkspace(
 ) {
   const { data, error } = useSWR<ResponseGetWorkspaces, ServiceError>(
     [WORKSPACE_URL, req],
-    createWorkspaceFetcher,
+    doCreateWorkspace,
     config
   );
   return {
@@ -88,7 +82,7 @@ export function useUpdateWorkspace(
 ) {
   const { data, error } = useSWR<MayError, ServiceError>(
     [`${WORKSPACE_URL}${id}`, req],
-    updateWorkspaceFetcher,
+    doUpdateWorkspace,
     config
   );
   return {
@@ -101,7 +95,7 @@ export function useUpdateWorkspace(
 export function useDeleteWorkspace(id: string, config?: SWRConfiguration) {
   const { data, error } = useSWR<MayError, ServiceError>(
     `${WORKSPACE_URL}${id}`,
-    deleteWorkspaceFetcher,
+    doDeleteWorkspace,
     config
   );
   return {
