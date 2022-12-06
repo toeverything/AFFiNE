@@ -24,7 +24,7 @@ importers:
     specifiers:
       '@blocksuite/blocks': 0.3.0-alpha.5
       '@blocksuite/editor': 0.3.0-alpha.5
-      '@blocksuite/icons': ^1.0.3
+      '@blocksuite/icons': ^1.0.5
       '@blocksuite/store': 0.3.0-alpha.5
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
@@ -55,7 +55,7 @@ importers:
     dependencies:
       '@blocksuite/blocks': 0.3.0-alpha.5
       '@blocksuite/editor': 0.3.0-alpha.5
-      '@blocksuite/icons': 1.0.3_w5j4k42lgipnm43s3brx6h3c34
+      '@blocksuite/icons': 1.0.5_w5j4k42lgipnm43s3brx6h3c34
       '@blocksuite/store': 0.3.0-alpha.5
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
@@ -200,8 +200,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/icons/1.0.3_w5j4k42lgipnm43s3brx6h3c34:
-    resolution: {integrity: sha512-wcptCjIaL3M6bSVLLTVEfqlIGTrRR7qJBp9Oacr947TR9ACIACEd1E1FRu0yyDhcouw2BcY2A0Wi6LF0xpe6mw==}
+  /@blocksuite/icons/1.0.5_w5j4k42lgipnm43s3brx6h3c34:
+    resolution: {integrity: sha512-0iagAntIBvrGoaQ6eM6QQFYNkR1WRh6vLU+eOyV9o69eoXjRU8BgC3+U4ljY+1X30enfr3tf8X97iAxWuAVJcw==}
     peerDependencies:
       '@types/react': ^18.0.25
       react: ^18.2.0

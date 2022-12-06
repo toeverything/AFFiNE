@@ -12,7 +12,7 @@ import {
   PaperIcon,
   MiddleExportToHtmlIcon,
   MiddleExportToMarkdownIcon,
-  MoreVerticalIcon,
+  MoreVertical_24pxIcon,
 } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
@@ -98,7 +98,7 @@ export const Header = ({ children }: PropsWithChildren<{}>) => {
           <ThemeModeSwitch />
           <Menu content={<PopoverContent />} placement="bottom-end">
             <IconButton>
-              <MoreVerticalIcon />
+              <MoreVertical_24pxIcon />
             </IconButton>
           </Menu>
         </StyledHeaderRightSide>

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Header } from '@/components/Header';
+import { Header } from '@/components/header';
 import { styled } from '@/styles';
 import { Table, TableCell, TableHead, TableRow, TableBody } from '../ui/table';
 import { useConfirm } from '@/providers/confirm-provider';
 import { IconButton } from '@/ui/button';
-import { MoreVerticalIcon } from '@blocksuite/icons';
+import { MoreVertical_24pxIcon } from '@blocksuite/icons';
 import { Menu, MenuItem } from '@/ui/menu';
 
 const StyledTableContainer = styled.div(() => {
@@ -69,7 +69,7 @@ export const AllPage = () => {
                       disablePortal={true}
                     >
                       <IconButton hoverBackground="#E0E6FF">
-                        <MoreVerticalIcon />
+                        <MoreVertical_24pxIcon />
                       </IconButton>
                     </Menu>
                   </TableCell>

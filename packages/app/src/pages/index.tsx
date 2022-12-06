@@ -1,6 +1,6 @@
 import type { NextPage } from 'next';
 import { styled } from '@/styles';
-import { PageHeader } from '@/components/Header';
+import { PageHeader } from '@/components/header';
 import { FAQ } from '@/components/faq';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
