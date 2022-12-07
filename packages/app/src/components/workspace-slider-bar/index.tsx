@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Router from 'next/router';
+import { useRouter } from 'next/router';
 import {
   StyledArrowButton,
   StyledListItem,
@@ -8,18 +8,31 @@ import {
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
+import Link from 'next/link';
 export const WorkSpaceSliderBar = () => {
   const [show, setShow] = useState(false);
+  const router = useRouter();
   return (
     <>
       <StyledSliderBar show={show}>
         <StyledListItem>Quick search</StyledListItem>
+
         <StyledListItem
           onClick={() => {
-            Router.push('/all-page');
+            router.push({
+              pathname: '/',
+              query: {
+                pageId: new Date().getTime().toString(),
+              },
+            });
           }}
         >
-          All pages
+          Back to Doc
+        </StyledListItem>
+        <StyledListItem>
+          <Link href={{ pathname: '/all-page', query: { name: 'test' } }}>
+            All pages
+          </Link>
         </StyledListItem>
         <StyledListItem>Favourites</StyledListItem>
         <StyledSubListItem>
