@@ -11,14 +11,14 @@ import { Arrow } from './icons';
 import { useModal } from '@/providers/global-modal-provider';
 
 export const WorkSpaceSliderBar = () => {
-  const { shortcutsModalHandler } = useModal();
+  const { triggerQuickSearchModal } = useModal();
   const [show, setShow] = useState(false);
   return (
     <>
       <StyledSliderBar show={show}>
         <StyledListItem
           onClick={() => {
-            shortcutsModalHandler(true);
+            triggerQuickSearchModal(true);
           }}
         >
           Quick search
