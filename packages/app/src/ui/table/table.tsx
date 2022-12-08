@@ -1,4 +1,4 @@
-import { PropsWithChildren, Children, ReactNode } from 'react';
+import { PropsWithChildren, Children, ReactNode, HTMLAttributes } from 'react';
 import { StyledTable } from './styles';
 
 const childrenHasEllipsis = (children: ReactNode | ReactNode[]): boolean => {
@@ -14,10 +14,17 @@ const childrenHasEllipsis = (children: ReactNode | ReactNode[]): boolean => {
   });
 };
 
-export const Table = ({ children }: PropsWithChildren<{}>) => {
+export const Table = ({
+  children,
+  ...props
+}: PropsWithChildren<HTMLAttributes<HTMLTableElement>>) => {
   const tableLayout = childrenHasEllipsis(children) ? 'fixed' : 'auto';
 
-  return <StyledTable tableLayout={tableLayout}>{children}</StyledTable>;
+  return (
+    <StyledTable tableLayout={tableLayout} {...props}>
+      {children}
+    </StyledTable>
+  );
 };
 
 export default Table;
