@@ -1,13 +1,13 @@
 import { displayFlex, styled, AffineTheme } from '@/styles';
 import { ConfirmProps } from '@/ui/confirm/confirm';
+import { ModalWrapper } from '@/ui/modal';
 
-export const StyledModalWrapper = styled.div(({ theme }) => {
+export const StyledModalWrapper = styled(ModalWrapper)(({ theme }) => {
   return {
     width: '460px',
     height: '240px',
     padding: '0 60px',
     background: theme.colors.popoverBackground,
-    borderRadius: '28px',
     position: 'relative',
   };
 });

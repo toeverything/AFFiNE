@@ -13,7 +13,6 @@ import {
   windowsKeyboardShortcuts,
   winMarkdownShortcuts,
 } from '@/components/shortcuts-modal/config';
-import CloseIcon from '@mui/icons-material/Close';
 import Slide from '@mui/material/Slide';
 import { ModalCloseButton } from '@/ui/modal';
 type ModalProps = {

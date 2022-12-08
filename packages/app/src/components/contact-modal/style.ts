@@ -1,15 +1,4 @@
 import { absoluteCenter, displayFlex, styled } from '@/styles';
-import bg from './bg.png';
-
-export const StyledModalWrapper = styled('div')(({ theme }) => {
-  return {
-    width: '860px',
-    height: '540px',
-    backgroundColor: theme.colors.popoverBackground,
-    backgroundImage: `url(${bg.src})`,
-    borderRadius: '20px',
-  };
-});
 
 export const StyledBigLink = styled('a')(({ theme }) => {
   return {

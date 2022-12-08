@@ -1,4 +1,4 @@
-import { absoluteCenter, displayFlex, styled } from '@/styles';
+import { absoluteCenter, displayInlineFlex, styled } from '@/styles';
 import { CSSProperties } from 'react';
 
 export const StyledIconButton = styled.button<{
@@ -23,7 +23,7 @@ export const StyledIconButton = styled.button<{
       width,
       height,
       color: theme.colors.iconColor,
-      ...displayFlex('center', 'center'),
+      ...displayInlineFlex('center', 'center'),
       position: 'relative',
       ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
       transition: 'background .15s',

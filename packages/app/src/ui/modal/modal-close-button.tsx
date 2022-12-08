@@ -1,24 +1,28 @@
 import { HTMLAttributes } from 'react';
-import { StyledCloseButton } from './style';
 import { CloseIcon } from '@blocksuite/icons';
-
+import { IconButton, IconButtonProps } from '@/ui/button';
+import { styled } from '@/styles';
 export type ModalCloseButtonProps = {
   top?: number;
   right?: number;
-  triggerSize?: [number, number];
-  size?: [number, number];
-  iconSize?: [number, number];
-} & HTMLAttributes<HTMLButtonElement>;
+} & Omit<IconButtonProps, 'children'> &
+  HTMLAttributes<HTMLButtonElement>;
 
-export const ModalCloseButton = ({
-  iconSize = [24, 24],
-  ...props
-}: ModalCloseButtonProps) => {
-  const [iconWidth, iconHeight] = iconSize;
+const StyledIconButton = styled(IconButton)<
+  Pick<ModalCloseButtonProps, 'top' | 'right'>
+>(({ top, right }) => {
+  return {
+    position: 'absolute',
+    top: top ?? 6,
+    right: right ?? 6,
+  };
+});
+
+export const ModalCloseButton = ({ ...props }: ModalCloseButtonProps) => {
   return (
-    <StyledCloseButton {...props}>
-      <CloseIcon width={iconWidth} height={iconHeight} />
-    </StyledCloseButton>
+    <StyledIconButton {...props}>
+      <CloseIcon />
+    </StyledIconButton>
   );
 };
 
