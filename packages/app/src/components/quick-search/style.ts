@@ -32,7 +32,7 @@ export const StyledInputContent = styled('div')({
   ...displayFlex('space-between', 'center'),
 });
 export const StyledShortcut = styled('div')(({ theme }) => {
-  return { color: theme.colors.placeHolderColor, fontSize: theme.font.sm };
+  return { color: theme.colors.placeHolderColor, fontSize: theme.font.xs };
 });
 export const StyledInput = styled('input')(({ theme }) => {
   return {
