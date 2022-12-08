@@ -7,7 +7,7 @@ import { IconButton } from '@/ui/button';
 import { MoreVertical_24pxIcon } from '@blocksuite/icons';
 import { Menu, MenuItem } from '@/ui/menu';
 import { PageMeta, useEditor } from '@/providers/editor-provider';
-import { Wrapper } from '@/ui/Layout';
+import { Wrapper } from '@/ui/layout';
 
 import {
   MiddleFavouritesIcon,
