@@ -5,13 +5,13 @@ import ContactModal from '@/components/contact-modal';
 
 type ModalContextValue = {
   shortcutsModalHandler: (visible: boolean) => void;
-  contactModalHandler: (visible: boolean) => void;
+  triggerContactModal: (visible: boolean) => void;
 };
 type ModalContextProps = PropsWithChildren<{}>;
 
 export const ModalContext = createContext<ModalContextValue>({
   shortcutsModalHandler: () => {},
-  contactModalHandler: () => {},
+  triggerContactModal: () => {},
 });
 
 export const useModal = () => useContext(ModalContext);
@@ -28,7 +28,7 @@ export const ModalProvider = ({
         shortcutsModalHandler: visible => {
           setOpenShortcutsModal(visible);
         },
-        contactModalHandler: visible => {
+        triggerContactModal: visible => {
           setOpenContactModal(visible);
         },
       }}

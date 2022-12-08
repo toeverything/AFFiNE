@@ -8,12 +8,21 @@ import {
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
+import { useModal } from '@/providers/global-modal-provider';
+
 export const WorkSpaceSliderBar = () => {
+  const { shortcutsModalHandler } = useModal();
   const [show, setShow] = useState(false);
   return (
     <>
       <StyledSliderBar show={show}>
-        <StyledListItem>Quick search</StyledListItem>
+        <StyledListItem
+          onClick={() => {
+            shortcutsModalHandler(true);
+          }}
+        >
+          Quick search
+        </StyledListItem>
         <StyledListItem
           onClick={() => {
             Router.push('/all-page');
