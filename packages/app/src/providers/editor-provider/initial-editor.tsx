@@ -73,14 +73,21 @@ const InitialEditor = ({
     if (!workspace) {
       return;
     }
-    let initialPage =
-      workspace.pages.get(`space:${router.query.pageId}`) ??
-      [...workspace.pages.values()][0];
 
-    if (!initialPage) {
-      const pageId = `${router.query.pageId}` ?? 'page0';
-      initialPage = workspace.createPage(pageId).register(BlockSchema);
-    }
+    // const initialPageId =
+    //   workspace.meta.pages.find(p => p.id === (router.query.pageId as string))
+    //     ?.id ??
+    //   workspace.meta.pages[0]?.id ??
+    //   'page0';
+
+    const initialPageId =
+      workspace.meta.pages.find(p => p.id === (router.query.pageId as string))
+        ?.id ?? 'page0';
+    console.log('initialPageId', initialPageId);
+
+    const initialPage = workspace
+      .createPage(initialPageId)
+      .register(BlockSchema);
     setCurrentPage(initialPage);
   }, [workspace, router.query.pageId, setCurrentPage]);
 

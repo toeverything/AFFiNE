@@ -9,8 +9,10 @@ import {
 } from './style';
 import { Arrow } from './icons';
 import Link from 'next/link';
+import { useEditor } from '@/providers/editor-provider';
 export const WorkSpaceSliderBar = () => {
   const [show, setShow] = useState(false);
+  const { createPage } = useEditor();
   const router = useRouter();
   return (
     <>
@@ -29,11 +31,9 @@ export const WorkSpaceSliderBar = () => {
         >
           Back to Doc
         </StyledListItem>
-        <StyledListItem>
-          <Link href={{ pathname: '/all-page', query: { name: 'test' } }}>
-            All pages
-          </Link>
-        </StyledListItem>
+        <Link href={{ pathname: '/all-page', query: { name: 'test' } }}>
+          <StyledListItem>All pages</StyledListItem>
+        </Link>
         <StyledListItem>Favourites</StyledListItem>
         <StyledSubListItem>
           document 1, this is a paper icondocument 1
@@ -43,7 +43,13 @@ export const WorkSpaceSliderBar = () => {
         <StyledListItem>Import</StyledListItem>
         <StyledListItem>Bin</StyledListItem>
 
-        <StyledNewPageButton>New Page</StyledNewPageButton>
+        <StyledNewPageButton
+          onClick={() => {
+            createPage();
+          }}
+        >
+          New Page
+        </StyledNewPageButton>
       </StyledSliderBar>
       <StyledArrowButton
         isShow={show}
