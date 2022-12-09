@@ -16,7 +16,7 @@ export const FAQ = () => {
   const [showContent, setShowContent] = useState(false);
   const { mode } = useTheme();
   const { mode: editorMode } = useEditor();
-  const { shortcutsModalHandler, contactModalHandler } = useModal();
+  const { shortcutsModalHandler, triggerContactModal } = useModal();
   const isEdgelessDark = mode === 'dark' && editorMode === 'edgeless';
 
   return (
@@ -38,7 +38,7 @@ export const FAQ = () => {
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
                   setShowContent(false);
-                  contactModalHandler(true);
+                  triggerContactModal(true);
                 }}
               >
                 <ContactIcon />
