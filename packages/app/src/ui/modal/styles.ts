@@ -1,6 +1,6 @@
-import { absoluteCenter, displayFlex, fixedCenter, styled } from '@/styles';
+import { styled } from '@/styles';
 import ModalUnstyled from '@mui/base/ModalUnstyled';
-import { ModalCloseButtonProps } from '@/ui/modal/modal-close-button';
+import { Wrapper } from '@/ui/layout';
 
 export const StyledBackdrop = styled.div<{ open?: boolean }>(({ open }) => {
   return {
@@ -22,7 +22,6 @@ export const StyledModal = styled(ModalUnstyled)(({ theme }) => {
     left: '0',
     top: '0',
     zIndex: theme.zIndex.modal,
-    ...displayFlex('center', 'center'),
     '*': {
       WebkitTapHighlightColor: 'transparent',
       outline: 'none',
@@ -30,3 +29,10 @@ export const StyledModal = styled(ModalUnstyled)(({ theme }) => {
   };
 });
 
+export const StyledWrapper = styled(Wrapper)(() => {
+  return {
+    width: '100vw',
+    height: '100vh',
+    overflow: 'hidden',
+  };
+});
