@@ -28,6 +28,10 @@ export const ModalProvider = ({
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {
         const selection = window.getSelection();
+        if (selection?.toString()) {
+          setOpenQuickSearchModal(false);
+          return;
+        }
         if (selection?.isCollapsed) {
           setOpenQuickSearchModal(
             openQuickSearchModal => !openQuickSearchModal
