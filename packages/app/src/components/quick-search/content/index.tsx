@@ -1,12 +1,14 @@
 import React from 'react';
+import { useEditor } from '@/providers/editor-provider';
+import JumpTo from './jumpTo';
 
 const Result = () => {
+  const { editor, mode, setMode } = useEditor();
+  console.log(editor?.page);
+
   return (
     <div>
-      <div>Jump to</div>
-      <div>All pages</div>
-      <div>Favorites</div>
-      <div>Trash</div>
+      <JumpTo />
     </div>
   );
 };
