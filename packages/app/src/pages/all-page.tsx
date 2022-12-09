@@ -1,11 +1,18 @@
 import React from 'react';
 import { Header } from '@/components/header';
-import { styled } from '@/styles';
+import { displayFlex, styled, textEllipsis } from '@/styles';
 import { Table, TableCell, TableHead, TableRow, TableBody } from '../ui/table';
 import { useConfirm } from '@/providers/confirm-provider';
 import { IconButton } from '@/ui/button';
 import { MoreVertical_24pxIcon } from '@blocksuite/icons';
 import { Menu, MenuItem } from '@/ui/menu';
+import { PageMeta, useEditor } from '@/providers/editor-provider';
+import { Wrapper } from '@/ui/layout';
+
+import {
+  MiddleFavouritesIcon,
+  MiddleFavouritedStatus2Icon,
+} from '@blocksuite/icons';
 
 const StyledTableContainer = styled.div(() => {
   return {
@@ -14,19 +21,87 @@ const StyledTableContainer = styled.div(() => {
     overflowY: 'auto',
   };
 });
+const StyledTitleWrapper = styled.div(({ theme }) => {
+  return {
+    ...displayFlex('flex-start', 'center'),
+    'favorite-heart': {},
+  };
+});
+const StyledTitleContent = styled.div(({ theme }) => {
+  return {
+    maxWidth: '90%',
+    marginRight: '18px',
+    ...textEllipsis(1),
+  };
+});
+const StyledFavoriteButton = styled.button<{ favorite: boolean }>(
+  ({ theme, favorite }) => {
+    return {
+      width: '32px',
+      height: '32px',
+      justifyContent: 'center',
+      alignItems: 'center',
+      display: 'none',
+      color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
+      '&:hover': {
+        color: theme.colors.primaryColor,
+      },
+    };
+  }
+);
+const StyledTableRow = styled(TableRow)(({ theme }) => {
+  return {
+    '&:hover': {
+      '.favorite-button': {
+        display: 'flex',
+      },
+    },
+  };
+});
 
-const OperationMenu = () => {
-  return (
+const OperationArea = ({ pageMeta }: { pageMeta: PageMeta }) => {
+  const { id, favorite } = pageMeta;
+  const { openPage, toggleFavoritePage, toggleDeletePage } = useEditor();
+
+  const OperationMenu = (
     <>
-      <MenuItem>Add to favourites</MenuItem>
-      <MenuItem>Open in new tab</MenuItem>
-      <MenuItem>Delete</MenuItem>
+      <MenuItem
+        onClick={() => {
+          toggleFavoritePage(id);
+        }}
+      >
+        {favorite ? 'Remove' : 'Add'} to favourites
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          openPage(id);
+        }}
+      >
+        Open in new tab
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          toggleDeletePage(id);
+        }}
+      >
+        Delete
+      </MenuItem>
     </>
+  );
+  return (
+    <Wrapper alignItems="center" justifyContent="center">
+      <Menu content={OperationMenu} placement="bottom-end" disablePortal={true}>
+        <IconButton hoverBackground="#E0E6FF">
+          <MoreVertical_24pxIcon />
+        </IconButton>
+      </Menu>
+    </Wrapper>
   );
 };
 
 export const AllPage = () => {
   const { confirm } = useConfirm();
+  const { pageList, toggleFavoritePage } = useEditor();
   return (
     <>
       <Header />
@@ -53,27 +128,35 @@ export const AllPage = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {new Array(100).fill(0).map((_, index) => {
+            {pageList.map((pageMeta, index) => {
               return (
-                <TableRow key={index}>
-                  <TableCell ellipsis={true}>
-                    This is a long, very long, extremely long, incredibly long,
-                    exceedingly long, very long document title
-                  </TableCell>
-                  <TableCell ellipsis={true}>2022-11-02 18:30</TableCell>
-                  <TableCell ellipsis={true}>2022-11-02 18:30</TableCell>
+                <StyledTableRow key={`${pageMeta.id}-${index}`}>
                   <TableCell>
-                    <Menu
-                      content={<OperationMenu />}
-                      placement="bottom-end"
-                      disablePortal={true}
-                    >
-                      <IconButton hoverBackground="#E0E6FF">
-                        <MoreVertical_24pxIcon />
-                      </IconButton>
-                    </Menu>
+                    <StyledTitleWrapper>
+                      <StyledTitleContent>
+                        {pageMeta.title || pageMeta.id}
+                      </StyledTitleContent>
+                      <StyledFavoriteButton
+                        className="favorite-button"
+                        favorite={pageMeta.favorite}
+                        onClick={() => {
+                          toggleFavoritePage(pageMeta.id);
+                        }}
+                      >
+                        {pageMeta.favorite ? (
+                          <MiddleFavouritedStatus2Icon />
+                        ) : (
+                          <MiddleFavouritesIcon />
+                        )}
+                      </StyledFavoriteButton>
+                    </StyledTitleWrapper>
                   </TableCell>
-                </TableRow>
+                  <TableCell ellipsis={true}>{pageMeta.createDate}</TableCell>
+                  <TableCell ellipsis={true}>{pageMeta.createDate}</TableCell>
+                  <TableCell>
+                    <OperationArea pageMeta={pageMeta} />
+                  </TableCell>
+                </StyledTableRow>
               );
             })}
           </TableBody>

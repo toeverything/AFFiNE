@@ -6,8 +6,6 @@ import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
 import Editor from '@/components/editor';
 
-import '@/components/simple-counter';
-
 const StyledEditorContainer = styled('div')(({ theme }) => {
   return {
     height: 'calc(100vh - 60px)',

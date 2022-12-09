@@ -26,11 +26,12 @@ export const StyledTableCell = styled.td<
   const width = proportion ? `${proportion * 100}%` : 'auto';
   return {
     width,
-    height: '54px',
-    lineHeight: '54px',
+    height: '52px',
+    lineHeight: '52px',
     padding: '0 30px',
     boxSizing: 'border-box',
     textAlign: align,
+    verticalAlign: 'middle',
     ...(ellipsis ? textEllipsis(1) : {}),
     overflowWrap: 'break-word',
   };

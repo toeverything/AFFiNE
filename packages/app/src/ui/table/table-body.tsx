@@ -1,8 +1,11 @@
-import { PropsWithChildren } from 'react';
+import { HTMLAttributes, PropsWithChildren } from 'react';
 import { StyledTableBody } from '@/ui/table/styles';
 
-export const TableBody = ({ children }: PropsWithChildren<{}>) => {
-  return <StyledTableBody>{children}</StyledTableBody>;
+export const TableBody = ({
+  children,
+  ...props
+}: PropsWithChildren<HTMLAttributes<HTMLTableSectionElement>>) => {
+  return <StyledTableBody {...props}>{children}</StyledTableBody>;
 };
 
 export default TableBody;

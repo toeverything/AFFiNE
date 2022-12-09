@@ -1,16 +1,4 @@
 import { displayFlex, styled } from '@/styles';
-import bg from './bg.png';
-
-export const ModalWrapper = styled.div(({ theme }) => {
-  return {
-    width: '348px',
-    height: '388px',
-    background: theme.colors.popoverBackground,
-    borderRadius: '28px',
-    position: 'relative',
-    backgroundImage: `url(${bg.src})`,
-  };
-});
 
 export const StyledTitle = styled.div(({ theme }) => {
   return {

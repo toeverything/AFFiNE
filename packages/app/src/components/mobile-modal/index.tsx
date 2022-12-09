@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import Modal, { ModalCloseButton } from '@/ui/modal';
+import Modal, { ModalCloseButton, ModalWrapper } from '@/ui/modal';
 import getIsMobile from '@/utils/get-is-mobile';
-import {
-  ModalWrapper,
-  StyledButton,
-  StyledContent,
-  StyledTitle,
-} from './styles';
+import { StyledButton, StyledContent, StyledTitle } from './styles';
+import bg from './bg.png';
 export const MobileModal = () => {
   const [showModal, setShowModal] = useState(getIsMobile());
   return (
@@ -16,7 +12,11 @@ export const MobileModal = () => {
         setShowModal(false);
       }}
     >
-      <ModalWrapper>
+      <ModalWrapper
+        width={348}
+        height={388}
+        style={{ backgroundImage: `url(${bg.src})` }}
+      >
         <ModalCloseButton
           size={[30, 30]}
           iconSize={[20, 20]}

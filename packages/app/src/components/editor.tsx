@@ -12,7 +12,7 @@ export const Editor = () => {
 
       editorContainer.current?.appendChild(editor);
 
-      initDefaultContent(editor);
+      // initDefaultContent(editor);
     }
   }, [editor]);
 

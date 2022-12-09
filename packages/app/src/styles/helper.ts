@@ -17,6 +17,23 @@ export const displayFlex = (
     alignContent,
   };
 };
+export const displayInlineFlex = (
+  justifyContent: CSSProperties['justifyContent'] = 'unset',
+  alignItems: CSSProperties['alignContent'] = 'unset',
+  alignContent: CSSProperties['alignContent'] = 'unset'
+): {
+  display: CSSProperties['display'];
+  justifyContent: CSSProperties['justifyContent'];
+  alignItems: CSSProperties['alignContent'];
+  alignContent: CSSProperties['alignContent'];
+} => {
+  return {
+    display: 'inline-flex',
+    justifyContent,
+    alignItems,
+    alignContent,
+  };
+};
 
 export const absoluteCenter = ({
   horizontal = false,

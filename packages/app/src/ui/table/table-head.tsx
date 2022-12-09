@@ -1,8 +1,11 @@
-import { PropsWithChildren } from 'react';
+import { HTMLAttributes, PropsWithChildren } from 'react';
 import { StyledTableHead } from './styles';
 
-export const TableHead = ({ children }: PropsWithChildren<{}>) => {
-  return <StyledTableHead>{children}</StyledTableHead>;
+export const TableHead = ({
+  children,
+  ...props
+}: PropsWithChildren<HTMLAttributes<HTMLTableSectionElement>>) => {
+  return <StyledTableHead {...props}>{children}</StyledTableHead>;
 };
 
 export default TableHead;

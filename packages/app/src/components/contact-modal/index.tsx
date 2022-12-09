@@ -1,4 +1,4 @@
-import { Modal, ModalCloseButton } from '@/ui/modal';
+import { Modal, ModalCloseButton, ModalWrapper } from '@/ui/modal';
 import {
   LogoIcon,
   DocIcon,
@@ -11,7 +11,6 @@ import {
 } from './icons';
 import logo from './affine-text-logo.png';
 import {
-  StyledModalWrapper,
   StyledBigLink,
   StyledSmallLink,
   StyledSubTitle,
@@ -23,6 +22,7 @@ import {
   StyledModalHeaderLeft,
   StyledModalFooter,
 } from './style';
+import bg from '@/components/contact-modal/bg.png';
 
 const linkList = [
   {
@@ -74,7 +74,11 @@ type TransitionsModalProps = {
 export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
   return (
     <Modal open={open} onClose={onClose}>
-      <StyledModalWrapper data-testid="contact-us-modal-content">
+      <ModalWrapper
+        width={860}
+        height={540}
+        style={{ backgroundImage: `url(${bg.src})` }}
+      >
         <StyledModalHeader>
           <StyledModalHeaderLeft>
             <StyledLogo src={logo.src} alt="" />
@@ -83,8 +87,6 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
           <ModalCloseButton
             top={6}
             right={6}
-            size={[30, 30]}
-            iconSize={[20, 20]}
             onClick={() => {
               onClose();
             }}
@@ -134,7 +136,7 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
           </p>
           <p>Copyright &copy; 2022 Toeverything</p>
         </StyledModalFooter>
-      </StyledModalWrapper>
+      </ModalWrapper>
     </Modal>
   );
 };

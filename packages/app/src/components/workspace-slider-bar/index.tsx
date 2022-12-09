@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Router from 'next/router';
+import { useRouter } from 'next/router';
 import {
   StyledArrowButton,
   StyledListItem,
@@ -8,11 +8,13 @@ import {
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
-import { useModal } from '@/providers/global-modal-provider';
-
+import Link from 'next/link';
+import { useEditor } from '@/providers/editor-provider';
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal } = useModal();
   const [show, setShow] = useState(false);
+  const { createPage } = useEditor();
+  const router = useRouter();
   return (
     <>
       <StyledSliderBar show={show}>
@@ -25,11 +27,19 @@ export const WorkSpaceSliderBar = () => {
         </StyledListItem>
         <StyledListItem
           onClick={() => {
-            Router.push('/all-page');
+            router.push({
+              pathname: '/',
+              query: {
+                pageId: new Date().getTime().toString(),
+              },
+            });
           }}
         >
-          All pages
+          Back to Doc
         </StyledListItem>
+        <Link href={{ pathname: '/all-page', query: { name: 'test' } }}>
+          <StyledListItem>All pages</StyledListItem>
+        </Link>
         <StyledListItem>Favourites</StyledListItem>
         <StyledSubListItem>
           document 1, this is a paper icondocument 1
@@ -39,7 +49,13 @@ export const WorkSpaceSliderBar = () => {
         <StyledListItem>Import</StyledListItem>
         <StyledListItem>Bin</StyledListItem>
 
-        <StyledNewPageButton>New Page</StyledNewPageButton>
+        <StyledNewPageButton
+          onClick={() => {
+            createPage();
+          }}
+        >
+          New Page
+        </StyledNewPageButton>
       </StyledSliderBar>
       <StyledArrowButton
         isShow={show}
