@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import ShortcutsModal from '@/components/shortcuts-modal';
 import ContactModal from '@/components/contact-modal';
@@ -24,7 +24,20 @@ export const ModalProvider = ({
   const [openContactModal, setOpenContactModal] = useState(false);
   const [openShortcutsModal, setOpenShortcutsModal] = useState(false);
   const [openQuickSearchModal, setOpenQuickSearchModal] = useState(false);
-
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && e.metaKey) {
+        const selection = window.getSelection();
+        if (selection?.isCollapsed) {
+          setOpenQuickSearchModal(
+            openQuickSearchModal => !openQuickSearchModal
+          );
+        }
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
   return (
     <ModalContext.Provider
       value={{
