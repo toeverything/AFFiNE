@@ -65,6 +65,7 @@ export const StyledButton = styled.button<
     | 'hoverStyle'
     | 'shape'
     | 'type'
+    | 'bold'
   >
 >(
   ({
@@ -74,6 +75,7 @@ export const StyledButton = styled.button<
     hoverBackground,
     hoverColor,
     hoverStyle,
+    bold = false,
     shape = 'default',
     type = 'default',
   }) => {
@@ -91,6 +93,7 @@ export const StyledButton = styled.button<
       // TODO: Implement circle shape
       borderRadius: shape === 'default' ? borderRadius : height / 2,
       fontSize,
+      fontWeight: bold ? '500' : '400',
       '.affine-button-icon': {
         color: theme.colors.iconColor,
       },

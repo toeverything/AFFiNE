@@ -4,7 +4,6 @@ import { StyledTableCell } from './styles';
 
 export const TableCell = ({
   children,
-  ellipsis,
   ...props
 }: PropsWithChildren<
   TableCellProps & HTMLAttributes<HTMLTableCellElement>

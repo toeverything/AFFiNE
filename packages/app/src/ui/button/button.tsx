@@ -24,12 +24,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon,
       type = 'default',
       children,
+      bold = false,
       ...props
     },
     ref
   ) => {
     const { iconSize } = getSize(size);
-    console.log('type', type);
 
     return (
       <StyledButton
@@ -42,6 +42,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         hoverStyle={hoverStyle}
         // @ts-ignore
         type={type}
+        bold={bold}
         {...props}
       >
         {icon &&

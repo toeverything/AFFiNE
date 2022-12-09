@@ -19,4 +19,5 @@ export type ButtonProps = PropsWithChildren &
     icon?: ReactElement;
     shape?: 'default' | 'round' | 'circle';
     type?: 'primary' | 'warning' | 'danger' | 'default';
+    bold?: boolean;
   };

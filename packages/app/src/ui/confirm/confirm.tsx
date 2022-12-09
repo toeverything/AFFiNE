@@ -41,6 +41,7 @@ export const Confirm = ({
         <StyledButtonWrapper>
           <Button
             shape="round"
+            bold={true}
             onClick={() => {
               setOpen(false);
               onCancel?.();
@@ -52,6 +53,7 @@ export const Confirm = ({
           <Button
             type={confirmType}
             shape="round"
+            bold={true}
             onClick={() => {
               setOpen(false);
               onConfirm?.();
