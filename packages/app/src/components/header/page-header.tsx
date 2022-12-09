@@ -6,7 +6,7 @@ import EditorModeSwitch from '@/components/editor-mode-switch';
 import Header from './header';
 
 export const PageHeader = () => {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState('Untitled');
   const [isHover, setIsHover] = useState(false);
 
   const { editor } = useEditor();
@@ -22,24 +22,22 @@ export const PageHeader = () => {
 
   return (
     <Header>
-      {title ? (
-        <StyledTitle
-          onMouseEnter={() => {
-            setIsHover(true);
+      <StyledTitle
+        onMouseEnter={() => {
+          setIsHover(true);
+        }}
+        onMouseLeave={() => {
+          setIsHover(false);
+        }}
+      >
+        <EditorModeSwitch
+          isHover={isHover}
+          style={{
+            marginRight: '12px',
           }}
-          onMouseLeave={() => {
-            setIsHover(false);
-          }}
-        >
-          <EditorModeSwitch
-            isHover={isHover}
-            style={{
-              marginRight: '12px',
-            }}
-          />
-          <StyledTitleWrapper>{title}</StyledTitleWrapper>
-        </StyledTitle>
-      ) : null}
+        />
+        <StyledTitleWrapper>{title}</StyledTitleWrapper>
+      </StyledTitle>
     </Header>
   );
 };

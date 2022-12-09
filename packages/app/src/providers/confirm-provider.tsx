@@ -3,12 +3,12 @@ import type { PropsWithChildren } from 'react';
 import { Confirm, ConfirmProps } from '@/ui/confirm';
 
 type ConfirmContextValue = {
-  confirm: (props: ConfirmProps) => void;
+  confirm: (props: ConfirmProps) => Promise<boolean>;
 };
 type ConfirmContextProps = PropsWithChildren<{}>;
 
 export const ConfirmContext = createContext<ConfirmContextValue>({
-  confirm: () => {},
+  confirm: () => Promise.resolve(false),
 });
 
 export const useConfirm = () => useContext(ConfirmContext);
@@ -22,21 +22,33 @@ export const ConfirmProvider = ({
   return (
     <ConfirmContext.Provider
       value={{
-        confirm: (props: ConfirmProps) => {
-          const confirmId = String(Date.now());
-          setConfirmRecord(oldConfirmRecord => {
-            return {
-              ...oldConfirmRecord,
-              [confirmId]: (
-                <Confirm
-                  {...props}
-                  onClose={() => {
-                    delete confirmRecord[confirmId];
-                    setConfirmRecord({ ...confirmRecord });
-                  }}
-                />
-              ),
+        confirm: ({ onClose, onCancel, onConfirm, ...props }: ConfirmProps) => {
+          return new Promise((resolve, reject) => {
+            const confirmId = String(Date.now());
+            const closeHandler = () => {
+              delete confirmRecord[confirmId];
+              setConfirmRecord({ ...confirmRecord });
             };
+            setConfirmRecord(oldConfirmRecord => {
+              return {
+                ...oldConfirmRecord,
+                [confirmId]: (
+                  <Confirm
+                    {...props}
+                    onCancel={() => {
+                      closeHandler();
+                      onCancel?.();
+                      resolve(false);
+                    }}
+                    onConfirm={() => {
+                      closeHandler();
+                      onConfirm?.();
+                      resolve(true);
+                    }}
+                  />
+                ),
+              };
+            });
           });
         },
       }}

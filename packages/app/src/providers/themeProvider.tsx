@@ -1,9 +1,13 @@
+import { createContext, useContext, useEffect, useState } from 'react';
 import {
   ThemeProvider as EmotionThemeProvider,
   Global,
   css,
 } from '@emotion/react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  ThemeProvider as MuiThemeProvider,
+  createTheme as MuiCreateTheme,
+} from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
 import {
   Theme,
@@ -26,6 +30,7 @@ export const ThemeContext = createContext<ThemeProviderValue>({
 });
 
 export const useTheme = () => useContext(ThemeContext);
+const muiTheme = MuiCreateTheme();
 
 export const ThemeProvider = ({
   defaultTheme = 'light',
@@ -87,16 +92,21 @@ export const ThemeProvider = ({
   // }, [mode]);
 
   return (
-    <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
-      <Global
-        styles={css`
-          :root {
-            ${globalThemeVariables(mode, themeStyle) as {}}
-          }
-        `}
-      />
-      <EmotionThemeProvider theme={themeStyle}>{children}</EmotionThemeProvider>
-    </ThemeContext.Provider>
+    // Use MuiThemeProvider is just because some Transitions in Mui components need it
+    <MuiThemeProvider theme={muiTheme}>
+      <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
+        <Global
+          styles={css`
+            :root {
+              ${globalThemeVariables(mode, themeStyle) as {}}
+            }
+          `}
+        />
+        <EmotionThemeProvider theme={themeStyle}>
+          {children}
+        </EmotionThemeProvider>
+      </ThemeContext.Provider>
+    </MuiThemeProvider>
   );
 };
 
