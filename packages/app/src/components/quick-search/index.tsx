@@ -1,16 +1,16 @@
 import { Modal, ModalWrapper } from '@/ui/modal';
-
 import {
-  StyledModalWrapper,
   StyledContent,
   StyledModalHeader,
   StyledModalFooter,
   StyledModalDivider,
   StyledShortcut,
 } from './style';
-import Input from './input';
+import Input from './Input';
 import Result from './content';
-import QuickSearchFooter from './footer';
+import QuickSearchFooter from './Footer';
+import { Command } from 'cmdk';
+import { useState } from 'react';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
@@ -19,8 +19,9 @@ const isMac = () => {
   return /macintosh|mac os x/i.test(navigator.userAgent);
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
+  const [search, setSearch] = useState('');
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={onClose} wrapperPosition={['top', 'center']}>
       <ModalWrapper
         width={620}
         height={'auto'}
@@ -28,20 +29,23 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           maxHeight: '720px',
           minHeight: '350px',
           borderRadius: '20px',
+          top: '138px',
         }}
       >
-        <StyledModalHeader>
-          <Input />
-          <StyledShortcut>{isMac() ? '⌘+K' : 'Ctrl+K'}</StyledShortcut>
-        </StyledModalHeader>
-        <StyledModalDivider />
-        <StyledContent>
-          <Result />
-        </StyledContent>
+        <Command>
+          <StyledModalHeader>
+            <Input search={search} setSearch={setSearch} />
+            <StyledShortcut>{isMac() ? '⌘+K' : 'Ctrl+K'}</StyledShortcut>
+          </StyledModalHeader>
+          <StyledModalDivider />
+          <StyledContent>
+            <Result search={search} />
+          </StyledContent>
 
-        <StyledModalFooter>
-          <QuickSearchFooter />
-        </StyledModalFooter>
+          <StyledModalFooter>
+            <QuickSearchFooter />
+          </StyledModalFooter>
+        </Command>
       </ModalWrapper>
     </Modal>
   );

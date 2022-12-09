@@ -4,23 +4,25 @@ import {
   MiddleTrashIcon,
   MiddleAllPagesIcon,
 } from '@blocksuite/icons';
+import Link from 'next/link';
+import { StyledJumpTo } from '../style';
 const JumpTo = () => {
   return (
-    <div>
-      <div>Jump to</div>
-      <div>
-        <MiddleAllPagesIcon />
+    <StyledJumpTo>
+      <strong>Jump to</strong>
+      <Link href={{ pathname: '/all-page', query: { name: 'test' } }}>
+        <MiddleAllPagesIcon width={20} height={20} />
         <span> All pages</span>
-      </div>
-      <div>
-        <MiddleFavouritesIcon />
+      </Link>
+      <Link href={'/'}>
+        <MiddleFavouritesIcon width={20} height={20} />
         <span> Favourites</span>
-      </div>
-      <div>
-        <MiddleTrashIcon />
+      </Link>
+      <Link href={'/'}>
+        <MiddleTrashIcon width={20} height={20} />
         <span> Trash</span>
-      </div>
-    </div>
+      </Link>
+    </StyledJumpTo>
   );
 };
 

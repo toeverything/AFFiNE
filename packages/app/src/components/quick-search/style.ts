@@ -1,5 +1,4 @@
 import { displayFlex, styled } from '@/styles';
-import { relative } from 'path';
 
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
@@ -20,33 +19,63 @@ export const StyledContent = styled('div')(({ theme }) => {
     minHeight: '215px',
     maxHeight: '585px',
     width: '100%',
-    padding: '5px 24px',
+    padding: '0 24px',
     overflow: 'auto',
     color: theme.colors.popoverColor,
-    marginTop: '16px',
     letterSpacing: '0.06em',
   };
 });
-export const StyledInputContent = styled('div')({
-  margin: '13px 0',
-  ...displayFlex('space-between', 'center'),
+export const StyledJumpTo = styled('div')(({ theme }) => {
+  return {
+    ...displayFlex('center', 'start'),
+    flexDirection: 'column',
+    padding: '10px 10px 10px 0',
+    fontSize: theme.font.sm,
+    strong: {
+      fontWeight: '500',
+      marginBottom: '10px',
+    },
+    a: {
+      color: theme.colors.popoverColor,
+      padding: '5px 5px 5px 0',
+      ...displayFlex('center', 'center'),
+      ':visited': {
+        color: theme.colors.popoverColor,
+      },
+      svg: {
+        marginBottom: '2px',
+      },
+      span: {
+        marginLeft: '12px',
+
+        lineHeight: '22px',
+      },
+    },
+  };
+});
+export const StyledInputContent = styled('div')(({ theme }) => {
+  return {
+    margin: '13px 0',
+    ...displayFlex('space-between', 'center'),
+    input: {
+      width: '492px',
+      height: '22px',
+      padding: '0 12px',
+      fontSize: theme.font.sm,
+      ...displayFlex('space-between', 'center'),
+      letterSpacing: '0.06em',
+      color: theme.colors.popoverColor,
+      '::placeholder': {
+        color: theme.colors.placeHolderColor,
+      },
+    },
+  };
 });
 export const StyledShortcut = styled('div')(({ theme }) => {
   return { color: theme.colors.placeHolderColor, fontSize: theme.font.xs };
 });
 export const StyledInput = styled('input')(({ theme }) => {
-  return {
-    width: '492px',
-    height: '22px',
-    padding: '0 12px',
-    fontSize: theme.font.sm,
-    ...displayFlex('space-between', 'center'),
-    letterSpacing: '0.06em',
-    color: theme.colors.popoverColor,
-    '::placeholder': {
-      color: theme.colors.placeHolderColor,
-    },
-  };
+  return {};
 });
 export const StyledLabel = styled('label')(({ theme }) => {
   return {

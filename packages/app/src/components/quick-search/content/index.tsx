@@ -1,14 +1,11 @@
 import React from 'react';
-import { useEditor } from '@/providers/editor-provider';
-import JumpTo from './jumpTo';
+import JumpTo from './JumpTo';
+import { Command } from 'cmdk';
+import SearchResult from './searchResult';
 
-const Result = () => {
-  const { editor, mode, setMode } = useEditor();
-
+const Result = (props: { search: string }) => {
   return (
-    <div>
-      <JumpTo />
-    </div>
+    <Command.List>{props.search ? <SearchResult /> : <JumpTo />}</Command.List>
   );
 };
 

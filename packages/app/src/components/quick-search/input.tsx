@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 import { MiddleSearchIcon } from '@blocksuite/icons';
-import { StyledInput, StyledInputContent, StyledLabel } from './style';
-
-const Input = () => {
+import { StyledInputContent, StyledLabel } from './style';
+import { Command } from 'cmdk';
+const Input = (props: {
+  search: string;
+  setSearch: Dispatch<SetStateAction<string>>;
+}) => {
   return (
     <StyledInputContent>
-      <StyledLabel htmlFor="quickSearchInput">
+      <StyledLabel htmlFor=":r5:">
         <MiddleSearchIcon />
       </StyledLabel>
-      <StyledInput
-        id="quickSearchInput"
-        type="text"
-        placeholder="Quick search..."
+      <Command.Input
+        value={props.search}
+        onValueChange={props.setSearch}
+        placeholder="Quick Search..."
       />
     </StyledInputContent>
   );
