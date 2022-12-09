@@ -40,10 +40,9 @@ export const StyledTitle = styled('div')(({ theme }) => ({
 
 export const StyledTitleWrapper = styled('div')({
   maxWidth: '720px',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
+  height: '100%',
   position: 'relative',
+  ...displayFlex('center', 'center'),
 });
 
 export const StyledHeaderRightSide = styled('div')({
@@ -87,5 +86,27 @@ export const StyledCloseButton = styled.div(({ theme }) => {
       position: 'relative',
       zIndex: 1,
     },
+  };
+});
+
+export const StyledSwitchWrapper = styled.div(() => {
+  return {
+    position: 'absolute',
+    right: '100%',
+    top: 0,
+    bottom: 0,
+    margin: 'auto',
+    ...displayFlex('center', 'center'),
+  };
+});
+
+export const StyledSearchArrowWrapper = styled.div(() => {
+  return {
+    position: 'absolute',
+    left: 'calc(100% + 4px)',
+    top: 0,
+    bottom: 0,
+    margin: 'auto',
+    ...displayFlex('center', 'center'),
   };
 });

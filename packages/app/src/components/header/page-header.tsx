@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { StyledTitle, StyledTitleWrapper } from './styles';
+import {
+  StyledSearchArrowWrapper,
+  StyledSwitchWrapper,
+  StyledTitle,
+  StyledTitleWrapper,
+} from './styles';
+import { IconButton } from '@/ui/button';
+import { Content } from '@/ui/layout';
 import { useEditor } from '@/providers/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
+import { MiddleIconArrowDownSmallIcon } from '@blocksuite/icons';
 
 import Header from './header';
 
@@ -30,13 +38,22 @@ export const PageHeader = () => {
           setIsHover(false);
         }}
       >
-        <EditorModeSwitch
-          isHover={isHover}
-          style={{
-            marginRight: '12px',
-          }}
-        />
-        <StyledTitleWrapper>{title}</StyledTitleWrapper>
+        <StyledTitleWrapper>
+          <StyledSwitchWrapper>
+            <EditorModeSwitch
+              isHover={isHover}
+              style={{
+                marginRight: '12px',
+              }}
+            />
+          </StyledSwitchWrapper>
+          <Content ellipsis={true}>{title}</Content>
+          <StyledSearchArrowWrapper>
+            <IconButton>
+              <MiddleIconArrowDownSmallIcon />
+            </IconButton>
+          </StyledSearchArrowWrapper>
+        </StyledTitleWrapper>
       </StyledTitle>
     </Header>
   );
