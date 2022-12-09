@@ -4,7 +4,6 @@ import JumpTo from './jumpTo';
 
 const Result = () => {
   const { editor, mode, setMode } = useEditor();
-  console.log(editor?.page);
 
   return (
     <div>
