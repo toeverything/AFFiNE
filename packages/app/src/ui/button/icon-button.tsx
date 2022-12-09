@@ -11,7 +11,7 @@ import { StyledIconButton } from './styles';
 const SIZE_SMALL = 'small' as const;
 const SIZE_MIDDLE = 'middle' as const;
 const SIZE_NORMAL = 'normal' as const;
-// TODO: Designer is not sure about the size of the icon button
+// TODO: IconButton should merge into Button, but it has not been designed yet
 const SIZE_CONFIG = {
   [SIZE_SMALL]: {
     iconSize: 16,

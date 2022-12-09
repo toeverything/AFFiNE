@@ -5,9 +5,8 @@ import {
   StyledConfirmContent,
   StyledConfirmTitle,
   StyledModalWrapper,
-  StyledButton,
 } from '@/ui/confirm/styles';
-
+import { Button } from '@/ui/button';
 export type ConfirmProps = {
   title?: string;
   content?: string;
@@ -40,23 +39,26 @@ export const Confirm = ({
         <StyledConfirmContent>{content}</StyledConfirmContent>
 
         <StyledButtonWrapper>
-          <StyledButton
+          <Button
+            shape="round"
             onClick={() => {
               setOpen(false);
               onCancel?.();
             }}
+            style={{ marginRight: '24px' }}
           >
             Cancel
-          </StyledButton>
-          <StyledButton
-            confirmType={confirmType}
+          </Button>
+          <Button
+            type={confirmType}
+            shape="round"
             onClick={() => {
               setOpen(false);
               onConfirm?.();
             }}
           >
             {confirmText}
-          </StyledButton>
+          </Button>
         </StyledButtonWrapper>
       </StyledModalWrapper>
     </Modal>
