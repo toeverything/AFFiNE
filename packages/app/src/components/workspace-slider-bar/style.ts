@@ -5,7 +5,7 @@ export const StyledSliderBar = styled.div<{ show: boolean }>(
     return {
       width: show ? '320px' : '0',
       height: '100vh',
-      background: '#FBFBFC',
+      background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
       boxShadow: theme.shadow.modal,
       transition: 'width .15s',
       position: 'relative',
@@ -42,22 +42,25 @@ export const StyledArrowButton = styled.button<{ isShow: boolean }>(
   }
 );
 
-export const StyledListItem = styled.button(({ theme }) => {
-  return {
-    width: '296px',
-    height: '32px',
-    marginTop: '12px',
-    fontSize: theme.font.sm,
-    color: theme.colors.popoverColor,
-    padding: '0 12px',
-    borderRadius: '5px',
-    ...displayFlex('flex-start', 'center'),
-    ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
-    },
-  };
-});
+export const StyledListItem = styled.button<{ active?: boolean }>(
+  ({ theme, active }) => {
+    return {
+      width: '296px',
+      height: '32px',
+      marginTop: '12px',
+      fontSize: theme.font.sm,
+      color: active ? theme.colors.primaryColor : theme.colors.popoverColor,
+      backgroundColor: active ? theme.colors.hoverBackground : 'unset',
+      paddingLeft: '12px',
+      borderRadius: '5px',
+      ...displayFlex('flex-start', 'center'),
+      ':hover': {
+        color: theme.colors.primaryColor,
+        backgroundColor: theme.colors.hoverBackground,
+      },
+    };
+  }
+);
 
 export const StyledNewPageButton = styled(StyledListItem)(({ theme }) => {
   return {
@@ -69,20 +72,32 @@ export const StyledNewPageButton = styled(StyledListItem)(({ theme }) => {
   };
 });
 
-export const StyledSubListItem = styled.button(({ theme }) => {
+export const StyledSubListItem = styled.button<{
+  disable?: boolean;
+  active?: boolean;
+}>(({ theme, disable, active }) => {
   return {
     width: '296px',
     height: '32px',
     marginTop: '4px',
     fontSize: theme.font.sm,
-    color: theme.colors.popoverColor,
+    color: disable
+      ? theme.colors.iconColor
+      : active
+      ? theme.colors.primaryColor
+      : theme.colors.popoverColor,
+    backgroundColor: active ? theme.colors.hoverBackground : 'unset',
+
+    cursor: disable ? 'not-allowed' : 'pointer',
     paddingLeft: '45px',
     lineHeight: '32px',
     textAlign: 'start',
     ...textEllipsis(1),
-    ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
-    },
+    ':hover': disable
+      ? {}
+      : {
+          color: theme.colors.primaryColor,
+          backgroundColor: theme.colors.hoverBackground,
+        },
   };
 });

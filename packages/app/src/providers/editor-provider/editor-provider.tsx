@@ -39,6 +39,7 @@ type EditorHandlers = {
   favoritePage: (pageId: string) => void;
   unFavoritePage: (pageId: string) => void;
   toggleFavoritePage: (pageId: string) => void;
+  permanentlyDeletePage: (pageId: string) => void;
 };
 
 type EditorContextProps = PropsWithChildren<{}>;
@@ -59,6 +60,7 @@ export const EditorContext = createContext<EditorContextValue>({
   favoritePage: () => {},
   unFavoritePage: () => {},
   toggleFavoritePage: () => {},
+  permanentlyDeletePage: () => {},
 });
 
 export const useEditor = () => useContext(EditorContext);
@@ -108,19 +110,23 @@ export const EditorProvider = ({
       });
     },
     deletePage: pageId => {
-      workspace?.setPage(pageId, { trash: true });
+      workspace?.setPageMeta(pageId, { trash: true });
     },
     recyclePage: pageId => {
-      workspace?.setPage(pageId, { trash: false });
+      workspace?.setPageMeta(pageId, { trash: false });
     },
     toggleDeletePage: pageId => {
       const pageMeta = workspace?.meta.pages.find(p => p.id === pageId);
       if (pageMeta) {
-        workspace?.setPage(pageId, { trash: !pageMeta.trash });
+        workspace?.setPageMeta(pageId, { trash: !pageMeta.trash });
       }
     },
     favoritePage: pageId => {
-      workspace?.setPage(pageId, { favorite: true });
+      workspace?.setPageMeta(pageId, { favorite: true });
+    },
+    permanentlyDeletePage: pageId => {
+      // TODO:  workspace.meta.removePage or workspace.removePage?
+      workspace?.meta.removePage(pageId);
     },
     unFavoritePage: pageId => {
       workspace?.setPageMeta(pageId, { favorite: true });

@@ -16,13 +16,16 @@ import {
 } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
-import { IconButton } from '@/ui/button';
+import { IconButton, Button } from '@/ui/button';
 import CloseIcon from '@mui/icons-material/Close';
 import { getWarningMessage, shouldShowWarning } from './utils';
 import { Menu, MenuItem } from '@/ui/menu';
+import { useRouter } from 'next/router';
+import { useConfirm } from '@/providers/confirm-provider';
 
 const PopoverContent = () => {
   const { editor, mode, setMode } = useEditor();
+
   return (
     <>
       <MenuItem
@@ -81,9 +84,71 @@ const BrowserWarning = ({
   );
 };
 
-export const Header = ({ children }: PropsWithChildren<{}>) => {
-  const [showWarning, setShowWarning] = useState(shouldShowWarning());
+const HeaderRight = () => {
+  const { pageList, toggleDeletePage, permanentlyDeletePage } = useEditor();
+  const { confirm } = useConfirm();
+  const router = useRouter();
+  const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
+  const isTrash = !!currentPageMeta?.trash;
 
+  if (isTrash) {
+    const { id } = currentPageMeta;
+    return (
+      <>
+        <Button
+          bold={true}
+          shape="round"
+          style={{ marginRight: '24px' }}
+          onClick={() => {
+            toggleDeletePage(id);
+          }}
+        >
+          Restore it
+        </Button>
+        <Button
+          bold={true}
+          shape="round"
+          type="danger"
+          onClick={() => {
+            confirm({
+              title: 'Permanently delete',
+              content:
+                "Once deleted, you can't undo this action. Do you confirm?",
+              confirmText: 'Delete',
+              confirmType: 'danger',
+            }).then(confirm => {
+              if (confirm) {
+                router.push({ pathname: '/page-list/all' });
+                permanentlyDeletePage(id);
+              }
+            });
+          }}
+        >
+          Delete permanently
+        </Button>
+      </>
+    );
+  }
+  return (
+    <>
+      <ThemeModeSwitch />
+      <Menu content={<PopoverContent />} placement="bottom-end">
+        <IconButton>
+          <MoreVertical_24pxIcon />
+        </IconButton>
+      </Menu>
+    </>
+  );
+};
+
+export const Header = ({ children }: PropsWithChildren<{}>) => {
+  const { pageList } = useEditor();
+
+  const [showWarning, setShowWarning] = useState(shouldShowWarning());
+  const router = useRouter();
+  const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
+  const isTrash = !!currentPageMeta?.trash;
+  console.log('isTrash', isTrash);
   return (
     <StyledHeaderContainer hasWarning={showWarning}>
       <BrowserWarning
@@ -95,12 +160,7 @@ export const Header = ({ children }: PropsWithChildren<{}>) => {
       <StyledHeader hasWarning={showWarning}>
         {children}
         <StyledHeaderRightSide>
-          <ThemeModeSwitch />
-          <Menu content={<PopoverContent />} placement="bottom-end">
-            <IconButton>
-              <MoreVertical_24pxIcon />
-            </IconButton>
-          </Menu>
+          <HeaderRight />
         </StyledHeaderRightSide>
       </StyledHeader>
     </StyledHeaderContainer>

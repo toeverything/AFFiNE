@@ -78,21 +78,3 @@ const getButtonColors = (
       };
   }
 };
-
-export const StyledButton = styled.button<Pick<ConfirmProps, 'confirmType'>>(
-  ({ theme, confirmType }) => {
-    return {
-      width: '100px',
-      height: '38px',
-      borderRadius: '19px',
-      border: '1px solid',
-      ...getButtonColors(theme, confirmType),
-      fontSize: theme.font.sm,
-      fontWeight: 500,
-
-      '&:first-of-type': {
-        marginRight: '24px',
-      },
-    };
-  }
-);

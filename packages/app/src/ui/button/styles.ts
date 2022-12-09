@@ -1,5 +1,7 @@
 import { absoluteCenter, displayInlineFlex, styled } from '@/styles';
 import { CSSProperties } from 'react';
+import { ButtonProps } from '@/ui/button/interface';
+import { getSize, getButtonColors } from './utils';
 
 export const StyledIconButton = styled.button<{
   width: number;
@@ -50,6 +52,70 @@ export const StyledIconButton = styled.button<{
         },
         ...(hoverStyle ?? {}),
       },
+    };
+  }
+);
+export const StyledButton = styled.button<
+  Pick<
+    ButtonProps,
+    | 'size'
+    | 'disabled'
+    | 'hoverBackground'
+    | 'hoverColor'
+    | 'hoverStyle'
+    | 'shape'
+    | 'type'
+    | 'bold'
+  >
+>(
+  ({
+    theme,
+    size = 'default',
+    disabled,
+    hoverBackground,
+    hoverColor,
+    hoverStyle,
+    bold = false,
+    shape = 'default',
+    type = 'default',
+  }) => {
+    const { fontSize, borderRadius, padding, height } = getSize(size);
+
+    return {
+      height,
+      paddingLeft: padding,
+      paddingRight: padding,
+      border: '1px solid',
+      ...displayInlineFlex('flex-start', 'center'),
+      position: 'relative',
+      ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
+      transition: 'background .15s',
+      // TODO: Implement circle shape
+      borderRadius: shape === 'default' ? borderRadius : height / 2,
+      fontSize,
+      fontWeight: bold ? '500' : '400',
+      '.affine-button-icon': {
+        color: theme.colors.iconColor,
+      },
+      '>span': {
+        marginLeft: '5px',
+      },
+      // @ts-ignore
+      ...getButtonColors(theme, type, {
+        hoverBackground,
+        hoverColor,
+        hoverStyle,
+      }),
+
+      //
+      // ':hover': {
+      //   color: hoverColor ?? theme.colors.primaryColor,
+      //   background: hoverBackground ?? theme.colors.hoverBackground,
+      //   '.affine-button-icon':{
+      //
+      //   }
+      //   ...(hoverStyle ?? {}),
+      // },
     };
   }
 );

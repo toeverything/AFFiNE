@@ -1,14 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { StyledTitle, StyledTitleWrapper } from './styles';
+import {
+  StyledSearchArrowWrapper,
+  StyledSwitchWrapper,
+  StyledTitle,
+  StyledTitleWrapper,
+} from './styles';
+import { IconButton } from '@/ui/button';
+import { Content } from '@/ui/layout';
 import { useEditor } from '@/providers/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import { MiddleIconArrowDownSmallIcon } from '@blocksuite/icons';
 import { useModal } from '@/providers/global-modal-provider';
-import IconButton from '@/ui/button/icon-button';
+
 import Header from './header';
 
 export const PageHeader = () => {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState('Untitled');
   const [isHover, setIsHover] = useState(false);
 
   const { editor } = useEditor();
@@ -24,35 +31,35 @@ export const PageHeader = () => {
 
   return (
     <Header>
-      {title ? (
-        <StyledTitle
-          onMouseEnter={() => {
-            setIsHover(true);
-          }}
-          onMouseLeave={() => {
-            setIsHover(false);
-          }}
-        >
-          <EditorModeSwitch
-            isHover={isHover}
-            style={{
-              marginRight: '12px',
-            }}
-          />
-          <StyledTitleWrapper>{title}</StyledTitleWrapper>
-          <IconButton
-            style={{
-              marginLeft: '6px',
-            }}
-          >
-            <MiddleIconArrowDownSmallIcon
+      <StyledTitle
+        onMouseEnter={() => {
+          setIsHover(true);
+        }}
+        onMouseLeave={() => {
+          setIsHover(false);
+        }}
+      >
+        <StyledTitleWrapper>
+          <StyledSwitchWrapper>
+            <EditorModeSwitch
+              isHover={isHover}
+              style={{
+                marginRight: '12px',
+              }}
+            />
+          </StyledSwitchWrapper>
+          <Content ellipsis={true}>{title}</Content>
+          <StyledSearchArrowWrapper>
+            <IconButton
               onClick={() => {
                 triggerQuickSearchModal(true);
               }}
-            />
-          </IconButton>
-        </StyledTitle>
-      ) : null}
+            >
+              <MiddleIconArrowDownSmallIcon />
+            </IconButton>
+          </StyledSearchArrowWrapper>
+        </StyledTitleWrapper>
+      </StyledTitle>
     </Header>
   );
 };
