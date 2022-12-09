@@ -6,6 +6,7 @@ import Loading from './loading';
 import { Page, Workspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/editor/dist/block-loader';
 import { useRouter } from 'next/router';
+import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 export interface PageMeta {
   id: string;
   title: string;
@@ -40,6 +41,7 @@ type EditorHandlers = {
   unFavoritePage: (pageId: string) => void;
   toggleFavoritePage: (pageId: string) => void;
   permanentlyDeletePage: (pageId: string) => void;
+  search: (query: QueryContent) => any;
 };
 
 type EditorContextProps = PropsWithChildren<{}>;
@@ -61,6 +63,7 @@ export const EditorContext = createContext<EditorContextValue>({
   unFavoritePage: () => {},
   toggleFavoritePage: () => {},
   permanentlyDeletePage: () => {},
+  search: () => {},
 });
 
 export const useEditor = () => useContext(EditorContext);
@@ -135,6 +138,11 @@ export const EditorProvider = ({
       const pageMeta = workspace?.meta.pages.find(p => p.id === pageId);
       if (pageMeta) {
         workspace?.setPageMeta(pageId, { favorite: !pageMeta.favorite });
+      }
+    },
+    search: (query: QueryContent) => {
+      if (query) {
+        return workspace?.search(query);
       }
     },
   };

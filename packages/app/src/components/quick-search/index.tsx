@@ -11,6 +11,7 @@ import Result from './content';
 import QuickSearchFooter from './Footer';
 import { Command } from 'cmdk';
 import { useState } from 'react';
+import { useEditor } from '@/providers/editor-provider';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
@@ -19,7 +20,11 @@ const isMac = () => {
   return /macintosh|mac os x/i.test(navigator.userAgent);
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
-  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
+  const [result, setResult] = useState({});
+  const { search } = useEditor();
+  const { pageList } = useEditor();
+
   return (
     <Modal open={open} onClose={onClose} wrapperPosition={['top', 'center']}>
       <ModalWrapper
@@ -34,12 +39,12 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
       >
         <Command>
           <StyledModalHeader>
-            <Input search={search} setSearch={setSearch} />
+            <Input query={query} setQuery={setQuery} />
             <StyledShortcut>{isMac() ? '⌘+K' : 'Ctrl+K'}</StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider />
           <StyledContent>
-            <Result search={search} />
+            <Result result={query} />
           </StyledContent>
 
           <StyledModalFooter>
