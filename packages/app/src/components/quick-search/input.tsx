@@ -3,8 +3,8 @@ import { MiddleSearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
 const Input = (props: {
-  search: string;
-  setSearch: Dispatch<SetStateAction<string>>;
+  query: string;
+  setQuery: Dispatch<SetStateAction<string>>;
 }) => {
   return (
     <StyledInputContent>
@@ -12,8 +12,8 @@ const Input = (props: {
         <MiddleSearchIcon />
       </StyledLabel>
       <Command.Input
-        value={props.search}
-        onValueChange={props.setSearch}
+        value={props.query}
+        onValueChange={props.setQuery}
         placeholder="Quick Search..."
       />
     </StyledInputContent>

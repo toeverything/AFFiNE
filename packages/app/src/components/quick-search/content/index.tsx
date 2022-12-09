@@ -3,9 +3,9 @@ import JumpTo from './JumpTo';
 import { Command } from 'cmdk';
 import SearchResult from './searchResult';
 
-const Result = (props: { search: string }) => {
+const Result = (props: { result: string }) => {
   return (
-    <Command.List>{props.search ? <SearchResult /> : <JumpTo />}</Command.List>
+    <Command.List>{props.result ? <SearchResult /> : <JumpTo />}</Command.List>
   );
 };
 
