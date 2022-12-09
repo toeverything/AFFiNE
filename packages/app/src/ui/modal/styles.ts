@@ -1,6 +1,7 @@
 import { styled } from '@/styles';
 import ModalUnstyled from '@mui/base/ModalUnstyled';
 import { Wrapper } from '@/ui/layout';
+import { CSSProperties } from 'react';
 
 export const StyledBackdrop = styled.div<{ open?: boolean }>(({ open }) => {
   return {
@@ -14,10 +15,16 @@ export const StyledBackdrop = styled.div<{ open?: boolean }>(({ open }) => {
   };
 });
 
-export const StyledModal = styled(ModalUnstyled)(({ theme }) => {
+export const StyledModal = styled(ModalUnstyled)<{
+  alignItems: CSSProperties['alignItems'];
+  justifyContent: CSSProperties['justifyContent'];
+}>(({ theme, alignItems, justifyContent }) => {
   return {
     width: '100vw',
     height: '100vh',
+    display: 'flex',
+    alignItems,
+    justifyContent,
     position: 'fixed',
     left: '0',
     top: '0',

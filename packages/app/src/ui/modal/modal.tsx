@@ -38,15 +38,14 @@ export const Modal = (props: ModalProps) => {
   } = props;
   const [vertical, horizontal] = wrapperPosition;
   return (
-    <StyledModal {...otherProps} open={open} components={{ Backdrop }}>
-      <Fade in={open}>
-        <StyledWrapper
-          alignItems={transformConfig[vertical]}
-          justifyContent={transformConfig[horizontal]}
-        >
-          {children}
-        </StyledWrapper>
-      </Fade>
+    <StyledModal
+      {...otherProps}
+      open={open}
+      components={{ Backdrop }}
+      alignItems={transformConfig[vertical]}
+      justifyContent={transformConfig[horizontal]}
+    >
+      <Fade in={open}>{children}</Fade>
     </StyledModal>
   );
 };
