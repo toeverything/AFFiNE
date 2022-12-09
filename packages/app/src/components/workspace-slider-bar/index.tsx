@@ -10,6 +10,7 @@ import {
 import { Arrow } from './icons';
 import Link from 'next/link';
 import { useEditor } from '@/providers/editor-provider';
+import { useModal } from '@/providers/global-modal-provider';
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal } = useModal();
   const [show, setShow] = useState(false);

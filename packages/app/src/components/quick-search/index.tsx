@@ -1,4 +1,4 @@
-import { Modal } from '@/ui/modal';
+import { Modal, ModalWrapper } from '@/ui/modal';
 
 import {
   StyledModalWrapper,
@@ -21,7 +21,15 @@ const isMac = () => {
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   return (
     <Modal open={open} onClose={onClose}>
-      <StyledModalWrapper data-testid="quick-search-modal-content">
+      <ModalWrapper
+        width={620}
+        height={'auto'}
+        style={{
+          maxHeight: '720px',
+          minHeight: '350px',
+          borderRadius: '20px',
+        }}
+      >
         <StyledModalHeader>
           <Input />
           <StyledShortcut>{isMac() ? '⌘+K' : 'Ctrl+K'}</StyledShortcut>
@@ -34,7 +42,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         <StyledModalFooter>
           <QuickSearchFooter />
         </StyledModalFooter>
-      </StyledModalWrapper>
+      </ModalWrapper>
     </Modal>
   );
 };

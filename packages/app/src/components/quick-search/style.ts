@@ -22,7 +22,7 @@ export const StyledContent = styled('div')(({ theme }) => {
     width: '100%',
     padding: '5px 24px',
     overflow: 'auto',
-    color: theme.colors.textColor,
+    color: theme.colors.popoverColor,
     marginTop: '16px',
     letterSpacing: '0.06em',
   };
@@ -42,14 +42,18 @@ export const StyledInput = styled('input')(({ theme }) => {
     fontSize: theme.font.sm,
     ...displayFlex('space-between', 'center'),
     letterSpacing: '0.06em',
-    color: theme.colors.textColor,
+    color: theme.colors.popoverColor,
     '::placeholder': {
       color: theme.colors.placeHolderColor,
     },
   };
 });
 export const StyledLabel = styled('label')(({ theme }) => {
-  return { width: '24px', height: '24px' };
+  return {
+    width: '24px',
+    height: '24px',
+    color: theme.colors.iconColor,
+  };
 });
 
 export const StyledModalHeader = styled('div')(({ theme }) => {
@@ -57,7 +61,7 @@ export const StyledModalHeader = styled('div')(({ theme }) => {
     height: '48px',
     margin: '12px 24px 0px 24px',
     ...displayFlex('space-between', 'center'),
-    color: theme.colors.textColor,
+    color: theme.colors.popoverColor,
   };
 });
 export const StyledModalDivider = styled('div')(({ theme }) => {
@@ -75,7 +79,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     fontSize: theme.font.sm,
     lineHeight: '20px',
     textAlign: 'center',
-    color: theme.colors.textColor,
+    color: theme.colors.popoverColor,
     margin: '16px 0',
   };
 });
@@ -85,7 +89,7 @@ export const StyledModalFooterContent = styled('div')(({ theme }) => {
     lineHeight: '20px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),
-    color: theme.colors.textColor,
+    color: theme.colors.popoverColor,
     margin: '16px 0',
     span: {
       marginLeft: '12px',
