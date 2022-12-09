@@ -10,7 +10,7 @@ const StyledLoadingContainer = styled('div')(({ theme }) => {
     color: '#6880FF',
     h1: {
       fontSize: '2em',
-      marginTop: '150px',
+      marginTop: '15px',
       fontWeight: '600',
     },
   };

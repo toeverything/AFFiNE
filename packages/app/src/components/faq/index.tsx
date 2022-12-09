@@ -16,7 +16,7 @@ export const FAQ = () => {
   const [showContent, setShowContent] = useState(false);
   const { mode } = useTheme();
   const { mode: editorMode } = useEditor();
-  const { shortcutsModalHandler, triggerContactModal } = useModal();
+  const { triggerShortcutsModal, triggerContactModal } = useModal();
   const isEdgelessDark = mode === 'dark' && editorMode === 'edgeless';
 
   return (
@@ -38,7 +38,7 @@ export const FAQ = () => {
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
                   setShowContent(false);
-                  triggerContactModal(true);
+                  triggerContactModal();
                 }}
               >
                 <ContactIcon />
@@ -50,7 +50,7 @@ export const FAQ = () => {
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
                   setShowContent(false);
-                  shortcutsModalHandler(true);
+                  triggerShortcutsModal();
                 }}
               >
                 <KeyboardIcon />
@@ -74,14 +74,3 @@ export const FAQ = () => {
     </>
   );
 };
-
-const routesLIst: any = [
-  {
-    path: '/',
-    children: [
-      {
-        element: <HelpIcon />,
-      },
-    ],
-  },
-];

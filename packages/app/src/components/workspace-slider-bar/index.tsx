@@ -47,7 +47,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
   );
 };
 export const WorkSpaceSliderBar = () => {
-  const { triggerQuickSearchModal } = useModal();
+  const { triggerQuickSearchModal, triggerImportModal } = useModal();
   const [show, setShow] = useState(false);
   const [showSubFavorite, setShowSubFavorite] = useState(false);
   const { createPage } = useEditor();
@@ -58,7 +58,7 @@ export const WorkSpaceSliderBar = () => {
       <StyledSliderBar show={show}>
         <StyledListItem
           onClick={() => {
-            triggerQuickSearchModal(true);
+            triggerQuickSearchModal();
           }}
         >
           Quick search
@@ -102,7 +102,13 @@ export const WorkSpaceSliderBar = () => {
         </StyledListItem>
         <FavoriteList showList={showSubFavorite} />
 
-        <StyledListItem>Import</StyledListItem>
+        <StyledListItem
+          onClick={() => {
+            triggerImportModal();
+          }}
+        >
+          Import
+        </StyledListItem>
 
         <Link href={{ pathname: '/page-list/trash' }}>
           <StyledListItem active={router.pathname === '/page-list/trash'}>
