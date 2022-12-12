@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import ShortcutsModal from '@/components/shortcuts-modal';
 import ContactModal from '@/components/contact-modal';
@@ -8,7 +8,7 @@ import { ImportModal } from '@/components/import';
 type ModalContextValue = {
   triggerShortcutsModal: () => void;
   triggerContactModal: () => void;
-  triggerQuickSearchModal: () => void;
+  triggerQuickSearchModal: (visible?: boolean) => void;
   triggerImportModal: () => void;
 };
 type ModalContextProps = PropsWithChildren<{}>;
@@ -22,7 +22,7 @@ type ModalMap = {
 export const ModalContext = createContext<ModalContextValue>({
   triggerShortcutsModal: () => {},
   triggerContactModal: () => {},
-  triggerQuickSearchModal: () => {},
+  triggerQuickSearchModal: (visible?) => {},
   triggerImportModal: () => {},
 });
 
@@ -45,23 +45,6 @@ export const ModalProvider = ({
     });
   };
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && e.metaKey) {
-        const selection = window.getSelection();
-        if (selection?.toString()) {
-          triggerHandler('quickSearch', false);
-          return;
-        }
-        if (selection?.isCollapsed) {
-          triggerHandler('quickSearch');
-        }
-      }
-    };
-    document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
-  }, []);
-
   return (
     <ModalContext.Provider
       value={{
@@ -71,8 +54,8 @@ export const ModalProvider = ({
         triggerContactModal: () => {
           triggerHandler('contact');
         },
-        triggerQuickSearchModal: () => {
-          triggerHandler('quickSearch');
+        triggerQuickSearchModal: (visible?) => {
+          triggerHandler('quickSearch', visible);
         },
         triggerImportModal: () => {
           triggerHandler('import');

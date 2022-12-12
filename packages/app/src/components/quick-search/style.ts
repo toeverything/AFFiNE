@@ -36,18 +36,21 @@ export const StyledJumpTo = styled('div')(({ theme }) => {
       marginBottom: '10px',
     },
     a: {
-      color: theme.colors.popoverColor,
+      color: 'inherit',
       padding: '5px 5px 5px 0',
       ...displayFlex('center', 'center'),
       ':visited': {
         color: theme.colors.popoverColor,
       },
+      ':hover': {
+        color: theme.colors.primaryColor,
+      },
+      transition: `color .15s`,
       svg: {
         marginBottom: '2px',
       },
       span: {
         marginLeft: '12px',
-
         lineHeight: '22px',
       },
     },

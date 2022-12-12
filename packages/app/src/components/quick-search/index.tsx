@@ -10,8 +10,9 @@ import Input from './Input';
 import Result from './content';
 import QuickSearchFooter from './Footer';
 import { Command } from 'cmdk';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useEditor } from '@/providers/editor-provider';
+import { useModal } from '@/providers/global-modal-provider';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
@@ -21,10 +22,29 @@ const isMac = () => {
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [query, setQuery] = useState('');
-  const [result, setResult] = useState({});
   const { search } = useEditor();
+  const [result, setResult] = useState({});
   const { pageList } = useEditor();
-
+  const { triggerQuickSearchModal } = useModal();
+  useEffect(() => {
+    setResult(search(query, { enrich: true }));
+  }, [query]);
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && e.metaKey) {
+        const selection = window.getSelection();
+        if (selection?.toString()) {
+          triggerQuickSearchModal(false);
+          return;
+        }
+        if (selection?.isCollapsed) {
+          triggerQuickSearchModal(!open);
+        }
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, [open]);
   return (
     <Modal open={open} onClose={onClose} wrapperPosition={['top', 'center']}>
       <ModalWrapper
