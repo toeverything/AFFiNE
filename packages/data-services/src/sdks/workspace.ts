@@ -1,106 +1,187 @@
-import useSWR, { SWRConfiguration } from 'swr';
-import type {
-  MayError,
-  RequestCreateWorkspace,
-  RequestUpdateWorkspace,
-  ResponseCreateWorkspace,
-  ResponseGetWorkspaces,
-} from './types';
-import { request, ServiceError } from '../request';
+import { type } from 'os';
+import { request } from '../request';
+import { User } from './user';
 
-const WORKSPACE_URL = '/api/workspace';
-
-async function doGetWorkSpaces(url: string) {
-  const { data } = await request.get<ResponseGetWorkspaces>(url);
-  return data;
+export interface GetWorkspaceDetailParams {
+  id: string;
 }
 
-export async function getWorkSpaces() {
-  return await doGetWorkSpaces(WORKSPACE_URL);
+export enum WorkspaceType {
+  Private = 0,
+  Normal = 1,
 }
 
-async function doCreateWorkspace(url: string, req: RequestCreateWorkspace) {
-  const { data } = await request.put<ResponseCreateWorkspace>(url, req);
-  return data;
+export enum PermissionType {
+  Read = 0,
+  Write = 1,
+  Admin = 2,
+  Owner = 3,
 }
 
-export async function createWorkspace(req: RequestCreateWorkspace) {
-  doCreateWorkspace(WORKSPACE_URL, req);
+export interface Workspace {
+  id: string;
+  type: WorkspaceType;
+  public: boolean;
+  permission_type: PermissionType;
+  create_at: number;
 }
 
-async function doUpdateWorkspace(url: string, req: RequestUpdateWorkspace) {
-  const { data } = await request.post<MayError>(url, req);
-  return data;
+export async function getWorkspaces(): Promise<Workspace[]> {
+  const data = await request({
+    url: '/api/workspace',
+    method: 'GET',
+  });
+
+  return data.data;
 }
 
-export function updateWorkspace(id: string, req: RequestUpdateWorkspace) {
-  return doUpdateWorkspace(`${WORKSPACE_URL}${id}`, req);
+export interface WorkspaceDetail extends Workspace {
+  owner: User;
+  member_count: number;
 }
 
-async function doDeleteWorkspace(url: string) {
-  const { data } = await request.delete<MayError>(url);
-  return data;
+export async function getWorkspaceDetail(
+  params: GetWorkspaceDetailParams
+): Promise<WorkspaceDetail | null> {
+  const data = await request<WorkspaceDetail | null>({
+    url: `/api/workspace/${params.id}`,
+    method: 'PUT',
+  });
+
+  return data.data;
 }
 
-export function deleteWorkspace(id: string) {
-  return doDeleteWorkspace(`${WORKSPACE_URL}${id}`);
+export interface Permission {
+  id: number;
+  type: PermissionType;
+  workspace_id: string;
+  accepted: boolean;
+  create_at: number;
 }
 
-export function useGetWorkspaces(config?: SWRConfiguration) {
-  const { data, error } = useSWR<ResponseGetWorkspaces, ServiceError, string>(
-    WORKSPACE_URL,
-    doGetWorkSpaces,
-    config
-  );
-  return {
-    data,
-    isLoading: !data,
-    isError: data && !error,
-  };
+export interface RegisteredUser extends User {
+  type: 'Registered';
 }
 
-export function useCreateWorkspace(
-  req: RequestCreateWorkspace,
-  config?: SWRConfiguration
-) {
-  const { data, error } = useSWR<ResponseGetWorkspaces, ServiceError>(
-    [WORKSPACE_URL, req],
-    doCreateWorkspace,
-    config
-  );
-  return {
-    data,
-    isLoading: !error && !data,
-    isError: error,
-  };
+export interface UnregisteredUser {
+  type: 'Unregistered';
+  email: string;
 }
 
-export function useUpdateWorkspace(
-  id: string,
-  req: RequestCreateWorkspace,
-  config?: SWRConfiguration
-) {
-  const { data, error } = useSWR<MayError, ServiceError>(
-    [`${WORKSPACE_URL}${id}`, req],
-    doUpdateWorkspace,
-    config
-  );
-  return {
-    data,
-    isLoading: !error && !data,
-    isError: error,
-  };
+export interface Member extends Permission {
+  user: RegisteredUser | UnregisteredUser;
 }
 
-export function useDeleteWorkspace(id: string, config?: SWRConfiguration) {
-  const { data, error } = useSWR<MayError, ServiceError>(
-    `${WORKSPACE_URL}${id}`,
-    doDeleteWorkspace,
-    config
-  );
-  return {
-    data,
-    isLoading: !error && !data,
-    isError: error,
-  };
+export interface GetWorkspaceMembersParams {
+  id: string;
+}
+
+export async function getWorkspaceMembers(
+  params: GetWorkspaceDetailParams
+): Promise<Member[]> {
+  const data = await request<Member[]>({
+    url: `/api/workspace/${params.id}/permission`,
+    method: 'GET',
+  });
+
+  return data.data;
+}
+
+export interface CreateWorkspaceParams {
+  name: string;
+  avatar_url: string;
+}
+
+export async function createWorkspace(
+  params: CreateWorkspaceParams
+): Promise<void> {
+  const data = await request({
+    url: '/api/workspace',
+    method: 'POST',
+    data: params,
+  });
+
+  return data.data;
+}
+
+export interface UpdateWorkspaceParams {
+  id: string;
+  public: boolean;
+}
+
+export async function updateWorkspace(
+  params: UpdateWorkspaceParams
+): Promise<void> {
+  const data = await request({
+    url: `/api/workspace/${params.id}`,
+    method: 'POST',
+    data: {
+      public: params.public,
+    },
+  });
+
+  return data.data;
+}
+
+export interface DeleteWorkspaceParams {
+  id: string;
+}
+
+export async function deleteWorkspace(
+  params: DeleteWorkspaceParams
+): Promise<void> {
+  const data = await request({
+    url: `/api/workspace/${params.id}`,
+    method: 'DELETE',
+  });
+
+  return data.data;
+}
+
+export interface InviteMemberParams {
+  id: string;
+  email: string;
+}
+
+/**
+ * Notice: Only support normal(contrast to private) workspace.
+ */
+export async function inviteMember(params: InviteMemberParams): Promise<void> {
+  const data = await request({
+    url: `/api/workspace/${params.id}/permission`,
+    method: 'POST',
+    data: {
+      email: params.email,
+    },
+  });
+
+  return data.data;
+}
+
+export interface RemoveMemberParams {
+  permissionId: number;
+}
+
+export async function removeMember(params: RemoveMemberParams): Promise<void> {
+  const data = await request({
+    url: `/api/permission/${params.permissionId}`,
+    method: 'DELETE',
+  });
+
+  return data.data;
+}
+
+export interface AcceptInvitingParams {
+  invitingCode: string;
+}
+
+export async function acceptInviting(
+  params: AcceptInvitingParams
+): Promise<void> {
+  const data = await request({
+    url: `/api/invite/${params.invitingCode}`,
+    method: 'POST',
+  });
+
+  return data.data;
 }
