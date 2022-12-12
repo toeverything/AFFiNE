@@ -10,10 +10,10 @@ Use the table of contents icon on the top left corner of this document to get to
 
 ## New contributor guide
 
-Currently we have two versions of affine:
+Currently we have two versions of AFFiNE:
 
-- [AFFiNE Pre-Alpha](https://livedemo.affine.pro/). Using branch master.
-- [AFFiNE Alpha](https://pathfinder.affine.pro/). Using branch pathfinder. Our developer mainly focus on. Once we finish it, we will archive current master branch and use pathfinder as master branch.
+- [AFFiNE Pre-Alpha](https://livedemo.affine.pro/). This version users the branch `master` however is no longer actively developed and will be archived in the future.
+- [AFFiNE Alpha](https://pathfinder.affine.pro/). This is our latest version under active development. We plan to update this to the master branch in the near future.
 
 To get an overview of the project, read the [README](../README.md). Here are some resources to help you get started with open source contributions:
 
