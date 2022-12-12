@@ -24,9 +24,8 @@ export const StyledArrow = styled(MiddleArrowRightIcon)(({ theme }) => {
 });
 
 export const StyledMenuItem = styled.button<{
-  popperVisible?: boolean;
   isDir?: boolean;
-}>(({ theme, popperVisible, isDir = false }) => {
+}>(({ theme, isDir = false }) => {
   return {
     width: '100%',
     borderRadius: '5px',
@@ -36,12 +35,8 @@ export const StyledMenuItem = styled.button<{
     ...displayFlex('flex-start', 'center'),
     cursor: isDir ? 'pointer' : '',
     position: 'relative',
-    color: popperVisible
-      ? theme.colors.primaryColor
-      : theme.colors.popoverColor,
-    backgroundColor: popperVisible
-      ? theme.colors.hoverBackground
-      : 'transparent',
+    color: theme.colors.popoverColor,
+    backgroundColor: 'transparent',
 
     ':hover': {
       color: theme.colors.primaryColor,

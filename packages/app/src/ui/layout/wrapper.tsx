@@ -12,7 +12,19 @@ export type WrapperProps = {
 };
 
 // Sometimes we just want to wrap a component with a div to set flex or other styles, but we don't want to create a new component for it.
-export const Wrapper = styled.div<WrapperProps>(
+export const Wrapper = styled('button', {
+  shouldForwardProp: prop => {
+    return ![
+      'display',
+      'justifyContent',
+      'alignItems',
+      'flexWrap',
+      'flexDirection',
+      'flexShrink',
+      'flexGrow',
+    ].includes(prop);
+  },
+})<WrapperProps>(
   ({
     display = 'flex',
     justifyContent = 'flex-start',

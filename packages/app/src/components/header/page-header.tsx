@@ -52,7 +52,7 @@ export const PageHeader = () => {
           <StyledSearchArrowWrapper>
             <IconButton
               onClick={() => {
-                triggerQuickSearchModal(true);
+                triggerQuickSearchModal();
               }}
             >
               <MiddleIconArrowDownSmallIcon />

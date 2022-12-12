@@ -3,7 +3,20 @@ import { CSSProperties } from 'react';
 import { ButtonProps } from '@/ui/button/interface';
 import { getSize, getButtonColors } from './utils';
 
-export const StyledIconButton = styled.button<{
+export const StyledIconButton = styled('button', {
+  shouldForwardProp: prop => {
+    return ![
+      'borderRadius',
+      'top',
+      'right',
+      'width',
+      'height',
+      'hoverBackground',
+      'hoverColor',
+      'hoverStyle',
+    ].includes(prop);
+  },
+})<{
   width: number;
   height: number;
   borderRadius: number;
@@ -55,7 +68,13 @@ export const StyledIconButton = styled.button<{
     };
   }
 );
-export const StyledButton = styled.button<
+export const StyledButton = styled('button', {
+  shouldForwardProp: prop => {
+    return !['hoverBackground', 'hoverColor', 'hoverStyle', 'type'].includes(
+      prop
+    );
+  },
+})<
   Pick<
     ButtonProps,
     | 'size'

@@ -148,7 +148,6 @@ export const Header = ({ children }: PropsWithChildren<{}>) => {
   const router = useRouter();
   const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
   const isTrash = !!currentPageMeta?.trash;
-  console.log('isTrash', isTrash);
   return (
     <StyledHeaderContainer hasWarning={showWarning}>
       <BrowserWarning
