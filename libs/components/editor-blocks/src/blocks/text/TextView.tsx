@@ -266,6 +266,8 @@ export const TextView = ({
         >
             <BlockPendantProvider editor={editor} block={block}>
                 <TextBlock
+                    // Once the block type changed, this node should be re-render
+                    key={`${block.id}_${block.type}`}
                     block={block}
                     type={block.type}
                     editor={editor}
