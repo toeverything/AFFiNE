@@ -1,48 +1,24 @@
 import type { EditorContainer } from '@blocksuite/editor';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import dynamic from 'next/dynamic';
 import Loading from './loading';
 import { Page, Workspace } from '@blocksuite/store';
-import { BlockSchema } from '@blocksuite/editor/dist/block-loader';
-import { useRouter } from 'next/router';
-import { QueryContent } from '@blocksuite/store/dist/workspace/search';
-export interface PageMeta {
-  id: string;
-  title: string;
-  favorite: boolean;
-  trash: boolean;
-  createDate: number;
-  trashDate: number | null;
-}
+import useEditorHandler from './useEditorHandler';
+import { EditorHandlers, PageMeta } from './interface';
+
 // Blocksuite has to be imported dynamically since it has a lot of effects
-const DynamicEditor = dynamic(() => import('./initial-editor'), {
+const DynamicEditor = dynamic(() => import('./editor-reactor'), {
   ssr: false,
 });
 
 type EditorContextValue = {
   mode: EditorContainer['mode'];
   setMode: (mode: EditorContainer['mode']) => void;
-  currentPage: Page | null;
-  editor: EditorContainer | null;
+  currentPage: Page | void;
+  editor: EditorContainer | void;
   pageList: PageMeta[];
 } & EditorHandlers;
-
-type EditorHandlers = {
-  createPage: (pageId?: string) => void;
-  openPage: (
-    pageId: string,
-    query?: { [key: string]: string }
-  ) => Promise<boolean>;
-  deletePage: (pageId: string) => void;
-  recyclePage: (pageId: string) => void;
-  toggleDeletePage: (pageId: string) => void;
-  favoritePage: (pageId: string) => void;
-  unFavoritePage: (pageId: string) => void;
-  toggleFavoritePage: (pageId: string) => void;
-  permanentlyDeletePage: (pageId: string) => void;
-  search: (query: QueryContent) => any;
-};
 
 type EditorContextProps = PropsWithChildren<{}>;
 
@@ -50,20 +26,9 @@ export const EditorContext = createContext<EditorContextValue>({
   mode: 'page',
   setMode: () => {},
   pageList: [],
-  currentPage: null,
-  editor: null,
-  createPage: () => {},
-  openPage: async () => {
-    return false;
-  },
-  deletePage: () => {},
-  recyclePage: () => {},
-  toggleDeletePage: () => {},
-  favoritePage: () => {},
-  unFavoritePage: () => {},
-  toggleFavoritePage: () => {},
-  permanentlyDeletePage: () => {},
-  search: () => {},
+  currentPage: undefined,
+  editor: undefined,
+  ...({} as EditorHandlers),
 });
 
 export const useEditor = () => useContext(EditorContext);
@@ -71,13 +36,13 @@ export const useEditor = () => useContext(EditorContext);
 export const EditorProvider = ({
   children,
 }: PropsWithChildren<EditorContextProps>) => {
-  const router = useRouter();
-  const blockSchemaRef = useRef<typeof BlockSchema | null>(null);
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [currentPage, setCurrentPage] = useState<Page | null>(null);
+  const [workspace, setWorkspace] = useState<Workspace>();
+  const [currentPage, setCurrentPage] = useState<Page>();
   const [pageList, setPageList] = useState<PageMeta[]>([]);
-  const [editor, setEditor] = useState<EditorContainer | null>(null);
+  const [editor, setEditor] = useState<EditorContainer>();
   const [mode, setMode] = useState<EditorContainer['mode']>('page');
+
+  const editorHandlers = useEditorHandler(workspace);
 
   useEffect(() => {
     const event = new CustomEvent('affine.switch-mode', { detail: mode });
@@ -88,9 +53,9 @@ export const EditorProvider = ({
     if (!workspace) {
       return;
     }
-    setPageList(workspace.meta.pages as PageMeta[]);
+    setPageList(workspace.meta.pageMetas as PageMeta[]);
     workspace.meta.pagesUpdated.on(res => {
-      setPageList(workspace.meta.pages as PageMeta[]);
+      setPageList(workspace.meta.pageMetas as PageMeta[]);
     });
     return () => {
       // TODO: Does it need to be removed?
@@ -98,67 +63,20 @@ export const EditorProvider = ({
     };
   }, [workspace]);
 
-  const editorHandler: EditorHandlers = {
-    createPage: (pageId = new Date().getTime().toString()) => {
-      blockSchemaRef.current &&
-        workspace?.createPage(pageId).register(blockSchemaRef.current);
-    },
-    openPage: (pageId, query = {}) => {
-      return router.push({
-        pathname: '/',
-        query: {
-          pageId,
-          ...query,
-        },
-      });
-    },
-    deletePage: pageId => {
-      workspace?.setPageMeta(pageId, { trash: true });
-    },
-    recyclePage: pageId => {
-      workspace?.setPageMeta(pageId, { trash: false });
-    },
-    toggleDeletePage: pageId => {
-      const pageMeta = workspace?.meta.pages.find(p => p.id === pageId);
-      if (pageMeta) {
-        workspace?.setPageMeta(pageId, { trash: !pageMeta.trash });
-      }
-    },
-    favoritePage: pageId => {
-      workspace?.setPageMeta(pageId, { favorite: true });
-    },
-    permanentlyDeletePage: pageId => {
-      // TODO:  workspace.meta.removePage or workspace.removePage?
-      workspace?.meta.removePage(pageId);
-    },
-    unFavoritePage: pageId => {
-      workspace?.setPageMeta(pageId, { favorite: true });
-    },
-    toggleFavoritePage: pageId => {
-      const pageMeta = workspace?.meta.pages.find(p => p.id === pageId);
-      if (pageMeta) {
-        workspace?.setPageMeta(pageId, { favorite: !pageMeta.favorite });
-      }
-    },
-    search: (query: QueryContent) => {
-      if (query) {
-        return workspace?.search(query);
-      }
-    },
-  };
-
   return (
     <EditorContext.Provider
-      value={{ editor, currentPage, mode, setMode, pageList, ...editorHandler }}
+      value={{
+        editor,
+        currentPage,
+        mode,
+        setMode,
+        pageList,
+        ...editorHandlers,
+      }}
     >
       <DynamicEditor
         workspace={workspace}
         currentPage={currentPage}
-        setBlockSchema={blockSchema => {
-          if (!blockSchemaRef.current) {
-            blockSchemaRef.current = blockSchema;
-          }
-        }}
         setEditor={setEditor}
         setWorkspace={setWorkspace}
         setCurrentPage={setCurrentPage}

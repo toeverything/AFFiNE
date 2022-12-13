@@ -50,7 +50,7 @@ export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal, triggerImportModal } = useModal();
   const [show, setShow] = useState(false);
   const [showSubFavorite, setShowSubFavorite] = useState(false);
-  const { createPage } = useEditor();
+  const { createPage, getPageMeta, openPage } = useEditor();
   const router = useRouter();
 
   return (
@@ -116,8 +116,10 @@ export const WorkSpaceSliderBar = () => {
           </StyledListItem>
         </Link>
         <StyledNewPageButton
-          onClick={() => {
-            createPage();
+          onClick={async () => {
+            const page = await createPage();
+            const pageMeta = getPageMeta(page.id);
+            pageMeta && openPage(pageMeta.id);
           }}
         >
           New Page
