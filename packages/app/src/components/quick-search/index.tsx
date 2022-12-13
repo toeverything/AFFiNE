@@ -22,7 +22,6 @@ const isMac = () => {
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [query, setQuery] = useState('');
   const { triggerQuickSearchModal } = useModal();
-
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {
@@ -38,7 +37,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, [open]);
+  }, [open, triggerQuickSearchModal]);
   return (
     <Modal open={open} onClose={onClose} wrapperPosition={['top', 'center']}>
       <ModalWrapper

@@ -23,8 +23,3 @@ export const StyledButtonWrapper = styled.div(() => {
     },
   };
 });
-
-export const StyledLoadingWrapper = styled.div(() => {
-  return {
-  }
-})

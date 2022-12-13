@@ -3,7 +3,15 @@ import { useConfirm } from '@/providers/confirm-provider';
 import { Menu, MenuItem } from '@/ui/menu';
 import { Wrapper } from '@/ui/layout';
 import { IconButton } from '@/ui/button';
-import { MoreVerticalIcon, RestoreIcon, DeleteIcon } from '@blocksuite/icons';
+import {
+  MoreVerticalIcon,
+  RestoreIcon,
+  DeleteIcon,
+  FavouritesIcon,
+  FavouritedIcon,
+  OpenInNewIcon,
+  TrashIcon,
+} from '@blocksuite/icons';
 import React from 'react';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
@@ -17,6 +25,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         onClick={() => {
           toggleFavoritePage(id);
         }}
+        icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
         {favorite ? 'Remove' : 'Add'} to favourites
       </MenuItem>
@@ -24,6 +33,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         onClick={() => {
           openPage(id);
         }}
+        icon={<OpenInNewIcon />}
       >
         Open in new tab
       </MenuItem>
@@ -39,6 +49,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
             confirm && toggleDeletePage(id);
           });
         }}
+        icon={<TrashIcon />}
       >
         Delete
       </MenuItem>

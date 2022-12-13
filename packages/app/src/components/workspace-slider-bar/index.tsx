@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import {
   StyledArrowButton,
+  StyledLink,
   StyledListItem,
   StyledNewPageButton,
   StyledSliderBar,
@@ -9,7 +10,15 @@ import {
 } from './style';
 import { Arrow } from './icons';
 import Collapse from '@mui/material/Collapse';
-import { ArrowDownIcon } from '@blocksuite/icons';
+import {
+  ArrowDownIcon,
+  SearchIcon,
+  AllPagesIcon,
+  FavouritesIcon,
+  ImportIcon,
+  TrashIcon,
+  AddIcon,
+} from '@blocksuite/icons';
 import Link from 'next/link';
 import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
@@ -20,7 +29,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { pageList, openPage } = useEditor();
   const router = useRouter();
 
-  const favoriteList = pageList.filter(p => p.favorite);
+  const favoriteList = pageList.filter(p => p.favorite && !p.trash);
   return (
     <Collapse in={showList}>
       {favoriteList.map((pageMeta, index) => {
@@ -61,20 +70,18 @@ export const WorkSpaceSliderBar = () => {
             triggerQuickSearchModal();
           }}
         >
-          Quick search
+          <SearchIcon /> Quick search
         </StyledListItem>
         <Link href={{ pathname: '/page-list/all' }}>
           <StyledListItem active={router.pathname === '/page-list/all'}>
-            All pages
+            <AllPagesIcon /> All pages
           </StyledListItem>
         </Link>
         <StyledListItem active={router.pathname === '/page-list/favorite'}>
-          <Link
-            href={{ pathname: '/page-list/favorite' }}
-            style={{ flexGrow: 1, textAlign: 'left', color: 'inherit' }}
-          >
+          <StyledLink href={{ pathname: '/page-list/favorite' }}>
+            <FavouritesIcon />
             Favourites
-          </Link>
+          </StyledLink>
           <IconButton
             hoverBackground="#E0E6FF"
             onClick={() => {
@@ -95,12 +102,12 @@ export const WorkSpaceSliderBar = () => {
             triggerImportModal();
           }}
         >
-          Import
+          <ImportIcon /> Import
         </StyledListItem>
 
         <Link href={{ pathname: '/page-list/trash' }}>
           <StyledListItem active={router.pathname === '/page-list/trash'}>
-            Trash
+            <TrashIcon /> Trash
           </StyledListItem>
         </Link>
         <StyledNewPageButton
@@ -110,7 +117,7 @@ export const WorkSpaceSliderBar = () => {
             pageMeta && openPage(pageMeta.id);
           }}
         >
-          New Page
+          <AddIcon /> New Page
         </StyledNewPageButton>
       </StyledSliderBar>
       <StyledArrowButton

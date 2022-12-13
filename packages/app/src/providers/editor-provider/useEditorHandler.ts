@@ -26,15 +26,10 @@ export const useEditorHandler = (workspace?: Workspace): EditorHandlers => {
         },
       });
     },
-    deletePage: pageId => {
-      workspace!.setPageMeta(pageId, { trash: true });
-    },
-    recyclePage: pageId => {
-      workspace!.setPageMeta(pageId, { trash: false });
-    },
     toggleDeletePage: pageId => {
       const pageMeta = workspace!.meta.pageMetas.find(p => p.id === pageId);
       if (pageMeta) {
+        workspace!.meta.setPage(pageId, { trashDate: new Date().getTime() });
         workspace!.setPageMeta(pageId, { trash: !pageMeta.trash });
       }
     },

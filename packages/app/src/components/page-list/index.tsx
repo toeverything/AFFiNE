@@ -12,6 +12,7 @@ import { OperationCell, TrashOperationCell } from './operation-cell';
 import Empty from './empty';
 import Link from 'next/link';
 import React from 'react';
+import DateCell from '@/components/page-list/date-cell';
 const FavoriteTag = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { toggleFavoritePage } = useEditor();
 
@@ -40,6 +41,7 @@ export const PageList = ({
   if (pageList.length === 0) {
     return <Empty />;
   }
+
   return (
     <StyledTableContainer>
       <Table>
@@ -48,7 +50,7 @@ export const PageList = ({
             <TableCell proportion={0.5}>Documents</TableCell>
             <TableCell proportion={0.2}>Created</TableCell>
             <TableCell proportion={0.2}>
-              {isTrash ? 'Uploaded' : 'Moved to Trash'}
+              {isTrash ? 'Moved to Trash' : 'Uploaded'}
             </TableCell>
             <TableCell proportion={0.1}></TableCell>
           </TableRow>
@@ -69,9 +71,12 @@ export const PageList = ({
                     {showFavoriteTag && <FavoriteTag pageMeta={pageMeta} />}
                   </StyledTitleWrapper>
                 </TableCell>
-                <TableCell ellipsis={true}>{pageMeta.createDate}</TableCell>
-                <TableCell ellipsis={true}>{pageMeta.createDate}</TableCell>
-                <TableCell>
+                <DateCell pageMeta={pageMeta} dateKey="createDate" />
+                <DateCell
+                  pageMeta={pageMeta}
+                  dateKey={isTrash ? 'trashDate' : 'createDate'}
+                />
+                <TableCell style={{ padding: 0 }}>
                   {isTrash ? (
                     <TrashOperationCell pageMeta={pageMeta} />
                   ) : (

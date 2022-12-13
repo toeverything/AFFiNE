@@ -5,9 +5,10 @@ import { styled, textEllipsis } from '@/styles';
 export type ContentProps = {
   width?: CSSProperties['width'];
   maxWidth?: CSSProperties['maxWidth'];
+  align?: CSSProperties['textAlign'];
   color?: CSSProperties['color'];
   fontSize?: CSSProperties['fontSize'];
-  fontWeight?: CSSProperties['fontWeight'];
+  weight?: CSSProperties['fontWeight'];
   lineHeight?: CSSProperties['lineHeight'];
   ellipsis?: boolean;
   lineNum?: number;
@@ -19,20 +20,22 @@ export const Content = styled.div<ContentProps>(
     theme,
     color,
     fontSize,
-    fontWeight,
+    weight,
     lineHeight,
     ellipsis,
     lineNum,
     width,
     maxWidth,
+    align,
   }) => {
     return {
       width,
       maxWidth,
+      textAlign: align,
       display: 'inline-block',
       color: color ?? theme.colors.textColor,
       fontSize: fontSize ?? theme.font.base,
-      fontWeight: fontWeight ?? 400,
+      fontWeight: weight ?? 400,
       lineHeight: lineHeight ?? 1.5,
       ...(ellipsis ? textEllipsis(lineNum) : {}),
     };
