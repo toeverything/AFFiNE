@@ -22,10 +22,10 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': 0.3.0-alpha.6
-      '@blocksuite/editor': 0.3.0-alpha.6
+      '@blocksuite/blocks': 0.3.0-alpha.7
+      '@blocksuite/editor': 0.3.0-alpha.7
       '@blocksuite/icons': ^1.0.5
-      '@blocksuite/store': 0.3.0-alpha.6
+      '@blocksuite/store': 0.3.0-alpha.7
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -54,10 +54,10 @@ importers:
       react-dom: 18.2.0
       typescript: 4.8.3
     dependencies:
-      '@blocksuite/blocks': 0.3.0-alpha.6
-      '@blocksuite/editor': 0.3.0-alpha.6
+      '@blocksuite/blocks': 0.3.0-alpha.7
+      '@blocksuite/editor': 0.3.0-alpha.7
       '@blocksuite/icons': 1.0.5_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.3.0-alpha.6
+      '@blocksuite/store': 0.3.0-alpha.7
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -174,12 +174,14 @@ packages:
       to-fast-properties: 2.0.0
     dev: false
 
-  /@blocksuite/blocks/0.3.0-alpha.6:
-    resolution: {integrity: sha512-pa8wP0hRIDlufae+ABAQFLW8TNOGsfh8AqyTKF/+LVYFCGr+9tlW55X3OlWtU51vFxawst1Wd3FnjCAW6XiaKQ==}
+  /@blocksuite/blocks/0.3.0-alpha.7:
+    resolution: {integrity: sha512-RV6yiKSVIr3hRkT1MYp15Bt7i615aahqQ7CEJZQAuDMr2OVRzAGeXJpjt3e69HWW5os4fs4yOsC1PiS8VuuWRg==}
     dependencies:
-      '@blocksuite/store': 0.3.0-alpha.6
+      '@blocksuite/store': 0.3.0-alpha.7
+      '@tldraw/vec': 1.8.0
       hotkeys-js: 3.10.0
       lit: 2.4.0
+      perfect-freehand: 1.2.0
       quill: 1.3.7
       quill-cursors: 4.0.0
     transitivePeerDependencies:
@@ -188,11 +190,11 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/editor/0.3.0-alpha.6:
-    resolution: {integrity: sha512-2wFkOlCKqC4BrfCIzuxjUyVnE/mmGOyUnqVTQNmHrToDS81RLIq0r+lj1IrzLv+LZQCfTyhoAlJyaxUNrUw3sw==}
+  /@blocksuite/editor/0.3.0-alpha.7:
+    resolution: {integrity: sha512-vq5xgg2Ea1kbYDCYogBnmccg3Opw2DfQeiEQM5JRxqRBe6E2R4lZqZvksVj5fekY5Pl2Nrr73VgxTutjGS1u2g==}
     dependencies:
-      '@blocksuite/blocks': 0.3.0-alpha.6
-      '@blocksuite/store': 0.3.0-alpha.6
+      '@blocksuite/blocks': 0.3.0-alpha.7
+      '@blocksuite/store': 0.3.0-alpha.7
       lit: 2.4.0
       marked: 4.1.1
       turndown: 7.1.1
@@ -212,8 +214,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/store/0.3.0-alpha.6:
-    resolution: {integrity: sha512-rI7cUVSqoMh1bsNLwL8MAgyaUq0Ix+SRBqweYwVjeDoqFIbHjnRSwkVw48K/FgxN6ekN96HLSf3Sj/HK1ivPpw==}
+  /@blocksuite/store/0.3.0-alpha.7:
+    resolution: {integrity: sha512-dO+hx/6V5aun5+U1M7qRSQLdHpXYNa2TDr9747f+Xy8CoToyYQ5jTJ/KcjKEdNm36xg66N3sNBDarhAUzs3QOg==}
     dependencies:
       buffer: 6.0.3
       flexsearch: 0.7.21
@@ -1087,6 +1089,10 @@ packages:
       tslib: 2.4.0
     dev: false
 
+  /@tldraw/vec/1.8.0:
+    resolution: {integrity: sha512-GiS5Df3CzXY/fPBFcM0CKFERZfI4Cg1X33VPZX+NLo7Fwm/h9zu/aU24N1mG75Q9LuMnwKm7woxKr8BiUXGYCg==}
+    dev: false
+
   /@types/json5/0.0.29:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
     dev: true
@@ -1871,7 +1877,7 @@ packages:
       eslint-import-resolver-webpack:
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
+      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
       debug: 3.2.7
       eslint: 8.22.0
       eslint-import-resolver-node: 0.3.6
@@ -1890,7 +1896,7 @@ packages:
       '@typescript-eslint/parser':
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
+      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
       array-includes: 3.1.5
       array.prototype.flat: 1.3.0
       debug: 2.6.9
@@ -3032,6 +3038,10 @@ packages:
   /path-type/4.0.0:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
     engines: {node: '>=8'}
+
+  /perfect-freehand/1.2.0:
+    resolution: {integrity: sha512-h/0ikF1M3phW7CwpZ5MMvKnfpHficWoOEyr//KVNTxV4F6deRK1eYMtHyBKEAKFK0aXIEUK9oBvlF6PNXMDsAw==}
+    dev: false
 
   /picocolors/1.0.0:
     resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}

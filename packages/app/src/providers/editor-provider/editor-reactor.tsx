@@ -2,6 +2,7 @@ import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
 import type { EditorContainer } from '@blocksuite/editor';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
+import { generateDefaultPageId, initialPage } from './utils';
 import { useEffect } from 'react';
 import pkg from '../../../package.json';
 import {
@@ -11,6 +12,7 @@ import {
   Page,
 } from '@blocksuite/store';
 import { useRouter } from 'next/router';
+import { createPage } from '@/providers/editor-provider/utils';
 
 const getEditorParams = () => {
   const providers = [];
@@ -22,9 +24,8 @@ const getEditorParams = () => {
     );
     providers.push(WebsocketDocProvider);
   }
-  if (params.get('syncMode') === 'indexeddb') {
-    providers.push(IndexedDBDocProvider);
-  }
+
+  providers.push(IndexedDBDocProvider);
 
   return {
     room,
@@ -32,29 +33,25 @@ const getEditorParams = () => {
   };
 };
 
-const InitialEditor = ({
+const EditorReactor = ({
   workspace,
   currentPage,
-  setBlockSchema,
   setEditor,
   setWorkspace,
   setCurrentPage,
 }: {
-  workspace: Workspace | null;
-  currentPage: Page | null;
-  setBlockSchema: (blockSchema: typeof BlockSchema) => void;
+  workspace: Workspace | void;
+  currentPage: Page | void;
   setEditor: (editor: EditorContainer) => void;
   setWorkspace: (workspace: Workspace) => void;
   setCurrentPage: (Page: Page) => void;
 }) => {
-  setBlockSchema(BlockSchema);
-
   const router = useRouter();
 
   useEffect(() => {
     const workspace = new Workspace({
       ...getEditorParams(),
-    });
+    }).register(BlockSchema);
     //@ts-ignore
     window.workspace = workspace;
     const indexDBProvider = workspace.providers.find(
@@ -74,21 +71,20 @@ const InitialEditor = ({
       return;
     }
 
-    // const initialPageId =
-    //   workspace.meta.pages.find(p => p.id === (router.query.pageId as string))
-    //     ?.id ??
-    //   workspace.meta.pages[0]?.id ??
-    //   'page0';
-
     const initialPageId =
-      workspace.meta.pages.find(p => p.id === (router.query.pageId as string))
-        ?.id ?? 'page0';
-    console.log('initialPageId', initialPageId);
+      workspace.meta.pageMetas.find(
+        p => p.id === (router.query.pageId as string)
+      )?.id ?? workspace.meta.pageMetas[0]?.id;
 
-    const initialPage = workspace
-      .createPage(initialPageId)
-      .register(BlockSchema);
-    setCurrentPage(initialPage);
+    if (!initialPageId) {
+      createPage(workspace!, generateDefaultPageId()).then(page => {
+        initialPage(page);
+        setCurrentPage(page);
+      });
+    } else {
+      const page = workspace.getPage(initialPageId);
+      setCurrentPage(page);
+    }
   }, [workspace, router.query.pageId, setCurrentPage]);
 
   useEffect(() => {
@@ -106,4 +102,4 @@ const InitialEditor = ({
   return <div />;
 };
 
-export default InitialEditor;
+export default EditorReactor;
