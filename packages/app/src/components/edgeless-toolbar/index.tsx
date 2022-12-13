@@ -78,11 +78,11 @@ const UndoRedo = () => {
   const { editor } = useEditor();
   useEffect(() => {
     if (!editor) return;
-    const { space } = editor;
+    const { page } = editor;
 
-    space.signals.historyUpdated.on(() => {
-      setCanUndo(space.canUndo);
-      setCanRedo(space.canRedo);
+    page.signals.historyUpdated.on(() => {
+      setCanUndo(page.canUndo);
+      setCanRedo(page.canRedo);
     });
   }, [editor]);
 
@@ -92,7 +92,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canUndo}
           onClick={() => {
-            editor?.space?.undo();
+            editor?.page?.undo();
           }}
         >
           <UndoIcon />
@@ -102,7 +102,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canRedo}
           onClick={() => {
-            editor?.space?.redo();
+            editor?.page?.redo();
           }}
         >
           <RedoIcon />

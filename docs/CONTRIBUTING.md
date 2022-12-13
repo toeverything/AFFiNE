@@ -10,12 +10,17 @@ Use the table of contents icon on the top left corner of this document to get to
 
 ## New contributor guide
 
+Currently we have two versions of AFFiNE:
+
+- [AFFiNE Pre-Alpha](https://livedemo.affine.pro/). This version users the branch `master`, however is no longer actively developed and will be archived in the future.
+- [AFFiNE Alpha](https://pathfinder.affine.pro/). This version uses the 'pathfinder' branch,  this is the latest version under active development. We plan to update this to the master branch in the near future.
+
 To get an overview of the project, read the [README](../README.md). Here are some resources to help you get started with open source contributions:
 
--   [Finding ways to contribute to open source on GitHub](https://docs.github.com/en/get-started/exploring-projects-on-github/finding-ways-to-contribute-to-open-source-on-github)
--   [Set up Git](https://docs.github.com/en/get-started/quickstart/set-up-git)
--   [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow)
--   [Collaborating with pull requests](https://docs.github.com/en/github/collaborating-with-pull-requests)
+- [Finding ways to contribute to open source on GitHub](https://docs.github.com/en/get-started/exploring-projects-on-github/finding-ways-to-contribute-to-open-source-on-github)
+- [Set up Git](https://docs.github.com/en/get-started/quickstart/set-up-git)
+- [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow)
+- [Collaborating with pull requests](https://docs.github.com/en/github/collaborating-with-pull-requests)
 
 ## Getting started
 
@@ -47,15 +52,15 @@ For more information about using a codespace for working on GitHub documentation
 
 2. Fork the repository.
 
--   Using GitHub Desktop:
+- Using GitHub Desktop:
 
-    -   [Getting started with GitHub Desktop](https://docs.github.com/en/desktop/installing-and-configuring-github-desktop/getting-started-with-github-desktop) will guide you through setting up Desktop.
-    -   Once Desktop is set up, you can use it to [fork the repo](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/cloning-and-forking-repositories-from-github-desktop)!
+  - [Getting started with GitHub Desktop](https://docs.github.com/en/desktop/installing-and-configuring-github-desktop/getting-started-with-github-desktop) will guide you through setting up Desktop.
+  - Once Desktop is set up, you can use it to [fork the repo](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/cloning-and-forking-repositories-from-github-desktop)!
 
--   Using the command line:
-    -   [Fork the repo](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#fork-an-example-repository) so that you can make your changes without affecting the original project until you're ready to merge them.
+- Using the command line:
+  - [Fork the repo](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#fork-an-example-repository) so that you can make your changes without affecting the original project until you're ready to merge them.
 
-3. Install or update to **Node.js v16**. For more information, see [the development guide](contributing/development.md).
+3. Install or update to **Node.js v16**.
 
 4. Create a working branch and start with your changes!
 
@@ -71,13 +76,13 @@ Once your changes are ready, don't forget to self-review to speed up the review 
 
 When you're finished with the changes, create a pull request, also known as a PR.
 
--   Fill the "Ready for review" template so that we can review your PR. This template helps reviewers understand your changes as well as the purpose of your pull request.
--   Don't forget to [link PR to issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) if you are solving one.
--   Enable the checkbox to [allow maintainer edits](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork) so the branch can be updated for a merge.
-    Once you submit your PR, a Docs team member will review your proposal. We may ask questions or request for additional information.
--   We may ask for changes to be made before a PR can be merged, either using [suggested changes](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/incorporating-feedback-in-your-pull-request) or pull request comments. You can apply suggested changes directly through the UI. You can make any other changes in your fork, then commit them to your branch.
--   As you update your PR and apply changes, mark each conversation as [resolved](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/commenting-on-a-pull-request#resolving-conversations).
--   If you run into any merge issues, checkout this [git tutorial](https://github.com/skills/resolve-merge-conflicts) to help you resolve merge conflicts and other issues.
+- Fill the "Ready for review" template so that we can review your PR. This template helps reviewers understand your changes as well as the purpose of your pull request.
+- Don't forget to [link PR to issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) if you are solving one.
+- Enable the checkbox to [allow maintainer edits](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork) so the branch can be updated for a merge.
+  Once you submit your PR, a Docs team member will review your proposal. We may ask questions or request for additional information.
+- We may ask for changes to be made before a PR can be merged, either using [suggested changes](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/incorporating-feedback-in-your-pull-request) or pull request comments. You can apply suggested changes directly through the UI. You can make any other changes in your fork, then commit them to your branch.
+- As you update your PR and apply changes, mark each conversation as [resolved](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/commenting-on-a-pull-request#resolving-conversations).
+- If you run into any merge issues, checkout this [git tutorial](https://github.com/skills/resolve-merge-conflicts) to help you resolve merge conflicts and other issues.
 
 ### Your PR is merged!
 
