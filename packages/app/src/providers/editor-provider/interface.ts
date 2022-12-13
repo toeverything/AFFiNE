@@ -17,8 +17,6 @@ export type EditorHandlers = {
     query?: { [key: string]: string }
   ) => Promise<boolean>;
   getPageMeta: (pageId: string) => PageMeta | void;
-  deletePage: (pageId: string) => void;
-  recyclePage: (pageId: string) => void;
   toggleDeletePage: (pageId: string) => void;
   favoritePage: (pageId: string) => void;
   unFavoritePage: (pageId: string) => void;

@@ -41,6 +41,7 @@ importers:
       '@types/react-dom': 18.0.6
       cmdk: ^0.1.20
       css-spring: ^4.1.0
+      dayjs: ^1.11.7
       eslint: 8.22.0
       eslint-config-next: 12.3.1
       eslint-config-prettier: ^8.5.0
@@ -70,6 +71,7 @@ importers:
       '@toeverything/pathfinder-logger': link:../logger
       cmdk: 0.1.20_7ey2zzynotv32rpkwno45fsx4e
       css-spring: 4.1.0
+      dayjs: 1.11.7
       lit: 2.4.0
       next: 13.0.1_biqbaboplfbrettd7655fr4n2y
       prettier: 2.7.1
@@ -1579,6 +1581,10 @@ packages:
     resolution: {integrity: sha512-sdQSFB7+llfUcQHUQO3+B8ERRj0Oa4w9POWMI/puGtuf7gFywGmkaLCElnudfTiKZV+NvHqL0ifzdrI8Ro7ESA==}
     dev: true
 
+  /dayjs/1.11.7:
+    resolution: {integrity: sha512-+Yw9U6YO5TQohxLcIkrXBeY73WP3ejHWVvx8XCk3gxvQDCTEmS48ZrSZCKciI7Bhl/uCMyxYtE9UqRILmFphkQ==}
+    dev: false
+
   /debug/2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
     peerDependencies:
@@ -1877,7 +1883,7 @@ packages:
       eslint-import-resolver-webpack:
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
+      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
       debug: 3.2.7
       eslint: 8.22.0
       eslint-import-resolver-node: 0.3.6
@@ -1896,7 +1902,7 @@ packages:
       '@typescript-eslint/parser':
         optional: true
     dependencies:
-      '@typescript-eslint/parser': 5.38.0_eslint@8.22.0
+      '@typescript-eslint/parser': 5.38.0_76twfck5d7crjqrmw4yltga7zm
       array-includes: 3.1.5
       array.prototype.flat: 1.3.0
       debug: 2.6.9

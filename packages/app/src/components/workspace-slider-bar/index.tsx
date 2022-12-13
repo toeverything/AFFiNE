@@ -29,7 +29,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { pageList, openPage } = useEditor();
   const router = useRouter();
 
-  const favoriteList = pageList.filter(p => p.favorite);
+  const favoriteList = pageList.filter(p => p.favorite && !p.trash);
   return (
     <Collapse in={showList}>
       {favoriteList.map((pageMeta, index) => {
