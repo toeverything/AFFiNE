@@ -1,7 +1,7 @@
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { StyledButtonWrapper, StyledTitle } from './styles';
 import { Button } from '@/ui/button';
-import { Wrapper } from '@/ui/layout';
+import { Wrapper, Content } from '@/ui/layout';
 import { Loading } from '@/components/loading';
 import { useEffect, useState } from 'react';
 type ImportModalProps = {
@@ -9,21 +9,19 @@ type ImportModalProps = {
   onClose: () => void;
 };
 export const ImportModal = ({ open, onClose }: ImportModalProps) => {
-  const [status, setStatus] = useState<'unImported' | 'importing'>(
-    'unImported'
-  );
+  const [status, setStatus] = useState<'unImported' | 'importing'>('importing');
 
   useEffect(() => {
     if (status === 'importing') {
       setTimeout(() => {
         setStatus('unImported');
-      }, 3000);
+      }, 1500);
     }
   }, [status]);
 
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalWrapper width={460} height={240}>
+      <ModalWrapper width={460} minHeight={240}>
         <ModalCloseButton onClick={onClose} />
         <StyledTitle>Import</StyledTitle>
 
@@ -47,8 +45,16 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
         )}
 
         {status === 'importing' && (
-          <Wrapper justifyContent="center" style={{ marginTop: 22 }}>
+          <Wrapper
+            wrap={true}
+            justifyContent="center"
+            style={{ marginTop: 22, paddingBottom: '32px' }}
+          >
             <Loading size={25}></Loading>
+            <Content align="center" weight="500">
+              OOOOPS! Sorry forgot to remind you that we are working on the
+              import function
+            </Content>
           </Wrapper>
         )}
       </ModalWrapper>
