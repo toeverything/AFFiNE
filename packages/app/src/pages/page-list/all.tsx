@@ -1,8 +1,21 @@
 import { Header } from '@/components/header';
 import { useEditor } from '@/providers/editor-provider';
 import { PageList } from '@/components/page-list';
-import { StyledWrapper } from '@/pages/page-list/styles';
 import { AllPagesIcon } from '@blocksuite/icons';
+
+import { HeaderWrapper } from '@/components/header';
+import { styled } from '@/styles';
+
+export const StyledWrapper = styled(HeaderWrapper)(({ theme }) => {
+  return {
+    fontSize: theme.font.sm,
+    color: theme.colors.textColor,
+    '>svg': {
+      fontSize: '20px',
+      marginRight: '12px',
+    },
+  };
+});
 
 export const All = () => {
   const { pageList: allPageList } = useEditor();

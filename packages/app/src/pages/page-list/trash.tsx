@@ -1,7 +1,7 @@
 import { Header } from '@/components/header';
 import { useEditor } from '@/providers/editor-provider';
 import { PageList } from '@/components/page-list';
-import { StyledWrapper } from './styles';
+import { StyledWrapper } from './all';
 import { TrashIcon } from '@blocksuite/icons';
 export const Trash = () => {
   const { pageList: allPageList } = useEditor();

@@ -1,7 +1,7 @@
 import { Header } from '@/components/header';
 import { useEditor } from '@/providers/editor-provider';
 import { PageList } from '@/components/page-list';
-import { StyledWrapper } from '@/pages/page-list/styles';
+import { StyledWrapper } from './all';
 import { FavouritesIcon } from '@blocksuite/icons';
 
 export const Favorite = () => {
