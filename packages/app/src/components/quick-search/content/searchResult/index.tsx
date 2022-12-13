@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import NoResult from './not-found';
+import NotFound from './not-found';
 import { Command } from 'cmdk';
 import { PageMeta, useEditor } from '@/providers/editor-provider';
 
@@ -35,7 +35,10 @@ const SearchResult = (props: { query: string }) => {
     }
   });
   return (
-    <>{resultsPageMeta.length ? renderPages(resultsPageMeta) : <NoResult />}</>
+    <>
+      {renderPages(resultsPageMeta)}
+      {resultsPageMeta.length ? <></> : <NotFound />}
+    </>
   );
 };
 
