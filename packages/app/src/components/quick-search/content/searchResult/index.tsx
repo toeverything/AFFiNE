@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import NoResult from './notFound';
+import NoResult from './not-found';
 import { Command } from 'cmdk';
 import { PageMeta, useEditor } from '@/providers/editor-provider';
 
@@ -20,7 +20,7 @@ const SearchResult = (props: { query: string }) => {
   useEffect(() => {
     return setResults(search(query));
     //Save the Map<BlockId, PageId> obtained from the search as state
-  }, [query]);
+  }, [query, search]);
 
   const resultsPageMeta: PageMeta[] = [];
 
