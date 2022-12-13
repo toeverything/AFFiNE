@@ -46,7 +46,9 @@ const EditorReactor = ({
   setWorkspace: (workspace: Workspace) => void;
   setCurrentPage: (Page: Page) => void;
 }) => {
-  const router = useRouter();
+  const {
+    query: { pageId: routerPageId },
+  } = useRouter();
 
   useEffect(() => {
     const workspace = new Workspace({
@@ -71,21 +73,31 @@ const EditorReactor = ({
       return;
     }
 
-    const initialPageId =
-      workspace.meta.pageMetas.find(
-        p => p.id === (router.query.pageId as string)
-      )?.id ?? workspace.meta.pageMetas[0]?.id;
-
-    if (!initialPageId) {
-      createPage(workspace!, generateDefaultPageId()).then(page => {
-        initialPage(page);
+    if (routerPageId) {
+      const pageId = routerPageId.toString();
+      const page = workspace.getPage(pageId);
+      if (page) {
         setCurrentPage(page);
-      });
-    } else {
-      const page = workspace.getPage(initialPageId);
-      setCurrentPage(page);
+      } else {
+        createPage(workspace!, pageId).then(page => {
+          initialPage(page);
+          setCurrentPage(page);
+        });
+      }
+      return;
     }
-  }, [workspace, router.query.pageId, setCurrentPage]);
+
+    const savedPageId = workspace.meta.pageMetas[0]?.id;
+    if (savedPageId) {
+      setCurrentPage(workspace.getPage(savedPageId));
+      return;
+    }
+
+    createPage(workspace!, generateDefaultPageId()).then(page => {
+      initialPage(page);
+      setCurrentPage(page);
+    });
+  }, [workspace, routerPageId, setCurrentPage]);
 
   useEffect(() => {
     if (!currentPage) {
