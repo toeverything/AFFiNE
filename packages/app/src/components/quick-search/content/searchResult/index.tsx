@@ -1,43 +1,28 @@
 import { useEffect, useState } from 'react';
 import NotFound from './not-found';
 import { Command } from 'cmdk';
-import { PageMeta, useEditor } from '@/providers/editor-provider';
-
-function renderPages(resultsPageMeta: PageMeta[]) {
-  return resultsPageMeta.map(resultPageMeta => {
-    return (
-      <Command.Item key={resultPageMeta.id}>
-        {resultPageMeta.title}
-      </Command.Item>
-    );
-  });
-}
+import { useEditor } from '@/providers/editor-provider';
 
 const SearchResult = (props: { query: string }) => {
-  const { search, getPageMeta, openPage } = useEditor();
+  const { search, openPage, pageList } = useEditor();
   const [results, setResults] = useState(new Map<string, string | undefined>());
   const query = props.query;
   useEffect(() => {
     return setResults(search(query));
     //Save the Map<BlockId, PageId> obtained from the search as state
   }, [query, search]);
+  const pageIds = [...results.values()];
 
-  const resultsPageMeta: PageMeta[] = [];
+  const resultsPageMeta = pageList.filter(
+    page => pageIds.indexOf(page.id) > -1
+  );
 
-  results.forEach(pageId => {
-    if (!pageId) {
-      return;
-    }
-    const pageMeta = getPageMeta(pageId);
-    if (pageMeta) {
-      //Get pageMeta just like { title , id , text...}
-      resultsPageMeta.push(pageMeta);
-    }
-  });
   return (
     <>
-      {renderPages(resultsPageMeta)}
-      {resultsPageMeta.length ? <></> : <NotFound />}
+      <NotFound />
+      {resultsPageMeta.map(result => {
+        return <Command.Item key={result.id}>{result.title}</Command.Item>;
+      })}
     </>
   );
 };
