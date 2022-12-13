@@ -9,7 +9,7 @@ import {
 } from './style';
 import { Arrow } from './icons';
 import Collapse from '@mui/material/Collapse';
-import { MiddleIconArrowDownSmallIcon } from '@blocksuite/icons';
+import { ArrowDownIcon } from '@blocksuite/icons';
 import Link from 'next/link';
 import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
@@ -63,18 +63,6 @@ export const WorkSpaceSliderBar = () => {
         >
           Quick search
         </StyledListItem>
-        <StyledListItem
-          onClick={() => {
-            router.push({
-              pathname: '/',
-              query: {
-                pageId: new Date().getTime().toString(),
-              },
-            });
-          }}
-        >
-          Back to Doc
-        </StyledListItem>
         <Link href={{ pathname: '/page-list/all' }}>
           <StyledListItem active={router.pathname === '/page-list/all'}>
             All pages
@@ -93,7 +81,7 @@ export const WorkSpaceSliderBar = () => {
               setShowSubFavorite(!showSubFavorite);
             }}
           >
-            <MiddleIconArrowDownSmallIcon
+            <ArrowDownIcon
               style={{
                 transform: `rotate(${showSubFavorite ? '180' : '0'}deg)`,
               }}

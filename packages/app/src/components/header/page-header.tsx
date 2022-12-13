@@ -9,7 +9,7 @@ import { IconButton } from '@/ui/button';
 import { Content } from '@/ui/layout';
 import { useEditor } from '@/providers/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
-import { MiddleIconArrowDownSmallIcon } from '@blocksuite/icons';
+import { ArrowDownIcon } from '@blocksuite/icons';
 import { useModal } from '@/providers/global-modal-provider';
 
 import Header from './header';
@@ -59,7 +59,7 @@ export const PageHeader = () => {
                   triggerQuickSearchModal();
                 }}
               >
-                <MiddleIconArrowDownSmallIcon />
+                <ArrowDownIcon />
               </IconButton>
             </StyledSearchArrowWrapper>
           </StyledTitleWrapper>

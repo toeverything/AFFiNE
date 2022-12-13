@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction } from 'react';
-import { MiddleSearchIcon } from '@blocksuite/icons';
+import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
 const Input = (props: {
@@ -9,7 +9,7 @@ const Input = (props: {
   return (
     <StyledInputContent>
       <StyledLabel htmlFor=":r5:">
-        <MiddleSearchIcon />
+        <SearchIcon />
       </StyledLabel>
       <Command.Input
         value={props.query}

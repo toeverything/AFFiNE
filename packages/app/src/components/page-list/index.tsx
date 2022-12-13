@@ -1,8 +1,5 @@
 import { PageMeta, useEditor } from '@/providers/editor-provider';
-import {
-  MiddleFavouritedStatus2Icon,
-  MiddleFavouritesIcon,
-} from '@blocksuite/icons';
+import { FavouritedIcon, FavouritesIcon } from '@blocksuite/icons';
 import {
   StyledFavoriteButton,
   StyledTableContainer,
@@ -26,11 +23,7 @@ const FavoriteTag = ({ pageMeta }: { pageMeta: PageMeta }) => {
         toggleFavoritePage(pageMeta.id);
       }}
     >
-      {pageMeta.favorite ? (
-        <MiddleFavouritedStatus2Icon />
-      ) : (
-        <MiddleFavouritesIcon />
-      )}
+      {pageMeta.favorite ? <FavouritedIcon /> : <FavouritesIcon />}
     </StyledFavoriteButton>
   );
 };

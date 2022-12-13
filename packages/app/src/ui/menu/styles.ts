@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '@/styles';
 import StyledPopperContainer from '../shared/Container';
-import { MiddleArrowRightIcon } from '@blocksuite/icons';
+import { ArrowRightIcon } from '@blocksuite/icons';
 
 export const StyledMenuWrapper = styled(StyledPopperContainer)(({ theme }) => {
   return {
@@ -13,7 +13,7 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)(({ theme }) => {
   };
 });
 
-export const StyledArrow = styled(MiddleArrowRightIcon)(({ theme }) => {
+export const StyledArrow = styled(ArrowRightIcon)(({ theme }) => {
   return {
     position: 'absolute',
     right: 0,

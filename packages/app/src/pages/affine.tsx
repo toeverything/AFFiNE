@@ -4,10 +4,7 @@ import { Loading } from '@/components/loading';
 import Modal from '@/ui/modal';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
-import {
-  MiddleFavouritedStatus2Icon,
-  MiddleFavouritesIcon,
-} from '@blocksuite/icons';
+import { FavouritedIcon } from '@blocksuite/icons';
 export const StyledHeader = styled('div')({
   height: '60px',
   width: '100vw',
@@ -41,19 +38,19 @@ const Affine = () => {
       </Modal>
       <Loading />
 
-      <Button icon={<MiddleFavouritedStatus2Icon />}>click me!</Button>
-      <Button icon={<MiddleFavouritedStatus2Icon />} type={'primary'}>
+      <Button icon={<FavouritedIcon />}>click me!</Button>
+      <Button icon={<FavouritedIcon />} type={'primary'}>
         click me!
       </Button>
-      <Button icon={<MiddleFavouritedStatus2Icon />} type={'warning'}>
+      <Button icon={<FavouritedIcon />} type={'warning'}>
         click me!
       </Button>
-      <Button icon={<MiddleFavouritedStatus2Icon />} type={'danger'}>
+      <Button icon={<FavouritedIcon />} type={'danger'}>
         click me!
       </Button>
 
-      <Button icon={<MiddleFavouritedStatus2Icon />}></Button>
-      <Button icon={<MiddleFavouritedStatus2Icon />} shape="round"></Button>
+      <Button icon={<FavouritedIcon />}></Button>
+      <Button icon={<FavouritedIcon />} shape="round"></Button>
     </>
   );
 };

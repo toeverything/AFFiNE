@@ -1,5 +1,5 @@
 import React from 'react';
-import { MiddleAddIcon } from '@blocksuite/icons';
+import { AddIcon } from '@blocksuite/icons';
 import { StyledModalFooterContent } from './style';
 import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
@@ -11,7 +11,7 @@ const QuickSearchFooter = () => {
   return (
     <StyledModalFooterContent>
       <IconButton>
-        <MiddleAddIcon
+        <AddIcon
           onClick={() => {
             createPage();
             triggerQuickSearchModal();

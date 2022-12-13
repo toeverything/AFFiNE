@@ -11,7 +11,7 @@
   "dependencies": {
     "@blocksuite/blocks": "0.3.0-alpha.7",
     "@blocksuite/editor": "0.3.0-alpha.7",
-    "@blocksuite/icons": "^1.0.5",
+    "@blocksuite/icons": "^2.0.0",
     "@blocksuite/store": "0.3.0-alpha.7",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
