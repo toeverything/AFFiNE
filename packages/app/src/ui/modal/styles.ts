@@ -15,7 +15,11 @@ export const StyledBackdrop = styled.div<{ open?: boolean }>(({ open }) => {
   };
 });
 
-export const StyledModal = styled(ModalUnstyled)<{
+export const StyledModal = styled(ModalUnstyled, {
+  shouldForwardProp: prop => {
+    return !['justifyContent', 'alignItems'].includes(prop);
+  },
+})<{
   alignItems: CSSProperties['alignItems'];
   justifyContent: CSSProperties['justifyContent'];
 }>(({ theme, alignItems, justifyContent }) => {
