@@ -1,4 +1,5 @@
 import { displayFlex, styled, textEllipsis } from '@/styles';
+import Link from 'next/link';
 
 export const StyledSliderBar = styled.div<{ show: boolean }>(
   ({ theme, show }) => {
@@ -54,6 +55,10 @@ export const StyledListItem = styled.button<{ active?: boolean }>(
       paddingLeft: '12px',
       borderRadius: '5px',
       ...displayFlex('flex-start', 'center'),
+      '>svg': {
+        fontSize: '20px',
+        marginRight: '12px',
+      },
       ':hover': {
         color: theme.colors.primaryColor,
         backgroundColor: theme.colors.hoverBackground,
@@ -62,6 +67,21 @@ export const StyledListItem = styled.button<{ active?: boolean }>(
   }
 );
 
+export const StyledLink = styled(Link)(({ theme }) => {
+  return {
+    flexGrow: 1,
+    textAlign: 'left',
+    color: 'inherit',
+    ...displayFlex('flex-start', 'center'),
+    ':visited': {
+      color: 'inherit',
+    },
+    '>svg': {
+      fontSize: '20px',
+      marginRight: '12px',
+    },
+  };
+});
 export const StyledNewPageButton = styled(StyledListItem)(({ theme }) => {
   return {
     position: 'absolute',

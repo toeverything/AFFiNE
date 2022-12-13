@@ -71,7 +71,7 @@ export const PageList = ({
                 </TableCell>
                 <TableCell ellipsis={true}>{pageMeta.createDate}</TableCell>
                 <TableCell ellipsis={true}>{pageMeta.createDate}</TableCell>
-                <TableCell>
+                <TableCell style={{ padding: 0 }}>
                   {isTrash ? (
                     <TrashOperationCell pageMeta={pageMeta} />
                   ) : (
