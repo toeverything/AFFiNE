@@ -28,13 +28,7 @@ const SearchResult = (props: { query: string }) => {
     }
   });
   return (
-    <>
-      {resultsPageMeta.length ? (
-        renderPages(resultsPageMeta)
-      ) : (
-        <NoResult query={query} />
-      )}
-    </>
+    <>{resultsPageMeta.length ? renderPages(resultsPageMeta) : <NoResult />}</>
   );
 };
 
