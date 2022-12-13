@@ -17,6 +17,7 @@ import {
 import { Tooltip } from '@/ui/tooltip';
 import Slide from '@mui/material/Slide';
 import { useEditor } from '@/components/editor-provider';
+import { createEvent } from '@blocksuite/blocks';
 
 const toolbarList1 = [
   {
@@ -24,6 +25,13 @@ const toolbarList1 = [
     icon: <SelectIcon />,
     toolTip: 'Select',
     disable: false,
+    onClick: () => {
+      window.dispatchEvent(
+        createEvent('affine.switch-mouse-mode', {
+          type: 'default',
+        })
+      );
+    },
   },
   {
     flavor: 'text',
@@ -34,8 +42,17 @@ const toolbarList1 = [
   {
     flavor: 'shape',
     icon: <ShapeIcon />,
-    toolTip: 'Shape (coming soon)',
+    toolTip: 'Shape',
     disable: true,
+    onClick: () => {
+      window.dispatchEvent(
+        createEvent('affine.switch-mouse-mode', {
+          type: 'shape',
+          shape: 'rectangle',
+          color: 'black',
+        })
+      );
+    },
   },
   {
     flavor: 'sticky',
@@ -124,20 +141,22 @@ export const EdgelessToolbar = () => {
     >
       <StyledEdgelessToolbar>
         <StyledToolbarWrapper>
-          {toolbarList1.map(({ icon, toolTip, flavor, disable }, index) => {
-            return (
-              <Tooltip key={index} content={toolTip} placement="right-start">
-                <StyledToolbarItem
-                  disable={disable}
-                  onClick={() => {
-                    console.log('flavor', flavor);
-                  }}
-                >
-                  {icon}
-                </StyledToolbarItem>
-              </Tooltip>
-            );
-          })}
+          {toolbarList1.map(
+            ({ icon, toolTip, flavor, disable, onClick }, index) => {
+              return (
+                <Tooltip key={index} content={toolTip} placement="right-start">
+                  <StyledToolbarItem
+                    disable={disable}
+                    onClick={() => {
+                      onClick?.();
+                    }}
+                  >
+                    {icon}
+                  </StyledToolbarItem>
+                </Tooltip>
+              );
+            }
+          )}
         </StyledToolbarWrapper>
         <UndoRedo />
       </StyledEdgelessToolbar>
