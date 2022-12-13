@@ -1,5 +1,5 @@
 import React from 'react';
-import JumpTo from './JumpTo';
+import JumpTo from './jumpTo';
 import { Command } from 'cmdk';
 import SearchResult from './searchResult';
 

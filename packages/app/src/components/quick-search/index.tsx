@@ -6,9 +6,9 @@ import {
   StyledModalDivider,
   StyledShortcut,
 } from './style';
-import Input from './Input';
+import Input from './input';
 import Result from './content';
-import QuickSearchFooter from './Footer';
+import QuickSearchFooter from './footer';
 import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/global-modal-provider';
