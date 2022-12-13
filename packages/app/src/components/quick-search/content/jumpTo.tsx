@@ -1,9 +1,5 @@
 import React from 'react';
-import {
-  MiddleFavouritesIcon,
-  MiddleTrashIcon,
-  MiddleAllPagesIcon,
-} from '@blocksuite/icons';
+import { FavouritesIcon, TrashIcon, AllPagesIcon } from '@blocksuite/icons';
 import Link from 'next/link';
 import { StyledJumpTo } from '../style';
 import { useModal } from '@/providers/global-modal-provider';
@@ -16,21 +12,21 @@ const JumpTo = () => {
         href={{ pathname: '/page-list/all' }}
         onClick={() => triggerQuickSearchModal()}
       >
-        <MiddleAllPagesIcon width={20} height={20} />
+        <AllPagesIcon width={20} height={20} />
         <span> All pages</span>
       </Link>
       <Link
         href={{ pathname: '/page-list/favorite' }}
         onClick={() => triggerQuickSearchModal()}
       >
-        <MiddleFavouritesIcon width={20} height={20} />
+        <FavouritesIcon width={20} height={20} />
         <span> Favourites</span>
       </Link>
       <Link
         href={{ pathname: '/page-list/trash' }}
         onClick={() => triggerQuickSearchModal()}
       >
-        <MiddleTrashIcon width={20} height={20} />
+        <TrashIcon width={20} height={20} />
         <span> Trash</span>
       </Link>
     </StyledJumpTo>

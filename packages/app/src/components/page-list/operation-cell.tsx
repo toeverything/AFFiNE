@@ -3,11 +3,7 @@ import { useConfirm } from '@/providers/confirm-provider';
 import { Menu, MenuItem } from '@/ui/menu';
 import { Wrapper } from '@/ui/layout';
 import { IconButton } from '@/ui/button';
-import {
-  MoreVertical_24pxIcon,
-  RestoreIcon,
-  TrashDeleteforeverIcon,
-} from '@blocksuite/icons';
+import { MoreVerticalIcon, RestoreIcon, DeleteIcon } from '@blocksuite/icons';
 import React from 'react';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
@@ -52,7 +48,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
     <Wrapper alignItems="center" justifyContent="center">
       <Menu content={OperationMenu} placement="bottom-end" disablePortal={true}>
         <IconButton hoverBackground="#E0E6FF">
-          <MoreVertical_24pxIcon />
+          <MoreVerticalIcon />
         </IconButton>
       </Menu>
     </Wrapper>
@@ -89,7 +85,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
           });
         }}
       >
-        <TrashDeleteforeverIcon />
+        <DeleteIcon />
       </IconButton>
     </Wrapper>
   );

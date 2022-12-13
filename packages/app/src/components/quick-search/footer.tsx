@@ -1,5 +1,5 @@
 import React from 'react';
-import { MiddleAddIcon } from '@blocksuite/icons';
+import { AddIcon } from '@blocksuite/icons';
 import { StyledModalFooterContent } from './style';
 import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
@@ -10,15 +10,15 @@ const QuickSearchFooter = () => {
   const { triggerQuickSearchModal } = useModal();
   return (
     <StyledModalFooterContent>
-      <IconButton>
-        <MiddleAddIcon
-          onClick={async () => {
-            const page = createPage();
-            const pageMeta = getPageMeta((await page).id);
-            pageMeta && openPage(pageMeta.id);
-            triggerQuickSearchModal();
-          }}
-        />
+      <IconButton
+        onClick={async () => {
+          const page = createPage();
+          const pageMeta = getPageMeta((await page).id);
+          pageMeta && openPage(pageMeta.id);
+          triggerQuickSearchModal();
+        }}
+      >
+        <AddIcon />
       </IconButton>
       <span>New page</span>
     </StyledModalFooterContent>

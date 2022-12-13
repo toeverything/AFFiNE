@@ -7,12 +7,12 @@ import {
   StyledCloseButton,
 } from './styles';
 import {
-  MiddleExportIcon,
+  ExportIcon,
   EdgelessIcon,
   PaperIcon,
-  MiddleExportToHtmlIcon,
-  MiddleExportToMarkdownIcon,
-  MoreVertical_24pxIcon,
+  ExportToHtmlIcon,
+  ExportToMarkdownIcon,
+  MoreVerticalIcon,
 } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
@@ -44,7 +44,7 @@ const PopoverContent = () => {
               onClick={() => {
                 editor && editor.contentParser.onExportHtml();
               }}
-              icon={<MiddleExportToHtmlIcon />}
+              icon={<ExportToHtmlIcon />}
             >
               Export to HTML
             </MenuItem>
@@ -52,14 +52,14 @@ const PopoverContent = () => {
               onClick={() => {
                 editor && editor.contentParser.onExportMarkdown();
               }}
-              icon={<MiddleExportToMarkdownIcon />}
+              icon={<ExportToMarkdownIcon />}
             >
               Export to Markdown
             </MenuItem>
           </>
         }
       >
-        <MenuItem icon={<MiddleExportIcon />} isDir={true}>
+        <MenuItem icon={<ExportIcon />} isDir={true}>
           Export
         </MenuItem>
       </Menu>
@@ -134,7 +134,7 @@ const HeaderRight = () => {
       <ThemeModeSwitch />
       <Menu content={<PopoverContent />} placement="bottom-end">
         <IconButton>
-          <MoreVertical_24pxIcon />
+          <MoreVerticalIcon />
         </IconButton>
       </Menu>
     </>
