@@ -50,9 +50,7 @@ export const useEditorHandler = (workspace?: Workspace): EditorHandlers => {
       }
     },
     search: (query: QueryContent) => {
-      if (query) {
-        return workspace!.search(query);
-      }
+      return workspace!.search(query);
     },
   };
 };
