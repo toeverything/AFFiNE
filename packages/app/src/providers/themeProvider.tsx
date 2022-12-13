@@ -1,25 +1,36 @@
+import { createContext, useContext, useEffect, useState } from 'react';
 import {
   ThemeProvider as EmotionThemeProvider,
   Global,
   css,
 } from '@emotion/react';
-import { createContext, useEffect, useState } from 'react';
+import {
+  ThemeProvider as MuiThemeProvider,
+  createTheme as MuiCreateTheme,
+} from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
 import {
   Theme,
   ThemeMode,
   ThemeProviderProps,
   ThemeProviderValue,
-} from './types';
-import { getLightTheme, getDarkTheme, globalThemeVariables } from './theme';
-import { SystemThemeHelper, localStorageThemeHelper } from './utils';
-import { useEditor } from '@/components/editor-provider';
+} from '@/styles/types';
+import {
+  getLightTheme,
+  getDarkTheme,
+  globalThemeVariables,
+} from '@/styles/theme';
+import { SystemThemeHelper, localStorageThemeHelper } from '@/styles/utils';
+import { useEditor } from '@/providers/editor-provider';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
   changeMode: () => {},
   theme: getLightTheme('page'),
 });
+
+export const useTheme = () => useContext(ThemeContext);
+const muiTheme = MuiCreateTheme();
 
 export const ThemeProvider = ({
   defaultTheme = 'light',
@@ -81,16 +92,21 @@ export const ThemeProvider = ({
   // }, [mode]);
 
   return (
-    <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
-      <Global
-        styles={css`
-          :root {
-            ${globalThemeVariables(mode, themeStyle) as {}}
-          }
-        `}
-      />
-      <EmotionThemeProvider theme={themeStyle}>{children}</EmotionThemeProvider>
-    </ThemeContext.Provider>
+    // Use MuiThemeProvider is just because some Transitions in Mui components need it
+    <MuiThemeProvider theme={muiTheme}>
+      <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
+        <Global
+          styles={css`
+            :root {
+              ${globalThemeVariables(mode, themeStyle) as {}}
+            }
+          `}
+        />
+        <EmotionThemeProvider theme={themeStyle}>
+          {children}
+        </EmotionThemeProvider>
+      </ThemeContext.Provider>
+    </MuiThemeProvider>
   );
 };
 

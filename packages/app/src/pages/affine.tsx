@@ -3,6 +3,8 @@ import { ThemeModeSwitch } from '@/components/theme-mode-switch';
 import { Loading } from '@/components/loading';
 import Modal from '@/ui/modal';
 import { useState } from 'react';
+import { Button } from '@/ui/button';
+import { FavouritedIcon } from '@blocksuite/icons';
 export const StyledHeader = styled('div')({
   height: '60px',
   width: '100vw',
@@ -35,6 +37,20 @@ const Affine = () => {
         <div>hi</div>
       </Modal>
       <Loading />
+
+      <Button icon={<FavouritedIcon />}>click me!</Button>
+      <Button icon={<FavouritedIcon />} type={'primary'}>
+        click me!
+      </Button>
+      <Button icon={<FavouritedIcon />} type={'warning'}>
+        click me!
+      </Button>
+      <Button icon={<FavouritedIcon />} type={'danger'}>
+        click me!
+      </Button>
+
+      <Button icon={<FavouritedIcon />}></Button>
+      <Button icon={<FavouritedIcon />} shape="round"></Button>
     </>
   );
 };

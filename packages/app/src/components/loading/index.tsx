@@ -1,13 +1,19 @@
-import { StyledLoading, StyledLoadingItem } from './styled';
+import {
+  StyledLoadingWrapper,
+  StyledLoading,
+  StyledLoadingItem,
+} from './styled';
 
-export const Loading = () => {
+export const Loading = ({ size = 40 }: { size?: number }) => {
   return (
-    <StyledLoading>
-      <StyledLoadingItem />
-      <StyledLoadingItem />
-      <StyledLoadingItem />
-      <StyledLoadingItem />
-    </StyledLoading>
+    <StyledLoadingWrapper size={size}>
+      <StyledLoading>
+        <StyledLoadingItem size={size} />
+        <StyledLoadingItem size={size} />
+        <StyledLoadingItem size={size} />
+        <StyledLoadingItem size={size} />
+      </StyledLoading>
+    </StyledLoadingWrapper>
   );
 };
 

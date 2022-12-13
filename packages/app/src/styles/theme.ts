@@ -20,6 +20,7 @@ export const getLightTheme = (
       tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
       warningBackground: '#FFF9C7',
+      errorBackground: '#FFDED8',
 
       textColor: '#3A4C5C',
       edgelessTextColor: '#3A4C5C',
@@ -36,11 +37,19 @@ export const getLightTheme = (
       borderColor: '#D0D7E3',
       disableColor: '#C0C0C0',
       warningColor: '#906616',
+      errorColor: '#EB4335',
     },
     font: {
       xs: '12px',
       sm: '16px',
       base: '18px',
+      h1: '30px',
+      h2: '28px',
+      h3: '26px',
+      h4: '24px',
+      h5: '22px',
+      h6: '20px',
+
       family: `Avenir Next, Poppins, ${basicFontFamily}`,
       family2: `Space Mono, ${basicFontFamily}`,
       lineHeightBase: '26px',
@@ -85,6 +94,7 @@ export const getDarkTheme = (
           ? lightTheme.colors.codeBackground
           : '#505662',
       warningBackground: '#FFF9C7',
+      errorBackground: '#FFDED8',
 
       textColor: '#fff',
       edgelessTextColor: '#3A4C5C',
@@ -102,6 +112,7 @@ export const getDarkTheme = (
       borderColor: '#4D4C53',
       disableColor: '#4b4b4b',
       warningColor: '#906616',
+      errorColor: '#EB4335',
     },
     shadow: {
       popover:

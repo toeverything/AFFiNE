@@ -16,7 +16,7 @@ import {
 } from './icons';
 import { Tooltip } from '@/ui/tooltip';
 import Slide from '@mui/material/Slide';
-import { useEditor } from '@/components/editor-provider';
+import { useEditor } from '@/providers/editor-provider';
 
 const toolbarList1 = [
   {
@@ -75,16 +75,18 @@ const toolbarList2 = [
 const UndoRedo = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const { editor } = useEditor();
+  const { currentPage } = useEditor();
   useEffect(() => {
-    if (!editor) return;
-    const { page } = editor;
+    if (!currentPage) return;
 
-    page.signals.historyUpdated.on(() => {
-      setCanUndo(page.canUndo);
-      setCanRedo(page.canRedo);
+    currentPage.signals.historyUpdated.on(() => {
+      setCanUndo(currentPage.canUndo);
+      setCanRedo(currentPage.canRedo);
     });
-  }, [editor]);
+    return () => {
+      currentPage.signals.historyUpdated.dispose();
+    };
+  }, [currentPage]);
 
   return (
     <StyledToolbarWrapper>
@@ -92,7 +94,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canUndo}
           onClick={() => {
-            editor?.page?.undo();
+            currentPage?.undo();
           }}
         >
           <UndoIcon />
@@ -102,7 +104,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canRedo}
           onClick={() => {
-            editor?.page?.redo();
+            currentPage?.redo();
           }}
         >
           <RedoIcon />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTheme } from '@/styles';
+import { useTheme } from '@/providers/themeProvider';
 import { MoonIcon, SunIcon } from './icons';
 import { StyledThemeModeSwitch, StyledSwitchItem } from './style';
 

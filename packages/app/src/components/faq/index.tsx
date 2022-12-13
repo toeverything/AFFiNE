@@ -8,15 +8,15 @@ import {
 import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import Grow from '@mui/material/Grow';
 import { Tooltip } from '@/ui/tooltip';
-import { useEditor } from '@/components/editor-provider';
-import { useModal } from '@/components/global-modal-provider';
-import { useTheme } from '@/styles';
+import { useEditor } from '@/providers/editor-provider';
+import { useModal } from '@/providers/global-modal-provider';
+import { useTheme } from '@/providers/themeProvider';
 
 export const FAQ = () => {
   const [showContent, setShowContent] = useState(false);
   const { mode } = useTheme();
   const { mode: editorMode } = useEditor();
-  const { shortcutsModalHandler, contactModalHandler } = useModal();
+  const { triggerShortcutsModal, triggerContactModal } = useModal();
   const isEdgelessDark = mode === 'dark' && editorMode === 'edgeless';
 
   return (
@@ -38,7 +38,7 @@ export const FAQ = () => {
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
                   setShowContent(false);
-                  contactModalHandler(true);
+                  triggerContactModal();
                 }}
               >
                 <ContactIcon />
@@ -50,7 +50,7 @@ export const FAQ = () => {
                 isEdgelessDark={isEdgelessDark}
                 onClick={() => {
                   setShowContent(false);
-                  shortcutsModalHandler(true);
+                  triggerShortcutsModal();
                 }}
               >
                 <KeyboardIcon />
@@ -74,14 +74,3 @@ export const FAQ = () => {
     </>
   );
 };
-
-const routesLIst: any = [
-  {
-    path: '/',
-    children: [
-      {
-        element: <HelpIcon />,
-      },
-    ],
-  },
-];
