@@ -1,16 +1,20 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import NoResult from './NotFound';
 import { Command } from 'cmdk';
+import { useEditor } from '@/providers/editor-provider';
 
-const SearchResult = () => {
+const SearchResult = (props: { query: string }) => {
+  const { pageList, search, getPageMeta, openPage } = useEditor();
+  const [results, setResults] = useState({});
+  const query = props.query;
+  useEffect(() => {
+    setResults(search(query));
+  }, [query]);
+
   return (
     <>
       <NoResult />
-      <Command.Group heading="Letters">
-        <Command.Item>a</Command.Item>
-        <Command.Item>b</Command.Item>
-        <Command.Item>c</Command.Item>
-      </Command.Group>
+
       <Command.Item>Apple</Command.Item>
     </>
   );

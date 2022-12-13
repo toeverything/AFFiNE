@@ -11,7 +11,6 @@ import Result from './content';
 import QuickSearchFooter from './Footer';
 import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
-import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
 type TransitionsModalProps = {
   open: boolean;
@@ -22,13 +21,8 @@ const isMac = () => {
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [query, setQuery] = useState('');
-  const { search } = useEditor();
-  const [result, setResult] = useState({});
-  const { pageList } = useEditor();
   const { triggerQuickSearchModal } = useModal();
-  useEffect(() => {
-    setResult(search(query, { enrich: true }));
-  }, [query]);
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {
@@ -64,7 +58,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           </StyledModalHeader>
           <StyledModalDivider />
           <StyledContent>
-            <Result result={query} />
+            <Result query={query} />
           </StyledContent>
 
           <StyledModalFooter>
