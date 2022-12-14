@@ -11,6 +11,13 @@ export const StyledContent = styled('div')(({ theme }) => {
     letterSpacing: '0.06em',
     '[cmdk-group-heading]': {
       margin: '5px 16px',
+      fontSize: theme.font.sm,
+    },
+    '[aria-selected="true"]': {
+      transition: 'background .15s, color .15s',
+      borderRadius: '5px',
+      color: theme.colors.primaryColor,
+      backgroundColor: theme.colors.hoverBackground,
     },
   };
 });
@@ -110,40 +117,13 @@ export const StyledListItem = styled.button(({ theme }) => {
     width: '612px',
     height: '32px',
     fontSize: theme.font.sm,
-    color: theme.colors.popoverColor,
+    color: 'inherit',
     paddingLeft: '12px',
     borderRadius: '5px',
     ...displayFlex('flex-start', 'center'),
     '>svg': {
       fontSize: '20px',
       marginRight: '12px',
-    },
-    transition: 'background .15s, color .15s',
-    ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
-    },
-    a: {
-      width: '100%',
-      color: 'inherit',
-      ...displayFlex('flex-start', 'center'),
-      ':visited': {
-        color: theme.colors.popoverColor,
-      },
-      transition: 'background .15s, color .15s',
-      svg: {
-        fontSize: '20px',
-        color: 'inherit',
-        marginBottom: '2px',
-      },
-      span: {
-        color: 'inherit',
-        margin: '0 12px',
-        lineHeight: '22px',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-      },
     },
   };
 });

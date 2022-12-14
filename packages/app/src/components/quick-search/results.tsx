@@ -1,15 +1,21 @@
 import { Command } from 'cmdk';
 import { StyledListItem } from './style';
-import Link from 'next/link';
 import { useModal } from '@/providers/global-modal-provider';
-import { AllPagesIcon, FavouritesIcon, TrashIcon } from '@blocksuite/icons';
+import {
+  AllPagesIcon,
+  FavouritesIcon,
+  TrashIcon,
+  PaperIcon,
+} from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 export const Results = (props: { query: string }) => {
   const query = props.query;
   const { triggerQuickSearchModal } = useModal();
   const { search, openPage, pageList } = useEditor();
+  const router = useRouter();
   const [results, setResults] = useState(new Map<string, string | undefined>());
   useEffect(() => {
     return setResults(search(query));
@@ -34,43 +40,49 @@ export const Results = (props: { query: string }) => {
               }}
               value={result.title}
             >
-              <StyledListItem>{result.title}</StyledListItem>
+              <StyledListItem>
+                <PaperIcon />
+                <span>{result.title}</span>
+              </StyledListItem>
             </Command.Item>
           );
         })}
       </Command.Group>
       <Command.Group heading="Jump to">
-        <Command.Item>
+        <Command.Item
+          value="All pages"
+          onSelect={() => {
+            router.push('/page-list/all');
+            triggerQuickSearchModal();
+          }}
+        >
           <StyledListItem>
-            <Link
-              href={{ pathname: '/page-list/all' }}
-              onClick={() => triggerQuickSearchModal()}
-            >
-              <AllPagesIcon />
-              <span> All pages</span>
-            </Link>
+            <AllPagesIcon />
+            <span>All pages</span>
           </StyledListItem>
         </Command.Item>
-        <Command.Item>
+        <Command.Item
+          value="Favourites"
+          onSelect={() => {
+            router.push('/page-list/favorite');
+            triggerQuickSearchModal();
+          }}
+        >
           <StyledListItem>
-            <Link
-              href={{ pathname: '/page-list/favorite' }}
-              onClick={() => triggerQuickSearchModal()}
-            >
-              <FavouritesIcon />
-              <span> Favourites</span>
-            </Link>
+            <FavouritesIcon />
+            <span>Favourites</span>
           </StyledListItem>
         </Command.Item>
-        <Command.Item>
+        <Command.Item
+          value="Trash"
+          onSelect={() => {
+            router.push('/page-list/trash');
+            triggerQuickSearchModal();
+          }}
+        >
           <StyledListItem>
-            <Link
-              href={{ pathname: '/page-list/trash' }}
-              onClick={() => triggerQuickSearchModal()}
-            >
-              <TrashIcon />
-              <span> Trash</span>
-            </Link>
+            <TrashIcon />
+            <span>Trash</span>
           </StyledListItem>
         </Command.Item>
       </Command.Group>
