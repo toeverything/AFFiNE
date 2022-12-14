@@ -41,7 +41,7 @@ export const EditorProvider = ({
   const [editor, setEditor] = useState<EditorContainer>();
   const [mode, setMode] = useState<EditorContainer['mode']>('page');
 
-  const editorHandlers = useEditorHandler(workspace);
+  const editorHandlers = useEditorHandler({ workspace, editor });
   const onPropsUpdated = usePropsUpdated(editor);
   const onHistoryUpdated = useHistoryUpdated(page);
 
@@ -56,8 +56,9 @@ export const EditorProvider = ({
   }, [workspace, onHistoryUpdated]);
 
   useEffect(() => {
-    const event = new CustomEvent('affine.switch-mode', { detail: mode });
-    window.dispatchEvent(event);
+    // FIXME
+    const editorContainer = document.querySelector('editor-container');
+    editorContainer?.setAttribute('mode', mode as string);
   }, [mode]);
 
   useEffect(() => {

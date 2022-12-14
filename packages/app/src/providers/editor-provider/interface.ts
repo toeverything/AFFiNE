@@ -37,4 +37,5 @@ export type EditorHandlers = {
   toggleFavoritePage: (pageId: string) => void;
   permanentlyDeletePage: (pageId: string) => void;
   search: (query: QueryContent) => Map<string, string | undefined>;
+  changeEditorMode: (pageId: string) => void;
 };

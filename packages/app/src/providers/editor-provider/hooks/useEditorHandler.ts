@@ -3,8 +3,15 @@ import { createPage, initialPage, generateDefaultPageId } from '../utils';
 import { Workspace } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import { EditorHandlers, PageMeta } from '../interface';
+import { EditorContainer } from '@blocksuite/editor';
 
-export const useEditorHandler = (workspace?: Workspace): EditorHandlers => {
+export const useEditorHandler = ({
+  editor,
+  workspace,
+}: {
+  workspace?: Workspace;
+  editor?: EditorContainer;
+}): EditorHandlers => {
   const router = useRouter();
 
   return {
@@ -55,6 +62,10 @@ export const useEditorHandler = (workspace?: Workspace): EditorHandlers => {
     },
     search: (query: QueryContent) => {
       return workspace!.search(query);
+    },
+    changeEditorMode: (pageId: string) => {
+      editor!.mode = editor!.mode === 'page' ? 'edgeless' : 'page';
+      workspace?.setPageMeta(pageId, { mode: editor!.mode });
     },
   };
 };
