@@ -36,6 +36,7 @@ export interface AffineTheme {
     linkVisitedColor: string;
     iconColor: string;
     popoverColor: string;
+    inputColor: string;
     tooltipColor: string;
     codeColor: string;
     quoteColor: string;

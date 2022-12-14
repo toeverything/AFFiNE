@@ -29,6 +29,7 @@ export const getLightTheme = (
       linkColor2: '#6880FF',
       linkVisitedColor: '#ABB8FE',
       popoverColor: '#4C6275',
+      inputColor: '#4C6275',
       tooltipColor: '#fff',
       codeColor: '#517ea6',
       quoteColor: '#4C6275',
@@ -103,6 +104,7 @@ export const getDarkTheme = (
       linkColor2: '#6880FF',
       linkVisitedColor: '#505FAB',
       popoverColor: '#C6CBD9',
+      inputColor: '#C6CBD9',
       tooltipColor: '#fff',
       codeColor:
         editorMode === 'edgeless' ? lightTheme.colors.codeColor : '#BDDBFD',
@@ -148,6 +150,7 @@ export const globalThemeVariables: (
     '--affine-link-visited-color': theme.colors.linkVisitedColor,
     '--affine-icon-color': theme.colors.iconColor,
     '--affine-popover-color': theme.colors.popoverColor,
+    '--affine-input-color': theme.colors.inputColor,
     '--affine-code-color': theme.colors.codeColor,
     '--affine-quote-color': theme.colors.quoteColor,
     '--affine-selected-color': theme.colors.selectedColor,
