@@ -18,7 +18,7 @@ export const DateCell = ({
     <TableCell ellipsis={true}>
       {pageMeta[dateKey] === undefined
         ? '--'
-        : dayjs(pageMeta[dateKey] as string).format('YYYY-MM-DD HH:MM')}
+        : dayjs(pageMeta[dateKey] as string).format('YYYY-MM-DD HH:mm')}
     </TableCell>
   );
 };

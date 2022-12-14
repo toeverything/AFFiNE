@@ -103,8 +103,18 @@ const EditorReactor = ({
     if (!currentPage) {
       return;
     }
-    setEditor(createEditor(currentPage));
-  }, [currentPage, setEditor]);
+    const editor = createEditor(currentPage);
+    const pageMeta = workspace?.meta.pageMetas.find(
+      p => p.id === currentPage.pageId.replace('space:', '')
+    );
+
+    if (pageMeta?.mode) {
+      // @ts-ignore
+      editor.mode = pageMeta.mode;
+    }
+
+    setEditor(editor);
+  }, [workspace, currentPage, setEditor]);
 
   useEffect(() => {
     const version = pkg.dependencies['@blocksuite/editor'].substring(1);

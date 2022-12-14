@@ -11,9 +11,9 @@ import {
   EditorContextValue,
   EditorContextProps,
 } from './interface';
-import usePropsUpdated from '@/providers/editor-provider/hooks/usePropsUpdated';
-import useHistoryUpdated from '@/providers/editor-provider/hooks/useHistoryUpdated';
-
+import usePropsUpdated from './hooks/usePropsUpdated';
+import useHistoryUpdated from './hooks/useHistoryUpdated';
+import useMode from './hooks/useMode';
 // Blocksuite has to be imported dynamically since it has a lot of effects
 const DynamicEditor = dynamic(() => import('./editor-reactor'), {
   ssr: false,
@@ -39,12 +39,12 @@ export const EditorProvider = ({
   const [page, setPage] = useState<Page>();
   const [pageList, setPageList] = useState<PageMeta[]>([]);
   const [editor, setEditor] = useState<EditorContainer>();
-  const [mode, setMode] = useState<EditorContainer['mode']>('page');
+
+  const { mode, setMode } = useMode({ workspace, page });
 
   const editorHandlers = useEditorHandler({ workspace, editor });
   const onPropsUpdated = usePropsUpdated(editor);
   const onHistoryUpdated = useHistoryUpdated(page);
-
   // Modify the updatedDate when history change
   useEffect(() => {
     if (!workspace) {
@@ -54,12 +54,6 @@ export const EditorProvider = ({
       workspace.setPageMeta(page.id, { updatedDate: +new Date() });
     });
   }, [workspace, onHistoryUpdated]);
-
-  useEffect(() => {
-    // FIXME
-    const editorContainer = document.querySelector('editor-container');
-    editorContainer?.setAttribute('mode', mode as string);
-  }, [mode]);
 
   useEffect(() => {
     if (!workspace) {

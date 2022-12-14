@@ -30,6 +30,7 @@ const StyledPage = styled('div')(({ theme }) => {
 const StyledWrapper = styled('div')(({ theme }) => {
   return {
     flexGrow: 1,
+    position: 'relative',
   };
 });
 

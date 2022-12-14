@@ -22,6 +22,7 @@ export type PageMeta = {
   trash: boolean;
   trashDate: number | void;
   updatedDate: number | void;
+  mode: EditorContainer['mode'];
 } & OriginalPageMeta;
 
 export type EditorHandlers = {

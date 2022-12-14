@@ -1,16 +1,21 @@
 import { PageMeta, useEditor } from '@/providers/editor-provider';
-import { FavouritedIcon, FavouritesIcon } from '@blocksuite/icons';
+import {
+  FavouritedIcon,
+  FavouritesIcon,
+  PaperIcon,
+  EdgelessIcon,
+} from '@blocksuite/icons';
 import {
   StyledFavoriteButton,
   StyledTableContainer,
   StyledTableRow,
-  StyledTitleContent,
+  StyledTitleLink,
   StyledTitleWrapper,
 } from './styles';
 import { Table, TableBody, TableCell, TableHead, TableRow } from '@/ui/table';
 import { OperationCell, TrashOperationCell } from './operation-cell';
 import Empty from './empty';
-import Link from 'next/link';
+import { Content } from '@/ui/layout';
 import React from 'react';
 import DateCell from '@/components/page-list/date-cell';
 const FavoriteTag = ({ pageMeta }: { pageMeta: PageMeta }) => {
@@ -50,7 +55,7 @@ export const PageList = ({
             <TableCell proportion={0.5}>Documents</TableCell>
             <TableCell proportion={0.2}>Created</TableCell>
             <TableCell proportion={0.2}>
-              {isTrash ? 'Moved to Trash' : 'Uploaded'}
+              {isTrash ? 'Moved to Trash' : 'Updated'}
             </TableCell>
             <TableCell proportion={0.1}></TableCell>
           </TableRow>
@@ -61,13 +66,18 @@ export const PageList = ({
               <StyledTableRow key={`${pageMeta.id}-${index}`}>
                 <TableCell>
                   <StyledTitleWrapper>
-                    <Link
+                    <StyledTitleLink
                       href={{ pathname: '/', query: { pageId: pageMeta.id } }}
                     >
-                      <StyledTitleContent>
-                        {pageMeta.title || pageMeta.id}
-                      </StyledTitleContent>
-                    </Link>
+                      {pageMeta.mode === 'edgeless' ? (
+                        <EdgelessIcon />
+                      ) : (
+                        <PaperIcon />
+                      )}
+                      <Content ellipsis={true} color="inherit">
+                        {pageMeta.title || 'Untitled'}
+                      </Content>
+                    </StyledTitleLink>
                     {showFavoriteTag && <FavoriteTag pageMeta={pageMeta} />}
                   </StyledTitleWrapper>
                 </TableCell>
