@@ -43,14 +43,21 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
     <Modal open={open} onClose={onClose} wrapperPosition={['top', 'center']}>
       <ModalWrapper
         width={620}
-        height={'auto'}
         style={{
           maxHeight: '67vh',
           minHeight: '350px',
           top: '138px',
+          transition: 'height .15s',
         }}
       >
-        <Command>
+        <Command
+          //Handle KeyboardEvent conflicts with blocksuite
+          onKeyDown={(e: React.KeyboardEvent) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.stopPropagation();
+            }
+          }}
+        >
           <StyledModalHeader>
             <Input query={query} setQuery={setQuery} />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
