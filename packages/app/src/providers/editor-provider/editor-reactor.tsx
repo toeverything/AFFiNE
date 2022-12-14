@@ -89,7 +89,7 @@ const EditorReactor = ({
 
     const savedPageId = workspace.meta.pageMetas[0]?.id;
     if (savedPageId) {
-      setCurrentPage(workspace.getPage(savedPageId));
+      setCurrentPage(workspace.getPage(savedPageId) as Page);
       return;
     }
 

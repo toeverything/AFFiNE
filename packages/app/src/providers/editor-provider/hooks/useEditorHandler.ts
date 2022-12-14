@@ -1,8 +1,8 @@
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
-import { createPage, initialPage, generateDefaultPageId } from './utils';
+import { createPage, initialPage, generateDefaultPageId } from '../utils';
 import { Workspace } from '@blocksuite/store';
 import { useRouter } from 'next/router';
-import { EditorHandlers } from './interface';
+import { EditorHandlers, PageMeta } from '../interface';
 
 export const useEditorHandler = (workspace?: Workspace): EditorHandlers => {
   const router = useRouter();
@@ -15,7 +15,9 @@ export const useEditorHandler = (workspace?: Workspace): EditorHandlers => {
     },
     getPageMeta(pageId: string) {
       pageId = pageId.replace('space:', '');
-      return workspace!.meta.pageMetas.find(page => page.id === pageId);
+      return workspace!.meta.pageMetas.find(
+        page => page.id === pageId
+      ) as PageMeta;
     },
     openPage: (pageId, query = {}) => {
       return router.push({
@@ -29,8 +31,10 @@ export const useEditorHandler = (workspace?: Workspace): EditorHandlers => {
     toggleDeletePage: pageId => {
       const pageMeta = workspace!.meta.pageMetas.find(p => p.id === pageId);
       if (pageMeta) {
-        workspace!.meta.setPage(pageId, { trashDate: new Date().getTime() });
-        workspace!.setPageMeta(pageId, { trash: !pageMeta.trash });
+        workspace!.setPageMeta(pageId, {
+          trash: !pageMeta.trash,
+          trashDate: +new Date(),
+        });
       }
     },
     favoritePage: pageId => {

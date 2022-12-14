@@ -74,7 +74,7 @@ export const PageList = ({
                 <DateCell pageMeta={pageMeta} dateKey="createDate" />
                 <DateCell
                   pageMeta={pageMeta}
-                  dateKey={isTrash ? 'trashDate' : 'createDate'}
+                  dateKey={isTrash ? 'trashDate' : 'updatedDate'}
                 />
                 <TableCell style={{ padding: 0 }}>
                   {isTrash ? (

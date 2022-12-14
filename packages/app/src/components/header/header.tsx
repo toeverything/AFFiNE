@@ -142,12 +142,8 @@ const HeaderRight = () => {
 };
 
 export const Header = ({ children }: PropsWithChildren<{}>) => {
-  const { pageList } = useEditor();
-
   const [showWarning, setShowWarning] = useState(shouldShowWarning());
-  const router = useRouter();
-  const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
-  const isTrash = !!currentPageMeta?.trash;
+
   return (
     <StyledHeaderContainer hasWarning={showWarning}>
       <BrowserWarning
