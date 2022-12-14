@@ -7,9 +7,8 @@ import { useEditor } from '@/providers/editor-provider';
 import { useEffect, useState } from 'react';
 
 export const Results = (props: { query: string }) => {
-  const { triggerQuickSearchModal } = useModal();
-
   const query = props.query;
+  const { triggerQuickSearchModal } = useModal();
   const { search, openPage, pageList } = useEditor();
   const [results, setResults] = useState(new Map<string, string | undefined>());
   useEffect(() => {
@@ -24,7 +23,7 @@ export const Results = (props: { query: string }) => {
   return (
     <Command.List>
       <Command.Empty>No results found for &quot;{query}&quot;.</Command.Empty>
-      <Command.Group heading="Page">
+      <Command.Group>
         {resultsPageMeta.map(result => {
           return (
             <Command.Item

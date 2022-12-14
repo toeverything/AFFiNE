@@ -1,28 +1,17 @@
 import { displayFlex, styled } from '@/styles';
 
-export const StyledModalWrapper = styled('div')(({ theme }) => {
-  return {
-    width: '620px',
-    height: 'auto',
-    maxHeight: '720px',
-    minHeight: '350px',
-    backgroundColor: theme.colors.popoverBackground,
-    borderRadius: '20px',
-    position: 'absolute',
-    top: '138px',
-    margin: 'auto',
-  };
-});
-
 export const StyledContent = styled('div')(({ theme }) => {
   return {
-    minHeight: '215px',
-    maxHeight: '585px',
+    minHeight: '224px',
+    maxHeight: '50vh',
     width: '100%',
-    padding: '0 24px',
     overflow: 'auto',
+    ...displayFlex('center', 'flex-start'),
     color: theme.colors.popoverColor,
     letterSpacing: '0.06em',
+    '[cmdk-group-heading]': {
+      margin: '5px 16px',
+    },
   };
 });
 export const StyledJumpTo = styled('div')(({ theme }) => {
@@ -35,24 +24,6 @@ export const StyledJumpTo = styled('div')(({ theme }) => {
       fontWeight: '500',
       marginBottom: '10px',
     },
-    a: {
-      color: 'inherit',
-      padding: '5px 5px 5px 0',
-      ...displayFlex('center', 'center'),
-      ':visited': {
-        color: theme.colors.popoverColor,
-      },
-      transition: 'background .15s, color .15s',
-      svg: {
-        color: 'inherit',
-        marginBottom: '2px',
-      },
-      span: {
-        color: 'inherit',
-        marginLeft: '12px',
-        lineHeight: '22px',
-      },
-    },
   };
 });
 export const StyledInputContent = styled('div')(({ theme }) => {
@@ -63,7 +34,7 @@ export const StyledInputContent = styled('div')(({ theme }) => {
       width: '492px',
       height: '22px',
       padding: '0 12px',
-      fontSize: theme.font.sm,
+      fontSize: theme.font.base,
       ...displayFlex('space-between', 'center'),
       letterSpacing: '0.06em',
       color: theme.colors.popoverColor,
@@ -74,11 +45,9 @@ export const StyledInputContent = styled('div')(({ theme }) => {
   };
 });
 export const StyledShortcut = styled('div')(({ theme }) => {
-  return { color: theme.colors.placeHolderColor, fontSize: theme.font.xs };
+  return { color: theme.colors.placeHolderColor, fontSize: theme.font.sm };
 });
-export const StyledInput = styled('input')(({ theme }) => {
-  return {};
-});
+
 export const StyledLabel = styled('label')(({ theme }) => {
   return {
     width: '24px',
@@ -99,7 +68,7 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
   return {
     width: 'auto',
     height: '0',
-    margin: '6px 12px 6.5px 12px',
+    margin: '6px 16px 6.5px 16px',
     position: 'relative',
     borderTop: `0.5px solid ${theme.colors.placeHolderColor}`,
   };
@@ -108,19 +77,19 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
 export const StyledModalFooter = styled('div')(({ theme }) => {
   return {
     fontSize: theme.font.sm,
-    lineHeight: '20px',
+    lineHeight: '22px',
+    marginBottom: '8px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),
     color: theme.colors.popoverColor,
-    margin: '16px 0',
   };
 });
 export const StyledModalFooterContent = styled.button(({ theme }) => {
   return {
-    width: '572px',
+    width: '612px',
     height: '32px',
     fontSize: theme.font.sm,
-    lineHeight: '20px',
+    lineHeight: '22px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),
     color: theme.colors.popoverColor,
@@ -138,9 +107,8 @@ export const StyledModalFooterContent = styled.button(({ theme }) => {
 });
 export const StyledListItem = styled.button(({ theme }) => {
   return {
-    width: '572px',
+    width: '612px',
     height: '32px',
-    marginTop: '12px',
     fontSize: theme.font.sm,
     color: theme.colors.popoverColor,
     paddingLeft: '12px',
@@ -154,6 +122,28 @@ export const StyledListItem = styled.button(({ theme }) => {
     ':hover': {
       color: theme.colors.primaryColor,
       backgroundColor: theme.colors.hoverBackground,
+    },
+    a: {
+      width: '100%',
+      color: 'inherit',
+      ...displayFlex('flex-start', 'center'),
+      ':visited': {
+        color: theme.colors.popoverColor,
+      },
+      transition: 'background .15s, color .15s',
+      svg: {
+        fontSize: '20px',
+        color: 'inherit',
+        marginBottom: '2px',
+      },
+      span: {
+        color: 'inherit',
+        margin: '0 12px',
+        lineHeight: '22px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      },
     },
   };
 });

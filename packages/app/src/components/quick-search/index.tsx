@@ -22,6 +22,7 @@ const isMac = () => {
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [query, setQuery] = useState('');
   const { triggerQuickSearchModal } = useModal();
+  // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {
@@ -44,22 +45,22 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         width={620}
         height={'auto'}
         style={{
-          maxHeight: '720px',
+          maxHeight: '67vh',
           minHeight: '350px',
-          borderRadius: '20px',
           top: '138px',
         }}
       >
         <Command>
           <StyledModalHeader>
             <Input query={query} setQuery={setQuery} />
-            <StyledShortcut>{isMac() ? '⌘+K' : 'Ctrl+K'}</StyledShortcut>
+            <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider />
           <StyledContent>
             <Results query={query} />
           </StyledContent>
         </Command>
+        <StyledModalDivider />
         <StyledModalFooter>
           <Footer />
         </StyledModalFooter>
@@ -67,3 +68,5 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
     </Modal>
   );
 };
+
+export default QuickSearch;
