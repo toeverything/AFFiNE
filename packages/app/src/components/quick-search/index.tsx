@@ -6,9 +6,9 @@ import {
   StyledModalDivider,
   StyledShortcut,
 } from './style';
-import Input from './input';
-import Result from './content';
-import QuickSearchFooter from './footer';
+import { Input } from './input';
+import { Results } from './results';
+import { Footer } from './footer';
 import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/global-modal-provider';
@@ -57,16 +57,13 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           </StyledModalHeader>
           <StyledModalDivider />
           <StyledContent>
-            <Result query={query} />
+            <Results query={query} />
           </StyledContent>
-
-          <StyledModalFooter>
-            <QuickSearchFooter />
-          </StyledModalFooter>
         </Command>
+        <StyledModalFooter>
+          <Footer />
+        </StyledModalFooter>
       </ModalWrapper>
     </Modal>
   );
 };
-
-export default QuickSearch;

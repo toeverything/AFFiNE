@@ -42,14 +42,13 @@ export const StyledJumpTo = styled('div')(({ theme }) => {
       ':visited': {
         color: theme.colors.popoverColor,
       },
-      ':hover': {
-        color: theme.colors.primaryColor,
-      },
-      transition: `color .15s`,
+      transition: 'background .15s, color .15s',
       svg: {
+        color: 'inherit',
         marginBottom: '2px',
       },
       span: {
+        color: 'inherit',
         marginLeft: '12px',
         lineHeight: '22px',
       },
@@ -111,20 +110,50 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     fontSize: theme.font.sm,
     lineHeight: '20px',
     textAlign: 'center',
+    ...displayFlex('center', 'center'),
     color: theme.colors.popoverColor,
     margin: '16px 0',
   };
 });
-export const StyledModalFooterContent = styled('div')(({ theme }) => {
+export const StyledModalFooterContent = styled.button(({ theme }) => {
   return {
+    width: '572px',
+    height: '32px',
     fontSize: theme.font.sm,
     lineHeight: '20px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),
     color: theme.colors.popoverColor,
-    margin: '16px 0',
-    span: {
-      marginLeft: '12px',
+    borderRadius: '5px',
+    transition: 'background .15s, color .15s',
+    '>svg': {
+      fontSize: '20px',
+      marginRight: '12px',
+    },
+    ':hover': {
+      color: theme.colors.primaryColor,
+      backgroundColor: theme.colors.hoverBackground,
+    },
+  };
+});
+export const StyledListItem = styled.button(({ theme }) => {
+  return {
+    width: '572px',
+    height: '32px',
+    marginTop: '12px',
+    fontSize: theme.font.sm,
+    color: theme.colors.popoverColor,
+    paddingLeft: '12px',
+    borderRadius: '5px',
+    ...displayFlex('flex-start', 'center'),
+    '>svg': {
+      fontSize: '20px',
+      marginRight: '12px',
+    },
+    transition: 'background .15s, color .15s',
+    ':hover': {
+      color: theme.colors.primaryColor,
+      backgroundColor: theme.colors.hoverBackground,
     },
   };
 });

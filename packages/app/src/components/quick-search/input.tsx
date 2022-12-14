@@ -2,7 +2,7 @@ import React, { Dispatch, SetStateAction } from 'react';
 import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
-const Input = (props: {
+export const Input = (props: {
   query: string;
   setQuery: Dispatch<SetStateAction<string>>;
 }) => {
@@ -19,5 +19,3 @@ const Input = (props: {
     </StyledInputContent>
   );
 };
-
-export default Input;
