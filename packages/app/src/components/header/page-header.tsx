@@ -18,18 +18,17 @@ export const PageHeader = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
 
-  const { editor } = useEditor();
+  const { editor, onPropsUpdated } = useEditor();
   const { triggerQuickSearchModal } = useModal();
+
   useEffect(() => {
-    if (editor?.model) {
-      setTitle(editor.model.title || 'Untitled');
-      editor.model.propsUpdated.on(() => {
-        setTitle(editor.model.title);
-      });
-    }
-    return () => {
-      editor?.model?.propsUpdated.dispose();
-    };
+    onPropsUpdated(editor => {
+      setTitle(editor.model.title);
+    });
+  }, [onPropsUpdated]);
+
+  useEffect(() => {
+    setTitle(editor?.model.title || 'Untitled');
   }, [editor]);
 
   return (

@@ -21,7 +21,7 @@ export const createPage = (
     workspace.createPage(pageId);
     workspace.signals.pageAdded.once(addedPageId => {
       const page = workspace!.getPage(addedPageId);
-      resolve(page);
+      resolve(page as Page);
     });
   });
 };
@@ -35,4 +35,14 @@ export const initialPage = (page: Page) => {
 
 export const generateDefaultPageId = () => {
   return new Date().getTime().toString();
+};
+
+export const getEditorMode = () => {
+  const editorContainer = document.querySelector('editor-container');
+  return editorContainer?.mode;
+};
+
+export const setEditorMode = (mode: EditorContainer['mode']) => {
+  const editorContainer = document.querySelector('editor-container');
+  editorContainer?.setAttribute('mode', mode as string);
 };

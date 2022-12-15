@@ -75,18 +75,14 @@ const toolbarList2 = [
 const UndoRedo = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const { currentPage } = useEditor();
-  useEffect(() => {
-    if (!currentPage) return;
+  const { onHistoryUpdated, page } = useEditor();
 
-    currentPage.signals.historyUpdated.on(() => {
-      setCanUndo(currentPage.canUndo);
-      setCanRedo(currentPage.canRedo);
+  useEffect(() => {
+    onHistoryUpdated(page => {
+      setCanUndo(page.canUndo);
+      setCanRedo(page.canRedo);
     });
-    return () => {
-      currentPage.signals.historyUpdated.dispose();
-    };
-  }, [currentPage]);
+  }, [onHistoryUpdated]);
 
   return (
     <StyledToolbarWrapper>
@@ -94,7 +90,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canUndo}
           onClick={() => {
-            currentPage?.undo();
+            page?.undo();
           }}
         >
           <UndoIcon />
@@ -104,7 +100,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canRedo}
           onClick={() => {
-            currentPage?.redo();
+            page?.redo();
           }}
         >
           <RedoIcon />
