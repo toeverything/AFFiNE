@@ -21,6 +21,8 @@ const isMac = () => {
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
@@ -44,13 +46,13 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
       <ModalWrapper
         width={620}
         style={{
-          maxHeight: '67vh',
+          maxHeight: '80vh',
           minHeight: '350px',
-          top: '138px',
-          transition: 'height .15s',
+          top: '12vh',
         }}
       >
         <Command
+          shouldFilter={false}
           //Handle KeyboardEvent conflicts with blocksuite
           onKeyDown={(e: React.KeyboardEvent) => {
             if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -59,18 +61,27 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           }}
         >
           <StyledModalHeader>
-            <Input query={query} setQuery={setQuery} />
+            <Input query={query} setQuery={setQuery} setLoading={setLoading} />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider />
           <StyledContent>
-            <Results query={query} />
+            <Results
+              query={query}
+              loading={loading}
+              setLoading={setLoading}
+              setShowCreatePage={setShowCreatePage}
+            />
           </StyledContent>
         </Command>
-        <StyledModalDivider />
-        <StyledModalFooter>
-          <Footer />
-        </StyledModalFooter>
+        {showCreatePage ? (
+          <>
+            <StyledModalDivider />
+            <StyledModalFooter>
+              <Footer query={query} />
+            </StyledModalFooter>
+          </>
+        ) : null}
       </ModalWrapper>
     </Modal>
   );

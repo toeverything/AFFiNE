@@ -1,24 +1,29 @@
 import { Command } from 'cmdk';
-import { StyledListItem } from './style';
+import { StyledListItem, StyledNotFound } from './style';
 import { useModal } from '@/providers/global-modal-provider';
-import {
-  AllPagesIcon,
-  FavouritesIcon,
-  TrashIcon,
-  PaperIcon,
-} from '@blocksuite/icons';
+import { PaperIcon, LogoUnlogIcon } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { List } from './config';
 
-export const Results = (props: { query: string }) => {
+export const Results = (props: {
+  query: string;
+  loading: boolean;
+  setLoading: Dispatch<SetStateAction<boolean>>;
+  setShowCreatePage: Dispatch<SetStateAction<boolean>>;
+}) => {
   const query = props.query;
+  const loading = props.loading;
+  const setLoading = props.setLoading;
+  const setShowCreatePage = props.setShowCreatePage;
   const { triggerQuickSearchModal } = useModal();
   const { search, openPage, pageList } = useEditor();
   const router = useRouter();
   const [results, setResults] = useState(new Map<string, string | undefined>());
   useEffect(() => {
-    return setResults(search(query));
+    setResults(search(query));
+    setLoading(false);
     //Save the Map<BlockId, PageId> obtained from the search as state
   }, [query, search]);
   const pageIds = [...results.values()];
@@ -26,66 +31,62 @@ export const Results = (props: { query: string }) => {
   const resultsPageMeta = pageList.filter(
     page => pageIds.indexOf(page.id) > -1
   );
-  return (
+
+  useEffect(() => {
+    setShowCreatePage(resultsPageMeta.length ? false : true);
+    //Determine whether to display the  ‘+ New page’
+  }, [resultsPageMeta]);
+
+  return loading ? null : (
     <Command.List>
-      <Command.Empty>No results found for &quot;{query}&quot;.</Command.Empty>
-      <Command.Group>
-        {resultsPageMeta.map(result => {
-          return (
-            <Command.Item
-              key={result.id}
-              onSelect={() => {
-                openPage(result.id);
-                triggerQuickSearchModal();
-              }}
-              value={result.title}
-            >
-              <StyledListItem>
-                <PaperIcon />
-                <span>{result.title}</span>
-              </StyledListItem>
-            </Command.Item>
-          );
-        })}
-      </Command.Group>
-      <Command.Group heading="Jump to">
-        <Command.Item
-          value="All pages"
-          onSelect={() => {
-            router.push('/page-list/all');
-            triggerQuickSearchModal();
-          }}
-        >
-          <StyledListItem>
-            <AllPagesIcon />
-            <span>All pages</span>
-          </StyledListItem>
-        </Command.Item>
-        <Command.Item
-          value="Favourites"
-          onSelect={() => {
-            router.push('/page-list/favorite');
-            triggerQuickSearchModal();
-          }}
-        >
-          <StyledListItem>
-            <FavouritesIcon />
-            <span>Favourites</span>
-          </StyledListItem>
-        </Command.Item>
-        <Command.Item
-          value="Trash"
-          onSelect={() => {
-            router.push('/page-list/trash');
-            triggerQuickSearchModal();
-          }}
-        >
-          <StyledListItem>
-            <TrashIcon />
-            <span>Trash</span>
-          </StyledListItem>
-        </Command.Item>
-      </Command.Group>
+      {query ? (
+        resultsPageMeta.length ? (
+          <Command.Group heading={`Find ${resultsPageMeta.length} results`}>
+            {resultsPageMeta.map(result => {
+              return (
+                <Command.Item
+                  key={result.id}
+                  onSelect={() => {
+                    openPage(result.id);
+                    triggerQuickSearchModal();
+                  }}
+                  value={result.title}
+                >
+                  <StyledListItem>
+                    <PaperIcon />
+                    <span>{result.title}</span>
+                  </StyledListItem>
+                </Command.Item>
+              );
+            })}
+          </Command.Group>
+        ) : (
+          <StyledNotFound>
+            <span>Find 0 result</span>
+            <LogoUnlogIcon />
+          </StyledNotFound>
+        )
+      ) : (
+        <Command.Group heading="Jump to">
+          {List.map(link => {
+            return (
+              <Command.Item
+                key={link.title}
+                value={link.title}
+                onSelect={() => {
+                  router.push(link.href);
+                  triggerQuickSearchModal();
+                }}
+              >
+                <StyledListItem>
+                  <link.icon />
+                  <span>{link.title}</span>
+                </StyledListItem>
+              </Command.Item>
+            );
+          })}
+        </Command.Group>
+      )}
     </Command.List>
   );
 };

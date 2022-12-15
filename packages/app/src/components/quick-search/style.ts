@@ -2,16 +2,18 @@ import { displayFlex, styled } from '@/styles';
 
 export const StyledContent = styled('div')(({ theme }) => {
   return {
-    minHeight: '224px',
-    maxHeight: '50vh',
+    minHeight: '220px',
+    maxHeight: '55vh',
     width: '100%',
     overflow: 'auto',
+    marginBottom: '10px',
     ...displayFlex('center', 'flex-start'),
     color: theme.colors.popoverColor,
     letterSpacing: '0.06em',
     '[cmdk-group-heading]': {
       margin: '5px 16px',
       fontSize: theme.font.sm,
+      fontWeight: '500',
     },
     '[aria-selected="true"]': {
       transition: 'background .15s, color .15s',
@@ -30,6 +32,24 @@ export const StyledJumpTo = styled('div')(({ theme }) => {
     strong: {
       fontWeight: '500',
       marginBottom: '10px',
+    },
+  };
+});
+export const StyledNotFound = styled('div')(({ theme }) => {
+  return {
+    width: '620px',
+    ...displayFlex('center', 'center'),
+    flexDirection: 'column',
+    padding: '10px 16px',
+    fontSize: theme.font.sm,
+    span: {
+      width: '100%',
+      fontWeight: '500',
+    },
+
+    '>svg': {
+      marginTop: '10px',
+      fontSize: '150px',
     },
   };
 });
