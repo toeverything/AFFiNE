@@ -5,6 +5,7 @@ import Modal from '@/ui/modal';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
 import { FavouritedIcon } from '@blocksuite/icons';
+import { toast } from '@/components/toast';
 export const StyledHeader = styled('div')({
   height: '60px',
   width: '100vw',
@@ -38,7 +39,14 @@ const Affine = () => {
       </Modal>
       <Loading />
 
-      <Button icon={<FavouritedIcon />}>click me!</Button>
+      <Button
+        icon={<FavouritedIcon />}
+        onClick={() => {
+          toast('hello, world!!');
+        }}
+      >
+        click me!
+      </Button>
       <Button icon={<FavouritedIcon />} type={'primary'}>
         click me!
       </Button>
