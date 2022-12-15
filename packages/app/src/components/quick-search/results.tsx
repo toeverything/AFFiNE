@@ -25,7 +25,7 @@ export const Results = (props: {
     setResults(search(query));
     setLoading(false);
     //Save the Map<BlockId, PageId> obtained from the search as state
-  }, [query, search]);
+  }, [query, search, setLoading]);
   const pageIds = [...results.values()];
 
   const resultsPageMeta = pageList.filter(
@@ -35,7 +35,7 @@ export const Results = (props: {
   useEffect(() => {
     setShowCreatePage(resultsPageMeta.length ? false : true);
     //Determine whether to display the  ‘+ New page’
-  }, [resultsPageMeta]);
+  }, [resultsPageMeta, setShowCreatePage]);
 
   return loading ? null : (
     <Command.List>
