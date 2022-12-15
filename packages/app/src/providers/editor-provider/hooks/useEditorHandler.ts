@@ -4,7 +4,7 @@ import { Workspace } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import { EditorHandlers, PageMeta } from '../interface';
 import { EditorContainer } from '@blocksuite/editor';
-
+import toast from '@/components/toast';
 export const useEditorHandler = ({
   editor,
   workspace,
@@ -44,20 +44,17 @@ export const useEditorHandler = ({
         });
       }
     },
-    favoritePage: pageId => {
-      workspace!.setPageMeta(pageId, { favorite: true });
-    },
     permanentlyDeletePage: pageId => {
       // TODO:  workspace.meta.removePage or workspace.removePage?
       workspace!.meta.removePage(pageId);
-    },
-    unFavoritePage: pageId => {
-      workspace!.setPageMeta(pageId, { favorite: true });
     },
     toggleFavoritePage: pageId => {
       const pageMeta = workspace?.meta.pageMetas.find(p => p.id === pageId);
       if (pageMeta) {
         workspace!.setPageMeta(pageId, { favorite: !pageMeta.favorite });
+        toast(
+          pageMeta.favorite ? 'Removed to Favourites' : 'Added to Favourites'
+        );
       }
     },
     search: (query: QueryContent) => {
