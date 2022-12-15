@@ -12,7 +12,7 @@ export const Footer = (props: { query: string }) => {
   return (
     <StyledModalFooterContent
       onClick={async () => {
-        const page = createPage();
+        const page = query ? createPage({ title: query }) : createPage();
         const pageMeta = getPageMeta((await page).id);
         pageMeta && openPage(pageMeta.id);
 
