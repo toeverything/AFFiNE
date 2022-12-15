@@ -13,6 +13,7 @@ import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   MoreVerticalIcon,
+  CloudUnsyncedIcon,
 } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
@@ -131,6 +132,9 @@ const HeaderRight = () => {
   }
   return (
     <>
+      <IconButton iconSize="middle">
+        <CloudUnsyncedIcon />
+      </IconButton>
       <ThemeModeSwitch />
       <Menu content={<PopoverContent />} placement="bottom-end">
         <IconButton>

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import Avatar from '@mui/material/Avatar';
 import {
   StyledArrowButton,
   StyledLink,
   StyledListItem,
+  StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
   StyledSubListItem,
@@ -24,6 +26,7 @@ import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
 
 import { IconButton } from '@/ui/button';
+import { WorkspaceSelector } from './WorkspaceSelector';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { pageList, openPage } = useEditor();
@@ -65,6 +68,9 @@ export const WorkSpaceSliderBar = () => {
   return (
     <>
       <StyledSliderBar show={show}>
+        <StyledListItemForWorkspace>
+          <WorkspaceSelector />
+        </StyledListItemForWorkspace>
         <StyledListItem
           onClick={() => {
             triggerQuickSearchModal();
