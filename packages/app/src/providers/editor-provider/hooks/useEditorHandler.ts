@@ -42,6 +42,13 @@ export const useEditorHandler = ({
           trash: !pageMeta.trash,
           trashDate: +new Date(),
         });
+
+        if (pageMeta.trash) {
+          toast('Removed to trash');
+          const editor = document.querySelector('editor-container');
+          // @ts-ignore
+          editor?.setAttribute('readonly', 'false');
+        }
       }
     },
     permanentlyDeletePage: pageId => {

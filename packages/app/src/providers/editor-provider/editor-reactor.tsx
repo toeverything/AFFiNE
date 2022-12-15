@@ -113,6 +113,11 @@ const EditorReactor = ({
       editor.mode = pageMeta.mode;
     }
 
+    if (pageMeta?.trash) {
+      // @ts-ignore
+      editor.readonly = true;
+    }
+
     setEditor(editor);
   }, [workspace, currentPage, setEditor]);
 
