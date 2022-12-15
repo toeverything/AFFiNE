@@ -15,9 +15,9 @@ export const useEditorHandler = ({
   const router = useRouter();
 
   return {
-    createPage: async (pageId = generateDefaultPageId()) => {
+    createPage: async ({ pageId = generateDefaultPageId(), title } = {}) => {
       const page = await createPage(workspace!, pageId);
-      initialPage(page);
+      initialPage(page, title);
       return page;
     },
     getPageMeta(pageId: string) {

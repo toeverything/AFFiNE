@@ -26,7 +26,7 @@ export type PageMeta = {
 } & OriginalPageMeta;
 
 export type EditorHandlers = {
-  createPage: (pageId?: string) => Promise<Page>;
+  createPage: (params?: { pageId?: string; title?: string }) => Promise<Page>;
   openPage: (
     pageId: string,
     query?: { [key: string]: string }
