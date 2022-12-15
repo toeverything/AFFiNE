@@ -29,7 +29,7 @@ export const Results = (props: {
   const pageIds = [...results.values()];
 
   const resultsPageMeta = pageList.filter(
-    page => pageIds.indexOf(page.id) > -1
+    page => pageIds.indexOf(page.id) > -1 && page.trash !== true
   );
 
   useEffect(() => {
