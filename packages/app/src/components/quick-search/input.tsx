@@ -21,7 +21,9 @@ export const Input = (props: {
   }, [inputRef]);
   useEffect(() => {
     return setInputValue(props.query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   return (
     <StyledInputContent>
       <StyledLabel htmlFor=":r5:">
