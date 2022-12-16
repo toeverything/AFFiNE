@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import Avatar from '@mui/material/Avatar';
 import {
   StyledArrowButton,
   StyledLink,
@@ -22,11 +21,13 @@ import {
   AddIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
+import { Tooltip } from '@/ui/tooltip';
 import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
 
 import { IconButton } from '@/ui/button';
 import { WorkspaceSelector } from './WorkspaceSelector';
+import useLocalStorage from '@/hooks/use-local-storage';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { pageList, openPage } = useEditor();
@@ -48,7 +49,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
               openPage(pageMeta.id);
             }}
           >
-            {pageMeta.title || pageMeta.id}
+            {pageMeta.title || 'Untitled'}
           </StyledSubListItem>
         );
       })}
@@ -60,10 +61,12 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
 };
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal, triggerImportModal } = useModal();
-  const [show, setShow] = useState(false);
   const [showSubFavorite, setShowSubFavorite] = useState(true);
   const { createPage, getPageMeta, openPage } = useEditor();
   const router = useRouter();
+
+  const [showTip, setShowTip] = useState(false);
+  const [show, setShow] = useLocalStorage('AFFINE_SLIDE_BAR', false, true);
 
   return (
     <>
@@ -119,21 +122,33 @@ export const WorkSpaceSliderBar = () => {
         <StyledNewPageButton
           onClick={async () => {
             const page = await createPage();
-            const pageMeta = getPageMeta(page.id);
-            pageMeta && openPage(pageMeta.id);
+            openPage(page.id);
           }}
         >
           <AddIcon /> New Page
         </StyledNewPageButton>
       </StyledSliderBar>
-      <StyledArrowButton
-        isShow={show}
-        onClick={() => {
-          setShow(!show);
-        }}
+      <Tooltip
+        content={show ? 'Collapse sidebar' : 'Expand sidebar'}
+        placement="right"
+        visible={showTip}
       >
-        <Arrow />
-      </StyledArrowButton>
+        <StyledArrowButton
+          isShow={show}
+          onClick={() => {
+            setShow(!show);
+            setShowTip(false);
+          }}
+          onMouseEnter={() => {
+            setShowTip(true);
+          }}
+          onMouseLeave={() => {
+            setShowTip(false);
+          }}
+        >
+          <Arrow />
+        </StyledArrowButton>
+      </Tooltip>
     </>
   );
 };

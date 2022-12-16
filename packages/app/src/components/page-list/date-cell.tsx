@@ -9,16 +9,17 @@ dayjs.extend(localizedFormat);
 export const DateCell = ({
   pageMeta,
   dateKey,
+  backupKey = '',
 }: {
   pageMeta: PageMeta;
   dateKey: keyof PageMeta;
+  backupKey?: keyof PageMeta;
 }) => {
   // dayjs().format('L LT');
+  const value = pageMeta[dateKey] ?? pageMeta[backupKey];
   return (
     <TableCell ellipsis={true}>
-      {pageMeta[dateKey] === undefined
-        ? '--'
-        : dayjs(pageMeta[dateKey] as string).format('YYYY-MM-DD HH:mm')}
+      {value ? dayjs(value as string).format('YYYY-MM-DD HH:mm') : '--'}
     </TableCell>
   );
 };

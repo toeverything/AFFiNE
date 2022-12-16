@@ -14,6 +14,9 @@ import '../utils/print-build-info';
 import { styled } from '@/styles';
 import ProviderComposer from '@/components/provider-composer';
 import ConfirmProvider from '@/providers/confirm-provider';
+import HelpIsland from '@/components/help-island';
+import { useRouter } from 'next/router';
+
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
 });
@@ -36,6 +39,8 @@ const StyledWrapper = styled('div')(({ theme }) => {
 });
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
   return (
     <>
       <Logger />
@@ -52,6 +57,9 @@ function MyApp({ Component, pageProps }: AppProps) {
           <WorkSpaceSliderBar />
           <StyledWrapper>
             <Component {...pageProps} />
+            <HelpIsland
+              showList={router.pathname !== '/' ? ['contact'] : undefined}
+            />
           </StyledWrapper>
         </StyledPage>
       </ProviderComposer>

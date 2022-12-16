@@ -5,40 +5,45 @@ import {
   StyledTitle,
   StyledTitleWrapper,
 } from './styles';
-import { IconButton } from '@/ui/button';
 import { Content } from '@/ui/layout';
 import { useEditor } from '@/providers/editor-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
-import { ArrowDownIcon } from '@blocksuite/icons';
-import { useModal } from '@/providers/global-modal-provider';
-
+import QuickSearchButton from './quick-search-button';
 import Header from './header';
 
-export const PageHeader = () => {
+export const EditorHeader = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
 
-  const { editor, onPropsUpdated } = useEditor();
-  const { triggerQuickSearchModal } = useModal();
+  const { editor, onPropsUpdated, getPageMeta } = useEditor();
 
   useEffect(() => {
     onPropsUpdated(editor => {
-      setTitle(editor.model.title);
+      setTitle(editor.model?.title || 'Untitled');
     });
   }, [onPropsUpdated]);
 
   useEffect(() => {
-    setTitle(editor?.model.title || 'Untitled');
+    setTimeout(() => {
+      // If first time in, need to wait for editor to be inserted into DOM
+      setTitle(editor?.model?.title || 'Untitled');
+    }, 300);
   }, [editor]);
+
+  const pageMeta = getPageMeta();
 
   return (
     <Header>
       {title && (
         <StyledTitle
           onMouseEnter={() => {
+            if (pageMeta?.trash) return;
+
             setIsHover(true);
           }}
           onMouseLeave={() => {
+            if (pageMeta?.trash) return;
+
             setIsHover(false);
           }}
         >
@@ -53,13 +58,7 @@ export const PageHeader = () => {
             </StyledSwitchWrapper>
             <Content ellipsis={true}>{title}</Content>
             <StyledSearchArrowWrapper>
-              <IconButton
-                onClick={() => {
-                  triggerQuickSearchModal();
-                }}
-              >
-                <ArrowDownIcon />
-              </IconButton>
+              <QuickSearchButton />
             </StyledSearchArrowWrapper>
           </StyledTitleWrapper>
         </StyledTitle>
@@ -68,4 +67,4 @@ export const PageHeader = () => {
   );
 };
 
-export default PageHeader;
+export default EditorHeader;

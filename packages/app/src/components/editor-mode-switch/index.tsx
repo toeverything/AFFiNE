@@ -66,7 +66,9 @@ export const EditorModeSwitch = ({
   style = {},
 }: AnimateRadioProps) => {
   const { mode: themeMode } = useTheme();
-  const { mode, setMode } = useEditor();
+  const { mode, setMode, getPageMeta } = useEditor();
+  const pageMeta = getPageMeta();
+
   const modifyRadioItemStatus = (): RadioItemStatus => {
     return {
       left: isHover
@@ -99,6 +101,7 @@ export const EditorModeSwitch = ({
       data-testid="editor-mode-switcher"
       shrink={!isHover}
       style={style}
+      disabled={!!pageMeta?.trash}
     >
       <AnimateRadioItem
         isLeft={true}

@@ -2,8 +2,13 @@ import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
 import type { EditorContainer } from '@blocksuite/editor';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
-import { generateDefaultPageId, initialPage } from './utils';
-import { useEffect } from 'react';
+import {
+  generateDefaultPageId,
+  getEditor,
+  initIntroduction,
+  initIntroductionMeta,
+} from './utils';
+import { useEffect, useRef } from 'react';
 import pkg from '../../../package.json';
 import {
   createWebsocketDocProvider,
@@ -46,6 +51,7 @@ const EditorReactor = ({
   setWorkspace: (workspace: Workspace) => void;
   setCurrentPage: (Page: Page) => void;
 }) => {
+  const shouldInitIntroduction = useRef(false);
   const {
     query: { pageId: routerPageId },
   } = useRouter();
@@ -80,7 +86,8 @@ const EditorReactor = ({
         setCurrentPage(page);
       } else {
         createPage(workspace!, pageId).then(page => {
-          initialPage(page);
+          shouldInitIntroduction.current = true;
+          initIntroductionMeta(workspace!, page);
           setCurrentPage(page);
         });
       }
@@ -94,7 +101,8 @@ const EditorReactor = ({
     }
 
     createPage(workspace!, generateDefaultPageId()).then(page => {
-      initialPage(page);
+      shouldInitIntroduction.current = true;
+      initIntroductionMeta(workspace!, page);
       setCurrentPage(page);
     });
   }, [workspace, routerPageId, setCurrentPage]);
@@ -113,7 +121,33 @@ const EditorReactor = ({
       editor.mode = pageMeta.mode;
     }
 
+    if (pageMeta?.trash) {
+      // @ts-ignore
+      editor.readonly = true;
+    }
+
+    const onEditorInsertHandler = () => {
+      const editor = getEditor();
+      // Editor is different from the previous one witch is not inserted into the DOM
+      setEditor(editor as EditorContainer);
+      if (shouldInitIntroduction.current) {
+        shouldInitIntroduction.current = false;
+        initIntroduction(workspace!, editor as EditorContainer);
+      }
+    };
+
+    editor.addEventListener(
+      'DOMNodeInsertedIntoDocument',
+      onEditorInsertHandler
+    );
     setEditor(editor);
+
+    return () => {
+      editor.removeEventListener(
+        'DOMNodeInsertedIntoDocument',
+        onEditorInsertHandler
+      );
+    };
   }, [workspace, currentPage, setEditor]);
 
   useEffect(() => {

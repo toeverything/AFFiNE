@@ -23,6 +23,7 @@ export interface AffineTheme {
     popoverBackground: string;
     tooltipBackground: string;
     hoverBackground: string;
+    innerHoverBackground: string;
     codeBackground: string;
     warningBackground: string;
     errorBackground: string;

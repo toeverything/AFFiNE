@@ -38,9 +38,14 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         }
       }
     };
-    document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
+    if (!open) {
+      setQuery('');
+    }
+    document.addEventListener('keydown', down, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', down, { capture: true });
   }, [open, triggerQuickSearchModal]);
+
   return (
     <Modal open={open} onClose={onClose} wrapperPosition={['top', 'center']}>
       <ModalWrapper

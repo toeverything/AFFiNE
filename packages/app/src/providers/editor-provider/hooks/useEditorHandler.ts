@@ -1,32 +1,38 @@
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
-import { createPage, initialPage, generateDefaultPageId } from '../utils';
-import { Workspace } from '@blocksuite/store';
+import { createPage, generateDefaultPageId, initPage } from '../utils';
+import { Workspace, Page } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import { EditorHandlers, PageMeta } from '../interface';
 import { EditorContainer } from '@blocksuite/editor';
-
+import toast from '@/components/toast';
 export const useEditorHandler = ({
   editor,
   workspace,
+  page,
 }: {
   workspace?: Workspace;
+  page?: Page;
   editor?: EditorContainer;
 }): EditorHandlers => {
   const router = useRouter();
 
   return {
-    createPage: async ({ pageId = generateDefaultPageId(), title } = {}) => {
+    createPage: async ({
+      pageId = generateDefaultPageId(),
+      title = '',
+    } = {}) => {
       const page = await createPage(workspace!, pageId);
-      initialPage(page, title);
+      initPage(workspace!, page, { title });
       return page;
     },
-    getPageMeta(pageId: string) {
-      pageId = pageId.replace('space:', '');
+    getPageMeta(pageId) {
+      pageId = (pageId ?? page!.id).replace('space:', '');
       return workspace!.meta.pageMetas.find(
         page => page.id === pageId
       ) as PageMeta;
     },
     openPage: (pageId, query = {}) => {
+      pageId = pageId.replace('space:', '');
       return router.push({
         pathname: '/',
         query: {
@@ -42,22 +48,26 @@ export const useEditorHandler = ({
           trash: !pageMeta.trash,
           trashDate: +new Date(),
         });
+
+        if (pageMeta.trash) {
+          toast('Removed to trash');
+          const editor = document.querySelector('editor-container');
+          // @ts-ignore
+          editor?.setAttribute('readonly', 'false');
+        }
       }
-    },
-    favoritePage: pageId => {
-      workspace!.setPageMeta(pageId, { favorite: true });
     },
     permanentlyDeletePage: pageId => {
       // TODO:  workspace.meta.removePage or workspace.removePage?
       workspace!.meta.removePage(pageId);
     },
-    unFavoritePage: pageId => {
-      workspace!.setPageMeta(pageId, { favorite: true });
-    },
     toggleFavoritePage: pageId => {
       const pageMeta = workspace?.meta.pageMetas.find(p => p.id === pageId);
       if (pageMeta) {
         workspace!.setPageMeta(pageId, { favorite: !pageMeta.favorite });
+        toast(
+          pageMeta.favorite ? 'Removed to Favourites' : 'Added to Favourites'
+        );
       }
     },
     search: (query: QueryContent) => {
