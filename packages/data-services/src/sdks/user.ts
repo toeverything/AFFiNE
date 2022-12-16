@@ -31,6 +31,7 @@ export async function login(params: LoginParams): Promise<LoginResponse> {
     url: '/api/user/token',
     method: 'POST',
     data: params,
+    withAuthorization: false,
   });
   return data.data;
 }

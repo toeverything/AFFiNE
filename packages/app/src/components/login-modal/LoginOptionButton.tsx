@@ -1,10 +1,37 @@
+import { useEffect } from 'react';
+import {
+  signInWithGoogle,
+  onAuthStateChanged,
+  login,
+} from '@pathfinder/data-services';
 import { styled } from '@/styles';
 import { Button } from '@/ui/button';
 import { GoogleIcon, StayLogOutIcon } from './icons';
 
 export const GoogleLoginButton = () => {
+  useEffect(() => {
+    onAuthStateChanged(async user => {
+      console.log('on auth state changed', user);
+      const token = await user?.getIdToken();
+      if (!token) {
+        return;
+      }
+      const ret = await login({ token, type: 'Google' });
+      console.log('login', ret);
+    });
+  });
   return (
-    <StyledGoogleButton>
+    <StyledGoogleButton
+      onClick={() => {
+        signInWithGoogle()
+          .then(ret => {
+            console.log('sign google', ret);
+          })
+          .catch(error => {
+            console.log('sign google error', error);
+          });
+      }}
+    >
       <ButtonWrapper>
         <IconWrapper>
           <GoogleIcon />

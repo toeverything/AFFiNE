@@ -1,16 +1,103 @@
 import type { AxiosRequestConfig } from 'axios';
-import { firebaseAuth } from '../../auth';
+import { login, getUserByEmail } from '../../sdks';
+
+const TOKEN_KEY = 'affine_token';
+
+interface Token {
+  accessToken: string;
+  refreshToken: string;
+}
+
+/**
+ * set null to clear token
+ */
+function setToken(token: Token | null): void {
+  if (token === null) {
+    window.localStorage.removeItem(TOKEN_KEY);
+    return;
+  }
+  window.localStorage.setItem(TOKEN_KEY, JSON.stringify(token));
+}
+
+function getToken(): { accessToken: string; refreshToken: string } | null {
+  try {
+    return JSON.parse(window.localStorage.getItem(TOKEN_KEY) || '');
+  } catch (error) {
+    return null;
+  }
+}
+
+interface AccessTokenMessage {
+  create_at: number;
+  exp: number;
+  email: string;
+}
+
+function parseAccessToken(token: string): AccessTokenMessage | null {
+  try {
+    const message: AccessTokenMessage = JSON.parse(
+      window.atob(token.split('.')[1])
+    );
+    return message;
+  } catch (error) {
+    return null;
+  }
+}
+
+function isAccessTokenExpired(token: string) {
+  const message = parseAccessToken(token);
+  if (!message) {
+    return true;
+  }
+  return Date.now() - message.create_at > message.exp;
+}
+
+export async function isLoggedIn(): Promise<boolean> {
+  const token = getToken();
+  if (!token) {
+    return false;
+  }
+  const message = parseAccessToken(token.accessToken);
+  if (!message) {
+    return false;
+  }
+  const user = await getUserByEmail({
+    email: message.email,
+  });
+  return !!user;
+}
+
+let refreshingToken: ReturnType<typeof login> | undefined;
 
 export async function setAuthorization(config: AxiosRequestConfig<unknown>) {
+  if (!config.headers) {
+    config.headers = {};
+  }
+
   if (config.withAuthorization) {
-    const token = await firebaseAuth.currentUser?.getIdToken();
+    let token = getToken();
     if (!token) {
       throw new Error('No authorization token.');
+    }
+    if (isAccessTokenExpired(token.accessToken)) {
+      if (!refreshingToken) {
+        refreshingToken = login({
+          type: 'Refresh',
+          token: token.refreshToken,
+        });
+      }
+      const newToken = await refreshingToken;
+      token = {
+        accessToken: newToken.token,
+        refreshToken: newToken.refresh,
+      };
+      setToken(token);
+      refreshingToken = undefined;
     }
     if (!config.headers) {
       config.headers = {};
     }
-    config.headers['Authorization'] = token;
+    config.headers['Authorization'] = token.accessToken;
   }
   return config;
 }
