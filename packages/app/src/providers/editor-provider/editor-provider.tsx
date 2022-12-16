@@ -4,29 +4,28 @@ import type { PropsWithChildren } from 'react';
 import dynamic from 'next/dynamic';
 import Loading from './loading';
 import { Page, Workspace } from '@blocksuite/store';
-import useEditorHandler from './useEditorHandler';
-import { EditorHandlers, PageMeta } from './interface';
-
+import useEditorHandler from './hooks/useEditorHandler';
+import {
+  EditorHandlers,
+  PageMeta,
+  EditorContextValue,
+  EditorContextProps,
+} from './interface';
+import usePropsUpdated from './hooks/usePropsUpdated';
+import useHistoryUpdated from './hooks/useHistoryUpdated';
+import useMode from './hooks/useMode';
 // Blocksuite has to be imported dynamically since it has a lot of effects
 const DynamicEditor = dynamic(() => import('./editor-reactor'), {
   ssr: false,
 });
 
-type EditorContextValue = {
-  mode: EditorContainer['mode'];
-  setMode: (mode: EditorContainer['mode']) => void;
-  currentPage: Page | void;
-  editor: EditorContainer | void;
-  pageList: PageMeta[];
-} & EditorHandlers;
-
-type EditorContextProps = PropsWithChildren<{}>;
-
 export const EditorContext = createContext<EditorContextValue>({
   mode: 'page',
   setMode: () => {},
   pageList: [],
-  currentPage: undefined,
+  page: undefined,
+  onPropsUpdated: () => {},
+  onHistoryUpdated: () => {},
   editor: undefined,
   ...({} as EditorHandlers),
 });
@@ -37,17 +36,24 @@ export const EditorProvider = ({
   children,
 }: PropsWithChildren<EditorContextProps>) => {
   const [workspace, setWorkspace] = useState<Workspace>();
-  const [currentPage, setCurrentPage] = useState<Page>();
+  const [page, setPage] = useState<Page>();
   const [pageList, setPageList] = useState<PageMeta[]>([]);
   const [editor, setEditor] = useState<EditorContainer>();
-  const [mode, setMode] = useState<EditorContainer['mode']>('page');
 
-  const editorHandlers = useEditorHandler(workspace);
+  const { mode, setMode } = useMode({ workspace, page });
 
+  const editorHandlers = useEditorHandler({ workspace, editor });
+  const onPropsUpdated = usePropsUpdated(editor);
+  const onHistoryUpdated = useHistoryUpdated(page);
+  // Modify the updatedDate when history change
   useEffect(() => {
-    const event = new CustomEvent('affine.switch-mode', { detail: mode });
-    window.dispatchEvent(event);
-  }, [mode]);
+    if (!workspace) {
+      return;
+    }
+    onHistoryUpdated(page => {
+      workspace.setPageMeta(page.id, { updatedDate: +new Date() });
+    });
+  }, [workspace, onHistoryUpdated]);
 
   useEffect(() => {
     if (!workspace) {
@@ -67,21 +73,23 @@ export const EditorProvider = ({
     <EditorContext.Provider
       value={{
         editor,
-        currentPage,
+        page,
         mode,
         setMode,
         pageList,
+        onHistoryUpdated,
+        onPropsUpdated,
         ...editorHandlers,
       }}
     >
       <DynamicEditor
         workspace={workspace}
-        currentPage={currentPage}
+        currentPage={page}
         setEditor={setEditor}
         setWorkspace={setWorkspace}
-        setCurrentPage={setCurrentPage}
+        setCurrentPage={setPage}
       />
-      {workspace && currentPage && editor ? children : <Loading />}
+      {workspace && page && editor ? children : <Loading />}
     </EditorContext.Provider>
   );
 };

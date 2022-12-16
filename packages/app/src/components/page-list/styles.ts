@@ -1,5 +1,6 @@
 import { displayFlex, styled, textEllipsis } from '@/styles';
 import { TableRow } from '@/ui/table';
+import Link from 'next/link';
 
 export const StyledTableContainer = styled.div(() => {
   return {
@@ -22,11 +23,23 @@ export const StyledTitleWrapper = styled.div(({ theme }) => {
     },
   };
 });
-export const StyledTitleContent = styled.div(({ theme }) => {
+export const StyledTitleLink = styled(Link)(({ theme }) => {
   return {
-    maxWidth: '90%',
+    maxWidth: '80%',
     marginRight: '18px',
-    ...textEllipsis(1),
+    ...displayFlex('flex-start', 'center'),
+    color: theme.colors.textColor,
+    '>svg': {
+      fontSize: '24px',
+      marginRight: '12px',
+      color: theme.colors.iconColor,
+    },
+    ':hover': {
+      color: theme.colors.textColor,
+      '>svg': {
+        color: theme.colors.primaryColor,
+      },
+    },
   };
 });
 export const StyledFavoriteButton = styled.button<{ favorite: boolean }>(

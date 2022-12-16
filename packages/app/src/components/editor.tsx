@@ -3,7 +3,7 @@ import { useEditor, initDefaultContent } from '@/providers/editor-provider';
 
 export const Editor = () => {
   const editorContainer = useRef<HTMLDivElement>(null);
-  const { editor } = useEditor();
+  const { editor, onHistoryUpdated } = useEditor();
   const ref = useRef<any>();
   useEffect(() => {
     if (editor && ref.current?.page.id !== editor?.page.id) {

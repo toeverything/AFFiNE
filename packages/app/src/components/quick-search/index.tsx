@@ -6,9 +6,9 @@ import {
   StyledModalDivider,
   StyledShortcut,
 } from './style';
-import Input from './input';
-import Result from './content';
-import QuickSearchFooter from './footer';
+import { Input } from './input';
+import { Results } from './results';
+import { Footer } from './footer';
 import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/global-modal-provider';
@@ -21,7 +21,10 @@ const isMac = () => {
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
+  // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {
@@ -42,28 +45,43 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
     <Modal open={open} onClose={onClose} wrapperPosition={['top', 'center']}>
       <ModalWrapper
         width={620}
-        height={'auto'}
         style={{
-          maxHeight: '720px',
+          maxHeight: '80vh',
           minHeight: '350px',
-          borderRadius: '20px',
-          top: '138px',
+          top: '12vh',
         }}
       >
-        <Command>
+        <Command
+          shouldFilter={false}
+          //Handle KeyboardEvent conflicts with blocksuite
+          onKeyDown={(e: React.KeyboardEvent) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.stopPropagation();
+            }
+          }}
+        >
           <StyledModalHeader>
-            <Input query={query} setQuery={setQuery} />
-            <StyledShortcut>{isMac() ? '⌘+K' : 'Ctrl+K'}</StyledShortcut>
+            <Input query={query} setQuery={setQuery} setLoading={setLoading} />
+            <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider />
           <StyledContent>
-            <Result query={query} />
+            <Results
+              query={query}
+              loading={loading}
+              setLoading={setLoading}
+              setShowCreatePage={setShowCreatePage}
+            />
           </StyledContent>
-
-          <StyledModalFooter>
-            <QuickSearchFooter />
-          </StyledModalFooter>
         </Command>
+        {showCreatePage ? (
+          <>
+            <StyledModalDivider />
+            <StyledModalFooter>
+              <Footer query={query} />
+            </StyledModalFooter>
+          </>
+        ) : null}
       </ModalWrapper>
     </Modal>
   );

@@ -1,17 +1,32 @@
+import { PropsWithChildren } from 'react';
 import { Page } from '@blocksuite/store';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
+import { PageMeta as OriginalPageMeta } from '@blocksuite/store';
+import { EditorContainer } from '@blocksuite/editor';
 
-export interface PageMeta {
-  id: string;
-  title: string;
+export type EventCallBack<T> = (callback: (props: T) => void) => void;
+export type EditorContextProps = PropsWithChildren<{}>;
+
+export type EditorContextValue = {
+  mode: EditorContainer['mode'];
+  setMode: (mode: EditorContainer['mode']) => void;
+  page: Page | void;
+  editor: EditorContainer | void;
+  pageList: PageMeta[];
+  onHistoryUpdated: EventCallBack<Page>;
+  onPropsUpdated: EventCallBack<EditorContainer>;
+} & EditorHandlers;
+
+export type PageMeta = {
   favorite: boolean;
   trash: boolean;
-  createDate: number;
-  trashDate: number | null;
-}
+  trashDate: number | void;
+  updatedDate: number | void;
+  mode: EditorContainer['mode'];
+} & OriginalPageMeta;
 
 export type EditorHandlers = {
-  createPage: (pageId?: string) => Promise<Page>;
+  createPage: (params?: { pageId?: string; title?: string }) => Promise<Page>;
   openPage: (
     pageId: string,
     query?: { [key: string]: string }
@@ -23,4 +38,5 @@ export type EditorHandlers = {
   toggleFavoritePage: (pageId: string) => void;
   permanentlyDeletePage: (pageId: string) => void;
   search: (query: QueryContent) => Map<string, string | undefined>;
+  changeEditorMode: (pageId: string) => void;
 };

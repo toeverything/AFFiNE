@@ -61,7 +61,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal, triggerImportModal } = useModal();
   const [show, setShow] = useState(false);
-  const [showSubFavorite, setShowSubFavorite] = useState(false);
+  const [showSubFavorite, setShowSubFavorite] = useState(true);
   const { createPage, getPageMeta, openPage } = useEditor();
   const router = useRouter();
 
