@@ -38,13 +38,17 @@ export const Input = (props: {
         onCompositionEnd={e => {
           props.setQuery(e.data);
           setIsComposition(false);
-          props.setLoading(true);
+          if (!props.query) {
+            props.setLoading(true);
+          }
         }}
         onValueChange={str => {
           setInputValue(str);
           if (!isComposition) {
             props.setQuery(str);
-            props.setLoading(true);
+            if (!props.query) {
+              props.setLoading(true);
+            }
           }
         }}
         onKeyDown={(e: React.KeyboardEvent) => {
