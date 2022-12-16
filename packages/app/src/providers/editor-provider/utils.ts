@@ -2,14 +2,24 @@ import { EditorContainer } from '@blocksuite/editor';
 import exampleMarkdown from '@/providers/editor-provider/example-markdown';
 import { Page, Workspace } from '@blocksuite/store';
 
-export const initDefaultContent = (editor: EditorContainer) => {
+export const initIntroductionMeta = (workspace: Workspace, page: Page) => {
+  workspace!.meta.setPage(page.id.replace('space:', ''), {
+    title: 'Welcome to the AFFiNE Alpha',
+  });
+};
+export const initIntroduction = (
+  workspace: Workspace,
+  editor: EditorContainer
+) => {
   const { page } = editor;
+  const title = 'Welcome to the AFFiNE Alpha';
   const pageId = page.addBlock({
     flavour: 'affine:page',
-    title: 'Welcome to the AFFiNE Alpha',
+    title,
   });
   const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
   editor.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
+  workspace.setPageMeta(page.id, { title });
   page.resetHistory();
 };
 
@@ -49,6 +59,10 @@ export const initPage = (
 
 export const generateDefaultPageId = () => {
   return new Date().getTime().toString();
+};
+
+export const getEditor = () => {
+  return document.querySelector('editor-container') as EditorContainer | null;
 };
 
 export const getEditorMode = () => {

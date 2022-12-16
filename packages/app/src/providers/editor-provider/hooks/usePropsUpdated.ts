@@ -10,10 +10,9 @@ export const usePropsUpdated: UsePropsUpdated = editor => {
   const callbackQueue = useRef<((editor: EditorContainer) => void)[]>([]);
 
   useEffect(() => {
-    if (!editor?.model) {
+    if (!editor) {
       return;
     }
-
     setTimeout(() => {
       editor.model?.propsUpdated.on(() => {
         callbackQueue.current.forEach(callback => {
