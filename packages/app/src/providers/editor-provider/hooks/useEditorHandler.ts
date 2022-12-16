@@ -1,6 +1,6 @@
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import { createPage, initialPage, generateDefaultPageId } from '../utils';
-import { Workspace } from '@blocksuite/store';
+import { Workspace, Page } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import { EditorHandlers, PageMeta } from '../interface';
 import { EditorContainer } from '@blocksuite/editor';
@@ -8,8 +8,10 @@ import toast from '@/components/toast';
 export const useEditorHandler = ({
   editor,
   workspace,
+  page,
 }: {
   workspace?: Workspace;
+  page?: Page;
   editor?: EditorContainer;
 }): EditorHandlers => {
   const router = useRouter();
@@ -20,8 +22,8 @@ export const useEditorHandler = ({
       initialPage(page, title);
       return page;
     },
-    getPageMeta(pageId: string) {
-      pageId = pageId.replace('space:', '');
+    getPageMeta(pageId) {
+      pageId = (pageId ?? page!.id).replace('space:', '');
       return workspace!.meta.pageMetas.find(
         page => page.id === pageId
       ) as PageMeta;

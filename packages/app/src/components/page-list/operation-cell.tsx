@@ -40,9 +40,8 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
       <MenuItem
         onClick={() => {
           confirm({
-            title: 'Delete',
-            content:
-              'Deleted items will be moved to Trash Bin. Do you confirm?',
+            title: 'Delete page?',
+            content: `${pageMeta.title} will be moved to Trash`,
             confirmText: 'Delete',
             confirmType: 'danger',
           }).then(confirm => {

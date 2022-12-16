@@ -4,8 +4,7 @@ import { ModalWrapper } from '@/ui/modal';
 export const StyledModalWrapper = styled(ModalWrapper)(({ theme }) => {
   return {
     width: '460px',
-    height: '240px',
-    padding: '0 60px',
+    padding: '46px 60px 32px',
   };
 });
 
@@ -14,7 +13,6 @@ export const StyledConfirmTitle = styled.div(({ theme }) => {
     fontSize: theme.font.h6,
     fontWeight: 600,
     textAlign: 'center',
-    marginTop: '45px',
     color: theme.colors.popoverColor,
   };
 });

@@ -16,6 +16,7 @@ export const getLightTheme = (
 
       pageBackground: '#fff',
       hoverBackground: '#F1F3FF',
+      innerHoverBackground: '#E0E6FF',
       popoverBackground: '#fff',
       tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
@@ -87,6 +88,7 @@ export const getDarkTheme = (
 
       pageBackground: '#2c2c2c',
       hoverBackground: '#3C3C42',
+      innerHoverBackground: '#E0E6FF',
       popoverBackground: '#1F2021',
       tooltipBackground: '#1F2021',
       codeBackground:

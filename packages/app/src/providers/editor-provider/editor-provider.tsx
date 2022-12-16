@@ -42,7 +42,7 @@ export const EditorProvider = ({
 
   const { mode, setMode } = useMode({ workspace, page });
 
-  const editorHandlers = useEditorHandler({ workspace, editor });
+  const editorHandlers = useEditorHandler({ workspace, editor, page });
   const onPropsUpdated = usePropsUpdated(editor);
   const onHistoryUpdated = useHistoryUpdated(page);
   // Modify the updatedDate when history change

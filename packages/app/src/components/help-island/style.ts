@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '@/styles';
 
-export const StyledFAQ = styled('div')(({ theme }) => {
+export const StyledIsland = styled('div')(({ theme }) => {
   return {
     width: '32px',
     height: '32px',
@@ -57,7 +57,7 @@ export const StyledIconWrapper = styled('div')<{ isEdgelessDark: boolean }>(
   }
 );
 
-export const StyledFAQWrapper = styled('div')(({ theme }) => {
+export const StyledIslandWrapper = styled('div')(({ theme }) => {
   return {
     position: 'absolute',
     bottom: '100%',
