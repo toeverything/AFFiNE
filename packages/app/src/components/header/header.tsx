@@ -23,6 +23,7 @@ import { getWarningMessage, shouldShowWarning } from './utils';
 import { Menu, MenuItem } from '@/ui/menu';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/confirm-provider';
+import { useModal } from '@/providers/global-modal-provider';
 
 const PopoverContent = () => {
   const { editor, mode, setMode } = useEditor();
@@ -88,6 +89,7 @@ const BrowserWarning = ({
 const HeaderRight = () => {
   const { pageList, toggleDeletePage, permanentlyDeletePage } = useEditor();
   const { confirm } = useConfirm();
+  const { triggerLoginModal } = useModal();
   const router = useRouter();
   const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
   const isTrash = !!currentPageMeta?.trash;
@@ -132,7 +134,7 @@ const HeaderRight = () => {
   }
   return (
     <>
-      <IconButton iconSize="middle">
+      <IconButton iconSize="middle" onClick={triggerLoginModal}>
         <CloudUnsyncedIcon />
       </IconButton>
       <ThemeModeSwitch />
