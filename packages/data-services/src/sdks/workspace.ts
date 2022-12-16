@@ -1,4 +1,3 @@
-import { type } from 'os';
 import { request } from '../request';
 import { User } from './user';
 
@@ -89,7 +88,7 @@ export async function getWorkspaceMembers(
 
 export interface CreateWorkspaceParams {
   name: string;
-  avatar_url: string;
+  avatar: string;
 }
 
 export async function createWorkspace(

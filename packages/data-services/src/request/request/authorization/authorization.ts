@@ -1,7 +1,14 @@
 import type { AxiosRequestConfig } from 'axios';
-import { login, getUserByEmail } from '../../sdks';
+import { login } from '../../../sdks';
+import { AuthorizationEvent } from './events';
+import type { AccessTokenMessage } from './types';
 
 const TOKEN_KEY = 'affine_token';
+
+export const authorizationEvent = new AuthorizationEvent();
+authorizationEvent.triggerChange(
+  parseAccessToken(getToken()?.accessToken || '')
+);
 
 interface Token {
   accessToken: string;
@@ -11,12 +18,14 @@ interface Token {
 /**
  * set null to clear token
  */
-function setToken(token: Token | null): void {
+export function setToken(token: Token | null): void {
   if (token === null) {
     window.localStorage.removeItem(TOKEN_KEY);
+    authorizationEvent.triggerChange(null);
     return;
   }
   window.localStorage.setItem(TOKEN_KEY, JSON.stringify(token));
+  authorizationEvent.triggerChange(parseAccessToken(token.accessToken));
 }
 
 function getToken(): { accessToken: string; refreshToken: string } | null {
@@ -25,12 +34,6 @@ function getToken(): { accessToken: string; refreshToken: string } | null {
   } catch (error) {
     return null;
   }
-}
-
-interface AccessTokenMessage {
-  create_at: number;
-  exp: number;
-  email: string;
 }
 
 function parseAccessToken(token: string): AccessTokenMessage | null {
@@ -52,19 +55,12 @@ function isAccessTokenExpired(token: string) {
   return Date.now() - message.create_at > message.exp;
 }
 
-export async function isLoggedIn(): Promise<boolean> {
+async function isLoggedIn(): Promise<boolean> {
   const token = getToken();
   if (!token) {
     return false;
   }
-  const message = parseAccessToken(token.accessToken);
-  if (!message) {
-    return false;
-  }
-  const user = await getUserByEmail({
-    email: message.email,
-  });
-  return !!user;
+  return isAccessTokenExpired(token.accessToken);
 }
 
 let refreshingToken: ReturnType<typeof login> | undefined;

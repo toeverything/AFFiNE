@@ -5,13 +5,15 @@ import {
   updateWorkspace,
   deleteWorkspace,
   inviteMember,
+  Workspace,
 } from './workspace';
-import type {
+import {
   GetWorkspaceDetailParams,
   WorkspaceDetail,
   UpdateWorkspaceParams,
   DeleteWorkspaceParams,
   InviteMemberParams,
+  getWorkspaces,
 } from './workspace';
 
 export const GET_WORKSPACE_DETAIL_SWR_TOKEN = 'workspace.getWorkspaceDetail';
@@ -30,6 +32,21 @@ export function useGetWorkspaceDetail(
     error,
     loading: isLoading,
     mutate,
+  };
+}
+
+export const GET_WORKSPACES_SWR_TOKEN = 'workspace.getWorkspaces';
+export function useGetWorkspaces(config?: SWRConfiguration) {
+  const { data, error, isLoading } = useSWR<Workspace[]>(
+    [GET_WORKSPACES_SWR_TOKEN],
+    () => getWorkspaces(),
+    config
+  );
+
+  return {
+    data,
+    error,
+    loading: isLoading,
   };
 }
 

@@ -54,7 +54,7 @@ export async function getUserByEmail(
   const data = await request<User | null>({
     url: '/api/user',
     method: 'GET',
-    data: params,
+    params,
   });
   return data.data;
 }

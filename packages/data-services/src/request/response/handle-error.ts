@@ -9,6 +9,7 @@ export function handleResponseError(response: AxiosResponse<any, any>) {
       const error = new ServiceError(data.error.message, data.error.code);
       throw error;
     }
-    return response.data;
+    return response;
   }
+  return response;
 }

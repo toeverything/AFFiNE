@@ -13,7 +13,6 @@ import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   MoreVerticalIcon,
-  CloudUnsyncedIcon,
 } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
@@ -24,6 +23,8 @@ import { Menu, MenuItem } from '@/ui/menu';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/confirm-provider';
 import { useModal } from '@/providers/global-modal-provider';
+import { useAppState } from '@/providers/app-state-provider';
+import { SyncIcon } from './sync-icon';
 
 const PopoverContent = () => {
   const { editor, mode, setMode } = useEditor();
@@ -91,6 +92,7 @@ const HeaderRight = () => {
   const { confirm } = useConfirm();
   const { triggerLoginModal } = useModal();
   const router = useRouter();
+  const appState = useAppState();
   const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
   const isTrash = !!currentPageMeta?.trash;
 
@@ -134,9 +136,7 @@ const HeaderRight = () => {
   }
   return (
     <>
-      <IconButton iconSize="middle" onClick={triggerLoginModal}>
-        <CloudUnsyncedIcon />
-      </IconButton>
+      <SyncIcon />
       <ThemeModeSwitch />
       <Menu content={<PopoverContent />} placement="bottom-end">
         <IconButton>

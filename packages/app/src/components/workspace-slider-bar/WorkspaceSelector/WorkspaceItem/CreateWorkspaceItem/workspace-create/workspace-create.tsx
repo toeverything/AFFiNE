@@ -1,3 +1,4 @@
+import { createWorkspace } from '@pathfinder/data-services';
 import Modal from '@/ui/modal';
 import Input from '@/ui/input';
 import { Button } from '@/ui/button';
@@ -11,13 +12,19 @@ import {
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 
-export const WorkspaceCreate = () => {
-  const [WorkspaceId, setWorkspaceId] = useState<string>('');
-  const handlerInputChange = (workspaceId: string) => {
-    setWorkspaceId(workspaceId);
+interface WorkspaceCreateProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
+  const [workspaceName, setWorkspaceId] = useState<string>('');
+  const handlerInputChange = (workspaceName: string) => {
+    setWorkspaceId(workspaceName);
   };
+  console.log('workspaceName', workspaceName);
   return (
-    <Modal open={true}>
+    <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton />
         <StyledModalHeader>Create new Workspace</StyledModalHeader>
@@ -29,13 +36,16 @@ export const WorkspaceCreate = () => {
           <Input
             onChange={handlerInputChange}
             placeholder="Set a Workspace name"
-            value={WorkspaceId}
+            value={workspaceName}
           ></Input>
         </StyledInputContent>
         <StyledButtonContent>
           <Button
-            disabled={Boolean(WorkspaceId.length)}
+            disabled={!workspaceName.length}
             style={{ width: '260px' }}
+            onClick={() => {
+              createWorkspace({ name: workspaceName, avatar: '' });
+            }}
           >
             Create
           </Button>

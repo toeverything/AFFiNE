@@ -1,6 +1,7 @@
 import { InformationIcon, LogOutIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { Divider } from '@/ui/divider';
+import { useAppState } from '@/providers/app-state-provider';
 import { SelectorPopperContainer } from './styles';
 import {
   PrivateWorkspaceItem,
@@ -8,12 +9,6 @@ import {
   CreateWorkspaceItem,
   ListItem,
 } from './WorkspaceItem';
-
-const privateWorkspace = {
-  name: 'Wang Zuomeng',
-  icon: '',
-  email: 'wangxinglong@toeverything.info',
-};
 
 const workspaces = [
   {
@@ -31,9 +26,11 @@ const workspaces = [
 ];
 
 export const SelectorPopperContent = () => {
+  const state = useAppState();
+  console.log('state', state);
   return (
     <SelectorPopperContainer placement="bottom-start">
-      <PrivateWorkspaceItem {...privateWorkspace} />
+      <PrivateWorkspaceItem />
       <StyledDivider />
       <WorkspaceGroupTitle>Workspace</WorkspaceGroupTitle>
       {workspaces.map(workspace => {

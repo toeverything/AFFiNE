@@ -1,29 +1,22 @@
 import { styled } from '@/styles';
+import { useAppState } from '@/providers/app-state-provider';
 import {
   WorkspaceItemAvatar,
   PrivateWorkspaceWrapper,
   WorkspaceItemContent,
 } from './styles';
 
-interface PrivateWorkspaceItemProps {
-  name: string;
-  icon: string;
-  email: string;
-}
+export const PrivateWorkspaceItem = () => {
+  const { user } = useAppState();
 
-export const PrivateWorkspaceItem = ({
-  name,
-  icon,
-  email,
-}: PrivateWorkspaceItemProps) => {
-  return (
+  return !user ? null : (
     <PrivateWorkspaceWrapper>
-      <WorkspaceItemAvatar alt={name} src={icon}>
-        {name.charAt(0)}
+      <WorkspaceItemAvatar alt={user.name} src={user.avatar_url}>
+        {user.name.charAt(0)}
       </WorkspaceItemAvatar>
       <WorkspaceItemContent>
-        <Name title={name}>{name}</Name>
-        <Email title={email}>{email}</Email>
+        <Name title={user.name}>{user.name}</Name>
+        <Email title={user.email}>{user.email}</Email>
       </WorkspaceItemContent>
     </PrivateWorkspaceWrapper>
   );
