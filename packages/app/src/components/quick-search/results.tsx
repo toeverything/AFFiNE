@@ -1,7 +1,12 @@
 import { Command } from 'cmdk';
 import { StyledListItem, StyledNotFound } from './style';
 import { useModal } from '@/providers/global-modal-provider';
-import { PaperIcon, LogoUnlogIcon } from '@blocksuite/icons';
+import {
+  PaperIcon,
+  EdgelessIcon,
+  LogoUnlogIcon,
+  AllPagesIcon,
+} from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -36,6 +41,7 @@ export const Results = (props: {
     setShowCreatePage(resultsPageMeta.length ? false : true);
     //Determine whether to display the  ‘+ New page’
   }, [resultsPageMeta, setShowCreatePage]);
+  console.log(resultsPageMeta);
 
   return loading ? null : (
     <Command.List>
@@ -53,7 +59,11 @@ export const Results = (props: {
                   value={result.title}
                 >
                   <StyledListItem>
-                    <PaperIcon />
+                    {result.mode === 'edgeless' ? (
+                      <EdgelessIcon />
+                    ) : (
+                      <PaperIcon />
+                    )}
                     <span>{result.title}</span>
                   </StyledListItem>
                 </Command.Item>
