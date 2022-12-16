@@ -9,6 +9,7 @@ import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
 export const Input = (props: {
+  query: string;
   setQuery: Dispatch<SetStateAction<string>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
 }) => {
@@ -18,6 +19,9 @@ export const Input = (props: {
   useEffect(() => {
     return inputRef.current?.focus();
   }, [inputRef]);
+  useEffect(() => {
+    return setInputValue(props.query);
+  }, []);
   return (
     <StyledInputContent>
       <StyledLabel htmlFor=":r5:">
