@@ -2,7 +2,7 @@ import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
 import type { EditorContainer } from '@blocksuite/editor';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
-import { generateDefaultPageId, initialPage } from './utils';
+import { generateDefaultPageId, initEmptyPage } from './utils';
 import { useEffect } from 'react';
 import pkg from '../../../package.json';
 import {
@@ -80,7 +80,7 @@ const EditorReactor = ({
         setCurrentPage(page);
       } else {
         createPage(workspace!, pageId).then(page => {
-          initialPage(page);
+          initEmptyPage(page);
           setCurrentPage(page);
         });
       }
@@ -94,7 +94,7 @@ const EditorReactor = ({
     }
 
     createPage(workspace!, generateDefaultPageId()).then(page => {
-      initialPage(page);
+      initEmptyPage(page);
       setCurrentPage(page);
     });
   }, [workspace, routerPageId, setCurrentPage]);

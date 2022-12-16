@@ -1,5 +1,5 @@
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
-import { createPage, initialPage, generateDefaultPageId } from '../utils';
+import { createPage, generateDefaultPageId, initPage } from '../utils';
 import { Workspace, Page } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import { EditorHandlers, PageMeta } from '../interface';
@@ -17,9 +17,12 @@ export const useEditorHandler = ({
   const router = useRouter();
 
   return {
-    createPage: async ({ pageId = generateDefaultPageId(), title } = {}) => {
+    createPage: async ({
+      pageId = generateDefaultPageId(),
+      title = '',
+    } = {}) => {
       const page = await createPage(workspace!, pageId);
-      initialPage(page, title);
+      initPage(workspace!, page, { title });
       return page;
     },
     getPageMeta(pageId) {
@@ -29,6 +32,7 @@ export const useEditorHandler = ({
       ) as PageMeta;
     },
     openPage: (pageId, query = {}) => {
+      pageId = pageId.replace('space:', '');
       return router.push({
         pathname: '/',
         query: {

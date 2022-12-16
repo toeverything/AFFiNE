@@ -26,10 +26,24 @@ export const createPage = (
   });
 };
 
-export const initialPage = (page: Page, title?: string) => {
+export const initEmptyPage = (page: Page) => {
+  const pageBlockId = page.addBlock({ flavour: 'affine:page' });
+  const groupId = page.addBlock({ flavour: 'affine:group' }, pageBlockId);
+  page.addBlock({ flavour: 'affine:paragraph' }, groupId);
+  return page;
+};
+
+export const initPage = (
+  workspace: Workspace,
+  page: Page,
+  { title = '' }: { title?: string } = {}
+) => {
   const pageBlockId = page.addBlock({ flavour: 'affine:page', title });
   const groupId = page.addBlock({ flavour: 'affine:group' }, pageBlockId);
   page.addBlock({ flavour: 'affine:paragraph' }, groupId);
+  if (title) {
+    workspace!.meta.setPage(page.id.replace('space:', ''), { title });
+  }
   return page;
 };
 
