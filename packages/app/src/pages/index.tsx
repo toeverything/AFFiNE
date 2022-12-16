@@ -1,7 +1,6 @@
 import type { NextPage } from 'next';
 import { styled } from '@/styles';
-import { PageHeader } from '@/components/header';
-import { FAQ } from '@/components/faq';
+import { EditorHeader } from '@/components/header';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
 import Editor from '@/components/editor';
@@ -15,12 +14,11 @@ const StyledEditorContainer = styled('div')(({ theme }) => {
 const Home: NextPage = () => {
   return (
     <>
-      <PageHeader />
+      <EditorHeader />
       <MobileModal />
       <StyledEditorContainer>
         <Editor />
       </StyledEditorContainer>
-      <FAQ />
       <EdgelessToolbar />
     </>
   );

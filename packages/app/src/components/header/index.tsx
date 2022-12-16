@@ -1,3 +1,3 @@
 export * from './header';
-export * from './page-header';
-export { StyledTitle as HeaderWrapper } from './styles';
+export * from './editor-header';
+export * from './page-list-header';

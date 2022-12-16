@@ -110,3 +110,14 @@ export const StyledSearchArrowWrapper = styled.div(() => {
     ...displayFlex('center', 'center'),
   };
 });
+
+export const StyledPageListTittleWrapper = styled(StyledTitle)(({ theme }) => {
+  return {
+    fontSize: theme.font.sm,
+    color: theme.colors.textColor,
+    '>svg': {
+      fontSize: '20px',
+      marginRight: '12px',
+    },
+  };
+});
