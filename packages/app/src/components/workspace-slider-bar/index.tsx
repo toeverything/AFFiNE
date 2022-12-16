@@ -117,8 +117,7 @@ export const WorkSpaceSliderBar = () => {
         <StyledNewPageButton
           onClick={async () => {
             const page = await createPage();
-            const pageMeta = getPageMeta(page.id);
-            pageMeta && openPage(pageMeta.id);
+            openPage(page.id);
           }}
         >
           <AddIcon /> New Page

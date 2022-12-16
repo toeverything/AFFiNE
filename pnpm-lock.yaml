@@ -22,10 +22,10 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': 0.3.0-alpha.9
-      '@blocksuite/editor': 0.3.0-alpha.9
+      '@blocksuite/blocks': 0.3.0-alpha.10
+      '@blocksuite/editor': 0.3.0-alpha.10
       '@blocksuite/icons': ^2.0.0
-      '@blocksuite/store': 0.3.0-alpha.9
+      '@blocksuite/store': 0.3.0-alpha.10
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -55,10 +55,10 @@ importers:
       react-dom: 18.2.0
       typescript: 4.8.3
     dependencies:
-      '@blocksuite/blocks': 0.3.0-alpha.9
-      '@blocksuite/editor': 0.3.0-alpha.9
+      '@blocksuite/blocks': 0.3.0-alpha.10
+      '@blocksuite/editor': 0.3.0-alpha.10
       '@blocksuite/icons': 2.0.0_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.3.0-alpha.9
+      '@blocksuite/store': 0.3.0-alpha.10
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -176,10 +176,10 @@ packages:
       to-fast-properties: 2.0.0
     dev: false
 
-  /@blocksuite/blocks/0.3.0-alpha.9:
-    resolution: {integrity: sha512-7Zw2lL5DZ+JB6dtmGKfuW19nG5gMvLPcTakK9oMszbhgETnwHUUN382Pz3urecuDA88yaLj8qbC1VdbAQWDW5w==}
+  /@blocksuite/blocks/0.3.0-alpha.10:
+    resolution: {integrity: sha512-tW6AMQTQIkBg4uob+6naAtnNWEgxtX/kBFpV/L1hGW3OHGF6JwpyM/AfzuuS9KooDJvADpb2xeQnNcifJTWGHA==}
     dependencies:
-      '@blocksuite/store': 0.3.0-alpha.9
+      '@blocksuite/store': 0.3.0-alpha.10
       '@tldraw/intersect': 1.8.0
       '@tldraw/vec': 1.8.0
       hotkeys-js: 3.10.0
@@ -193,11 +193,11 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/editor/0.3.0-alpha.9:
-    resolution: {integrity: sha512-dnrk87akzwRRKxS18dec2rY2ZvfIpvNq9SIHEPCCk2UNLI2R66HUO5v1RhLi6/oglbWtizcqzQWCa/DjjY1ljA==}
+  /@blocksuite/editor/0.3.0-alpha.10:
+    resolution: {integrity: sha512-P5PcrYGRmnOeNTdqGDncWjUn5BwCm4j5JvJkjOw80VbvWNcVtWhr2ViBCsgD00m4ZIybxV6o00GOqDNNej2mEQ==}
     dependencies:
-      '@blocksuite/blocks': 0.3.0-alpha.9
-      '@blocksuite/store': 0.3.0-alpha.9
+      '@blocksuite/blocks': 0.3.0-alpha.10
+      '@blocksuite/store': 0.3.0-alpha.10
       lit: 2.4.0
       marked: 4.1.1
       turndown: 7.1.1
@@ -217,8 +217,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/store/0.3.0-alpha.9:
-    resolution: {integrity: sha512-5wdnE6JUL1/y/LufqcRg2lRL5mYvdXc+MOj98eNfFAv+JFbY4vuGZ8N9HFn6dQ/rQaQsgaoAZkWyogbbC8x4IA==}
+  /@blocksuite/store/0.3.0-alpha.10:
+    resolution: {integrity: sha512-KP88oFu5qAZA1mYbfLZ6D8S90bw8x3d19HhfoOqME0MOHyY6r462NF7wxQh9jlGDsCmyJMf3ZY+z/PxsJIufxQ==}
     dependencies:
       buffer: 6.0.3
       flexsearch: 0.7.21
