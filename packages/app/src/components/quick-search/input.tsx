@@ -9,11 +9,11 @@ import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
 export const Input = (props: {
-  query: string;
   setQuery: Dispatch<SetStateAction<string>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
 }) => {
   const [isComposition, setIsComposition] = useState(false);
+  const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     return inputRef.current?.focus();
@@ -25,12 +25,17 @@ export const Input = (props: {
       </StyledLabel>
       <Command.Input
         ref={inputRef}
-        onCompositionStart={() => setIsComposition(true)}
+        value={inputValue}
+        onCompositionStart={e => {
+          setIsComposition(true);
+        }}
         onCompositionEnd={e => {
           props.setQuery(e.data);
           setIsComposition(false);
+          props.setLoading(true);
         }}
         onValueChange={str => {
+          setInputValue(str);
           if (!isComposition) {
             props.setQuery(str);
             props.setLoading(true);

@@ -61,7 +61,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           }}
         >
           <StyledModalHeader>
-            <Input query={query} setQuery={setQuery} setLoading={setLoading} />
+            <Input setQuery={setQuery} setLoading={setLoading} />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider />
