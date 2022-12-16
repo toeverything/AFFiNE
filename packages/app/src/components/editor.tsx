@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useEditor, initDefaultContent } from '@/providers/editor-provider';
+import { useEditor } from '@/providers/editor-provider';
 
 export const Editor = () => {
   const editorContainer = useRef<HTMLDivElement>(null);
@@ -11,8 +11,6 @@ export const Editor = () => {
       ref.current = editor;
 
       editorContainer.current?.appendChild(editor);
-
-      // initDefaultContent(editor);
     }
   }, [editor]);
 
