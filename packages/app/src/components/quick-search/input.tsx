@@ -1,4 +1,10 @@
-import React, { Dispatch, SetStateAction, useEffect, useRef } from 'react';
+import React, {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
@@ -7,6 +13,7 @@ export const Input = (props: {
   setQuery: Dispatch<SetStateAction<string>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
 }) => {
+  const [isComposition, setIsComposition] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     return inputRef.current?.focus();
@@ -18,10 +25,27 @@ export const Input = (props: {
       </StyledLabel>
       <Command.Input
         ref={inputRef}
-        value={props.query}
+        onCompositionStart={() => setIsComposition(true)}
+        onCompositionEnd={e => {
+          props.setQuery(e.data);
+          setIsComposition(false);
+        }}
         onValueChange={str => {
-          props.setQuery(str);
-          props.setLoading(true);
+          if (!isComposition) {
+            props.setQuery(str);
+            props.setLoading(true);
+          }
+        }}
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if (isComposition) {
+            if (
+              e.key === 'ArrowDown' ||
+              e.key === 'ArrowUp' ||
+              e.key === 'Enter'
+            ) {
+              e.stopPropagation();
+            }
+          }
         }}
         placeholder="Quick Search..."
       />
