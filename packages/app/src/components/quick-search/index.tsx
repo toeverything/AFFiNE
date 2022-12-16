@@ -28,8 +28,6 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {
-        console.log(e);
-
         const selection = window.getSelection();
         if (selection?.toString()) {
           triggerQuickSearchModal(false);
