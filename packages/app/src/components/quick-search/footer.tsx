@@ -12,8 +12,10 @@ export const Footer = (props: { query: string }) => {
   return (
     <StyledModalFooterContent
       onClick={async () => {
-        const page = query ? createPage({ title: query }) : createPage();
-        const pageMeta = getPageMeta((await page).id);
+        const page = await (query
+          ? createPage({ title: query })
+          : createPage());
+        const pageMeta = getPageMeta(page.id);
         pageMeta && openPage(pageMeta.id);
 
         triggerQuickSearchModal();
