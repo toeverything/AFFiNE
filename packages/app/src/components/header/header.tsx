@@ -90,9 +90,7 @@ const BrowserWarning = ({
 const HeaderRight = () => {
   const { pageList, toggleDeletePage, permanentlyDeletePage } = useEditor();
   const { confirm } = useConfirm();
-  const { triggerLoginModal } = useModal();
   const router = useRouter();
-  const appState = useAppState();
   const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
   const isTrash = !!currentPageMeta?.trash;
 
