@@ -22,10 +22,10 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': 0.3.0-alpha.10
-      '@blocksuite/editor': 0.3.0-alpha.10
+      '@blocksuite/blocks': 0.3.0-alpha.11
+      '@blocksuite/editor': 0.3.0-alpha.11
       '@blocksuite/icons': ^2.0.0
-      '@blocksuite/store': 0.3.0-alpha.10
+      '@blocksuite/store': 0.3.0-alpha.11
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -55,10 +55,10 @@ importers:
       react-dom: 18.2.0
       typescript: 4.8.3
     dependencies:
-      '@blocksuite/blocks': 0.3.0-alpha.10
-      '@blocksuite/editor': 0.3.0-alpha.10
+      '@blocksuite/blocks': 0.3.0-alpha.11
+      '@blocksuite/editor': 0.3.0-alpha.11
       '@blocksuite/icons': 2.0.0_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.3.0-alpha.10
+      '@blocksuite/store': 0.3.0-alpha.11
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -176,12 +176,13 @@ packages:
       to-fast-properties: 2.0.0
     dev: false
 
-  /@blocksuite/blocks/0.3.0-alpha.10:
-    resolution: {integrity: sha512-tW6AMQTQIkBg4uob+6naAtnNWEgxtX/kBFpV/L1hGW3OHGF6JwpyM/AfzuuS9KooDJvADpb2xeQnNcifJTWGHA==}
+  /@blocksuite/blocks/0.3.0-alpha.11:
+    resolution: {integrity: sha512-SwOTu9Ph5zsxczzPL0RoSfQKZLrrgEPhXiZycbv+tvsaXSwHq27JALJFh+G+HHP0uJvt/vSYfXzHck+3J1m+4Q==}
     dependencies:
-      '@blocksuite/store': 0.3.0-alpha.10
+      '@blocksuite/store': 0.3.0-alpha.11
       '@tldraw/intersect': 1.8.0
       '@tldraw/vec': 1.8.0
+      highlight.js: 11.7.0
       hotkeys-js: 3.10.0
       lit: 2.4.0
       perfect-freehand: 1.2.0
@@ -193,11 +194,11 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/editor/0.3.0-alpha.10:
-    resolution: {integrity: sha512-P5PcrYGRmnOeNTdqGDncWjUn5BwCm4j5JvJkjOw80VbvWNcVtWhr2ViBCsgD00m4ZIybxV6o00GOqDNNej2mEQ==}
+  /@blocksuite/editor/0.3.0-alpha.11:
+    resolution: {integrity: sha512-oEcc70bn0lYIhJo7DTHO+4Xx+iLjaLvRYfoQdkImJrgmEZ6WoFafENKRv4rpuFQKa9HFDS1Zf6V349ykATbHzw==}
     dependencies:
-      '@blocksuite/blocks': 0.3.0-alpha.10
-      '@blocksuite/store': 0.3.0-alpha.10
+      '@blocksuite/blocks': 0.3.0-alpha.11
+      '@blocksuite/store': 0.3.0-alpha.11
       lit: 2.4.0
       marked: 4.1.1
       turndown: 7.1.1
@@ -217,8 +218,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/store/0.3.0-alpha.10:
-    resolution: {integrity: sha512-KP88oFu5qAZA1mYbfLZ6D8S90bw8x3d19HhfoOqME0MOHyY6r462NF7wxQh9jlGDsCmyJMf3ZY+z/PxsJIufxQ==}
+  /@blocksuite/store/0.3.0-alpha.11:
+    resolution: {integrity: sha512-udcXVB83Tq3Q2vglAvWb3oPeKTceKIArtG2gSf05ugIbJ2oIlM8h7IpY9DZKofK/Du+5fE3pNxRb8ZhSyI9Apw==}
     dependencies:
       buffer: 6.0.3
       flexsearch: 0.7.21
@@ -2337,6 +2338,11 @@ packages:
     engines: {node: '>= 0.4.0'}
     dependencies:
       function-bind: 1.1.1
+
+  /highlight.js/11.7.0:
+    resolution: {integrity: sha512-1rRqesRFhMO/PRF+G86evnyJkCgaZFOI+Z6kdj15TA18funfoqJXvgPCLSf0SWq3SRfg1j3HlDs8o4s3EGq1oQ==}
+    engines: {node: '>=12.0.0'}
+    dev: false
 
   /hoist-non-react-statics/3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
