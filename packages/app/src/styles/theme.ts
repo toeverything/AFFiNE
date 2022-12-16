@@ -24,7 +24,7 @@ export const getLightTheme = (
 
       textColor: '#3A4C5C',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#9096A5',
+      iconColor: '#888a9e',
       linkColor: '#6880FF',
       linkColor2: '#6880FF',
       linkVisitedColor: '#ABB8FE',
@@ -98,7 +98,7 @@ export const getDarkTheme = (
 
       textColor: '#fff',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#9096A5',
+      iconColor: '#888a9e',
       linkColor: '#7D91FF',
       linkColor2: '#6880FF',
       linkVisitedColor: '#505FAB',
