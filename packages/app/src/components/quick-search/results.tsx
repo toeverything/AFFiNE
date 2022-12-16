@@ -1,12 +1,7 @@
 import { Command } from 'cmdk';
 import { StyledListItem, StyledNotFound } from './style';
 import { useModal } from '@/providers/global-modal-provider';
-import {
-  PaperIcon,
-  EdgelessIcon,
-  LogoUnlogIcon,
-  AllPagesIcon,
-} from '@blocksuite/icons';
+import { PaperIcon, EdgelessIcon, LogoUnlogIcon } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -34,15 +29,13 @@ export const Results = (props: {
   const pageIds = [...results.values()];
 
   const resultsPageMeta = pageList.filter(
-    page => pageIds.indexOf(page.id) > -1 && page.trash !== true
+    page => pageIds.indexOf(page.id) > -1 && !page.trash
   );
 
   useEffect(() => {
     setShowCreatePage(resultsPageMeta.length ? false : true);
     //Determine whether to display the  ‘+ New page’
   }, [resultsPageMeta, setShowCreatePage]);
-  console.log(resultsPageMeta);
-
   return loading ? null : (
     <Command.List>
       {query ? (
