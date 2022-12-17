@@ -60,7 +60,12 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           shouldFilter={false}
           //Handle KeyboardEvent conflicts with blocksuite
           onKeyDown={(e: React.KeyboardEvent) => {
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            if (
+              e.key === 'ArrowDown' ||
+              e.key === 'ArrowUp' ||
+              e.key === 'ArrowLeft' ||
+              e.key === 'ArrowRight'
+            ) {
               e.stopPropagation();
             }
           }}
