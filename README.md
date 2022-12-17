@@ -93,6 +93,8 @@ Looking for **others ways to contribute** and wondering where to start? Check ou
 
 If you have questions, join us across various [**social platforms**](https://docs.affine.pro/affine/community-links/official-communities) where our friendly community can help provide the answers.
 
+We have done a major refactoring recently, if you want to see our previous version of the code, please go to the [Pre-Alpha](https://github.com/toeverything/AFFiNE/tree/Pre-Alpha) branch to view
+
 ## Thanks
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
