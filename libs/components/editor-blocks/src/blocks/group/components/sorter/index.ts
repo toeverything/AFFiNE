@@ -1,1 +1,0 @@
-export { Sorter } from './Sorter';

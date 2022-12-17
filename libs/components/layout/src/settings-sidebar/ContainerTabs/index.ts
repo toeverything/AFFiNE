@@ -1,1 +1,0 @@
-export { ContainerTabs } from './ContainerTabs';

@@ -43,3 +43,11 @@ Thumbs.db
 *.env.local
 *.local.env
 .history
+
+.next
+out/
+
+module-resolve.js
+/test-results/
+/playwright-report/
+/playwright/.cache/

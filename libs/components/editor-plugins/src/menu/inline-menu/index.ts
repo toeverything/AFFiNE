@@ -1,1 +1,0 @@
-export { InlineMenuPlugin } from './Plugin';

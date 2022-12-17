@@ -1,1 +1,0 @@
-export { Comments } from './Comments';

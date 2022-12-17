@@ -1,9 +1,0 @@
-{
-    "name": "@toeverything/components/account",
-    "version": "0.0.1",
-    "license": "MIT",
-    "dependencies": {
-        "@emotion/styled": "^11.9.3"
-    },
-    "devDependencies": {}
-}

@@ -1,9 +1,0 @@
-{
-    "executors": {
-        "figmaRes": {
-            "implementation": "./download.js",
-            "schema": "./schema.json",
-            "description": "Run `figmaRes` (to download figma icons and pictures)."
-        }
-    }
-}

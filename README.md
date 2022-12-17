@@ -1,18 +1,17 @@
-<h1 align="center" style="border-bottom: none">
-    <b>
-        <a href="https://affine.pro">AFFiNE.PRO</a><br>
-    </b>
+<div align="center">
+
+<h1 style="border-bottom: none">
+    <b><a href="https://affine.pro">AFFiNE.PRO</a></b><br />
     The Next-Gen Collaborative Knowledge Base
     <br>
 </h1>
 
-<p align="center">
-Open-source and privacy-first. <br />
-A free replacement for Notion & Miro.
+<p>
+    AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.<br />
+    Privacy first, open-source, customizable and ready to use - a free replacement for Notion & Miro. <br />
 </p>
 
-<div align="center">
-
+<div>
 <!--
 Make New Badge Pattern badges inline
 See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
@@ -26,15 +25,13 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![affine.pro](https://img.shields.io/static/v1?label=live%20demo&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAhpJREFUWEdjZEACtnl3MxgY/0YzMjAaMzAwcCLLUYH9/T/D/7MM/5mXHp6kPANmHiOI4Zx9Xfg3C+tKBob/zlSwiAgjGPey/vkdvneq5luwA+zy7+yhn+Vwv+89NFHFhREU7IyM/6YT4WyqK/n/nymT0Tb/1mFGBkYbqptOhIH/Gf4fYbTLv/2NBgmOCOvBSr6DHPCfWNW0UEe2A2x1uRlakiXBbtpx6jND+7KXZLmPbAdURokzeJjxwi31rrzH8OX7P5IdQbYDtnUoMXBzMMEt7Fj2imH7qU/0cQBy8MNsPHL5K0P13Of0cQB68MNsJScaSI4CHk4mhq3tSnCf3n36k0FZmh3Mn7L+DcPqgx9ICgWSHeBpxsdQESUGtgRk+eqDH+H8O09/MiR3P6atA1qTJRlsdLnhPgYlPOQQCW96wPDi3R+iHUFSCKAHP8wydEeREg0kOQA9+JOgwR1qL8CQEygC9jWp0UCSA+aVysIT3JqDHxgmr38DtlRCiIVhZZ0CPNhB6QDkEGIA0Q4gZAkuxxFyBNEOQA7ml+/+MIQ1PUAxG1kelAhB6YMYQLQDCPmQUAjhcgxRDiDWcEKOxOYIohyQGyjCEGIvANaPLfhhBiNHA6hmBBXNhABRDgCV/aBQAAFQpYMrn4PUgNTCACiXEMoNRDmAkC8okR8UDhjYRumAN8sHvGMCSkAD2jUDOWDAO6ewbDQQ3XMAy/oxKownQR0AAAAASUVORK5CYII=&color=orange&message=→)](https://livedemo.affine.pro)
 [![stars](https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars)](https://github.com/toeverything/AFFiNE)
 [![All Contributors][all-contributors-badge]](#contributors)
-<br/>
 [![Node](https://img.shields.io/badge/node->=16.0-success)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/TypeScript-4.7-3178c6)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18-61dafb)](https://reactjs.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.62-dea584)](https://www.rust-lang.org/)
-
 </div>
 
-<p align="center">
+<div>
     <a href="http://affine.pro"><img src="https://img.shields.io/badge/-AFFiNE-06449d?style=social&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAMAAAAPkIrYAAAAP1BMVEU8b9w8b9w+b947cNw7b9w6b908b909b9w8b9w7b9w8b9w7cN08b9w7b908b9w7b9w8b907cNw8b9w8b91HcEx3NJCJAAAAFXRSTlP/3QWSgA+lHPlu6Di4XtIrxk/xRADGudUoAAAB9UlEQVR42tWYwbKjIBREG0GJKkRj/v9bZ1ZvRC99rzib11tTB9qqnKoW3/+X38vy7ifzQ1b/wk/8Q1bCv3y6Z6wFh2x2llIRGB6xRhzz6p+wVhRJD1gRZZYHrADYSyqsjFPGZtYbuFESesUysZXlcMnYyJpxTW5keQh5N7G6CUJCE2uHFNfEGiBmbmB1H4jxDawNcqbuPmtAJTtj6RZ0lpIwiR5jNmgfNtHHwLXPWfFYcS2NMdxkjac/dNaNCJPo3yf9pFuseHbDrBsRFguGs8te8Q4rXzTjVSPCIHp3FePKWbzi30xE+4zlBMmoJaGLfpLUmAmLiN4Xyibahy76WZRQMLJ2WX27on2oFvQVac8yi4p+J2forA0V8W1c++AVS1f1H6p9KKLHxk9RWKmsyB+VLC76gV65DLjokdg5KmsEMXsiDwXWSmTc9ezSoKJHoi9zUVihbMHfQOSsXB7Mrz1S1huKPde69sEsiKgNt8hYTjiWlAyENeu7IFe1D15RSEBN+yCiXw17K1RZm/w7UtJVWYN8f1ZyLlkVb2bT4vIVVrINH1dqX2YttkHmIWsfVWs646wcRFYis6fIVGpfYq1kjpGSW8kSRD+xYSmXRM0Ang9eSZioVdy/5pWaLqzIRyIpuVxYozvGf1m67I7pf/s3UXv+AP61NI2Y+BbSAAAAAElFTkSuQmCC" height=25></a>
     &nbsp;
     <a href="https://discord.com/invite/yz6tGVsf5p"><img src="https://img.shields.io/badge/-Discord-424549?style=social&logo=discord" height=25></a>
@@ -44,82 +41,63 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
     <a href="https://twitter.com/AffineOfficial"><img src="https://img.shields.io/badge/-Twitter-red?style=social&logo=twitter" height=25></a>
     &nbsp;
     <a href="https://medium.com/@affineworkos"><img src="https://img.shields.io/badge/-Medium-red?style=social&logo=medium" height=25></a>
-</p>
+</div>
 
 <br />
+<div>
+<em>AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
+</div>
+<br />
 
-<p align="center"><img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/21084335/182552060-972cac0e-6258-4ccb-85bd-3bb466c30ccd.png"><p/>
+<img width="1920" alt="affine_screen" src="https://user-images.githubusercontent.com/4605025/198174913-d4f90da8-ae2a-4eb6-8424-55c94de432a1.jpeg"></div>
 
-# :star: Support Us and Keep Updated :star:
+## Join our community
 
-![952cd7a5-70fe-48ab-b74f-23981d94d2c5](https://user-images.githubusercontent.com/79301703/182365526-df074c64-cee4-45f6-b8e0-b912f17332c6.gif)
+Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities across [official social platforms](https://docs.affine.pro/affine/community-links/official-communities)! Once you’re familiar with using the software, maybe you will share your wisdom with others and even consider joining the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome) to help spread AFFiNE to the world.
 
-# Getting Started
+## Features
+
+**Privacy focussed** — AFFiNE is built with your privacy in mind and is one of our key concerns. We want you to keep control of your data, allowing you to store it as you like, where you like while still being able to freely edit and view your data on-demand.
+
+**Offline-first** - With your privacy in mind we also decided to go offline-first. This means that AFFiNE can be used offline, whether you want to view or edit, with support for conflict-free merging when you are back online.
+
+**Clean, intuitive design** — With AFFiNE you can concentrate on editing with a clean and modern interface. Which is responsive, so it looks great on tablets too, and mobile support is coming in the future.
+
+**Seamless transitions** — However you want your data displayed, whichever viewing mode you use, AFFiNE supports easy transitions to allow you to quickly and effortlessly view your data in the way you want.
+
+**Markdown support** — When you write in AFFiNE you can use Markdown syntax which helps create an easier editing experience, that can be experienced with just a keyboard. And this allows you to export your data cleanly into Markdown.
+<!--
+**Colloboration** — Whether you want to colloborate with yourself across multiple devices, or work together with others, support for colloboration and multiplayer is out-of-the-box, which makes it easy for teams to get started with AFFiNE.
+-->
+**Choice of multiple languages** — Thanks to community contributions AFFiNE offers support for multiple languages. If you don't find your language or would like to suggest some changes we welcome your contributions.
+
+## Getting started
+
+⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
 
 [![affine.pro](https://img.shields.io/static/v1?label=Try%20it%20Online&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAhpJREFUWEdjZEACtnl3MxgY/0YzMjAaMzAwcCLLUYH9/T/D/7MM/5mXHp6kPANmHiOI4Zx9Xfg3C+tKBob/zlSwiAgjGPey/vkdvneq5luwA+zy7+yhn+Vwv+89NFHFhREU7IyM/6YT4WyqK/n/nymT0Tb/1mFGBkYbqptOhIH/Gf4fYbTLv/2NBgmOCOvBSr6DHPCfWNW0UEe2A2x1uRlakiXBbtpx6jND+7KXZLmPbAdURokzeJjxwi31rrzH8OX7P5IdQbYDtnUoMXBzMMEt7Fj2imH7qU/0cQBy8MNsPHL5K0P13Of0cQB68MNsJScaSI4CHk4mhq3tSnCf3n36k0FZmh3Mn7L+DcPqgx9ICgWSHeBpxsdQESUGtgRk+eqDH+H8O09/MiR3P6atA1qTJRlsdLnhPgYlPOQQCW96wPDi3R+iHUFSCKAHP8wydEeREg0kOQA9+JOgwR1qL8CQEygC9jWp0UCSA+aVysIT3JqDHxgmr38DtlRCiIVhZZ0CPNhB6QDkEGIA0Q4gZAkuxxFyBNEOQA7ml+/+MIQ1PUAxG1kelAhB6YMYQLQDCPmQUAjhcgxRDiDWcEKOxOYIohyQGyjCEGIvANaPLfhhBiNHA6hmBBXNhABRDgCV/aBQAAFQpYMrn4PUgNTCACiXEMoNRDmAkC8okR8UDhjYRumAN8sHvGMCSkAD2jUDOWDAO6ewbDQQ3XMAy/oxKownQR0AAAAASUVORK5CYII=&message=%E2%86%92&style=for-the-badge)](https://affine.pro) No installation or registration required! Head over to our website and try it out now.
 
-Want to deploy it yourself? AFFiNE can run just about anywhere. <br />
-
 [AFFiNE Documentation](https://docs.affine.pro/affine/) - More detailed documentation on how to use and develop with AFFiNE
 
-AFFiNE Communities: [Discord](https://discord.gg/yz6tGVsf5p) | [Telegram](https://t.me/affineworkos) | [Twitter](https://twitter.com/AffineOfficial)
-<br /><br />
-⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
+[Our official communities](https://docs.affine.pro/affine/community-links/official-communities) - Join our friendly communities for more support and discussions
 
-[Install AFFiNE with docker](https://docs.affine.pro/affine/getting-started/install-affine-with-docker) - This guide assumes you already have an environment setup running docker
+## Contributing
 
-## Create your story
+Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to get stuck in to show us what you’re made of.
 
-There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together. Privacy first, open-source, customizable and ready to use, built with web technologies to ensure consistency and accessibility on Mac, Windows and Linux. We want your data always to be yours, without any sacrifice to your accessibility. Your data is always stored local first, with full support for real-time collaboration through peer-to-peer technology. We don't think "privacy-first" is a good excuse for not supporting modern web features.
-And when it comes to collaboration, these features are not just necessarily for teams - you can take and insert pictures on your phone, edit them from your desktop, and then share them with your collaborators.
+For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropiate template for your feedback.
 
-### Shape your page
+For **translation** and **language support** you can visit our docs for the [internationalization guide].(https://docs.affine.pro/affine/internationalization/welcome)
 
-![546163d6-4c39-4128-ae7f-55d59bc3b76b](https://user-images.githubusercontent.com/79301703/182365611-b0ba3690-21c0-4d9b-bfbc-0bc15da05aeb.gif)
+Looking for **others ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome), we work closely with passionate members of our community and provide them with a wide-range of support and resources. 
 
-### Plan your task
+If you have questions, join us across various [**social platforms**](https://docs.affine.pro/affine/community-links/official-communities) where our friendly community can help provide the answers.
 
-![41a7b3a4-32f2-4d18-ac6b-57d1e1fda753](https://user-images.githubusercontent.com/79301703/182366553-1f6558a7-f17b-4611-ab95-aea3ec997154.gif)
+## Thanks
 
-### Sort your knowledge
+We would also like to give thanks to open-source projects that make AFFiNE possible:
 
-![c9e1ff46-cec2-411b-b89d-6727a5e6f6c3](https://user-images.githubusercontent.com/79301703/182366602-08e44d28-a031-4097-9904-52fb9b1e9e17.gif)
-
-# Contact Us
-
-Feel free to send us an email: contact@toeverything.info
-
-# The Philosophy of AFFiNE
-
-Timothy Berners-Lee once taught us about the idea of the semantic web, where all the data can be interpreted in any form while the "truth" is kept. This gives our best image of an ideal knowledge base by far, that sorting of information, planning of project and goals as well as creating of knowledge can be all together.
-We have witnessed waves of paradigm shift so many times. At first, everything was noted on office-like apps or DSL like LaTeX, then we found todo-list apps and WYSIWYG markdown editors better for writing and planning. Finally, here comes Notion and Miro, who take advantage of the idea of blocks to further liberate our creativity.
-It is all perfect... without waste operations and redundant information. And, we insist that privacy first should always be given by default.
-That's why we are making AFFiNE. Some of the most important features are:
-
--   Transformable
-    -   Every block can be transformed equally
-        -   e.g. you can create a todo in Markdown in the text view and then later edit it in the kanban view.
-    -   Every document can be turned into a whiteboard
-        -   An always good-to-read, structured docs-form page is the best for your notes, but a boundless doodle surface is better for collaboration and creativity.
--   Atomic
-    -   The basic elements of AFFiNE are blocks, not pages.
-        -   Blocks can be directly reused and synced between pages.
-    -   Pages and blocks are searched and organized based on connected graphs, not tree-like paths.
-    -   Dual-link and semantic search are fully supported.
--   Collaborative and privacy-first
-    -   Data is always stored locally by default
-    -   CRDTs are applied so that peer-to-peer collaboration is possible.
-
-We appreciate the ideas of Monday, Airtable, and Notion databases. They have inspired us and shaped our product, helping us get it right when it comes to task management. But we also do things differently. We don't like doing things again and again. It's easy to set a todo with Markdown, but then why do you need to repeat and recreate data for a kanban or other databases. This is the power of AFFiNE. With AFFiNE, every block group has infinite views, for you to keep your single source of data, a single source of truth.
-
-We would like to give special thanks to the innovators and pioneers who greatly inspired us:
-
--   Quip & Notion -- that docs can be organized as blocks
--   Taskade & Monday -- brilliant multi-dimensional tables
--   Height & Linear -- beautiful task management tool
-
-We would also like to give thanks to open-source projects that make affine possible:
-
+-   [BlockSuite](https://github.com/toeverything/BlockSuite) - AFFiNE is built with and powered by BlockSuite.
 -   [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
 -   [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
 -   [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
@@ -136,8 +114,6 @@ We use the following open source projects to help us build a better development 
 -   [tolgee](https://github.com/tolgee/tolgee-platform) -- Elegant i18n collaborative editing platform
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
-
-[Some amazing companies](./docs/jobs/summary.md), including AFFiNE are looking for developers! Are you interested in helping build with AFFiNE and/or its partners? Check out some of the latest [jobs available](./docs/jobs/summary.md).
 
 # Contributors
 
@@ -168,7 +144,7 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
     <td align="center"><a href="https://github.com/Svaney-ssman"><img src="https://avatars.githubusercontent.com/u/110808979?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Svaney</b></sub></a><br /><a href="#design-Svaney-ssman" title="Design">🎨</a></td>
     <td align="center"><a href="http://xell.me/"><img src="https://avatars.githubusercontent.com/u/132558?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Guozhu Liu</b></sub></a><br /><a href="#design-xell" title="Design">🎨</a></td>
     <td align="center"><a href="https://github.com/fyZheng07"><img src="https://avatars.githubusercontent.com/u/63830919?v=4?s=50" width="50px;" alt=""/><br /><sub><b>fyZheng07</b></sub></a><br /><a href="#eventOrganizing-fyZheng07" title="Event Organizing">📋</a> <a href="#userTesting-fyZheng07" title="User Testing">📓</a></td>
-    <td align="center"><a href="https://github.com/CJSS"><img src="https://avatars.githubusercontent.com/u/4605025?v=4?s=50" width="50px;" alt=""/><br /><sub><b>CJSS</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=CJSS" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/ShortCipher5"><img src="https://avatars.githubusercontent.com/u/4605025?v=4?s=50" width="50px;" alt=""/><br /><sub><b>ShortCipher5</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=ShortCipher5" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/JimmFly"><img src="https://avatars.githubusercontent.com/u/102217452?v=4?s=50" width="50px;" alt=""/><br /><sub><b>JimmFly</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=JimmFly" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/CarlosZoft"><img src="https://avatars.githubusercontent.com/u/62192072?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Carlos Rafael </b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=CarlosZoft" title="Code">💻</a></td>
   </tr>
@@ -202,8 +178,10 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-# License
+## Jobs
 
-AFFiNE is distributed under the terms of MIT license.
+Some amazing companies including AFFiNE are looking for developers! Are you interested in helping build with AFFiNE and/or its partners? Check out some of the latest [jobs available](./docs/jobs/summary.md).
+
+## License
 
 See [LICENSE](/LICENSE) for details.

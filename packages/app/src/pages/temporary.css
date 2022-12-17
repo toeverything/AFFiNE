@@ -1,0 +1,14 @@
+debug-menu {
+  display: none !important;
+}
+.affine-block-children-container.edgeless {
+  background-color: #fff;
+}
+
+.affine-default-page-block-title-container {
+  margin-top: 78px;
+  margin-bottom: 40px;
+}
+.affine-editor-container {
+  background: transparent !important;
+}

@@ -1,0 +1,122 @@
+name: Build Pathfinder LiveDemo Version
+
+on:
+  push:
+    branches: [pathfinder]
+  pull_request:
+    branches: [pathfinder]
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+# See https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for
+  # pull requests or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint and Build
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 'latest'
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18.x
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+          cache: 'pnpm'
+
+      - run: node scripts/module-resolve/ci.js
+
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .next/cache
+          # Generate a new cache whenever packages or source files change.
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          # If source files changed but packages didn't, rebuild from a prior cache.
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
+
+      - name: Lint
+        run: |
+          pnpm lint --max-warnings=0
+
+      # - name: Test
+      #   run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Export
+        run: pnpm export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./packages/app/out
+
+  push_to_registry:
+    # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+    name: Push Docker image to Docker Hub
+    if: github.ref == 'refs/heads/pathfinder'
+    runs-on: ubuntu-latest
+    needs: build
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: 'toeverything/affine-pathfinder'
+      IMAGE_TAG: canary-${{ github.sha }}
+      IMAGE_TAG_LATEST: nightly-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: packages/app/out/
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            ${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_TAG_LATEST }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          file: ./.github/deployment/Dockerfile
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

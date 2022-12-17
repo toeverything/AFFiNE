@@ -1,1 +1,0 @@
-export { LinkMenuPlugin } from './Plugin';

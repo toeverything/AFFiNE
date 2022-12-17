@@ -1,1 +1,0 @@
-export { LigoVirgoRoutes } from './AppRoutes';
