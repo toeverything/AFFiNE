@@ -69,13 +69,15 @@ export const WorkSpaceSliderBar = () => {
   return (
     <>
       <StyledSliderBar show={show}>
-        <StyledListItem
-          onClick={() => {
-            triggerQuickSearchModal();
-          }}
-        >
-          <SearchIcon /> Quick search
-        </StyledListItem>
+        <Tooltip content="Search and quickly jump to a page" placement="right">
+          <StyledListItem
+            onClick={() => {
+              triggerQuickSearchModal();
+            }}
+          >
+            <SearchIcon /> Quick search
+          </StyledListItem>
+        </Tooltip>
         <Link href={{ pathname: '/page-list/all' }}>
           <StyledListItem active={router.pathname === '/page-list/all'}>
             <AllPagesIcon /> All pages
