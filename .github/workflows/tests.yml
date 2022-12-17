@@ -1,9 +1,9 @@
 name: E2E & Unit Tests
 on:
   push:
-    branches: [pathfinder]
+    branches: [master]
   pull_request:
-    branches: [pathfinder]
+    branches: [master]
 jobs:
   test:
     timeout-minutes: 60
