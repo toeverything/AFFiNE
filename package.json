@@ -9,7 +9,8 @@
     "start": "pnpm --filter @pathfinder/app start",
     "lint": "pnpm --filter @pathfinder/app lint",
     "test:e2e": "playwright test",
-    "test:unit": "jest"
+    "test:unit": "jest",
+    "notify": "node --experimental-modules scripts/notify.mjs"
   },
   "devDependencies": {
     "@jest/globals": "^29.3.1",
