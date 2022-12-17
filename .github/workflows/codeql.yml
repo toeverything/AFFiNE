@@ -13,10 +13,10 @@ name: 'CodeQL'
 
 on:
   push:
-    branches: [pathfinder]
+    branches: [master]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [pathfinder]
+    branches: [master]
 
 jobs:
   analyze:
