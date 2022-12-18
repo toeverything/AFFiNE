@@ -52,7 +52,6 @@ const i18n = i18next.createInstance();
 i18n.use(initReactI18next).init({
   lng: language,
   fallbackLng,
-  // debug: process.env['NODE_ENV'] === 'development',
   debug: false,
   resources,
   interpolation: {
