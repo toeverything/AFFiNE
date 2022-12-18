@@ -12,12 +12,13 @@ import { Footer } from './footer';
 import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/global-modal-provider';
+import { getUaHelper } from '@/utils';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
 };
 const isMac = () => {
-  return /macintosh|mac os x/i.test(navigator.userAgent);
+  return getUaHelper().isMacOs;
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [query, setQuery] = useState('');
