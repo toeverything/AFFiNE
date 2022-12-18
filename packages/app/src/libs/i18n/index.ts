@@ -7,12 +7,12 @@ import {
 import { LOCALES } from './resources';
 import type en_US from './resources/en.json';
 
-const localStorage = {
-  getItem() {
-    return undefined;
-  },
-  setItem() {},
-};
+// const localStorage = {
+//   getItem() {
+//     return undefined;
+//   },
+//   setItem() {},
+// };
 // See https://react.i18next.com/latest/typescript
 declare module 'react-i18next' {
   interface CustomTypeOptions {
@@ -25,7 +25,7 @@ declare module 'react-i18next' {
   }
 }
 
-const STORAGE_KEY = 'i18n_lng';
+// const STORAGE_KEY = 'i18n_lng';
 
 export { i18n, useTranslation, I18nProvider, LOCALES };
 
@@ -43,8 +43,9 @@ const standardizeLocale = (language: string) => {
 };
 
 const language = standardizeLocale(
-  localStorage.getItem(STORAGE_KEY) ??
-    (typeof navigator !== 'undefined' ? navigator.language : 'en')
+  //   localStorage.getItem(STORAGE_KEY) ??
+  //     (typeof navigator !== 'undefined' ? navigator.language : 'en')
+  'en'
 );
 
 const i18n = i18next.createInstance();
@@ -60,7 +61,7 @@ i18n.use(initReactI18next).init({
 });
 
 i18n.on('languageChanged', lng => {
-  localStorage.setItem(STORAGE_KEY, lng);
+  //   localStorage.setItem(STORAGE_KEY, lng);
 });
 
 const I18nProvider = I18nextProvider;
