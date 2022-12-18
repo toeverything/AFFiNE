@@ -60,8 +60,6 @@ class UaHelper {
     this.isSafari = this.checkUseragent('safari');
     this.isWindows = this.checkUseragent('win');
     this.isFireFox = this.checkUseragent('firefox');
-
-    console.log(this);
   }
 }
 
