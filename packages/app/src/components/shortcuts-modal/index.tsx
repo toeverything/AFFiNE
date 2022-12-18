@@ -15,13 +15,14 @@ import {
 } from '@/components/shortcuts-modal/config';
 import Slide from '@mui/material/Slide';
 import { ModalCloseButton } from '@/ui/modal';
+import { getUaHelper } from '@/utils';
 type ModalProps = {
   open: boolean;
   onClose: () => void;
 };
 
 const isMac = () => {
-  return /macintosh|mac os x/i.test(navigator.userAgent);
+  return getUaHelper().isMacOs;
 };
 
 export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
