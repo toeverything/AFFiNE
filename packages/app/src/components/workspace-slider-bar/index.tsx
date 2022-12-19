@@ -85,7 +85,7 @@ export const WorkSpaceSliderBar = () => {
         </Tooltip>
         <Link href={{ pathname: '/page-list/all' }}>
           <StyledListItem active={router.pathname === '/page-list/all'}>
-            <AllPagesIcon /> {t('All pages')}
+            <AllPagesIcon /> <span>All pages</span>
           </StyledListItem>
         </Link>
         <StyledListItem active={router.pathname === '/page-list/favorite'}>
