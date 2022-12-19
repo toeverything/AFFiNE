@@ -5,7 +5,9 @@ import GoogleSvg from './google.svg';
 export const GoogleIcon = () => {
   return (
     <GoogleIconWrapper>
-      <img src={GoogleSvg.src} alt="Google" />
+      <picture>
+        <img src={GoogleSvg.src} alt="Google" />
+      </picture>
     </GoogleIconWrapper>
   );
 };

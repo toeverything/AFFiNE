@@ -44,26 +44,25 @@ import { fetchTolgee } from './request';
  * ```
  */
 export const getAllProjectLanguages = async (size = 1000) => {
-    const url = `/languages?size=${size}`;
-    const resp = await fetchTolgee(url);
-    if (resp.status < 200 || resp.status >= 300) {
-        throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
-    }
-    const json: {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        _embedded: {
-            languages: {
-                id: number;
-                name: string;
-                tag: string;
-                originalName: string;
-                flagEmoji: string;
-                base: boolean;
-            }[];
-        };
-        page: unknown;
-    } = await resp.json();
-    return json._embedded.languages;
+  const url = `/languages?size=${size}`;
+  const resp = await fetchTolgee(url);
+  if (resp.status < 200 || resp.status >= 300) {
+    throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
+  }
+  const json: {
+    _embedded: {
+      languages: {
+        id: number;
+        name: string;
+        tag: string;
+        originalName: string;
+        flagEmoji: string;
+        base: boolean;
+      }[];
+    };
+    page: unknown;
+  } = await resp.json();
+  return json._embedded.languages;
 };
 
 /**
@@ -72,13 +71,13 @@ export const getAllProjectLanguages = async (size = 1000) => {
  * See https://tolgee.io/api#operation/getTranslations_
  */
 export const getTranslations = async () => {
-    const url = '/translations';
-    const resp = await fetchTolgee(url);
-    if (resp.status < 200 || resp.status >= 300) {
-        throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
-    }
-    const json = await resp.json();
-    return json;
+  const url = '/translations';
+  const resp = await fetchTolgee(url);
+  if (resp.status < 200 || resp.status >= 300) {
+    throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
+  }
+  const json = await resp.json();
+  return json;
 };
 
 /**
@@ -87,25 +86,24 @@ export const getTranslations = async () => {
  * See https://tolgee.io/api#operation/getAllTranslations_1
  */
 export const getLanguagesTranslations = async <T extends string>(
-    languages: T
+  languages: T
 ) => {
-    const url = `/translations/${languages}`;
-    const resp = await fetchTolgee(url);
-    if (resp.status < 200 || resp.status >= 300) {
-        throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
-    }
-    const json: { [key in T]?: Record<string, string> } = await resp.json();
-    return json;
+  const url = `/translations/${languages}`;
+  const resp = await fetchTolgee(url);
+  if (resp.status < 200 || resp.status >= 300) {
+    throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
+  }
+  const json: { [key in T]?: Record<string, string> } = await resp.json();
+  return json;
 };
 
 export const getRemoteTranslations = async (languages: string) => {
-    const translations = await getLanguagesTranslations(languages);
-    if (!(languages in translations)) {
-        return {};
-    }
-    // The assert is safe because we checked above
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return translations[languages]!;
+  const translations = await getLanguagesTranslations(languages);
+  if (!(languages in translations)) {
+    return {};
+  }
+  // The assert is safe because we checked above
+  return translations[languages]!;
 };
 
 /**
@@ -114,19 +112,19 @@ export const getRemoteTranslations = async (languages: string) => {
  * See https://tolgee.io/api#operation/create_2
  */
 export const createsNewKey = async (
-    key: string,
-    translations: Record<string, string>
+  key: string,
+  translations: Record<string, string>
 ) => {
-    const url = '/translations/keys/create';
-    const resp = await fetchTolgee(url, {
-        method: 'POST',
-        body: JSON.stringify({ name: key, translations }),
-    });
-    if (resp.status < 200 || resp.status >= 300) {
-        throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
-    }
-    const json = await resp.json();
-    return json;
+  const url = '/translations/keys/create';
+  const resp = await fetchTolgee(url, {
+    method: 'POST',
+    body: JSON.stringify({ name: key, translations }),
+  });
+  if (resp.status < 200 || resp.status >= 300) {
+    throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
+  }
+  const json = await resp.json();
+  return json;
 };
 
 /**
@@ -135,16 +133,16 @@ export const createsNewKey = async (
  * See https://tolgee.io/api#operation/tagKey_1
  */
 export const addTag = async (keyId: string, tagName: string) => {
-    const url = `/keys/${keyId}/tags`;
-    const resp = await fetchTolgee(url, {
-        method: 'PUT',
-        body: JSON.stringify({ name: tagName }),
-    });
-    if (resp.status < 200 || resp.status >= 300) {
-        throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
-    }
-    const json = await resp.json();
-    return json;
+  const url = `/keys/${keyId}/tags`;
+  const resp = await fetchTolgee(url, {
+    method: 'PUT',
+    body: JSON.stringify({ name: tagName }),
+  });
+  if (resp.status < 200 || resp.status >= 300) {
+    throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
+  }
+  const json = await resp.json();
+  return json;
 };
 
 /**
@@ -153,21 +151,21 @@ export const addTag = async (keyId: string, tagName: string) => {
  * See https://tolgee.io/api#operation/tagKey_1
  */
 export const removeTag = async (keyId: string, tagId: number) => {
-    const url = `/keys/${keyId}/tags/${tagId}`;
-    const resp = await fetchTolgee(url, {
-        method: 'DELETE',
-    });
-    if (resp.status < 200 || resp.status >= 300) {
-        throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
-    }
-    const json = await resp.json();
-    return json;
+  const url = `/keys/${keyId}/tags/${tagId}`;
+  const resp = await fetchTolgee(url, {
+    method: 'DELETE',
+  });
+  if (resp.status < 200 || resp.status >= 300) {
+    throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
+  }
+  const json = await resp.json();
+  return json;
 };
 
 export const addTagByKey = async (key: string, tag: string) => {
-    // TODO get key id by key name
-    // const keyId =
-    // addTag(keyId, tag);
+  // TODO get key id by key name
+  // const keyId =
+  // addTag(keyId, tag);
 };
 
 /**
@@ -176,11 +174,11 @@ export const addTagByKey = async (key: string, tag: string) => {
  * See https://tolgee.io/api#operation/export_1
  */
 export const exportResources = async () => {
-    const url = `/export`;
-    const resp = await fetchTolgee(url);
+  const url = `/export`;
+  const resp = await fetchTolgee(url);
 
-    if (resp.status < 200 || resp.status >= 300) {
-        throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
-    }
-    return resp;
+  if (resp.status < 200 || resp.status >= 300) {
+    throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
+  }
+  return resp;
 };

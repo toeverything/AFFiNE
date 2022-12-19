@@ -9,7 +9,7 @@ module.exports = {
     'next/core-web-vitals',
     'plugin:@next/next/recommended',
     'plugin:prettier/recommended',
-    'next/babel',
+    // 'next/babel',
   ],
   rules: {
     'prettier/prettier': 'warn',

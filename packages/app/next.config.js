@@ -15,7 +15,12 @@ const nextConfig = {
   },
   // XXX not test yet
   rewrites: async () => {
-    return [{ source: '/api/:path*', destination: '/api/:path*' }];
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://100.77.180.48:11001/api/:path*',
+      },
+    ];
   },
 };
 
