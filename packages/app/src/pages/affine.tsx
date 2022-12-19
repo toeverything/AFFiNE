@@ -16,7 +16,7 @@ const Affine = () => {
   const [show, setShow] = useState(false);
   return (
     <>
-      <StyledHeader data-tauri-drag-region={window.CLIENT_APP}>
+      <StyledHeader>
         <ThemeModeSwitch></ThemeModeSwitch>
         <button
           onClick={() => {
