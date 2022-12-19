@@ -11,8 +11,9 @@ export const QuickSearchButton = ({
   const { triggerQuickSearchModal } = useModal();
 
   return (
-    <Tooltip content="Search and quickly jump to a page" placement="bottom">
+    <Tooltip content="Switch to" placement="bottom">
       <IconButton
+        data-testid="header-quickSearchButton"
         {...props}
         onClick={e => {
           onClick?.(e);
