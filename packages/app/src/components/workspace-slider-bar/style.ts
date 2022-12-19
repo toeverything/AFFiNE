@@ -59,7 +59,6 @@ export const StyledListItem = styled.button<{
     ...(disabled
       ? {
           cursor: 'not-allowed',
-          pointerEvent: 'none',
           color: theme.colors.borderColor,
         }
       : {}),
