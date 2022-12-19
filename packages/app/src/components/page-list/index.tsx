@@ -6,7 +6,6 @@ import {
   EdgelessIcon,
 } from '@blocksuite/icons';
 import {
-  StyledFavoriteButton,
   StyledTableContainer,
   StyledTableRow,
   StyledTitleLink,
@@ -18,19 +17,31 @@ import Empty from './empty';
 import { Content } from '@/ui/layout';
 import React from 'react';
 import DateCell from '@/components/page-list/date-cell';
-const FavoriteTag = ({ pageMeta }: { pageMeta: PageMeta }) => {
+import { IconButton } from '@/ui/button';
+import { Tooltip } from '@/ui/tooltip';
+import { router } from 'next/client';
+const FavoriteTag = ({
+  pageMeta: { favorite, id },
+}: {
+  pageMeta: PageMeta;
+}) => {
   const { toggleFavoritePage } = useEditor();
-
   return (
-    <StyledFavoriteButton
-      className="favorite-button"
-      favorite={pageMeta.favorite}
-      onClick={() => {
-        toggleFavoritePage(pageMeta.id);
-      }}
+    <Tooltip
+      content={favorite ? 'Favourited' : 'Favourite'}
+      placement="top-start"
     >
-      {pageMeta.favorite ? <FavouritedIcon /> : <FavouritesIcon />}
-    </StyledFavoriteButton>
+      <IconButton
+        darker={true}
+        iconSize={[20, 20]}
+        onClick={e => {
+          e.stopPropagation();
+          toggleFavoritePage(id);
+        }}
+      >
+        {favorite ? <FavouritedIcon /> : <FavouritesIcon />}
+      </IconButton>
+    </Tooltip>
   );
 };
 
@@ -52,7 +63,7 @@ export const PageList = ({
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell proportion={0.5}>Documents</TableCell>
+            <TableCell proportion={0.5}>Title</TableCell>
             <TableCell proportion={0.2}>Created</TableCell>
             <TableCell proportion={0.2}>
               {isTrash ? 'Moved to Trash' : 'Updated'}
@@ -63,12 +74,18 @@ export const PageList = ({
         <TableBody>
           {pageList.map((pageMeta, index) => {
             return (
-              <StyledTableRow key={`${pageMeta.id}-${index}`}>
+              <StyledTableRow
+                key={`${pageMeta.id}-${index}`}
+                onClick={() => {
+                  router.push({
+                    pathname: '/',
+                    query: { pageId: pageMeta.id },
+                  });
+                }}
+              >
                 <TableCell>
                   <StyledTitleWrapper>
-                    <StyledTitleLink
-                      href={{ pathname: '/', query: { pageId: pageMeta.id } }}
-                    >
+                    <StyledTitleLink>
                       {pageMeta.mode === 'edgeless' ? (
                         <EdgelessIcon />
                       ) : (
@@ -87,7 +104,12 @@ export const PageList = ({
                   dateKey={isTrash ? 'trashDate' : 'updatedDate'}
                   backupKey={isTrash ? 'trashDate' : 'createDate'}
                 />
-                <TableCell style={{ padding: 0 }}>
+                <TableCell
+                  style={{ padding: 0 }}
+                  onClick={e => {
+                    e.stopPropagation();
+                  }}
+                >
                   {isTrash ? (
                     <TrashOperationCell pageMeta={pageMeta} />
                   ) : (

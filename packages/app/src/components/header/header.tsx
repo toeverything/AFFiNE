@@ -13,6 +13,9 @@ import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   MoreVerticalIcon,
+  FavouritesIcon,
+  FavouritedIcon,
+  TrashIcon,
 } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
@@ -22,15 +25,37 @@ import { getWarningMessage, shouldShowWarning } from './utils';
 import { Menu, MenuItem } from '@/ui/menu';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/confirm-provider';
-import { useModal } from '@/providers/global-modal-provider';
-import { useAppState } from '@/providers/app-state-provider';
 import { SyncIcon } from './sync-icon';
+import { toast } from '@/components/toast';
 
 const PopoverContent = () => {
-  const { editor, mode, setMode } = useEditor();
+  const {
+    editor,
+    mode,
+    setMode,
+    getPageMeta,
+    page,
+    toggleFavoritePage,
+    toggleDeletePage,
+  } = useEditor();
+  const { confirm } = useConfirm();
+
+  const { id, favorite, title } = getPageMeta(page?.id) ?? {
+    id: '',
+    favorite: false,
+    title: '',
+  };
 
   return (
     <>
+      <MenuItem
+        onClick={() => {
+          toggleFavoritePage(id);
+        }}
+        icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
+      >
+        {favorite ? 'Remove' : 'Add'} to favourites
+      </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
         onClick={() => {
@@ -66,6 +91,22 @@ const PopoverContent = () => {
           Export
         </MenuItem>
       </Menu>
+      <MenuItem
+        onClick={() => {
+          confirm({
+            title: 'Delete page?',
+            content: `${title || 'Untitled'} will be moved to Trash`,
+            confirmText: 'Delete',
+            confirmType: 'danger',
+          }).then(confirm => {
+            confirm && toggleDeletePage(id);
+            toast('Moved to Trash');
+          });
+        }}
+        icon={<TrashIcon />}
+      >
+        Delete
+      </MenuItem>
     </>
   );
 };

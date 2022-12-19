@@ -14,6 +14,7 @@ export const StyledIconButton = styled('button', {
       'hoverBackground',
       'hoverColor',
       'hoverStyle',
+      'darker',
     ].includes(prop);
   },
 })<{
@@ -24,6 +25,8 @@ export const StyledIconButton = styled('button', {
   hoverBackground?: CSSProperties['background'];
   hoverColor?: string;
   hoverStyle?: CSSProperties;
+  // In some cases, button is in a normal hover status, it should be darkened
+  darker?: boolean;
 }>(
   ({
     theme,
@@ -33,6 +36,7 @@ export const StyledIconButton = styled('button', {
     hoverBackground,
     hoverColor,
     hoverStyle,
+    darker = false,
   }) => {
     return {
       width,
@@ -40,7 +44,7 @@ export const StyledIconButton = styled('button', {
       color: theme.colors.iconColor,
       ...displayInlineFlex('center', 'center'),
       position: 'relative',
-      ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
+      ...(disabled ? { cursor: 'not-allowed' } : {}),
       transition: 'background .15s',
 
       // TODO: we need to add @emotion/babel-plugin
@@ -61,7 +65,10 @@ export const StyledIconButton = styled('button', {
       ':hover': {
         color: hoverColor ?? theme.colors.primaryColor,
         '::after': {
-          background: hoverBackground ?? theme.colors.hoverBackground,
+          background:
+            hoverBackground ?? darker
+              ? theme.colors.innerHoverBackground
+              : theme.colors.hoverBackground,
         },
         ...(hoverStyle ?? {}),
       },
@@ -116,7 +123,7 @@ export const StyledTextButton = styled('button', {
       paddingRight: padding,
       ...displayInlineFlex('flex-start', 'center'),
       position: 'relative',
-      ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
+      ...(disabled ? { cursor: 'not-allowed' } : {}),
       transition: 'background .15s',
       // TODO: Implement circle shape
       borderRadius: shape === 'default' ? borderRadius : height / 2,
@@ -171,7 +178,10 @@ export const StyledButton = styled('button', {
       border: '1px solid',
       ...displayInlineFlex('flex-start', 'center'),
       position: 'relative',
-      ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
+      // TODO: disabled color is not decided
+      ...(disabled
+        ? { cursor: 'not-allowed', color: theme.colors.borderColor }
+        : {}),
       transition: 'background .15s',
       // TODO: Implement circle shape
       borderRadius: shape === 'default' ? borderRadius : height / 2,
@@ -190,6 +200,7 @@ export const StyledButton = styled('button', {
         hoverStyle,
       }),
 
+      // TODO: disabled hover should be implemented
       //
       // ':hover': {
       //   color: hoverColor ?? theme.colors.primaryColor,

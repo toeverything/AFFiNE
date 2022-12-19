@@ -19,6 +19,7 @@ import {
   ImportIcon,
   TrashIcon,
   AddIcon,
+  FavouritedIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
@@ -93,7 +94,7 @@ export const WorkSpaceSliderBar = () => {
             Favourites
           </StyledLink>
           <IconButton
-            hoverBackground="#E0E6FF"
+            darker={true}
             onClick={() => {
               setShowSubFavorite(!showSubFavorite);
             }}
@@ -107,13 +108,16 @@ export const WorkSpaceSliderBar = () => {
         </StyledListItem>
         <FavoriteList showList={showSubFavorite} />
 
-        <StyledListItem
-          onClick={() => {
-            triggerImportModal();
-          }}
-        >
-          <ImportIcon /> Import
-        </StyledListItem>
+        <Tooltip content="Coming soon" placement="right-start" zIndex={9999}>
+          <StyledListItem
+            disabled={true}
+            onClick={() => {
+              // triggerImportModal();
+            }}
+          >
+            <ImportIcon /> Import
+          </StyledListItem>
+        </Tooltip>
 
         <Link href={{ pathname: '/page-list/trash' }}>
           <StyledListItem active={router.pathname === '/page-list/trash'}>

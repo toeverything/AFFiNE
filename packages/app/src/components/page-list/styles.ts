@@ -23,7 +23,7 @@ export const StyledTitleWrapper = styled.div(({ theme }) => {
     },
   };
 });
-export const StyledTitleLink = styled(Link)(({ theme }) => {
+export const StyledTitleLink = styled.div(({ theme }) => {
   return {
     maxWidth: '80%',
     marginRight: '18px',
@@ -34,31 +34,12 @@ export const StyledTitleLink = styled(Link)(({ theme }) => {
       marginRight: '12px',
       color: theme.colors.iconColor,
     },
-    ':hover': {
-      color: theme.colors.textColor,
-      '>svg': {
-        color: theme.colors.primaryColor,
-      },
-    },
   };
 });
-export const StyledFavoriteButton = styled.button<{ favorite: boolean }>(
-  ({ theme, favorite }) => {
-    return {
-      width: '32px',
-      height: '32px',
-      justifyContent: 'center',
-      alignItems: 'center',
-      display: 'none',
-      color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
-      '&:hover': {
-        color: theme.colors.primaryColor,
-      },
-    };
-  }
-);
+
 export const StyledTableRow = styled(TableRow)(({ theme }) => {
   return {
+    cursor: 'pointer',
     '&:hover': {
       '.favorite-button': {
         display: 'flex',

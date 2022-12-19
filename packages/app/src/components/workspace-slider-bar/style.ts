@@ -43,29 +43,33 @@ export const StyledArrowButton = styled.button<{ isShow: boolean }>(
   }
 );
 
-export const StyledListItem = styled.button<{ active?: boolean }>(
-  ({ theme, active }) => {
-    return {
-      width: '296px',
-      height: '32px',
-      marginTop: '12px',
-      fontSize: theme.font.sm,
-      color: active ? theme.colors.primaryColor : theme.colors.popoverColor,
-      backgroundColor: active ? theme.colors.hoverBackground : 'unset',
-      paddingLeft: '12px',
-      borderRadius: '5px',
-      ...displayFlex('flex-start', 'center'),
-      '>svg': {
-        fontSize: '20px',
-        marginRight: '12px',
-      },
-      ':hover': {
-        color: theme.colors.primaryColor,
-        backgroundColor: theme.colors.hoverBackground,
-      },
-    };
-  }
-);
+export const StyledListItem = styled.button<{
+  active?: boolean;
+  disabled?: boolean;
+}>(({ theme, active, disabled }) => {
+  return {
+    width: '296px',
+    height: '32px',
+    marginTop: '12px',
+    fontSize: theme.font.sm,
+    color: active ? theme.colors.primaryColor : theme.colors.popoverColor,
+    paddingLeft: '12px',
+    borderRadius: '5px',
+    ...displayFlex('flex-start', 'center'),
+    ...(disabled
+      ? { cursor: 'not-allowed', color: theme.colors.borderColor }
+      : {}),
+
+    '>svg': {
+      fontSize: '20px',
+      marginRight: '12px',
+    },
+    ':hover:not([disabled])': {
+      color: theme.colors.primaryColor,
+      backgroundColor: theme.colors.hoverBackground,
+    },
+  };
+});
 
 export const StyledListItemForWorkspace = styled(StyledListItem)({
   height: '52px',
