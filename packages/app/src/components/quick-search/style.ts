@@ -37,10 +37,10 @@ export const StyledJumpTo = styled('div')(({ theme }) => {
 });
 export const StyledNotFound = styled('div')(({ theme }) => {
   return {
-    width: '620px',
+    width: '612px',
     ...displayFlex('center', 'center'),
     flexDirection: 'column',
-    padding: '10px 16px',
+    padding: '5px 16px',
     fontSize: theme.font.sm,
     span: {
       width: '100%',
