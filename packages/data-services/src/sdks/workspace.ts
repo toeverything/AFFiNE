@@ -44,7 +44,7 @@ export async function getWorkspaceDetail(
 ): Promise<WorkspaceDetail | null> {
   const data = await request<WorkspaceDetail | null>({
     url: `/api/workspace/${params.id}`,
-    method: 'PUT',
+    method: 'GET',
   });
 
   return data.data;
