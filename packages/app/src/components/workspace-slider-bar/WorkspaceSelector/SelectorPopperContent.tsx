@@ -8,6 +8,7 @@ import {
   WorkspaceItem,
   CreateWorkspaceItem,
   ListItem,
+  LoginItem,
 } from './WorkspaceItem';
 
 const workspaces = [
@@ -26,15 +27,31 @@ const workspaces = [
 ];
 
 export const SelectorPopperContent = () => {
-  const state = useAppState();
-  console.log('state', state);
-  return (
+  const { user, workspaces } = useAppState();
+  return !user ? (
+    <SelectorPopperContainer placement="bottom-start">
+      <LoginItem />
+      <StyledDivider />
+      <ListItem
+        icon={<InformationIcon />}
+        name="About AFFiNE"
+        onClick={() => console.log('About AFFiNE')}
+      />
+    </SelectorPopperContainer>
+  ) : (
     <SelectorPopperContainer placement="bottom-start">
       <PrivateWorkspaceItem />
       <StyledDivider />
       <WorkspaceGroupTitle>Workspace</WorkspaceGroupTitle>
       {workspaces.map(workspace => {
-        return <WorkspaceItem key={workspace.name} {...workspace} />;
+        return (
+          <WorkspaceItem
+            key={workspace.id}
+            id={workspace.id}
+            name={`workspace-${workspace.id}`}
+            icon={''}
+          />
+        );
       })}
       <CreateWorkspaceItem />
       <StyledDivider />

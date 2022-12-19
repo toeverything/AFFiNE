@@ -19,6 +19,16 @@ export const PrivateWorkspaceWrapper = styled(WorkspaceItemWrapper)({
   padding: '10px 12px',
 });
 
+export const LoginItemWrapper = styled(WorkspaceItemWrapper)(({ theme }) => {
+  return {
+    padding: '10px 12px',
+
+    ':hover .login-description': {
+      color: theme.colors.primaryColor,
+    },
+  };
+});
+
 export const WorkspaceItemAvatar = styled(MuiAvatar)({
   height: '40px',
   width: '40px',
