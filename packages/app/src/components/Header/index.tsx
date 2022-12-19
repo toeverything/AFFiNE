@@ -109,7 +109,7 @@ export const Header = () => {
     }
   }, [editor]);
   return (
-    <StyledHeaderContainer hasWarning={showWarning}>
+    <StyledHeaderContainer hasWarning={showWarning} data-tauri-drag-region>
       <BrowserWarning
         onClose={() => {
           setShowWarning(false);
