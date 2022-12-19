@@ -14,6 +14,7 @@ const nextConfig = {
     VERSION: getGitVersion(),
     COMMIT_HASH: getCommitHash(),
   },
+  basePath: process.env.BASE_PATH,
 };
 
 module.exports = nextConfig;
