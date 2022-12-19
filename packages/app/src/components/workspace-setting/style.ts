@@ -1,13 +1,16 @@
 import { styled } from '@/styles';
+import { Button } from '@/ui/button';
+import MuiAvatar from '@mui/material/Avatar';
 
-export const StyledSettingContent = styled('div')(({ theme }) => {
+export const StyledSettingContainer = styled('div')(({ theme }) => {
   return {
     position: 'relative',
     display: 'flex',
     padding: '0px',
-    width: '1080px',
+    width: '961px',
     background: theme.colors.popoverBackground,
     borderRadius: '12px',
+    overflow: 'hidden',
   };
 });
 
@@ -15,7 +18,23 @@ export const StyledSettingSidebar = styled('div')(({ theme }) => {
   {
     return {
       width: '236px',
-      height: '780px',
+      height: '620px',
+      background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
+    };
+  }
+});
+
+export const StyledSettingContent = styled('div')(({ theme }) => {
+  return {
+    paddingLeft: '48px',
+  };
+});
+
+export const StyledSetting = styled('div')(({ theme }) => {
+  {
+    return {
+      width: '236px',
+      height: '620px',
       background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
     };
   }
@@ -71,10 +90,47 @@ export const StyledSettingTagIconContainer = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledSettingH2 = styled('h2')(({ theme }) => {
+export const StyledSettingH2 = styled('h2')<{ marginTop?: number }>(
+  ({ marginTop, theme }) => {
+    return {
+      fontWeight: '500',
+      fontSize: '18px',
+      lineHeight: '26px',
+      marginTop: marginTop ? `${marginTop}px` : '0px',
+    };
+  }
+);
+
+export const StyledSettingAvatarContent = styled('div')(({ theme }) => {
   return {
-    fontWeight: '500',
-    fontSize: '18px',
-    lineHeight: '26px',
+    marginTop: '12px',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '72px',
+  };
+});
+
+export const StyledSettingAvatar = styled(MuiAvatar)(({ theme }) => {
+  return { height: '72px', width: '72px' };
+});
+
+export const StyledAvatarUploadBtn = styled(Button)(({ theme }) => {
+  return {
+    backgroundColor: theme.colors.hoverBackground,
+    color: theme.colors.primaryColor,
+    margin: '0 12px 0 24px',
+  };
+});
+
+export const StyledSettingInputContainer = styled('div')(({ theme }) => {
+  return {
+    marginTop: '12px',
+  };
+});
+
+export const StyledDeleteButtonContainer = styled('div')(({ theme }) => {
+  return {
+    marginTop: '158px',
   };
 });
