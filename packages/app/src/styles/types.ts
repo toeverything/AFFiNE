@@ -121,3 +121,9 @@ export interface AffineThemeCSSVariables {
 declare module '@emotion/react' {
   export interface Theme extends AffineTheme {}
 }
+
+declare global {
+  interface Window {
+    CLIENT_APP?: boolean;
+  }
+}
