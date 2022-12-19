@@ -21,7 +21,7 @@ export const StyledIconButton = styled('button', {
   height: number;
   borderRadius: number;
   disabled?: boolean;
-  hoverBackground?: string;
+  hoverBackground?: CSSProperties['background'];
   hoverColor?: string;
   hoverStyle?: CSSProperties;
 }>(
@@ -68,6 +68,70 @@ export const StyledIconButton = styled('button', {
     };
   }
 );
+
+export const StyledTextButton = styled('button', {
+  shouldForwardProp: prop => {
+    return ![
+      'borderRadius',
+      'top',
+      'right',
+      'width',
+      'height',
+      'hoverBackground',
+      'hoverColor',
+      'hoverStyle',
+    ].includes(prop);
+  },
+})<
+  Pick<
+    ButtonProps,
+    | 'size'
+    | 'disabled'
+    | 'hoverBackground'
+    | 'hoverColor'
+    | 'hoverStyle'
+    | 'shape'
+    | 'type'
+    | 'bold'
+  >
+>(
+  ({
+    theme,
+    size = 'default',
+    disabled,
+    hoverBackground,
+    hoverColor,
+    hoverStyle,
+    bold = false,
+    shape = 'default',
+    // TODO: Implement type
+    type = 'default',
+  }) => {
+    const { fontSize, borderRadius, padding, height } = getSize(size);
+    console.log('size', size, height);
+
+    return {
+      height,
+      paddingLeft: padding,
+      paddingRight: padding,
+      ...displayInlineFlex('flex-start', 'center'),
+      position: 'relative',
+      ...(disabled ? { cursor: 'not-allowed', pointerEvents: 'none' } : {}),
+      transition: 'background .15s',
+      // TODO: Implement circle shape
+      borderRadius: shape === 'default' ? borderRadius : height / 2,
+      fontSize,
+      fontWeight: bold ? '500' : '400',
+
+      ':hover': {
+        color: hoverColor ?? theme.colors.primaryColor,
+        background: hoverBackground ?? theme.colors.hoverBackground,
+        ...(hoverStyle ?? {}),
+      },
+    };
+  }
+);
+
 export const StyledButton = styled('button', {
   shouldForwardProp: prop => {
     return !['hoverBackground', 'hoverColor', 'hoverStyle', 'type'].includes(

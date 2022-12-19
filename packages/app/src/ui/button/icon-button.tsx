@@ -39,7 +39,7 @@ export type IconButtonProps = {
     | typeof SIZE_NORMAL
     | [number, number];
   disabled?: boolean;
-  hoverBackground?: string;
+  hoverBackground?: CSSProperties['background'];
   hoverColor?: string;
   hoverStyle?: CSSProperties;
   children: ReactElement<HTMLAttributes<SVGElement>, 'svg'>;

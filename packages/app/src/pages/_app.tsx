@@ -5,6 +5,7 @@ import '../../public/variable.css';
 import './temporary.css';
 import { EditorProvider } from '@/providers/editor-provider';
 import { ModalProvider } from '@/providers/global-modal-provider';
+import { AppStateProvider } from '@/providers/app-state-provider';
 import { Logger } from '@toeverything/pathfinder-logger';
 import { WorkSpaceSliderBar } from '@/components/workspace-slider-bar';
 import '@fontsource/space-mono';
@@ -49,6 +50,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <ThemeProvider key="ThemeProvider" />,
           <ModalProvider key="ModalProvider" />,
           <ConfirmProvider key="ConfirmProvider" />,
+          <AppStateProvider key="appStateProvider" />,
         ]}
       >
         <StyledPage>

@@ -67,6 +67,10 @@ export const StyledListItem = styled.button<{ active?: boolean }>(
   }
 );
 
+export const StyledListItemForWorkspace = styled(StyledListItem)({
+  height: '52px',
+});
+
 export const StyledLink = styled(Link)(({ theme }) => {
   return {
     flexGrow: 1,

@@ -1,4 +1,3 @@
-// @ts-check
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
 
 /** @type {import('next').NextConfig} */
@@ -13,6 +12,15 @@ const nextConfig = {
     CI: process.env.CI || null,
     VERSION: getGitVersion(),
     COMMIT_HASH: getCommitHash(),
+  },
+  // XXX not test yet
+  rewrites: async () => {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://100.77.180.48:11001/api/:path*',
+      },
+    ];
   },
 };
 

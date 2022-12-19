@@ -4,12 +4,14 @@ import ShortcutsModal from '@/components/shortcuts-modal';
 import ContactModal from '@/components/contact-modal';
 import QuickSearch from '@/components/quick-search';
 import { ImportModal } from '@/components/import';
+import { LoginModal } from '@/components/login-modal';
 
 type ModalContextValue = {
   triggerShortcutsModal: () => void;
   triggerContactModal: () => void;
   triggerQuickSearchModal: (visible?: boolean) => void;
   triggerImportModal: () => void;
+  triggerLoginModal: () => void;
 };
 type ModalContextProps = PropsWithChildren<{}>;
 type ModalMap = {
@@ -17,6 +19,7 @@ type ModalMap = {
   shortcuts: boolean;
   quickSearch: boolean;
   import: boolean;
+  login: boolean;
 };
 
 export const ModalContext = createContext<ModalContextValue>({
@@ -24,6 +27,7 @@ export const ModalContext = createContext<ModalContextValue>({
   triggerContactModal: () => {},
   triggerQuickSearchModal: (visible?) => {},
   triggerImportModal: () => {},
+  triggerLoginModal: () => {},
 });
 
 export const useModal = () => useContext(ModalContext);
@@ -36,6 +40,7 @@ export const ModalProvider = ({
     shortcuts: false,
     quickSearch: false,
     import: false,
+    login: false,
   });
 
   const triggerHandler = (key: keyof ModalMap, visible?: boolean) => {
@@ -59,6 +64,9 @@ export const ModalProvider = ({
         },
         triggerImportModal: () => {
           triggerHandler('import');
+        },
+        triggerLoginModal: () => {
+          triggerHandler('login');
         },
       }}
     >
@@ -86,6 +94,12 @@ export const ModalProvider = ({
           triggerHandler('import', false);
         }}
       ></ImportModal>
+      <LoginModal
+        open={modalMap.login}
+        onClose={() => {
+          triggerHandler('login', false);
+        }}
+      />
       {children}
     </ModalContext.Provider>
   );

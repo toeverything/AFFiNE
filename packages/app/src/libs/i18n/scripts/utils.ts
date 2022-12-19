@@ -1,3 +1,3 @@
 export interface TranslationRes {
-    [x: string]: string | TranslationRes;
+  [x: string]: string | TranslationRes;
 }

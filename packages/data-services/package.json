@@ -1,0 +1,30 @@
+{
+  "name": "@pathfinder/data-services",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    "./src/*": "./dist/src/*.js",
+    ".": "./dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc --project ./tsconfig.json"
+  },
+  "keywords": [],
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFINE.git"
+  },
+  "devDependencies": {
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "axios": "^1.2.0",
+    "encoding": "^0.1.13",
+    "firebase": "^9.13.0",
+    "swr": "^2.0.0"
+  }
+}
