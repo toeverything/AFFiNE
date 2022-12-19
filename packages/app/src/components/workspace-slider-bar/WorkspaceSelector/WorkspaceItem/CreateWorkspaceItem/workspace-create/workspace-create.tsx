@@ -23,7 +23,6 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
   const handlerInputChange = (workspaceName: string) => {
     setWorkspaceId(workspaceName);
   };
-  console.log('workspaceName', workspaceName);
   return (
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
