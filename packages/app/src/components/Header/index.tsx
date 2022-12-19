@@ -115,7 +115,7 @@ export const Header = () => {
           setShowWarning(false);
         }}
       />
-      <StyledHeader hasWarning={showWarning}>
+      <StyledHeader hasWarning={showWarning} data-tauri-drag-region>
         <StyledLogo
           data-testid="left-top-corner-logo"
           onClick={() => {
@@ -126,6 +126,7 @@ export const Header = () => {
         </StyledLogo>
         {title ? (
           <StyledTitle
+            data-tauri-drag-region
             onMouseEnter={() => {
               setIsHover(true);
             }}
