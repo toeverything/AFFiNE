@@ -20,7 +20,7 @@ import { toast } from '@/components/toast';
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
   const goToPage = useGoToPage();
-  const { toggleFavoritePage, toggleDeletePage } = useEditor();
+  const { toggleFavoritePage, toggleDeletePage } = useAppState();
   const { confirm } = useConfirm();
 
   const OperationMenu = (
@@ -28,6 +28,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
       <MenuItem
         onClick={() => {
           toggleFavoritePage(id);
+          toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
         }}
         icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
@@ -73,8 +74,8 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
 export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id } = pageMeta;
   const goToPage = useGoToPage();
-  const { getPageMeta } = useAppState();
-  const { permanentlyDeletePage, toggleDeletePage } = useEditor();
+  const { getPageMeta, toggleDeletePage } = useAppState();
+  const { permanentlyDeletePage } = useEditor();
   const { confirm } = useConfirm();
 
   return (

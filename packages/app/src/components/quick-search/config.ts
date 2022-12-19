@@ -1,4 +1,6 @@
 import { AllPagesIcon, FavouritesIcon, TrashIcon } from '@blocksuite/icons';
+
+// FIXME: href changed
 export const List = [
   {
     title: 'All pages',

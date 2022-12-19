@@ -30,8 +30,14 @@ import { SyncIcon } from './sync-icon';
 import { toast } from '@/components/toast';
 
 const PopoverContent = () => {
-  const { getPageMeta, editor, currentPage } = useAppState();
-  const { mode, setMode, toggleFavoritePage, toggleDeletePage } = useEditor();
+  const {
+    getPageMeta,
+    editor,
+    currentPage,
+    toggleFavoritePage,
+    toggleDeletePage,
+  } = useAppState();
+  const { mode, setMode } = useEditor();
   const { confirm } = useConfirm();
 
   const { id, favorite, title } = (currentPage?.id
@@ -47,6 +53,7 @@ const PopoverContent = () => {
       <MenuItem
         onClick={() => {
           toggleFavoritePage(id);
+          toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
         }}
         icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
@@ -125,7 +132,8 @@ const BrowserWarning = ({
 };
 
 const HeaderRight = () => {
-  const { pageList, toggleDeletePage, permanentlyDeletePage } = useEditor();
+  const { pageList, permanentlyDeletePage } = useEditor();
+  const { currentWorkspaceId, toggleDeletePage } = useAppState();
   const { confirm } = useConfirm();
   const router = useRouter();
   const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
@@ -158,7 +166,7 @@ const HeaderRight = () => {
               confirmType: 'danger',
             }).then(confirm => {
               if (confirm) {
-                router.push({ pathname: '/page-list/all' });
+                router.push(`/workspace/${currentWorkspaceId}/all`);
                 permanentlyDeletePage(id);
               }
             });

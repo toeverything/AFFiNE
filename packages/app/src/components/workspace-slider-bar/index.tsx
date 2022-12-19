@@ -26,6 +26,7 @@ import { Tooltip } from '@/ui/tooltip';
 import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
 import { useGoToPage } from '@/providers/app-state-provider/hooks';
+import { useAppState } from '@/providers/app-state-provider/context';
 
 import { IconButton } from '@/ui/button';
 import { WorkspaceSelector } from './WorkspaceSelector';
@@ -62,9 +63,9 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
   );
 };
 export const WorkSpaceSliderBar = () => {
-  const { triggerQuickSearchModal, triggerImportModal } = useModal();
+  const { triggerQuickSearchModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
-  const { createPage } = useEditor();
+  const { createPage, currentWorkspaceId } = useAppState();
   const goToPage = useGoToPage();
   const router = useRouter();
 
@@ -85,13 +86,21 @@ export const WorkSpaceSliderBar = () => {
         >
           <SearchIcon /> Quick search
         </StyledListItem>
-        <Link href={{ pathname: '/page-list/all' }}>
-          <StyledListItem active={router.pathname === '/page-list/all'}>
+        <Link href={{ pathname: `/workspace/${currentWorkspaceId}/all` }}>
+          <StyledListItem
+            active={router.pathname === `/workspace/${currentWorkspaceId}/all`}
+          >
             <AllPagesIcon /> <span>All pages</span>
           </StyledListItem>
         </Link>
-        <StyledListItem active={router.pathname === '/page-list/favorite'}>
-          <StyledLink href={{ pathname: '/page-list/favorite' }}>
+        <StyledListItem
+          active={
+            router.pathname === `/workspace/${currentWorkspaceId}/favorite`
+          }
+        >
+          <StyledLink
+            href={{ pathname: `/workspace/${currentWorkspaceId}/favorite` }}
+          >
             <FavouritesIcon />
             Favourites
           </StyledLink>
@@ -121,15 +130,22 @@ export const WorkSpaceSliderBar = () => {
           </StyledListItem>
         </Tooltip>
 
-        <Link href={{ pathname: '/page-list/trash' }}>
-          <StyledListItem active={router.pathname === '/page-list/trash'}>
+        <Link href={{ pathname: `/workspace/${currentWorkspaceId}/trash` }}>
+          <StyledListItem
+            active={
+              router.pathname === `/workspace/${currentWorkspaceId}/trash`
+            }
+          >
             <TrashIcon /> Trash
           </StyledListItem>
         </Link>
         <StyledNewPageButton
           onClick={async () => {
-            const page = await createPage();
-            goToPage(page.pageId);
+            const pageId = await createPage();
+            console.log('pageID', pageId);
+            if (pageId) {
+              goToPage(pageId);
+            }
           }}
         >
           <AddIcon /> New Page

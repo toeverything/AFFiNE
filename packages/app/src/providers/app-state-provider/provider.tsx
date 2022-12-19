@@ -124,6 +124,32 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
           null
         );
       },
+      toggleFavoritePage: (pageId: string) => {
+        const { currentWorkspace } = state;
+        if (!currentWorkspace) {
+          return;
+        }
+        const pageMeta = currentWorkspace.meta.pageMetas.find(
+          p => p.id === pageId
+        );
+        if (pageMeta) {
+          currentWorkspace.setPageMeta(pageId, {
+            favorite: !pageMeta.favorite,
+          });
+        }
+      },
+      toggleDeletePage: (pageId: string) => {
+        const { currentWorkspace } = state;
+        const pageMeta = currentWorkspace?.meta.pageMetas.find(
+          p => p.id === pageId
+        );
+        if (pageMeta) {
+          currentWorkspace!.setPageMeta(pageId, {
+            trash: !pageMeta.trash,
+            trashDate: +new Date(),
+          });
+        }
+      },
     }),
     [state, setState, loadWorkspaceHandler, createEditorHandler]
   );

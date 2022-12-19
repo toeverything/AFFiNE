@@ -1,12 +1,14 @@
-import { useEditor } from '@/providers/editor-provider';
+import { usePageList } from '@/providers/app-state-provider/usePageList';
+import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
 import { PageList } from '@/components/page-list';
 import { AllPagesIcon } from '@blocksuite/icons';
 
 import { PageListHeader } from '@/components/header';
 
-export const All = () => {
-  const { pageList: allPageList } = useEditor();
-  return (
+const All = () => {
+  const workspace = useLoadWorkspace();
+  const allPageList = usePageList(workspace);
+  return workspace ? (
     <>
       <PageListHeader icon={<AllPagesIcon />}>All Page</PageListHeader>
       <PageList
@@ -14,7 +16,7 @@ export const All = () => {
         showFavoriteTag={true}
       />
     </>
-  );
+  ) : null;
 };
 
 export default All;

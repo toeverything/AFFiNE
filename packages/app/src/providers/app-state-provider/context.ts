@@ -30,6 +30,8 @@ export interface AppStateContext extends AppStateValue {
   loadPage: (pageId: string) => Promise<StorePage | null> | null;
   createPage: (pageId?: string) => Promise<string | null> | null;
   getPageMeta: (pageId: string) => PageMeta | null;
+  toggleFavoritePage: (pageId: string) => void;
+  toggleDeletePage: (pageId: string) => void;
 }
 
 export const AppState = createContext<AppStateContext>({
@@ -50,6 +52,8 @@ export const AppState = createContext<AppStateContext>({
   loadPage: () => null,
   createPage: () => null,
   getPageMeta: () => null,
+  toggleFavoritePage: () => {},
+  toggleDeletePage: () => {},
 });
 
 export const useAppState = () => {

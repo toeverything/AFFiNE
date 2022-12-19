@@ -19,13 +19,16 @@ import React from 'react';
 import DateCell from '@/components/page-list/date-cell';
 import { IconButton } from '@/ui/button';
 import { Tooltip } from '@/ui/tooltip';
-import { router } from 'next/client';
+import { useRouter } from 'next/router';
+import { useAppState } from '@/providers/app-state-provider/context';
+import { toast } from '@/components/toast';
+
 const FavoriteTag = ({
   pageMeta: { favorite, id },
 }: {
   pageMeta: PageMeta;
 }) => {
-  const { toggleFavoritePage } = useEditor();
+  const { toggleFavoritePage } = useAppState();
   return (
     <Tooltip
       content={favorite ? 'Favourited' : 'Favourite'}
@@ -37,6 +40,7 @@ const FavoriteTag = ({
         onClick={e => {
           e.stopPropagation();
           toggleFavoritePage(id);
+          toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
         }}
       >
         {favorite ? <FavouritedIcon /> : <FavouritesIcon />}
@@ -54,6 +58,8 @@ export const PageList = ({
   showFavoriteTag?: boolean;
   isTrash?: boolean;
 }) => {
+  const router = useRouter();
+  const { currentWorkspaceId } = useAppState();
   if (pageList.length === 0) {
     return <Empty />;
   }
@@ -77,10 +83,9 @@ export const PageList = ({
               <StyledTableRow
                 key={`${pageMeta.id}-${index}`}
                 onClick={() => {
-                  router.push({
-                    pathname: '/',
-                    query: { pageId: pageMeta.id },
-                  });
+                  router.push(
+                    `/workspace/${currentWorkspaceId}/${pageMeta.id}`
+                  );
                 }}
               >
                 <TableCell>
