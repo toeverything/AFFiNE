@@ -74,15 +74,14 @@ export const WorkSpaceSliderBar = () => {
         <StyledListItemForWorkspace>
           <WorkspaceSelector />
         </StyledListItemForWorkspace>
-        <Tooltip content="Search and quickly jump to a page" placement="right">
-          <StyledListItem
-            onClick={() => {
-              triggerQuickSearchModal();
-            }}
-          >
-            <SearchIcon /> Quick search
-          </StyledListItem>
-        </Tooltip>
+        <StyledListItem
+          data-testid="sliderBar-quickSearchButton"
+          onClick={() => {
+            triggerQuickSearchModal();
+          }}
+        >
+          <SearchIcon /> Quick search
+        </StyledListItem>
         <Link href={{ pathname: '/page-list/all' }}>
           <StyledListItem active={router.pathname === '/page-list/all'}>
             <AllPagesIcon /> <span>All pages</span>
@@ -136,6 +135,7 @@ export const WorkSpaceSliderBar = () => {
         visible={showTip}
       >
         <StyledArrowButton
+          data-testid="sliderBar-arrowButton"
           isShow={show}
           onClick={() => {
             setShow(!show);
