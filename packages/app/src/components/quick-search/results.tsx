@@ -37,7 +37,7 @@ export const Results = (props: {
     //Determine whether to display the  ‘+ New page’
   }, [resultsPageMeta, setShowCreatePage]);
   return loading ? null : (
-    <Command.List>
+    <>
       {query ? (
         resultsPageMeta.length ? (
           <Command.Group heading={`Find ${resultsPageMeta.length} results`}>
@@ -90,6 +90,6 @@ export const Results = (props: {
           })}
         </Command.Group>
       )}
-    </Command.List>
+    </>
   );
 };

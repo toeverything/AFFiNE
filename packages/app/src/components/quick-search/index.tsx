@@ -76,23 +76,25 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider />
-          <StyledContent>
-            <Results
-              query={query}
-              loading={loading}
-              setLoading={setLoading}
-              setShowCreatePage={setShowCreatePage}
-            />
-          </StyledContent>
+          <Command.List>
+            <StyledContent>
+              <Results
+                query={query}
+                loading={loading}
+                setLoading={setLoading}
+                setShowCreatePage={setShowCreatePage}
+              />
+            </StyledContent>
+            {showCreatePage ? (
+              <>
+                <StyledModalDivider />
+                <StyledModalFooter>
+                  <Footer query={query} />
+                </StyledModalFooter>
+              </>
+            ) : null}
+          </Command.List>
         </Command>
-        {showCreatePage ? (
-          <>
-            <StyledModalDivider />
-            <StyledModalFooter>
-              <Footer query={query} />
-            </StyledModalFooter>
-          </>
-        ) : null}
       </ModalWrapper>
     </Modal>
   );

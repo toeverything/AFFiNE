@@ -109,6 +109,12 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     textAlign: 'center',
     ...displayFlex('center', 'center'),
     color: theme.colors.popoverColor,
+    '[aria-selected="true"]': {
+      transition: 'background .15s, color .15s',
+      borderRadius: '5px',
+      color: theme.colors.primaryColor,
+      backgroundColor: theme.colors.hoverBackground,
+    },
   };
 });
 export const StyledModalFooterContent = styled.button(({ theme }) => {
@@ -119,16 +125,12 @@ export const StyledModalFooterContent = styled.button(({ theme }) => {
     lineHeight: '22px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),
-    color: theme.colors.popoverColor,
+    color: 'inherit',
     borderRadius: '5px',
     transition: 'background .15s, color .15s',
     '>svg': {
       fontSize: '20px',
       marginRight: '12px',
-    },
-    ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
     },
   };
 });
@@ -140,6 +142,7 @@ export const StyledListItem = styled.button(({ theme }) => {
     color: 'inherit',
     paddingLeft: '12px',
     borderRadius: '5px',
+    transition: 'background .15s, color .15s',
     ...displayFlex('flex-start', 'center'),
     '>svg': {
       fontSize: '20px',
