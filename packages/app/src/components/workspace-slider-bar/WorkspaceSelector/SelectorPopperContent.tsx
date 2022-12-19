@@ -27,7 +27,7 @@ const workspaces = [
 ];
 
 export const SelectorPopperContent = () => {
-  const { user, workspaces } = useAppState();
+  const { user, workspacesMeta } = useAppState();
   return !user ? (
     <SelectorPopperContainer placement="bottom-start">
       <LoginItem />
@@ -43,7 +43,7 @@ export const SelectorPopperContent = () => {
       <PrivateWorkspaceItem />
       <StyledDivider />
       <WorkspaceGroupTitle>Workspace</WorkspaceGroupTitle>
-      {workspaces.map(workspace => {
+      {workspacesMeta.map(workspace => {
         return (
           <WorkspaceItem
             key={workspace.id}

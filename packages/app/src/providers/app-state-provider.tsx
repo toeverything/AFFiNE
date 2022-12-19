@@ -9,7 +9,7 @@ import type { Workspace } from '@pathfinder/data-services';
 
 interface AppStateValue {
   user: AccessTokenMessage | null;
-  workspaces: Workspace[];
+  workspacesMeta: Workspace[];
 }
 
 interface AppStateContext extends AppStateValue {
@@ -18,14 +18,14 @@ interface AppStateContext extends AppStateValue {
 
 const AppState = createContext<AppStateContext>({
   user: null,
-  workspaces: [],
+  workspacesMeta: [],
   setState: () => {},
 });
 
 export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   const [state, setState] = useState<AppStateValue>({
     user: null,
-    workspaces: [],
+    workspacesMeta: [],
   });
 
   useEffect(() => {
