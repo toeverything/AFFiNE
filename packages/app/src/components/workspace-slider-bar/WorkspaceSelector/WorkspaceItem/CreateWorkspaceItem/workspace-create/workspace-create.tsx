@@ -8,6 +8,7 @@ import {
   StyledModalWrapper,
   StyledInputContent,
   StyledButtonContent,
+  StyledButton,
 } from './style';
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
@@ -26,7 +27,7 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
   return (
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
-        <ModalCloseButton />
+        <ModalCloseButton onClick={onClose} />
         <StyledModalHeader>Create new Workspace</StyledModalHeader>
         <StyledTextContent>
           Workspaces are shared environments where teams can collaborate. After
@@ -40,15 +41,14 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
           ></Input>
         </StyledInputContent>
         <StyledButtonContent>
-          <Button
+          <StyledButton
             disabled={!workspaceName.length}
-            style={{ width: '260px' }}
             onClick={() => {
               createWorkspace({ name: workspaceName, avatar: '' });
             }}
           >
             Create
-          </Button>
+          </StyledButton>
         </StyledButtonContent>
       </StyledModalWrapper>
     </Modal>

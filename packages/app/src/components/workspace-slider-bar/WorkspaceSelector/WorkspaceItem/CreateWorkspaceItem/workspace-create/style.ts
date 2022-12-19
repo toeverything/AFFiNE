@@ -1,4 +1,5 @@
 import { styled } from '@/styles';
+import { Button } from '@/ui/button';
 
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
@@ -51,5 +52,12 @@ export const StyledButtonContent = styled('div')(({ theme }) => {
     flexDirection: 'row',
     justifyContent: 'center',
     margin: '0px 0 32px 0',
+  };
+});
+
+export const StyledButton = styled(Button)(({ theme }) => {
+  return {
+    width: '260px',
+    justifyContent: 'center',
   };
 });
