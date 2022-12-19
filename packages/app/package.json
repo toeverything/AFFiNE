@@ -33,7 +33,9 @@
     "quill": "^1.3.7",
     "quill-cursors": "^4.0.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "i18next": "^21.9.1",
+    "react-i18next": "^11.18.4"
   },
   "devDependencies": {
     "@types/node": "18.7.18",

@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconButton, IconButtonProps } from '@/ui/button';
+import { Tooltip } from '@/ui/tooltip';
 import { ArrowDownIcon } from '@blocksuite/icons';
 import { useModal } from '@/providers/global-modal-provider';
 
@@ -10,15 +11,17 @@ export const QuickSearchButton = ({
   const { triggerQuickSearchModal } = useModal();
 
   return (
-    <IconButton
-      {...props}
-      onClick={e => {
-        onClick?.(e);
-        triggerQuickSearchModal();
-      }}
-    >
-      <ArrowDownIcon />
-    </IconButton>
+    <Tooltip content="Search and quickly jump to a page" placement="bottom">
+      <IconButton
+        {...props}
+        onClick={e => {
+          onClick?.(e);
+          triggerQuickSearchModal();
+        }}
+      >
+        <ArrowDownIcon />
+      </IconButton>
+    </Tooltip>
   );
 };
 

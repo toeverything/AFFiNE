@@ -12,12 +12,13 @@ import { Footer } from './footer';
 import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/global-modal-provider';
+import { getUaHelper } from '@/utils';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
 };
 const isMac = () => {
-  return /macintosh|mac os x/i.test(navigator.userAgent);
+  return getUaHelper().isMacOs;
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [query, setQuery] = useState('');
@@ -60,7 +61,12 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           shouldFilter={false}
           //Handle KeyboardEvent conflicts with blocksuite
           onKeyDown={(e: React.KeyboardEvent) => {
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            if (
+              e.key === 'ArrowDown' ||
+              e.key === 'ArrowUp' ||
+              e.key === 'ArrowLeft' ||
+              e.key === 'ArrowRight'
+            ) {
               e.stopPropagation();
             }
           }}

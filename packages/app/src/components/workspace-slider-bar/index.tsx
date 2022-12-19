@@ -28,7 +28,7 @@ import { useModal } from '@/providers/global-modal-provider';
 import { IconButton } from '@/ui/button';
 import { WorkspaceSelector } from './WorkspaceSelector';
 import useLocalStorage from '@/hooks/use-local-storage';
-
+import { useTranslation } from '@/libs/i18n';
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { pageList, openPage } = useEditor();
   const router = useRouter();
@@ -67,23 +67,25 @@ export const WorkSpaceSliderBar = () => {
 
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFINE_SLIDE_BAR', false, true);
-
+  const { t } = useTranslation();
   return (
     <>
       <StyledSliderBar show={show}>
         <StyledListItemForWorkspace>
           <WorkspaceSelector />
         </StyledListItemForWorkspace>
-        <StyledListItem
-          onClick={() => {
-            triggerQuickSearchModal();
-          }}
-        >
-          <SearchIcon /> Quick search
-        </StyledListItem>
+        <Tooltip content="Search and quickly jump to a page" placement="right">
+          <StyledListItem
+            onClick={() => {
+              triggerQuickSearchModal();
+            }}
+          >
+            <SearchIcon /> Quick search
+          </StyledListItem>
+        </Tooltip>
         <Link href={{ pathname: '/page-list/all' }}>
           <StyledListItem active={router.pathname === '/page-list/all'}>
-            <AllPagesIcon /> All pages
+            <AllPagesIcon /> {t('All pages')}
           </StyledListItem>
         </Link>
         <StyledListItem active={router.pathname === '/page-list/favorite'}>
