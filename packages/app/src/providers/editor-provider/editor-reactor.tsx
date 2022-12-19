@@ -53,8 +53,9 @@ const EditorReactor = ({
 }) => {
   const shouldInitIntroduction = useRef(false);
   const {
-    query: { pageId: routerPageId, workspaceId },
+    query: { pageId0: routerPageId },
   } = useRouter();
+  const workspaceId = 'sfas';
 
   useEffect(() => {
     const workspace = new Workspace({

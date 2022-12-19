@@ -5,7 +5,7 @@ import '../../public/variable.css';
 import './temporary.css';
 import { EditorProvider } from '@/providers/editor-provider';
 import { ModalProvider } from '@/providers/global-modal-provider';
-import { AppStateProvider } from '@/providers/app-state-provider';
+import { AppStateProvider } from '@/providers/app-state-provider/provider';
 import { Logger } from '@toeverything/pathfinder-logger';
 import { WorkSpaceSliderBar } from '@/components/workspace-slider-bar';
 import '@fontsource/space-mono';

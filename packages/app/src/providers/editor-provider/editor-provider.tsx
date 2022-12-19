@@ -49,7 +49,7 @@ export const EditorProvider = ({
   const setPage = useCallback(
     (page: Page) => {
       _setPage(page);
-      router.push(`/workspace/${workspaceId}/${page.id.replace('space:', '')}`);
+      // router.push(`/workspace/${workspaceId}/${page.id.replace('space:', '')}`);
     },
     [_setPage, workspaceId]
   );

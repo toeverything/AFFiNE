@@ -1,6 +1,6 @@
 import { CloudUnsyncedIcon, CloudInsyncIcon } from '@blocksuite/icons';
 import { useModal } from '@/providers/global-modal-provider';
-import { useAppState } from '@/providers/app-state-provider';
+import { useAppState } from '@/providers/app-state-provider/context';
 import { IconButton } from '@/ui/button';
 
 export const SyncIcon = () => {
