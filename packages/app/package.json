@@ -11,7 +11,7 @@
   "dependencies": {
     "@blocksuite/blocks": "0.3.0-alpha.10",
     "@blocksuite/editor": "0.3.0-alpha.10",
-    "@blocksuite/icons": "^2.0.0",
+    "@blocksuite/icons": "^2.0.2",
     "@blocksuite/store": "0.3.0-alpha.10",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
@@ -22,11 +22,12 @@
     "@mui/base": "^5.0.0-alpha.87",
     "@mui/icons-material": "^5.10.9",
     "@mui/material": "^5.8.6",
-    "@toeverything/pathfinder-logger": "workspace:@pathfinder/logger@*",
     "@pathfinder/data-services": "workspace:@pathfinder/data-services@*",
+    "@toeverything/pathfinder-logger": "workspace:@pathfinder/logger@*",
     "cmdk": "^0.1.20",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
+    "i18next": "^21.9.1",
     "lit": "^2.3.1",
     "next": "13.0.1",
     "prettier": "^2.7.1",
@@ -34,7 +35,6 @@
     "quill-cursors": "^4.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "i18next": "^21.9.1",
     "react-i18next": "^11.18.4"
   },
   "devDependencies": {
