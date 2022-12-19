@@ -1,5 +1,8 @@
+import { useRouter } from 'next/router';
 import { PageMeta, useEditor } from '@/providers/editor-provider';
 import { useConfirm } from '@/providers/confirm-provider';
+import { useAppState } from '@/providers/app-state-provider/context';
+import { useGoToPage } from '@/providers/app-state-provider/hooks';
 import { Menu, MenuItem } from '@/ui/menu';
 import { Wrapper } from '@/ui/layout';
 import { IconButton } from '@/ui/button';
@@ -16,7 +19,8 @@ import { toast } from '@/components/toast';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
-  const { openPage, toggleFavoritePage, toggleDeletePage } = useEditor();
+  const goToPage = useGoToPage();
+  const { toggleFavoritePage, toggleDeletePage } = useEditor();
   const { confirm } = useConfirm();
 
   const OperationMenu = (
@@ -31,7 +35,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
       </MenuItem>
       <MenuItem
         onClick={() => {
-          openPage(id);
+          goToPage(id);
         }}
         icon={<OpenInNewIcon />}
       >
@@ -68,8 +72,9 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
 
 export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id } = pageMeta;
-  const { permanentlyDeletePage, toggleDeletePage, openPage, getPageMeta } =
-    useEditor();
+  const goToPage = useGoToPage();
+  const { getPageMeta } = useAppState();
+  const { permanentlyDeletePage, toggleDeletePage } = useEditor();
   const { confirm } = useConfirm();
 
   return (
@@ -80,7 +85,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         onClick={() => {
           toggleDeletePage(id);
           toast(`${getPageMeta(id)?.title || 'Untitled'} restored`);
-          openPage(id);
+          goToPage(id);
         }}
       >
         <RestoreIcon />

@@ -4,6 +4,9 @@ import {
   createWebsocketDocProvider,
   IndexedDBDocProvider,
 } from '@blocksuite/store';
+import '@blocksuite/blocks';
+import '@blocksuite/blocks/style';
+
 import type { Page } from '@blocksuite/store';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
 import type { AppStateContext } from './context';

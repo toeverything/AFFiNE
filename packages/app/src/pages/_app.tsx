@@ -3,7 +3,6 @@ import dynamic from 'next/dynamic';
 import '../../public/globals.css';
 import '../../public/variable.css';
 import './temporary.css';
-import { EditorProvider } from '@/providers/editor-provider';
 import { ModalProvider } from '@/providers/global-modal-provider';
 import { AppStateProvider } from '@/providers/app-state-provider/provider';
 import { Logger } from '@toeverything/pathfinder-logger';
@@ -46,7 +45,6 @@ function MyApp({ Component, pageProps }: AppProps) {
       <Logger />
       <ProviderComposer
         contexts={[
-          <EditorProvider key="EditorProvider" />,
           <ThemeProvider key="ThemeProvider" />,
           <ModalProvider key="ModalProvider" />,
           <ConfirmProvider key="ConfirmProvider" />,

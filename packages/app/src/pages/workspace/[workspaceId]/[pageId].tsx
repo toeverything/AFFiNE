@@ -21,7 +21,7 @@ const Home: NextPage = () => {
   const editorContainer = useRef<HTMLDivElement>(null);
   const workspace = useLoadWorkspace();
   const page = useLoadPage();
-  const { createEditor } = useAppState();
+  const { createEditor, setEditor } = useAppState();
 
   useEffect(() => {
     const ret = () => {
@@ -38,6 +38,7 @@ const Home: NextPage = () => {
     const editor = createEditor(page);
     if (editor) {
       editorContainer.current?.appendChild(editor);
+      setEditor(editor);
       if (page.isEmpty) {
         const title = 'Welcome to the AFFiNE Alpha';
         const pageId = page.addBlock({

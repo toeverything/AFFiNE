@@ -22,6 +22,8 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     currentWorkspace: null,
 
     currentPage: null,
+
+    editor: null,
   });
 
   const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =
@@ -79,6 +81,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
 
         return editor;
       },
+      setEditor: (editor: AppStateValue['editor']) => {
+        setState(state => ({ ...state, editor }));
+      },
       loadWorkspace: async (workspaceId: string) => {
         const workspace = (await loadWorkspaceHandler?.(workspaceId)) || null;
         setState(state => ({
@@ -109,6 +114,16 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
             resolve(addedPageId);
           });
         }),
+      getPageMeta: (pageId: string) => {
+        const { currentWorkspace } = state;
+        if (!currentWorkspace) {
+          return null;
+        }
+        return (
+          currentWorkspace.meta.pageMetas.find(page => page.id === pageId) ||
+          null
+        );
+      },
     }),
     [state, setState, loadWorkspaceHandler, createEditorHandler]
   );

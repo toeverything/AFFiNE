@@ -18,6 +18,7 @@ import {
   TrashIcon,
 } from '@blocksuite/icons';
 import { useEditor } from '@/providers/editor-provider';
+import { useAppState } from '@/providers/app-state-provider/context';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
 import { IconButton, Button } from '@/ui/button';
 import CloseIcon from '@mui/icons-material/Close';
@@ -29,18 +30,13 @@ import { SyncIcon } from './sync-icon';
 import { toast } from '@/components/toast';
 
 const PopoverContent = () => {
-  const {
-    editor,
-    mode,
-    setMode,
-    getPageMeta,
-    page,
-    toggleFavoritePage,
-    toggleDeletePage,
-  } = useEditor();
+  const { getPageMeta, editor, currentPage } = useAppState();
+  const { mode, setMode, toggleFavoritePage, toggleDeletePage } = useEditor();
   const { confirm } = useConfirm();
 
-  const { id, favorite, title } = getPageMeta(page?.id) ?? {
+  const { id, favorite, title } = (currentPage?.id
+    ? getPageMeta(currentPage.id)
+    : null) ?? {
     id: '',
     favorite: false,
     title: '',

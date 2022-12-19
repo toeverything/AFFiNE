@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
 import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
+import { useGoToPage } from '@/providers/app-state-provider/hooks';
 
 import { IconButton } from '@/ui/button';
 import { WorkspaceSelector } from './WorkspaceSelector';
@@ -63,7 +64,8 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal, triggerImportModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
-  const { createPage, getPageMeta, openPage } = useEditor();
+  const { createPage } = useEditor();
+  const goToPage = useGoToPage();
   const router = useRouter();
 
   const [showTip, setShowTip] = useState(false);
@@ -127,7 +129,7 @@ export const WorkSpaceSliderBar = () => {
         <StyledNewPageButton
           onClick={async () => {
             const page = await createPage();
-            openPage(page.id);
+            goToPage(page.pageId);
           }}
         >
           <AddIcon /> New Page

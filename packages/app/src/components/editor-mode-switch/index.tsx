@@ -14,6 +14,7 @@ import type {
 import { useTheme } from '@/providers/themeProvider';
 import { EdgelessIcon, PaperIcon } from './icons';
 import { useEditor } from '@/providers/editor-provider';
+import { useAppState } from '@/providers/app-state-provider/context';
 
 const PaperItem = ({ active }: { active?: boolean }) => {
   const {
@@ -66,8 +67,9 @@ export const EditorModeSwitch = ({
   style = {},
 }: AnimateRadioProps) => {
   const { mode: themeMode } = useTheme();
-  const { mode, setMode, getPageMeta } = useEditor();
-  const pageMeta = getPageMeta();
+  const { getPageMeta, currentPage } = useAppState();
+  const { mode, setMode } = useEditor();
+  const pageMeta = currentPage?.pageId ? getPageMeta(currentPage.pageId) : null;
 
   const modifyRadioItemStatus = (): RadioItemStatus => {
     return {

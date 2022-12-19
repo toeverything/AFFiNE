@@ -7,6 +7,7 @@ import {
 } from './styles';
 import { Content } from '@/ui/layout';
 import { useEditor } from '@/providers/editor-provider';
+import { useAppState } from '@/providers/app-state-provider/context';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import QuickSearchButton from './quick-search-button';
 import Header from './header';
@@ -14,8 +15,9 @@ import Header from './header';
 export const EditorHeader = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
+  const { getPageMeta, currentPage, editor } = useAppState();
 
-  const { editor, onPropsUpdated, getPageMeta } = useEditor();
+  const { onPropsUpdated } = useEditor();
 
   useEffect(() => {
     onPropsUpdated(editor => {
@@ -30,7 +32,7 @@ export const EditorHeader = () => {
     }, 300);
   }, [editor]);
 
-  const pageMeta = getPageMeta();
+  const pageMeta = currentPage?.pageId ? getPageMeta(currentPage.pageId) : null;
 
   return (
     <Header>
