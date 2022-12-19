@@ -8,6 +8,7 @@ import { FooterSetting } from './FooterSetting';
 import { FooterUsers } from './FooterUsers';
 
 interface WorkspaceItemProps {
+  id: string;
   name: string;
   icon: string;
 }
