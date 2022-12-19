@@ -57,7 +57,11 @@ export const StyledListItem = styled.button<{
     borderRadius: '5px',
     ...displayFlex('flex-start', 'center'),
     ...(disabled
-      ? { cursor: 'not-allowed', color: theme.colors.borderColor }
+      ? {
+          cursor: 'not-allowed',
+          pointerEvent: 'none',
+          color: theme.colors.borderColor,
+        }
       : {}),
 
     '>svg': {

@@ -44,7 +44,7 @@ export const StyledIconButton = styled('button', {
       color: theme.colors.iconColor,
       ...displayInlineFlex('center', 'center'),
       position: 'relative',
-      ...(disabled ? { cursor: 'not-allowed' } : {}),
+      ...(disabled ? { cursor: 'not-allowed', pointerEvent: 'none' } : {}),
       transition: 'background .15s',
 
       // TODO: we need to add @emotion/babel-plugin
@@ -123,7 +123,7 @@ export const StyledTextButton = styled('button', {
       paddingRight: padding,
       ...displayInlineFlex('flex-start', 'center'),
       position: 'relative',
-      ...(disabled ? { cursor: 'not-allowed' } : {}),
+      ...(disabled ? { cursor: 'not-allowed', pointerEvent: 'none' } : {}),
       transition: 'background .15s',
       // TODO: Implement circle shape
       borderRadius: shape === 'default' ? borderRadius : height / 2,
@@ -180,7 +180,11 @@ export const StyledButton = styled('button', {
       position: 'relative',
       // TODO: disabled color is not decided
       ...(disabled
-        ? { cursor: 'not-allowed', color: theme.colors.borderColor }
+        ? {
+            cursor: 'not-allowed',
+            pointerEvent: 'none',
+            color: theme.colors.borderColor,
+          }
         : {}),
       transition: 'background .15s',
       // TODO: Implement circle shape
