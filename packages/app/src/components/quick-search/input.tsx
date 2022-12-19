@@ -17,13 +17,19 @@ export const Input = (props: {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
+    inputRef.current?.addEventListener(
+      'blur',
+      () => {
+        inputRef.current?.focus();
+      },
+      true
+    );
     return inputRef.current?.focus();
   }, [inputRef]);
   useEffect(() => {
     return setInputValue(props.query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   return (
     <StyledInputContent>
       <StyledLabel htmlFor=":r5:">
