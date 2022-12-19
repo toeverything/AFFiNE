@@ -12,6 +12,7 @@ export const Footer = (props: { query: string }) => {
 
   return (
     <Command.Item
+      data-testid="quickSearch-addNewPage"
       onSelect={async () => {
         const page = await createPage({ title: query });
         openPage(page.id);

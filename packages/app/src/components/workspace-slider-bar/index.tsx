@@ -19,6 +19,7 @@ import {
   ImportIcon,
   TrashIcon,
   AddIcon,
+  FavouritedIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
@@ -74,15 +75,14 @@ export const WorkSpaceSliderBar = () => {
         <StyledListItemForWorkspace>
           <WorkspaceSelector />
         </StyledListItemForWorkspace>
-        <Tooltip content="Search and quickly jump to a page" placement="right">
-          <StyledListItem
-            onClick={() => {
-              triggerQuickSearchModal();
-            }}
-          >
-            <SearchIcon /> Quick search
-          </StyledListItem>
-        </Tooltip>
+        <StyledListItem
+          data-testid="sliderBar-quickSearchButton"
+          onClick={() => {
+            triggerQuickSearchModal();
+          }}
+        >
+          <SearchIcon /> Quick search
+        </StyledListItem>
         <Link href={{ pathname: '/page-list/all' }}>
           <StyledListItem active={router.pathname === '/page-list/all'}>
             <AllPagesIcon /> <span>All pages</span>
@@ -94,7 +94,7 @@ export const WorkSpaceSliderBar = () => {
             Favourites
           </StyledLink>
           <IconButton
-            hoverBackground="#E0E6FF"
+            darker={true}
             onClick={() => {
               setShowSubFavorite(!showSubFavorite);
             }}
@@ -108,13 +108,16 @@ export const WorkSpaceSliderBar = () => {
         </StyledListItem>
         <FavoriteList showList={showSubFavorite} />
 
-        <StyledListItem
-          onClick={() => {
-            triggerImportModal();
-          }}
-        >
-          <ImportIcon /> Import
-        </StyledListItem>
+        <Tooltip content="Coming soon" placement="right-start" zIndex={9999}>
+          <StyledListItem
+            disabled={true}
+            onClick={() => {
+              // triggerImportModal();
+            }}
+          >
+            <ImportIcon /> Import
+          </StyledListItem>
+        </Tooltip>
 
         <Link href={{ pathname: '/page-list/trash' }}>
           <StyledListItem active={router.pathname === '/page-list/trash'}>
@@ -136,6 +139,7 @@ export const WorkSpaceSliderBar = () => {
         visible={showTip}
       >
         <StyledArrowButton
+          data-testid="sliderBar-arrowButton"
           isShow={show}
           onClick={() => {
             setShow(!show);

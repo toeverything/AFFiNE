@@ -70,7 +70,7 @@ export const Results = (props: {
           </StyledNotFound>
         )
       ) : (
-        <Command.Group heading="Jump to">
+        <Command.Group heading="Switch to">
           {List.map(link => {
             return (
               <Command.Item

@@ -40,6 +40,13 @@ export const StyledTableCell = styled.td<
 export const StyledTableHead = styled.thead(({ theme }) => {
   return {
     fontWeight: 500,
+    tr: {
+      ':hover': {
+        td: {
+          background: 'unset',
+        },
+      },
+    },
   };
 });
 

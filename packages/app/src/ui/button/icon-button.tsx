@@ -43,6 +43,7 @@ export type IconButtonProps = {
   hoverColor?: string;
   hoverStyle?: CSSProperties;
   children: ReactElement<HTMLAttributes<SVGElement>, 'svg'>;
+  darker?: boolean;
 } & HTMLAttributes<HTMLButtonElement>;
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(

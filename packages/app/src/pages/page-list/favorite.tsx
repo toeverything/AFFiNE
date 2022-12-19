@@ -7,7 +7,7 @@ export const Favorite = () => {
   const { pageList: allPageList } = useEditor();
   return (
     <>
-      <PageListHeader icon={<FavouritesIcon />}>Favorites</PageListHeader>
+      <PageListHeader icon={<FavouritesIcon />}>Favourites</PageListHeader>
       <PageList pageList={allPageList.filter(p => p.favorite && !p.trash)} />
     </>
   );

@@ -48,7 +48,12 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   }, [open, triggerQuickSearchModal]);
 
   return (
-    <Modal open={open} onClose={onClose} wrapperPosition={['top', 'center']}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      wrapperPosition={['top', 'center']}
+      data-testid="quickSearch"
+    >
       <ModalWrapper
         width={620}
         style={{

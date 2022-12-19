@@ -12,7 +12,7 @@ import {
   OpenInNewIcon,
   TrashIcon,
 } from '@blocksuite/icons';
-import React from 'react';
+import { toast } from '@/components/toast';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
@@ -41,11 +41,12 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         onClick={() => {
           confirm({
             title: 'Delete page?',
-            content: `${pageMeta.title} will be moved to Trash`,
+            content: `${pageMeta.title || 'Untitled'} will be moved to Trash`,
             confirmText: 'Delete',
             confirmType: 'danger',
           }).then(confirm => {
             confirm && toggleDeletePage(id);
+            toast('Moved to Trash');
           });
         }}
         icon={<TrashIcon />}
@@ -57,7 +58,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   return (
     <Wrapper alignItems="center" justifyContent="center">
       <Menu content={OperationMenu} placement="bottom-end" disablePortal={true}>
-        <IconButton hoverBackground="#E0E6FF">
+        <IconButton darker={true}>
           <MoreVerticalIcon />
         </IconButton>
       </Menu>
@@ -67,31 +68,34 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
 
 export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id } = pageMeta;
-  const { permanentlyDeletePage, toggleDeletePage } = useEditor();
+  const { permanentlyDeletePage, toggleDeletePage, openPage, getPageMeta } =
+    useEditor();
   const { confirm } = useConfirm();
 
   return (
     <Wrapper>
       <IconButton
-        hoverBackground="#E0E6FF"
+        darker={true}
         style={{ marginRight: '12px' }}
         onClick={() => {
           toggleDeletePage(id);
+          toast(`${getPageMeta(id)?.title || 'Untitled'} restored`);
+          openPage(id);
         }}
       >
         <RestoreIcon />
       </IconButton>
       <IconButton
-        hoverBackground="#E0E6FF"
+        darker={true}
         onClick={() => {
           confirm({
-            title: 'Permanently delete',
-            content:
-              "Once deleted, you can't undo this action. Do you confirm?",
+            title: 'Delete permanently?',
+            content: "Once deleted, you can't undo this action.",
             confirmText: 'Delete',
             confirmType: 'danger',
           }).then(confirm => {
             confirm && permanentlyDeletePage(id);
+            toast('Permanently deleted');
           });
         }}
       >

@@ -8,6 +8,7 @@ export const WorkspaceSelector = () => {
       content={<SelectorPopperContent />}
       zIndex={1000}
       placement="bottom-start"
+      trigger="hover"
     >
       <SelectorWrapper>
         <Avatar alt="Affine" />
