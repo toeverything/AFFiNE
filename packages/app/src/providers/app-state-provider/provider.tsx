@@ -46,8 +46,8 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
 
   useEffect(() => {
     const callback = async (user: AccessTokenMessage | null) => {
-      const workspaces = user ? await getWorkspaces() : [];
-      setState(state => ({ ...state, user: user, workspaces }));
+      const workspacesMeta = user ? await getWorkspaces() : [];
+      setState(state => ({ ...state, user: user, workspacesMeta }));
     };
     authorizationEvent.onChange(callback);
 

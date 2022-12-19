@@ -11,21 +11,6 @@ import {
   LoginItem,
 } from './WorkspaceItem';
 
-const workspaces = [
-  {
-    name: 'Design',
-    icon: '',
-  },
-  {
-    name: 'Operation',
-    icon: '',
-  },
-  {
-    name: 'Something is too long to show in this box',
-    icon: '',
-  },
-];
-
 export const SelectorPopperContent = () => {
   const { user, workspacesMeta } = useAppState();
   return !user ? (
