@@ -1,3 +1,4 @@
+import { useRouter } from 'next/router';
 import { styled } from '@/styles';
 import {
   WorkspaceItemAvatar,
@@ -13,9 +14,15 @@ interface WorkspaceItemProps {
   icon: string;
 }
 
-export const WorkspaceItem = ({ name, icon }: WorkspaceItemProps) => {
+export const WorkspaceItem = ({ id, name, icon }: WorkspaceItemProps) => {
+  const router = useRouter();
+
   return (
-    <StyledWrapper>
+    <StyledWrapper
+      onClick={() => {
+        router.push(`/workspace/${id}`);
+      }}
+    >
       <WorkspaceItemAvatar alt={name} src={icon}>
         {name.charAt(0)}
       </WorkspaceItemAvatar>

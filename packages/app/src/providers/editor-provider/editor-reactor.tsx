@@ -19,13 +19,13 @@ import {
 import { useRouter } from 'next/router';
 import { createPage } from '@/providers/editor-provider/utils';
 
-const getEditorParams = () => {
+const getEditorParams = (workspaceId: string) => {
   const providers = [];
   const params = new URLSearchParams(location.search);
-  const room = params.get('room') ?? 'AFFINE-pathfinder';
+  // const room = params.get('room') ?? 'AFFINE-pathfinder';
   if (params.get('syncMode') === 'websocket') {
     const WebsocketDocProvider = createWebsocketDocProvider(
-      'ws://127.0.0.1:3000/collaboration/AFFiNE'
+      `ws://${window.location.host}/collaboration/`
     );
     providers.push(WebsocketDocProvider);
   }
@@ -33,7 +33,7 @@ const getEditorParams = () => {
   providers.push(IndexedDBDocProvider);
 
   return {
-    room,
+    room: workspaceId,
     providers,
   };
 };
@@ -53,12 +53,12 @@ const EditorReactor = ({
 }) => {
   const shouldInitIntroduction = useRef(false);
   const {
-    query: { pageId: routerPageId },
+    query: { pageId: routerPageId, workspaceId },
   } = useRouter();
 
   useEffect(() => {
     const workspace = new Workspace({
-      ...getEditorParams(),
+      ...getEditorParams(workspaceId as string),
     }).register(BlockSchema);
     //@ts-ignore
     window.workspace = workspace;
@@ -72,7 +72,7 @@ const EditorReactor = ({
     } else {
       setWorkspace(workspace);
     }
-  }, [setWorkspace]);
+  }, [setWorkspace, workspaceId]);
 
   useEffect(() => {
     if (!workspace) {

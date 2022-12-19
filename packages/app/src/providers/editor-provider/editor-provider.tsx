@@ -1,6 +1,13 @@
 import type { EditorContainer } from '@blocksuite/editor';
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import type { PropsWithChildren } from 'react';
+import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import Loading from './loading';
 import { Page, Workspace } from '@blocksuite/store';
@@ -35,8 +42,17 @@ export const useEditor = () => useContext(EditorContext);
 export const EditorProvider = ({
   children,
 }: PropsWithChildren<EditorContextProps>) => {
+  const router = useRouter();
   const [workspace, setWorkspace] = useState<Workspace>();
-  const [page, setPage] = useState<Page>();
+  const [page, _setPage] = useState<Page>();
+  const workspaceId = router.query.workspaceId as string;
+  const setPage = useCallback(
+    (page: Page) => {
+      _setPage(page);
+      router.push(`/workspace/${workspaceId}/${page.id.replace('space:', '')}`);
+    },
+    [_setPage, workspaceId]
+  );
   const [pageList, setPageList] = useState<PageMeta[]>([]);
   const [editor, setEditor] = useState<EditorContainer>();
 
