@@ -23,6 +23,7 @@
     "@mui/icons-material": "^5.10.9",
     "@mui/material": "^5.8.6",
     "@toeverything/pathfinder-logger": "workspace:@pathfinder/logger@*",
+    "@pathfinder/data-services": "workspace:@pathfinder/data-services@*",
     "cmdk": "^0.1.20",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",

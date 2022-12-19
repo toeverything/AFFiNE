@@ -4,6 +4,7 @@ import {
   StyledArrowButton,
   StyledLink,
   StyledListItem,
+  StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
   StyledSubListItem,
@@ -25,6 +26,7 @@ import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
 
 import { IconButton } from '@/ui/button';
+import { WorkspaceSelector } from './WorkspaceSelector';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { useTranslation } from '@/libs/i18n';
 const FavoriteList = ({ showList }: { showList: boolean }) => {
@@ -69,6 +71,9 @@ export const WorkSpaceSliderBar = () => {
   return (
     <>
       <StyledSliderBar show={show}>
+        <StyledListItemForWorkspace>
+          <WorkspaceSelector />
+        </StyledListItemForWorkspace>
         <Tooltip content="Search and quickly jump to a page" placement="right">
           <StyledListItem
             onClick={() => {
@@ -80,7 +85,7 @@ export const WorkSpaceSliderBar = () => {
         </Tooltip>
         <Link href={{ pathname: '/page-list/all' }}>
           <StyledListItem active={router.pathname === '/page-list/all'}>
-            <AllPagesIcon /> {t('All pages')}
+            <AllPagesIcon /> <span>All pages</span>
           </StyledListItem>
         </Link>
         <StyledListItem active={router.pathname === '/page-list/favorite'}>

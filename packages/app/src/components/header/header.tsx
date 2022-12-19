@@ -22,6 +22,9 @@ import { getWarningMessage, shouldShowWarning } from './utils';
 import { Menu, MenuItem } from '@/ui/menu';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/confirm-provider';
+import { useModal } from '@/providers/global-modal-provider';
+import { useAppState } from '@/providers/app-state-provider';
+import { SyncIcon } from './sync-icon';
 
 const PopoverContent = () => {
   const { editor, mode, setMode } = useEditor();
@@ -131,6 +134,7 @@ const HeaderRight = () => {
   }
   return (
     <>
+      <SyncIcon />
       <ThemeModeSwitch />
       <Menu content={<PopoverContent />} placement="bottom-end">
         <IconButton>
