@@ -10,7 +10,7 @@ import { useGoToPage } from '@/providers/app-state-provider/hooks';
 import { usePageList } from '@/providers/app-state-provider/usePageList';
 import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
 import NextImage from 'next/image';
-import noResultImage from './jungle-searching.png';
+import noResultSVG from './noResult.svg';
 export const Results = (props: {
   query: string;
   loading: boolean;
@@ -76,7 +76,7 @@ export const Results = (props: {
             <span>Find 0 result</span>
             <NextImage
               alt="no result"
-              src={noResultImage}
+              src={noResultSVG}
               width={150}
               height={150}
             ></NextImage>
