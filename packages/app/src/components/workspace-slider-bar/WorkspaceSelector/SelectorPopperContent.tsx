@@ -51,7 +51,12 @@ export const SelectorPopperContent = () => {
       <ListItem
         icon={<LogOutIcon />}
         name="Sign out"
-        onClick={() => console.log('Sign out')}
+        onClick={() => {
+          console.log('Sign out');
+          // FIXME: remove token from local storage and reload the page
+          localStorage.removeItem('affine_token');
+          window.location.reload();
+        }}
       />
     </SelectorPopperContainer>
   );
