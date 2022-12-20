@@ -208,7 +208,6 @@ const MembersPage = () => {
           open={isInviteModalShow}
         ></InviteMembers>
       </StyledMemberButtonContainer>
-      Inv
     </div>
   );
 };
