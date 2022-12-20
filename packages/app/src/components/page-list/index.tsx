@@ -1,4 +1,4 @@
-import { PageMeta, useEditor } from '@/providers/editor-provider';
+import { PageMeta } from '@/providers/app-state-provider';
 import {
   FavouritedIcon,
   FavouritesIcon,

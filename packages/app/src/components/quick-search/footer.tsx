@@ -4,12 +4,12 @@ import { StyledModalFooterContent } from './style';
 import { useModal } from '@/providers/global-modal-provider';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { Command } from 'cmdk';
-import { useGoToPage } from '@/providers/app-state-provider/hooks';
+import { usePageHelper } from '@/hooks/use-page-helper';
 
 export const Footer = (props: { query: string }) => {
   const { createPage } = useAppState();
   const { triggerQuickSearchModal } = useModal();
-  const goToPage = useGoToPage();
+  const { openPage } = usePageHelper();
   const query = props.query;
 
   return (
@@ -18,7 +18,7 @@ export const Footer = (props: { query: string }) => {
       onSelect={async () => {
         const pageId = await createPage?.current?.();
         if (pageId) {
-          goToPage(pageId);
+          openPage(pageId);
         }
 
         triggerQuickSearchModal();

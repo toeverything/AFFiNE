@@ -9,7 +9,7 @@ import {
   useLoadPage,
 } from '@/providers/app-state-provider/hooks';
 import { useAppState } from '@/providers/app-state-provider/context';
-import exampleMarkdown from '@/providers/editor-provider/example-markdown';
+import exampleMarkdown from '@/static/example-markdown';
 
 const StyledEditorContainer = styled('div')(({ theme }) => {
   return {

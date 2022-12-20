@@ -28,12 +28,3 @@ export const useLoadPage = () => {
 
   return currentPage?.pageId === pageId ? currentPage : null;
 };
-
-export const useGoToPage = () => {
-  const router = useRouter();
-  const { currentWorkspaceId } = useAppState();
-
-  return (pageId: string) => {
-    router.push(`/workspace/${currentWorkspaceId}/${pageId}`);
-  };
-};

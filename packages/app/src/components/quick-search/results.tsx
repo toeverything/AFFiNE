@@ -6,7 +6,6 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { useRouter } from 'next/router';
 import { config } from './config';
-import { useGoToPage } from '@/providers/app-state-provider/hooks';
 import { usePageList } from '@/providers/app-state-provider/usePageList';
 import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
 import { NoResultSVG } from './noResultSVG';
@@ -24,7 +23,7 @@ export const Results = (props: {
   const { triggerQuickSearchModal } = useModal();
   const workspace = useLoadWorkspace();
   const pageList = usePageList(workspace);
-  const goToPage = useGoToPage();
+  const { openPage } = usePageHelper();
   const router = useRouter();
   const { currentWorkspaceId } = useAppState();
   const { search } = usePageHelper();
@@ -55,7 +54,7 @@ export const Results = (props: {
                 <Command.Item
                   key={result.id}
                   onSelect={() => {
-                    goToPage(result.id);
+                    openPage(result.id);
                     triggerQuickSearchModal();
                   }}
                   value={result.id}

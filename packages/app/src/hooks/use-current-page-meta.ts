@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useAppState } from '@/providers/app-state-provider';
-import { PageMeta } from '@blocksuite/store';
+import { useAppState, PageMeta } from '@/providers/app-state-provider';
 
-export const useCurrentPageMeta = () => {
+export const useCurrentPageMeta = (): PageMeta | null => {
   const { currentPage, currentWorkspace } = useAppState();
 
-  const pageMetaHandler = useCallback(() => {
+  const pageMetaHandler = useCallback((): PageMeta | null => {
     if (!currentPage || !currentWorkspace) {
       return null;
     }
     return (
-      currentWorkspace?.meta.pageMetas.find(p => p.id === currentPage.pageId) ??
-      null
+      (currentWorkspace?.meta.pageMetas.find(
+        p => p.id === currentPage.pageId
+      ) as PageMeta) ?? null
     );
   }, [currentPage, currentWorkspace]);
 

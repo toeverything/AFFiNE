@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
-import { useAppState } from '@/providers/app-state-provider';
-import { PageMeta } from '@blocksuite/store';
+import { useAppState, PageMeta } from '@/providers/app-state-provider';
 
 export type ChangePageMeta = (
   pageId: string,

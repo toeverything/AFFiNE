@@ -8,12 +8,11 @@ import {
 import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import Grow from '@mui/material/Grow';
 import { Tooltip } from '@/ui/tooltip';
-import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
 import { useTheme } from '@/providers/themeProvider';
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 
 export type IslandItemNames = 'contact' | 'shortcuts';
-// export type IslandShowMap = Record<IslandItemNames, boolean>;
 
 export const HelpIsland = ({
   showList = ['contact', 'shortcuts'],
@@ -22,7 +21,7 @@ export const HelpIsland = ({
 }) => {
   const [showContent, setShowContent] = useState(false);
   const { mode } = useTheme();
-  const { mode: editorMode } = useEditor();
+  const { mode: editorMode } = useCurrentPageMeta() || {};
   const { triggerShortcutsModal, triggerContactModal } = useModal();
   const isEdgelessDark = mode === 'dark' && editorMode === 'edgeless';
 
