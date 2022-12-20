@@ -76,19 +76,7 @@ export async function setAuthorization(config: AxiosRequestConfig<unknown>) {
       throw new Error('No authorization token.');
     }
     if (isAccessTokenExpired(token.accessToken)) {
-      if (!refreshingToken) {
-        refreshingToken = login({
-          type: 'Refresh',
-          token: token.refreshToken,
-        });
-      }
-      const newToken = await refreshingToken;
-      token = {
-        accessToken: newToken.token,
-        refreshToken: newToken.refresh,
-      };
-      setToken(token);
-      refreshingToken = undefined;
+      await refreshToken();
     }
     if (!config.headers) {
       config.headers = {};
@@ -97,3 +85,23 @@ export async function setAuthorization(config: AxiosRequestConfig<unknown>) {
   }
   return config;
 }
+
+export const refreshToken = async () => {
+  let token = getToken();
+  if (!token) {
+    throw new Error('No authorization token.');
+  }
+  if (!refreshingToken) {
+    refreshingToken = login({
+      type: 'Refresh',
+      token: token.refreshToken,
+    });
+  }
+  const newToken = await refreshingToken;
+  token = {
+    accessToken: newToken.token,
+    refreshToken: newToken.refresh,
+  };
+  setToken(token);
+  refreshingToken = undefined;
+};
