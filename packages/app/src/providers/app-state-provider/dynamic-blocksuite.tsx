@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
+import type { Page } from '@blocksuite/store';
 import {
-  Workspace,
   createWebsocketDocProvider,
   IndexedDBDocProvider,
+  Workspace,
 } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
-
-import type { Page } from '@blocksuite/store';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
 import type { AppStateContext } from './context';
 
@@ -66,8 +65,7 @@ const DynamicBlocksuite = ({
 
   useEffect(() => {
     const createEditorHandler: CreateEditorHandler = (page: Page) => {
-      const editor = createEditor(page);
-      return editor;
+      return createEditor(page);
     };
 
     setCreateEditorHandler(createEditorHandler);

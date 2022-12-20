@@ -1,10 +1,10 @@
 import { createContext, useContext } from 'react';
-import { AccessTokenMessage } from '@pathfinder/data-services';
 import type { Workspace } from '@pathfinder/data-services';
+import { AccessTokenMessage } from '@pathfinder/data-services';
 import type {
-  Workspace as StoreWorkspace,
   Page as StorePage,
   PageMeta,
+  Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import type { EditorContainer } from '@blocksuite/editor';
 
@@ -57,6 +57,5 @@ export const AppState = createContext<AppStateContext>({
 });
 
 export const useAppState = () => {
-  const state = useContext(AppState);
-  return state;
+  return useContext(AppState);
 };
