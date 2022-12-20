@@ -8,6 +8,7 @@ import {
 } from '@pathfinder/data-services';
 import { AppState } from './context';
 import type { AppStateValue, AppStateContext } from './context';
+import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
@@ -149,6 +150,10 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
             trashDate: +new Date(),
           });
         }
+      },
+      search: (query: QueryContent) => {
+        const { currentWorkspace } = state;
+        return currentWorkspace!.search(query);
       },
     }),
     [state, setState, loadWorkspaceHandler, createEditorHandler]

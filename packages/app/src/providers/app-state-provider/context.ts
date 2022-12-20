@@ -7,6 +7,7 @@ import type {
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import type { EditorContainer } from '@blocksuite/editor';
+import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 
 export interface AppStateValue {
   user: AccessTokenMessage | null;
@@ -32,6 +33,7 @@ export interface AppStateContext extends AppStateValue {
   getPageMeta: (pageId: string) => PageMeta | null;
   toggleFavoritePage: (pageId: string) => void;
   toggleDeletePage: (pageId: string) => void;
+  search: (query: QueryContent) => Map<string, string | undefined>;
 }
 
 export const AppState = createContext<AppStateContext>({
@@ -54,6 +56,7 @@ export const AppState = createContext<AppStateContext>({
   getPageMeta: () => null,
   toggleFavoritePage: () => {},
   toggleDeletePage: () => {},
+  search: () => new Map<string, string>(),
 });
 
 export const useAppState = () => {

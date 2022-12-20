@@ -1,21 +1,25 @@
 import React from 'react';
 import { AddIcon } from '@blocksuite/icons';
 import { StyledModalFooterContent } from './style';
-import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
+import { useAppState } from '@/providers/app-state-provider/context';
 import { Command } from 'cmdk';
+import { useGoToPage } from '@/providers/app-state-provider/hooks';
 
 export const Footer = (props: { query: string }) => {
-  const { createPage, openPage } = useEditor();
+  const { createPage } = useAppState();
   const { triggerQuickSearchModal } = useModal();
+  const goToPage = useGoToPage();
   const query = props.query;
 
   return (
     <Command.Item
       data-testid="quickSearch-addNewPage"
       onSelect={async () => {
-        const page = await createPage({ title: query });
-        openPage(page.id);
+        const pageId = await createPage();
+        if (pageId) {
+          goToPage(pageId);
+        }
 
         triggerQuickSearchModal();
       }}

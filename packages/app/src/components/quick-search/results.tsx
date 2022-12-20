@@ -1,12 +1,14 @@
 import { Command } from 'cmdk';
 import { StyledListItem, StyledNotFound } from './style';
 import { useModal } from '@/providers/global-modal-provider';
-import { PaperIcon, EdgelessIcon, LogoUnlogIcon } from '@blocksuite/icons';
-import { useEditor } from '@/providers/editor-provider';
+import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { useAppState } from '@/providers/app-state-provider/context';
 import { useRouter } from 'next/router';
-import { List } from './config';
-
+import { config } from './config';
+import { useGoToPage } from '@/providers/app-state-provider/hooks';
+import { usePageList } from '@/providers/app-state-provider/usePageList';
+import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
 export const Results = (props: {
   query: string;
   loading: boolean;
@@ -18,8 +20,12 @@ export const Results = (props: {
   const setLoading = props.setLoading;
   const setShowCreatePage = props.setShowCreatePage;
   const { triggerQuickSearchModal } = useModal();
-  const { search, openPage, pageList } = useEditor();
+  const workspace = useLoadWorkspace();
+  const pageList = usePageList(workspace);
+  const goToPage = useGoToPage();
   const router = useRouter();
+  const { search, currentWorkspaceId } = useAppState();
+  const List = config(currentWorkspaceId);
   const [results, setResults] = useState(new Map<string, string | undefined>());
   useEffect(() => {
     setResults(search(query));
@@ -46,7 +52,7 @@ export const Results = (props: {
                 <Command.Item
                   key={result.id}
                   onSelect={() => {
-                    openPage(result.id);
+                    goToPage(result.id);
                     triggerQuickSearchModal();
                   }}
                   value={result.title}
@@ -66,7 +72,6 @@ export const Results = (props: {
         ) : (
           <StyledNotFound>
             <span>Find 0 result</span>
-            <LogoUnlogIcon />
           </StyledNotFound>
         )
       ) : (
