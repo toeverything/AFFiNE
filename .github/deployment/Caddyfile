@@ -1,0 +1,39 @@
+:80 {
+	root /* ./dist
+
+	file_server {
+		# precompressed br
+	}
+
+	encode {
+		zstd
+		gzip 9
+	}
+
+	header {
+		# 7 days
+		Cache-Control "public, max-age=86400, must-revalidate"
+	}
+
+	handle_path /api/* {
+		reverse_proxy {$API_SERVER} {
+			@error status 500 502 503 503
+			handle_response @error {
+				root * /dist
+				rewrite * /50x.html
+				file_server
+			}
+		}
+	}
+
+	@notStatic {
+		not path /_next/static/*
+	}
+
+	handle @notStatic {
+		header {
+			Cache-Control "no-cache, no-store, must-revalidate"
+		}
+		try_files {path} /index.html
+	}
+}
