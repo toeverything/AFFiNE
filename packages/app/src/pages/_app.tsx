@@ -45,10 +45,10 @@ function MyApp({ Component, pageProps }: AppProps) {
       <Logger />
       <ProviderComposer
         contexts={[
+          <AppStateProvider key="appStateProvider" />,
           <ThemeProvider key="ThemeProvider" />,
           <ModalProvider key="ModalProvider" />,
           <ConfirmProvider key="ConfirmProvider" />,
-          <AppStateProvider key="appStateProvider" />,
         ]}
       >
         <StyledPage>
