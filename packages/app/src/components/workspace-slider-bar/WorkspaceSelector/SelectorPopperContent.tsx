@@ -12,6 +12,7 @@ import {
 } from './WorkspaceItem';
 import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useState } from 'react';
+import { WorkspaceType } from '@pathfinder/data-services';
 
 export const SelectorPopperContent = () => {
   const { user, workspacesMeta } = useAppState();
@@ -56,6 +57,13 @@ export const SelectorPopperContent = () => {
       <WorkspaceSetting
         isShow={Boolean(settingWorkspaceId)}
         onClose={handleCloseWorkSpace}
+        workspace={
+          settingWorkspaceId
+            ? workspacesMeta.find(
+                workspace => workspace.id === settingWorkspaceId
+              )
+            : undefined
+        }
       />
       <StyledDivider />
       <ListItem
