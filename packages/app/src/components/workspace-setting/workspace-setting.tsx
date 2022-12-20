@@ -1,4 +1,4 @@
-import Modal from '@/ui/modal';
+import Modal, { ModalCloseButton } from '@/ui/modal';
 import {
   StyledAvatarUploadBtn,
   StyledCopyButtonContainer,
@@ -35,7 +35,7 @@ import {
   PublishIcon,
   MoreVerticalIcon,
 } from '@blocksuite/icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 
@@ -48,6 +48,11 @@ enum ActiveTab {
 type SettingTabProps = {
   activeTab: ActiveTab;
   onTabChange?: (tab: ActiveTab) => void;
+};
+
+type WorkspaceSettingProps = {
+  isShow: boolean;
+  onClose?: () => void;
 };
 
 const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
@@ -90,14 +95,27 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
   );
 };
 
-export const WorkspaceSetting = () => {
+export const WorkspaceSetting = ({
+  isShow,
+  onClose,
+}: WorkspaceSettingProps) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(ActiveTab.general);
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
   };
+  const handleClickClose = () => {
+    onClose && onClose();
+  };
+  useEffect(() => {
+    // reset tab when modal is closed
+    if (!isShow) {
+      setActiveTab(ActiveTab.general);
+    }
+  }, [isShow]);
   return (
-    <Modal open={true}>
+    <Modal open={isShow}>
       <StyledSettingContainer>
+        <ModalCloseButton onClick={handleClickClose} />
         <StyledSettingSidebar>
           <StyledSettingSidebarHeader>
             Workspace Settings

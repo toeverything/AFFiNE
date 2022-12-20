@@ -2,9 +2,16 @@ import { SettingsIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { IconButton } from '@/ui/button';
 
-export const FooterSetting = () => {
+type SettingProps = {
+  onClick?: () => void;
+};
+
+export const FooterSetting = ({ onClick }: SettingProps) => {
+  const handleClick = () => {
+    onClick && onClick();
+  };
   return (
-    <Wrapper className="footer-setting">
+    <Wrapper className="footer-setting" onClick={handleClick}>
       <SettingsIcon />
     </Wrapper>
   );

@@ -12,10 +12,20 @@ interface WorkspaceItemProps {
   id: string;
   name: string;
   icon: string;
+  onClick?: (workspaceId: string) => void;
 }
 
-export const WorkspaceItem = ({ id, name, icon }: WorkspaceItemProps) => {
+export const WorkspaceItem = ({
+  id,
+  name,
+  icon,
+  onClick,
+}: WorkspaceItemProps) => {
   const router = useRouter();
+
+  const handleClickSetting = async () => {
+    onClick && onClick(id);
+  };
 
   return (
     <StyledWrapper
@@ -31,7 +41,7 @@ export const WorkspaceItem = ({ id, name, icon }: WorkspaceItemProps) => {
       </WorkspaceItemContent>
       <Footer>
         <FooterUsers />
-        <FooterSetting />
+        <FooterSetting onClick={handleClickSetting} />
       </Footer>
     </StyledWrapper>
   );
