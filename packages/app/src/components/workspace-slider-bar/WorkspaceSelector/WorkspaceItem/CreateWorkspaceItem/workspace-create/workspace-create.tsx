@@ -12,6 +12,7 @@ import {
 } from './style';
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
+import router from 'next/router';
 
 interface WorkspaceCreateProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface WorkspaceCreateProps {
 
 export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
   const [workspaceName, setWorkspaceId] = useState<string>('');
+  const [canCreate, setCanCreate] = useState<boolean>(false);
   const handlerInputChange = (workspaceName: string) => {
     setWorkspaceId(workspaceName);
   };
@@ -41,9 +43,21 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
         </StyledInputContent>
         <StyledButtonContent>
           <StyledButton
-            disabled={!workspaceName.length}
+            disabled={!workspaceName.length || canCreate}
             onClick={() => {
-              createWorkspace({ name: workspaceName, avatar: '' });
+              setCanCreate(true);
+              createWorkspace({ name: workspaceName, avatar: '' })
+                .then(data => {
+                  // @ts-ignore
+                  router.push(`/workspace/${data.created_at}`);
+                  onClose();
+                })
+                .catch(err => {
+                  console.log(err, 'err');
+                })
+                .finally(() => {
+                  setCanCreate(false);
+                });
             }}
           >
             Create

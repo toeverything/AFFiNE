@@ -28,16 +28,19 @@ export const SelectorPopperContent = () => {
       <PrivateWorkspaceItem />
       <StyledDivider />
       <WorkspaceGroupTitle>Workspace</WorkspaceGroupTitle>
-      {workspacesMeta.map(workspace => {
-        return (
-          <WorkspaceItem
-            key={workspace.id}
-            id={workspace.id}
-            name={`workspace-${workspace.id}`}
-            icon={''}
-          />
-        );
-      })}
+      <WorkspaceWrapper>
+        {workspacesMeta.map(workspace => {
+          return (
+            <WorkspaceItem
+              key={workspace.id}
+              id={workspace.id}
+              name={`workspace-${workspace.id}`}
+              icon={''}
+            />
+          );
+        })}
+      </WorkspaceWrapper>
+
       <CreateWorkspaceItem />
       <StyledDivider />
       <ListItem
@@ -66,5 +69,12 @@ const WorkspaceGroupTitle = styled('div')(({ theme }) => {
     lineHeight: '30px',
     height: '30px',
     padding: '0 12px',
+  };
+});
+
+const WorkspaceWrapper = styled('div')(({ theme }) => {
+  return {
+    maxHeight: '200px',
+    overflow: 'auto',
   };
 });
