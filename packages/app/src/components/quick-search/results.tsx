@@ -57,7 +57,7 @@ export const Results = (props: {
                     goToPage(result.id);
                     triggerQuickSearchModal();
                   }}
-                  value={result.title}
+                  value={result.id}
                 >
                   <StyledListItem>
                     {result.mode === 'edgeless' ? (
