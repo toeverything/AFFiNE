@@ -17,7 +17,9 @@
     "experimentalDecorators": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@pathfinder/data-services": ["../data-services/src/index"],
+      "@toeverything/pathfinder-logger": ["../logger/src/index"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],

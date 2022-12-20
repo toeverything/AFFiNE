@@ -19,6 +19,7 @@ import Slide from '@mui/material/Slide';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { useAppState } from '@/providers/app-state-provider';
 import useHistoryUpdated from '@/hooks/use-history-update';
+// import { createEvent, ColorStyle, TDShapeType } from '@blocksuite/blocks/std';
 
 const toolbarList1 = [
   {

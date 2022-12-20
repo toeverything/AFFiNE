@@ -2,6 +2,9 @@ const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    externalDir: true
+  },
   productionBrowserSourceMaps: true,
   reactStrictMode: false,
   swcMinify: false,
@@ -27,4 +30,9 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const withTM = require('next-transpile-modules')([], {
+  resolveSymlinks: false,
+  debug: false
+})
+
+module.exports = withTM(nextConfig);
