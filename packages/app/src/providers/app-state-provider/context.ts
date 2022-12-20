@@ -9,6 +9,12 @@ import type {
 import type { EditorContainer } from '@blocksuite/editor';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 
+export type LoadWorkspaceHandler = (
+  workspaceId: string
+) => Promise<StoreWorkspace | null> | null;
+
+export type CreateEditorHandler = (page: StorePage) => EditorContainer | null;
+
 export interface AppStateValue {
   user: AccessTokenMessage | null;
   workspacesMeta: Workspace[];
@@ -23,15 +29,19 @@ export interface AppStateValue {
 
 export interface AppStateContext extends AppStateValue {
   setState: (state: AppStateValue) => void;
-  createEditor: (page: StorePage) => EditorContainer | null;
-  setEditor: (editor: EditorContainer) => void;
+  createEditor?: MutableRefObject<
+    ((page: StorePage) => EditorContainer | null) | undefined
+  >;
+  setEditor?: MutableRefObject<((page: EditorContainer) => void) | undefined>;
   loadWorkspace?: MutableRefObject<
     ((workspaceId: string) => Promise<StoreWorkspace | null> | null) | undefined
   >;
   loadPage?: MutableRefObject<
     ((pageId: string) => Promise<StorePage | null> | null) | undefined
   >;
-  createPage: (pageId?: string) => Promise<string | null> | null;
+  createPage?: MutableRefObject<
+    ((pageId?: string) => Promise<string | null>) | undefined
+  >;
   getPageMeta: (pageId: string) => PageMeta | null;
   toggleFavoritePage: (pageId: string) => void;
   toggleDeletePage: (pageId: string) => void;
@@ -50,11 +60,11 @@ export const AppState = createContext<AppStateContext>({
   editor: null,
 
   setState: () => {},
-  createEditor: () => null,
-  setEditor: () => {},
+  createEditor: undefined,
+  setEditor: undefined,
   loadWorkspace: undefined,
   loadPage: undefined,
-  createPage: () => null,
+  createPage: undefined,
   getPageMeta: () => null,
   toggleFavoritePage: () => {},
   toggleDeletePage: () => {},

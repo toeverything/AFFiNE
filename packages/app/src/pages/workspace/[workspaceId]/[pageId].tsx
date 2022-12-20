@@ -35,10 +35,10 @@ const Home: NextPage = () => {
       return ret;
     }
 
-    const editor = createEditor(page);
+    const editor = createEditor?.current?.(page);
     if (editor) {
       editorContainer.current?.appendChild(editor);
-      setEditor(editor);
+      setEditor?.current?.(editor);
       if (page.isEmpty) {
         const title = 'Welcome to the AFFiNE Alpha';
         const pageId = page.addBlock({
@@ -53,7 +53,7 @@ const Home: NextPage = () => {
     }
 
     return ret;
-  }, [workspace, page]);
+  }, [workspace, page, createEditor, setEditor]);
 
   return (
     <>

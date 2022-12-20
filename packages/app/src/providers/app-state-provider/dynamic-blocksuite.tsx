@@ -8,7 +8,11 @@ import {
 import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
-import type { AppStateContext } from './context';
+import type {
+  AppStateContext,
+  LoadWorkspaceHandler,
+  CreateEditorHandler,
+} from './context';
 
 const getEditorParams = (workspaceId: string) => {
   const providers = [];
@@ -28,9 +32,6 @@ const getEditorParams = (workspaceId: string) => {
     providers,
   };
 };
-
-type LoadWorkspaceHandler = AppStateContext['loadWorkspace'];
-type CreateEditorHandler = AppStateContext['createEditor'];
 
 interface Props {
   setLoadWorkspaceHandler: (handler: LoadWorkspaceHandler) => void;
