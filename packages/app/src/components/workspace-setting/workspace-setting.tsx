@@ -1,7 +1,22 @@
 import Modal from '@/ui/modal';
 import {
   StyledAvatarUploadBtn,
+  StyledCopyButtonContainer,
   StyledDeleteButtonContainer,
+  StyledMemberAvatar,
+  StyledMemberButtonContainer,
+  StyledMemberEmail,
+  StyledMemberInfo,
+  StyledMemberListContainer,
+  StyledMemberListItem,
+  StyledMemberName,
+  StyledMemberNameContainer,
+  StyledMemberRoleContainer,
+  StyledMemberTitleContainer,
+  StyledMoreVerticalButton,
+  StyledPublishContent,
+  StyledPublishCopyContainer,
+  StyledPublishExplanation,
   StyledSettingAvatar,
   StyledSettingAvatarContent,
   StyledSettingContainer,
@@ -14,7 +29,12 @@ import {
   StyledSettingTagIconContainer,
   WorkspaceSettingTagItem,
 } from './style';
-import { EditIcon, UsersIcon, PublishIcon } from '@blocksuite/icons';
+import {
+  EditIcon,
+  UsersIcon,
+  PublishIcon,
+  MoreVerticalIcon,
+} from '@blocksuite/icons';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
@@ -89,6 +109,8 @@ export const WorkspaceSetting = () => {
         </StyledSettingSidebar>
         <StyledSettingContent>
           {activeTab === ActiveTab.general && <GeneralPage />}
+          {activeTab === ActiveTab.members && <MembersPage />}
+          {activeTab === ActiveTab.publish && <PublishPage />}
         </StyledSettingContent>
       </StyledSettingContainer>
     </Modal>
@@ -117,6 +139,66 @@ const GeneralPage = () => {
           Delete Workspace
         </Button>
       </StyledDeleteButtonContainer>
+    </div>
+  );
+};
+
+const MembersPage = () => {
+  return (
+    <div>
+      <StyledMemberTitleContainer>
+        <StyledMemberNameContainer>Users(88) </StyledMemberNameContainer>
+        <StyledMemberRoleContainer>Access level</StyledMemberRoleContainer>
+      </StyledMemberTitleContainer>
+      <StyledMemberListContainer>
+        <StyledMemberListItem>
+          <StyledMemberNameContainer>
+            <StyledMemberAvatar alt="member avatar">S</StyledMemberAvatar>
+            <StyledMemberInfo>
+              <StyledMemberName>Svaney</StyledMemberName>
+              <StyledMemberEmail>svaneyshen@gmail.com</StyledMemberEmail>
+            </StyledMemberInfo>
+          </StyledMemberNameContainer>
+          <StyledMemberRoleContainer>Workspace Owner</StyledMemberRoleContainer>
+          <StyledMoreVerticalButton>
+            <MoreVerticalIcon></MoreVerticalIcon>
+          </StyledMoreVerticalButton>
+        </StyledMemberListItem>
+      </StyledMemberListContainer>
+      <StyledMemberButtonContainer>
+        <Button type="primary" shape="circle">
+          Invite Members
+        </Button>
+      </StyledMemberButtonContainer>
+    </div>
+  );
+};
+
+const PublishPage = () => {
+  return (
+    <div>
+      <StyledPublishContent>
+        <StyledPublishExplanation>
+          After publishing to the web, everyone can view the content of this
+          workspace through the link.
+        </StyledPublishExplanation>
+        <StyledSettingH2 marginTop={48}>Share with link</StyledSettingH2>
+        <StyledPublishCopyContainer>
+          <Input
+            width={500}
+            value={'www.baidu.com/asdsadas/asdsadasd'}
+            disabled
+          ></Input>
+          <StyledCopyButtonContainer>
+            <Button type="primary" shape="circle">
+              Copy Link
+            </Button>
+          </StyledCopyButtonContainer>
+        </StyledPublishCopyContainer>
+      </StyledPublishContent>
+      <Button type="primary" shape="circle">
+        Publish to web
+      </Button>
     </div>
   );
 };

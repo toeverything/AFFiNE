@@ -17,9 +17,11 @@ export const StyledSettingContainer = styled('div')(({ theme }) => {
 export const StyledSettingSidebar = styled('div')(({ theme }) => {
   {
     return {
-      width: '236px',
+      width: '212px',
       height: '620px',
       background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
+      flexShrink: 0,
+      flexGrow: 0,
     };
   }
 });
@@ -131,6 +133,123 @@ export const StyledSettingInputContainer = styled('div')(({ theme }) => {
 
 export const StyledDeleteButtonContainer = styled('div')(({ theme }) => {
   return {
-    marginTop: '158px',
+    marginTop: '154px',
+  };
+});
+
+export const StyledMemberTitleContainer = styled('div')(({ theme }) => {
+  return {
+    display: 'flex',
+    marginTop: '60px',
+    fontWeight: '500',
+  };
+});
+
+export const StyledMemberAvatar = styled(MuiAvatar)(({ theme }) => {
+  return { height: '40px', width: '40px' };
+});
+
+export const StyledMemberNameContainer = styled('div')(({ theme }) => {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    width: '402px',
+  };
+});
+
+export const StyledMemberRoleContainer = styled('div')(({ theme }) => {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    width: '222px',
+  };
+});
+
+export const StyledMemberListContainer = styled('ul')(({ theme }) => {
+  return {
+    marginTop: '15px',
+    height: '432px',
+    overflowY: 'scroll',
+  };
+});
+
+export const StyledMemberListItem = styled('li')(({ theme }) => {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    height: '72px',
+  };
+});
+
+export const StyledMemberInfo = styled('div')(({ theme }) => {
+  return {
+    paddingLeft: '12px',
+  };
+});
+
+export const StyledMemberName = styled('div')(({ theme }) => {
+  return {
+    fontWeight: '400',
+    fontSize: '18px',
+    lineHeight: '16px',
+    color: theme.colors.textColor,
+  };
+});
+
+export const StyledMemberEmail = styled('div')(({ theme }) => {
+  return {
+    fontWeight: '400',
+    fontSize: '16px',
+    lineHeight: '22px',
+    color: theme.colors.iconColor,
+  };
+});
+
+export const StyledMemberButtonContainer = styled('div')(({ theme }) => {
+  return {
+    marginTop: '14px',
+  };
+});
+
+export const StyledMoreVerticalButton = styled('button')(({ theme }) => {
+  return {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '24px',
+    height: '24px',
+    cursor: 'pointer',
+  };
+});
+
+export const StyledPublishExplanation = styled('div')(({ theme }) => {
+  return {
+    marginTop: '56px',
+    paddingRight: '48px',
+    fontWeight: '500',
+    fontSize: '18px',
+    lineHeight: '26px',
+  };
+});
+
+export const StyledPublishCopyContainer = styled('div')(({ theme }) => {
+  return {
+    marginTop: '12px',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '38px',
+  };
+});
+
+export const StyledCopyButtonContainer = styled('div')(({ theme }) => {
+  return {
+    marginLeft: '12px',
+  };
+});
+
+export const StyledPublishContent = styled('div')(({ theme }) => {
+  return {
+    height: '494px',
   };
 });

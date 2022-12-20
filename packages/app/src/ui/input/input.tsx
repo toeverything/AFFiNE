@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, useState } from 'react';
+import { InputHTMLAttributes, useEffect, useState } from 'react';
 import { StyledInput } from './style';
 
 type inputProps = {
@@ -29,6 +29,9 @@ export const Input = (props: inputProps) => {
   const handleBlur: InputHTMLAttributes<HTMLInputElement>['onBlur'] = e => {
     onBlur && onBlur(e);
   };
+  useEffect(() => {
+    setValue(valueProp || '');
+  }, [valueProp]);
   return (
     <StyledInput
       value={value}
