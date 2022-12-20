@@ -19,13 +19,13 @@ const Page = () => {
       return;
     }
 
-    createPage()?.then(async pageId => {
+    createPage?.current?.()?.then(async pageId => {
       if (!pageId) {
         return;
       }
       router.push(`/workspace/${currentWorkspaceId}/${pageId}`);
     });
-  }, [workspace, currentWorkspaceId]);
+  }, [workspace, currentWorkspaceId, createPage, router]);
 
   return <div>Hello, there is [pageId]/index</div>;
 };

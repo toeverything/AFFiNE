@@ -7,13 +7,15 @@ import {
   getWorkspaces,
 } from '@pathfinder/data-services';
 import { AppState } from './context';
-import type { AppStateValue, AppStateContext } from './context';
+import type {
+  AppStateValue,
+  AppStateContext,
+  CreateEditorHandler,
+  LoadWorkspaceHandler,
+} from './context';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import type { Page, Workspace } from '@blocksuite/store';
-
-type LoadWorkspaceHandler = (
-  workspaceId: string
-) => Promise<Workspace | null> | null;
+import { EditorContainer } from '@blocksuite/editor';
 
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
@@ -42,9 +44,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   );
 
   const [createEditorHandler, _setCreateEditorHandler] =
-    useState<AppStateContext['createEditor']>();
+    useState<CreateEditorHandler>();
   const setCreateEditorHandler = useCallback(
-    (handler: AppStateContext['createEditor']) => {
+    (handler: CreateEditorHandler) => {
       _setCreateEditorHandler(() => handler);
     },
     [_setCreateEditorHandler]
@@ -71,6 +73,53 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     setState(state => ({ ...state, currentPage: page }));
     return page;
   };
+
+  const createEditor = useRef<
+    ((page: Page) => EditorContainer | null) | undefined
+  >();
+  createEditor.current = () => {
+    const { currentPage, currentWorkspace } = state;
+    if (!currentPage || !currentWorkspace) {
+      return null;
+    }
+    const editor = createEditorHandler?.(currentPage) || null;
+
+    if (editor) {
+      const pageMeta = currentWorkspace?.meta.pageMetas.find(
+        p => p.id === currentPage.pageId
+      );
+      if (pageMeta?.mode) {
+        editor.mode = pageMeta.mode as 'page' | 'edgeless' | undefined;
+      }
+      if (pageMeta?.trash) {
+        editor.readonly = true;
+      }
+    }
+
+    return editor;
+  };
+
+  const setEditor = useRef<(editor: AppStateValue['editor']) => void>();
+
+  setEditor.current = (editor: AppStateValue['editor']) => {
+    setState(state => ({ ...state, editor }));
+  };
+
+  const createPage = useRef<(pageId?: string) => Promise<string | null>>();
+
+  createPage.current = (pageId: string = Date.now().toString()) =>
+    new Promise<string | null>(resolve => {
+      const { currentWorkspace } = state;
+      if (!currentWorkspace) {
+        resolve(null);
+        return;
+      }
+      currentWorkspace.createPage(pageId);
+      currentWorkspace.signals.pageAdded.once(addedPageId => {
+        resolve(addedPageId);
+      });
+    });
+
   useEffect(() => {
     const callback = async (user: AccessTokenMessage | null) => {
       const workspacesMeta = user ? await getWorkspaces() : [];
@@ -87,44 +136,11 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     () => ({
       ...state,
       setState,
-      createEditor: () => {
-        const { currentPage, currentWorkspace } = state;
-        if (!currentPage || !currentWorkspace) {
-          return null;
-        }
-        const editor = createEditorHandler?.(currentPage) || null;
-
-        if (editor) {
-          const pageMeta = currentWorkspace?.meta.pageMetas.find(
-            p => p.id === currentPage.pageId
-          );
-          if (pageMeta?.mode) {
-            editor.mode = pageMeta.mode as 'page' | 'edgeless' | undefined;
-          }
-          if (pageMeta?.trash) {
-            editor.readonly = true;
-          }
-        }
-
-        return editor;
-      },
-      setEditor: (editor: AppStateValue['editor']) => {
-        setState(state => ({ ...state, editor }));
-      },
+      createEditor,
+      setEditor,
       loadWorkspace,
       loadPage,
-      createPage: (pageId: string = Date.now().toString()) =>
-        new Promise<string | null>(resolve => {
-          const { currentWorkspace } = state;
-          if (!currentWorkspace) {
-            resolve(null);
-            return;
-          }
-          currentWorkspace.createPage(pageId);
-          currentWorkspace.signals.pageAdded.once(addedPageId => {
-            resolve(addedPageId);
-          });
-        }),
+      createPage,
       getPageMeta: (pageId: string) => {
         const { currentWorkspace } = state;
         if (!currentWorkspace) {
@@ -166,14 +182,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
         return currentWorkspace!.search(query);
       },
     }),
-    [
-      state,
-      setState,
-      loadWorkspaceHandler,
-      createEditorHandler,
-      loadPage,
-      loadWorkspace,
-    ]
+    [state, setState, loadPage, loadWorkspace]
   );
 
   return (

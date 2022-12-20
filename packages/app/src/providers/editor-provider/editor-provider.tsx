@@ -45,13 +45,12 @@ export const EditorProvider = ({
   const router = useRouter();
   const [workspace, setWorkspace] = useState<Workspace>();
   const [page, _setPage] = useState<Page>();
-  const workspaceId = router.query.workspaceId as string;
   const setPage = useCallback(
     (page: Page) => {
       _setPage(page);
       // router.push(`/workspace/${workspaceId}/${page.id.replace('space:', '')}`);
     },
-    [_setPage, workspaceId]
+    [_setPage]
   );
   const [pageList, setPageList] = useState<PageMeta[]>([]);
   const [editor, setEditor] = useState<EditorContainer>();

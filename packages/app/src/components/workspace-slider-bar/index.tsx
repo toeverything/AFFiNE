@@ -141,7 +141,7 @@ export const WorkSpaceSliderBar = () => {
         </Link>
         <StyledNewPageButton
           onClick={async () => {
-            const pageId = await createPage();
+            const pageId = await createPage?.current?.();
             console.log('pageID', pageId);
             if (pageId) {
               goToPage(pageId);
