@@ -10,7 +10,7 @@ export const useLoadWorkspace = () => {
 
   useEffect(() => {
     loadWorkspace?.(workspaceId);
-  }, [workspaceId]);
+  }, [loadWorkspace, workspaceId]);
 
   return currentWorkspaceId === workspaceId ? currentWorkspace : null;
 };
@@ -24,7 +24,7 @@ export const useLoadPage = () => {
 
   useEffect(() => {
     loadPage(pageId);
-  }, [workspace, pageId]);
+  }, [workspace, pageId, loadPage]);
 
   return currentPage?.pageId === pageId ? currentPage : null;
 };
