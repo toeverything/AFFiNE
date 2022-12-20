@@ -43,9 +43,6 @@ export interface AppStateContext extends AppStateValue {
     ((pageId?: string) => Promise<string | null>) | undefined
   >;
   getPageMeta: (pageId: string) => PageMeta | null;
-  toggleFavoritePage: (pageId: string) => void;
-  toggleDeletePage: (pageId: string) => void;
-  search: (query: QueryContent) => Map<string, string | undefined>;
 }
 
 export const AppState = createContext<AppStateContext>({
@@ -66,9 +63,6 @@ export const AppState = createContext<AppStateContext>({
   loadPage: undefined,
   createPage: undefined,
   getPageMeta: () => null,
-  toggleFavoritePage: () => {},
-  toggleDeletePage: () => {},
-  search: () => new Map<string, string>(),
 });
 
 export const useAppState = () => {

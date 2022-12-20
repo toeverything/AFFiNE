@@ -9,11 +9,9 @@ import {
 import { AppState } from './context';
 import type {
   AppStateValue,
-  AppStateContext,
   CreateEditorHandler,
   LoadWorkspaceHandler,
 } from './context';
-import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import type { Page, Workspace } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
 
@@ -25,12 +23,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   const [state, setState] = useState<AppStateValue>({
     user: null,
     workspacesMeta: [],
-
     currentWorkspaceId: '',
     currentWorkspace: null,
-
     currentPage: null,
-
     editor: null,
   });
 
@@ -45,6 +40,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
 
   const [createEditorHandler, _setCreateEditorHandler] =
     useState<CreateEditorHandler>();
+
   const setCreateEditorHandler = useCallback(
     (handler: CreateEditorHandler) => {
       _setCreateEditorHandler(() => handler);
@@ -150,36 +146,6 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
           currentWorkspace.meta.pageMetas.find(page => page.id === pageId) ||
           null
         );
-      },
-      toggleFavoritePage: (pageId: string) => {
-        const { currentWorkspace } = state;
-        if (!currentWorkspace) {
-          return;
-        }
-        const pageMeta = currentWorkspace.meta.pageMetas.find(
-          p => p.id === pageId
-        );
-        if (pageMeta) {
-          currentWorkspace.setPageMeta(pageId, {
-            favorite: !pageMeta.favorite,
-          });
-        }
-      },
-      toggleDeletePage: (pageId: string) => {
-        const { currentWorkspace } = state;
-        const pageMeta = currentWorkspace?.meta.pageMetas.find(
-          p => p.id === pageId
-        );
-        if (pageMeta) {
-          currentWorkspace!.setPageMeta(pageId, {
-            trash: !pageMeta.trash,
-            trashDate: +new Date(),
-          });
-        }
-      },
-      search: (query: QueryContent) => {
-        const { currentWorkspace } = state;
-        return currentWorkspace!.search(query);
       },
     }),
     [state, setState, loadPage, loadWorkspace]

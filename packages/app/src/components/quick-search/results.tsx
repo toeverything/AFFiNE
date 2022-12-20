@@ -11,6 +11,7 @@ import { usePageList } from '@/providers/app-state-provider/usePageList';
 import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
 import NextImage from 'next/image';
 import noResultSVG from './noResult.svg';
+import { usePageHelper } from '@/hooks/use-page-helper';
 export const Results = (props: {
   query: string;
   loading: boolean;
@@ -26,7 +27,8 @@ export const Results = (props: {
   const pageList = usePageList(workspace);
   const goToPage = useGoToPage();
   const router = useRouter();
-  const { search, currentWorkspaceId } = useAppState();
+  const { currentWorkspaceId } = useAppState();
+  const { search } = usePageHelper();
   const List = config(currentWorkspaceId);
   const [results, setResults] = useState(new Map<string, string | undefined>());
   useEffect(() => {
