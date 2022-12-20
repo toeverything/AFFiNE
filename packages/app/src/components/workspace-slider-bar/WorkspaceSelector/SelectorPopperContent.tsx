@@ -10,9 +10,20 @@ import {
   ListItem,
   LoginItem,
 } from './WorkspaceItem';
+import { WorkspaceSetting } from '@/components/workspace-setting';
+import { useState } from 'react';
 
 export const SelectorPopperContent = () => {
   const { user, workspacesMeta } = useAppState();
+  const [settingWorkspaceId, setSettingWorkspaceId] = useState<string | null>(
+    null
+  );
+  const handleClickSettingWorkspace = (workspaceId: string) => {
+    setSettingWorkspaceId(workspaceId);
+  };
+  const handleCloseWorkSpace = () => {
+    setSettingWorkspaceId(null);
+  };
   return !user ? (
     <SelectorPopperContainer placement="bottom-start">
       <LoginItem />
@@ -36,12 +47,16 @@ export const SelectorPopperContent = () => {
               id={workspace.id}
               name={`workspace-${workspace.id}`}
               icon={''}
+              onClick={handleClickSettingWorkspace}
             />
           );
         })}
       </WorkspaceWrapper>
-
       <CreateWorkspaceItem />
+      <WorkspaceSetting
+        isShow={Boolean(settingWorkspaceId)}
+        onClose={handleCloseWorkSpace}
+      />
       <StyledDivider />
       <ListItem
         icon={<InformationIcon />}
