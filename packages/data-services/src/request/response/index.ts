@@ -1,1 +1,1 @@
-export { handleResponseError } from './handle-error';
+export { handleResponseError, handleResponse } from './handle-error';

@@ -14,7 +14,7 @@ import type {
 } from './context';
 import type { Page, Workspace } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
-
+import { PageMeta } from './interface';
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
 });
@@ -143,8 +143,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
           return null;
         }
         return (
-          currentWorkspace.meta.pageMetas.find(page => page.id === pageId) ||
-          null
+          (currentWorkspace.meta.pageMetas.find(
+            page => page.id === pageId
+          ) as PageMeta) || null
         );
       },
     }),

@@ -36,10 +36,23 @@ function getToken(): { accessToken: string; refreshToken: string } | null {
   }
 }
 
+function b64DecodeUnicode(str: string) {
+  // Going backwards: from byte stream, to percent-encoding, to original string.
+  return decodeURIComponent(
+    window
+      .atob(str)
+      .split('')
+      .map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join('')
+  );
+}
+
 function parseAccessToken(token: string): AccessTokenMessage | null {
   try {
     const message: AccessTokenMessage = JSON.parse(
-      window.atob(token.split('.')[1])
+      b64DecodeUnicode(token.split('.')[1])
     );
     return message;
   } catch (error) {
@@ -76,19 +89,7 @@ export async function setAuthorization(config: AxiosRequestConfig<unknown>) {
       throw new Error('No authorization token.');
     }
     if (isAccessTokenExpired(token.accessToken)) {
-      if (!refreshingToken) {
-        refreshingToken = login({
-          type: 'Refresh',
-          token: token.refreshToken,
-        });
-      }
-      const newToken = await refreshingToken;
-      token = {
-        accessToken: newToken.token,
-        refreshToken: newToken.refresh,
-      };
-      setToken(token);
-      refreshingToken = undefined;
+      await refreshToken();
     }
     if (!config.headers) {
       config.headers = {};
@@ -97,3 +98,23 @@ export async function setAuthorization(config: AxiosRequestConfig<unknown>) {
   }
   return config;
 }
+
+export const refreshToken = async () => {
+  let token = getToken();
+  if (!token) {
+    throw new Error('No authorization token.');
+  }
+  if (!refreshingToken) {
+    refreshingToken = login({
+      type: 'Refresh',
+      token: token.refreshToken,
+    });
+  }
+  const newToken = await refreshingToken;
+  token = {
+    accessToken: newToken.token,
+    refreshToken: newToken.refresh,
+  };
+  setToken(token);
+  refreshingToken = undefined;
+};

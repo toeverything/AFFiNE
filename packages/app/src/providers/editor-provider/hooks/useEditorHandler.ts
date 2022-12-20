@@ -1,4 +1,3 @@
-import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import { createPage, generateDefaultPageId, initPage } from '../utils';
 import { Workspace, Page } from '@blocksuite/store';
 import { useRouter } from 'next/router';
@@ -69,9 +68,6 @@ export const useEditorHandler = ({
           pageMeta.favorite ? 'Removed to Favourites' : 'Added to Favourites'
         );
       }
-    },
-    search: (query: QueryContent) => {
-      return workspace!.search(query);
     },
     changeEditorMode: (pageId: string) => {
       editor!.mode = editor!.mode === 'page' ? 'edgeless' : 'page';

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PageMeta } from '@/providers/app-state-provider/usePageList';
+import { PageMeta } from '@/providers/app-state-provider';
 import { useAppState } from '@/providers/app-state-provider';
 
 export const usePageMetaList = () => {

@@ -13,8 +13,8 @@ import type {
 } from './type';
 import { useTheme } from '@/providers/themeProvider';
 import { EdgelessIcon, PaperIcon } from './icons';
-import { useEditor } from '@/providers/editor-provider';
-import { useAppState } from '@/providers/app-state-provider/context';
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
+import { usePageHelper } from '@/hooks/use-page-helper';
 
 const PaperItem = ({ active }: { active?: boolean }) => {
   const {
@@ -67,9 +67,8 @@ export const EditorModeSwitch = ({
   style = {},
 }: AnimateRadioProps) => {
   const { mode: themeMode } = useTheme();
-  const { getPageMeta, currentPage } = useAppState();
-  const { mode, setMode } = useEditor();
-  const pageMeta = currentPage?.pageId ? getPageMeta(currentPage.pageId) : null;
+  const { changePageMode } = usePageHelper();
+  const { trash, mode = 'page', id = '' } = useCurrentPageMeta() || {};
 
   const modifyRadioItemStatus = (): RadioItemStatus => {
     return {
@@ -103,7 +102,7 @@ export const EditorModeSwitch = ({
       data-testid="editor-mode-switcher"
       shrink={!isHover}
       style={style}
-      disabled={!!pageMeta?.trash}
+      disabled={!!trash}
     >
       <AnimateRadioItem
         isLeft={true}
@@ -112,7 +111,7 @@ export const EditorModeSwitch = ({
         active={mode === 'page'}
         status={radioItemStatus.left}
         onClick={() => {
-          setMode('page');
+          changePageMode(id, 'page');
         }}
         onMouseEnter={() => {
           setRadioItemStatus({
@@ -132,7 +131,7 @@ export const EditorModeSwitch = ({
         active={mode === 'edgeless'}
         status={radioItemStatus.right}
         onClick={() => {
-          setMode('edgeless');
+          changePageMode(id, 'edgeless');
         }}
         onMouseEnter={() => {
           setRadioItemStatus({

@@ -23,17 +23,19 @@ import {
 } from '@blocksuite/icons';
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
-import { useEditor } from '@/providers/editor-provider';
 import { useModal } from '@/providers/global-modal-provider';
-import { useGoToPage } from '@/providers/app-state-provider/hooks';
 import { useAppState } from '@/providers/app-state-provider/context';
 
 import { IconButton } from '@/ui/button';
 import { WorkspaceSelector } from './WorkspaceSelector';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { useTranslation } from '@/libs/i18n';
+import usePageMetaList from '@/hooks/use-page-meta-list';
+import { usePageHelper } from '@/hooks/use-page-helper';
+
 const FavoriteList = ({ showList }: { showList: boolean }) => {
-  const { pageList, openPage } = useEditor();
+  const { openPage } = usePageHelper();
+  const pageList = usePageMetaList();
   const router = useRouter();
 
   const favoriteList = pageList.filter(p => p.favorite && !p.trash);
@@ -66,7 +68,7 @@ export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
   const { createPage, currentWorkspaceId } = useAppState();
-  const goToPage = useGoToPage();
+  const { openPage } = usePageHelper();
   const router = useRouter();
 
   const [showTip, setShowTip] = useState(false);
@@ -142,9 +144,8 @@ export const WorkSpaceSliderBar = () => {
         <StyledNewPageButton
           onClick={async () => {
             const pageId = await createPage?.current?.();
-            console.log('pageID', pageId);
             if (pageId) {
-              goToPage(pageId);
+              openPage(pageId);
             }
           }}
         >

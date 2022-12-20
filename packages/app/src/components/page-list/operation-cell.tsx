@@ -1,7 +1,5 @@
-import { PageMeta, useEditor } from '@/providers/editor-provider';
 import { useConfirm } from '@/providers/confirm-provider';
-import { useAppState } from '@/providers/app-state-provider/context';
-import { useGoToPage } from '@/providers/app-state-provider/hooks';
+import { useAppState, PageMeta } from '@/providers/app-state-provider';
 import { Menu, MenuItem } from '@/ui/menu';
 import { Wrapper } from '@/ui/layout';
 import { IconButton } from '@/ui/button';
@@ -19,7 +17,7 @@ import { usePageHelper } from '@/hooks/use-page-helper';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
-  const goToPage = useGoToPage();
+  const { openPage } = usePageHelper();
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
   const { confirm } = useConfirm();
 
@@ -36,7 +34,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
       </MenuItem>
       <MenuItem
         onClick={() => {
-          goToPage(id);
+          openPage(id);
         }}
         icon={<OpenInNewIcon />}
       >
@@ -73,9 +71,9 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
 
 export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id } = pageMeta;
-  const goToPage = useGoToPage();
-  const { getPageMeta, toggleDeletePage } = useAppState();
-  const { permanentlyDeletePage } = useEditor();
+  const { openPage } = usePageHelper();
+  const { getPageMeta } = useAppState();
+  const { toggleDeletePage, permanentlyDeletePage } = usePageHelper();
   const { confirm } = useConfirm();
 
   return (
@@ -86,7 +84,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         onClick={() => {
           toggleDeletePage(id);
           toast(`${getPageMeta(id)?.title || 'Untitled'} restored`);
-          goToPage(id);
+          openPage(id);
         }}
       >
         <RestoreIcon />

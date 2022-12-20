@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Workspace } from '@blocksuite/store';
-import type { PageMeta as OriginalPageMeta } from '@blocksuite/store';
-import type { EditorContainer } from '@blocksuite/editor';
-
-export type PageMeta = {
-  favorite: boolean;
-  trash: boolean;
-  trashDate: number | void;
-  updatedDate: number | void;
-  mode: EditorContainer['mode'];
-} & OriginalPageMeta;
+import { PageMeta } from './interface';
 
 export const usePageList = (workspace: Workspace | null) => {
   const [pageList, setPageList] = useState<PageMeta[]>([]);

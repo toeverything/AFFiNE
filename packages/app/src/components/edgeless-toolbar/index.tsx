@@ -16,7 +16,9 @@ import {
 } from './icons';
 import { Tooltip } from '@/ui/tooltip';
 import Slide from '@mui/material/Slide';
-import { useEditor } from '@/providers/editor-provider';
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
+import { useAppState } from '@/providers/app-state-provider';
+import useHistoryUpdated from '@/hooks/use-history-update';
 
 const toolbarList1 = [
   {
@@ -95,7 +97,8 @@ const toolbarList2 = [
 const UndoRedo = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const { onHistoryUpdated, page } = useEditor();
+  const { currentPage } = useAppState();
+  const onHistoryUpdated = useHistoryUpdated();
 
   useEffect(() => {
     onHistoryUpdated(page => {
@@ -110,7 +113,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canUndo}
           onClick={() => {
-            page?.undo();
+            currentPage?.undo();
           }}
         >
           <UndoIcon />
@@ -120,7 +123,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canRedo}
           onClick={() => {
-            page?.redo();
+            currentPage?.redo();
           }}
         >
           <RedoIcon />
@@ -131,7 +134,7 @@ const UndoRedo = () => {
 };
 
 export const EdgelessToolbar = () => {
-  const { mode } = useEditor();
+  const { mode } = useCurrentPageMeta() || {};
 
   return (
     <Slide

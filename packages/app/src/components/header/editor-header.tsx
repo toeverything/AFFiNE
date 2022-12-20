@@ -6,18 +6,19 @@ import {
   StyledTitleWrapper,
 } from './styles';
 import { Content } from '@/ui/layout';
-import { useEditor } from '@/providers/editor-provider';
 import { useAppState } from '@/providers/app-state-provider/context';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import QuickSearchButton from './quick-search-button';
 import Header from './header';
+import usePropsUpdated from '@/hooks/use-props-updated';
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 
 export const EditorHeader = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
-  const { getPageMeta, currentPage, editor } = useAppState();
-
-  const { onPropsUpdated } = useEditor();
+  const { editor } = useAppState();
+  const pageMeta = useCurrentPageMeta();
+  const onPropsUpdated = usePropsUpdated();
 
   useEffect(() => {
     onPropsUpdated(editor => {
@@ -31,8 +32,6 @@ export const EditorHeader = () => {
       setTitle(editor?.model?.title || 'Untitled');
     }, 300);
   }, [editor]);
-
-  const pageMeta = currentPage?.pageId ? getPageMeta(currentPage.pageId) : null;
 
   return (
     <Header>

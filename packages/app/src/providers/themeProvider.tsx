@@ -21,7 +21,7 @@ import {
   globalThemeVariables,
 } from '@/styles/theme';
 import { SystemThemeHelper, localStorageThemeHelper } from '@/styles/utils';
-import { useEditor } from '@/providers/editor-provider';
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
@@ -38,7 +38,7 @@ export const ThemeProvider = ({
 }: PropsWithChildren<ThemeProviderProps>) => {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
   const [mode, setMode] = useState<ThemeMode>('auto');
-  const { mode: editorMode } = useEditor();
+  const { mode: editorMode = 'page' } = useCurrentPageMeta() || {};
   const themeStyle =
     theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode);
   const changeMode = (themeMode: ThemeMode) => {

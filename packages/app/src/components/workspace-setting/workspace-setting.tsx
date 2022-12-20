@@ -39,6 +39,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { InviteMembers } from '../invite-members/index';
+import { Workspace, WorkspaceType } from '@pathfinder/data-services';
+
 enum ActiveTab {
   'general' = 'general',
   'members' = 'members',
@@ -53,6 +55,7 @@ type SettingTabProps = {
 type WorkspaceSettingProps = {
   isShow: boolean;
   onClose?: () => void;
+  workspace?: Workspace;
 };
 
 const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
@@ -98,6 +101,7 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
 export const WorkspaceSetting = ({
   isShow,
   onClose,
+  workspace,
 }: WorkspaceSettingProps) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(ActiveTab.general);
   const handleTabChange = (tab: ActiveTab) => {
@@ -106,6 +110,7 @@ export const WorkspaceSetting = ({
   const handleClickClose = () => {
     onClose && onClose();
   };
+  const isPrivate = workspace?.type === WorkspaceType.Private;
   useEffect(() => {
     // reset tab when modal is closed
     if (!isShow) {
@@ -126,7 +131,9 @@ export const WorkspaceSetting = ({
           />
         </StyledSettingSidebar>
         <StyledSettingContent>
-          {activeTab === ActiveTab.general && <GeneralPage />}
+          {activeTab === ActiveTab.general && (
+            <GeneralPage workspace={workspace} />
+          )}
           {activeTab === ActiveTab.members && <MembersPage />}
           {activeTab === ActiveTab.publish && <PublishPage />}
         </StyledSettingContent>
@@ -135,14 +142,14 @@ export const WorkspaceSetting = ({
   );
 };
 
-const GeneralPage = () => {
+const GeneralPage = ({ workspace }: { workspace?: Workspace }) => {
   return (
     <div>
       <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
       <StyledSettingAvatarContent>
         <StyledSettingAvatar alt="workspace avatar">W</StyledSettingAvatar>
-        <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>
-        <Button shape="round">remove</Button>
+        {/* <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>
+        <Button shape="round">remove</Button> */}
       </StyledSettingAvatarContent>
       <StyledSettingH2 marginTop={36}>Workspace Name</StyledSettingH2>
       <StyledSettingInputContainer>

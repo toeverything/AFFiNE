@@ -1,6 +1,5 @@
 import { PropsWithChildren } from 'react';
 import { Page } from '@blocksuite/store';
-import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import { PageMeta as OriginalPageMeta } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
 
@@ -35,6 +34,5 @@ export type EditorHandlers = {
   toggleDeletePage: (pageId: string) => void;
   toggleFavoritePage: (pageId: string) => void;
   permanentlyDeletePage: (pageId: string) => void;
-  search: (query: QueryContent) => Map<string, string | undefined>;
   changeEditorMode: (pageId: string) => void;
 };

@@ -1,14 +1,12 @@
-import { createContext, MutableRefObject, RefObject, useContext } from 'react';
+import { createContext, MutableRefObject, useContext } from 'react';
 import type { Workspace } from '@pathfinder/data-services';
 import { AccessTokenMessage } from '@pathfinder/data-services';
 import type {
   Page as StorePage,
-  PageMeta,
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import type { EditorContainer } from '@blocksuite/editor';
-import { QueryContent } from '@blocksuite/store/dist/workspace/search';
-
+import { PageMeta } from './interface';
 export type LoadWorkspaceHandler = (
   workspaceId: string
 ) => Promise<StoreWorkspace | null> | null;

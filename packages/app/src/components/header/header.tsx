@@ -17,7 +17,6 @@ import {
   FavouritedIcon,
   TrashIcon,
 } from '@blocksuite/icons';
-import { useEditor } from '@/providers/editor-provider';
 import { useAppState } from '@/providers/app-state-provider/context';
 import ThemeModeSwitch from '@/components/theme-mode-switch';
 import { IconButton, Button } from '@/ui/button';
@@ -31,18 +30,16 @@ import { toast } from '@/components/toast';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { usePageHelper } from '@/hooks/use-page-helper';
 const PopoverContent = () => {
-  const { getPageMeta, editor, currentPage } = useAppState();
+  const { editor } = useAppState();
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
-  const { mode, setMode } = useEditor();
+  const { changePageMode } = usePageHelper();
   const { confirm } = useConfirm();
-
-  const { id, favorite, title } = (currentPage?.id
-    ? getPageMeta(currentPage.id)
-    : null) ?? {
-    id: '',
-    favorite: false,
-    title: '',
-  };
+  const {
+    mode = 'page',
+    id = '',
+    favorite = false,
+    title = '',
+  } = useCurrentPageMeta() || {};
 
   return (
     <>
@@ -58,7 +55,7 @@ const PopoverContent = () => {
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
         onClick={() => {
-          setMode(mode === 'page' ? 'edgeless' : 'page');
+          changePageMode(id);
         }}
       >
         Convert to {mode === 'page' ? 'Edgeless' : 'Page'}
@@ -128,11 +125,12 @@ const BrowserWarning = ({
 };
 
 const HeaderRight = () => {
-  const { pageList, permanentlyDeletePage } = useEditor();
-  const { currentWorkspaceId, toggleDeletePage } = useAppState();
+  const { permanentlyDeletePage } = usePageHelper();
+  const { currentWorkspaceId } = useAppState();
+  const { toggleDeletePage } = usePageHelper();
   const { confirm } = useConfirm();
   const router = useRouter();
-  const currentPageMeta = pageList.find(p => p.id === router.query.pageId);
+  const currentPageMeta = useCurrentPageMeta();
   const isTrash = !!currentPageMeta?.trash;
 
   if (isTrash) {
@@ -188,8 +186,6 @@ const HeaderRight = () => {
 
 export const Header = ({ children }: PropsWithChildren<{}>) => {
   const [showWarning, setShowWarning] = useState(shouldShowWarning());
-  const currentPageMeta = useCurrentPageMeta();
-  console.log('currentPageMeta', currentPageMeta);
   return (
     <StyledHeaderContainer hasWarning={showWarning}>
       <BrowserWarning

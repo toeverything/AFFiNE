@@ -6,11 +6,9 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { useRouter } from 'next/router';
 import { config } from './config';
-import { useGoToPage } from '@/providers/app-state-provider/hooks';
 import { usePageList } from '@/providers/app-state-provider/usePageList';
 import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
-import NextImage from 'next/image';
-import noResultSVG from './noResult.svg';
+import { NoResultSVG } from './noResultSVG';
 import { usePageHelper } from '@/hooks/use-page-helper';
 export const Results = (props: {
   query: string;
@@ -25,7 +23,7 @@ export const Results = (props: {
   const { triggerQuickSearchModal } = useModal();
   const workspace = useLoadWorkspace();
   const pageList = usePageList(workspace);
-  const goToPage = useGoToPage();
+  const { openPage } = usePageHelper();
   const router = useRouter();
   const { currentWorkspaceId } = useAppState();
   const { search } = usePageHelper();
@@ -56,7 +54,7 @@ export const Results = (props: {
                 <Command.Item
                   key={result.id}
                   onSelect={() => {
-                    goToPage(result.id);
+                    openPage(result.id);
                     triggerQuickSearchModal();
                   }}
                   value={result.id}
@@ -76,12 +74,7 @@ export const Results = (props: {
         ) : (
           <StyledNotFound>
             <span>Find 0 result</span>
-            <NextImage
-              alt="no result"
-              src={noResultSVG}
-              width={150}
-              height={150}
-            ></NextImage>
+            <NoResultSVG />
           </StyledNotFound>
         )
       ) : (
