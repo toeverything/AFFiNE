@@ -38,7 +38,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
-
+import { InviteMembers } from '../invite-members/index';
 enum ActiveTab {
   'general' = 'general',
   'members' = 'members',
@@ -162,6 +162,7 @@ const GeneralPage = () => {
 };
 
 const MembersPage = () => {
+  const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   return (
     <div>
       <StyledMemberTitleContainer>
@@ -184,10 +185,23 @@ const MembersPage = () => {
         </StyledMemberListItem>
       </StyledMemberListContainer>
       <StyledMemberButtonContainer>
-        <Button type="primary" shape="circle">
+        <Button
+          onClick={() => {
+            setIsInviteModalShow(true);
+          }}
+          type="primary"
+          shape="circle"
+        >
           Invite Members
         </Button>
+        <InviteMembers
+          onClose={() => {
+            setIsInviteModalShow(false);
+          }}
+          open={isInviteModalShow}
+        ></InviteMembers>
       </StyledMemberButtonContainer>
+      Inv
     </div>
   );
 };

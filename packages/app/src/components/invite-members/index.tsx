@@ -4,6 +4,8 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { useState } from 'react';
+import { inviteMember, getUserByEmail } from '@pathfinder/data-services';
+import { useAppState } from '@/providers/app-state-provider';
 
 interface LoginModalProps {
   open: boolean;
@@ -33,16 +35,32 @@ export const debounce = <T extends (...args: any) => any>(
     }, delay);
   };
 };
+
 const gmailReg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/;
 export const InviteMembers = ({ open, onClose }: LoginModalProps) => {
   const [canInvite, setCanInvite] = useState<boolean>(true);
+  const [email, setEmail] = useState<string>('');
   const [showMember, setShowMember] = useState<boolean>(true);
-  const [showTip, setShowTip] = useState<boolean>(true);
-
-  const InputChange = (value: string) => {
+  const [showTip, setShowTip] = useState<boolean>(false);
+  const { currentWorkspaceId } = useAppState();
+  const inputChange = (value: string) => {
+    setEmail(value);
     setShowMember(true);
     if (gmailReg.test(value)) {
       setShowTip(false);
+      debounce(
+        () => {
+          getUserByEmail({ email: value }).then(data => {
+            console.log('data: ', data);
+            if (data) {
+              setCanInvite(false);
+            }
+          });
+        },
+        300,
+        true
+      )();
+    } else {
     }
   };
   return (
@@ -63,7 +81,8 @@ export const InviteMembers = ({ open, onClose }: LoginModalProps) => {
             <InviteBox>
               <Input
                 width={360}
-                onChange={InputChange}
+                value={email}
+                onChange={inputChange}
                 onBlur={() => {
                   setShowMember(false);
                 }}
@@ -89,7 +108,19 @@ export const InviteMembers = ({ open, onClose }: LoginModalProps) => {
             </InviteBox>
           </Content>
           <Footer>
-            <Button shape="circle" type="primary" disabled={canInvite}>
+            <Button
+              shape="circle"
+              type="primary"
+              onClick={() => {
+                inviteMember({ id: currentWorkspaceId, email: email })
+                  .then(res => {
+                    console.log(res);
+                  })
+                  .catch(err => {
+                    console.log(err);
+                  });
+              }}
+            >
               Invite
             </Button>
           </Footer>
