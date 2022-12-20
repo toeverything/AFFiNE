@@ -15,13 +15,15 @@
 		Cache-Control "public, max-age=86400, must-revalidate"
 	}
 
-	reverse_proxy /api/* {$API_SERVER} {
-		health_uri /api/healthz
-		@error status 500 502 503 503
-		handle_response @error {
-			root * /dist
-			rewrite * /50x.html
-			file_server
+	handle /api/* {
+		reverse_proxy {$API_SERVER} {
+			health_uri /api/healthz
+			@error status 500 502 503 503
+			handle_response @error {
+				root * /dist
+				rewrite * /50x.html
+				file_server
+			}
 		}
 	}
 
