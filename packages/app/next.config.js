@@ -13,6 +13,9 @@ const nextConfig = {
     VERSION: getGitVersion(),
     COMMIT_HASH: getCommitHash(),
   },
+  images: {
+    unoptimized: true,
+  },
   // XXX not test yet
   rewrites: async () => {
     return [
