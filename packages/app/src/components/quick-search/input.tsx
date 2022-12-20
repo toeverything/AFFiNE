@@ -58,6 +58,11 @@ export const Input = (props: {
           }
         }}
         onKeyDown={(e: React.KeyboardEvent) => {
+          if (e.key === 'a' && e.metaKey) {
+            e.stopPropagation();
+            inputRef.current?.select();
+            return;
+          }
           if (isComposition) {
             if (
               e.key === 'ArrowDown' ||
