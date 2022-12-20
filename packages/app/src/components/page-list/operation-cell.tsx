@@ -1,4 +1,3 @@
-import { useRouter } from 'next/router';
 import { PageMeta, useEditor } from '@/providers/editor-provider';
 import { useConfirm } from '@/providers/confirm-provider';
 import { useAppState } from '@/providers/app-state-provider/context';
@@ -16,11 +15,12 @@ import {
   TrashIcon,
 } from '@blocksuite/icons';
 import { toast } from '@/components/toast';
+import { usePageHelper } from '@/hooks/use-page-helper';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
   const goToPage = useGoToPage();
-  const { toggleFavoritePage, toggleDeletePage } = useAppState();
+  const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
   const { confirm } = useConfirm();
 
   const OperationMenu = (

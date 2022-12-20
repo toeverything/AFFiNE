@@ -28,15 +28,11 @@ import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/confirm-provider';
 import { SyncIcon } from './sync-icon';
 import { toast } from '@/components/toast';
-
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
+import { usePageHelper } from '@/hooks/use-page-helper';
 const PopoverContent = () => {
-  const {
-    getPageMeta,
-    editor,
-    currentPage,
-    toggleFavoritePage,
-    toggleDeletePage,
-  } = useAppState();
+  const { getPageMeta, editor, currentPage } = useAppState();
+  const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
   const { mode, setMode } = useEditor();
   const { confirm } = useConfirm();
 
@@ -192,7 +188,8 @@ const HeaderRight = () => {
 
 export const Header = ({ children }: PropsWithChildren<{}>) => {
   const [showWarning, setShowWarning] = useState(shouldShowWarning());
-
+  const currentPageMeta = useCurrentPageMeta();
+  console.log('currentPageMeta', currentPageMeta);
   return (
     <StyledHeaderContainer hasWarning={showWarning}>
       <BrowserWarning
