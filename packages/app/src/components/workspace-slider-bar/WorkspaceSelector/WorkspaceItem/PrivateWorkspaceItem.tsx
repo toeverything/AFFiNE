@@ -8,14 +8,15 @@ import {
 
 export const PrivateWorkspaceItem = () => {
   const { user } = useAppState();
-
+  // @ts-ignore
+  const Username = user.name;
   return !user ? null : (
     <PrivateWorkspaceWrapper>
-      <WorkspaceItemAvatar alt={user.name} src={user.avatar_url}>
-        {user.name.charAt(0)}
+      <WorkspaceItemAvatar alt={Username} src={user.avatar_url}>
+        {Username}
       </WorkspaceItemAvatar>
       <WorkspaceItemContent>
-        <Name title={user.name}>{user.name}</Name>
+        <Name title={Username}>{Username}</Name>
         <Email title={user.email}>{user.email}</Email>
       </WorkspaceItemContent>
     </PrivateWorkspaceWrapper>

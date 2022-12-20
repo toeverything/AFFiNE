@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import {
@@ -9,6 +9,11 @@ import {
 import { AppState } from './context';
 import type { AppStateValue, AppStateContext } from './context';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
+import type { Page, Workspace } from '@blocksuite/store';
+
+type LoadWorkspaceHandler = (
+  workspaceId: string
+) => Promise<Workspace | null> | null;
 
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
@@ -28,9 +33,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   });
 
   const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =
-    useState<AppStateContext['loadWorkspace']>();
+    useState<LoadWorkspaceHandler>();
   const setLoadWorkspaceHandler = useCallback(
-    (handler: AppStateContext['loadWorkspace']) => {
+    (handler: LoadWorkspaceHandler) => {
       _setLoadWorkspaceHandler(() => handler);
     },
     [_setLoadWorkspaceHandler]
@@ -45,6 +50,27 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     [_setCreateEditorHandler]
   );
 
+  const loadWorkspace =
+    useRef<(workspaceId: string) => Promise<Workspace | null> | null>();
+  loadWorkspace.current = async (workspaceId: string) => {
+    const workspace = (await loadWorkspaceHandler?.(workspaceId)) || null;
+    setState(state => ({
+      ...state,
+      currentWorkspace: workspace,
+      currentWorkspaceId: workspaceId,
+    }));
+    return workspace;
+  };
+  const loadPage = useRef<(pageId: string) => Promise<Page | null> | null>();
+  loadPage.current = async (pageId: string) => {
+    const { currentWorkspace, currentPage } = state;
+    if (pageId === currentPage?.pageId) {
+      return currentPage;
+    }
+    const page = currentWorkspace?.getPage(pageId) || null;
+    setState(state => ({ ...state, currentPage: page }));
+    return page;
+  };
   useEffect(() => {
     const callback = async (user: AccessTokenMessage | null) => {
       const workspacesMeta = user ? await getWorkspaces() : [];
@@ -85,24 +111,8 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       setEditor: (editor: AppStateValue['editor']) => {
         setState(state => ({ ...state, editor }));
       },
-      loadWorkspace: async (workspaceId: string) => {
-        const workspace = (await loadWorkspaceHandler?.(workspaceId)) || null;
-        setState(state => ({
-          ...state,
-          currentWorkspace: workspace,
-          currentWorkspaceId: workspaceId,
-        }));
-        return workspace;
-      },
-      loadPage: async (pageId: string) => {
-        const { currentWorkspace, currentPage } = state;
-        if (pageId === currentPage?.pageId) {
-          return currentPage;
-        }
-        const page = currentWorkspace?.getPage(pageId) || null;
-        setState(state => ({ ...state, currentPage: page }));
-        return page;
-      },
+      loadWorkspace,
+      loadPage,
       createPage: (pageId: string = Date.now().toString()) =>
         new Promise<string | null>(resolve => {
           const { currentWorkspace } = state;
@@ -156,7 +166,14 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
         return currentWorkspace!.search(query);
       },
     }),
-    [state, setState, loadWorkspaceHandler, createEditorHandler]
+    [
+      state,
+      setState,
+      loadWorkspaceHandler,
+      createEditorHandler,
+      loadPage,
+      loadWorkspace,
+    ]
   );
 
   return (

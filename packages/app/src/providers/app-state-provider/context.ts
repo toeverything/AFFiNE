@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, MutableRefObject, RefObject, useContext } from 'react';
 import type { Workspace } from '@pathfinder/data-services';
 import { AccessTokenMessage } from '@pathfinder/data-services';
 import type {
@@ -25,10 +25,12 @@ export interface AppStateContext extends AppStateValue {
   setState: (state: AppStateValue) => void;
   createEditor: (page: StorePage) => EditorContainer | null;
   setEditor: (editor: EditorContainer) => void;
-  loadWorkspace?: (
-    workspaceId: string
-  ) => Promise<StoreWorkspace | null> | null;
-  loadPage: (pageId: string) => Promise<StorePage | null> | null;
+  loadWorkspace?: MutableRefObject<
+    ((workspaceId: string) => Promise<StoreWorkspace | null> | null) | undefined
+  >;
+  loadPage?: MutableRefObject<
+    ((pageId: string) => Promise<StorePage | null> | null) | undefined
+  >;
   createPage: (pageId?: string) => Promise<string | null> | null;
   getPageMeta: (pageId: string) => PageMeta | null;
   toggleFavoritePage: (pageId: string) => void;
@@ -51,7 +53,7 @@ export const AppState = createContext<AppStateContext>({
   createEditor: () => null,
   setEditor: () => {},
   loadWorkspace: undefined,
-  loadPage: () => null,
+  loadPage: undefined,
   createPage: () => null,
   getPageMeta: () => null,
   toggleFavoritePage: () => {},
