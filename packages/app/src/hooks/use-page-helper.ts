@@ -1,5 +1,4 @@
 import { Page } from '@blocksuite/store';
-import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import { PageMeta } from '@/providers/editor-provider';
 import { useAppState } from '@/providers/app-state-provider';
 
@@ -13,7 +12,7 @@ export type EditorHandlers = {
   toggleDeletePage: (pageId: string) => void;
   toggleFavoritePage: (pageId: string) => void;
   // permanentlyDeletePage: (pageId: string) => void;
-  search: (query: QueryContent) => Map<string, string | undefined>;
+  search: (query: string) => Map<string, string | undefined>;
   // changeEditorMode: (pageId: string) => void;
 };
 
@@ -45,7 +44,7 @@ export const usePageHelper = (): EditorHandlers => {
         });
       }
     },
-    search: (query: QueryContent) => {
+    search: (query: string) => {
       return currentWorkspace!.search(query);
     },
   };

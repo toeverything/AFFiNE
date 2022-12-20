@@ -7,7 +7,6 @@ import type {
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import type { EditorContainer } from '@blocksuite/editor';
-import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 
 export type LoadWorkspaceHandler = (
   workspaceId: string
