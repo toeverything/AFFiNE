@@ -40,7 +40,6 @@ export interface AppStateContext extends AppStateValue {
   createPage?: MutableRefObject<
     ((pageId?: string) => Promise<string | null>) | undefined
   >;
-  getPageMeta: (pageId: string) => PageMeta | null;
 }
 
 export const AppState = createContext<AppStateContext>({
@@ -60,7 +59,6 @@ export const AppState = createContext<AppStateContext>({
   loadWorkspace: undefined,
   loadPage: undefined,
   createPage: undefined,
-  getPageMeta: () => null,
 });
 
 export const useAppState = () => {

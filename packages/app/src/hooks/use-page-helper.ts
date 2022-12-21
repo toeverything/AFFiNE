@@ -1,6 +1,6 @@
 import { Workspace } from '@blocksuite/store';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
-import { useAppState } from '@/providers/app-state-provider';
+import { PageMeta, useAppState } from '@/providers/app-state-provider';
 import { EditorContainer } from '@blocksuite/editor';
 import { useChangePageMeta } from '@/hooks/use-change-page-meta';
 import { useRouter } from 'next/router';
@@ -11,7 +11,7 @@ export type EditorHandlers = {
     pageId: string,
     query?: { [key: string]: string }
   ) => Promise<boolean>;
-  // getPageMeta: (pageId?: string) => PageMeta;
+  getPageMeta: (pageId: string) => PageMeta | null;
   toggleDeletePage: (pageId: string) => Promise<boolean>;
   toggleFavoritePage: (pageId: string) => Promise<boolean>;
   permanentlyDeletePage: (pageId: string) => void;
@@ -83,6 +83,17 @@ export const usePageHelper = (): EditorHandlers => {
         pathname: `/workspace/${currentWorkspaceId}/${pageId}`,
         query,
       });
+    },
+    getPageMeta: pageId => {
+      if (!currentWorkspace) {
+        return null;
+      }
+
+      return (
+        (currentWorkspace.meta.pageMetas.find(
+          page => page.id === pageId
+        ) as PageMeta) || null
+      );
     },
   };
 };

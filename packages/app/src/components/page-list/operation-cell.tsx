@@ -71,8 +71,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
 
 export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id } = pageMeta;
-  const { openPage } = usePageHelper();
-  const { getPageMeta } = useAppState();
+  const { openPage, getPageMeta } = usePageHelper();
   const { toggleDeletePage, permanentlyDeletePage } = usePageHelper();
   const { confirm } = useConfirm();
 
