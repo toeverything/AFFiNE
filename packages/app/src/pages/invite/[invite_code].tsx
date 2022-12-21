@@ -3,7 +3,7 @@ import { Empty } from '@/ui/empty';
 import { Avatar } from '@mui/material';
 import { acceptInviting } from '@pathfinder/data-services';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const User = ({ name, avatar }: { name: string; avatar?: string }) => {
   return (
@@ -21,11 +21,16 @@ const User = ({ name, avatar }: { name: string; avatar?: string }) => {
 export default function DevPage() {
   const router = useRouter();
   const [successInvited, setSuccessInvited] = useState<boolean>(false);
-  acceptInviting({ invitingCode: router.query.invite_code as string })
-    .then(data => {
-      setSuccessInvited(true);
-    })
-    .catch(err => {});
+  useEffect(() => {
+    return () => {
+      acceptInviting({ invitingCode: router.query.invite_code as string })
+        .then(data => {
+          setSuccessInvited(true);
+        })
+        .catch(err => {});
+    };
+  }, []);
+
   return (
     <Invited>
       <div>
