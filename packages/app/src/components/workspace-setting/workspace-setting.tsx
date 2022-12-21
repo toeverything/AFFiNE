@@ -34,12 +34,20 @@ import {
   UsersIcon,
   PublishIcon,
   MoreVerticalIcon,
+  EmailIcon,
 } from '@blocksuite/icons';
 import { useEffect, useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { InviteMembers } from '../invite-members/index';
-import { Workspace, WorkspaceType } from '@pathfinder/data-services';
+import {
+  getWorkspaceMembers,
+  Workspace,
+  WorkspaceType,
+  Member,
+  type RegisteredUser,
+} from '@pathfinder/data-services';
+import { Avatar } from '@mui/material';
 
 enum ActiveTab {
   'general' = 'general',
@@ -172,6 +180,18 @@ const GeneralPage = ({ workspace }: { workspace?: Workspace }) => {
 
 const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  useEffect(() => {
+    getWorkspaceMembers({
+      id: workspace.id,
+    })
+      .then(data => {
+        setMembers(data);
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  });
   return (
     <div>
       <StyledMemberTitleContainer>
@@ -179,19 +199,36 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
         <StyledMemberRoleContainer>Access level</StyledMemberRoleContainer>
       </StyledMemberTitleContainer>
       <StyledMemberListContainer>
-        <StyledMemberListItem>
-          <StyledMemberNameContainer>
-            <StyledMemberAvatar alt="member avatar">S</StyledMemberAvatar>
-            <StyledMemberInfo>
-              <StyledMemberName>Svaney</StyledMemberName>
-              <StyledMemberEmail>svaneyshen@gmail.com</StyledMemberEmail>
-            </StyledMemberInfo>
-          </StyledMemberNameContainer>
-          <StyledMemberRoleContainer>Workspace Owner</StyledMemberRoleContainer>
-          <StyledMoreVerticalButton>
-            <MoreVerticalIcon></MoreVerticalIcon>
-          </StyledMoreVerticalButton>
-        </StyledMemberListItem>
+        {members.map(member => {
+          return (
+            <StyledMemberListItem>
+              <StyledMemberNameContainer>
+                {member.user.type === 'Registered' ? (
+                  <Avatar src={member.user.avatar_url}></Avatar>
+                ) : (
+                  <StyledMemberAvatar alt="member avatar">
+                    <EmailIcon></EmailIcon>
+                  </StyledMemberAvatar>
+                )}
+
+                <StyledMemberInfo>
+                  {member.user.type === 'Registered' ? (
+                    <StyledMemberName>{member.user.name}</StyledMemberName>
+                  ) : (
+                    <></>
+                  )}
+                  <StyledMemberEmail>{member.user.email}</StyledMemberEmail>
+                </StyledMemberInfo>
+              </StyledMemberNameContainer>
+              <StyledMemberRoleContainer>
+                Workspace Owner
+              </StyledMemberRoleContainer>
+              <StyledMoreVerticalButton>
+                <MoreVerticalIcon></MoreVerticalIcon>
+              </StyledMoreVerticalButton>
+            </StyledMemberListItem>
+          );
+        })}
       </StyledMemberListContainer>
       <StyledMemberButtonContainer>
         <Button
