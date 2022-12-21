@@ -27,7 +27,7 @@ const Page = () => {
     });
   }, [workspace, currentWorkspaceId, createPage, router]);
 
-  return <div>Hello, there is [pageId]/index</div>;
+  return <div></div>;
 };
 
 export default Page;

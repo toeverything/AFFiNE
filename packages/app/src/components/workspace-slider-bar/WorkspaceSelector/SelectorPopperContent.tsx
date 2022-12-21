@@ -44,6 +44,7 @@ export const SelectorPopperContent = () => {
         {workspacesMeta.map(workspace => {
           return (
             <WorkspaceItem
+              type={workspace.type}
               key={workspace.id}
               id={workspace.id}
               name={`workspace-${workspace.id}`}
