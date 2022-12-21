@@ -5,11 +5,12 @@ import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { useState } from 'react';
 import { inviteMember, getUserByEmail } from '@pathfinder/data-services';
-import { useAppState } from '@/providers/app-state-provider';
+import { Avatar } from '@mui/material';
 
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
+  workSpaceId: string;
 }
 export const debounce = <T extends (...args: any) => any>(
   fn: T,
@@ -37,12 +38,16 @@ export const debounce = <T extends (...args: any) => any>(
 };
 
 const gmailReg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/;
-export const InviteMembers = ({ open, onClose }: LoginModalProps) => {
+export const InviteMembers = ({
+  open,
+  onClose,
+  workSpaceId,
+}: LoginModalProps) => {
   const [canInvite, setCanInvite] = useState<boolean>(true);
   const [email, setEmail] = useState<string>('');
-  const [showMember, setShowMember] = useState<boolean>(true);
+  const [showMember, setShowMember] = useState<boolean>(false);
   const [showTip, setShowTip] = useState<boolean>(false);
-  const { currentWorkspaceId } = useAppState();
+  const [userData, setUserData] = useState<any>({});
   const inputChange = (value: string) => {
     setEmail(value);
     setShowMember(true);
@@ -51,9 +56,9 @@ export const InviteMembers = ({ open, onClose }: LoginModalProps) => {
       debounce(
         () => {
           getUserByEmail({ email: value }).then(data => {
-            console.log('data: ', data);
-            if (data) {
-              setCanInvite(false);
+            if (data?.name) {
+              setUserData(data);
+              setShowTip(false);
             }
           });
         },
@@ -61,6 +66,7 @@ export const InviteMembers = ({ open, onClose }: LoginModalProps) => {
         true
       )();
     } else {
+      setShowTip(true);
     }
   };
   return (
@@ -94,11 +100,15 @@ export const InviteMembers = ({ open, onClose }: LoginModalProps) => {
                     <NoFind>Non-Gmail is not supported</NoFind>
                   ) : (
                     <Member>
-                      <MemberIcon>
-                        <EmailIcon></EmailIcon>
-                      </MemberIcon>
-                      <Email>huojoe@gmail.com</Email>
-                      <div>invited</div>
+                      {userData?.avatar_url ? (
+                        <Avatar src={userData?.avatar_url}></Avatar>
+                      ) : (
+                        <MemberIcon>
+                          <EmailIcon></EmailIcon>
+                        </MemberIcon>
+                      )}
+                      <Email>{email}</Email>
+                      {/* <div>invited</div> */}
                     </Member>
                   )}
                 </Members>
@@ -112,7 +122,7 @@ export const InviteMembers = ({ open, onClose }: LoginModalProps) => {
               shape="circle"
               type="primary"
               onClick={() => {
-                inviteMember({ id: currentWorkspaceId, email: email })
+                inviteMember({ id: workSpaceId, email: email })
                   .then(res => {
                     console.log(res);
                   })

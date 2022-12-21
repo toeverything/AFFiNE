@@ -134,7 +134,9 @@ export const WorkspaceSetting = ({
           {activeTab === ActiveTab.general && (
             <GeneralPage workspace={workspace} />
           )}
-          {activeTab === ActiveTab.members && <MembersPage />}
+          {activeTab === ActiveTab.members && workspace && (
+            <MembersPage workspace={workspace} />
+          )}
           {activeTab === ActiveTab.publish && <PublishPage />}
         </StyledSettingContent>
       </StyledSettingContainer>
@@ -168,7 +170,7 @@ const GeneralPage = ({ workspace }: { workspace?: Workspace }) => {
   );
 };
 
-const MembersPage = () => {
+const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   return (
     <div>
@@ -205,10 +207,10 @@ const MembersPage = () => {
           onClose={() => {
             setIsInviteModalShow(false);
           }}
+          workSpaceId={workspace.id}
           open={isInviteModalShow}
         ></InviteMembers>
       </StyledMemberButtonContainer>
-      Inv
     </div>
   );
 };
