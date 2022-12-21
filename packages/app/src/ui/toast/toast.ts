@@ -42,13 +42,17 @@ const createToastContainer = () => {
   return element;
 };
 
+export type ToastOptions = {
+  duration: number;
+};
+
 /**
  * @example
  * ```ts
  * toast('Hello World');
  * ```
  */
-export const toast = (message: string, duration = 2500) => {
+export const toast = (message: string, { duration = 2500 }: ToastOptions) => {
   if (!ToastContainer) {
     ToastContainer = createToastContainer();
   }
@@ -100,5 +104,6 @@ export const toast = (message: string, duration = 2500) => {
   }, duration);
   return element;
 };
+
 
 export default toast;
