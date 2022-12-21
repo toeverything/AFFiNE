@@ -10,6 +10,9 @@ import '../utils/print-build-info';
 import ProviderComposer from '@/components/provider-composer';
 import type { ReactElement, ReactNode } from 'react';
 import type { NextPage } from 'next';
+import { AppStateProvider } from '@/providers/app-state-provider/provider';
+import ConfirmProvider from '@/providers/confirm-provider';
+import { ModalProvider } from '@/providers/global-modal-provider';
 
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
@@ -29,7 +32,14 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
   return (
     <>
       <Logger />
-      <ProviderComposer contexts={[<ThemeProvider key="ThemeProvider" />]}>
+      <ProviderComposer
+        contexts={[
+          <ThemeProvider key="ThemeProvider" />,
+          <AppStateProvider key="appStateProvider" />,
+          <ModalProvider key="ModalProvider" />,
+          <ConfirmProvider key="ConfirmProvider" />,
+        ]}
+      >
         {getLayout(<Component {...pageProps} />)}
       </ProviderComposer>
     </>
