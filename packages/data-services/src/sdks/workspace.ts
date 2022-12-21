@@ -184,3 +184,17 @@ export async function acceptInviting(
 
   return data.data;
 }
+
+export interface DownloadWOrkspaceParams {
+  workspaceId: string;
+}
+export async function downloadWorkspace(
+  params: DownloadWOrkspaceParams
+): Promise<Uint16Array> {
+  const data = await request({
+    url: `/api/workspace/${params.workspaceId}/doc`,
+    method: 'GET',
+  });
+
+  return data.data;
+}
