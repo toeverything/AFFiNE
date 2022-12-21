@@ -6,7 +6,7 @@ import Input from '@/ui/input';
 import { useState } from 'react';
 import { inviteMember, getUserByEmail } from '@pathfinder/data-services';
 import { Avatar } from '@mui/material';
-
+import { toast } from '@/ui/toast';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -122,11 +122,13 @@ export const InviteMembers = ({
               shape="circle"
               type="primary"
               onClick={() => {
+                console.log(workSpaceId);
                 inviteMember({ id: workSpaceId, email: email })
-                  .then(res => {
-                    console.log(res);
+                  .then(() => {
+                    onClose();
                   })
                   .catch(err => {
+                    toast('Invite failed');
                     console.log(err);
                   });
               }}
