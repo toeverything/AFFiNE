@@ -122,7 +122,6 @@ export const InviteMembers = ({
               shape="circle"
               type="primary"
               onClick={() => {
-                console.log(workSpaceId);
                 inviteMember({ id: workSpaceId, email: email })
                   .then(() => {
                     onClose();
