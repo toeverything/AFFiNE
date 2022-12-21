@@ -207,7 +207,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
           onClose={() => {
             setIsInviteModalShow(false);
           }}
-          workSpaceId={workspace.id}
+          workspaceId={workspace.id}
           open={isInviteModalShow}
         ></InviteMembers>
       </StyledMemberButtonContainer>

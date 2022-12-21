@@ -10,7 +10,7 @@ import { toast } from '@/ui/toast';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
-  workSpaceId: string;
+  workspaceId: string;
 }
 export const debounce = <T extends (...args: any) => any>(
   fn: T,
@@ -41,7 +41,7 @@ const gmailReg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/;
 export const InviteMembers = ({
   open,
   onClose,
-  workSpaceId,
+  workspaceId,
 }: LoginModalProps) => {
   const [canInvite, setCanInvite] = useState<boolean>(true);
   const [email, setEmail] = useState<string>('');
@@ -55,7 +55,10 @@ export const InviteMembers = ({
       setShowTip(false);
       debounce(
         () => {
-          getUserByEmail({ email: value }).then(data => {
+          getUserByEmail({
+            email: value,
+            workspaceId,
+          }).then(data => {
             if (data?.name) {
               setUserData(data);
               setShowTip(false);
@@ -122,7 +125,7 @@ export const InviteMembers = ({
               shape="circle"
               type="primary"
               onClick={() => {
-                inviteMember({ id: workSpaceId, email: email })
+                inviteMember({ id: workspaceId, email: email })
                   .then(() => {
                     onClose();
                   })
