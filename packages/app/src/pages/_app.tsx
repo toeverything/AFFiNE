@@ -3,63 +3,34 @@ import dynamic from 'next/dynamic';
 import '../../public/globals.css';
 import '../../public/variable.css';
 import './temporary.css';
-import { ModalProvider } from '@/providers/global-modal-provider';
-import { AppStateProvider } from '@/providers/app-state-provider/provider';
 import { Logger } from '@toeverything/pathfinder-logger';
-import { WorkSpaceSliderBar } from '@/components/workspace-slider-bar';
 import '@fontsource/space-mono';
 import '@fontsource/poppins';
 import '../utils/print-build-info';
-import { styled } from '@/styles';
 import ProviderComposer from '@/components/provider-composer';
-import ConfirmProvider from '@/providers/confirm-provider';
-import HelpIsland from '@/components/help-island';
-import { useRouter } from 'next/router';
+import type { ReactElement, ReactNode } from 'react';
+import type { NextPage } from 'next';
 
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
 });
 
-const StyledPage = styled('div')(({ theme }) => {
-  return {
-    height: '100vh',
-    backgroundColor: theme.colors.pageBackground,
-    transition: 'background-color .5s',
-    display: 'flex',
-    flexGrow: '1',
-  };
-});
+export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
+  getLayout?: (page: ReactElement) => ReactNode;
+};
 
-const StyledWrapper = styled('div')(({ theme }) => {
-  return {
-    flexGrow: 1,
-    position: 'relative',
-  };
-});
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
 
-function MyApp({ Component, pageProps }: AppProps) {
-  const router = useRouter();
+function MyApp({ Component, pageProps }: AppPropsWithLayout) {
+  const getLayout = Component.getLayout || (page => page);
 
   return (
     <>
       <Logger />
-      <ProviderComposer
-        contexts={[
-          <AppStateProvider key="appStateProvider" />,
-          <ThemeProvider key="ThemeProvider" />,
-          <ModalProvider key="ModalProvider" />,
-          <ConfirmProvider key="ConfirmProvider" />,
-        ]}
-      >
-        <StyledPage>
-          <WorkSpaceSliderBar />
-          <StyledWrapper>
-            <Component {...pageProps} />
-            <HelpIsland
-              showList={router.pathname !== '/' ? ['contact'] : undefined}
-            />
-          </StyledWrapper>
-        </StyledPage>
+      <ProviderComposer contexts={[<ThemeProvider key="ThemeProvider" />]}>
+        {getLayout(<Component {...pageProps} />)}
       </ProviderComposer>
     </>
   );

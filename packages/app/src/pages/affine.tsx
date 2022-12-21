@@ -1,5 +1,4 @@
 import { displayFlex, styled } from '@/styles';
-import { ThemeModeSwitch } from '@/components/theme-mode-switch';
 import { Loading } from '@/components/loading';
 import Modal from '@/ui/modal';
 import { useState } from 'react';
@@ -20,7 +19,6 @@ const Affine = () => {
   return (
     <>
       <StyledHeader>
-        <ThemeModeSwitch></ThemeModeSwitch>
         <button
           onClick={() => {
             setShow(true);

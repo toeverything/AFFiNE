@@ -1,5 +1,4 @@
-import { useRef, useEffect } from 'react';
-import type { NextPage } from 'next';
+import { useRef, useEffect, ReactElement } from 'react';
 import { styled } from '@/styles';
 import { EditorHeader } from '@/components/header';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
@@ -10,6 +9,8 @@ import {
 } from '@/providers/app-state-provider/hooks';
 import { useAppState } from '@/providers/app-state-provider/context';
 import exampleMarkdown from '@/static/example-markdown';
+import type { NextPageWithLayout } from '../..//_app';
+import WorkspaceLayout from '@/components/workspace-layout';
 
 const StyledEditorContainer = styled('div')(({ theme }) => {
   return {
@@ -17,7 +18,7 @@ const StyledEditorContainer = styled('div')(({ theme }) => {
   };
 });
 
-const Home: NextPage = () => {
+const Page: NextPageWithLayout = () => {
   const editorContainer = useRef<HTMLDivElement>(null);
   const workspace = useLoadWorkspace();
   const page = useLoadPage();
@@ -65,4 +66,8 @@ const Home: NextPage = () => {
   );
 };
 
-export default Home;
+Page.getLayout = function getLayout(page: ReactElement) {
+  return <WorkspaceLayout>{page}</WorkspaceLayout>;
+};
+
+export default Page;

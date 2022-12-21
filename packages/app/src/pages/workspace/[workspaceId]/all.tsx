@@ -3,8 +3,11 @@ import { PageList } from '@/components/page-list';
 import { AllPagesIcon } from '@blocksuite/icons';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { PageListHeader } from '@/components/header';
+import { NextPageWithLayout } from '@/pages/_app';
+import { ReactElement } from 'react';
+import WorkspaceLayout from '@/components/workspace-layout';
 
-const All = () => {
+const All: NextPageWithLayout = () => {
   const workspace = useLoadWorkspace();
   const pageMetaList = usePageMetaList();
 
@@ -17,6 +20,10 @@ const All = () => {
       />
     </>
   ) : null;
+};
+
+All.getLayout = function getLayout(page: ReactElement) {
+  return <WorkspaceLayout>{page}</WorkspaceLayout>;
 };
 
 export default All;
