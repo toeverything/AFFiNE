@@ -8,6 +8,7 @@
     "export": "pnpm --filter @pathfinder/app export",
     "start": "pnpm --filter @pathfinder/app start",
     "lint": "pnpm --filter @pathfinder/app lint",
+    "test": "playwright test",
     "test:e2e": "playwright test",
     "test:unit": "jest"
   },
