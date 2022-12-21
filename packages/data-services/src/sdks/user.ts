@@ -38,6 +38,7 @@ export async function login(params: LoginParams): Promise<LoginResponse> {
 
 export interface GetUserByEmailParams {
   email: string;
+  workspaceId: string;
 }
 
 export interface User {
