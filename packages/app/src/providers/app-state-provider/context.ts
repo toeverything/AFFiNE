@@ -7,7 +7,8 @@ import type {
 } from '@blocksuite/store';
 import type { EditorContainer } from '@blocksuite/editor';
 export type LoadWorkspaceHandler = (
-  workspaceId: string
+  workspaceId: string,
+  websocket?: boolean
 ) => Promise<StoreWorkspace | null> | null;
 
 export type CreateEditorHandler = (page: StorePage) => EditorContainer | null;
