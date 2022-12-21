@@ -34,7 +34,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
       </MenuItem>
       <MenuItem
         onClick={() => {
-          openPage(id);
+          openPage(id, {}, true);
         }}
         icon={<OpenInNewIcon />}
       >

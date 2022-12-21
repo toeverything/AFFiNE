@@ -9,7 +9,8 @@ export type EditorHandlers = {
   // createPage: (params?: { pageId?: string; title?: string }) => Promise<Page>;
   openPage: (
     pageId: string,
-    query?: { [key: string]: string }
+    query?: { [key: string]: string },
+    newTab?: boolean
   ) => Promise<boolean>;
   getPageMeta: (pageId: string) => PageMeta | null;
   toggleDeletePage: (pageId: string) => Promise<boolean>;
@@ -77,8 +78,13 @@ export const usePageHelper = (): EditorHandlers => {
       // TODO:  workspace.meta.removePage or workspace.removePage?
       currentWorkspace!.meta.removePage(pageId);
     },
-    openPage: (pageId, query = {}) => {
+    openPage: (pageId, query = {}, newTab = false) => {
       pageId = pageId.replace('space:', '');
+
+      if (newTab) {
+        window.open(`/workspace/${currentWorkspaceId}/${pageId}`, '_blank');
+        return Promise.resolve(true);
+      }
       return router.push({
         pathname: `/workspace/${currentWorkspaceId}/${pageId}`,
         query,

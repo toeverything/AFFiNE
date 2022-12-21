@@ -6,7 +6,6 @@ import type {
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import type { EditorContainer } from '@blocksuite/editor';
-import { PageMeta } from './interface';
 export type LoadWorkspaceHandler = (
   workspaceId: string
 ) => Promise<StoreWorkspace | null> | null;
