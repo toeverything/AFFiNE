@@ -25,6 +25,39 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
   const handlerInputChange = (workspaceName: string) => {
     setWorkspaceId(workspaceName);
   };
+  const createDefaultHeadImg = (workspaceName: string) => {
+    const canvas = document.createElement('canvas');
+    canvas.height = 100;
+    canvas.width = 100;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // TODO: add a image list
+      ctx.fillStyle = '#FFDE03';
+      ctx.fillRect(0, 0, 100, 100);
+      ctx.font = "600 50px 'PingFang SC', 'Microsoft Yahei'";
+      ctx.fillStyle = '#FFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(workspaceName[0], 50, 50);
+      const blob = canvas.toBlob(blob => {}, 'image/png');
+    }
+  };
+  const handleCreateWorkspace = () => {
+    setCanCreate(true);
+    createDefaultHeadImg(workspaceName);
+    createWorkspace({ name: workspaceName, avatar: '' })
+      .then(data => {
+        // @ts-ignore
+        router.push(`/workspace/${data.created_at}`);
+        onClose();
+      })
+      .catch(err => {
+        console.log(err, 'err');
+      })
+      .finally(() => {
+        setCanCreate(false);
+      });
+  };
   return (
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
@@ -44,21 +77,7 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
         <StyledButtonContent>
           <StyledButton
             disabled={!workspaceName.length || canCreate}
-            onClick={() => {
-              setCanCreate(true);
-              createWorkspace({ name: workspaceName, avatar: '' })
-                .then(data => {
-                  // @ts-ignore
-                  router.push(`/workspace/${data.created_at}`);
-                  onClose();
-                })
-                .catch(err => {
-                  console.log(err, 'err');
-                })
-                .finally(() => {
-                  setCanCreate(false);
-                });
-            }}
+            onClick={handleCreateWorkspace}
           >
             Create
           </StyledButton>

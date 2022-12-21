@@ -119,7 +119,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     const callback = async (user: AccessTokenMessage | null) => {
       const workspacesMeta = user ? await getWorkspaces() : [];
       const workspaces = await Promise.all(
-        workspacesMeta.map(async ({ id }) => {
+        workspacesMeta?.map(async ({ id }) => {
           const workspace = (await loadWorkspaceHandler?.(id)) || null;
           return workspace;
         })
