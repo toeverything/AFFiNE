@@ -58,7 +58,7 @@ export const usePageHelper = (): EditorHandlers => {
       });
       return trash;
     },
-    search: (query: string) => {
+    search: (query: QueryContent) => {
       return currentWorkspace!.search(query);
     },
     changePageMode: async (pageId, mode) => {
