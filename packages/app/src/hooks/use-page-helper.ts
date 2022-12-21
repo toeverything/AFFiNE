@@ -103,3 +103,5 @@ export const usePageHelper = (): EditorHandlers => {
     },
   };
 };
+
+export default usePageHelper;

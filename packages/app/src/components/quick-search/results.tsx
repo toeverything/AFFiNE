@@ -6,10 +6,9 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { useRouter } from 'next/router';
 import { config } from './config';
-import { usePageList } from '@/providers/app-state-provider/usePageList';
-import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
 import { NoResultSVG } from './noResultSVG';
-import { usePageHelper } from '@/hooks/use-page-helper';
+import usePageHelper from '@/hooks/use-page-helper';
+import usePageMetaList from '@/hooks/use-page-meta-list';
 export const Results = (props: {
   query: string;
   loading: boolean;
@@ -21,8 +20,7 @@ export const Results = (props: {
   const setLoading = props.setLoading;
   const setShowCreatePage = props.setShowCreatePage;
   const { triggerQuickSearchModal } = useModal();
-  const workspace = useLoadWorkspace();
-  const pageList = usePageList(workspace);
+  const pageMetaList = usePageMetaList();
   const { openPage } = usePageHelper();
   const router = useRouter();
   const { currentWorkspaceId } = useAppState();
@@ -36,7 +34,7 @@ export const Results = (props: {
   }, [query, search, setLoading]);
   const pageIds = [...results.values()];
 
-  const resultsPageMeta = pageList.filter(
+  const resultsPageMeta = pageMetaList.filter(
     page => pageIds.indexOf(page.id) > -1 && !page.trash
   );
 
