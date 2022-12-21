@@ -3,7 +3,7 @@ import { Workspace, Page } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import { EditorHandlers, PageMeta } from '../interface';
 import { EditorContainer } from '@blocksuite/editor';
-import toast from '@/components/toast';
+import toast from '@/ui/toast';
 export const useEditorHandler = ({
   editor,
   workspace,

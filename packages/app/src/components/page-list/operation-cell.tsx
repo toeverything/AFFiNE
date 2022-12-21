@@ -12,7 +12,7 @@ import {
   OpenInNewIcon,
   TrashIcon,
 } from '@blocksuite/icons';
-import { toast } from '@/components/toast';
+import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {

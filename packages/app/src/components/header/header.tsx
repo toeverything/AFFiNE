@@ -26,7 +26,7 @@ import { Menu, MenuItem } from '@/ui/menu';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/confirm-provider';
 import { SyncIcon } from './sync-icon';
-import { toast } from '@/components/toast';
+import { toast } from '@/ui/toast';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { usePageHelper } from '@/hooks/use-page-helper';
 const PopoverContent = () => {

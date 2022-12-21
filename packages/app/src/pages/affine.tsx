@@ -5,7 +5,7 @@ import Modal from '@/ui/modal';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
 import { FavouritedIcon } from '@blocksuite/icons';
-import { toast } from '@/components/toast';
+import { toast } from '@/ui/toast';
 export const StyledHeader = styled('div')({
   height: '60px',
   width: '100vw',

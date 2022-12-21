@@ -21,7 +21,7 @@ import { IconButton } from '@/ui/button';
 import { Tooltip } from '@/ui/tooltip';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider/context';
-import { toast } from '@/components/toast';
+import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
 
 const FavoriteTag = ({
