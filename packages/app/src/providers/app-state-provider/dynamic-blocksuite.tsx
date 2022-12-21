@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { Page } from '@blocksuite/store';
 import {
-  createWebsocketDocProvider,
+  // createWebsocketDocProvider,
   IndexedDBDocProvider,
   Workspace,
 } from '@blocksuite/store';
@@ -13,17 +13,18 @@ import type {
   LoadWorkspaceHandler,
   CreateEditorHandler,
 } from './context';
+import { downloadWorkspace } from '@pathfinder/data-services';
 
 const getEditorParams = (workspaceId: string) => {
   const providers = [];
   const params = new URLSearchParams(location.search);
   // const room = params.get('room') ?? 'AFFINE-pathfinder';
-  if (params.get('syncMode') === 'websocket') {
-    const WebsocketDocProvider = createWebsocketDocProvider(
-      `ws://${window.location.host}/collaboration/`
-    );
-    providers.push(WebsocketDocProvider);
-  }
+  // if (params.get('syncMode') === 'websocket') {
+  //   const WebsocketDocProvider = createWebsocketDocProvider(
+  //     `ws://${window.location.host}/collaboration/`
+  //   );
+  //   providers.push(WebsocketDocProvider);
+  // }
 
   providers.push(IndexedDBDocProvider);
 
@@ -44,7 +45,7 @@ const DynamicBlocksuite = ({
 }: Props) => {
   useEffect(() => {
     const openWorkspace: LoadWorkspaceHandler = (workspaceId: string) =>
-      new Promise(resolve => {
+      new Promise(async resolve => {
         const workspace = new Workspace({
           ...getEditorParams(workspaceId as string),
         }).register(BlockSchema);
@@ -53,7 +54,12 @@ const DynamicBlocksuite = ({
           p => p instanceof IndexedDBDocProvider
         );
         if (indexDBProvider) {
-          (indexDBProvider as IndexedDBDocProvider)?.on('synced', () => {
+          (indexDBProvider as IndexedDBDocProvider)?.on('synced', async () => {
+            const updates = await downloadWorkspace({ workspaceId });
+            updates &&
+              Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
+            // if after update, the space:meta is empty, then we need to get map with doc
+            workspace.doc.getMap('space:meta');
             resolve(workspace);
           });
         } else {

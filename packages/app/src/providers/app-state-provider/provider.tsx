@@ -118,6 +118,13 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   useEffect(() => {
     const callback = async (user: AccessTokenMessage | null) => {
       const workspacesMeta = user ? await getWorkspaces() : [];
+      const workspaces = await Promise.all(
+        workspacesMeta.map(async ({ id }) => {
+          const workspace = (await loadWorkspaceHandler?.(id)) || null;
+          return workspace;
+        })
+      );
+      // TODO: add meta info to workspace meta
       setState(state => ({ ...state, user: user, workspacesMeta }));
     };
     authorizationEvent.onChange(callback);
@@ -125,7 +132,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     return () => {
       authorizationEvent.removeCallback(callback);
     };
-  }, []);
+  }, [loadWorkspaceHandler]);
 
   const context = useMemo(
     () => ({

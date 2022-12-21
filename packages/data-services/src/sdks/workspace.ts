@@ -190,10 +190,11 @@ export interface DownloadWOrkspaceParams {
 }
 export async function downloadWorkspace(
   params: DownloadWOrkspaceParams
-): Promise<Uint16Array> {
+): Promise<ArrayBuffer> {
   const data = await request({
     url: `/api/workspace/${params.workspaceId}/doc`,
     method: 'GET',
+    responseType: 'arraybuffer',
   });
 
   return data.data;
