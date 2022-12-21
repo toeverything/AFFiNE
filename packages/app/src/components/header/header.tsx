@@ -55,7 +55,7 @@ const PopoverContent = () => {
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
         onClick={() => {
-          changePageMode(id);
+          changePageMode(id, mode === 'page' ? 'edgeless' : 'page');
         }}
       >
         Convert to {mode === 'page' ? 'Edgeless' : 'Page'}

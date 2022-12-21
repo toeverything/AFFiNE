@@ -60,9 +60,9 @@ const rightLinkList = [
   },
   {
     icon: <DocIcon />,
-    title: 'Check Our Docs',
-    subTitle: 'docs.AFFiNE.pro',
-    link: 'https://docs.affine.pro',
+    title: 'AFFiNE Community',
+    subTitle: 'community.affine.pro',
+    link: 'https://community.affine.pro',
   },
 ];
 
@@ -109,10 +109,7 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
             })}
           </StyledLeftContainer>
           <StyledRightContainer>
-            <StyledSubTitle>
-              Get in touch! <br />
-              Join our community.
-            </StyledSubTitle>
+            <StyledSubTitle>Get in touch!</StyledSubTitle>
             {linkList.map(({ icon, title, link }) => {
               return (
                 <StyledSmallLink key={title} href={link} target="_blank">

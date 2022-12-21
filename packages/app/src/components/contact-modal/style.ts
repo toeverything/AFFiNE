@@ -2,10 +2,10 @@ import { absoluteCenter, displayFlex, styled } from '@/styles';
 
 export const StyledBigLink = styled('a')(({ theme }) => {
   return {
-    width: '320px',
+    width: '334px',
     height: '100px',
     marginBottom: '48px',
-    paddingLeft: '114px',
+    paddingLeft: '90px',
     fontSize: '24px',
     lineHeight: '36px',
     fontWeight: '600',
@@ -29,7 +29,7 @@ export const StyledBigLink = styled('a')(({ theme }) => {
       height: '50px',
       marginRight: '40px',
       color: theme.colors.primaryColor,
-      ...absoluteCenter({ vertical: true, position: { left: '32px' } }),
+      ...absoluteCenter({ vertical: true, position: { left: '20px' } }),
     },
     p: {
       width: '100%',
@@ -85,6 +85,7 @@ export const StyledSmallLink = styled('a')(({ theme }) => {
 });
 export const StyledSubTitle = styled('div')(({ theme }) => {
   return {
+    width: '190px',
     fontSize: '18px',
     fontWeight: '600',
     color: theme.colors.textColor,
