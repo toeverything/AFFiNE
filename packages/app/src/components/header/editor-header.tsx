@@ -17,7 +17,7 @@ export const EditorHeader = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
   const { editor } = useAppState();
-  const pageMeta = useCurrentPageMeta();
+  const { trash: isTrash = false } = useCurrentPageMeta() || {};
   const onPropsUpdated = usePropsUpdated();
 
   useEffect(() => {
@@ -34,16 +34,22 @@ export const EditorHeader = () => {
   }, [editor]);
 
   return (
-    <Header>
+    <Header
+      rightItems={
+        isTrash
+          ? ['trashButtonGroup']
+          : ['syncUser', 'themeModeSwitch', 'editorOptionMenu']
+      }
+    >
       {title && (
         <StyledTitle
           onMouseEnter={() => {
-            if (pageMeta?.trash) return;
+            if (isTrash) return;
 
             setIsHover(true);
           }}
           onMouseLeave={() => {
-            if (pageMeta?.trash) return;
+            if (isTrash) return;
 
             setIsHover(false);
           }}

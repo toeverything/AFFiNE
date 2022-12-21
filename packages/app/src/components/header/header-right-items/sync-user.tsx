@@ -3,7 +3,7 @@ import { useModal } from '@/providers/global-modal-provider';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { IconButton } from '@/ui/button';
 
-export const SyncIcon = () => {
+export const SyncUser = () => {
   const { triggerLoginModal } = useModal();
   const appState = useAppState();
 
@@ -17,3 +17,5 @@ export const SyncIcon = () => {
     </IconButton>
   );
 };
+
+export default SyncUser;
