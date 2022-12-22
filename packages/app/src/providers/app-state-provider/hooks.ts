@@ -43,7 +43,7 @@ export const useLoadPage = () => {
       });
     }
     loadPage?.current?.(pageId);
-  }, [workspace, pageId, loadPage]);
+  }, [workspace, pageId, loadPage, createPage, router, currentWorkspaceId]);
 
   return currentPage?.pageId === pageId ? currentPage : null;
 };
