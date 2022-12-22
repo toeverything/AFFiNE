@@ -26,7 +26,6 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     currentWorkspace: null,
     currentPage: null,
     editor: null,
-    workspaces: {},
     // Synced is used to ensure that the provider has synced with the server,
     // So after Synced set to true, the other state is sure to be set.
     synced: false,

@@ -15,7 +15,6 @@ export type CreateEditorHandler = (page: StorePage) => EditorContainer | null;
 export interface AppStateValue {
   user: AccessTokenMessage | null;
   workspacesMeta: Workspace[];
-  workspaces: Record<string, StoreWorkspace | null>;
 
   currentWorkspaceId: string;
   currentWorkspace: StoreWorkspace | null;
@@ -56,7 +55,7 @@ export const AppState = createContext<AppStateContext>({
   loadPage: () => Promise.resolve(null),
   createPage: () => Promise.resolve(null),
   synced: false,
-  workspaces: {},
+  // workspaces: {},
 });
 
 export const useAppState = () => {
