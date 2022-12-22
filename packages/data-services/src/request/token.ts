@@ -96,4 +96,5 @@ export const refreshToken = async () => {
   };
   setToken(token);
   refreshingToken = undefined;
+  return token;
 };

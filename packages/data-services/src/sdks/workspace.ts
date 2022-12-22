@@ -26,12 +26,7 @@ export interface Workspace {
 }
 
 export async function getWorkspaces(): Promise<Workspace[]> {
-  const data = await request({
-    url: '/api/workspace',
-    method: 'GET',
-  });
-
-  return data.data;
+  return request.get('/api/workspace').json();
 }
 
 export interface WorkspaceDetail extends Workspace {
@@ -42,14 +37,7 @@ export interface WorkspaceDetail extends Workspace {
 export async function getWorkspaceDetail(
   params: GetWorkspaceDetailParams
 ): Promise<WorkspaceDetail | null> {
-  const data = await request<WorkspaceDetail | null>({
-    url: `/api/workspace/${params.id}`,
-    method: 'GET',
-  });
-  if (data.data?.owner.id) {
-    data.data.owner.id = String(data.data?.owner.id);
-  }
-  return data.data;
+  return request.get(`/api/workspace/${params.id}`).json();
 }
 
 export interface Permission {
@@ -80,12 +68,7 @@ export interface GetWorkspaceMembersParams {
 export async function getWorkspaceMembers(
   params: GetWorkspaceDetailParams
 ): Promise<Member[]> {
-  const data = await request<Member[]>({
-    url: `/api/workspace/${params.id}/permission`,
-    method: 'GET',
-  });
-
-  return data.data;
+  return request.get(`/api/workspace/${params.id}/permission`).json();
 }
 
 export interface CreateWorkspaceParams {
@@ -96,13 +79,7 @@ export interface CreateWorkspaceParams {
 export async function createWorkspace(
   params: CreateWorkspaceParams
 ): Promise<void> {
-  const data = await request({
-    url: '/api/workspace',
-    method: 'POST',
-    data: params,
-  });
-
-  return data.data;
+  return request.post('/api/workspace', { json: params }).json();
 }
 
 export interface UpdateWorkspaceParams {
@@ -113,15 +90,13 @@ export interface UpdateWorkspaceParams {
 export async function updateWorkspace(
   params: UpdateWorkspaceParams
 ): Promise<void> {
-  const data = await request({
-    url: `/api/workspace/${params.id}`,
-    method: 'POST',
-    data: {
-      public: params.public,
-    },
-  });
-
-  return data.data;
+  return request
+    .post(`/api/workspace/${params.id}`, {
+      json: {
+        public: params.public,
+      },
+    })
+    .json();
 }
 
 export interface DeleteWorkspaceParams {
@@ -131,12 +106,7 @@ export interface DeleteWorkspaceParams {
 export async function deleteWorkspace(
   params: DeleteWorkspaceParams
 ): Promise<void> {
-  const data = await request({
-    url: `/api/workspace/${params.id}`,
-    method: 'DELETE',
-  });
-
-  return data.data;
+  await request.delete(`/api/workspace/${params.id}`);
 }
 
 export interface InviteMemberParams {
@@ -148,15 +118,13 @@ export interface InviteMemberParams {
  * Notice: Only support normal(contrast to private) workspace.
  */
 export async function inviteMember(params: InviteMemberParams): Promise<void> {
-  const data = await request({
-    url: `/api/workspace/${params.id}/permission`,
-    method: 'POST',
-    data: {
-      email: params.email,
-    },
-  });
-
-  return data.data;
+  return request
+    .post(`/api/workspace/${params.id}/permission`, {
+      json: {
+        email: params.email,
+      },
+    })
+    .json();
 }
 
 export interface RemoveMemberParams {
@@ -164,12 +132,7 @@ export interface RemoveMemberParams {
 }
 
 export async function removeMember(params: RemoveMemberParams): Promise<void> {
-  const data = await request({
-    url: `/api/permission/${params.permissionId}`,
-    method: 'DELETE',
-  });
-
-  return data.data;
+  await request.delete(`/api/permission/${params.permissionId}`);
 }
 
 export interface AcceptInvitingParams {
@@ -179,12 +142,7 @@ export interface AcceptInvitingParams {
 export async function acceptInviting(
   params: AcceptInvitingParams
 ): Promise<void> {
-  const data = await request({
-    url: `/api/invite/${params.invitingCode}`,
-    method: 'POST',
-  });
-
-  return data.data;
+  await request.post(`/api/invite/${params.invitingCode}`);
 }
 
 export interface DownloadWOrkspaceParams {
@@ -193,13 +151,7 @@ export interface DownloadWOrkspaceParams {
 export async function downloadWorkspace(
   params: DownloadWOrkspaceParams
 ): Promise<ArrayBuffer> {
-  const data = await request({
-    url: `/api/workspace/${params.workspaceId}/doc`,
-    method: 'GET',
-    responseType: 'arraybuffer',
-  });
-
-  return data?.data;
+  return request.get(`/api/workspace/${params.workspaceId}/doc`).arrayBuffer();
 }
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {
