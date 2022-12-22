@@ -37,10 +37,10 @@ type HeaderRightItemNames =
   | 'syncUser';
 
 const HeaderRightItems: Record<HeaderRightItemNames, ReactNode> = {
-  editorOptionMenu: <EditorOptionMenu />,
-  trashButtonGroup: <TrashButtonGroup />,
-  themeModeSwitch: <ThemeModeSwitch />,
-  syncUser: <SyncUser />,
+  editorOptionMenu: <EditorOptionMenu key="editorOptionMenu" />,
+  trashButtonGroup: <TrashButtonGroup key="trashButtonGroup" />,
+  themeModeSwitch: <ThemeModeSwitch key="themeModeSwitch" />,
+  syncUser: <SyncUser key="syncUser" />,
 };
 
 export const Header = ({
