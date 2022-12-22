@@ -23,6 +23,7 @@ export interface AppStateValue {
   currentPage: StorePage | null;
 
   editor: EditorContainer | null;
+  synced: boolean;
 }
 
 export interface AppStateContext extends AppStateValue {
@@ -31,15 +32,9 @@ export interface AppStateContext extends AppStateValue {
     ((page: StorePage) => EditorContainer | null) | undefined
   >;
   setEditor?: MutableRefObject<((page: EditorContainer) => void) | undefined>;
-  loadWorkspace?: MutableRefObject<
-    ((workspaceId: string) => Promise<StoreWorkspace | null> | null) | undefined
-  >;
-  loadPage?: MutableRefObject<
-    ((pageId: string) => Promise<StorePage | null> | null) | undefined
-  >;
-  createPage?: MutableRefObject<
-    ((pageId?: string) => Promise<string | null>) | undefined
-  >;
+  loadWorkspace: (workspaceId: string) => Promise<StoreWorkspace | null>;
+  loadPage: (pageId: string) => Promise<StorePage | null>;
+  createPage: (pageId?: string) => Promise<string | null>;
 }
 
 export const AppState = createContext<AppStateContext>({
@@ -56,9 +51,10 @@ export const AppState = createContext<AppStateContext>({
   setState: () => {},
   createEditor: undefined,
   setEditor: undefined,
-  loadWorkspace: undefined,
-  loadPage: undefined,
-  createPage: undefined,
+  loadWorkspace: () => Promise.resolve(null),
+  loadPage: () => Promise.resolve(null),
+  createPage: () => Promise.resolve(null),
+  synced: false,
   workspaces: {},
 });
 

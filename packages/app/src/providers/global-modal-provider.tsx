@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import ShortcutsModal from '@/components/shortcuts-modal';
 import ContactModal from '@/components/contact-modal';
@@ -49,6 +49,10 @@ export const ModalProvider = ({
       [key]: visible ?? !modalMap[key],
     });
   };
+  useEffect(() => {
+    // @ts-ignore
+    window.triggerHandler = () => triggerHandler('login');
+  }, [triggerHandler]);
 
   return (
     <ModalContext.Provider

@@ -8,7 +8,7 @@ import {
   WorkspaceType,
   getWorkspaceDetail,
 } from '@pathfinder/data-services';
-import { AppState } from './context';
+import { AppState, AppStateContext } from './context';
 import type {
   AppStateValue,
   CreateEditorHandler,
@@ -29,6 +29,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     currentPage: null,
     editor: null,
     workspaces: {},
+    // Synced is used to ensure that the provider has synced with the server,
+    // So after Synced set to true, the other state is sure to be set.
+    synced: false,
   });
 
   const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =
@@ -50,12 +53,14 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     [_setCreateEditorHandler]
   );
 
-  const loadWorkspace =
-    useRef<(workspaceId: string) => Promise<Workspace | null> | null>();
+  const loadWorkspace = useRef<AppStateContext['loadWorkspace']>(() =>
+    Promise.resolve(null)
+  );
   loadWorkspace.current = async (workspaceId: string) => {
     if (state.currentWorkspaceId === workspaceId) {
       return state.currentWorkspace;
     }
+
     const workspace = (await loadWorkspaceHandler?.(workspaceId, true)) || null;
 
     // @ts-expect-error
@@ -72,7 +77,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     }));
     return workspace;
   };
-  const loadPage = useRef<(pageId: string) => Promise<Page | null> | null>();
+  const loadPage = useRef<AppStateContext['loadPage']>(() =>
+    Promise.resolve(null)
+  );
   loadPage.current = async (pageId: string) => {
     const { currentWorkspace, currentPage } = state;
     if (pageId === currentPage?.pageId) {
@@ -114,7 +121,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     setState(state => ({ ...state, editor }));
   };
 
-  const createPage = useRef<(pageId?: string) => Promise<string | null>>();
+  const createPage = useRef<AppStateContext['createPage']>(() =>
+    Promise.resolve(null)
+  );
 
   createPage.current = (pageId: string = Date.now().toString()) =>
     new Promise<string | null>(resolve => {
@@ -130,8 +139,16 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     });
 
   useEffect(() => {
+    if (!loadWorkspaceHandler) {
+      return;
+    }
     const callback = async (user: AccessTokenMessage | null) => {
-      const workspacesMeta = user ? await getWorkspaces() : [];
+      const workspacesMeta = user
+        ? await getWorkspaces().catch(() => {
+            return [];
+          })
+        : [];
+
       const workspacesList = await Promise.all(
         workspacesMeta.map(async ({ id }) => {
           const workspace = (await loadWorkspaceHandler?.(id)) || null;
@@ -146,7 +163,13 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       });
 
       // TODO: add meta info to workspace meta
-      setState(state => ({ ...state, user: user, workspacesMeta, workspaces }));
+      setState(state => ({
+        ...state,
+        user: user,
+        workspacesMeta,
+        workspaces,
+        synced: true,
+      }));
     };
     authorizationEvent.onChange(callback);
 
@@ -161,9 +184,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       setState,
       createEditor,
       setEditor,
-      loadWorkspace,
-      loadPage,
-      createPage,
+      loadWorkspace: loadWorkspace.current,
+      loadPage: loadPage.current,
+      createPage: createPage.current,
     }),
     [state, setState, loadPage, loadWorkspace]
   );
@@ -174,7 +197,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
         setLoadWorkspaceHandler={setLoadWorkspaceHandler}
         setCreateEditorHandler={setCreateEditorHandler}
       />
-      {loadWorkspaceHandler ? children : null}
+      {children}
     </AppState.Provider>
   );
 };

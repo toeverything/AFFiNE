@@ -9,7 +9,7 @@ export const useLoadWorkspace = () => {
   const workspaceId = router.query.workspaceId as string;
 
   useEffect(() => {
-    loadWorkspace?.current?.(workspaceId);
+    loadWorkspace?.(workspaceId);
   }, [workspaceId, loadWorkspace]);
 
   return currentWorkspaceId === workspaceId ? currentWorkspace : null;
@@ -29,7 +29,7 @@ export const useLoadPage = () => {
     }
     const page = pageId ? workspace?.getPage(pageId) : null;
     if (page) {
-      loadPage?.current?.(pageId);
+      loadPage?.(pageId);
       return;
     }
 
@@ -39,7 +39,7 @@ export const useLoadPage = () => {
       return;
     }
 
-    createPage?.current?.()?.then(async pageId => {
+    createPage?.()?.then(async pageId => {
       if (!pageId) {
         return;
       }

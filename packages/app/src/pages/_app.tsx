@@ -8,12 +8,15 @@ import '@fontsource/space-mono';
 import '@fontsource/poppins';
 import '../utils/print-build-info';
 import ProviderComposer from '@/components/provider-composer';
-import type { ReactElement, ReactNode } from 'react';
+import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import type { NextPage } from 'next';
 import { AppStateProvider } from '@/providers/app-state-provider/provider';
 import ConfirmProvider from '@/providers/confirm-provider';
 import { ModalProvider } from '@/providers/global-modal-provider';
-
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
+import { useAppState } from '@/providers/app-state-provider';
+import { PageLoading } from '@/components/loading';
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
 });
@@ -26,7 +29,7 @@ type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
 
-function MyApp({ Component, pageProps }: AppPropsWithLayout) {
+const App = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout || (page => page);
 
   return (
@@ -40,10 +43,24 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
           <ConfirmProvider key="ConfirmProvider" />,
         ]}
       >
-        {getLayout(<Component {...pageProps} />)}
+        <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
       </ProviderComposer>
     </>
   );
-}
+};
 
-export default MyApp;
+const AppDefender = ({ children }: PropsWithChildren) => {
+  const router = useRouter();
+
+  const { synced } = useAppState();
+
+  useEffect(() => {
+    if (router.pathname === '/') {
+      router.replace('/workspace');
+    }
+  }, [router]);
+
+  return <div>{synced ? children : <PageLoading />}</div>;
+};
+
+export default App;

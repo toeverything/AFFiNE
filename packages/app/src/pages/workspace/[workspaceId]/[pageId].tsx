@@ -1,16 +1,19 @@
-import { useRef, useEffect, ReactElement } from 'react';
+import {
+  useRef,
+  useEffect,
+  useState,
+  ReactElement,
+  PropsWithChildren,
+} from 'react';
 import { styled } from '@/styles';
 import { EditorHeader } from '@/components/header';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
-import {
-  useLoadWorkspace,
-  useLoadPage,
-} from '@/providers/app-state-provider/hooks';
 import { useAppState } from '@/providers/app-state-provider/context';
 import exampleMarkdown from '@/static/example-markdown';
 import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
+import { useRouter } from 'next/router';
 
 const StyledEditorContainer = styled('div')(({ theme }) => {
   return {
@@ -20,9 +23,8 @@ const StyledEditorContainer = styled('div')(({ theme }) => {
 
 const Page: NextPageWithLayout = () => {
   const editorContainer = useRef<HTMLDivElement>(null);
-  const workspace = useLoadWorkspace();
-  const page = useLoadPage();
-  const { createEditor, setEditor } = useAppState();
+  const { createEditor, setEditor, currentPage, currentWorkspace } =
+    useAppState();
 
   useEffect(() => {
     const ret = () => {
@@ -32,29 +34,29 @@ const Page: NextPageWithLayout = () => {
       }
     };
 
-    if (!workspace || !page) {
-      return ret;
-    }
-
-    const editor = createEditor?.current?.(page);
+    const editor = createEditor?.current?.(currentPage!);
     if (editor) {
       editorContainer.current?.appendChild(editor);
       setEditor?.current?.(editor);
-      if (page.isEmpty) {
+      if (currentPage!.isEmpty) {
         const title = 'Welcome to the AFFiNE Alpha';
-        const pageId = page.addBlock({
+        const pageId = currentPage!.addBlock({
           flavour: 'affine:page',
           title,
         });
-        const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
+        const groupId = currentPage!.addBlock(
+          { flavour: 'affine:group' },
+          pageId
+        );
         editor.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
-        workspace.setPageMeta(page.id, { title });
-        page.resetHistory();
+
+        currentWorkspace!.setPageMeta(currentPage!.id, { title });
+        currentPage!.resetHistory();
       }
     }
 
     return ret;
-  }, [workspace, page, createEditor, setEditor]);
+  }, [currentWorkspace, currentPage, createEditor, setEditor]);
 
   return (
     <>
@@ -66,8 +68,34 @@ const Page: NextPageWithLayout = () => {
   );
 };
 
+const PageDefender = ({ children }: PropsWithChildren) => {
+  const router = useRouter();
+  const [pageLoaded, setPageLoaded] = useState(false);
+  const { currentWorkspace, createPage, loadPage } = useAppState();
+  useEffect(() => {
+    const initPage = async () => {
+      const pageId = router.query.pageId as string;
+      const isPageExist = !!currentWorkspace!.meta.pageMetas.find(
+        p => p.id === pageId
+      );
+      if (!isPageExist) {
+        await createPage(pageId);
+      }
+      await loadPage(pageId);
+      setPageLoaded(true);
+    };
+    initPage();
+  }, [createPage, currentWorkspace, loadPage, router.query.pageId]);
+
+  return <>{pageLoaded ? children : null}</>;
+};
+
 Page.getLayout = function getLayout(page: ReactElement) {
-  return <WorkspaceLayout>{page}</WorkspaceLayout>;
+  return (
+    <WorkspaceLayout>
+      <PageDefender>{page}</PageDefender>
+    </WorkspaceLayout>
+  );
 };
 
 export default Page;

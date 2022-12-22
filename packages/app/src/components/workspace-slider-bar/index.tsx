@@ -140,7 +140,7 @@ export const WorkSpaceSliderBar = () => {
         </Link>
         <StyledNewPageButton
           onClick={async () => {
-            const pageId = await createPage?.current?.();
+            const pageId = await createPage?.();
             if (pageId) {
               openPage(pageId);
             }

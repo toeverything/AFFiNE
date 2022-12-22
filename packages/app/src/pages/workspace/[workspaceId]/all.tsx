@@ -1,17 +1,14 @@
-import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
 import { PageList } from '@/components/page-list';
 import { AllPagesIcon } from '@blocksuite/icons';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { PageListHeader } from '@/components/header';
-import { NextPageWithLayout } from '@/pages/_app';
 import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
 
-const All: NextPageWithLayout = () => {
-  const workspace = useLoadWorkspace();
+const All = () => {
   const pageMetaList = usePageMetaList();
 
-  return workspace ? (
+  return (
     <>
       <PageListHeader icon={<AllPagesIcon />}>All Page</PageListHeader>
       <PageList
@@ -19,7 +16,7 @@ const All: NextPageWithLayout = () => {
         showFavoriteTag={true}
       />
     </>
-  ) : null;
+  );
 };
 
 All.getLayout = function getLayout(page: ReactElement) {

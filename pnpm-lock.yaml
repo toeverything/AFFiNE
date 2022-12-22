@@ -122,7 +122,7 @@ importers:
       swr: ^2.0.0
       typescript: ^4.8.4
     dependencies:
-      axios: 1.2.1
+      axios: 1.2.0
       encoding: 0.1.13
       firebase: 9.13.0_encoding@0.1.13
       ky: 0.33.0
@@ -1241,7 +1241,7 @@ packages:
     engines: {node: ^8.13.0 || >=10.10.0}
     dependencies:
       '@grpc/proto-loader': 0.7.3
-      '@types/node': 18.11.17
+      '@types/node': 18.7.18
     dev: false
 
   /@grpc/proto-loader/0.6.13:
@@ -2375,10 +2375,10 @@ packages:
 
   /@types/node/18.11.17:
     resolution: {integrity: sha512-HJSUJmni4BeDHhfzn6nF0sVmd1SMezP7/4F0Lq+aXzmp2xm9O7WXrUtHW/CHlYVtZUbByEvWidHqRtcJXGF2Ng==}
+    dev: true
 
   /@types/node/18.7.18:
     resolution: {integrity: sha512-m+6nTEOadJZuTPkKR/SYK3A2d7FZrgElol9UP1Kae90VVU4a6mxnPuLiIW1m4Cq4gZ/nWb9GrdVXJCoCazDAbg==}
-    dev: true
 
   /@types/parse-json/4.0.0:
     resolution: {integrity: sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==}
@@ -2765,8 +2765,8 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /axios/1.2.1:
-    resolution: {integrity: sha512-I88cFiGu9ryt/tfVEi4kX2SITsvDddTajXTOFmt2uK1ZVA8LytjtdeyefdQWEf5PU8w+4SSJDoYnggflB5tW4A==}
+  /axios/1.2.0:
+    resolution: {integrity: sha512-zT7wZyNYu3N5Bu0wuZ6QccIf93Qk1eV8LOewxgjOZFd2DenOs98cJ7+Y6703d0wkaXGY6/nZd4EweJaHz9uzQw==}
     dependencies:
       follow-redirects: 1.15.2
       form-data: 4.0.0
@@ -5659,7 +5659,7 @@ packages:
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
       '@types/long': 4.0.2
-      '@types/node': 18.11.17
+      '@types/node': 18.7.18
       long: 4.0.0
     dev: false
 
@@ -5678,7 +5678,7 @@ packages:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 18.11.17
+      '@types/node': 18.7.18
       long: 5.2.0
     dev: false
 
