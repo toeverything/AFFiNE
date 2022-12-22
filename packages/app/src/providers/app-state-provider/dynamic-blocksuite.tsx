@@ -92,7 +92,7 @@ const DynamicBlocksuite = ({
           (indexDBProvider as IndexedDBDocProvider)?.on('synced', async () => {
             const updates = await downloadWorkspace({ workspaceId });
 
-            if (updates.byteLength) {
+            if (updates && updates.byteLength) {
               Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
               // if after update, the space:meta is empty, then we need to get map with doc
               workspace.doc.getMap('space:meta');

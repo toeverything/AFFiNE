@@ -199,7 +199,7 @@ export async function downloadWorkspace(
     responseType: 'arraybuffer',
   });
 
-  return data.data;
+  return data?.data;
 }
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {

@@ -94,6 +94,10 @@ export async function setAuthorization(config: AxiosRequestConfig<unknown>) {
     }
     if (isAccessTokenExpired(token.accessToken)) {
       await refreshToken();
+      token = getToken();
+    }
+    if (!token) {
+      throw new Error('No authorization token.');
     }
     if (!config.headers) {
       config.headers = {};
