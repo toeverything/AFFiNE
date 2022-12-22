@@ -28,7 +28,6 @@
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
     "i18next": "^21.9.1",
-    "lib0": "^0.2.58",
     "lit": "^2.3.1",
     "next": "13.0.1",
     "prettier": "^2.7.1",
@@ -36,8 +35,7 @@
     "quill-cursors": "^4.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-i18next": "^11.18.4",
-    "y-protocols": "^1.0.5"
+    "react-i18next": "^11.18.4"
   },
   "devDependencies": {
     "@types/node": "18.7.18",

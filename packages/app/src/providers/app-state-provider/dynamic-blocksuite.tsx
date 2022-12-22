@@ -13,27 +13,7 @@ import type {
   LoadWorkspaceHandler,
   CreateEditorHandler,
 } from './context';
-import { token } from '@pathfinder/data-services';
-import { WebsocketProvider } from './y-websocket';
-
-const getEditorParams = (workspaceId: string) => {
-  const providers = [];
-  const params = new URLSearchParams(location.search);
-  // const room = params.get('room') ?? 'AFFINE-pathfinder';
-  // if (params.get('syncMode') === 'websocket') {
-  //   const WebsocketDocProvider = createWebsocketDocProvider(
-  //     `ws://${window.location.host}/collaboration/`
-  //   );
-  //   providers.push(WebsocketDocProvider);
-  // }
-
-  providers.push(IndexedDBDocProvider);
-
-  return {
-    room: workspaceId,
-    providers,
-  };
-};
+import { token, WebsocketProvider } from '@pathfinder/data-services';
 
 interface Props {
   setLoadWorkspaceHandler: (handler: LoadWorkspaceHandler) => void;
