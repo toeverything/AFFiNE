@@ -172,7 +172,10 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       }));
     };
     token.onChange(callback);
-    token.refreshToken();
+    token.refreshToken().catch(err => {
+      // FIXME: should resolve invalid refresh token
+      console.log(err);
+    });
     return () => {
       token.offChange(callback);
     };
