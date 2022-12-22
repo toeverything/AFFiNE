@@ -1,5 +1,5 @@
 import { displayFlex, styled } from '@/styles';
-import { Loading } from '@/components/loading';
+import Loading from '@/components/loading';
 import Modal from '@/ui/modal';
 import { useState } from 'react';
 import { Button } from '@/ui/button';

@@ -2,7 +2,7 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { StyledButtonWrapper, StyledTitle } from './styles';
 import { Button } from '@/ui/button';
 import { Wrapper, Content } from '@/ui/layout';
-import { Loading } from '@/components/loading';
+import Loading from '@/components/loading';
 import { useEffect, useState } from 'react';
 type ImportModalProps = {
   open: boolean;
