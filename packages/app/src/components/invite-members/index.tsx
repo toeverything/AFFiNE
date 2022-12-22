@@ -11,6 +11,7 @@ interface LoginModalProps {
   open: boolean;
   onClose: () => void;
   workspaceId: string;
+  onInviteSuccess: () => void;
 }
 export const debounce = <T extends (...args: any) => any>(
   fn: T,
@@ -42,6 +43,7 @@ export const InviteMembers = ({
   open,
   onClose,
   workspaceId,
+  onInviteSuccess,
 }: LoginModalProps) => {
   const [canInvite, setCanInvite] = useState<boolean>(true);
   const [email, setEmail] = useState<string>('');
@@ -128,6 +130,7 @@ export const InviteMembers = ({
                 inviteMember({ id: workspaceId, email: email })
                   .then(() => {
                     onClose();
+                    onInviteSuccess && onInviteSuccess();
                   })
                   .catch(err => {
                     toast('Invite failed');

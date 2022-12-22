@@ -27,7 +27,7 @@ export const Confirm = ({
 }: ConfirmProps) => {
   const [open, setOpen] = useState(true);
   return (
-    <Modal open={open} disablePortal={true}>
+    <Modal open={open}>
       <StyledModalWrapper>
         <ModalCloseButton
           onClick={() => {

@@ -129,7 +129,7 @@ export const WorkspaceSetting = ({
     }
   }, [isShow]);
   return (
-    <Modal onClose={onClose} open={isShow}>
+    <Modal open={isShow}>
       <StyledSettingContainer>
         <ModalCloseButton onClick={handleClickClose} />
         <StyledSettingSidebar>
@@ -184,7 +184,7 @@ const GeneralPage = ({ workspace }: { workspace?: Workspace }) => {
 const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
-  useEffect(() => {
+  const refreshMembers = () => {
     getWorkspaceMembers({
       id: workspace.id,
     })
@@ -194,8 +194,10 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
       .catch(err => {
         console.log(err);
       });
+  };
+  useEffect(() => {
+    refreshMembers();
   }, [workspace.id]);
-  const { confirm } = useConfirm();
 
   return (
     <div>
@@ -239,19 +241,20 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                       <>
                         <MenuItem
                           onClick={() => {
-                            confirm({
-                              title: 'Delete Member?',
-                              content: `will delete member`,
-                              confirmText: 'Delete',
-                              confirmType: 'danger',
-                            }).then(confirm => {
-                              removeMember({
-                                permissionId: member.id,
-                              }).then(data => {
-                                // console.log('data: ', data);
-                                toast('Moved to Trash');
-                              });
+                            // confirm({
+                            //   title: 'Delete Member?',
+                            //   content: `will delete member`,
+                            //   confirmText: 'Delete',
+                            //   confirmType: 'danger',
+                            // }).then(confirm => {
+                            removeMember({
+                              permissionId: member.id,
+                            }).then(data => {
+                              // console.log('data: ', data);
+                              toast('Moved to Trash');
+                              refreshMembers();
                             });
+                            // });
                           }}
                           icon={<TrashIcon />}
                         >
@@ -287,6 +290,9 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
         <InviteMembers
           onClose={() => {
             setIsInviteModalShow(false);
+          }}
+          onInviteSuccess={() => {
+            refreshMembers();
           }}
           workspaceId={workspace.id}
           open={isInviteModalShow}
