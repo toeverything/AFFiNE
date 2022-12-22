@@ -17,12 +17,31 @@ export const useLoadWorkspace = () => {
 
 export const useLoadPage = () => {
   const router = useRouter();
-  const { loadPage, currentPage } = useAppState();
+  const { loadPage, currentPage, createPage, currentWorkspaceId } =
+    useAppState();
   const workspace = useLoadWorkspace();
 
   const pageId = router.query.pageId as string;
 
   useEffect(() => {
+    if (!workspace) {
+      return;
+    }
+    const page = workspace?.getPage(pageId);
+    if (!page) {
+      const savedPageId = workspace.meta.pageMetas[0]?.id;
+      if (savedPageId) {
+        router.push(`/workspace/${currentWorkspaceId}/${savedPageId}`);
+        return;
+      }
+
+      createPage?.current?.()?.then(async pageId => {
+        if (!pageId) {
+          return;
+        }
+        router.push(`/workspace/${currentWorkspaceId}/${pageId}`);
+      });
+    }
     loadPage?.current?.(pageId);
   }, [workspace, pageId, loadPage]);
 
