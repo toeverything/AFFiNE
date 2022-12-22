@@ -28,9 +28,9 @@ export const StyledArrowButton = styled.button<{ isShow: boolean }>(
       backgroundColor: theme.colors.hoverBackground,
       borderRadius: '50%',
       transition: 'all .15s',
-      position: 'fixed',
+      position: 'relative',
       top: '34px',
-      left: isShow ? '304px' : '-8px',
+      left: isShow ? '-16px' : '-8px',
       zIndex: theme.zIndex.modal,
       svg: {
         transform: isShow ? 'rotate(180deg)' : 'unset',
