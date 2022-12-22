@@ -78,7 +78,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     if (pageId === currentPage?.pageId) {
       return currentPage;
     }
-    const page = currentWorkspace?.getPage(pageId) || null;
+    const page = (pageId ? currentWorkspace?.getPage(pageId) : null) || null;
     setState(state => ({ ...state, currentPage: page }));
     return page;
   };
