@@ -78,7 +78,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     if (pageId === currentPage?.pageId) {
       return currentPage;
     }
-    const page = currentWorkspace?.getPage(pageId) || null;
+    const page = (pageId ? currentWorkspace?.getPage(pageId) : null) || null;
     setState(state => ({ ...state, currentPage: page }));
     return page;
   };
@@ -94,7 +94,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     const editor = createEditorHandler?.(currentPage) || null;
 
     if (editor) {
-      const pageMeta = currentWorkspace?.meta.pageMetas.find(
+      const pageMeta = currentWorkspace.meta.pageMetas.find(
         p => p.id === currentPage.pageId
       );
       if (pageMeta?.mode) {
@@ -133,13 +133,13 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     const callback = async (user: AccessTokenMessage | null) => {
       const workspacesMeta = user ? await getWorkspaces() : [];
       const workspacesList = await Promise.all(
-        workspacesMeta?.map(async ({ id }) => {
+        workspacesMeta.map(async ({ id }) => {
           const workspace = (await loadWorkspaceHandler?.(id)) || null;
           return { id, workspace };
         })
       );
 
-      let workspaces: Record<string, Workspace | null> = {};
+      const workspaces: Record<string, Workspace | null> = {};
 
       workspacesList.forEach(({ id, workspace }) => {
         workspaces[id] = workspace;

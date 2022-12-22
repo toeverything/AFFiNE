@@ -8,6 +8,7 @@ import {
 import { FooterSetting } from './FooterSetting';
 import { FooterUsers } from './FooterUsers';
 import { WorkspaceType } from '@pathfinder/data-services';
+import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceItemProps {
   id: string;
@@ -28,6 +29,8 @@ export const WorkspaceItem = ({
 }: WorkspaceItemProps) => {
   const router = useRouter();
 
+  const { currentWorkspaceId } = useAppState();
+
   const handleClickSetting = async () => {
     onClick && onClick(id);
   };
@@ -37,7 +40,9 @@ export const WorkspaceItem = ({
       onClick={() => {
         router.push(`/workspace/${id}`);
       }}
-      isPrivate={type === WorkspaceType.Private}
+      canSet={
+        type !== WorkspaceType.Private && currentWorkspaceId === String(id)
+      }
     >
       <WorkspaceItemAvatar alt={name} src={icon}>
         {name.charAt(0)}
@@ -64,17 +69,17 @@ const Name = styled('div')(({ theme }) => {
   };
 });
 
-const StyledWrapper = styled(WorkspaceItemWrapper)<{ isPrivate: boolean }>(
-  ({ isPrivate }) => {
+const StyledWrapper = styled(WorkspaceItemWrapper)<{ canSet: boolean }>(
+  ({ canSet }) => {
     return {
       '& .footer-setting': {
         display: 'none',
       },
       ':hover .footer-users': {
-        display: isPrivate ? 'block' : 'none',
+        display: canSet ? 'none' : '',
       },
       ':hover .footer-setting': {
-        display: isPrivate ? 'none' : 'block',
+        display: canSet ? 'block' : 'none',
       },
     };
   }

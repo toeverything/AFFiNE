@@ -7,6 +7,8 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
+import { login } from './sdks';
+import { setToken } from './request';
 
 /**
  * firebaseConfig reference: https://firebase.google.com/docs/web/setup#add_firebase_to_your_app
@@ -32,8 +34,14 @@ const signIn = (email: string, password: string) => {
 };
 
 const googleAuthProvider = new GoogleAuthProvider();
-export const signInWithGoogle = () => {
-  return signInWithPopup(firebaseAuth, googleAuthProvider);
+export const signInWithGoogle = async () => {
+  const user = await signInWithPopup(firebaseAuth, googleAuthProvider);
+  const idToken = await user.user.getIdToken();
+  const token = await login({ token: idToken, type: 'Google' });
+  setToken({
+    accessToken: token.token,
+    refreshToken: token.refresh,
+  });
 };
 
 export const onAuthStateChanged = (callback: (user: User | null) => void) => {

@@ -28,21 +28,23 @@ export const useLoadPage = () => {
       return;
     }
     const page = pageId ? workspace?.getPage(pageId) : null;
-    if (!page) {
-      const savedPageId = workspace.meta.pageMetas[0]?.id;
-      if (savedPageId) {
-        router.push(`/workspace/${currentWorkspaceId}/${savedPageId}`);
+    if (page) {
+      loadPage?.current?.(pageId);
+      return;
+    }
+
+    const savedPageId = workspace.meta.pageMetas[0]?.id;
+    if (savedPageId) {
+      router.push(`/workspace/${currentWorkspaceId}/${savedPageId}`);
+      return;
+    }
+
+    createPage?.current?.()?.then(async pageId => {
+      if (!pageId) {
         return;
       }
-
-      createPage?.current?.()?.then(async pageId => {
-        if (!pageId) {
-          return;
-        }
-        router.push(`/workspace/${currentWorkspaceId}/${pageId}`);
-      });
-    }
-    loadPage?.current?.(pageId);
+      router.push(`/workspace/${currentWorkspaceId}/${pageId}`);
+    });
   }, [workspace, pageId, loadPage, createPage, router, currentWorkspaceId]);
 
   return currentPage?.pageId === pageId ? currentPage : null;

@@ -27,13 +27,9 @@ export interface LoginResponse {
 }
 
 export async function login(params: LoginParams): Promise<LoginResponse> {
-  const data = await request<LoginResponse>({
-    url: '/api/user/token',
-    method: 'POST',
-    data: params,
-    withAuthorization: false,
-  });
-  return data.data;
+  return request
+    .post('/api/user/token', { json: params, headers: { token: undefined } })
+    .json<LoginResponse>();
 }
 
 export interface GetUserByEmailParams {
@@ -52,10 +48,5 @@ export interface User {
 export async function getUserByEmail(
   params: GetUserByEmailParams
 ): Promise<User | null> {
-  const data = await request<User | null>({
-    url: '/api/user',
-    method: 'GET',
-    params,
-  });
-  return data.data;
+  return request.get('/api/user', { json: params }).json<User | null>();
 }

@@ -2,7 +2,6 @@ import Modal, { ModalCloseButton } from '@/ui/modal';
 import {
   StyledAvatarUploadBtn,
   StyledCopyButtonContainer,
-  StyledDeleteButtonContainer,
   StyledMemberAvatar,
   StyledMemberButtonContainer,
   StyledMemberEmail,
@@ -17,12 +16,9 @@ import {
   StyledPublishContent,
   StyledPublishCopyContainer,
   StyledPublishExplanation,
-  StyledSettingAvatar,
-  StyledSettingAvatarContent,
   StyledSettingContainer,
   StyledSettingContent,
   StyledSettingH2,
-  StyledSettingInputContainer,
   StyledSettingSidebar,
   StyledSettingSidebarHeader,
   StyledSettingTabContainer,
@@ -52,6 +48,10 @@ import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
 import { toast } from '@/ui/toast';
 import { useConfirm } from '@/providers/confirm-provider';
+import { useAppState } from '@/providers/app-state-provider';
+import { WorkspaceDetails } from '../workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
+import { GeneralPage } from './general';
+
 enum ActiveTab {
   'general' = 'general',
   'members' = 'members',
@@ -66,7 +66,8 @@ type SettingTabProps = {
 type WorkspaceSettingProps = {
   isShow: boolean;
   onClose?: () => void;
-  workspace?: Workspace;
+  workspace: Workspace;
+  owner: WorkspaceDetails[string]['owner'];
 };
 
 const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
@@ -113,7 +114,9 @@ export const WorkspaceSetting = ({
   isShow,
   onClose,
   workspace,
+  owner,
 }: WorkspaceSettingProps) => {
+  const { workspaces, user } = useAppState();
   const [activeTab, setActiveTab] = useState<ActiveTab>(ActiveTab.general);
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -121,7 +124,7 @@ export const WorkspaceSetting = ({
   const handleClickClose = () => {
     onClose && onClose();
   };
-  const isPrivate = workspace?.type === WorkspaceType.Private;
+  const isOwner = user && owner.id === user.id;
   useEffect(() => {
     // reset tab when modal is closed
     if (!isShow) {
@@ -132,18 +135,20 @@ export const WorkspaceSetting = ({
     <Modal open={isShow}>
       <StyledSettingContainer>
         <ModalCloseButton onClick={handleClickClose} />
-        <StyledSettingSidebar>
-          <StyledSettingSidebarHeader>
-            Workspace Settings
-          </StyledSettingSidebarHeader>
-          <WorkspaceSettingTab
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-          />
-        </StyledSettingSidebar>
+        {isOwner ? (
+          <StyledSettingSidebar>
+            <StyledSettingSidebarHeader>
+              Workspace Settings
+            </StyledSettingSidebarHeader>
+            <WorkspaceSettingTab
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+            />
+          </StyledSettingSidebar>
+        ) : null}
         <StyledSettingContent>
           {activeTab === ActiveTab.general && (
-            <GeneralPage workspace={workspace} />
+            <GeneralPage workspace={workspace} owner={owner} />
           )}
           {activeTab === ActiveTab.members && workspace && (
             <MembersPage workspace={workspace} />
@@ -152,32 +157,6 @@ export const WorkspaceSetting = ({
         </StyledSettingContent>
       </StyledSettingContainer>
     </Modal>
-  );
-};
-
-const GeneralPage = ({ workspace }: { workspace?: Workspace }) => {
-  return (
-    <div>
-      <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
-      <StyledSettingAvatarContent>
-        <StyledSettingAvatar alt="workspace avatar">W</StyledSettingAvatar>
-        {/* <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>
-        <Button shape="round">remove</Button> */}
-      </StyledSettingAvatarContent>
-      <StyledSettingH2 marginTop={36}>Workspace Name</StyledSettingH2>
-      <StyledSettingInputContainer>
-        <Input width={327} placeholder="Workspace Name"></Input>
-      </StyledSettingInputContainer>
-      <StyledSettingH2 marginTop={36}>Workspace Owner</StyledSettingH2>
-      <StyledSettingInputContainer>
-        <Input width={327} placeholder="Workspace Owner"></Input>
-      </StyledSettingInputContainer>
-      <StyledDeleteButtonContainer>
-        <Button type="danger" shape="circle">
-          Delete Workspace
-        </Button>
-      </StyledDeleteButtonContainer>
-    </div>
   );
 };
 
