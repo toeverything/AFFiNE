@@ -10,14 +10,17 @@
     "lint": "pnpm --filter @pathfinder/app lint",
     "test": "playwright test",
     "test:e2e": "playwright test",
-    "test:e2e:codegen":"npx playwright codegen http://localhost:8080",
+    "test:e2e:codegen": "npx playwright codegen http://localhost:8080",
     "test:unit": "jest"
   },
   "devDependencies": {
     "@jest/globals": "^29.3.1",
     "@playwright/test": "^1.28.1",
-    "@types/node": "18.7.18",
-    "eslint": "8.22.0",
+    "@typescript-eslint/eslint-plugin": "^5.47.0",
+    "@typescript-eslint/parser": "^5.47.0",
+    "@types/eslint": "^8.4.10",
+    "@types/node": "^18.11.17",
+    "eslint": "^8.30.0",
     "eslint-config-next": "12.3.1",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
@@ -25,5 +28,30 @@
     "prettier": "^2.7.1",
     "ts-jest": "^29.0.3",
     "typescript": "^4.9.3"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:prettier/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "project": [
+        "./tsconfig.json"
+      ]
+    },
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "rules": {
+      "prettier/prettier": "warn"
+    },
+    "reportUnusedDisableDirectives": true,
+    "ignorePatterns": [
+      "src/**/*.test.ts",
+      "package/**/dist/*"
+    ]
   }
 }
