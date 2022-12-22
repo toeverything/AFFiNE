@@ -13,7 +13,8 @@ import type {
   LoadWorkspaceHandler,
   CreateEditorHandler,
 } from './context';
-import { downloadWorkspace } from '@pathfinder/data-services';
+import { downloadWorkspace, getToken } from '@pathfinder/data-services';
+import { WebsocketProvider } from './y-websocket';
 
 const getEditorParams = (workspaceId: string) => {
   const providers = [];
@@ -44,11 +45,45 @@ const DynamicBlocksuite = ({
   setCreateEditorHandler,
 }: Props) => {
   useEffect(() => {
-    const openWorkspace: LoadWorkspaceHandler = (workspaceId: string) =>
+    const openWorkspace: LoadWorkspaceHandler = (
+      workspaceId: string,
+      websocket = false
+    ) =>
       new Promise(async resolve => {
         const workspace = new Workspace({
-          ...getEditorParams(workspaceId as string),
+          room: workspaceId,
+          providers: [IndexedDBDocProvider],
         }).register(BlockSchema);
+
+        const refreshToken = getToken()?.refreshToken;
+
+        if (
+          websocket &&
+          refreshToken &&
+          location.search.includes('sync=websocket')
+        ) {
+          // FIXME: if add websocket provider, the first page will be blank
+          const ws = new WebsocketProvider(
+            `ws${window.location.protocol === 'https:' ? 's' : ''}://${
+              window.location.host
+            }/api/sync/`,
+            workspaceId,
+            workspace.doc,
+            {
+              params: {
+                token: refreshToken,
+              },
+              awareness: workspace.meta.awareness.awareness,
+            }
+          );
+
+          ws.shouldConnect = false;
+
+          // FIXME: there needs some method to destroy websocket.
+          // Or we need a manager to manage websocket.
+          // @ts-expect-error
+          workspace.__ws__ = ws;
+        }
 
         const indexDBProvider = workspace.providers.find(
           p => p instanceof IndexedDBDocProvider

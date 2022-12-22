@@ -28,7 +28,10 @@ export function setToken(token: Token | null): void {
   authorizationEvent.triggerChange(parseAccessToken(token.accessToken));
 }
 
-function getToken(): { accessToken: string; refreshToken: string } | null {
+export function getToken(): {
+  accessToken: string;
+  refreshToken: string;
+} | null {
   try {
     return JSON.parse(window.localStorage.getItem(TOKEN_KEY) || '');
   } catch (error) {

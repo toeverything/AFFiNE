@@ -50,7 +50,18 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   const loadWorkspace =
     useRef<(workspaceId: string) => Promise<Workspace | null> | null>();
   loadWorkspace.current = async (workspaceId: string) => {
-    const workspace = (await loadWorkspaceHandler?.(workspaceId)) || null;
+    if (state.currentWorkspaceId === workspaceId) {
+      return state.currentWorkspace;
+    }
+    const workspace = (await loadWorkspaceHandler?.(workspaceId, true)) || null;
+
+    // @ts-expect-error
+    window.workspace = workspace;
+    // FIXME: there needs some method to destroy websocket.
+    // Or we need a manager to manage websocket.
+    // @ts-expect-error
+    state.currentWorkspace?.__ws__?.destroy();
+
     setState(state => ({
       ...state,
       currentWorkspace: workspace,
