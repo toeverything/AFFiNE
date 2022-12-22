@@ -87,6 +87,7 @@ export const StyledTextButton = styled('button', {
       'hoverBackground',
       'hoverColor',
       'hoverStyle',
+      'bold',
     ].includes(prop);
   },
 })<
@@ -141,9 +142,13 @@ export const StyledTextButton = styled('button', {
 
 export const StyledButton = styled('button', {
   shouldForwardProp: prop => {
-    return !['hoverBackground', 'hoverColor', 'hoverStyle', 'type'].includes(
-      prop
-    );
+    return ![
+      'hoverBackground',
+      'hoverColor',
+      'hoverStyle',
+      'type',
+      'bold',
+    ].includes(prop);
   },
 })<
   Pick<
