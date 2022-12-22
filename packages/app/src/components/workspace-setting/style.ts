@@ -29,6 +29,7 @@ export const StyledSettingSidebar = styled('div')(({ theme }) => {
 export const StyledSettingContent = styled('div')(({ theme }) => {
   return {
     paddingLeft: '48px',
+    height: '620px',
   };
 });
 
@@ -103,37 +104,11 @@ export const StyledSettingH2 = styled('h2')<{ marginTop?: number }>(
   }
 );
 
-export const StyledSettingAvatarContent = styled('div')(({ theme }) => {
-  return {
-    marginTop: '12px',
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: '72px',
-  };
-});
-
-export const StyledSettingAvatar = styled(MuiAvatar)(({ theme }) => {
-  return { height: '72px', width: '72px' };
-});
-
 export const StyledAvatarUploadBtn = styled(Button)(({ theme }) => {
   return {
     backgroundColor: theme.colors.hoverBackground,
     color: theme.colors.primaryColor,
     margin: '0 12px 0 24px',
-  };
-});
-
-export const StyledSettingInputContainer = styled('div')(({ theme }) => {
-  return {
-    marginTop: '12px',
-  };
-});
-
-export const StyledDeleteButtonContainer = styled('div')(({ theme }) => {
-  return {
-    marginTop: '154px',
   };
 });
 

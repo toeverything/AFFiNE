@@ -14,7 +14,7 @@ import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useCallback, useEffect, useState } from 'react';
 import { getWorkspaceDetail, WorkspaceType } from '@pathfinder/data-services';
 
-type WorkspaceDetails = Record<
+export type WorkspaceDetails = Record<
   string,
   { memberCount: number; owner: { id: string; name: string } }
 >;
@@ -39,6 +39,9 @@ export const SelectorPopperContent = ({
   const handleCloseWorkSpace = () => {
     setSettingWorkspaceId(null);
   };
+  const settingWorkspace = settingWorkspaceId
+    ? workspacesMeta.find(workspace => workspace.id === settingWorkspaceId)
+    : undefined;
 
   const refreshDetails = useCallback(async () => {
     const workspaceDetailList = await Promise.all(
@@ -103,7 +106,9 @@ export const SelectorPopperContent = ({
               onClick={handleClickSettingWorkspace}
               name={
                 workspaces[workspace.id]?.meta.name ||
-                `workspace-${workspace.id}`
+                (workspace.type === WorkspaceType.Private
+                  ? user.name
+                  : `workspace-${workspace.id}`)
               }
               memberCount={workSpaceDetails[workspace.id]?.memberCount || 1}
             />
@@ -111,17 +116,20 @@ export const SelectorPopperContent = ({
         })}
       </WorkspaceWrapper>
       <CreateWorkspaceItem />
-      <WorkspaceSetting
-        isShow={Boolean(settingWorkspaceId)}
-        onClose={handleCloseWorkSpace}
-        workspace={
-          settingWorkspaceId
-            ? workspacesMeta.find(
-                workspace => workspace.id === settingWorkspaceId
-              )
-            : undefined
-        }
-      />
+      {settingWorkspace ? (
+        <WorkspaceSetting
+          isShow={Boolean(settingWorkspaceId)}
+          onClose={handleCloseWorkSpace}
+          workspace={settingWorkspace}
+          owner={
+            (settingWorkspaceId &&
+              workSpaceDetails[settingWorkspaceId]?.owner) || {
+              id: user.id,
+              name: user.name,
+            }
+          }
+        />
+      ) : null}
       <StyledDivider />
       <ListItem
         icon={<InformationIcon />}
