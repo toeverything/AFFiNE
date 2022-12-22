@@ -43,7 +43,7 @@ export const StyledArrowButton = styled.button<{ isShow: boolean }>(
   }
 );
 
-export const StyledListItem = styled.button<{
+export const StyledListItem = styled.div<{
   active?: boolean;
   disabled?: boolean;
 }>(({ theme, active, disabled }) => {
