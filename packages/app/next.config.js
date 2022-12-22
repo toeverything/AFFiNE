@@ -1,4 +1,5 @@
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
+const { dependencies } = require('./package.json')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -12,6 +13,7 @@ const nextConfig = {
     CI: process.env.CI || null,
     VERSION: getGitVersion(),
     COMMIT_HASH: getCommitHash(),
+    EDITOR_VERSION: dependencies['@blocksuite/editor']
   },
   images: {
     unoptimized: true,
