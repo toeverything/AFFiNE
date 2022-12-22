@@ -1,4 +1,4 @@
-import type { AccessTokenMessage } from './types';
+import { AccessTokenMessage } from './token';
 
 type Callback = (user: AccessTokenMessage | null) => void;
 

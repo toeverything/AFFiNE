@@ -32,7 +32,7 @@ export async function login(params: LoginParams): Promise<LoginResponse> {
     method: 'POST',
     data: params,
     withAuthorization: false,
-  });
+  } as any);
   return data.data;
 }
 

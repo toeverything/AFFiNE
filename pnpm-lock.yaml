@@ -117,12 +117,14 @@ importers:
       axios: ^1.2.0
       encoding: ^0.1.13
       firebase: ^9.13.0
+      ky: ^0.33.0
       swr: ^2.0.0
       typescript: ^4.8.4
     dependencies:
-      axios: 1.2.0
+      axios: 1.2.1
       encoding: 0.1.13
       firebase: 9.13.0_encoding@0.1.13
+      ky: 0.33.0
       swr: 2.0.0
     devDependencies:
       typescript: 4.9.3
@@ -3586,10 +3588,10 @@ packages:
     engines: { node: '>=4' }
     dev: true
 
-  /axios/1.2.0:
+  /axios/1.2.1:
     resolution:
       {
-        integrity: sha512-zT7wZyNYu3N5Bu0wuZ6QccIf93Qk1eV8LOewxgjOZFd2DenOs98cJ7+Y6703d0wkaXGY6/nZd4EweJaHz9uzQw==,
+        integrity: sha512-I88cFiGu9ryt/tfVEi4kX2SITsvDddTajXTOFmt2uK1ZVA8LytjtdeyefdQWEf5PU8w+4SSJDoYnggflB5tW4A==,
       }
     dependencies:
       follow-redirects: 1.15.2
@@ -6671,6 +6673,14 @@ packages:
     resolution:
       {
         integrity: sha512-eBJeF6IXNwX5rksdwBrE2rIJrU2d84GoTvdM7OmmTIwUVXEMd72wIwvT+nyhrqtv7AzbSNsWz7yRsHgVhj1uog==,
+      }
+    engines: { node: '>=14.16' }
+    dev: false
+
+  /ky/0.33.0:
+    resolution:
+      {
+        integrity: sha512-peKzuOlN/q3Q3jOgi4t0cp6DOgif5rVnmiSIsjsmkiOcdnSjkrKSUqQmRWYCTqjUtR9b3xQQr8aj7KwSW1r49A==,
       }
     engines: { node: '>=14.16' }
     dev: false

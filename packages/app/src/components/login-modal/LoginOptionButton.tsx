@@ -1,4 +1,4 @@
-import { signInWithGoogle, login, setToken } from '@pathfinder/data-services';
+import { signInWithGoogle } from '@pathfinder/data-services';
 import { styled } from '@/styles';
 import { Button } from '@/ui/button';
 import { useModal } from '@/providers/global-modal-provider';
@@ -10,13 +10,7 @@ export const GoogleLoginButton = () => {
     <StyledGoogleButton
       onClick={() => {
         signInWithGoogle()
-          .then(async user => {
-            const idToken = await user.user.getIdToken();
-            const token = await login({ token: idToken, type: 'Google' });
-            setToken({
-              accessToken: token.token,
-              refreshToken: token.refresh,
-            });
+          .then(async => {
             triggerLoginModal();
           })
           .catch(error => {
