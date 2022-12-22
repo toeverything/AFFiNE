@@ -1,4 +1,4 @@
-import { client } from '../request';
+import { client, bareClient } from '../request';
 import { User } from './user';
 
 export interface GetWorkspaceDetailParams {
@@ -142,7 +142,7 @@ export interface AcceptInvitingParams {
 export async function acceptInviting(
   params: AcceptInvitingParams
 ): Promise<void> {
-  await client.post(`/api/invitation/${params.invitingCode}`);
+  await bareClient.post(`/api/invitation/${params.invitingCode}`);
 }
 
 export interface DownloadWOrkspaceParams {
