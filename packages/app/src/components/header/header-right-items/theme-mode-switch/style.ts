@@ -1,5 +1,6 @@
 import { displayFlex, keyframes, styled } from '@/styles';
 import { CSSProperties } from 'react';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import spring, { toString } from 'css-spring';
 

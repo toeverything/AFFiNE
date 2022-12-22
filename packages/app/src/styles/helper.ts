@@ -100,7 +100,7 @@ export const fixedCenter = ({
   };
 };
 
-export const textEllipsis = (lineNum: number = 1): CSSProperties => {
+export const textEllipsis = (lineNum = 1): CSSProperties => {
   if (lineNum > 1) {
     return {
       display: '-webkit-box',

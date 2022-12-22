@@ -61,10 +61,12 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
 
     const workspace = (await loadWorkspaceHandler?.(workspaceId, true)) || null;
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     window.workspace = workspace;
     // FIXME: there needs some method to destroy websocket.
     // Or we need a manager to manage websocket.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     state.currentWorkspace?.__ws__?.destroy();
 

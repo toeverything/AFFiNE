@@ -48,6 +48,7 @@ export const AppState = createContext<AppStateContext>({
 
   editor: null,
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   setState: () => {},
   createEditor: undefined,
   setEditor: undefined,

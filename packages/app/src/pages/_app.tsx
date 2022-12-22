@@ -14,14 +14,17 @@ import { AppStateProvider } from '@/providers/app-state-provider/provider';
 import ConfirmProvider from '@/providers/confirm-provider';
 import { ModalProvider } from '@/providers/global-modal-provider';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { PageLoading } from '@/components/loading';
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
 });
 
-export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
+export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
+  P,
+  IP
+> & {
   getLayout?: (page: ReactElement) => ReactNode;
 };
 

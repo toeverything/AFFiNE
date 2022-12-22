@@ -8,19 +8,21 @@ import {
 
 export const PrivateWorkspaceItem = () => {
   const { user } = useAppState();
-  // @ts-ignore
-  const Username = user.name;
-  return !user ? null : (
-    <PrivateWorkspaceWrapper>
-      <WorkspaceItemAvatar alt={Username} src={user.avatar_url}>
-        {Username}
-      </WorkspaceItemAvatar>
-      <WorkspaceItemContent>
-        <Name title={Username}>{Username}</Name>
-        <Email title={user.email}>{user.email}</Email>
-      </WorkspaceItemContent>
-    </PrivateWorkspaceWrapper>
-  );
+  if (user) {
+    const Username = user.name;
+    return (
+      <PrivateWorkspaceWrapper>
+        <WorkspaceItemAvatar alt={Username} src={user.avatar_url}>
+          {Username}
+        </WorkspaceItemAvatar>
+        <WorkspaceItemContent>
+          <Name title={Username}>{Username}</Name>
+          <Email title={user.email}>{user.email}</Email>
+        </WorkspaceItemContent>
+      </PrivateWorkspaceWrapper>
+    );
+  }
+  return null;
 };
 
 const Name = styled('div')(({ theme }) => {

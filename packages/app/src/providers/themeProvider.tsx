@@ -25,6 +25,7 @@ import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   changeMode: () => {},
   theme: getLightTheme('page'),
 });
@@ -98,7 +99,7 @@ export const ThemeProvider = ({
         <Global
           styles={css`
             :root {
-              ${globalThemeVariables(mode, themeStyle) as {}}
+              ${globalThemeVariables(mode, themeStyle) as any}
             }
           `}
         />

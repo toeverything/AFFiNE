@@ -40,6 +40,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         hoverBackground={hoverBackground}
         hoverColor={hoverColor}
         hoverStyle={hoverStyle}
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         type={type}
         bold={bold}

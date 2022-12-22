@@ -49,6 +49,7 @@ const DynamicBlocksuite = ({
       workspaceId: string,
       websocket = false
     ) =>
+      // eslint-disable-next-line no-async-promise-executor
       new Promise(async resolve => {
         const workspace = new Workspace({
           room: workspaceId,
@@ -79,6 +80,7 @@ const DynamicBlocksuite = ({
 
           // FIXME: there needs some method to destroy websocket.
           // Or we need a manager to manage websocket.
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-expect-error
           workspace.__ws__ = ws;
         }
@@ -87,7 +89,7 @@ const DynamicBlocksuite = ({
           p => p instanceof IndexedDBDocProvider
         );
         if (indexDBProvider) {
-          (indexDBProvider as IndexedDBDocProvider)?.on('synced', async () => {
+          (indexDBProvider as IndexedDBDocProvider).on('synced', async () => {
             // const updates = await downloadWorkspace({ workspaceId });
             // updates &&
             //   Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));

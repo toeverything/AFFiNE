@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import ShortcutsModal from '@/components/shortcuts-modal';
@@ -13,7 +14,7 @@ type ModalContextValue = {
   triggerImportModal: () => void;
   triggerLoginModal: () => void;
 };
-type ModalContextProps = PropsWithChildren<{}>;
+type ModalContextProps = PropsWithChildren<Record<string, unknown>>;
 type ModalMap = {
   contact: boolean;
   shortcuts: boolean;
@@ -50,6 +51,7 @@ export const ModalProvider = ({
     });
   };
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     window.triggerHandler = () => triggerHandler('login');
   }, [triggerHandler]);

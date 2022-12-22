@@ -202,6 +202,7 @@ export const StyledButton = styled('button', {
       '>span': {
         marginLeft: '5px',
       },
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       ...getButtonColors(theme, type, {
         hoverBackground,

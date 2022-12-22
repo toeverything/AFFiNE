@@ -1,4 +1,3 @@
-import { EditorContainer } from '@blocksuite/editor';
 import { PageMeta as OriginalPageMeta } from '@blocksuite/store/dist/workspace/workspace';
 
 // export type PageMeta = {
@@ -14,6 +13,5 @@ export interface PageMeta extends OriginalPageMeta {
   trash: boolean;
   trashDate: number;
   updatedDate: number;
-  // @ts-ignore
   mode: 'edgeless' | 'page';
 }

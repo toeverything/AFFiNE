@@ -20,7 +20,7 @@ export const debounce = <T extends (...args: any) => any>(
 ): ((...args: any) => any) => {
   let timeoutId: null | number;
   let defaultImmediate = immediate || false;
-  let delay = time || 300;
+  const delay = time || 300;
   return (...args: any) => {
     if (defaultImmediate) {
       fn.apply(this, args); // 确保引用函数的指向正确，并且函数的参数也不变
@@ -30,6 +30,7 @@ export const debounce = <T extends (...args: any) => any>(
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     timeoutId = setTimeout(() => {
       fn.apply(this, args);

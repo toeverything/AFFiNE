@@ -5,7 +5,7 @@ import { Confirm, ConfirmProps } from '@/ui/confirm';
 type ConfirmContextValue = {
   confirm: (props: ConfirmProps) => Promise<boolean>;
 };
-type ConfirmContextProps = PropsWithChildren<{}>;
+type ConfirmContextProps = PropsWithChildren<Record<string, unknown>>;
 
 export const ConfirmContext = createContext<ConfirmContextValue>({
   confirm: () => Promise.resolve(false),

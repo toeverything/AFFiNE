@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 // Inspire by https://stackoverflow.com/a/11381730/8415727
 export function isMobile(userAgent: string) {
   return !!(

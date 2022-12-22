@@ -1,4 +1,5 @@
 import { displayFlex, keyframes, styled } from '@/styles';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import spring, { toString } from 'css-spring';
 import type { ItemStatus } from './type';

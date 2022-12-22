@@ -6,6 +6,7 @@ export const tagName = 'simple-counter';
 
 // Adapt React in order to be able to use custom tags properly
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
       [tagName]: PersonInfoProps;
