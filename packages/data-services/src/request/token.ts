@@ -1,5 +1,5 @@
-import { request } from '.';
-import { AuthorizationEvent } from './events';
+import { bareClient } from '.';
+import { AuthorizationEvent, Callback } from './events';
 
 export interface AccessTokenMessage {
   create_at: number;
@@ -25,12 +25,7 @@ type LoginResponse = {
 };
 
 const login = (params: LoginParams): Promise<LoginResponse> =>
-  request
-    .post('/api/user/token', {
-      json: params,
-      headers: { token: undefined },
-    })
-    .json();
+  bareClient.post('/api/user/token', { json: params }).json();
 
 function b64DecodeUnicode(str: string) {
   // Going backwards: from byte stream, to percent-encoding, to original string.
@@ -80,6 +75,8 @@ class Token {
     this._refreshToken = login.refresh;
     this._user = Token.parse(login.token);
 
+    this._event.triggerChange(this._user);
+
     setRefreshToken(login.refresh);
   }
 
@@ -99,12 +96,14 @@ class Token {
     }
     this._setToken(await this._padding);
     this._padding = undefined;
-
-    this._event.triggerChange(this._user);
   }
 
   get token() {
     return this._accessToken;
+  }
+
+  get refresh() {
+    return this._refreshToken;
   }
 
   get isLogin() {
@@ -125,6 +124,14 @@ class Token {
     } catch (error) {
       return null;
     }
+  }
+
+  onChange(callback: Callback) {
+    this._event.onChange(callback);
+  }
+
+  offChange(callback: Callback) {
+    this._event.removeCallback(callback);
   }
 }
 

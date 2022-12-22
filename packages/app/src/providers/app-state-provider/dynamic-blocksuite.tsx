@@ -13,7 +13,7 @@ import type {
   LoadWorkspaceHandler,
   CreateEditorHandler,
 } from './context';
-import { downloadWorkspace, getToken } from '@pathfinder/data-services';
+import { downloadWorkspace, token } from '@pathfinder/data-services';
 import { WebsocketProvider } from './y-websocket';
 
 const getEditorParams = (workspaceId: string) => {
@@ -55,11 +55,9 @@ const DynamicBlocksuite = ({
           providers: [IndexedDBDocProvider],
         }).register(BlockSchema);
 
-        const refreshToken = getToken()?.refreshToken;
-
         if (
           websocket &&
-          refreshToken &&
+          token.refresh &&
           location.search.includes('sync=websocket')
         ) {
           // FIXME: if add websocket provider, the first page will be blank
@@ -71,7 +69,7 @@ const DynamicBlocksuite = ({
             workspace.doc,
             {
               params: {
-                token: refreshToken,
+                token: token.refresh,
               },
               awareness: workspace.meta.awareness.awareness,
             }

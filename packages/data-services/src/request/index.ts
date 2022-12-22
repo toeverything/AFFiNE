@@ -1,19 +1,9 @@
 import ky from 'ky';
 import { token } from './token';
 
-export const request = ky.extend({
+export const bareClient = ky.extend({
   retry: 1,
   hooks: {
-    beforeRequest: [
-      async request => {
-        if (!request.headers.has('token') || request.headers.get('token')) {
-          if (token.isLogin) {
-            if (token.isExpired) await token.refreshToken();
-            request.headers.set('Authorization', token.token);
-          }
-        }
-      },
-    ],
     // afterResponse: [
     //   async (_request, _options, response) => {
     //     if (response.status === 200) {
@@ -27,6 +17,19 @@ export const request = ky.extend({
     //     return response;
     //   },
     // ],
+  },
+});
+export const client = bareClient.extend({
+  hooks: {
+    beforeRequest: [
+      async request => {
+        if (token.isLogin) {
+          if (token.isExpired) await token.refreshToken();
+          request.headers.set('Authorization', token.token);
+        }
+      },
+    ],
+
     beforeRetry: [
       async ({ request }) => {
         await token.refreshToken();

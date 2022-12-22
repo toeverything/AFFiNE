@@ -2,11 +2,9 @@ import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import {
-  authorizationEvent,
+  token,
   AccessTokenMessage,
   getWorkspaces,
-  WorkspaceType,
-  getWorkspaceDetail,
 } from '@pathfinder/data-services';
 import { AppState, AppStateContext } from './context';
 import type {
@@ -171,10 +169,10 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
         synced: true,
       }));
     };
-    authorizationEvent.onChange(callback);
+    token.onChange(callback);
 
     return () => {
-      authorizationEvent.removeCallback(callback);
+      token.offChange(callback);
     };
   }, [loadWorkspaceHandler]);
 

@@ -1,4 +1,4 @@
-import { request } from '../request';
+import { client } from '../request';
 import { User } from './user';
 
 export interface GetWorkspaceDetailParams {
@@ -26,7 +26,7 @@ export interface Workspace {
 }
 
 export async function getWorkspaces(): Promise<Workspace[]> {
-  return request.get('/api/workspace').json();
+  return client.get('/api/workspace').json();
 }
 
 export interface WorkspaceDetail extends Workspace {
@@ -37,7 +37,7 @@ export interface WorkspaceDetail extends Workspace {
 export async function getWorkspaceDetail(
   params: GetWorkspaceDetailParams
 ): Promise<WorkspaceDetail | null> {
-  return request.get(`/api/workspace/${params.id}`).json();
+  return client.get(`/api/workspace/${params.id}`).json();
 }
 
 export interface Permission {
@@ -68,7 +68,7 @@ export interface GetWorkspaceMembersParams {
 export async function getWorkspaceMembers(
   params: GetWorkspaceDetailParams
 ): Promise<Member[]> {
-  return request.get(`/api/workspace/${params.id}/permission`).json();
+  return client.get(`/api/workspace/${params.id}/permission`).json();
 }
 
 export interface CreateWorkspaceParams {
@@ -79,7 +79,7 @@ export interface CreateWorkspaceParams {
 export async function createWorkspace(
   params: CreateWorkspaceParams
 ): Promise<void> {
-  return request.post('/api/workspace', { json: params }).json();
+  return client.post('/api/workspace', { json: params }).json();
 }
 
 export interface UpdateWorkspaceParams {
@@ -90,7 +90,7 @@ export interface UpdateWorkspaceParams {
 export async function updateWorkspace(
   params: UpdateWorkspaceParams
 ): Promise<void> {
-  return request
+  return client
     .post(`/api/workspace/${params.id}`, {
       json: {
         public: params.public,
@@ -106,7 +106,7 @@ export interface DeleteWorkspaceParams {
 export async function deleteWorkspace(
   params: DeleteWorkspaceParams
 ): Promise<void> {
-  await request.delete(`/api/workspace/${params.id}`);
+  await client.delete(`/api/workspace/${params.id}`);
 }
 
 export interface InviteMemberParams {
@@ -118,7 +118,7 @@ export interface InviteMemberParams {
  * Notice: Only support normal(contrast to private) workspace.
  */
 export async function inviteMember(params: InviteMemberParams): Promise<void> {
-  return request
+  return client
     .post(`/api/workspace/${params.id}/permission`, {
       json: {
         email: params.email,
@@ -132,7 +132,7 @@ export interface RemoveMemberParams {
 }
 
 export async function removeMember(params: RemoveMemberParams): Promise<void> {
-  await request.delete(`/api/permission/${params.permissionId}`);
+  await client.delete(`/api/permission/${params.permissionId}`);
 }
 
 export interface AcceptInvitingParams {
@@ -142,7 +142,7 @@ export interface AcceptInvitingParams {
 export async function acceptInviting(
   params: AcceptInvitingParams
 ): Promise<void> {
-  await request.post(`/api/invitation/${params.invitingCode}`);
+  await client.post(`/api/invitation/${params.invitingCode}`);
 }
 
 export interface DownloadWOrkspaceParams {
@@ -151,15 +151,15 @@ export interface DownloadWOrkspaceParams {
 export async function downloadWorkspace(
   params: DownloadWOrkspaceParams
 ): Promise<ArrayBuffer> {
-  return request.get(`/api/workspace/${params.workspaceId}/doc`).arrayBuffer();
+  return client.get(`/api/workspace/${params.workspaceId}/doc`).arrayBuffer();
 }
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {
-  return request.post('/api/blob', { body: params.blob }).text();
+  return client.post('/api/blob', { body: params.blob }).text();
 }
 
 export async function getBlob(params: {
   blobId: string;
 }): Promise<ArrayBuffer> {
-  return request.get(`/api/blob/${params.blobId}`).arrayBuffer();
+  return client.get(`/api/blob/${params.blobId}`).arrayBuffer();
 }

@@ -1,4 +1,4 @@
-import { request } from '../request';
+import { client } from '../request';
 
 export interface GetUserByEmailParams {
   email: string;
@@ -16,5 +16,5 @@ export interface User {
 export async function getUserByEmail(
   params: GetUserByEmailParams
 ): Promise<User | null> {
-  return request.get('/api/user', { json: params }).json<User | null>();
+  return client.get('/api/user', { json: params }).json<User | null>();
 }

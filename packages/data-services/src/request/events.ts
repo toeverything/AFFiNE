@@ -1,6 +1,6 @@
 import { AccessTokenMessage } from './token';
 
-type Callback = (user: AccessTokenMessage | null) => void;
+export type Callback = (user: AccessTokenMessage | null) => void;
 
 export class AuthorizationEvent {
   private callbacks: Callback[] = [];
