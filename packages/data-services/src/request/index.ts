@@ -26,6 +26,8 @@ export const client = bareClient.extend({
         if (token.isLogin) {
           if (token.isExpired) await token.refreshToken();
           request.headers.set('Authorization', token.token);
+        } else {
+          return new Response('Unauthorized', { status: 401 });
         }
       },
     ],
