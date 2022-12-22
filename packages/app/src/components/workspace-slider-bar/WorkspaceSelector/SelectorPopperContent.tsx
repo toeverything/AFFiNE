@@ -56,7 +56,7 @@ export const SelectorPopperContent = ({
         }
       })
     );
-    let workSpaceDetails: WorkspaceDetails = {};
+    const workSpaceDetails: WorkspaceDetails = {};
     workspaceDetailList.forEach(details => {
       if (details) {
         const { id, member_count, owner } = details;
