@@ -5,6 +5,8 @@ import {
   authorizationEvent,
   AccessTokenMessage,
   getWorkspaces,
+  WorkspaceType,
+  getWorkspaceDetail,
 } from '@pathfinder/data-services';
 import { AppState } from './context';
 import type {
@@ -26,6 +28,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     currentWorkspace: null,
     currentPage: null,
     editor: null,
+    workspaces: {},
   });
 
   const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =
@@ -129,14 +132,21 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   useEffect(() => {
     const callback = async (user: AccessTokenMessage | null) => {
       const workspacesMeta = user ? await getWorkspaces() : [];
-      const workspaces = await Promise.all(
+      const workspacesList = await Promise.all(
         workspacesMeta?.map(async ({ id }) => {
           const workspace = (await loadWorkspaceHandler?.(id)) || null;
-          return workspace;
+          return { id, workspace };
         })
       );
+
+      let workspaces: Record<string, Workspace | null> = {};
+
+      workspacesList.forEach(({ id, workspace }) => {
+        workspaces[id] = workspace;
+      });
+
       // TODO: add meta info to workspace meta
-      setState(state => ({ ...state, user: user, workspacesMeta }));
+      setState(state => ({ ...state, user: user, workspacesMeta, workspaces }));
     };
     authorizationEvent.onChange(callback);
 

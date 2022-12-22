@@ -46,7 +46,9 @@ export async function getWorkspaceDetail(
     url: `/api/workspace/${params.id}`,
     method: 'GET',
   });
-
+  if (data.data?.owner.id) {
+    data.data.owner.id = String(data.data?.owner.id);
+  }
   return data.data;
 }
 
@@ -197,5 +199,22 @@ export async function downloadWorkspace(
     responseType: 'arraybuffer',
   });
 
+  return data.data;
+}
+
+export async function uploadBlob(params: { blob: Blob }): Promise<string> {
+  const data = await request({
+    url: '/api/blob',
+    method: 'PUT',
+    data: params.blob,
+  });
+  return data.data;
+}
+
+export async function getBlob(params: { blobId: string }): Promise<string> {
+  const data = await request({
+    url: `/api/blob/${params.blobId}`,
+    method: 'GET',
+  });
   return data.data;
 }
