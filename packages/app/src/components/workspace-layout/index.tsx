@@ -2,38 +2,15 @@ import HelpIsland from '@/components/help-island';
 import { WorkSpaceSliderBar } from '@/components/workspace-slider-bar';
 import { useRouter } from 'next/router';
 import { StyledPage, StyledWrapper } from './styles';
-import { PropsWithChildren, useEffect, useState } from 'react';
+import { PropsWithChildren } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
+import { useInitWorkspace } from '@/hooks/use-init-workspace';
 
 export const WorkspaceDefender = ({ children }: PropsWithChildren) => {
-  const router = useRouter();
-  const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
-  const { synced, loadWorkspace, workspacesMeta } = useAppState();
+  const { synced } = useAppState();
+  const { loading } = useInitWorkspace(!synced);
 
-  useEffect(() => {
-    const initWorkspace = async () => {
-      const workspaceId =
-        (router.query.workspaceId as string) ||
-        workspacesMeta?.[0]?.id ||
-        new Date().getTime().toString();
-
-      await loadWorkspace(workspaceId);
-      setWorkspaceLoaded(true);
-    };
-    if (!synced) {
-      return;
-    }
-
-    initWorkspace();
-  }, [
-    loadWorkspace,
-    router.pathname,
-    router.query.workspaceId,
-    synced,
-    workspaceLoaded,
-    workspacesMeta,
-  ]);
-  return <>{workspaceLoaded ? children : null}</>;
+  return <>{!loading ? children : null}</>;
 };
 
 export const WorkspaceLayout = ({ children }: PropsWithChildren) => {

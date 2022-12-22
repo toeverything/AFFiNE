@@ -1,13 +1,12 @@
-import React, { ReactElement, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider/context';
-import { useLoadWorkspace } from '@/providers/app-state-provider/hooks';
-import WorkspaceLayout from '@/components/workspace-layout';
+import { useInitWorkspace } from '@/hooks/use-init-workspace';
 
 const WorkspaceIndex = () => {
   const router = useRouter();
-  const workspace = useLoadWorkspace();
   const { createPage, currentWorkspaceId } = useAppState();
+  const { workspace } = useInitWorkspace();
 
   useEffect(() => {
     const initPage = async () => {
@@ -27,10 +26,6 @@ const WorkspaceIndex = () => {
   }, [workspace, currentWorkspaceId, createPage, router]);
 
   return <></>;
-};
-
-WorkspaceIndex.getLayout = function getLayout(page: ReactElement) {
-  return <WorkspaceLayout>{page}</WorkspaceLayout>;
 };
 
 export default WorkspaceIndex;
