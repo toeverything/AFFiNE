@@ -194,8 +194,9 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
       .catch(err => {
         console.log(err);
       });
-  }, []);
+  }, [workspace.id]);
   const { confirm } = useConfirm();
+
   return (
     <div>
       <StyledMemberTitleContainer>
@@ -206,7 +207,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
         {members.length ? (
           members.map(member => {
             return (
-              <StyledMemberListItem>
+              <StyledMemberListItem key={member.id}>
                 <StyledMemberNameContainer>
                   {member.user.type === 'Registered' ? (
                     <Avatar src={member.user.avatar_url}></Avatar>

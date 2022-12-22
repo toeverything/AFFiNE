@@ -11,13 +11,27 @@ import {
   LoginItem,
 } from './WorkspaceItem';
 import { WorkspaceSetting } from '@/components/workspace-setting';
-import { useState } from 'react';
-import { WorkspaceType } from '@pathfinder/data-services';
+import { useCallback, useEffect, useState } from 'react';
+import { getWorkspaceDetail, WorkspaceType } from '@pathfinder/data-services';
 
-export const SelectorPopperContent = () => {
-  const { user, workspacesMeta } = useAppState();
+type WorkspaceDetails = Record<
+  string,
+  { memberCount: number; owner: { id: string; name: string } }
+>;
+
+type SelectorPopperContentProps = {
+  isShow: boolean;
+};
+
+export const SelectorPopperContent = ({
+  isShow,
+}: SelectorPopperContentProps) => {
+  const { user, workspacesMeta, workspaces } = useAppState();
   const [settingWorkspaceId, setSettingWorkspaceId] = useState<string | null>(
     null
+  );
+  const [workSpaceDetails, setWorkSpaceDetails] = useState<WorkspaceDetails>(
+    {}
   );
   const handleClickSettingWorkspace = (workspaceId: string) => {
     setSettingWorkspaceId(workspaceId);
@@ -25,6 +39,44 @@ export const SelectorPopperContent = () => {
   const handleCloseWorkSpace = () => {
     setSettingWorkspaceId(null);
   };
+
+  const refreshDetails = useCallback(async () => {
+    const workspaceDetailList = await Promise.all(
+      workspacesMeta?.map(async ({ id, type }) => {
+        if (user) {
+          if (type === WorkspaceType.Private) {
+            return { id, member_count: 1, owner: user };
+          } else {
+            const data = await getWorkspaceDetail({ id });
+            return { id, ...data } || { id, member_count: 0, owner: user };
+          }
+        }
+      })
+    );
+    let workSpaceDetails: WorkspaceDetails = {};
+    workspaceDetailList.forEach(details => {
+      if (details) {
+        const { id, member_count, owner } = details;
+        if (!owner) return;
+        workSpaceDetails[id] = {
+          memberCount: member_count || 1,
+          owner: {
+            id: owner.id,
+            name: owner.name,
+          },
+        };
+      }
+    });
+    setWorkSpaceDetails(workSpaceDetails);
+  }, [user, workspacesMeta]);
+
+  useEffect(() => {
+    if (isShow) {
+      setSettingWorkspaceId(null);
+      refreshDetails();
+    }
+  }, [isShow, refreshDetails]);
+
   return !user ? (
     <SelectorPopperContainer placement="bottom-start">
       <LoginItem />
@@ -47,9 +99,13 @@ export const SelectorPopperContent = () => {
               type={workspace.type}
               key={workspace.id}
               id={workspace.id}
-              name={`workspace-${workspace.id}`}
-              icon={''}
+              icon={workspaces[workspace.id]?.meta.avatar || ''}
               onClick={handleClickSettingWorkspace}
+              name={
+                workspaces[workspace.id]?.meta.name ||
+                `workspace-${workspace.id}`
+              }
+              memberCount={workSpaceDetails[workspace.id]?.memberCount || 1}
             />
           );
         })}

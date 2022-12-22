@@ -10,12 +10,12 @@ export type LoadWorkspaceHandler = (
   workspaceId: string,
   websocket?: boolean
 ) => Promise<StoreWorkspace | null> | null;
-
 export type CreateEditorHandler = (page: StorePage) => EditorContainer | null;
 
 export interface AppStateValue {
   user: AccessTokenMessage | null;
   workspacesMeta: Workspace[];
+  workspaces: Record<string, StoreWorkspace | null>;
 
   currentWorkspaceId: string;
   currentWorkspace: StoreWorkspace | null;
@@ -59,6 +59,7 @@ export const AppState = createContext<AppStateContext>({
   loadWorkspace: undefined,
   loadPage: undefined,
   createPage: undefined,
+  workspaces: {},
 });
 
 export const useAppState = () => {

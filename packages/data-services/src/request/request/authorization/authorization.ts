@@ -57,6 +57,7 @@ function parseAccessToken(token: string): AccessTokenMessage | null {
     const message: AccessTokenMessage = JSON.parse(
       b64DecodeUnicode(token.split('.')[1])
     );
+    message.id = message.id.toString();
     return message;
   } catch (error) {
     return null;

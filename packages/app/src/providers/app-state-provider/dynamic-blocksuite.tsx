@@ -101,6 +101,11 @@ const DynamicBlocksuite = ({
             resolve(workspace);
           });
         } else {
+          const updates = await downloadWorkspace({ workspaceId });
+          updates &&
+            Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
+          // if after update, the space:meta is empty, then we need to get map with doc
+          workspace.doc.getMap('space:meta');
           resolve(workspace);
         }
       });

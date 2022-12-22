@@ -14,6 +14,7 @@ interface WorkspaceItemProps {
   name: string;
   icon: string;
   type: WorkspaceType;
+  memberCount: number;
   onClick?: (workspaceId: string) => void;
 }
 
@@ -23,6 +24,7 @@ export const WorkspaceItem = ({
   icon,
   type,
   onClick,
+  memberCount,
 }: WorkspaceItemProps) => {
   const router = useRouter();
 
@@ -44,7 +46,7 @@ export const WorkspaceItem = ({
         <Name title={name}>{name}</Name>
       </WorkspaceItemContent>
       <Footer>
-        <FooterUsers />
+        <FooterUsers memberCount={memberCount} />
         <FooterSetting onClick={handleClickSetting} />
       </Footer>
     </StyledWrapper>

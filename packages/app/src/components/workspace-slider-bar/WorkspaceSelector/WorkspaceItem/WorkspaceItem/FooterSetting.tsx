@@ -1,13 +1,15 @@
 import { SettingsIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { IconButton } from '@/ui/button';
+import { MouseEventHandler } from 'react';
 
 type SettingProps = {
   onClick?: () => void;
 };
 
 export const FooterSetting = ({ onClick }: SettingProps) => {
-  const handleClick = () => {
+  const handleClick: MouseEventHandler<HTMLButtonElement> = e => {
+    e.stopPropagation();
     onClick && onClick();
   };
   return (
@@ -15,7 +17,7 @@ export const FooterSetting = ({ onClick }: SettingProps) => {
       className="footer-setting"
       onClick={e => {
         e.stopPropagation();
-        handleClick();
+        handleClick(e);
       }}
     >
       <SettingsIcon />

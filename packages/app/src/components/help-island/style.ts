@@ -12,24 +12,24 @@ export const StyledIsland = styled('div')(({ theme }) => {
     zIndex: theme.zIndex.popover,
   };
 });
-export const StyledTransformIcon = styled.div<{ in: boolean }>(
-  ({ in: isIn, theme }) => ({
-    height: '32px',
-    width: '32px',
-    borderRadius: '50%',
-    position: 'absolute',
-    left: '0',
-    right: '0',
-    bottom: '0',
-    top: '0',
-    margin: 'auto',
-    ...displayFlex('center', 'center'),
-    opacity: isIn ? 1 : 0,
-    backgroundColor: isIn
-      ? theme.colors.hoverBackground
-      : theme.colors.pageBackground,
-  })
-);
+export const StyledTransformIcon = styled('div', {
+  shouldForwardProp: prop => prop !== 'in',
+})<{ in: boolean }>(({ in: isIn, theme }) => ({
+  height: '32px',
+  width: '32px',
+  borderRadius: '50%',
+  position: 'absolute',
+  left: '0',
+  right: '0',
+  bottom: '0',
+  top: '0',
+  margin: 'auto',
+  ...displayFlex('center', 'center'),
+  opacity: isIn ? 1 : 0,
+  backgroundColor: isIn
+    ? theme.colors.hoverBackground
+    : theme.colors.pageBackground,
+}));
 export const StyledIconWrapper = styled('div')<{ isEdgelessDark: boolean }>(
   ({ theme, isEdgelessDark }) => {
     return {

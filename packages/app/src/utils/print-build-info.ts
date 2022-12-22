@@ -29,7 +29,7 @@ const printBuildInfo = () => {
     'Environment:',
     `${publicRuntimeConfig.NODE_ENV}${publicRuntimeConfig.CI ? '(ci)' : ''}`
   );
-  console.log('Editor Version:', publicRuntimeConfig.EDITOR_VERSION)
+  console.log('Editor Version:', publicRuntimeConfig.EDITOR_VERSION);
   console.log('Version:', publicRuntimeConfig.VERSION);
   console.log(
     'AFFiNE is an open source project, you can view its source code on GitHub!'

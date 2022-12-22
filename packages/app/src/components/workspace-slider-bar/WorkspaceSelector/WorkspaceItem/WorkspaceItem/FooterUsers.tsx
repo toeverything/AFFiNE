@@ -2,12 +2,16 @@ import { UsersIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { IconButton } from '@/ui/button';
 
-export const FooterUsers = () => {
+type FooterUsersProps = {
+  memberCount: number;
+};
+
+export const FooterUsers = ({ memberCount = 1 }: FooterUsersProps) => {
   return (
     <Wrapper className="footer-users">
       <>
         <UsersIcon />
-        <Tip>99+</Tip>
+        <Tip>{memberCount > 99 ? '99+' : memberCount}</Tip>
       </>
     </Wrapper>
   );
