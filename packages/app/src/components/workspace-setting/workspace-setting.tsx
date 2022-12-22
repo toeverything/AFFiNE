@@ -40,17 +40,16 @@ import { InviteMembers } from '../invite-members/index';
 import {
   getWorkspaceMembers,
   Workspace,
-  WorkspaceType,
   Member,
   removeMember,
 } from '@pathfinder/data-services';
 import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
 import { toast } from '@/ui/toast';
-import { useConfirm } from '@/providers/confirm-provider';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDetails } from '../workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { GeneralPage } from './general';
+import { Workspace as StoreWorkspaces } from '@blocksuite/store';
 
 enum ActiveTab {
   'general' = 'general',
@@ -68,6 +67,7 @@ type WorkspaceSettingProps = {
   onClose?: () => void;
   workspace: Workspace;
   owner: WorkspaceDetails[string]['owner'];
+  workspaces: Record<string, StoreWorkspaces | null>;
 };
 
 const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
@@ -115,8 +115,9 @@ export const WorkspaceSetting = ({
   onClose,
   workspace,
   owner,
+  workspaces,
 }: WorkspaceSettingProps) => {
-  const { workspaces, user } = useAppState();
+  const { user } = useAppState();
   const [activeTab, setActiveTab] = useState<ActiveTab>(ActiveTab.general);
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -148,7 +149,11 @@ export const WorkspaceSetting = ({
         ) : null}
         <StyledSettingContent>
           {activeTab === ActiveTab.general && (
-            <GeneralPage workspace={workspace} owner={owner} />
+            <GeneralPage
+              workspace={workspace}
+              owner={owner}
+              workspaces={workspaces}
+            />
           )}
           {activeTab === ActiveTab.members && workspace && (
             <MembersPage workspace={workspace} />

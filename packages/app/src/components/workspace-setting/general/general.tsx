@@ -1,10 +1,10 @@
-import Modal, { ModalCloseButton } from '@/ui/modal';
 import {
   StyledDeleteButtonContainer,
   StyledSettingAvatar,
   StyledSettingAvatarContent,
   StyledSettingInputContainer,
 } from './style';
+import { StyledSettingH2 } from '../style';
 
 import { useState } from 'react';
 import { Button } from '@/ui/button';
@@ -12,15 +12,20 @@ import Input from '@/ui/input';
 import { Workspace, WorkspaceType } from '@pathfinder/data-services';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
-import { StyledSettingH2 } from '../style';
+import { WorkspaceDelete } from './delete';
+import { Workspace as StoreWorkspaces } from '@blocksuite/store';
+
 export const GeneralPage = ({
   workspace,
   owner,
+  workspaces,
 }: {
   workspace: Workspace;
   owner: WorkspaceDetails[string]['owner'];
+  workspaces: Record<string, StoreWorkspaces | null>;
 }) => {
-  const { workspaces, user, currentWorkspace } = useAppState();
+  const { user, currentWorkspace, workspacesMeta } = useAppState();
+  const [showDelete, setShowDelete] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(
     workspaces[workspace.id]?.meta.name ||
       (workspace.type === WorkspaceType.Private && user
@@ -33,8 +38,28 @@ export const GeneralPage = ({
     currentWorkspace?.meta.setName(newName);
     workspaces[workspace.id]?.meta.setName(newName);
   };
+  const currentWorkspaceIndex = workspacesMeta.findIndex(
+    meta => meta.id === workspace.id
+  );
+  const nextWorkSpaceId =
+    currentWorkspaceIndex > workspacesMeta.length - 1
+      ? workspacesMeta[currentWorkspaceIndex - 1]?.id
+      : workspacesMeta[currentWorkspaceIndex + 1]?.id;
+  const handleCloseDelete = () => {
+    setShowDelete(false);
+  };
+  const handleClickDelete = () => {
+    setShowDelete(true);
+  };
   return workspace ? (
     <div>
+      <WorkspaceDelete
+        open={showDelete}
+        onClose={handleCloseDelete}
+        workspaceName={workspaceName}
+        workspaceId={workspace.id}
+        nextWorkSpaceId={nextWorkSpaceId}
+      ></WorkspaceDelete>
       <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
       <StyledSettingAvatarContent>
         <StyledSettingAvatar
@@ -43,6 +68,7 @@ export const GeneralPage = ({
         >
           W
         </StyledSettingAvatar>
+        {/* TODO: add upload logic */}
         {/* {isOwner ? (
           <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>
         ) : null} */}
@@ -70,7 +96,7 @@ export const GeneralPage = ({
         ></Input>
       </StyledSettingInputContainer>
       <StyledDeleteButtonContainer>
-        <Button type="danger" shape="circle">
+        <Button type="danger" shape="circle" onClick={handleClickDelete}>
           Delete Workspace
         </Button>
       </StyledDeleteButtonContainer>

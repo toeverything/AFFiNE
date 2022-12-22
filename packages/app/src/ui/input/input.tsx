@@ -25,6 +25,11 @@ export const Input = (props: inputProps) => {
   } = props;
   const [value, setValue] = useState<string>(valueProp || '');
   const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
+    if (
+      (maxLength && e.target.value.length > maxLength) ||
+      (minLength && e.target.value.length < minLength)
+    )
+      return;
     setValue(e.target.value);
     onChange && onChange(e.target.value);
   };
