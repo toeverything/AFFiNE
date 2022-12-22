@@ -156,13 +156,6 @@ export async function downloadWorkspace(
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {
   return request.post('/api/blob', { body: params.blob }).text();
-
-  // const data = await request({
-  //   url: '/api/blob',
-  //   method: 'PUT',
-  //   data: params.blob,
-  // });
-  // return data.data;
 }
 
 export async function getBlob(params: {
