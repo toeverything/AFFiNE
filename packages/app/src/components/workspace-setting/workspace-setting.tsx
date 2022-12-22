@@ -190,7 +190,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
     <div>
       <StyledMemberTitleContainer>
         <StyledMemberNameContainer>
-          Users({members.length}){' '}
+          Users({members.length})
         </StyledMemberNameContainer>
         <StyledMemberRoleContainer>Access level</StyledMemberRoleContainer>
       </StyledMemberTitleContainer>
