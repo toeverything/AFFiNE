@@ -22,13 +22,13 @@ export default function DevPage() {
   const router = useRouter();
   const [successInvited, setSuccessInvited] = useState<boolean>(false);
   useEffect(() => {
-    return () => {
-      acceptInviting({ invitingCode: router.query.invite_code as string })
-        .then(data => {
-          setSuccessInvited(true);
-        })
-        .catch(err => {});
-    };
+    acceptInviting({ invitingCode: router.query.invite_code as string })
+      .then(data => {
+        setSuccessInvited(true);
+      })
+      .catch(err => {
+        console.log('err: ', err);
+      });
   }, [router.query.invite_code]);
 
   return (

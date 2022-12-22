@@ -142,7 +142,7 @@ export interface AcceptInvitingParams {
 export async function acceptInviting(
   params: AcceptInvitingParams
 ): Promise<void> {
-  await request.post(`/api/invite/${params.invitingCode}`);
+  await request.post(`/api/invitation/${params.invitingCode}`);
 }
 
 export interface DownloadWOrkspaceParams {
