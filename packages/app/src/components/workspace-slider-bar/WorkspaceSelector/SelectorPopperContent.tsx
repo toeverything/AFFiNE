@@ -103,10 +103,8 @@ export const SelectorPopperContent = ({
       workspaces[id] = workspace;
     });
 
-    console.log('workspaces', workspaces);
-
     setWorkspaces(workspaces);
-  }, []);
+  }, [workspacesMeta]);
 
   useEffect(() => {
     if (isShow) {

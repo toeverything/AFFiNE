@@ -19,6 +19,13 @@ const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
 });
 
 export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
+  const refreshWorkspacesMeta = useCallback(async () => {
+    const workspacesMeta = await getWorkspaces().catch(() => {
+      return [];
+    });
+    setState(state => ({ ...state, workspacesMeta }));
+  }, []);
+
   const [state, setState] = useState<AppStateValue>({
     user: null,
     workspacesMeta: [],
@@ -29,6 +36,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     // Synced is used to ensure that the provider has synced with the server,
     // So after Synced set to true, the other state is sure to be set.
     synced: false,
+    refreshWorkspacesMeta,
   });
 
   const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =

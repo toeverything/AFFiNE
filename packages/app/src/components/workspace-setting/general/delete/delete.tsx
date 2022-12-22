@@ -13,6 +13,7 @@ import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { deleteWorkspace } from '@pathfinder/data-services';
 import { useRouter } from 'next/router';
+import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceDeleteProps {
   open: boolean;
@@ -31,6 +32,7 @@ export const WorkspaceDelete = ({
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
   const router = useRouter();
+  const { refreshWorkspacesMeta } = useAppState();
 
   const handlerInputChange = (workspaceName: string) => {
     setDeleteStr(workspaceName);
@@ -39,6 +41,7 @@ export const WorkspaceDelete = ({
   const handleDelete = async () => {
     await deleteWorkspace({ id: workspaceId });
     router.push(`/workspace/${nextWorkSpaceId}`);
+    refreshWorkspacesMeta();
     onClose();
   };
 

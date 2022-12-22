@@ -17,6 +17,7 @@ import {
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 import router from 'next/router';
+import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceCreateProps {
   open: boolean;
@@ -34,6 +35,7 @@ const DefaultHeadImgColors = [
 export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
   const [workspaceName, setWorkspaceId] = useState<string>('');
   const [canCreate, setCanCreate] = useState<boolean>(false);
+  const { refreshWorkspacesMeta } = useAppState();
   const handlerInputChange = (workspaceName: string) => {
     setWorkspaceId(workspaceName);
   };
@@ -74,6 +76,7 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         router.push(`/workspace/${data.created_at}`);
+        refreshWorkspacesMeta();
         onClose();
       })
       .catch(err => {
