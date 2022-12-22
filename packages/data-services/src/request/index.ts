@@ -1,11 +1,5 @@
 import ky from 'ky';
-import {
-  getToken,
-  setToken,
-  isAccessTokenExpired,
-  refreshToken,
-  authorizationEvent,
-} from './token';
+import { token } from './token';
 
 export const request = ky.extend({
   retry: 1,
@@ -13,13 +7,9 @@ export const request = ky.extend({
     beforeRequest: [
       async request => {
         if (!request.headers.has('token') || request.headers.get('token')) {
-          const token = getToken();
-          if (token) {
-            if (isAccessTokenExpired(token.accessToken)) {
-              await refreshToken();
-            }
-
-            request.headers.set('Authorization', token.accessToken);
+          if (token.isLogin) {
+            if (token.isExpired) await token.refreshToken();
+            request.headers.set('Authorization', token.token);
           }
         }
       },
@@ -39,12 +29,12 @@ export const request = ky.extend({
     // ],
     beforeRetry: [
       async ({ request }) => {
-        const token = await refreshToken();
-        request.headers.set('Authorization', token.accessToken);
+        await token.refreshToken();
+        request.headers.set('Authorization', token.token);
       },
     ],
   },
 });
 
 export type { AccessTokenMessage } from './token';
-export { authorizationEvent, getToken, setToken };
+export { token };
