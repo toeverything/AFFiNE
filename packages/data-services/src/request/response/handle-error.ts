@@ -17,7 +17,7 @@ export async function handleResponseError(error: AxiosError<any, any>) {
     await refreshToken();
     return request({ ...config, refreshTokenRequest: true });
   }
-  return response;
+  return error;
 }
 
 export async function handleResponse(response: AxiosResponse<any, any>) {
