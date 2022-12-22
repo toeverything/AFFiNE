@@ -14,7 +14,7 @@ export enum PermissionType {
   Read = 0,
   Write = 1,
   Admin = 2,
-  Owner = 3,
+  Owner = 99,
 }
 
 export interface Workspace {

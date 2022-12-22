@@ -191,7 +191,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
       .catch(err => {
         console.log(err);
       });
-  });
+  }, []);
   return (
     <div>
       <StyledMemberTitleContainer>
@@ -221,7 +221,11 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                 </StyledMemberInfo>
               </StyledMemberNameContainer>
               <StyledMemberRoleContainer>
-                Workspace Owner
+                {member.accepted
+                  ? member.type !== 99
+                    ? 'Member'
+                    : 'Workspace Owner'
+                  : 'Pending'}
               </StyledMemberRoleContainer>
               <StyledMoreVerticalButton>
                 <MoreVerticalIcon></MoreVerticalIcon>
