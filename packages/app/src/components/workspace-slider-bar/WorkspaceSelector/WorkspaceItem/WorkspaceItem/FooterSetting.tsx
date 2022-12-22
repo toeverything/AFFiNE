@@ -11,7 +11,13 @@ export const FooterSetting = ({ onClick }: SettingProps) => {
     onClick && onClick();
   };
   return (
-    <Wrapper className="footer-setting" onClick={handleClick}>
+    <Wrapper
+      className="footer-setting"
+      onClick={e => {
+        e.stopPropagation();
+        handleClick();
+      }}
+    >
       <SettingsIcon />
     </Wrapper>
   );
