@@ -191,7 +191,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
       .catch(err => {
         console.log(err);
       });
-  }, []);
+  }, [workspace.id]);
   return (
     <div>
       <StyledMemberTitleContainer>
@@ -201,7 +201,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
       <StyledMemberListContainer>
         {members.map(member => {
           return (
-            <StyledMemberListItem>
+            <StyledMemberListItem key={member.id}>
               <StyledMemberNameContainer>
                 {member.user.type === 'Registered' ? (
                   <Avatar src={member.user.avatar_url}></Avatar>

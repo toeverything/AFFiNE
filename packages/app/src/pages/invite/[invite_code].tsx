@@ -29,7 +29,7 @@ export default function DevPage() {
         })
         .catch(err => {});
     };
-  }, []);
+  }, [router.query.invite_code]);
 
   return (
     <Invited>
