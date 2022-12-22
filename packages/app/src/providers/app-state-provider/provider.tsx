@@ -172,7 +172,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       }));
     };
     token.onChange(callback);
-
+    token.refreshToken();
     return () => {
       token.offChange(callback);
     };
