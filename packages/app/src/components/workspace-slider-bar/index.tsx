@@ -74,6 +74,15 @@ export const WorkSpaceSliderBar = () => {
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFINE_SLIDE_BAR', false, true);
   const { t } = useTranslation();
+
+  const paths = {
+    all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
+    favorite: currentWorkspaceId
+      ? `/workspace/${currentWorkspaceId}/favorite`
+      : '',
+    trash: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/trash` : '',
+  };
+
   return (
     <>
       <StyledSliderBar show={show}>
@@ -88,21 +97,13 @@ export const WorkSpaceSliderBar = () => {
         >
           <SearchIcon /> Quick search
         </StyledListItem>
-        <Link href={{ pathname: `/workspace/${currentWorkspaceId}/all` }}>
-          <StyledListItem
-            active={router.pathname === `/workspace/${currentWorkspaceId}/all`}
-          >
+        <Link href={{ pathname: paths.all }}>
+          <StyledListItem active={router.pathname === paths.all}>
             <AllPagesIcon /> <span>All pages</span>
           </StyledListItem>
         </Link>
-        <StyledListItem
-          active={
-            router.pathname === `/workspace/${currentWorkspaceId}/favorite`
-          }
-        >
-          <StyledLink
-            href={{ pathname: `/workspace/${currentWorkspaceId}/favorite` }}
-          >
+        <StyledListItem active={router.pathname === paths.favorite}>
+          <StyledLink href={{ pathname: paths.favorite }}>
             <FavouritesIcon />
             Favourites
           </StyledLink>
@@ -132,12 +133,8 @@ export const WorkSpaceSliderBar = () => {
           </StyledListItem>
         </Tooltip>
 
-        <Link href={{ pathname: `/workspace/${currentWorkspaceId}/trash` }}>
-          <StyledListItem
-            active={
-              router.pathname === `/workspace/${currentWorkspaceId}/trash`
-            }
-          >
+        <Link href={{ pathname: paths.trash }}>
+          <StyledListItem active={router.pathname === paths.trash}>
             <TrashIcon /> Trash
           </StyledListItem>
         </Link>
