@@ -1,5 +1,13 @@
-FROM nginx:alpine
+FROM node:16-alpine as relocate
+WORKDIR /app
+COPY ./packages/app/out ./dist
+COPY ./.github/deployment/Caddyfile ./Caddyfile
 
-COPY ./packages/app/out /usr/share/nginx/html
+FROM caddy:2.6.2-alpine
+ARG API_SERVER
+WORKDIR /app
+COPY --from=relocate /app .
 
-COPY ./.github/deployment/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+ENV API_SERVER=$API_SERVER
+CMD ["caddy", "run"]
