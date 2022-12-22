@@ -27,7 +27,7 @@ export const useLoadPage = () => {
     if (!workspace) {
       return;
     }
-    const page = workspace?.getPage(pageId);
+    const page = pageId ? workspace?.getPage(pageId) : null;
     if (!page) {
       const savedPageId = workspace.meta.pageMetas[0]?.id;
       if (savedPageId) {
