@@ -23,6 +23,7 @@ export interface AppStateValue {
 
   editor: EditorContainer | null;
   synced: boolean;
+  refreshWorkspacesMeta: () => void;
 }
 
 export interface AppStateContext extends AppStateValue {
@@ -55,7 +56,7 @@ export const AppState = createContext<AppStateContext>({
   loadPage: () => Promise.resolve(null),
   createPage: () => Promise.resolve(null),
   synced: false,
-  // workspaces: {},
+  refreshWorkspacesMeta: () => {},
 });
 
 export const useAppState = () => {

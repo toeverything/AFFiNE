@@ -21,10 +21,12 @@ const User = ({ name, avatar }: { name: string; avatar?: string }) => {
 export default function DevPage() {
   const router = useRouter();
   const [successInvited, setSuccessInvited] = useState<boolean>(false);
+  const [inviteData, setInviteData] = useState<any>(null);
   useEffect(() => {
     acceptInviting({ invitingCode: router.query.invite_code as string })
       .then(data => {
         setSuccessInvited(true);
+        setInviteData(data);
       })
       .catch(err => {
         console.log('err: ', err);
@@ -35,9 +37,13 @@ export default function DevPage() {
     <Invited>
       <div>
         <Empty width={310} height={310}></Empty>
+
         <Content>
-          <User name={'Svaney'}></User> invited you to join
-          <User name={'Dev Space'}></User>
+          <User name={inviteData?.name ? inviteData.name : '-'}></User> invited
+          you to join
+          <User
+            name={inviteData?.workspaceName ? inviteData.workspaceName : '-'}
+          ></User>
           {successInvited ? (
             <Status>
               <svg

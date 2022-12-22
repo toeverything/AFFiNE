@@ -42,6 +42,7 @@ import {
   Workspace,
   Member,
   removeMember,
+  updateWorkspace,
 } from '@pathfinder/data-services';
 import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
@@ -158,7 +159,9 @@ export const WorkspaceSetting = ({
           {activeTab === ActiveTab.members && workspace && (
             <MembersPage workspace={workspace} />
           )}
-          {activeTab === ActiveTab.publish && <PublishPage />}
+          {activeTab === ActiveTab.publish && (
+            <PublishPage workspace={workspace} />
+          )}
         </StyledSettingContent>
       </StyledSettingContainer>
     </Modal>
@@ -286,31 +289,69 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   );
 };
 
-const PublishPage = () => {
+const PublishPage = ({ workspace }: { workspace: Workspace }) => {
+  const { refreshWorkspacesMeta } = useAppState();
+  const shareUrl = window.location.host + '/workspace/' + workspace.id;
+  const togglePublic = (flag: boolean) => {
+    updateWorkspace({
+      id: workspace.id,
+      public: flag,
+    }).then(data => {
+      refreshWorkspacesMeta();
+      toast('Updated');
+    });
+  };
+  const copyUrl = () => {
+    navigator.clipboard.writeText(shareUrl);
+    toast('Copied');
+  };
   return (
     <div>
       <StyledPublishContent>
-        <StyledPublishExplanation>
-          After publishing to the web, everyone can view the content of this
-          workspace through the link.
-        </StyledPublishExplanation>
-        <StyledSettingH2 marginTop={48}>Share with link</StyledSettingH2>
-        <StyledPublishCopyContainer>
-          <Input
-            width={500}
-            value={'www.baidu.com/asdsadas/asdsadasd'}
-            disabled
-          ></Input>
-          <StyledCopyButtonContainer>
-            <Button type="primary" shape="circle">
-              Copy Link
-            </Button>
-          </StyledCopyButtonContainer>
-        </StyledPublishCopyContainer>
+        {workspace.public ? (
+          <StyledPublishExplanation>
+            After publishing to the web, everyone can view the content of this
+            workspace through the link.
+          </StyledPublishExplanation>
+        ) : (
+          <>
+            <StyledPublishExplanation>
+              The current workspace has been published to the web, everyone can
+              view the contents of this workspace through the link.
+            </StyledPublishExplanation>
+            <StyledSettingH2 marginTop={48}>Share with link</StyledSettingH2>
+            <StyledPublishCopyContainer>
+              <Input width={500} value={shareUrl} disabled={true}></Input>
+              <StyledCopyButtonContainer>
+                <Button onClick={copyUrl} type="primary" shape="circle">
+                  Copy Link
+                </Button>
+              </StyledCopyButtonContainer>
+            </StyledPublishCopyContainer>
+          </>
+        )}
       </StyledPublishContent>
-      <Button type="primary" shape="circle">
-        Publish to web
-      </Button>
+      {!workspace.public ? (
+        <Button
+          onClick={() => {
+            togglePublic(true);
+          }}
+          type="primary"
+          shape="circle"
+        >
+          Publish to web
+        </Button>
+      ) : (
+        <Button
+          onClick={() => {
+            togglePublic(false);
+          }}
+          type="primary"
+          shape="circle"
+        >
+          Stop publishing
+        </Button>
+      )}
     </div>
   );
 };

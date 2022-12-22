@@ -1,4 +1,4 @@
-import { client } from '../request';
+import { client, bareClient } from '../request';
 import { User } from './user';
 
 export interface GetWorkspaceDetailParams {
@@ -142,7 +142,7 @@ export interface AcceptInvitingParams {
 export async function acceptInviting(
   params: AcceptInvitingParams
 ): Promise<void> {
-  await client.post(`/api/invitation/${params.invitingCode}`);
+  await bareClient.post(`/api/invitation/${params.invitingCode}`);
 }
 
 export interface DownloadWOrkspaceParams {
@@ -155,7 +155,7 @@ export async function downloadWorkspace(
 }
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {
-  return client.post('/api/blob', { body: params.blob }).text();
+  return client.put('/api/blob', { body: params.blob }).text();
 }
 
 export async function getBlob(params: {
