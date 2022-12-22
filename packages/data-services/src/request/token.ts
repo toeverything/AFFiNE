@@ -18,13 +18,9 @@ type LoginParams = {
 };
 
 type LoginResponse = {
-  /**
-   * JWT, expires in a very short time
-   */
+  // JWT, expires in a very short time
   token: string;
-  /**
-   * Refresh token
-   */
+  // Refresh token
   refresh: string;
 };
 
@@ -49,6 +45,19 @@ function b64DecodeUnicode(str: string) {
   );
 }
 
+function getRefreshToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || '';
+  } catch (_) {
+    return '';
+  }
+}
+function setRefreshToken(token: string) {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch (_) {}
+}
+
 class Token {
   private readonly _event: AuthorizationEvent;
   private _accessToken: string;
@@ -59,7 +68,7 @@ class Token {
 
   constructor(refreshToken?: string) {
     this._accessToken = '';
-    this._refreshToken = refreshToken || localStorage.getItem(TOKEN_KEY) || '';
+    this._refreshToken = refreshToken || getRefreshToken();
     this._event = new AuthorizationEvent();
 
     this._user = Token.parse(this._accessToken);
@@ -71,7 +80,7 @@ class Token {
     this._refreshToken = login.refresh;
     this._user = Token.parse(login.token);
 
-    window.localStorage.setItem(TOKEN_KEY, login.refresh);
+    setRefreshToken(login.refresh);
   }
 
   async initToken(token: string) {
