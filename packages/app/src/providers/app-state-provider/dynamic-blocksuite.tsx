@@ -89,7 +89,7 @@ const DynamicBlocksuite = ({
           p => p instanceof IndexedDBDocProvider
         );
         if (indexDBProvider) {
-          (indexDBProvider as IndexedDBDocProvider)?.on('synced', async () => {
+          (indexDBProvider as IndexedDBDocProvider).on('synced', async () => {
             const updates = await downloadWorkspace({ workspaceId });
 
             if (updates && updates.byteLength) {
