@@ -142,7 +142,7 @@ export const SelectorPopperContent = ({
                 workspaces[workspace.id]?.meta.name ||
                 (workspace.type === WorkspaceType.Private
                   ? user.name
-                  : `workspace-${workspace.id}`)
+                  : `loading...`) // workspace-${workspace.id}
               }
               memberCount={workSpaceDetails[workspace.id]?.memberCount || 1}
             />
