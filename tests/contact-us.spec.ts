@@ -5,18 +5,10 @@ loadPage();
 
 test.describe('Open contact us', () => {
   test('Click about us', async ({ page }) => {
-    page.waitForTimeout(1000);
     const currentWorkspace = page.getByTestId('current-workspace');
     await currentWorkspace.click();
-
-    await page
-      .getByRole('tooltip', {
-        name: 'A AFFiNE Log in to sync with affine About AFFiNE',
-      })
-      .locator('div')
-      .filter({ hasText: 'About AFFiNE' })
-      .nth(2)
-      .click();
+    page.waitForTimeout(1000);
+    await page.getByText('About AFFiNE').click();
 
     const contactUsModal = page.locator(
       '[data-testid=contact-us-modal-content]'
@@ -24,7 +16,6 @@ test.describe('Open contact us', () => {
     await expect(contactUsModal).toContainText('AFFiNE Community');
   });
   test('Click right-bottom corner contact icon', async ({ page }) => {
-    page.waitForTimeout(1000);
     const faqIcon = page.locator('[data-testid=faq-icon]');
     const box = await faqIcon.boundingBox();
     await expect(box?.x).not.toBeUndefined();
