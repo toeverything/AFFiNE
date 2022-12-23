@@ -194,6 +194,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       return;
     }
     const callback = async (user: AccessTokenMessage | null) => {
+      const isLogin = token.isLogin;
       const workspacesMeta = user
         ? await getWorkspaces().catch(() => {
             return [];
@@ -204,7 +205,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
         ...state,
         user: user,
         workspacesMeta,
-        synced: true,
+        synced: isLogin ? !!user : true,
       }));
     };
     token.onChange(callback);

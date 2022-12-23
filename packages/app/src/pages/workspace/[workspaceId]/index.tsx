@@ -1,19 +1,19 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider/context';
-import { useInitWorkspace } from '@/hooks/use-init-workspace';
+import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
 
 const WorkspaceIndex = () => {
   const router = useRouter();
-  const { createPage, currentWorkspaceId } = useAppState();
-  const { workspace } = useInitWorkspace();
+  const { createPage, currentWorkspaceId, currentWorkspace } = useAppState();
+  const { workspaceLoaded } = useEnsureWorkspace();
 
   useEffect(() => {
     const initPage = async () => {
-      if (!workspace) {
+      if (!workspaceLoaded) {
         return;
       }
-      const savedPageId = workspace.meta.pageMetas[0]?.id;
+      const savedPageId = currentWorkspace?.meta.pageMetas[0]?.id;
       if (savedPageId) {
         router.replace(`/workspace/${currentWorkspaceId}/${savedPageId}`);
         return;
@@ -23,7 +23,13 @@ const WorkspaceIndex = () => {
       router.replace(`/workspace/${currentWorkspaceId}/${pageId}`);
     };
     initPage();
-  }, [workspace, currentWorkspaceId, createPage, router]);
+  }, [
+    currentWorkspace,
+    currentWorkspaceId,
+    createPage,
+    router,
+    workspaceLoaded,
+  ]);
 
   return <></>;
 };

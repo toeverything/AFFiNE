@@ -3,14 +3,11 @@ import { WorkSpaceSliderBar } from '@/components/workspace-slider-bar';
 import { useRouter } from 'next/router';
 import { StyledPage, StyledWrapper } from './styles';
 import { PropsWithChildren } from 'react';
-import { useAppState } from '@/providers/app-state-provider';
-import { useInitWorkspace } from '@/hooks/use-init-workspace';
+import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
 
 export const WorkspaceDefender = ({ children }: PropsWithChildren) => {
-  const { synced } = useAppState();
-  const { loading } = useInitWorkspace(!synced);
-
-  return <>{!loading ? children : null}</>;
+  const { workspaceLoaded } = useEnsureWorkspace();
+  return <>{workspaceLoaded ? children : null}</>;
 };
 
 export const WorkspaceLayout = ({ children }: PropsWithChildren) => {
