@@ -7,6 +7,9 @@ import {
 } from './style';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
+import { leaveWorkspace } from '@pathfinder/data-services';
+import { Router, useRouter } from 'next/router';
+import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceDeleteProps {
   open: boolean;
@@ -16,9 +19,19 @@ interface WorkspaceDeleteProps {
   nextWorkSpaceId: string;
 }
 
-export const WorkspaceDelete = ({ open, onClose }: WorkspaceDeleteProps) => {
+export const WorkspaceLeave = ({
+  open,
+  onClose,
+  nextWorkSpaceId,
+  workspaceId,
+}: WorkspaceDeleteProps) => {
+  const router = useRouter();
+  const { refreshWorkspacesMeta } = useAppState();
   const handleLeave = async () => {
-    // TODO
+    await leaveWorkspace({ id: workspaceId });
+    router.push(`/workspace/${nextWorkSpaceId}`);
+    refreshWorkspacesMeta();
+    onClose();
   };
 
   return (
@@ -48,4 +61,4 @@ export const WorkspaceDelete = ({ open, onClose }: WorkspaceDeleteProps) => {
   );
 };
 
-export default WorkspaceDelete;
+export default WorkspaceLeave;

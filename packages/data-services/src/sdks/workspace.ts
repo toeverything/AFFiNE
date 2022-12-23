@@ -163,3 +163,10 @@ export async function getBlob(params: {
 }): Promise<ArrayBuffer> {
   return client.get(`/api/blob/${params.blobId}`).arrayBuffer();
 }
+
+export interface LeaveWorkspaceParams {
+  id: number | string;
+}
+export async function leaveWorkspace({ id }: LeaveWorkspaceParams) {
+  await client.delete(`/api/workspace/${id}/permission`).json();
+}

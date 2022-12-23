@@ -31,8 +31,8 @@ export const WorkspaceDelete = ({
   nextWorkSpaceId,
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
-  const router = useRouter();
   const { refreshWorkspacesMeta } = useAppState();
+  const router = useRouter();
 
   const handlerInputChange = (workspaceName: string) => {
     setDeleteStr(workspaceName);

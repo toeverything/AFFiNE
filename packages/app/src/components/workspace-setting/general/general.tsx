@@ -15,6 +15,7 @@ import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSel
 import { WorkspaceDelete } from './delete';
 import { Workspace as StoreWorkspace } from '@blocksuite/store';
 import { debounce } from '@/utils';
+import { WorkspaceLeave } from './leave';
 
 export const GeneralPage = ({
   workspace,
@@ -32,6 +33,7 @@ export const GeneralPage = ({
     refreshWorkspacesMeta,
   } = useAppState();
   const [showDelete, setShowDelete] = useState<boolean>(false);
+  const [showLeave, setShowLeave] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(
     workspaces[workspace.id]?.meta.name ||
       (workspace.type === WorkspaceType.Private && user ? user.name : '')
@@ -53,21 +55,22 @@ export const GeneralPage = ({
     currentWorkspaceIndex > workspacesMeta.length - 1
       ? workspacesMeta[currentWorkspaceIndex - 1]?.id
       : workspacesMeta[currentWorkspaceIndex + 1]?.id;
-  const handleCloseDelete = () => {
-    setShowDelete(false);
-  };
   const handleClickDelete = () => {
     setShowDelete(true);
   };
+  const handleCloseDelete = () => {
+    setShowDelete(false);
+  };
+
+  const handleClickLeave = () => {
+    setShowLeave(true);
+  };
+  const handleCloseLeave = () => {
+    setShowLeave(false);
+  };
+
   return workspace ? (
     <div>
-      <WorkspaceDelete
-        open={showDelete}
-        onClose={handleCloseDelete}
-        workspaceName={workspaceName}
-        workspaceId={workspace.id}
-        nextWorkSpaceId={nextWorkSpaceId}
-      ></WorkspaceDelete>
       <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
       <StyledSettingAvatarContent>
         <StyledSettingAvatar
@@ -104,9 +107,33 @@ export const GeneralPage = ({
         ></Input>
       </StyledSettingInputContainer>
       <StyledDeleteButtonContainer>
-        <Button type="danger" shape="circle" onClick={handleClickDelete}>
-          Delete Workspace
-        </Button>
+        {isOwner ? (
+          <>
+            <Button type="danger" shape="circle" onClick={handleClickDelete}>
+              Delete Workspace
+            </Button>
+            <WorkspaceDelete
+              open={showDelete}
+              onClose={handleCloseDelete}
+              workspaceName={workspaceName}
+              workspaceId={workspace.id}
+              nextWorkSpaceId={nextWorkSpaceId}
+            />
+          </>
+        ) : (
+          <>
+            <Button type="danger" shape="circle" onClick={handleClickLeave}>
+              Leave Workspace
+            </Button>
+            <WorkspaceLeave
+              open={showLeave}
+              onClose={handleCloseLeave}
+              workspaceName={workspaceName}
+              workspaceId={workspace.id}
+              nextWorkSpaceId={nextWorkSpaceId}
+            />
+          </>
+        )}
       </StyledDeleteButtonContainer>
     </div>
   ) : null;
