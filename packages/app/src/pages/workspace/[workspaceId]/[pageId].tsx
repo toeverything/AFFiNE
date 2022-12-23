@@ -40,7 +40,8 @@ const Page: NextPageWithLayout = () => {
       editorContainer.current?.appendChild(editor);
       setEditor?.current?.(editor);
       if (currentPage!.isEmpty) {
-        const title = 'Welcome to the AFFiNE Alpha';
+        const isFirstPage = currentWorkspace?.meta.pageMetas.length === 1;
+        const title = isFirstPage ? 'Welcome to the AFFiNE Alpha' : '';
         const pageId = currentPage!.addBlock({
           flavour: 'affine:page',
           title,
@@ -49,9 +50,12 @@ const Page: NextPageWithLayout = () => {
           { flavour: 'affine:group' },
           pageId
         );
-        editor.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
-
-        currentWorkspace!.setPageMeta(currentPage!.id, { title });
+        currentPage!.addBlock({ flavour: 'affine:group' }, pageId);
+        // If this is a first page in workspace, init an introduction markdown
+        if (isFirstPage) {
+          editor.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
+          currentWorkspace!.setPageMeta(currentPage!.id, { title });
+        }
         currentPage!.resetHistory();
       }
     }
