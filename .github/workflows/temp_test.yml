@@ -56,8 +56,8 @@ jobs:
         run: |
           pnpm lint --max-warnings=0
 
-      - name: Test
-        run: pnpm test
+      # - name: Test
+      #   run: pnpm test
 
       - name: Build
         run: pnpm build
