@@ -12,7 +12,6 @@ export const WorkspaceSelector = () => {
   const workspaceMeta = workspacesMeta.find(
     meta => String(meta.id) === String(currentWorkspaceId)
   );
-  console.log('currentWorkspace', currentWorkspace, workspaceMeta);
   return (
     <Popper
       content={<SelectorPopperContent isShow={isShow} />}

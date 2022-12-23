@@ -5,6 +5,7 @@ import {
   token,
   AccessTokenMessage,
   getWorkspaces,
+  downloadWorkspace,
 } from '@pathfinder/data-services';
 import { AppState, AppStateContext } from './context';
 import type {
@@ -12,19 +13,19 @@ import type {
   CreateEditorHandler,
   LoadWorkspaceHandler,
 } from './context';
-import type { Page, Workspace } from '@blocksuite/store';
+import { Page, Workspace } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
 });
 
 export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
-  const refreshWorkspacesMeta = useCallback(async () => {
+  const refreshWorkspacesMeta = async () => {
     const workspacesMeta = await getWorkspaces().catch(() => {
       return [];
     });
     setState(state => ({ ...state, workspacesMeta }));
-  }, []);
+  };
 
   const [state, setState] = useState<AppStateValue>({
     user: null,
@@ -37,7 +38,42 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     // So after Synced set to true, the other state is sure to be set.
     synced: false,
     refreshWorkspacesMeta,
+    workspaces: {},
   });
+
+  const refreshWorkspacesInfo = async (
+    workspaces: AppStateValue['workspaces']
+  ) => {
+    Object.entries(workspaces).forEach(async ([workspaceId, workspace]) => {
+      if (workspace) {
+        const updates = await downloadWorkspace({ workspaceId });
+        updates &&
+          Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
+        // if after update, the space:meta is empty, then we need to get map with doc
+        workspace.doc.getMap('space:meta');
+      }
+    });
+  };
+
+  useEffect(() => {
+    (async () => {
+      const workspacesList = await Promise.all(
+        state.workspacesMeta.map(async ({ id }) => {
+          const workspace = (await loadWorkspaceHandler?.(id)) || null;
+          return { id, workspace };
+        })
+      );
+      const workspaces: Record<string, Workspace | null> = {};
+      workspacesList.forEach(({ id, workspace }) => {
+        workspaces[id] = workspace;
+      });
+      setState(state => ({
+        ...state,
+        workspaces,
+      }));
+      refreshWorkspacesInfo(workspaces);
+    })();
+  }, [state.workspacesMeta]);
 
   const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =
     useState<LoadWorkspaceHandler>();
@@ -156,25 +192,10 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
           })
         : [];
 
-      const workspacesList = await Promise.all(
-        workspacesMeta.map(async ({ id }) => {
-          const workspace = (await loadWorkspaceHandler?.(id)) || null;
-          return { id, workspace };
-        })
-      );
-
-      const workspaces: Record<string, Workspace | null> = {};
-
-      workspacesList.forEach(({ id, workspace }) => {
-        workspaces[id] = workspace;
-      });
-
-      // TODO: add meta info to workspace meta
       setState(state => ({
         ...state,
         user: user,
         workspacesMeta,
-        workspaces,
         synced: true,
       }));
     };

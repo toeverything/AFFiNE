@@ -18,13 +18,18 @@ import { Workspace as StoreWorkspaces } from '@blocksuite/store';
 export const GeneralPage = ({
   workspace,
   owner,
-  workspaces,
 }: {
   workspace: Workspace;
   owner: WorkspaceDetails[string]['owner'];
   workspaces: Record<string, StoreWorkspaces | null>;
 }) => {
-  const { user, currentWorkspace, workspacesMeta } = useAppState();
+  const {
+    user,
+    currentWorkspace,
+    workspacesMeta,
+    workspaces,
+    refreshWorkspacesMeta,
+  } = useAppState();
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(
     workspaces[workspace.id]?.meta.name ||
@@ -37,6 +42,7 @@ export const GeneralPage = ({
     setWorkspaceName(newName);
     currentWorkspace?.meta.setName(newName);
     workspaces[workspace.id]?.meta.setName(newName);
+    refreshWorkspacesMeta();
   };
   const currentWorkspaceIndex = workspacesMeta.findIndex(
     meta => meta.id === workspace.id
@@ -66,7 +72,7 @@ export const GeneralPage = ({
           alt="workspace avatar"
           src={workspaces[workspace.id]?.meta.avatar || ''}
         >
-          W
+          {workspaces[workspace.id]?.meta.name[0]}
         </StyledSettingAvatar>
         {/* TODO: add upload logic */}
         {/* {isOwner ? (

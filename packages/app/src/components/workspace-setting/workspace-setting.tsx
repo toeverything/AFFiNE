@@ -68,7 +68,6 @@ type WorkspaceSettingProps = {
   onClose?: () => void;
   workspace: Workspace;
   owner: WorkspaceDetails[string]['owner'];
-  workspaces: Record<string, StoreWorkspaces | null>;
 };
 
 const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
@@ -116,9 +115,8 @@ export const WorkspaceSetting = ({
   onClose,
   workspace,
   owner,
-  workspaces,
 }: WorkspaceSettingProps) => {
-  const { user } = useAppState();
+  const { user, workspaces } = useAppState();
   const [activeTab, setActiveTab] = useState<ActiveTab>(ActiveTab.general);
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);

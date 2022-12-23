@@ -12,12 +12,7 @@ import {
 } from './WorkspaceItem';
 import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  downloadWorkspace,
-  getWorkspaceDetail,
-  WorkspaceType,
-} from '@pathfinder/data-services';
-import { Workspace } from '@blocksuite/store';
+import { getWorkspaceDetail, WorkspaceType } from '@pathfinder/data-services';
 
 export type WorkspaceDetails = Record<
   string,
@@ -31,16 +26,15 @@ type SelectorPopperContentProps = {
 export const SelectorPopperContent = ({
   isShow,
 }: SelectorPopperContentProps) => {
-  const { user, workspacesMeta } = useAppState();
+  const { user, workspacesMeta, workspaces, refreshWorkspacesMeta } =
+    useAppState();
   const [settingWorkspaceId, setSettingWorkspaceId] = useState<string | null>(
     null
   );
   const [workSpaceDetails, setWorkSpaceDetails] = useState<WorkspaceDetails>(
     {}
   );
-  const [workspaces, setWorkspaces] = useState<
-    Record<string, Workspace | null>
-  >({});
+
   const handleClickSettingWorkspace = (workspaceId: string) => {
     setSettingWorkspaceId(workspaceId);
   };
@@ -81,38 +75,13 @@ export const SelectorPopperContent = ({
     setWorkSpaceDetails(workSpaceDetails);
   }, [user, workspacesMeta]);
 
-  // TODO: add to context
-  const refreshWorkspaces = useCallback(async () => {
-    const workspacesList = await Promise.all(
-      workspacesMeta.map(async ({ id }) => {
-        const workspace = new Workspace({
-          room: id,
-          providers: [],
-        });
-        const updates = await downloadWorkspace({ workspaceId: id });
-        updates &&
-          Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
-        // if after update, the space:meta is empty, then we need to get map with doc
-        workspace.doc.getMap('space:meta');
-        return { id, workspace };
-      })
-    );
-    const workspaces: Record<string, Workspace | null> = {};
-
-    workspacesList.forEach(({ id, workspace }) => {
-      workspaces[id] = workspace;
-    });
-
-    setWorkspaces(workspaces);
-  }, [workspacesMeta]);
-
   useEffect(() => {
     if (isShow) {
       setSettingWorkspaceId(null);
+      refreshWorkspacesMeta();
       refreshDetails();
-      refreshWorkspaces();
     }
-  }, [isShow, refreshDetails]);
+  }, [isShow]);
 
   return !user ? (
     <SelectorPopperContainer placement="bottom-start">
@@ -142,7 +111,7 @@ export const SelectorPopperContent = ({
                 workspaces[workspace.id]?.meta.name ||
                 (workspace.type === WorkspaceType.Private
                   ? user.name
-                  : `loading...`) // workspace-${workspace.id}
+                  : `loading...`)
               }
               memberCount={workSpaceDetails[workspace.id]?.memberCount || 1}
             />
@@ -162,7 +131,6 @@ export const SelectorPopperContent = ({
               name: user.name,
             }
           }
-          workspaces={workspaces}
         />
       ) : null}
       <StyledDivider />
