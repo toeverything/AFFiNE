@@ -58,6 +58,7 @@ export const AppState = createContext<AppStateContext>({
   loadPage: () => Promise.resolve(null),
   createPage: () => Promise.resolve(null),
   synced: false,
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   refreshWorkspacesMeta: () => {},
   workspaces: {},
 });
