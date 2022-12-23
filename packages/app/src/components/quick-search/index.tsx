@@ -13,7 +13,7 @@ import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/global-modal-provider';
 import { getUaHelper } from '@/utils';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
