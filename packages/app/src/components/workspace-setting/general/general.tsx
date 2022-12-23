@@ -90,7 +90,7 @@ export const GeneralPage = ({
           alt="workspace avatar"
           src={
             workspaces[workspace.id]?.meta.avatar
-              ? 'api/blob/' + workspaces[workspace.id]?.meta.avatar
+              ? '/api/blob/' + workspaces[workspace.id]?.meta.avatar
               : ''
           }
         >
