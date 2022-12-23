@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '@/styles';
 
-export const StyledTitle = styled.div(({ theme }) => {
+export const StyledTitle = styled.div(() => {
   return {
     ...displayFlex('center', 'center'),
     fontSize: '20px',
@@ -10,7 +10,7 @@ export const StyledTitle = styled.div(({ theme }) => {
   };
 });
 
-export const StyledContent = styled.div(({ theme }) => {
+export const StyledContent = styled.div(() => {
   return {
     padding: '0 40px',
     marginTop: '32px',

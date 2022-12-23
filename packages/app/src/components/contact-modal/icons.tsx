@@ -71,7 +71,7 @@ export const GithubIcon = () => {
     </svg>
   );
 };
-export const DiscordIcon = (props: any) => {
+export const DiscordIcon = () => {
   return (
     <svg
       width="22"

@@ -1,4 +1,4 @@
-import { absoluteCenter, displayFlex, styled } from '@/styles';
+import { styled } from '@/styles';
 
 export const PageContainer = styled('div')(({ theme }) => {
   return {

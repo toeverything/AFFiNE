@@ -120,7 +120,7 @@ export const StyledLogo = styled('img')({
   width: 'auto',
 });
 
-export const StyledModalHeader = styled('div')(({ theme }) => {
+export const StyledModalHeader = styled('div')(() => {
   return {
     height: '20px',
     marginTop: '36px',

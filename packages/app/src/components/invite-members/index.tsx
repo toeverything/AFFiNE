@@ -6,7 +6,6 @@ import Input from '@/ui/input';
 import { useState } from 'react';
 import { inviteMember, getUserByEmail } from '@pathfinder/data-services';
 import { Avatar } from '@mui/material';
-import { toast } from '@/ui/toast';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;

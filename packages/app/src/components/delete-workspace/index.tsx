@@ -1,7 +1,7 @@
 import { ResetIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { Button, TextButton } from '@/ui/button';
+import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { useState } from 'react';
 
@@ -95,10 +95,4 @@ const Footer = styled('div')({
   paddingLeft: '24px',
   marginTop: '32px',
   textAlign: 'center',
-});
-
-const StyledResetIcon = styled(ResetIcon)({
-  marginRight: '12px',
-  width: '20px',
-  height: '20px',
 });

@@ -10,7 +10,7 @@ export const GoogleLoginButton = () => {
     <StyledGoogleButton
       onClick={() => {
         signInWithGoogle()
-          .then(async => {
+          .then(() => {
             triggerLoginModal();
           })
           .catch(error => {
@@ -47,7 +47,7 @@ export const StayLogOutButton = () => {
   );
 };
 
-const StyledGoogleButton = styled(Button)(({ theme }) => {
+const StyledGoogleButton = styled(Button)(() => {
   return {
     width: '361px',
     height: '56px',
@@ -66,7 +66,7 @@ const StyledGoogleButton = styled(Button)(({ theme }) => {
   };
 });
 
-const StyledStayLogOutButton = styled(Button)(({ theme }) => {
+const StyledStayLogOutButton = styled(Button)(() => {
   return {
     width: '361px',
     height: '56px',
@@ -101,7 +101,7 @@ const TextWrapper = styled('div')({
   textAlign: 'left',
 });
 
-const Title = styled('h1')(({ theme }) => {
+const Title = styled('h1')(() => {
   return {
     fontSize: '18px',
     lineHeight: '26px',
@@ -109,7 +109,7 @@ const Title = styled('h1')(({ theme }) => {
   };
 });
 
-const Description = styled('p')(({ theme }) => {
+const Description = styled('p')(() => {
   return {
     fontSize: '16px',
     lineHeight: '22px',

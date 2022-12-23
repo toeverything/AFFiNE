@@ -9,7 +9,7 @@ export const StyledHeaderContainer = styled.div<{ hasWarning: boolean }>(
   }
 );
 export const StyledHeader = styled.div<{ hasWarning: boolean }>(
-  ({ hasWarning, theme }) => {
+  ({ hasWarning }) => {
     return {
       height: '60px',
       width: '100%',

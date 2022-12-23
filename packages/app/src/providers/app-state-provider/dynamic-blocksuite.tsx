@@ -33,14 +33,10 @@ const DynamicBlocksuite = ({
       new Promise(async resolve => {
         const workspace = new Workspace({
           room: workspaceId,
-          providers: [IndexedDBDocProvider],
+          providers: [],
         }).register(BlockSchema);
 
-        if (
-          websocket &&
-          token.refresh &&
-          location.search.includes('sync=websocket')
-        ) {
+        if (websocket && token.refresh) {
           // FIXME: if add websocket provider, the first page will be blank
           const ws = new WebsocketProvider(
             `ws${window.location.protocol === 'https:' ? 's' : ''}://${

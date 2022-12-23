@@ -5,7 +5,6 @@ import {
 } from '@pathfinder/data-services';
 import Modal from '@/ui/modal';
 import Input from '@/ui/input';
-import { Button } from '@/ui/button';
 import {
   StyledModalHeader,
   StyledTextContent,

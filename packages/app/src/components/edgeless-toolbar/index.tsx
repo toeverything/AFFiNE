@@ -79,20 +79,6 @@ const toolbarList1 = [
     disable: true,
   },
 ];
-const toolbarList2 = [
-  {
-    flavor: 'undo',
-    icon: <UndoIcon />,
-    toolTip: 'Undo',
-    disable: false,
-  },
-  {
-    flavor: 'redo',
-    icon: <RedoIcon />,
-    toolTip: 'Redo',
-    disable: false,
-  },
-];
 
 const UndoRedo = () => {
   const [canUndo, setCanUndo] = useState(false);

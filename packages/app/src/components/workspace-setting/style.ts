@@ -26,7 +26,7 @@ export const StyledSettingSidebar = styled('div')(({ theme }) => {
   }
 });
 
-export const StyledSettingContent = styled('div')(({ theme }) => {
+export const StyledSettingContent = styled('div')(() => {
   return {
     paddingLeft: '48px',
     height: '620px',
@@ -43,7 +43,7 @@ export const StyledSetting = styled('div')(({ theme }) => {
   }
 });
 
-export const StyledSettingSidebarHeader = styled('div')(({ theme }) => {
+export const StyledSettingSidebarHeader = styled('div')(() => {
   {
     return {
       fontWeight: '500',
@@ -55,7 +55,7 @@ export const StyledSettingSidebarHeader = styled('div')(({ theme }) => {
   }
 });
 
-export const StyledSettingTabContainer = styled('ul')(({ theme }) => {
+export const StyledSettingTabContainer = styled('ul')(() => {
   {
     return {
       display: 'flex',
@@ -83,7 +83,7 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
   }
 );
 
-export const StyledSettingTagIconContainer = styled('div')(({ theme }) => {
+export const StyledSettingTagIconContainer = styled('div')(() => {
   return {
     display: 'flex',
     alignItems: 'center',
@@ -94,7 +94,7 @@ export const StyledSettingTagIconContainer = styled('div')(({ theme }) => {
 });
 
 export const StyledSettingH2 = styled('h2')<{ marginTop?: number }>(
-  ({ marginTop, theme }) => {
+  ({ marginTop }) => {
     return {
       fontWeight: '500',
       fontSize: '18px',
@@ -112,7 +112,7 @@ export const StyledAvatarUploadBtn = styled(Button)(({ theme }) => {
   };
 });
 
-export const StyledMemberTitleContainer = styled('div')(({ theme }) => {
+export const StyledMemberTitleContainer = styled('div')(() => {
   return {
     display: 'flex',
     marginTop: '60px',
@@ -120,11 +120,11 @@ export const StyledMemberTitleContainer = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledMemberAvatar = styled(MuiAvatar)(({ theme }) => {
+export const StyledMemberAvatar = styled(MuiAvatar)(() => {
   return { height: '40px', width: '40px' };
 });
 
-export const StyledMemberNameContainer = styled('div')(({ theme }) => {
+export const StyledMemberNameContainer = styled('div')(() => {
   return {
     display: 'flex',
     alignItems: 'center',
@@ -132,7 +132,7 @@ export const StyledMemberNameContainer = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledMemberRoleContainer = styled('div')(({ theme }) => {
+export const StyledMemberRoleContainer = styled('div')(() => {
   return {
     display: 'flex',
     alignItems: 'center',
@@ -140,7 +140,7 @@ export const StyledMemberRoleContainer = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledMemberListContainer = styled('ul')(({ theme }) => {
+export const StyledMemberListContainer = styled('ul')(() => {
   return {
     marginTop: '15px',
     height: '432px',
@@ -148,7 +148,7 @@ export const StyledMemberListContainer = styled('ul')(({ theme }) => {
   };
 });
 
-export const StyledMemberListItem = styled('li')(({ theme }) => {
+export const StyledMemberListItem = styled('li')(() => {
   return {
     display: 'flex',
     alignItems: 'center',
@@ -156,7 +156,7 @@ export const StyledMemberListItem = styled('li')(({ theme }) => {
   };
 });
 
-export const StyledMemberInfo = styled('div')(({ theme }) => {
+export const StyledMemberInfo = styled('div')(() => {
   return {
     paddingLeft: '12px',
   };
@@ -180,13 +180,13 @@ export const StyledMemberEmail = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledMemberButtonContainer = styled('div')(({ theme }) => {
+export const StyledMemberButtonContainer = styled('div')(() => {
   return {
     marginTop: '14px',
   };
 });
 
-export const StyledMoreVerticalButton = styled('button')(({ theme }) => {
+export const StyledMoreVerticalButton = styled('button')(() => {
   return {
     display: 'flex',
     justifyContent: 'center',
@@ -197,7 +197,7 @@ export const StyledMoreVerticalButton = styled('button')(({ theme }) => {
   };
 });
 
-export const StyledPublishExplanation = styled('div')(({ theme }) => {
+export const StyledPublishExplanation = styled('div')(() => {
   return {
     marginTop: '56px',
     paddingRight: '48px',
@@ -207,7 +207,7 @@ export const StyledPublishExplanation = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledPublishCopyContainer = styled('div')(({ theme }) => {
+export const StyledPublishCopyContainer = styled('div')(() => {
   return {
     marginTop: '12px',
     display: 'flex',
@@ -217,13 +217,13 @@ export const StyledPublishCopyContainer = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledCopyButtonContainer = styled('div')(({ theme }) => {
+export const StyledCopyButtonContainer = styled('div')(() => {
   return {
     marginLeft: '12px',
   };
 });
 
-export const StyledPublishContent = styled('div')(({ theme }) => {
+export const StyledPublishContent = styled('div')(() => {
   return {
     height: '494px',
   };
