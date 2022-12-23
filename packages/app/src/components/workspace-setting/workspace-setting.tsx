@@ -311,11 +311,6 @@ const PublishPage = ({ workspace }: { workspace: Workspace }) => {
     <div>
       <StyledPublishContent>
         {workspace.public ? (
-          <StyledPublishExplanation>
-            After publishing to the web, everyone can view the content of this
-            workspace through the link.
-          </StyledPublishExplanation>
-        ) : (
           <>
             <StyledPublishExplanation>
               The current workspace has been published to the web, everyone can
@@ -331,6 +326,11 @@ const PublishPage = ({ workspace }: { workspace: Workspace }) => {
               </StyledCopyButtonContainer>
             </StyledPublishCopyContainer>
           </>
+        ) : (
+          <StyledPublishExplanation>
+            After publishing to the web, everyone can view the content of this
+            workspace through the link.
+          </StyledPublishExplanation>
         )}
       </StyledPublishContent>
       {!workspace.public ? (
