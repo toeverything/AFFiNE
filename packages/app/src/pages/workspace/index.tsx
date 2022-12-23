@@ -1,16 +1,18 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useInitWorkspace } from '@/hooks/use-init-workspace';
+import { useAppState } from '@/providers/app-state-provider';
+import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
 
 export const WorkspaceIndex = () => {
   const router = useRouter();
-  const { workspaceId, workspace } = useInitWorkspace();
+  const { currentWorkspaceId } = useAppState();
+  const { workspaceLoaded } = useEnsureWorkspace();
 
   useEffect(() => {
-    if (workspace) {
-      router.push(`/workspace/${workspaceId}`);
+    if (workspaceLoaded) {
+      router.push(`/workspace/${currentWorkspaceId}`);
     }
-  }, [router, workspace, workspaceId]);
+  }, [currentWorkspaceId, router, workspaceLoaded]);
 
   return <></>;
 };

@@ -57,7 +57,7 @@ export const GeneralPage = ({
     meta => meta.id === workspace.id
   );
   const nextWorkSpaceId =
-    currentWorkspaceIndex > workspacesMeta.length - 1
+    currentWorkspaceIndex === workspacesMeta.length - 1
       ? workspacesMeta[currentWorkspaceIndex - 1]?.id
       : workspacesMeta[currentWorkspaceIndex + 1]?.id;
   const handleClickDelete = () => {
@@ -90,7 +90,7 @@ export const GeneralPage = ({
           alt="workspace avatar"
           src={
             workspaces[workspace.id]?.meta.avatar
-              ? 'api/blob/' + workspaces[workspace.id]?.meta.avatar
+              ? '/api/blob/' + workspaces[workspace.id]?.meta.avatar
               : ''
           }
         >

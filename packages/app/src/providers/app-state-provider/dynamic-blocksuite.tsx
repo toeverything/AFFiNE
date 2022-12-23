@@ -27,8 +27,7 @@ const DynamicBlocksuite = ({
   useEffect(() => {
     const openWorkspace: LoadWorkspaceHandler = (
       workspaceId: string,
-      websocket = false,
-      user
+      websocket = false
     ) =>
       // eslint-disable-next-line no-async-promise-executor
       new Promise(async resolve => {
@@ -64,16 +63,22 @@ const DynamicBlocksuite = ({
         const indexDBProvider = workspace.providers.find(
           p => p instanceof IndexedDBDocProvider
         );
-        if (user) {
-          const updates = await downloadWorkspace({ workspaceId });
-          updates &&
-            StoreWorkspace.Y.applyUpdate(
-              workspace.doc,
-              new Uint8Array(updates)
-            );
-          // if after update, the space:meta is empty, then we need to get map with doc
-          workspace.doc.getMap('space:meta');
-        }
+        await new Promise<undefined>(resolve => {
+          downloadWorkspace({ workspaceId })
+            .then(async updates => {
+              updates &&
+                StoreWorkspace.Y.applyUpdate(
+                  workspace.doc,
+                  new Uint8Array(updates)
+                );
+              // if after update, the space:meta is empty, then we need to get map with doc
+              workspace.doc.getMap('space:meta');
+              resolve(undefined);
+            })
+            .catch(() => {
+              resolve(undefined);
+            });
+        });
         if (indexDBProvider) {
           (indexDBProvider as IndexedDBDocProvider).on('synced', async () => {
             resolve(workspace);
