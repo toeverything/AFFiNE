@@ -79,7 +79,11 @@ export const Input = (props: {
             }
           }
         }}
-        placeholder={isPublic ? currentWorkspace?.meta.name : 'Quick Search...'}
+        placeholder={
+          isPublic
+            ? `Search in ${currentWorkspace?.meta.name}`
+            : 'Quick Search...'
+        }
       />
     </StyledInputContent>
   );
