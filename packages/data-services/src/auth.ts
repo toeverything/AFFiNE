@@ -5,9 +5,16 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  connectAuthEmulator
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { token } from './request';
+
+// Connect emulators based on env vars
+const connectSimulator =
+  process.env.NODE_ENV === "test" ||
+  process.env.NEXT_PUBLIC_FIREBASE_EMULATORS === "true";
+
 
 /**
  * firebaseConfig reference: https://firebase.google.com/docs/web/setup#add_firebase_to_your_app
@@ -23,6 +30,13 @@ const app = initializeApp({
 });
 
 export const firebaseAuth = getAuth(app);
+
+if (connectSimulator && !(globalThis as any).firebaseAuthEmulatorStarted) {
+  connectAuthEmulator(firebaseAuth, 'http://localhost:9099', {
+    disableWarnings: true,
+  });
+  (globalThis as any).firebaseAuthEmulatorStarted = true;
+}
 
 const signUp = (email: string, password: string) => {
   return createUserWithEmailAndPassword(firebaseAuth, email, password);
