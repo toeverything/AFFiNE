@@ -88,6 +88,7 @@ export const WorkSpaceSliderBar = () => {
         </StyledListItemForWorkspace>
         <StyledListItem
           data-testid="sliderBar-quickSearchButton"
+          style={{ cursor: 'pointer' }}
           onClick={() => {
             triggerQuickSearchModal();
           }}
