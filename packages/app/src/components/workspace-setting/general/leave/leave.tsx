@@ -8,7 +8,7 @@ import {
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { leaveWorkspace } from '@pathfinder/data-services';
-import { Router, useRouter } from 'next/router';
+import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceDeleteProps {
