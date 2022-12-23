@@ -73,7 +73,7 @@ type TransitionsModalProps = {
 
 export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
       <ModalWrapper
         width={860}
         height={540}
