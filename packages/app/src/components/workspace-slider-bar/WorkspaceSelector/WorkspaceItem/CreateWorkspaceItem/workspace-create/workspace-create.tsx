@@ -66,7 +66,7 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
   const handleCreateWorkspace = async () => {
     setCanCreate(true);
     const blobId = await createDefaultHeadImg(workspaceName);
-    createWorkspace({ name: workspaceName, avatar: `/api/blob/${blobId}` })
+    createWorkspace({ name: workspaceName, avatar: blobId })
       .then(data => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore

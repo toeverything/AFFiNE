@@ -21,7 +21,14 @@ export const WorkspaceSelector = () => {
       onVisibleChange={setIsShow}
     >
       <SelectorWrapper data-testid="current-workspace">
-        <Avatar alt="Affine" src={currentWorkspace?.meta.avatar || ''}>
+        <Avatar
+          alt="Affine"
+          src={
+            currentWorkspace?.meta.avatar
+              ? `api/blob/${currentWorkspace?.meta.avatar}`
+              : ''
+          }
+        >
           <AffineIcon />
         </Avatar>
         <WorkspaceName>

@@ -77,9 +77,8 @@ export const GeneralPage = ({
   const fileChange = async (file: File) => {
     const blob = new Blob([file], { type: file.type });
     const blobId = await uploadBlob({ blob });
-    const newAvatar = `/api/blob/${blobId}`;
-    currentWorkspace?.meta.setAvatar(newAvatar);
-    workspaces[workspace.id]?.meta.setAvatar(newAvatar);
+    currentWorkspace?.meta.setAvatar(blobId);
+    workspaces[workspace.id]?.meta.setAvatar(blobId);
     debouncedRefreshWorkspacesMeta();
   };
 
@@ -89,7 +88,11 @@ export const GeneralPage = ({
       <StyledSettingAvatarContent>
         <StyledSettingAvatar
           alt="workspace avatar"
-          src={workspaces[workspace.id]?.meta.avatar || ''}
+          src={
+            workspaces[workspace.id]?.meta.avatar
+              ? 'api/blob/' + workspaces[workspace.id]?.meta.avatar
+              : ''
+          }
         >
           {workspaces[workspace.id]?.meta.name[0]}
         </StyledSettingAvatar>

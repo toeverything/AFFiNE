@@ -108,7 +108,11 @@ export const SelectorPopperContent = ({
               type={workspace.type}
               key={workspace.id}
               id={workspace.id}
-              icon={workspaces[workspace.id]?.meta.avatar || ''}
+              icon={
+                workspaces[workspace.id]?.meta.avatar
+                  ? 'api/blob/' + workspaces[workspace.id]?.meta.avatar
+                  : ''
+              }
               onClick={handleClickSettingWorkspace}
               name={
                 workspaces[workspace.id]?.meta.name ||
