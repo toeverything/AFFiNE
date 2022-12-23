@@ -33,4 +33,34 @@ test.describe('Local first delete page', () => {
 
     expect(confirmTip).not.toBeUndefined();
   });
+
+  test('New a page ,then go to all pages and show delete modal', async ({
+    page,
+  }) => {
+    await page.getByText('New Page').click();
+    await page.getByPlaceholder('Title').click();
+    await page.getByPlaceholder('Title').fill('this is a new page to delete');
+    const newPageId = page.url().split('/').reverse()[0];
+    await page.getByRole('link', { name: 'All pages' }).click();
+
+    const cell = await page.getByRole('cell', {
+      name: 'this is a new page to delete',
+    });
+
+    expect(cell).not.toBeUndefined();
+
+    await page
+      .getByTestId('more-actions-' + newPageId)
+      .getByRole('button')
+      .first()
+      .click();
+
+    const deleteBtn = page.getByRole('button', { name: 'Delete' });
+
+    await deleteBtn.click();
+
+    const confirmTip = page.getByText('Delete page?');
+
+    expect(confirmTip).not.toBeUndefined();
+  });
 });

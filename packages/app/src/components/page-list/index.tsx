@@ -112,6 +112,7 @@ export const PageList = ({
                 />
                 <TableCell
                   style={{ padding: 0 }}
+                  data-testid={`more-actions-${pageMeta.id}`}
                   onClick={e => {
                     e.stopPropagation();
                   }}
