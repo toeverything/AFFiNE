@@ -27,11 +27,13 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
   const { currentWorkspaceId, workspacesMeta } = useAppState();
-  // Add  ‘⌘+K’ shortcut keys as switches
-  const isPublic = workspacesMeta.find(
-    ({ id }) => id === currentWorkspaceId
-  )?.public;
 
+  const currentWorkspace = workspacesMeta.find(
+    meta => String(meta.id) === String(currentWorkspaceId)
+  );
+  const isPublic = currentWorkspace?.public;
+
+  // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {
