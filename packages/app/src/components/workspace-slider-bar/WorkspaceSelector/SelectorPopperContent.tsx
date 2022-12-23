@@ -13,6 +13,7 @@ import {
 import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useCallback, useEffect, useState } from 'react';
 import { getWorkspaceDetail, WorkspaceType } from '@pathfinder/data-services';
+import { useModal } from '@/providers/global-modal-provider';
 
 export type WorkspaceDetails = Record<
   string,
@@ -34,6 +35,7 @@ export const SelectorPopperContent = ({
   const [workSpaceDetails, setWorkSpaceDetails] = useState<WorkspaceDetails>(
     {}
   );
+  const { triggerContactModal } = useModal();
 
   const handleClickSettingWorkspace = (workspaceId: string) => {
     setSettingWorkspaceId(workspaceId);
@@ -91,7 +93,7 @@ export const SelectorPopperContent = ({
       <ListItem
         icon={<InformationIcon />}
         name="About AFFiNE"
-        onClick={() => console.log('About AFFiNE')}
+        onClick={() => triggerContactModal()}
       />
     </SelectorPopperContainer>
   ) : (
