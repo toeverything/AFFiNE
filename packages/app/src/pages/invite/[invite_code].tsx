@@ -132,7 +132,7 @@ const UserContent = styled('span')({
   },
 });
 
-const Status = styled('div')(({ theme }) => {
+const Status = styled('div')(() => {
   return {
     marginTop: '16px',
     svg: {

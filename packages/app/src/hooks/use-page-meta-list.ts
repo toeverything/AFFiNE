@@ -11,7 +11,7 @@ export const usePageMetaList = () => {
       return;
     }
     setPageList(currentWorkspace.meta.pageMetas as PageMeta[]);
-    const dispose = currentWorkspace.meta.pagesUpdated.on(res => {
+    const dispose = currentWorkspace.meta.pagesUpdated.on(() => {
       setPageList(currentWorkspace.meta.pageMetas as PageMeta[]);
     }).dispose;
     return () => {
