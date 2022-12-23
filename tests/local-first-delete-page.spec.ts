@@ -4,7 +4,7 @@ import { loadPage } from './libs/load-page';
 loadPage();
 
 test.describe('Local first delete page', () => {
-  test('Click delete page and show delete modal', async ({ page }) => {
+  test('New a page ,then open it and show delete modal', async ({ page }) => {
     await page.getByText('New Page').click();
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to delete');
