@@ -77,6 +77,7 @@ const PopoverContent = () => {
         </MenuItem>
       </Menu>
       <MenuItem
+        data-testid="editor-option-menu-delete"
         onClick={() => {
           confirm({
             title: 'Delete page?',
