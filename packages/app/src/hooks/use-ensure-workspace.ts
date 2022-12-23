@@ -9,7 +9,7 @@ export const useEnsureWorkspace = () => {
   const { workspacesMeta, loadWorkspace, synced, user } = useAppState();
   const router = useRouter();
   const defaultOutLineWorkspaceId =
-    'local-first-' + '85b4ca0b-9081-421d-903b-bc2501ea280f';
+    'local-first-' + '85b4ca0b9081421d903bbc2501ea280f';
   // const defaultOutLineWorkspaceId = '99ce7eb7';
   // console.log(defaultOutLineWorkspaceId);
   useEffect(() => {
