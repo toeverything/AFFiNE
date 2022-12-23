@@ -4,7 +4,7 @@ import { SelectorPopperContent } from './SelectorPopperContent';
 import { useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceType } from '@pathfinder/data-services';
-
+import { AffineIcon } from '../icons/icons';
 export const WorkspaceSelector = () => {
   const [isShow, setIsShow] = useState(false);
   const { currentWorkspace, workspacesMeta, currentWorkspaceId, user } =
@@ -21,7 +21,9 @@ export const WorkspaceSelector = () => {
       onVisibleChange={setIsShow}
     >
       <SelectorWrapper data-testid="current-workspace">
-        <Avatar alt="Affine" src={currentWorkspace?.meta.avatar || ''} />
+        <Avatar alt="Affine" src={currentWorkspace?.meta.avatar || ''}>
+          <AffineIcon />
+        </Avatar>
         <WorkspaceName>
           {currentWorkspace?.meta.name ||
             (workspaceMeta?.type === WorkspaceType.Private && user

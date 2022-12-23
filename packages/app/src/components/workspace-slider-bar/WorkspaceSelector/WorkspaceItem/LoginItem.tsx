@@ -1,5 +1,6 @@
 import { useModal } from '@/providers/global-modal-provider';
 import { styled } from '@/styles';
+import { AffineIcon } from '../../icons/icons';
 import {
   WorkspaceItemAvatar,
   LoginItemWrapper,
@@ -11,7 +12,7 @@ export const LoginItem = () => {
   return (
     <LoginItemWrapper onClick={() => triggerLoginModal()}>
       <WorkspaceItemAvatar alt="AFFiNE" src={''}>
-        A
+        <AffineIcon />
       </WorkspaceItemAvatar>
       <WorkspaceItemContent>
         <Name title="AFFiNE">AFFiNE</Name>
