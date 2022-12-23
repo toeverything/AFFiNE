@@ -11,7 +11,7 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
 
     // mouse hover trigger animation for showing full switcher
     await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
     const edgelessButton = page
       .getByTestId('editor-mode-switcher')
       .locator('div')
