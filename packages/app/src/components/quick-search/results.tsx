@@ -3,7 +3,7 @@ import { StyledListItem, StyledNotFound } from './style';
 import { useModal } from '@/providers/global-modal-provider';
 import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { config } from './config';
 import { NoResultSVG } from './noResultSVG';

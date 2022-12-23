@@ -2,7 +2,7 @@ import React from 'react';
 import { AddIcon } from '@blocksuite/icons';
 import { StyledModalFooterContent } from './style';
 import { useModal } from '@/providers/global-modal-provider';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { Command } from 'cmdk';
 import { usePageHelper } from '@/hooks/use-page-helper';
 
