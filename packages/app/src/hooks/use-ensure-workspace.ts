@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-
 // It is a fully effective hook
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const { workspacesMeta, loadWorkspace, synced, user } = useAppState();
   const router = useRouter();
-  const defaultOutLineWorkspaceId = '112233';
+  const defaultOutLineWorkspaceId = '99ce7eb7';
 
   useEffect(() => {
     if (!synced) {
