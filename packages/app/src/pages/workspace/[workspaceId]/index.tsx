@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider/context';
 import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
+import { PageLoading } from '@/components/loading';
 
 const WorkspaceIndex = () => {
   const router = useRouter();
@@ -31,7 +32,7 @@ const WorkspaceIndex = () => {
     workspaceLoaded,
   ]);
 
-  return <></>;
+  return <PageLoading />;
 };
 
 export default WorkspaceIndex;
