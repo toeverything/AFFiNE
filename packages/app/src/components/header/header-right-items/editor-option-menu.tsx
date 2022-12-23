@@ -32,6 +32,7 @@ const PopoverContent = () => {
   return (
     <>
       <MenuItem
+        data-testid="editor-option-menu-favorite"
         onClick={() => {
           toggleFavoritePage(id);
           toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
