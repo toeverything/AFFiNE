@@ -134,7 +134,7 @@ export const InviteMembers = ({
                     onInviteSuccess && onInviteSuccess();
                   })
                   .catch(err => {
-                    toast('Invite failed');
+                    // toast('Invite failed');
                     console.log(err);
                   });
               }}
