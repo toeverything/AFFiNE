@@ -38,7 +38,7 @@ export const Input = (props: {
       <Command.Input
         ref={inputRef}
         value={inputValue}
-        onCompositionStart={e => {
+        onCompositionStart={() => {
           setIsComposition(true);
         }}
         onCompositionEnd={e => {

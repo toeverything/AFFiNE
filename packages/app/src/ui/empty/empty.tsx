@@ -1,4 +1,4 @@
-import React, { CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { EmptySVG } from './emptySVG';
 import { styled } from '@/styles';
 
@@ -8,7 +8,7 @@ export type ContentProps = {
   fontSize?: CSSProperties['fontSize'];
 };
 export const Empty = styled(EmptySVG)<ContentProps>(
-  ({ theme, fontSize, width, height }) => {
+  ({ fontSize, width, height }) => {
     return {
       width,
       height,

@@ -31,7 +31,8 @@ export const Results = (props: {
     setResults(search(query));
     setLoading(false);
     //Save the Map<BlockId, PageId> obtained from the search as state
-  }, [query, search, setLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, setResults, setLoading]);
   const pageIds = [...results.values()];
 
   const resultsPageMeta = pageMetaList.filter(
