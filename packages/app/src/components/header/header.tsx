@@ -56,7 +56,7 @@ export const Header = ({
           setShowWarning(false);
         }}
       />
-      <StyledHeader hasWarning={showWarning}>
+      <StyledHeader hasWarning={showWarning} data-testid="editor-header-items">
         {children}
         <StyledHeaderRightSide>
           {rightItems.map(itemName => {

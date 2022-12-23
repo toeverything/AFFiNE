@@ -127,7 +127,7 @@ export const EditorModeSwitch = ({
       <AnimateRadioItem
         isLeft={false}
         label="Edgeless"
-        data-testid="edgeless-item"
+        data-testid="switch-edgeless-item"
         icon={<EdgelessItem />}
         active={mode === 'edgeless'}
         status={radioItemStatus.right}
