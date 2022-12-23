@@ -4,14 +4,11 @@ import {
   StyledModalHeader,
   StyledTextContent,
   StyledModalWrapper,
-  StyledInputContent,
   StyledButtonContent,
-  StyledWorkspaceName,
 } from './style';
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { deleteWorkspace } from '@pathfinder/data-services';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
 
@@ -32,48 +29,32 @@ export const WorkspaceDelete = ({
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
   const router = useRouter();
-  const { refreshWorkspacesMeta } = useAppState();
+  // const { refreshWorkspacesMeta } = useAppState();
 
-  const handlerInputChange = (workspaceName: string) => {
-    setDeleteStr(workspaceName);
-  };
-
-  const handleDelete = async () => {
-    await deleteWorkspace({ id: workspaceId });
-    router.push(`/workspace/${nextWorkSpaceId}`);
-    refreshWorkspacesMeta();
-    onClose();
+  const handleLeave = async () => {
+    // TODO
   };
 
   return (
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>Delete Workspace</StyledModalHeader>
+        <StyledModalHeader>Leave Workspace</StyledModalHeader>
         <StyledTextContent>
-          This action cannot be undone. This will permanently delete (
-          <StyledWorkspaceName>{workspaceName}</StyledWorkspaceName>) along with
-          all its content.
+          After you leave, you will not be able to access all the contents of
+          this workspace.
         </StyledTextContent>
-        <StyledInputContent>
-          <Input
-            onChange={handlerInputChange}
-            placeholder="Please type “Delete” to confirm"
-            value={deleteStr}
-          ></Input>
-        </StyledInputContent>
         <StyledButtonContent>
           <Button shape="circle" onClick={onClose}>
             Cancel
           </Button>
           <Button
-            disabled={deleteStr.toLowerCase() !== 'delete'}
-            onClick={handleDelete}
+            onClick={handleLeave}
             type="danger"
             shape="circle"
             style={{ marginLeft: '24px' }}
           >
-            Delete
+            Leave
           </Button>
         </StyledButtonContent>
       </StyledModalWrapper>
