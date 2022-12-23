@@ -89,7 +89,7 @@ export interface UpdateWorkspaceParams {
 
 export async function updateWorkspace(
   params: UpdateWorkspaceParams
-): Promise<void> {
+): Promise<{ public: boolean | null }> {
   return client
     .post(`/api/workspace/${params.id}`, {
       json: {

@@ -293,14 +293,16 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 
 const PublishPage = ({ workspace }: { workspace: Workspace }) => {
   const shareUrl = window.location.host + '/workspace/' + workspace.id;
-  const [publicStatus, setPublicStatus] = useState<boolean>(workspace.public);
+  const [publicStatus, setPublicStatus] = useState<boolean | null>(
+    workspace.public
+  );
   const togglePublic = (flag: boolean) => {
     updateWorkspace({
       id: workspace.id,
       public: flag,
-    }).then(() => {
-      setPublicStatus(!publicStatus);
-      toast('Updated');
+    }).then(data => {
+      setPublicStatus(data?.public);
+      toast('Updated Public Status Success');
     });
   };
   const copyUrl = () => {
