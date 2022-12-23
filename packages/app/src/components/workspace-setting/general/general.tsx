@@ -16,6 +16,7 @@ import { WorkspaceDelete } from './delete';
 import { Workspace as StoreWorkspace } from '@blocksuite/store';
 import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
+import { Upload } from '@/components/file-upload';
 
 export const GeneralPage = ({
   workspace,
@@ -71,7 +72,14 @@ export const GeneralPage = ({
 
   return workspace ? (
     <div>
-      <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
+      <StyledSettingH2 marginTop={56}>
+        Workspace Avatar
+        <Upload
+          fileChange={file => {
+            console.log(file);
+          }}
+        ></Upload>
+      </StyledSettingH2>
       <StyledSettingAvatarContent>
         <StyledSettingAvatar
           alt="workspace avatar"
