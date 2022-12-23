@@ -36,16 +36,16 @@ jobs:
 
       - run: node scripts/module-resolve/ci.js
 
-      - name: Restore cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            .next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+      # - name: Restore cache
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       .next/cache
+      #     # Generate a new cache whenever packages or source files change.
+      #     key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+      #     # If source files changed but packages didn't, rebuild from a prior cache.
+      #     restore-keys: |
+      #       ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
