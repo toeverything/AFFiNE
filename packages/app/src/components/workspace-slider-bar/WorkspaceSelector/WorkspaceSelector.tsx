@@ -20,7 +20,7 @@ export const WorkspaceSelector = () => {
       trigger="click"
       onVisibleChange={setIsShow}
     >
-      <SelectorWrapper>
+      <SelectorWrapper data-testid="current-workspace">
         <Avatar alt="Affine" src={currentWorkspace?.meta.avatar || ''} />
         <WorkspaceName>
           {currentWorkspace?.meta.name ||
