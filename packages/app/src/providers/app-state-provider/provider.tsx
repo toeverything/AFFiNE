@@ -13,7 +13,7 @@ import type {
   CreateEditorHandler,
   LoadWorkspaceHandler,
 } from './context';
-import { Page, Workspace } from '@blocksuite/store';
+import { Page, Workspace as StoreWorkspace } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
@@ -49,7 +49,10 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
         if (workspace) {
           const updates = await downloadWorkspace({ workspaceId });
           updates &&
-            Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
+            StoreWorkspace.Y.applyUpdate(
+              workspace.doc,
+              new Uint8Array(updates)
+            );
           // if after update, the space:meta is empty, then we need to get map with doc
           workspace.doc.getMap('space:meta');
         }
@@ -65,7 +68,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
           return { id, workspace };
         })
       );
-      const workspaces: Record<string, Workspace | null> = {};
+      const workspaces: Record<string, StoreWorkspace | null> = {};
       workspacesList.forEach(({ id, workspace }) => {
         workspaces[id] = workspace;
       });
