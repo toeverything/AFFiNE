@@ -8,6 +8,9 @@ export const SelectorWrapper = styled('div')({
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'center',
+  ':hover': {
+    cursor: 'pointer',
+  },
 });
 
 export const Avatar = styled(MuiAvatar)({
