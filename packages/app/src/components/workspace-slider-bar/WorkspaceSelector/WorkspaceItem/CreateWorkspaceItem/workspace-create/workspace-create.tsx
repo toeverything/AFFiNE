@@ -67,11 +67,11 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
     setCanCreate(true);
     const blobId = await createDefaultHeadImg(workspaceName);
     createWorkspace({ name: workspaceName, avatar: blobId })
-      .then(data => {
+      .then(async data => {
+        await refreshWorkspacesMeta();
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        router.push(`/workspace/${data.created_at}`);
-        refreshWorkspacesMeta();
+        router.push(`/workspace/${data.id}`);
         onClose();
       })
       .catch(err => {

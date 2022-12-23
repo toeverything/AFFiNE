@@ -33,7 +33,7 @@ const DynamicBlocksuite = ({
       new Promise(async resolve => {
         const workspace = new StoreWorkspace({
           room: workspaceId,
-          providers: [],
+          providers: [IndexedDBDocProvider],
         }).register(BlockSchema);
         if (websocket && token.refresh) {
           // FIXME: if add websocket provider, the first page will be blank
