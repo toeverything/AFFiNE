@@ -292,14 +292,14 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 };
 
 const PublishPage = ({ workspace }: { workspace: Workspace }) => {
-  const { refreshWorkspacesMeta } = useAppState();
   const shareUrl = window.location.host + '/workspace/' + workspace.id;
+  const [publicStatus, setPublicStatus] = useState<boolean>(workspace.public);
   const togglePublic = (flag: boolean) => {
     updateWorkspace({
       id: workspace.id,
       public: flag,
     }).then(data => {
-      refreshWorkspacesMeta();
+      setPublicStatus(!publicStatus);
       toast('Updated');
     });
   };
@@ -310,7 +310,7 @@ const PublishPage = ({ workspace }: { workspace: Workspace }) => {
   return (
     <div>
       <StyledPublishContent>
-        {workspace.public ? (
+        {publicStatus ? (
           <>
             <StyledPublishExplanation>
               The current workspace has been published to the web, everyone can
@@ -333,7 +333,7 @@ const PublishPage = ({ workspace }: { workspace: Workspace }) => {
           </StyledPublishExplanation>
         )}
       </StyledPublishContent>
-      {!workspace.public ? (
+      {!publicStatus ? (
         <Button
           onClick={() => {
             togglePublic(true);
