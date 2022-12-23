@@ -9,7 +9,11 @@ import { StyledSettingH2 } from '../style';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
-import { Workspace, WorkspaceType } from '@pathfinder/data-services';
+import {
+  uploadBlob,
+  Workspace,
+  WorkspaceType,
+} from '@pathfinder/data-services';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { WorkspaceDelete } from './delete';
@@ -70,16 +74,18 @@ export const GeneralPage = ({
     setShowLeave(false);
   };
 
+  const fileChange = async (file: File) => {
+    const blob = new Blob([file], { type: file.type });
+    const blobId = await uploadBlob({ blob });
+    const newAvatar = `/api/blob/${blobId}`;
+    currentWorkspace?.meta.setAvatar(newAvatar);
+    workspaces[workspace.id]?.meta.setAvatar(newAvatar);
+    debouncedRefreshWorkspacesMeta();
+  };
+
   return workspace ? (
     <div>
-      <StyledSettingH2 marginTop={56}>
-        Workspace Avatar
-        <Upload
-          fileChange={file => {
-            console.log(file);
-          }}
-        ></Upload>
-      </StyledSettingH2>
+      <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
       <StyledSettingAvatarContent>
         <StyledSettingAvatar
           alt="workspace avatar"
@@ -87,6 +93,10 @@ export const GeneralPage = ({
         >
           {workspaces[workspace.id]?.meta.name[0]}
         </StyledSettingAvatar>
+        <Upload
+          accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+          fileChange={fileChange}
+        ></Upload>
         {/* TODO: add upload logic */}
         {/* {isOwner ? (
           <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>

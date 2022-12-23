@@ -24,5 +24,5 @@ export const StyledSettingAvatarContent = styled('div')(() => {
 });
 
 export const StyledSettingAvatar = styled(MuiAvatar)(() => {
-  return { height: '72px', width: '72px' };
+  return { height: '72px', width: '72px', marginRight: '24px' };
 });
