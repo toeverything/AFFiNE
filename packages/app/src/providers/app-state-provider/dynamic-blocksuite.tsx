@@ -13,7 +13,11 @@ import type {
   LoadWorkspaceHandler,
   CreateEditorHandler,
 } from './context';
-import { token, WebsocketProvider } from '@pathfinder/data-services';
+import {
+  downloadWorkspace,
+  token,
+  WebsocketProvider,
+} from '@pathfinder/data-services';
 
 interface Props {
   setLoadWorkspaceHandler: (handler: LoadWorkspaceHandler) => void;
@@ -64,6 +68,11 @@ const DynamicBlocksuite = ({
         const indexDBProvider = workspace.providers.find(
           p => p instanceof IndexedDBDocProvider
         );
+        const updates = await downloadWorkspace({ workspaceId });
+        updates &&
+          Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
+        // if after update, the space:meta is empty, then we need to get map with doc
+        workspace.doc.getMap('space:meta');
         if (indexDBProvider) {
           (indexDBProvider as IndexedDBDocProvider).on('synced', async () => {
             resolve(workspace);

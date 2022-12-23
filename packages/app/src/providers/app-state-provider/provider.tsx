@@ -44,15 +44,17 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   const refreshWorkspacesInfo = async (
     workspaces: AppStateValue['workspaces']
   ) => {
-    Object.entries(workspaces).forEach(async ([workspaceId, workspace]) => {
-      if (workspace) {
-        const updates = await downloadWorkspace({ workspaceId });
-        updates &&
-          Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
-        // if after update, the space:meta is empty, then we need to get map with doc
-        workspace.doc.getMap('space:meta');
-      }
-    });
+    return Promise.all(
+      Object.entries(workspaces).map(async ([workspaceId, workspace]) => {
+        if (workspace) {
+          const updates = await downloadWorkspace({ workspaceId });
+          updates &&
+            Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
+          // if after update, the space:meta is empty, then we need to get map with doc
+          workspace.doc.getMap('space:meta');
+        }
+      })
+    );
   };
 
   useEffect(() => {
@@ -67,11 +69,11 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       workspacesList.forEach(({ id, workspace }) => {
         workspaces[id] = workspace;
       });
+      await refreshWorkspacesInfo(workspaces);
       setState(state => ({
         ...state,
         workspaces,
       }));
-      refreshWorkspacesInfo(workspaces);
     })();
   }, [state.workspacesMeta]);
 
