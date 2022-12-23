@@ -5,7 +5,6 @@ import {
   token,
   AccessTokenMessage,
   getWorkspaces,
-  downloadWorkspace,
 } from '@pathfinder/data-services';
 import { AppState, AppStateContext } from './context';
 import type {
@@ -15,6 +14,7 @@ import type {
 } from './context';
 import { Page, Workspace as StoreWorkspace } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
+import { uuidv4 as uuidv4IdGenerator } from '@blocksuite/store';
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
 });
@@ -153,7 +153,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     Promise.resolve(null)
   );
 
-  createPage.current = (pageId: string = Date.now().toString()) =>
+  createPage.current = (pageId: string = 'lp-' + uuidv4IdGenerator()) =>
     new Promise<string | null>(resolve => {
       const { currentWorkspace } = state;
       if (!currentWorkspace) {
