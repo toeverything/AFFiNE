@@ -28,7 +28,7 @@ export const WorkspaceSelector = () => {
           {currentWorkspace?.meta.name ||
             (workspaceMeta?.type === WorkspaceType.Private && user
               ? user.name
-              : 'AFFINE')}
+              : 'AFFiNE')}
         </WorkspaceName>
       </SelectorWrapper>
     </Popper>
