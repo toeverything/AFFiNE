@@ -14,6 +14,7 @@ import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { WorkspaceDelete } from './delete';
 import { Workspace as StoreWorkspaces } from '@blocksuite/store';
+import { debounce } from '@/utils';
 
 export const GeneralPage = ({
   workspace,
@@ -37,12 +38,15 @@ export const GeneralPage = ({
         ? user.name
         : `workspace-${workspace?.id}`)
   );
+  const debouncedRefreshWorkspacesMeta = debounce(() => {
+    refreshWorkspacesMeta();
+  }, 100);
   const isOwner = user && owner.id === user.id;
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
     currentWorkspace?.meta.setName(newName);
     workspaces[workspace.id]?.meta.setName(newName);
-    refreshWorkspacesMeta();
+    debouncedRefreshWorkspacesMeta();
   };
   const currentWorkspaceIndex = workspacesMeta.findIndex(
     meta => meta.id === workspace.id
