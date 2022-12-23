@@ -146,7 +146,7 @@ export const SelectorPopperContent = ({
       <ListItem
         icon={<InformationIcon />}
         name="About AFFiNE"
-        onClick={() => console.log('About AFFiNE')}
+        onClick={() => triggerContactModal()}
       />
       <ListItem
         icon={<LogOutIcon />}
