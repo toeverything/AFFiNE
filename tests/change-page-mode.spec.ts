@@ -43,7 +43,7 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
       .getByRole('button')
       .nth(2)
       .click();
-    const menusEdgelessItem = page.getByTestId('menus-edgeless-item');
+    const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
 
     await menusEdgelessItem.click();
 
