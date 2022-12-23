@@ -153,7 +153,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     Promise.resolve(null)
   );
 
-  createPage.current = (pageId: string = 'lp-' + uuidv4IdGenerator()) =>
+  createPage.current = (pageId: string = uuidv4IdGenerator()) =>
     new Promise<string | null>(resolve => {
       const { currentWorkspace } = state;
       if (!currentWorkspace) {
