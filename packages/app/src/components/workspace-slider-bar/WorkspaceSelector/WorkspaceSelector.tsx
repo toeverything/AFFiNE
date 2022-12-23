@@ -24,12 +24,18 @@ export const WorkspaceSelector = () => {
         <Avatar
           alt="Affine"
           src={
-            currentWorkspace?.meta.avatar
-              ? `api/blob/${currentWorkspace?.meta.avatar}`
-              : ''
+            (currentWorkspace?.meta.avatar &&
+              `/api/blob/${currentWorkspace?.meta.avatar}`) ||
+            (workspaceMeta?.type === WorkspaceType.Private && user
+              ? user.avatar_url
+              : '')
           }
         >
-          <AffineIcon />
+          {workspaceMeta?.type === WorkspaceType.Private && user ? (
+            user?.name[0]
+          ) : (
+            <AffineIcon />
+          )}
         </Avatar>
         <WorkspaceName>
           {currentWorkspace?.meta.name ||
