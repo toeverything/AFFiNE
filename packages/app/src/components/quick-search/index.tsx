@@ -13,6 +13,7 @@ import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/global-modal-provider';
 import { getUaHelper } from '@/utils';
+import { useAppState } from '@/providers/app-state-provider/context';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
@@ -25,7 +26,12 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [loading, setLoading] = useState(true);
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
+  const { currentWorkspaceId, workspacesMeta } = useAppState();
   // Add  ‘⌘+K’ shortcut keys as switches
+  const isPublic = workspacesMeta.find(
+    ({ id }) => id === currentWorkspaceId
+  )?.public;
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {
@@ -90,7 +96,9 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                 setShowCreatePage={setShowCreatePage}
               />
             </StyledContent>
-            {showCreatePage ? (
+            {isPublic ? (
+              <></>
+            ) : showCreatePage ? (
               <>
                 <StyledModalDivider />
                 <StyledModalFooter>
