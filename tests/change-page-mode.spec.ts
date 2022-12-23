@@ -31,7 +31,7 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
     //   (box?.y ?? 0) + 5
     // );
 
-    const edgelessDom = page.locator('edgeless-page-block');
+    const edgelessDom = page.locator('affine-edgeless-page');
 
     await expect(await edgelessDom.isVisible()).toBe(true);
   });
