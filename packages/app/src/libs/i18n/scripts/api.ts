@@ -103,6 +103,7 @@ export const getRemoteTranslations = async (languages: string) => {
     return {};
   }
   // The assert is safe because we checked above
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return translations[languages]!;
 };
 
@@ -162,11 +163,11 @@ export const removeTag = async (keyId: string, tagId: number) => {
   return json;
 };
 
-export const addTagByKey = async (key: string, tag: string) => {
-  // TODO get key id by key name
-  // const keyId =
-  // addTag(keyId, tag);
-};
+// export const addTagByKey = async (key: string, tag: string) => {
+//   // TODO get key id by key name
+//   // const keyId =
+//   // addTag(keyId, tag);
+// };
 
 /**
  * Exports data

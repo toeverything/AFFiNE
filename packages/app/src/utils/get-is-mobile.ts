@@ -13,6 +13,7 @@ export function isMobile(userAgent: string) {
 
 export const getIsMobile = function () {
   return isMobile(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     navigator?.userAgent || navigator?.vendor || (window as any)?.opera
   );
 };

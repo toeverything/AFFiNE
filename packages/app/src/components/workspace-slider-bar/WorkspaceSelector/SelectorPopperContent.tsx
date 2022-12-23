@@ -47,7 +47,7 @@ export const SelectorPopperContent = ({
 
   const refreshDetails = useCallback(async () => {
     const workspaceDetailList = await Promise.all(
-      workspacesMeta?.map(async ({ id, type }) => {
+      workspacesMeta.map(async ({ id, type }) => {
         if (user) {
           if (type === WorkspaceType.Private) {
             return { id, member_count: 1, owner: user };
@@ -81,7 +81,7 @@ export const SelectorPopperContent = ({
       refreshWorkspacesMeta();
       refreshDetails();
     }
-  }, [isShow]);
+  }, [isShow, refreshDetails, refreshWorkspacesMeta]);
 
   return !user ? (
     <SelectorPopperContainer placement="bottom-start">
@@ -168,7 +168,7 @@ const WorkspaceGroupTitle = styled('div')(({ theme }) => {
   };
 });
 
-const WorkspaceWrapper = styled('div')(({ theme }) => {
+const WorkspaceWrapper = styled('div')(() => {
   return {
     maxHeight: '200px',
     overflow: 'auto',

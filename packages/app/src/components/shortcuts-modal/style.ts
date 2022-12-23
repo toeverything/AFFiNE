@@ -38,7 +38,7 @@ export const StyledSubTitle = styled.div(({ theme }) => ({
   marginTop: '28px',
   padding: '0 16px',
 }));
-export const StyledModalHeader = styled.div(({ theme }) => ({
+export const StyledModalHeader = styled.div(() => ({
   ...displayFlex('space-between', 'center'),
   paddingTop: '8px 4px 0 4px',
   width: '100%',

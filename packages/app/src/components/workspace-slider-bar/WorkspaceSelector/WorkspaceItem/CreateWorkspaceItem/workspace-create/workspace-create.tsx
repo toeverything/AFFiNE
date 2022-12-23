@@ -1,8 +1,4 @@
-import {
-  createWorkspace,
-  getBlob,
-  uploadBlob,
-} from '@pathfinder/data-services';
+import { createWorkspace, uploadBlob } from '@pathfinder/data-services';
 import Modal from '@/ui/modal';
 import Input from '@/ui/input';
 import {

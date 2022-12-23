@@ -8,11 +8,7 @@ import {
 import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
-import type {
-  AppStateContext,
-  LoadWorkspaceHandler,
-  CreateEditorHandler,
-} from './context';
+import type { LoadWorkspaceHandler, CreateEditorHandler } from './context';
 import {
   downloadWorkspace,
   token,

@@ -1,4 +1,4 @@
-import type { CSSProperties, HTMLAttributes, PropsWithChildren } from 'react';
+import type { CSSProperties } from 'react';
 import { styled } from '@/styles';
 
 export type WrapperProps = {

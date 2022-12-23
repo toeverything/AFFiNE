@@ -9,6 +9,7 @@ type inputProps = {
   maxLength?: number;
   minLength?: number;
   onChange?: (value: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onBlur?: (e: any) => void;
 };
 

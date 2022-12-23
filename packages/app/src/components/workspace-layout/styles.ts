@@ -10,7 +10,7 @@ export const StyledPage = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledWrapper = styled('div')(({ theme }) => {
+export const StyledWrapper = styled('div')(() => {
   return {
     flexGrow: 1,
     position: 'relative',

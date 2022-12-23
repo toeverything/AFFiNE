@@ -14,7 +14,7 @@ export const StyledTable = styled.table<{ tableLayout: 'auto' | 'fixed' }>(
   }
 );
 
-export const StyledTableBody = styled.tbody(({ theme }) => {
+export const StyledTableBody = styled.tbody(() => {
   return {
     fontWeight: 400,
   };
@@ -22,7 +22,7 @@ export const StyledTableBody = styled.tbody(({ theme }) => {
 
 export const StyledTableCell = styled.td<
   Pick<TableCellProps, 'ellipsis' | 'align' | 'proportion'>
->(({ theme, align = 'left', ellipsis = false, proportion }) => {
+>(({ align = 'left', ellipsis = false, proportion }) => {
   const width = proportion ? `${proportion * 100}%` : 'auto';
   return {
     width,
@@ -37,7 +37,7 @@ export const StyledTableCell = styled.td<
   };
 });
 
-export const StyledTableHead = styled.thead(({ theme }) => {
+export const StyledTableHead = styled.thead(() => {
   return {
     fontWeight: 500,
     tr: {

@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import type { PropsWithChildren } from 'react';
 import ShortcutsModal from '@/components/shortcuts-modal';
 import ContactModal from '@/components/contact-modal';
@@ -26,7 +32,7 @@ type ModalMap = {
 export const ModalContext = createContext<ModalContextValue>({
   triggerShortcutsModal: () => {},
   triggerContactModal: () => {},
-  triggerQuickSearchModal: (visible?) => {},
+  triggerQuickSearchModal: () => {},
   triggerImportModal: () => {},
   triggerLoginModal: () => {},
 });
@@ -44,12 +50,15 @@ export const ModalProvider = ({
     login: false,
   });
 
-  const triggerHandler = (key: keyof ModalMap, visible?: boolean) => {
-    setModalMap({
-      ...modalMap,
-      [key]: visible ?? !modalMap[key],
-    });
-  };
+  const triggerHandler = useCallback(
+    (key: keyof ModalMap, visible?: boolean) => {
+      setModalMap({
+        ...modalMap,
+        [key]: visible ?? !modalMap[key],
+      });
+    },
+    [modalMap]
+  );
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore

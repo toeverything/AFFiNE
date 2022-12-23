@@ -78,7 +78,7 @@ export const StyledListItemForWorkspace = styled(StyledListItem)({
   height: '52px',
 });
 
-export const StyledLink = styled(Link)(({ theme }) => {
+export const StyledLink = styled(Link)(() => {
   return {
     flexGrow: 1,
     textAlign: 'left',
@@ -93,7 +93,7 @@ export const StyledLink = styled(Link)(({ theme }) => {
     },
   };
 });
-export const StyledNewPageButton = styled(StyledListItem)(({ theme }) => {
+export const StyledNewPageButton = styled(StyledListItem)(() => {
   return {
     position: 'absolute',
     bottom: '24px',

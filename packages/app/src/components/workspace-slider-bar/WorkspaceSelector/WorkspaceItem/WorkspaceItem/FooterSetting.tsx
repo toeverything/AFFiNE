@@ -25,7 +25,7 @@ export const FooterSetting = ({ onClick }: SettingProps) => {
   );
 };
 
-const Wrapper = styled(IconButton)(({ theme }) => {
+const Wrapper = styled(IconButton)(() => {
   return {
     fontSize: '20px',
   };

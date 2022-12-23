@@ -1,7 +1,7 @@
 import { ResetIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { TextButton, Button } from '@/ui/button';
+import { TextButton } from '@/ui/button';
 import { GoogleLoginButton, StayLogOutButton } from './LoginOptionButton';
 
 interface LoginModalProps {

@@ -50,10 +50,10 @@ export class Counter extends LitElement {
     </div>`;
   }
 
-  private _increment(e: Event) {
+  private _increment() {
     this.count++;
   }
-  private _subtract(e: Event) {
+  private _subtract() {
     this.count--;
   }
 }

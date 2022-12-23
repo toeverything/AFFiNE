@@ -22,8 +22,8 @@ export const ConfirmProvider = ({
   return (
     <ConfirmContext.Provider
       value={{
-        confirm: ({ onClose, onCancel, onConfirm, ...props }: ConfirmProps) => {
-          return new Promise((resolve, reject) => {
+        confirm: ({ onCancel, onConfirm, ...props }: ConfirmProps) => {
+          return new Promise(resolve => {
             const confirmId = String(Date.now());
             const closeHandler = () => {
               delete confirmRecord[confirmId];

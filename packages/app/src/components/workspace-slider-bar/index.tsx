@@ -19,7 +19,6 @@ import {
   ImportIcon,
   TrashIcon,
   AddIcon,
-  FavouritedIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
@@ -29,7 +28,6 @@ import { useAppState } from '@/providers/app-state-provider/context';
 import { IconButton } from '@/ui/button';
 import { WorkspaceSelector } from './WorkspaceSelector';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { useTranslation } from '@/libs/i18n';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
 
@@ -73,7 +71,6 @@ export const WorkSpaceSliderBar = () => {
 
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFINE_SLIDE_BAR', false, true);
-  const { t } = useTranslation();
 
   const paths = {
     all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',

@@ -1,16 +1,12 @@
 import Modal from '@/ui/modal';
-import Input from '@/ui/input';
 import {
   StyledModalHeader,
   StyledTextContent,
   StyledModalWrapper,
   StyledButtonContent,
 } from './style';
-import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { useRouter } from 'next/router';
-import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceDeleteProps {
   open: boolean;
@@ -20,17 +16,7 @@ interface WorkspaceDeleteProps {
   nextWorkSpaceId: string;
 }
 
-export const WorkspaceDelete = ({
-  open,
-  onClose,
-  workspaceId,
-  workspaceName,
-  nextWorkSpaceId,
-}: WorkspaceDeleteProps) => {
-  const [deleteStr, setDeleteStr] = useState<string>('');
-  const router = useRouter();
-  // const { refreshWorkspacesMeta } = useAppState();
-
+export const WorkspaceDelete = ({ open, onClose }: WorkspaceDeleteProps) => {
   const handleLeave = async () => {
     // TODO
   };

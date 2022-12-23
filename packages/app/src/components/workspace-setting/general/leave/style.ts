@@ -1,5 +1,4 @@
 import { styled } from '@/styles';
-import { Button } from '@/ui/button';
 
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
@@ -24,7 +23,7 @@ export const StyledModalHeader = styled('div')(({ theme }) => {
 
 // export const StyledModalContent = styled('div')(({ theme }) => {});
 
-export const StyledTextContent = styled('div')(({ theme }) => {
+export const StyledTextContent = styled('div')(() => {
   return {
     margin: 'auto',
     width: '425px',
@@ -37,7 +36,7 @@ export const StyledTextContent = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledButtonContent = styled('div')(({ theme }) => {
+export const StyledButtonContent = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'row',

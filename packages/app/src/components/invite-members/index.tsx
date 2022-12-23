@@ -12,14 +12,17 @@ interface LoginModalProps {
   workspaceId: string;
   onInviteSuccess: () => void;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const debounce = <T extends (...args: any) => any>(
   fn: T,
   time?: number,
   immediate?: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): ((...args: any) => any) => {
   let timeoutId: null | number;
   let defaultImmediate = immediate || false;
   const delay = time || 300;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (...args: any) => {
     if (defaultImmediate) {
       fn.apply(this, args); // 确保引用函数的指向正确，并且函数的参数也不变
@@ -45,10 +48,10 @@ export const InviteMembers = ({
   workspaceId,
   onInviteSuccess,
 }: LoginModalProps) => {
-  const [canInvite, setCanInvite] = useState<boolean>(true);
   const [email, setEmail] = useState<string>('');
   const [showMember, setShowMember] = useState<boolean>(false);
   const [showTip, setShowTip] = useState<boolean>(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [userData, setUserData] = useState<any>({});
   const inputChange = (value: string) => {
     setEmail(value);

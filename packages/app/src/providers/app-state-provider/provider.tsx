@@ -75,6 +75,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
         workspaces,
       }));
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.workspacesMeta]);
 
   const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =

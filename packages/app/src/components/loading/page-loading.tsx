@@ -2,7 +2,7 @@ import { styled } from '@/styles';
 import Loading from './loading';
 
 // Used for the full page loading
-const StyledLoadingContainer = styled('div')(({ theme }) => {
+const StyledLoadingContainer = styled('div')(() => {
   return {
     height: '100vh',
     display: 'flex',

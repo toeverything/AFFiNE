@@ -28,7 +28,7 @@ export const useInitWorkspace = (disabled?: boolean) => {
     loadWorkspace(workspaceId).finally(() => {
       setLoading(false);
     });
-  }, [workspaceId, disabled]);
+  }, [workspaceId, disabled, loadWorkspace]);
 
   return {
     workspaceId,

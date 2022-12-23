@@ -1,5 +1,5 @@
 import Fade from '@mui/material/Fade';
-import { StyledModal, StyledBackdrop, StyledWrapper } from './styles';
+import { StyledModal, StyledBackdrop } from './styles';
 import { ModalUnstyledOwnProps } from '@mui/base/ModalUnstyled';
 
 const Backdrop = ({
@@ -11,7 +11,7 @@ const Backdrop = ({
 }) => {
   return (
     <Fade in={open}>
-      <StyledBackdrop open={open} {...other} />
+      <StyledBackdrop {...other} />
     </Fade>
   );
 };
@@ -31,7 +31,6 @@ const transformConfig = {
 export const Modal = (props: ModalProps) => {
   const {
     wrapperPosition = ['center', 'center'],
-    components,
     open,
     children,
     ...otherProps

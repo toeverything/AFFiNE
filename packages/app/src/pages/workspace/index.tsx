@@ -10,7 +10,7 @@ export const WorkspaceIndex = () => {
     if (workspace) {
       router.push(`/workspace/${workspaceId}`);
     }
-  }, [workspace, workspaceId]);
+  }, [router, workspace, workspaceId]);
 
   return <></>;
 };

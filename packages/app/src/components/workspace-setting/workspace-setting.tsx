@@ -1,6 +1,5 @@
 import Modal, { ModalCloseButton } from '@/ui/modal';
 import {
-  StyledAvatarUploadBtn,
   StyledCopyButtonContainer,
   StyledMemberAvatar,
   StyledMemberButtonContainer,
@@ -33,7 +32,7 @@ import {
   EmailIcon,
   TrashIcon,
 } from '@blocksuite/icons';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button, IconButton } from '@/ui/button';
 import Input from '@/ui/input';
 import { InviteMembers } from '../invite-members/index';
@@ -51,7 +50,6 @@ import { Empty } from '@/ui/empty';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDetails } from '../workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { GeneralPage } from './general';
-import { Workspace as StoreWorkspaces } from '@blocksuite/store';
 
 enum ActiveTab {
   'general' = 'general',
@@ -170,7 +168,7 @@ export const WorkspaceSetting = ({
 const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
-  const refreshMembers = () => {
+  const refreshMembers = useCallback(() => {
     getWorkspaceMembers({
       id: workspace.id,
     })
@@ -180,10 +178,10 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
       .catch(err => {
         console.log(err);
       });
-  };
+  }, [workspace.id]);
   useEffect(() => {
     refreshMembers();
-  }, [workspace.id]);
+  }, [refreshMembers]);
 
   return (
     <div>
@@ -240,7 +238,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                             // }).then(confirm => {
                             removeMember({
                               permissionId: member.id,
-                            }).then(data => {
+                            }).then(() => {
                               // console.log('data: ', data);
                               toast('Moved to Trash');
                               refreshMembers();
@@ -300,7 +298,7 @@ const PublishPage = ({ workspace }: { workspace: Workspace }) => {
     updateWorkspace({
       id: workspace.id,
       public: flag,
-    }).then(data => {
+    }).then(() => {
       setPublicStatus(!publicStatus);
       toast('Updated');
     });

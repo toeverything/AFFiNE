@@ -1,7 +1,7 @@
 // cSpell:ignore Tolgee
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { addTagByKey, createsNewKey, getRemoteTranslations } from './api';
+import { createsNewKey, getRemoteTranslations } from './api';
 import type { TranslationRes } from './utils';
 
 const BASE_JSON_PATH = path.resolve(
@@ -11,8 +11,6 @@ const BASE_JSON_PATH = path.resolve(
   'en.json'
 );
 const BASE_LANGUAGES = 'en' as const;
-
-const DEPRECATED_TAG_NAME = 'unused' as const;
 
 /**
  *
@@ -140,15 +138,15 @@ const main = async () => {
 
   // TODO remove unused tags from used keys
 
-  diff.remove.forEach(key => {
-    // TODO set unused tag
-    // console.log(`Add ${DEPRECATED_TAG_NAME} to ${key}`);
-    addTagByKey(key, DEPRECATED_TAG_NAME);
-  });
+  // diff.remove.forEach(key => {
+  //   // TODO set unused tag
+  //   // console.log(`Add ${DEPRECATED_TAG_NAME} to ${key}`);
+  //   addTagByKey(key, DEPRECATED_TAG_NAME);
+  // });
 
-  diff.modify.forEach(key => {
-    // TODO warn different between local and remote base translations
-  });
+  // diff.modify.forEach(key => {
+  //   // TODO warn different between local and remote base translations
+  // });
 
   // TODO send notification
 };

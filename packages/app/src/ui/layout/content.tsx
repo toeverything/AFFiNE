@@ -1,4 +1,4 @@
-import React, { CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { styled, textEllipsis } from '@/styles';
 
 // This component should be just used to be contained the text content

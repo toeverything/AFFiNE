@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
   useRef,
   useEffect,
@@ -15,7 +16,7 @@ import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
 
-const StyledEditorContainer = styled('div')(({ theme }) => {
+const StyledEditorContainer = styled('div')(() => {
   return {
     height: 'calc(100vh - 60px)',
   };

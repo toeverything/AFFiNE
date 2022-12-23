@@ -1,6 +1,5 @@
-import { displayFlex, styled, textEllipsis } from '@/styles';
+import { displayFlex, styled } from '@/styles';
 import { TableRow } from '@/ui/table';
-import Link from 'next/link';
 
 export const StyledTableContainer = styled.div(() => {
   return {
@@ -37,7 +36,7 @@ export const StyledTitleLink = styled.div(({ theme }) => {
   };
 });
 
-export const StyledTableRow = styled(TableRow)(({ theme }) => {
+export const StyledTableRow = styled(TableRow)(() => {
   return {
     cursor: 'pointer',
     '&:hover': {

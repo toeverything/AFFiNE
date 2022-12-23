@@ -1,12 +1,4 @@
-import {
-  HTMLAttributes,
-  cloneElement,
-  ReactElement,
-  Children,
-  CSSProperties,
-  forwardRef,
-  PropsWithChildren,
-} from 'react';
+import { cloneElement, Children, forwardRef } from 'react';
 import { StyledButton } from './styles';
 
 import { ButtonProps } from './interface';

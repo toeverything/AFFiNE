@@ -13,14 +13,12 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)(({ theme }) => {
   };
 });
 
-export const StyledArrow = styled(ArrowRightIcon)(({ theme }) => {
-  return {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    margin: 'auto',
-  };
+export const StyledArrow = styled(ArrowRightIcon)({
+  position: 'absolute',
+  right: 0,
+  top: 0,
+  bottom: 0,
+  margin: 'auto',
 });
 
 export const StyledMenuItem = styled.button<{

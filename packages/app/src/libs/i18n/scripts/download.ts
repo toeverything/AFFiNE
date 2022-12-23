@@ -9,7 +9,8 @@ const RES_DIR = path.resolve(process.cwd(), 'src', 'resources');
 
 const countKeys = (obj: TranslationRes) => {
   let count = 0;
-  Object.entries(obj).forEach(([key, value]) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Object.entries(obj).forEach(([_, value]) => {
     if (typeof value === 'string') {
       count++;
     } else {
@@ -101,6 +102,7 @@ const main = async () => {
 
         export const LOCALES = [
             ${availableLanguages
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               .map(({ translations, ...language }) =>
                 JSON.stringify({
                   ...language,

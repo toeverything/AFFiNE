@@ -99,7 +99,10 @@ export const ThemeProvider = ({
         <Global
           styles={css`
             :root {
-              ${globalThemeVariables(mode, themeStyle) as any}
+              ${
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                globalThemeVariables(mode, themeStyle) as any
+              }
             }
           `}
         />

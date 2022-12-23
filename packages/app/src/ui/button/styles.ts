@@ -113,6 +113,7 @@ export const StyledTextButton = styled('button', {
     bold = false,
     shape = 'default',
     // TODO: Implement type
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     type = 'default',
   }) => {
     const { fontSize, borderRadius, padding, height } = getSize(size);

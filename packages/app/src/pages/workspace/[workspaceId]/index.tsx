@@ -13,7 +13,7 @@ const WorkspaceIndex = () => {
       if (!workspace) {
         return;
       }
-      const savedPageId = workspace!.meta.pageMetas[0]?.id;
+      const savedPageId = workspace.meta.pageMetas[0]?.id;
       if (savedPageId) {
         router.replace(`/workspace/${currentWorkspaceId}/${savedPageId}`);
         return;

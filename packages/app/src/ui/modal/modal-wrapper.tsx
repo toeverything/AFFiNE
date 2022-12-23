@@ -1,4 +1,4 @@
-import React, { CSSProperties, HTMLAttributes, PropsWithChildren } from 'react';
+import { CSSProperties } from 'react';
 import { styled } from '@/styles';
 
 export const ModalWrapper = styled.div<{

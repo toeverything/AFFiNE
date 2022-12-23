@@ -1,4 +1,3 @@
-import { ResetIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';

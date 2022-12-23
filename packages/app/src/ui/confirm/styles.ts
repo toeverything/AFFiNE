@@ -1,7 +1,7 @@
 import { displayFlex, styled } from '@/styles';
 import { ModalWrapper } from '@/ui/modal';
 
-export const StyledModalWrapper = styled(ModalWrapper)(({ theme }) => {
+export const StyledModalWrapper = styled(ModalWrapper)(() => {
   return {
     width: '460px',
     padding: '46px 60px 32px',

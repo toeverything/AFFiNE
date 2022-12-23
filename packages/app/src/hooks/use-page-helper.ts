@@ -59,6 +59,7 @@ export const usePageHelper = (): EditorHandlers => {
       return trash;
     },
     search: (query: QueryContent) => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return currentWorkspace!.search(query);
     },
     changePageMode: async (pageId, mode) => {
@@ -76,6 +77,7 @@ export const usePageHelper = (): EditorHandlers => {
     },
     permanentlyDeletePage: pageId => {
       // TODO:  workspace.meta.removePage or workspace.removePage?
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       currentWorkspace!.meta.removePage(pageId);
     },
     openPage: (pageId, query = {}, newTab = false) => {
