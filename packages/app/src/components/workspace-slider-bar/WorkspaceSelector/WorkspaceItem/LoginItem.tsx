@@ -9,7 +9,10 @@ import {
 export const LoginItem = () => {
   const { triggerLoginModal } = useModal();
   return (
-    <LoginItemWrapper onClick={() => triggerLoginModal()}>
+    <LoginItemWrapper
+      onClick={() => triggerLoginModal()}
+      data-testid="open-login-modal"
+    >
       <WorkspaceItemAvatar alt="AFFiNE" src={''}>
         A
       </WorkspaceItemAvatar>

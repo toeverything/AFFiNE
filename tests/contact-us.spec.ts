@@ -5,10 +5,10 @@ loadPage();
 
 test.describe('Open contact us', () => {
   test('Click about us', async ({ page }) => {
-    page.waitForTimeout(1000);
+    // page.waitForTimeout(1000);
     const currentWorkspace = page.getByTestId('current-workspace');
     await currentWorkspace.click();
-
+    page.waitForTimeout(1000);
     await page
       .getByRole('tooltip', {
         name: 'A AFFiNE Log in to sync with affine About AFFiNE',

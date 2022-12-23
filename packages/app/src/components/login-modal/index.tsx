@@ -11,7 +11,7 @@ interface LoginModalProps {
 
 export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={onClose} data-testid="login-modal">
       <ModalWrapper width={620} height={334}>
         <Header>
           <ModalCloseButton
