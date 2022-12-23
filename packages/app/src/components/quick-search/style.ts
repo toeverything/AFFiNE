@@ -65,6 +65,7 @@ export const StyledInputContent = styled('div')(({ theme }) => {
       ...displayFlex('space-between', 'center'),
       letterSpacing: '0.06em',
       color: theme.colors.popoverColor,
+
       '::placeholder': {
         color: theme.colors.placeHolderColor,
       },
