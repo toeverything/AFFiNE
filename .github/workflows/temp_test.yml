@@ -32,7 +32,7 @@ jobs:
           node-version: 18.x
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
-          cache: 'pnpm'
+          # cache: 'pnpm'
 
       - run: node scripts/module-resolve/ci.js
 
