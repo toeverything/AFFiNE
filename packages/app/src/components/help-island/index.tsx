@@ -70,7 +70,10 @@ export const HelpIsland = ({
         </Grow>
 
         <div style={{ position: 'relative' }}>
-          <StyledIconWrapper isEdgelessDark={isEdgelessDark}>
+          <StyledIconWrapper
+            isEdgelessDark={isEdgelessDark}
+            data-testid="faq-icon"
+          >
             <HelpIcon />
           </StyledIconWrapper>
           <StyledTransformIcon in={showContent}>

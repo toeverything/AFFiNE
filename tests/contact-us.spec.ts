@@ -4,17 +4,8 @@ import { loadPage } from './libs/load-page';
 loadPage();
 
 test.describe('Open contact us', () => {
-  test('Click left-top corner Logo', async ({ page }) => {
-    const leftTopCorner = page.locator('[data-testid=left-top-corner-logo]');
-    await leftTopCorner.click();
-
-    const contactUsModal = page.locator(
-      '[data-testid=contact-us-modal-content]'
-    );
-    await expect(contactUsModal).toContainText('Join our community.');
-  });
-
   test('Click right-bottom corner contact icon', async ({ page }) => {
+    page.waitForTimeout(1000);
     const faqIcon = page.locator('[data-testid=faq-icon]');
     const box = await faqIcon.boundingBox();
     await expect(box?.x).not.toBeUndefined();
@@ -30,6 +21,6 @@ test.describe('Open contact us', () => {
     const contactUsModal = page.locator(
       '[data-testid=contact-us-modal-content]'
     );
-    await expect(contactUsModal).toContainText('Join our community.');
+    await expect(contactUsModal).toContainText('AFFiNE Community');
   });
 });
