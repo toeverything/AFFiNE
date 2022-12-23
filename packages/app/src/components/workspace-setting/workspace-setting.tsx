@@ -47,6 +47,7 @@ import {
 import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
 import { toast } from '@/ui/toast';
+import { Empty } from '@/ui/empty';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDetails } from '../workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { GeneralPage } from './general';
@@ -193,6 +194,9 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
         <StyledMemberRoleContainer>Access level</StyledMemberRoleContainer>
       </StyledMemberTitleContainer>
       <StyledMemberListContainer>
+        {members.length === 0 && (
+          <Empty width={648} sx={{ marginTop: '60px' }} height={300}></Empty>
+        )}
         {members.length ? (
           members.map(member => {
             return (

@@ -1,9 +1,12 @@
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider/context';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export const useInitWorkspace = (disabled?: boolean) => {
   const [loading, setLoading] = useState(true);
+  // Do not set as a constant, or it will trigger a hell of re-rendering
+  const defaultOutLineWorkspaceId = useRef(new Date().getTime().toString());
+
   const router = useRouter();
   const {
     workspacesMeta,
@@ -14,7 +17,7 @@ export const useInitWorkspace = (disabled?: boolean) => {
   const workspaceId =
     (router.query.workspaceId as string) ||
     workspacesMeta?.[0]?.id ||
-    new Date().getTime().toString();
+    defaultOutLineWorkspaceId.current;
 
   useEffect(() => {
     if (disabled) {
