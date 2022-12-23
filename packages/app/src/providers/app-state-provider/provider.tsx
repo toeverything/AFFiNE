@@ -64,7 +64,8 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     (async () => {
       const workspacesList = await Promise.all(
         state.workspacesMeta.map(async ({ id }) => {
-          const workspace = (await loadWorkspaceHandler?.(id)) || null;
+          const workspace =
+            (await loadWorkspaceHandler?.(id, false, state.user)) || null;
           return { id, workspace };
         })
       );
@@ -108,7 +109,8 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       return state.currentWorkspace;
     }
 
-    const workspace = (await loadWorkspaceHandler?.(workspaceId, true)) || null;
+    const workspace =
+      (await loadWorkspaceHandler?.(workspaceId, true, state.user)) || null;
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error

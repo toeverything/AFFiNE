@@ -34,9 +34,7 @@ export const GeneralPage = ({
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(
     workspaces[workspace.id]?.meta.name ||
-      (workspace.type === WorkspaceType.Private && user
-        ? user.name
-        : `workspace-${workspace?.id}`)
+      (workspace.type === WorkspaceType.Private && user ? user.name : '')
   );
   const debouncedRefreshWorkspacesMeta = debounce(() => {
     refreshWorkspacesMeta();

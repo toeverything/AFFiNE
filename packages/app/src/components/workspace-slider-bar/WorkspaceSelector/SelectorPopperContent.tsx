@@ -81,7 +81,8 @@ export const SelectorPopperContent = ({
       refreshWorkspacesMeta();
       refreshDetails();
     }
-  }, [isShow, refreshDetails, refreshWorkspacesMeta]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isShow]);
 
   return !user ? (
     <SelectorPopperContainer placement="bottom-start">
