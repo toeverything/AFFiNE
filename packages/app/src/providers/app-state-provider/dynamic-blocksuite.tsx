@@ -3,7 +3,7 @@ import type { Page } from '@blocksuite/store';
 import {
   // createWebsocketDocProvider,
   IndexedDBDocProvider,
-  Workspace,
+  Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import '@blocksuite/blocks/style';
@@ -35,7 +35,7 @@ const DynamicBlocksuite = ({
     ) =>
       // eslint-disable-next-line no-async-promise-executor
       new Promise(async resolve => {
-        const workspace = new Workspace({
+        const workspace = new StoreWorkspace({
           room: workspaceId,
           providers: [],
         }).register(BlockSchema);
@@ -70,7 +70,7 @@ const DynamicBlocksuite = ({
         );
         const updates = await downloadWorkspace({ workspaceId });
         updates &&
-          Workspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
+          StoreWorkspace.Y.applyUpdate(workspace.doc, new Uint8Array(updates));
         // if after update, the space:meta is empty, then we need to get map with doc
         workspace.doc.getMap('space:meta');
         if (indexDBProvider) {

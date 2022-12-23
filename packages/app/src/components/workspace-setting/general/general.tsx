@@ -13,7 +13,7 @@ import { Workspace, WorkspaceType } from '@pathfinder/data-services';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { WorkspaceDelete } from './delete';
-import { Workspace as StoreWorkspaces } from '@blocksuite/store';
+import { Workspace as StoreWorkspace } from '@blocksuite/store';
 import { debounce } from '@/utils';
 
 export const GeneralPage = ({
@@ -22,7 +22,7 @@ export const GeneralPage = ({
 }: {
   workspace: Workspace;
   owner: WorkspaceDetails[string]['owner'];
-  workspaces: Record<string, StoreWorkspaces | null>;
+  workspaces: Record<string, StoreWorkspace | null>;
 }) => {
   const {
     user,
