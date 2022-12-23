@@ -41,31 +41,11 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     workspaces: {},
   });
 
-  const refreshWorkspacesInfo = async (
-    workspaces: AppStateValue['workspaces']
-  ) => {
-    return Promise.all(
-      Object.entries(workspaces).map(async ([workspaceId, workspace]) => {
-        if (workspace) {
-          const updates = await downloadWorkspace({ workspaceId });
-          updates &&
-            StoreWorkspace.Y.applyUpdate(
-              workspace.doc,
-              new Uint8Array(updates)
-            );
-          // if after update, the space:meta is empty, then we need to get map with doc
-          workspace.doc.getMap('space:meta');
-        }
-      })
-    );
-  };
-
   useEffect(() => {
     (async () => {
       const workspacesList = await Promise.all(
         state.workspacesMeta.map(async ({ id }) => {
-          const workspace =
-            (await loadWorkspaceHandler?.(id, false, state.user)) || null;
+          const workspace = (await loadWorkspaceHandler?.(id, false)) || null;
           return { id, workspace };
         })
       );
@@ -73,7 +53,6 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       workspacesList.forEach(({ id, workspace }) => {
         workspaces[id] = workspace;
       });
-      await refreshWorkspacesInfo(workspaces);
       setState(state => ({
         ...state,
         workspaces,
@@ -108,9 +87,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     if (state.currentWorkspaceId === workspaceId) {
       return state.currentWorkspace;
     }
-
-    const workspace =
-      (await loadWorkspaceHandler?.(workspaceId, true, state.user)) || null;
+    const workspace = (await loadWorkspaceHandler?.(workspaceId, true)) || null;
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
@@ -195,6 +172,11 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     }
     const callback = async (user: AccessTokenMessage | null) => {
       const isLogin = token.isLogin;
+      setState(state => ({
+        ...state,
+        user,
+      }));
+
       const workspacesMeta = user
         ? await getWorkspaces().catch(() => {
             return [];
@@ -203,7 +185,6 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
 
       setState(state => ({
         ...state,
-        user: user,
         workspacesMeta,
         synced: isLogin ? !!user : true,
       }));
