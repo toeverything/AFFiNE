@@ -19,7 +19,7 @@ test.describe('Open contact us', () => {
     const faqIcon = page.locator('[data-testid=faq-icon]');
     const box = await faqIcon.boundingBox();
     await expect(box?.x).not.toBeUndefined();
-    await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
+    await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
 
     const rightBottomContactUs = page.locator(
       '[data-testid=right-bottom-contact-us-icon]'
