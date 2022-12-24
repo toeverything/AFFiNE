@@ -2,6 +2,8 @@
   "name": "pathfinder",
   "version": "0.0.0",
   "private": true,
+  "author": "toeverything",
+  "license": "MPL-2.0",
   "scripts": {
     "dev": "pnpm --filter=!@pathfinder/app build && pnpm --filter @pathfinder/app dev",
     "build": " pnpm --filter=!@pathfinder/app build && pnpm --filter!=@pathfinder/data-services -r build",
