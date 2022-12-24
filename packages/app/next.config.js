@@ -15,11 +15,6 @@ const nextConfig = {
     COMMIT_HASH: getCommitHash(),
     EDITOR_VERSION: dependencies['@blocksuite/editor']
   },
-  webpack: (config) => {
-    config.resolve.alias.yjs = require.resolve('yjs')
-    // console.log(config)
-    return config
-  },
   images: {
     unoptimized: true,
   },
