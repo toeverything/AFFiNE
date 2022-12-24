@@ -20,7 +20,10 @@ const nextConfig = {
     ? ['@blocksuite/editor', '@blocksuite/blocks', '@blocksuite/store']
     : [],
   webpack: config => {
-    if (process.env.LOCAL_BLOCK_SUITE) {
+    if (
+      process.env.LOCAL_BLOCK_SUITE &&
+      path.isAbsolute(process.env.LOCAL_BLOCK_SUITE)
+    ) {
       config.resolve.alias['yjs'] = require.resolve('yjs');
       config.resolve.extensionAlias = {
         '.js': ['.js', '.ts', '.tsx'],
