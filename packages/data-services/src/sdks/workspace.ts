@@ -26,7 +26,13 @@ export interface Workspace {
 }
 
 export async function getWorkspaces(): Promise<Workspace[]> {
-  return client.get('/api/workspace').json();
+  return client
+    .get('/api/workspace', {
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+    })
+    .json();
 }
 
 export interface WorkspaceDetail extends Workspace {
