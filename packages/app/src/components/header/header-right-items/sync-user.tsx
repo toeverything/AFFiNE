@@ -12,7 +12,11 @@ export const SyncUser = () => {
       <CloudInsyncIcon />
     </IconButton>
   ) : (
-    <IconButton iconSize="middle" onClick={triggerLoginModal}>
+    <IconButton
+      iconSize="middle"
+      data-testid="cloud-unsync-icon"
+      onClick={triggerLoginModal}
+    >
       <CloudUnsyncedIcon />
     </IconButton>
   );
