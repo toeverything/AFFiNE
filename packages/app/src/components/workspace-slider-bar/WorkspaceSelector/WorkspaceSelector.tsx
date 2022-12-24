@@ -24,11 +24,12 @@ export const WorkspaceSelector = () => {
         <Avatar
           alt="Affine"
           src={
-            (currentWorkspace?.meta.avatar &&
-              `/api/blob/${currentWorkspace?.meta.avatar}`) ||
-            (workspaceMeta?.type === WorkspaceType.Private && user
-              ? user.avatar_url
-              : '')
+            workspaceMeta?.type === WorkspaceType.Private
+              ? user
+                ? user.avatar_url
+                : ''
+              : currentWorkspace?.meta.avatar &&
+                `/api/blob/${currentWorkspace?.meta.avatar}`
           }
         >
           {workspaceMeta?.type === WorkspaceType.Private && user ? (
@@ -38,10 +39,11 @@ export const WorkspaceSelector = () => {
           )}
         </Avatar>
         <WorkspaceName>
-          {currentWorkspace?.meta.name ||
-            (workspaceMeta?.type === WorkspaceType.Private && user
+          {workspaceMeta?.type === WorkspaceType.Private
+            ? user
               ? user.name
-              : 'AFFiNE')}
+              : 'AFFiNE'
+            : currentWorkspace?.meta.name}
         </WorkspaceName>
       </SelectorWrapper>
     </Popper>
