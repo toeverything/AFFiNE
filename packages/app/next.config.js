@@ -21,6 +21,7 @@ const nextConfig = {
     : [],
   webpack: config => {
     if (process.env.LOCAL_BLOCK_SUITE) {
+      config.resolve.alias['yjs'] = require.resolve('yjs');
       config.resolve.extensionAlias = {
         '.js': ['.js', '.ts', '.tsx'],
       };
