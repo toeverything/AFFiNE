@@ -80,7 +80,7 @@ const DynamicBlocksuite = ({
             });
         });
         if (indexDBProvider) {
-          (indexDBProvider as IndexedDBDocProvider).on('synced', async () => {
+          (indexDBProvider as IndexedDBDocProvider).whenSynced.then(() => {
             resolve(workspace);
           });
         } else {
