@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceType } from '@pathfinder/data-services';
 import { AffineIcon } from '../icons/icons';
+
 export const WorkspaceSelector = () => {
   const [isShow, setIsShow] = useState(false);
   const { currentWorkspace, workspacesMeta, currentWorkspaceId, user } =
