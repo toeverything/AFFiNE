@@ -23,6 +23,7 @@ export const WorkspaceSelector = () => {
       <SelectorWrapper data-testid="current-workspace">
         <Avatar
           alt="Affine"
+          data-testid="workspace-avatar"
           src={
             workspaceMeta?.type === WorkspaceType.Private
               ? user
@@ -38,7 +39,7 @@ export const WorkspaceSelector = () => {
             <AffineIcon />
           )}
         </Avatar>
-        <WorkspaceName>
+        <WorkspaceName data-testid="workspace-name">
           {workspaceMeta?.type === WorkspaceType.Private
             ? user
               ? user.name
