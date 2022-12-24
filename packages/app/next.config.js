@@ -1,6 +1,6 @@
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
-const { dependencies } = require('./package.json')
-const path = require("node:path");
+const { dependencies } = require('./package.json');
+const path = require('node:path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -14,24 +14,34 @@ const nextConfig = {
     CI: process.env.CI || null,
     VERSION: getGitVersion(),
     COMMIT_HASH: getCommitHash(),
-    EDITOR_VERSION: dependencies['@blocksuite/editor']
+    EDITOR_VERSION: dependencies['@blocksuite/editor'],
   },
-  transpilePackages: [
-    process.env.LOCAL_BLOCK_SUITE && '@blocksuite/editor',
-    process.env.LOCAL_BLOCK_SUITE && '@blocksuite/blocks',
-    process.env.LOCAL_BLOCK_SUITE && '@blocksuite/store'
-  ],
-  webpack: (config) => {
+  transpilePackages: process.env.LOCAL_BLOCK_SUITE
+    ? ['@blocksuite/editor', '@blocksuite/blocks', '@blocksuite/store']
+    : [],
+  webpack: config => {
     if (process.env.LOCAL_BLOCK_SUITE) {
       config.resolve.extensionAlias = {
-        '.js': ['.js', '.ts', '.tsx']
-      }
-      const baseDir = process.env.LOCAL_BLOCK_SUITE
-      config.resolve.alias['@blocksuite/editor'] = path.resolve(baseDir, 'packages', 'editor')
-      config.resolve.alias['@blocksuite/blocks'] = path.resolve(baseDir, 'packages', 'blocks')
-      config.resolve.alias['@blocksuite/store'] = path.resolve(baseDir, 'packages', 'store')
+        '.js': ['.js', '.ts', '.tsx'],
+      };
+      const baseDir = process.env.LOCAL_BLOCK_SUITE;
+      config.resolve.alias['@blocksuite/editor'] = path.resolve(
+        baseDir,
+        'packages',
+        'editor'
+      );
+      config.resolve.alias['@blocksuite/blocks'] = path.resolve(
+        baseDir,
+        'packages',
+        'blocks'
+      );
+      config.resolve.alias['@blocksuite/store'] = path.resolve(
+        baseDir,
+        'packages',
+        'store'
+      );
     }
-    return config
+    return config;
   },
   images: {
     unoptimized: true,

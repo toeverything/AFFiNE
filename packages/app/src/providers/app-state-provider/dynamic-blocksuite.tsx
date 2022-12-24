@@ -6,7 +6,8 @@ import {
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import '@blocksuite/blocks';
-import '@blocksuite/blocks/dist/style.css';
+import '@blocksuite/blocks/style';
+// import '@blocksuite/blocks/dist/style.css';
 import { BlockSchema, createEditor } from '@blocksuite/editor';
 import type { LoadWorkspaceHandler, CreateEditorHandler } from './context';
 import {
