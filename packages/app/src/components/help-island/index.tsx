@@ -11,9 +11,7 @@ import { Tooltip } from '@/ui/tooltip';
 import { useModal } from '@/providers/global-modal-provider';
 import { useTheme } from '@/providers/themeProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
-
 export type IslandItemNames = 'contact' | 'shortcuts';
-
 export const HelpIsland = ({
   showList = ['contact', 'shortcuts'],
 }: {
