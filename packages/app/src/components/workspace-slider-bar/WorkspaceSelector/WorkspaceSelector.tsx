@@ -43,7 +43,7 @@ export const WorkspaceSelector = () => {
             ? user
               ? user.name
               : 'AFFiNE'
-            : currentWorkspace?.meta.name}
+            : currentWorkspace?.meta.name || 'AFFiNE'}
         </WorkspaceName>
       </SelectorWrapper>
     </Popper>
