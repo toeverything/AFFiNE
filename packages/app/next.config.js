@@ -24,6 +24,7 @@ const nextConfig = {
       process.env.LOCAL_BLOCK_SUITE &&
       path.isAbsolute(process.env.LOCAL_BLOCK_SUITE)
     ) {
+      config.cache.buildDependencies.config.push(path.resolve(__dirname, '.env.local'))
       config.resolve.alias['yjs'] = require.resolve('yjs');
       config.resolve.extensionAlias = {
         '.js': ['.js', '.ts', '.tsx'],
