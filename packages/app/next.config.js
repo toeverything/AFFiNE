@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-var-requires: "off" */
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
 const { dependencies } = require('./package.json');
 const path = require('node:path');
@@ -16,36 +17,8 @@ const nextConfig = {
     COMMIT_HASH: getCommitHash(),
     EDITOR_VERSION: dependencies['@blocksuite/editor'],
   },
-  transpilePackages: process.env.LOCAL_BLOCK_SUITE
-    ? ['@blocksuite/editor', '@blocksuite/blocks', '@blocksuite/store']
-    : [],
   webpack: config => {
-    if (
-      process.env.LOCAL_BLOCK_SUITE &&
-      path.isAbsolute(process.env.LOCAL_BLOCK_SUITE)
-    ) {
-      config.cache.buildDependencies.config.push(path.resolve(__dirname, '.env.local'))
-      config.resolve.alias['yjs'] = require.resolve('yjs');
-      config.resolve.extensionAlias = {
-        '.js': ['.js', '.ts', '.tsx'],
-      };
-      const baseDir = process.env.LOCAL_BLOCK_SUITE;
-      config.resolve.alias['@blocksuite/editor'] = path.resolve(
-        baseDir,
-        'packages',
-        'editor'
-      );
-      config.resolve.alias['@blocksuite/blocks'] = path.resolve(
-        baseDir,
-        'packages',
-        'blocks'
-      );
-      config.resolve.alias['@blocksuite/store'] = path.resolve(
-        baseDir,
-        'packages',
-        'store'
-      );
-    }
+    config.resolve.alias['yjs'] = require.resolve('yjs');
     return config;
   },
   images: {
@@ -62,4 +35,16 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
+const withDebugLocal = require('next-debug-local')(
+  {
+    '@blocksuite/editor': path.resolve(baseDir, 'packages', 'editor'),
+    '@blocksuite/blocks': path.resolve(baseDir, 'packages', 'blocks'),
+    '@blocksuite/store': path.resolve(baseDir, 'packages', 'store'),
+  },
+  {
+    enable: process.env.LOCAL_BLOCK_SUITE !== '',
+  }
+);
+
+module.exports = withDebugLocal(nextConfig);
