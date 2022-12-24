@@ -71,7 +71,7 @@ export const WorkSpaceSliderBar = () => {
   const router = useRouter();
 
   const [showTip, setShowTip] = useState(false);
-  const [show, setShow] = useLocalStorage('AFFINE_SLIDE_BAR', false, true);
+  const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
 
   const paths = {
     all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',

@@ -34,7 +34,7 @@ test.describe('Login Flow', () => {
       page.waitForEvent('popup'),
       page
         .getByRole('button', {
-          name: 'Google Continue with Google Set up an AFFINE account to sync data',
+          name: 'Google Continue with Google Set up an AFFiNE account to sync data',
         })
         .click(),
     ]);

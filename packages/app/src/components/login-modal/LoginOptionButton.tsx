@@ -24,7 +24,7 @@ export const GoogleLoginButton = () => {
         </IconWrapper>
         <TextWrapper>
           <Title>Continue with Google</Title>
-          <Description>Set up an AFFINE account to sync data</Description>
+          <Description>Set up an AFFiNE account to sync data</Description>
         </TextWrapper>
       </ButtonWrapper>
     </StyledGoogleButton>

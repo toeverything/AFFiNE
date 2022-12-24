@@ -15,7 +15,7 @@
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/toeverything/AFFINE.git"
+    "url": "git+https://github.com/toeverything/AFFiNE.git"
   },
   "dependencies": {
     "next": "^12.3.1",
