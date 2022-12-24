@@ -44,7 +44,11 @@ const FavoriteTag = ({
           toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
         }}
       >
-        {favorite ? <FavouritedIcon /> : <FavouritesIcon />}
+        {favorite ? (
+          <FavouritedIcon data-testid="favourited-icon" />
+        ) : (
+          <FavouritesIcon />
+        )}
       </IconButton>
     </Tooltip>
   );

@@ -43,6 +43,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
         const active = router.query.pageId === pageMeta.id;
         return (
           <StyledSubListItem
+            data-testid={`favorite-list-item-${pageMeta.id}`}
             active={active}
             key={`${pageMeta}-${index}`}
             onClick={() => {
