@@ -68,7 +68,7 @@ importers:
       i18next: ^21.9.1
       lit: ^2.3.1
       next: 13.1.0
-      next-debug-local: ^0.1.4
+      next-debug-local: ^0.1.5
       prettier: ^2.7.1
       quill: ^1.3.7
       quill-cursors: ^4.0.0
@@ -99,7 +99,7 @@ importers:
       i18next: 21.10.0
       lit: 2.4.0
       next: 13.1.0_biqbaboplfbrettd7655fr4n2y
-      next-debug-local: 0.1.4
+      next-debug-local: 0.1.5
       prettier: 2.7.1
       quill: 1.3.7
       quill-cursors: 4.0.0
@@ -5452,8 +5452,8 @@ packages:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
     dev: true
 
-  /next-debug-local/0.1.4:
-    resolution: {integrity: sha512-0MkuzfaykgGfOKvj5BSOkfBzNV4eNTmGc5WY/HoyITsRLsR/ZK5tEbtgyh8v3/8txQGm1UWfu3GTySwLTHx0wQ==}
+  /next-debug-local/0.1.5:
+    resolution: {integrity: sha512-KnJPlmPJ1ObNxz3suK89H14RqdiSqfZhyca+PnDA+bqSUjjUDvQJmIOQi6CV6dtJpx9isdJu8Pi4reoxm3wyGQ==}
     dev: false
 
   /next/12.3.1_biqbaboplfbrettd7655fr4n2y:
