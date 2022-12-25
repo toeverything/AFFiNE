@@ -47,5 +47,5 @@ export const useLoadPage = () => {
     });
   }, [workspace, pageId, loadPage, createPage, router, currentWorkspaceId]);
 
-  return currentPage?.pageId === pageId ? currentPage : null;
+  return currentPage?.id === pageId ? currentPage : null;
 };

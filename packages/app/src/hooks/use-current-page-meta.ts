@@ -10,7 +10,7 @@ export const useCurrentPageMeta = (): PageMeta | null => {
     }
     return (
       (currentWorkspace.meta.pageMetas.find(
-        p => p.id === currentPage.pageId
+        p => p.id === currentPage.id
       ) as PageMeta) ?? null
     );
   }, [currentPage, currentWorkspace]);

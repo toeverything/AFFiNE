@@ -110,7 +110,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   );
   loadPage.current = async (pageId: string) => {
     const { currentWorkspace, currentPage } = state;
-    if (pageId === currentPage?.pageId) {
+    if (pageId === currentPage?.id) {
       return currentPage;
     }
     const page = (pageId ? currentWorkspace?.getPage(pageId) : null) || null;
@@ -130,7 +130,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
 
     if (editor) {
       const pageMeta = currentWorkspace.meta.pageMetas.find(
-        p => p.id === currentPage.pageId
+        p => p.id === currentPage.id
       );
       if (pageMeta?.mode) {
         editor.mode = pageMeta.mode as 'page' | 'edgeless' | undefined;
