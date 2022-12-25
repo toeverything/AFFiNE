@@ -1,13 +1,13 @@
 name: E2E & Unit Tests
 on:
   push:
-    branches: [pathfinder]
+    branches: [pathfinder, feat/filesystem_and_search]
   pull_request:
-    branches: [pathfinder]
+    branches: [pathfinder, feat/filesystem_and_search]
 jobs:
   test:
     timeout-minutes: 60
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
