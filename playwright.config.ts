@@ -1,5 +1,5 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
-import { devices } from '@playwright/test';
+// import { devices } from '@playwright/test';
 
 /**
  * Read environment variables from file.
@@ -51,7 +51,7 @@ const config: PlaywrightTestConfig = {
       name: 'chromium',
       use: {
         browserName: 'chromium',
-        viewport: { width: 1920, height: 1080 },
+        viewport: { width: 1440, height: 800 },
         actionTimeout: 5 * 1000,
       },
     },
