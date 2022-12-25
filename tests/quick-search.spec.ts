@@ -3,9 +3,6 @@ import { loadPage } from './libs/load-page';
 import { withCtrlOrMeta } from './libs/keyboard';
 
 loadPage();
-const IS_MAC = process.platform === 'darwin';
-// const IS_WINDOWS = process.platform === 'win32';
-// const IS_LINUX = !IS_MAC && !IS_WINDOWS;
 
 const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
@@ -44,6 +41,7 @@ test.describe('Open quick search', () => {
     const quickSearch = page.locator('[data-testid=quickSearch]');
     await expect(quickSearch).toBeVisible();
   });
+
   test('Click arrowDown icon after title', async ({ page }) => {
     //header-quickSearchButton
     const quickSearchButton = page.locator(
@@ -53,6 +51,7 @@ test.describe('Open quick search', () => {
     const quickSearch = page.locator('[data-testid=quickSearch]');
     await expect(quickSearch).toBeVisible();
   });
+
   test('Press the shortcut key cmd+k', async ({ page }) => {
     await openQuickSearchByShortcut(page);
     const quickSearch = page.locator('[data-testid=quickSearch]');
@@ -61,13 +60,14 @@ test.describe('Open quick search', () => {
 });
 
 test.describe('Add new page in quick search', () => {
-  //TODO FIXME: This test is not working
+  // FIXME: not working
   test.skip('Create a new page without keyword', async ({ page }) => {
     await openQuickSearchByShortcut(page);
     const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
     await addNewPage.click();
     await assertTitleTexts(page, [''], { delay: 50 });
   });
+
   test.skip('Create a new page with keyword', async ({ page }) => {
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test');
@@ -95,6 +95,7 @@ test.describe('Search and select', () => {
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('Welcome');
     await assertResultList(page, ['Welcome to the AFFiNE Alpha', 'Welcome']);
+
     await page.keyboard.press('ArrowDown', { delay: 50 });
     await page.keyboard.press('Enter', { delay: 50 });
     await assertTitleTexts(page, ['Welcome'], {

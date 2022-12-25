@@ -1,8 +1,6 @@
 import type { Page } from '@playwright/test';
 
 const IS_MAC = process.platform === 'darwin';
-// const IS_WINDOWS = process.platform === 'win32';
-// const IS_LINUX = !IS_MAC && !IS_WINDOWS;
 
 async function keyDownCtrlOrMeta(page: Page) {
   if (IS_MAC) {
@@ -17,21 +15,6 @@ async function keyUpCtrlOrMeta(page: Page) {
     await page.keyboard.up('Meta');
   } else {
     await page.keyboard.up('Control');
-  }
-}
-async function keyDownOptionMeta(page: Page) {
-  if (IS_MAC) {
-    await page.keyboard.down('Alt');
-  } else {
-    await page.keyboard.down('Shift');
-  }
-}
-
-async function keyUpOptionMeta(page: Page) {
-  if (IS_MAC) {
-    await page.keyboard.up('Alt');
-  } else {
-    await page.keyboard.up('Shift');
   }
 }
 

@@ -7,7 +7,7 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
   test('Switch to edgeless by switch edgeless item', async ({ page }) => {
     const switcher = page.locator('[data-testid=editor-mode-switcher]');
     const box = await switcher.boundingBox();
-    await expect(box?.x).not.toBeUndefined();
+    expect(box?.x).not.toBeUndefined();
 
     // mouse hover trigger animation for showing full switcher
     // await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
@@ -15,7 +15,6 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
 
     // await page.waitForTimeout(1000);
     const edgelessButton = page.getByTestId('switch-edgeless-item'); // page.getByText('Edgeless').click()
-
     await edgelessButton.click();
 
     // // mouse move to edgeless button
@@ -32,9 +31,8 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
     //   (box?.y ?? 0) + 5
     // );
 
-    const edgelessDom = page.locator('affine-edgeless-page');
-
-    await expect(await edgelessDom.isVisible()).toBe(true);
+    const edgeless = page.locator('affine-edgeless-page');
+    expect(await edgeless.isVisible()).toBe(true);
   });
 
   test('Convert to edgeless by editor header items', async ({ page }) => {
@@ -44,11 +42,9 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
       .nth(2)
       .click();
     const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
-
     await menusEdgelessItem.click();
 
-    const edgelessDom = page.locator('affine-edgeless-page');
-
-    await expect(await edgelessDom.isVisible()).toBe(true);
+    const edgeless = page.locator('affine-edgeless-page');
+    expect(await edgeless.isVisible()).toBe(true);
   });
 });

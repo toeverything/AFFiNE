@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
 
 loadPage();
@@ -39,8 +39,6 @@ test.describe('Login Flow', () => {
         .click(),
     ]);
 
-    expect(await firebasePage.url()).toContain(
-      '.firebaseapp.com/__/auth/handler'
-    );
+    expect(firebasePage.url()).toContain('.firebaseapp.com/__/auth/handler');
   });
 });

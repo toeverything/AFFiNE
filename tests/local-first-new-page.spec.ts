@@ -8,7 +8,6 @@ test.describe('Local first new page', () => {
     const originPageUrl = page.url();
     await page.getByText('New Page').click();
     const newPageUrl = page.url();
-
     expect(newPageUrl).not.toBe(originPageUrl);
     expect(newPageUrl.length).toBe(originPageUrl.length);
   });
@@ -17,11 +16,8 @@ test.describe('Local first new page', () => {
     await page.getByText('New Page').click();
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page');
-
     await page.getByRole('link', { name: 'All pages' }).click();
-
-    const cell = await page.getByRole('cell', { name: 'this is a new page' });
-
+    const cell = page.getByRole('cell', { name: 'this is a new page' });
     expect(cell).not.toBeUndefined();
   });
 });
