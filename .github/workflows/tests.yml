@@ -30,11 +30,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+      - name: Install Playwright browsers
+        run: PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
 
-      - name: Run E2E tests
-        run: pnpm run test:e2e
+      # - name: Run E2E tests
+      #   run: pnpm run test:e2e
 
       - name: Run Unit tests
         run: pnpm run test:unit
