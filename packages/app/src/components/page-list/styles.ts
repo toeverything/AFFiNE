@@ -39,6 +39,9 @@ export const StyledTitleLink = styled.div(({ theme }) => {
 export const StyledTableRow = styled(TableRow)(() => {
   return {
     cursor: 'pointer',
+    '.favorite-button': {
+      display: 'none',
+    },
     '&:hover': {
       '.favorite-button': {
         display: 'flex',

@@ -117,7 +117,9 @@ export const Popper = ({
           },
           onPointerEnter: onPointerEnterHandler,
           onPointerLeave: onPointerLeaveHandler,
-          className: anchorClassName,
+          className: `${anchorClassName ? anchorClassName + ' ' : ''}${
+            children.props.className
+          }`,
         })}
         {content && (
           <BasicStyledPopper

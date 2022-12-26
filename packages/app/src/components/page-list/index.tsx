@@ -23,6 +23,7 @@ import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
+import { useTheme } from '@/providers/themeProvider';
 
 const FavoriteTag = ({
   pageMeta: { favorite, id },
@@ -30,6 +31,7 @@ const FavoriteTag = ({
   pageMeta: PageMeta;
 }) => {
   const { toggleFavoritePage } = usePageHelper();
+  const { theme } = useTheme();
   return (
     <Tooltip
       content={favorite ? 'Favourited' : 'Favourite'}
@@ -43,6 +45,10 @@ const FavoriteTag = ({
           toggleFavoritePage(id);
           toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
         }}
+        style={{
+          color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
+        }}
+        className="favorite-button"
       >
         {favorite ? (
           <FavouritedIcon data-testid="favourited-icon" />
