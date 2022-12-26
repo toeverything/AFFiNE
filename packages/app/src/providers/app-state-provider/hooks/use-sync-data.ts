@@ -17,6 +17,7 @@ export const useSyncData = ({
     }
     const start = async () => {
       const isLogin = await token.refreshToken().catch(() => false);
+      return isLogin;
     };
     start();
 
@@ -32,6 +33,7 @@ export const useSyncData = ({
       //   workspacesMeta,
       //   synced: true,
       // }));
+      return workspacesMeta;
     };
 
     token.onChange(callback);
