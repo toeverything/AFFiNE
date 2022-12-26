@@ -13,6 +13,7 @@ const minimumChromeVersion = 102;
 
 export const shouldShowWarning = () => {
   return (
+    !window.CLIENT_APP &&
     !getIsMobile() &&
     (!getIsChrome() || getChromeVersion() < minimumChromeVersion)
   );

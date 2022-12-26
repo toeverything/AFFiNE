@@ -33,6 +33,7 @@ const nextConfig = {
       },
     ];
   },
+  basePath: process.env.BASE_PATH,
 };
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
