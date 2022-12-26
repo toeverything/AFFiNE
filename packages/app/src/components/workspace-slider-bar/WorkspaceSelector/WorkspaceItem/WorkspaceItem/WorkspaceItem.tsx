@@ -16,7 +16,7 @@ interface WorkspaceItemProps {
   icon: string;
   type: WorkspaceType;
   memberCount: number;
-  onClick?: (workspaceId: string) => void;
+  onClickSetting?: (workspaceId: string) => void;
 }
 
 export const WorkspaceItem = ({
@@ -24,7 +24,7 @@ export const WorkspaceItem = ({
   name,
   icon,
   type,
-  onClick,
+  onClickSetting,
   memberCount,
 }: WorkspaceItemProps) => {
   const router = useRouter();
@@ -32,7 +32,7 @@ export const WorkspaceItem = ({
   const { currentWorkspaceId } = useAppState();
 
   const handleClickSetting = async () => {
-    onClick && onClick(id);
+    onClickSetting && onClickSetting(id);
   };
 
   return (

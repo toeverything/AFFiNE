@@ -5,13 +5,26 @@ import {
   PrivateWorkspaceWrapper,
   WorkspaceItemContent,
 } from './styles';
+import { useRouter } from 'next/router';
 
-export const PrivateWorkspaceItem = () => {
+type PrivateWorkspaceItemProps = {
+  privateWorkspaceId?: string;
+};
+
+export const PrivateWorkspaceItem = ({
+  privateWorkspaceId,
+}: PrivateWorkspaceItemProps) => {
   const { user } = useAppState();
+  const router = useRouter();
+  const handleClick = () => {
+    if (privateWorkspaceId) {
+      router.push(`/workspace/${privateWorkspaceId}`);
+    }
+  };
   if (user) {
     const Username = user.name;
     return (
-      <PrivateWorkspaceWrapper>
+      <PrivateWorkspaceWrapper onClick={handleClick}>
         <WorkspaceItemAvatar alt={Username} src={user.avatar_url}>
           {Username}
         </WorkspaceItemAvatar>

@@ -98,32 +98,32 @@ export const SelectorPopperContent = ({
     </SelectorPopperContainer>
   ) : (
     <SelectorPopperContainer placement="bottom-start">
-      <PrivateWorkspaceItem />
+      <PrivateWorkspaceItem
+        privateWorkspaceId={
+          workspacesMeta.find(
+            workspace => workspace.type === WorkspaceType.Private
+          )?.id
+        }
+      />
       <StyledDivider />
       <WorkspaceGroupTitle>Workspace</WorkspaceGroupTitle>
       <WorkspaceWrapper>
         {workspacesMeta.map(workspace => {
-          return (
+          return workspace.type !== WorkspaceType.Private ? (
             <WorkspaceItem
               type={workspace.type}
               key={workspace.id}
               id={workspace.id}
               icon={
-                workspace.type === WorkspaceType.Private
-                  ? user.avatar_url
-                  : (workspaces[workspace.id]?.meta.avatar &&
-                      `/api/blob/${workspaces[workspace.id]?.meta.avatar}`) ||
-                    `loading...`
+                (workspaces[workspace.id]?.meta.avatar &&
+                  `/api/blob/${workspaces[workspace.id]?.meta.avatar}`) ||
+                `loading...`
               }
-              onClick={handleClickSettingWorkspace}
-              name={
-                workspace.type === WorkspaceType.Private
-                  ? user.name
-                  : workspaces[workspace.id]?.meta.name || `loading...`
-              }
+              onClickSetting={handleClickSettingWorkspace}
+              name={workspaces[workspace.id]?.meta.name || `loading...`}
               memberCount={workSpaceDetails[workspace.id]?.memberCount || 1}
             />
-          );
+          ) : null;
         })}
       </WorkspaceWrapper>
       <CreateWorkspaceItem />
