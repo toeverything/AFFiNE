@@ -7,6 +7,7 @@ import {
   StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
+  StyledSliderBarWrapper,
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
@@ -84,92 +85,95 @@ export const WorkSpaceSliderBar = () => {
   return (
     <>
       <StyledSliderBar show={show}>
-        <StyledListItemForWorkspace>
-          <WorkspaceSelector />
-        </StyledListItemForWorkspace>
-        <StyledListItem
-          data-testid="sliderBar-quickSearchButton"
-          style={{ cursor: 'pointer' }}
-          onClick={() => {
-            triggerQuickSearchModal();
-          }}
+        <Tooltip
+          content={show ? 'Collapse sidebar' : 'Expand sidebar'}
+          placement="right"
+          visible={showTip}
         >
-          <SearchIcon /> Quick search
-        </StyledListItem>
-        <Link href={{ pathname: paths.all }}>
-          <StyledListItem active={router.pathname === paths.all}>
-            <AllPagesIcon /> <span>All pages</span>
-          </StyledListItem>
-        </Link>
-        <StyledListItem active={router.pathname === paths.favorite}>
-          <StyledLink href={{ pathname: paths.favorite }}>
-            <FavouritesIcon />
-            Favourites
-          </StyledLink>
-          <IconButton
-            darker={true}
+          <StyledArrowButton
+            data-testid="sliderBar-arrowButton"
+            isShow={show}
             onClick={() => {
-              setShowSubFavorite(!showSubFavorite);
+              setShow(!show);
+              setShowTip(false);
+            }}
+            onMouseEnter={() => {
+              setShowTip(true);
+            }}
+            onMouseLeave={() => {
+              setShowTip(false);
             }}
           >
-            <ArrowDownIcon
-              style={{
-                transform: `rotate(${showSubFavorite ? '180' : '0'}deg)`,
-              }}
-            />
-          </IconButton>
-        </StyledListItem>
-        <FavoriteList showList={showSubFavorite} />
-
-        <Tooltip content="Coming soon" placement="right-start" zIndex={9999}>
-          <StyledListItem
-            disabled={true}
-            onClick={() => {
-              // triggerImportModal();
-            }}
-          >
-            <ImportIcon /> Import
-          </StyledListItem>
+            <Arrow />
+          </StyledArrowButton>
         </Tooltip>
 
-        <Link href={{ pathname: paths.trash }}>
-          <StyledListItem active={router.pathname === paths.trash}>
-            <TrashIcon /> Trash
+        <StyledSliderBarWrapper>
+          <StyledListItemForWorkspace>
+            <WorkspaceSelector />
+          </StyledListItemForWorkspace>
+          <StyledListItem
+            data-testid="sliderBar-quickSearchButton"
+            style={{ cursor: 'pointer' }}
+            onClick={() => {
+              triggerQuickSearchModal();
+            }}
+          >
+            <SearchIcon /> Quick search
           </StyledListItem>
-        </Link>
-        <StyledNewPageButton
-          onClick={async () => {
-            const pageId = await createPage?.();
-            if (pageId) {
-              openPage(pageId);
-            }
-          }}
-        >
-          <AddIcon /> New Page
-        </StyledNewPageButton>
+          <Link href={{ pathname: paths.all }}>
+            <StyledListItem active={router.pathname === paths.all}>
+              <AllPagesIcon /> <span>All pages</span>
+            </StyledListItem>
+          </Link>
+          <StyledListItem active={router.pathname === paths.favorite}>
+            <StyledLink href={{ pathname: paths.favorite }}>
+              <FavouritesIcon />
+              Favourites
+            </StyledLink>
+            <IconButton
+              darker={true}
+              onClick={() => {
+                setShowSubFavorite(!showSubFavorite);
+              }}
+            >
+              <ArrowDownIcon
+                style={{
+                  transform: `rotate(${showSubFavorite ? '180' : '0'}deg)`,
+                }}
+              />
+            </IconButton>
+          </StyledListItem>
+          <FavoriteList showList={showSubFavorite} />
+
+          <Tooltip content="Coming soon" placement="right-start" zIndex={9999}>
+            <StyledListItem
+              disabled={true}
+              onClick={() => {
+                // triggerImportModal();
+              }}
+            >
+              <ImportIcon /> Import
+            </StyledListItem>
+          </Tooltip>
+
+          <Link href={{ pathname: paths.trash }}>
+            <StyledListItem active={router.pathname === paths.trash}>
+              <TrashIcon /> Trash
+            </StyledListItem>
+          </Link>
+          <StyledNewPageButton
+            onClick={async () => {
+              const pageId = await createPage?.();
+              if (pageId) {
+                openPage(pageId);
+              }
+            }}
+          >
+            <AddIcon /> New Page
+          </StyledNewPageButton>
+        </StyledSliderBarWrapper>
       </StyledSliderBar>
-      <Tooltip
-        content={show ? 'Collapse sidebar' : 'Expand sidebar'}
-        placement="right"
-        visible={showTip}
-      >
-        <StyledArrowButton
-          data-testid="sliderBar-arrowButton"
-          isShow={show}
-          onClick={() => {
-            setShow(!show);
-            setShowTip(false);
-          }}
-          onMouseEnter={() => {
-            setShowTip(true);
-          }}
-          onMouseLeave={() => {
-            setShowTip(false);
-          }}
-        >
-          <Arrow />
-        </StyledArrowButton>
-      </Tooltip>
     </>
   );
 };

@@ -8,15 +8,21 @@ export const StyledSliderBar = styled.div<{ show: boolean }>(
       height: '100vh',
       background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
       boxShadow: theme.shadow.modal,
-      transition: 'width .15s',
+      transition: 'width .15s, padding .15s',
       position: 'relative',
       zIndex: theme.zIndex.modal,
       padding: show ? '24px 12px' : '24px 0',
-      overflowX: 'hidden',
       flexShrink: 0,
     };
   }
 );
+export const StyledSliderBarWrapper = styled.div(() => {
+  return {
+    height: '100%',
+    overflowX: 'hidden',
+    overflowY: 'auto',
+  };
+});
 
 export const StyledArrowButton = styled.button<{ isShow: boolean }>(
   ({ theme, isShow }) => {
@@ -28,9 +34,9 @@ export const StyledArrowButton = styled.button<{ isShow: boolean }>(
       backgroundColor: theme.colors.hoverBackground,
       borderRadius: '50%',
       transition: 'all .15s',
-      position: 'relative',
+      position: 'absolute',
       top: '34px',
-      left: isShow ? '-16px' : '-8px',
+      right: '-20px',
       zIndex: theme.zIndex.modal,
       svg: {
         transform: isShow ? 'rotate(180deg)' : 'unset',
