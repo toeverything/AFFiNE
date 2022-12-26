@@ -29,6 +29,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![React](https://img.shields.io/badge/TypeScript-4.7-3178c6)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18-61dafb)](https://reactjs.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.62-dea584)](https://www.rust-lang.org/)
+
 </div>
 
 <div>
@@ -66,9 +67,11 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 **Seamless transitions** — However you want your data displayed, whichever viewing mode you use, AFFiNE supports easy transitions to allow you to quickly and effortlessly view your data in the way you want.
 
 **Markdown support** — When you write in AFFiNE you can use Markdown syntax which helps create an easier editing experience, that can be experienced with just a keyboard. And this allows you to export your data cleanly into Markdown.
+
 <!--
 **Colloboration** — Whether you want to colloborate with yourself across multiple devices, or work together with others, support for colloboration and multiplayer is out-of-the-box, which makes it easy for teams to get started with AFFiNE.
 -->
+
 **Choice of multiple languages** — Thanks to community contributions AFFiNE offers support for multiple languages. If you don't find your language or would like to suggest some changes we welcome your contributions.
 
 ## Getting started
@@ -89,29 +92,31 @@ For **bug reports**, **feature requests** and other **suggestions** you can also
 
 For **translation** and **language support** you can visit our docs for the [internationalization guide].(https://docs.affine.pro/affine/internationalization/welcome)
 
-Looking for **others ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome), we work closely with passionate members of our community and provide them with a wide-range of support and resources. 
+Looking for **others ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome), we work closely with passionate members of our community and provide them with a wide-range of support and resources.
 
 If you have questions, join us across various [**social platforms**](https://docs.affine.pro/affine/community-links/official-communities) where our friendly community can help provide the answers.
+
+We have done a major refactoring recently, if you want to see our previous version of the code, please go to the [Pre-Alpha](https://github.com/toeverything/AFFiNE/tree/Pre-Alpha) branch to view
 
 ## Thanks
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
 
--   [BlockSuite](https://github.com/toeverything/BlockSuite) - AFFiNE is built with and powered by BlockSuite.
--   [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
--   [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
--   [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
--   [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
--   [slatejs](https://github.com/ianstormtaylor/slate) -- Customizable rich-text editor.
--   [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend.
--   [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
--   [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
--   Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies)
+- [BlockSuite](https://github.com/toeverything/BlockSuite) - AFFiNE is built with and powered by BlockSuite.
+- [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
+- [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
+- [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
+- [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
+- [slatejs](https://github.com/ianstormtaylor/slate) -- Customizable rich-text editor.
+- [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend.
+- [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
+- [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
+- Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies)
 
 We use the following open source projects to help us build a better development experience:
 
--   [nx](https://github.com/nrwl/nx) -- Awesome monorepo manager & build system
--   [tolgee](https://github.com/tolgee/tolgee-platform) -- Elegant i18n collaborative editing platform
+- [nx](https://github.com/nrwl/nx) -- Awesome monorepo manager & build system
+- [tolgee](https://github.com/tolgee/tolgee-platform) -- Elegant i18n collaborative editing platform
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 

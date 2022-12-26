@@ -1,9 +1,9 @@
 name: E2E & Unit Tests
 on:
   push:
-    branches: [pathfinder, feat/filesystem_and_search]
+    branches: [master]
   pull_request:
-    branches: [pathfinder, feat/filesystem_and_search]
+    branches: [master]
 jobs:
   test:
     timeout-minutes: 60
