@@ -122,11 +122,11 @@ export const WorkSpaceSliderBar = () => {
             <SearchIcon /> Quick search
           </StyledListItem>
           <Link href={{ pathname: paths.all }}>
-            <StyledListItem active={router.pathname === paths.all}>
+            <StyledListItem active={router.asPath === paths.all}>
               <AllPagesIcon /> <span>All pages</span>
             </StyledListItem>
           </Link>
-          <StyledListItem active={router.pathname === paths.favorite}>
+          <StyledListItem active={router.asPath === paths.favorite}>
             <StyledLink href={{ pathname: paths.favorite }}>
               <FavouritesIcon />
               Favourites
@@ -158,7 +158,7 @@ export const WorkSpaceSliderBar = () => {
           </Tooltip>
 
           <Link href={{ pathname: paths.trash }}>
-            <StyledListItem active={router.pathname === paths.trash}>
+            <StyledListItem active={router.asPath === paths.trash}>
               <TrashIcon /> Trash
             </StyledListItem>
           </Link>
