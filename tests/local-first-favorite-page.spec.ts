@@ -103,7 +103,15 @@ test.describe('Local first favorite page', () => {
     ).not.toBeUndefined();
 
     // cancel favorite
+
     await page.getByRole('link', { name: 'All pages' }).click();
+
+    const box = await page
+      .getByRole('cell', { name: 'this is a new page to favorite' })
+      .boundingBox();
+    //hover table record
+    await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
+
     await page.getByTestId('favourited-icon').click();
 
     // expect it not in favorite list
