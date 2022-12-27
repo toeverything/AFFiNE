@@ -25,7 +25,7 @@ export const debounce = <T extends (...args: any) => any>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (...args: any) => {
     if (defaultImmediate) {
-      fn.apply(this, args); // 确保引用函数的指向正确，并且函数的参数也不变
+      fn.apply(this, args);
       defaultImmediate = false;
       return;
     }
