@@ -52,9 +52,12 @@ test.describe('Open quick search', () => {
   });
 
   // test('Press the shortcut key cmd+k', async ({ page }) => {
-  // await openQuickSearchByShortcut(page);
-  // const quickSearch = page.locator('[data-testid=quickSearch]');
-  // await expect(quickSearch).toBeVisible();
+  //   // why 1000ms page wait?
+  //   page.waitForTimeout(1000);
+  //   await openQuickSearchByShortcut(page);
+  //   const quickSearch = page.locator('[data-testid=quickSearch]');
+
+  //   await expect(quickSearch).toBeVisible();
   // });
 });
 
@@ -78,6 +81,7 @@ test.describe('Add new page in quick search', () => {
 
 test.describe('Search and select', () => {
   // test('Search and get results', async ({ page }) => {
+  //   // why 1000ms page wait?
   //   await openQuickSearchByShortcut(page);
   //   await page.keyboard.insertText('Welcome');
   //   await assertResultList(page, ['Welcome to the AFFiNE Alpha'], {
