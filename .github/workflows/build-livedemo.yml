@@ -18,6 +18,7 @@ jobs:
   build:
     name: Lint and Build
     runs-on: self-hosted
+    environment: production
 
     steps:
       - uses: actions/checkout@v2
