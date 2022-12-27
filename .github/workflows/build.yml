@@ -73,7 +73,7 @@ jobs:
           path: ./packages/app/out
 
   lint:
-    name: Lint and Test
+    name: Lint and E2E Test
     runs-on: ubuntu-latest
     environment: development
 
