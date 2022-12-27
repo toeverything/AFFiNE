@@ -6,7 +6,7 @@ import {
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import '@blocksuite/blocks';
-import { createEditor } from '@blocksuite/editor';
+import { EditorContainer } from '@blocksuite/editor';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import type { LoadWorkspaceHandler, CreateEditorHandler } from './context';
 import {
@@ -88,7 +88,9 @@ const DynamicBlocksuite = ({
 
   useEffect(() => {
     const createEditorHandler: CreateEditorHandler = (page: Page) => {
-      return createEditor(page);
+      const editor = new EditorContainer();
+      editor.page = page;
+      return editor;
     };
 
     setCreateEditorHandler(createEditorHandler);
