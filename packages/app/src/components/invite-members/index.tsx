@@ -62,7 +62,7 @@ export const InviteMembers = ({
         () => {
           getUserByEmail({
             email: value,
-            workspaceId,
+            workspace_id: workspaceId,
           }).then(data => {
             if (data?.name) {
               setUserData(data);
