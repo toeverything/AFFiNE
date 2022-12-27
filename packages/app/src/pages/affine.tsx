@@ -57,6 +57,8 @@ const Affine = () => {
 
       <Button icon={<FavouritedIcon />}></Button>
       <Button icon={<FavouritedIcon />} shape="round"></Button>
+      <Button loading={true}></Button>
+      <Button loading={true} type="primary"></Button>
     </>
   );
 };

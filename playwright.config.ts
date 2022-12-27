@@ -28,9 +28,10 @@ const config: PlaywrightTestConfig = {
   workers: '100%',
 
   webServer: {
-    command: 'npm run dev',
+    command: 'pnpm build && pnpm start -p 8080',
     port: 8080,
-    reuseExistingServer: true,
+    timeout: 120 * 1000,
+    reuseExistingServer: !process.env.CI,
   },
 };
 

@@ -20,4 +20,5 @@ export type ButtonProps = PropsWithChildren &
     shape?: 'default' | 'round' | 'circle';
     type?: 'primary' | 'warning' | 'danger' | 'default';
     bold?: boolean;
+    loading?: boolean;
   };

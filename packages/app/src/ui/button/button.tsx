@@ -3,6 +3,7 @@ import { StyledButton } from './styles';
 
 import { ButtonProps } from './interface';
 import { getSize } from './utils';
+import { Loading } from './loading';
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -17,6 +18,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       type = 'default',
       children,
       bold = false,
+      loading = false,
       ...props
     },
     ref
@@ -38,12 +40,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         bold={bold}
         {...props}
       >
-        {icon &&
+        {loading ? (
+          <Loading type={type}></Loading>
+        ) : (
+          icon &&
           cloneElement(Children.only(icon), {
             width: iconSize,
             height: iconSize,
             className: `affine-button-icon ${icon.props.className ?? ''}`,
-          })}
+          })
+        )}
         {children && <span>{children}</span>}
       </StyledButton>
     );

@@ -29,7 +29,7 @@ const DefaultHeadImgColors = [
 
 export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
   const [workspaceName, setWorkspaceId] = useState<string>('');
-  const [canCreate, setCanCreate] = useState<boolean>(false);
+  const [creating, setCreating] = useState<boolean>(false);
   const { refreshWorkspacesMeta } = useAppState();
   const handlerInputChange = (workspaceName: string) => {
     setWorkspaceId(workspaceName);
@@ -64,22 +64,26 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
     });
   };
   const handleCreateWorkspace = async () => {
-    setCanCreate(true);
-    const blobId = await createDefaultHeadImg(workspaceName);
-    createWorkspace({ name: workspaceName, avatar: blobId })
-      .then(async data => {
-        await refreshWorkspacesMeta();
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        router.push(`/workspace/${data.id}`);
-        onClose();
-      })
-      .catch(err => {
-        console.log(err, 'err');
-      })
-      .finally(() => {
-        setCanCreate(false);
-      });
+    setCreating(true);
+    const blobId = await createDefaultHeadImg(workspaceName).catch(() => {
+      setCreating(false);
+    });
+    if (blobId) {
+      createWorkspace({ name: workspaceName, avatar: blobId })
+        .then(async data => {
+          await refreshWorkspacesMeta();
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          router.push(`/workspace/${data.id}`);
+          onClose();
+        })
+        .catch(err => {
+          console.log(err, 'err');
+        })
+        .finally(() => {
+          setCreating(false);
+        });
+    }
   };
   return (
     <Modal open={open} onClose={onClose}>
@@ -99,8 +103,9 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
         </StyledInputContent>
         <StyledButtonContent>
           <StyledButton
-            disabled={!workspaceName.length || canCreate}
+            disabled={!workspaceName.length || creating}
             onClick={handleCreateWorkspace}
+            loading={creating}
           >
             Create
           </StyledButton>
