@@ -74,7 +74,7 @@ jobs:
 
   lint:
     name: Lint and Test
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: development
 
     steps:
