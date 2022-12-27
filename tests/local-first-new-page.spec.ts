@@ -5,11 +5,10 @@ loadPage();
 
 test.describe('local first new page', () => {
   test('click btn new page', async ({ page }) => {
-    const originPageUrl = page.url();
+    const originPageId = page.url().split('/').reverse()[0];
     await page.getByText('New Page').click();
-    const newPageUrl = page.url();
-    expect(newPageUrl).not.toBe(originPageUrl);
-    expect(newPageUrl.length).toBe(originPageUrl.length);
+    const newPageId = page.url().split('/').reverse()[0];
+    expect(newPageId).not.toBe(originPageId);
   });
 
   test('click btn bew page and find it in all pages', async ({ page }) => {
