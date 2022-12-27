@@ -11,7 +11,8 @@ import { EditorHeader } from '@/components/header';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
 import { useAppState } from '@/providers/app-state-provider/context';
-import exampleMarkdown from '@/static/example-markdown';
+
+import exampleMarkdown from '@/templates/Welcome-to-the-AFFiNE-Alpha.md';
 import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';

@@ -19,6 +19,11 @@ const nextConfig = {
   },
   webpack: config => {
     config.resolve.alias['yjs'] = require.resolve('yjs');
+    config.module.rules.push({
+      test: /\.md$/i,
+      loader: 'raw-loader',
+    });
+
     return config;
   },
   images: {
