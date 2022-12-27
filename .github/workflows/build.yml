@@ -70,12 +70,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: ./packages/app/out
+          path: ./packages/app/.next
 
   lint:
     name: Lint and E2E Test
     runs-on: ubuntu-latest
     environment: development
+    needs: build
 
     steps:
       - uses: actions/checkout@v2
@@ -105,15 +106,15 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
-      - name: Lint
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: packages/app/.next/
+
+      - name: Lint & E2E Test
         run: |
           pnpm lint --max-warnings=0
-
-      - name: Install Playwright browsers
-        run: PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
-
-      - name: E2E Test
-        run: |
           PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
           PLAYWRIGHT_BROWSERS_PATH=0 pnpm test -- --forbid-only
         env:
