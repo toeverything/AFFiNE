@@ -1,7 +1,7 @@
-name: Build Pathfinder LiveDemo Version
+name: Build Pathfinder Pull Request
 
 on:
-  push:
+  pull_request:
     branches: [master]
 
 # Cancels all previous workflow runs for pull requests that have not completed.
@@ -16,7 +16,7 @@ jobs:
   build:
     name: Lint and Build
     runs-on: self-hosted
-    environment: production
+    environment: development
 
     steps:
       - uses: actions/checkout@v2
