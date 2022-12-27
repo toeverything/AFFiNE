@@ -1,4 +1,4 @@
-name: E2E & Unit Tests
+name: Unit Tests
 on:
   push:
     branches: [master]
