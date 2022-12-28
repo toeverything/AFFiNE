@@ -4,21 +4,19 @@ export const config = (currentWorkspaceId: string) => {
   const List = [
     {
       title: 'All pages',
-      href: `/workspace/${currentWorkspaceId ? currentWorkspaceId : 'all'}/all`,
+      href: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
       icon: AllPagesIcon,
     },
     {
       title: 'Favourites',
-      href: `/workspace/${
-        currentWorkspaceId ? currentWorkspaceId : 'all'
-      }/favorite`,
+      href: currentWorkspaceId
+        ? `/workspace/${currentWorkspaceId}/favorite`
+        : '',
       icon: FavouritesIcon,
     },
     {
       title: 'Trash',
-      href: `/workspace/${
-        currentWorkspaceId ? currentWorkspaceId : 'all'
-      }/trash`,
+      href: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/trash` : '',
       icon: TrashIcon,
     },
   ];
