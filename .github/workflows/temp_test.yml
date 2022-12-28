@@ -22,6 +22,7 @@ jobs:
     environment: development
     permissions:
       pull-requests: write
+      contents: write
     steps:
       - uses: actions/checkout@v2
       - uses: pnpm/action-setup@v2
@@ -76,12 +77,8 @@ jobs:
       - name: Create changelog
         id: changesets
         uses: changesets/action@v1
-        with:
-          publish: changeset publish
-          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   lint:
     name: Lint and E2E Test
