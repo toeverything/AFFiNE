@@ -10,7 +10,7 @@ import {
   StyledSliderBarWrapper,
   StyledSubListItem,
 } from './style';
-import { Arrow } from './icons';
+import { Arrow } from './Icons';
 import Collapse from '@mui/material/Collapse';
 import {
   ArrowDownIcon,
@@ -23,7 +23,7 @@ import {
 } from '@blocksuite/icons';
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider/context';
 
 import { IconButton } from '@/ui/button';

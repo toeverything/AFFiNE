@@ -1,4 +1,4 @@
-import { useConfirm } from '@/providers/confirm-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import { PageMeta } from '@/providers/app-state-provider';
 import { Menu, MenuItem } from '@/ui/menu';
 import { Wrapper } from '@/ui/layout';

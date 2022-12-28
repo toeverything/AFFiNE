@@ -1,3 +1,3 @@
-export * from './menu';
+export * from './Menu';
 // export { StyledMenuItem as MenuItem } from './styles';
-export * from './menu-item';
+export * from './MenuItem';

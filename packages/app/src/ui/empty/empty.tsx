@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { EmptySVG } from './emptySVG';
+import { EmptySVG } from './EmptySvg';
 import { styled } from '@/styles';
 
 export type ContentProps = {

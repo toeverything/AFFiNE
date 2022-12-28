@@ -1,4 +1,4 @@
-import Button from '@/ui/button/button';
+import { Button } from '@/ui/button';
 import { FC, useRef, ChangeEvent, ReactElement } from 'react';
 import { styled } from '@/styles';
 interface Props {

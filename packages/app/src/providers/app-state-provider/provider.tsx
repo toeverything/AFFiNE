@@ -15,7 +15,7 @@ import type {
 import { Page, Workspace as StoreWorkspace } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
 import { uuidv4 as uuidv4IdGenerator } from '@blocksuite/store';
-const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
+const DynamicBlocksuite = dynamic(() => import('./DynamicBlocksuite'), {
   ssr: false,
 });
 

@@ -6,7 +6,7 @@ import {
   WorkspaceItemWrapper,
   WorkspaceItemContent,
 } from '../styles';
-import { WorkspaceCreate } from './workspace-create';
+import { WorkspaceCreate } from './workspace-create/WorkspaceCreate';
 
 const name = 'Create new Workspace';
 

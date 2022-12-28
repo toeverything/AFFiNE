@@ -8,7 +8,7 @@ import {
   TelegramIcon,
   RedditIcon,
   LinkIcon,
-} from './icons';
+} from './Icons';
 import logo from './affine-text-logo.png';
 import {
   StyledBigLink,

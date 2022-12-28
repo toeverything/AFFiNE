@@ -1,6 +1,6 @@
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 import { styled } from '@/styles';
-import { AffineIcon } from '../../icons/icons';
+import { AffineIcon } from '../../icons/Icons';
 import {
   WorkspaceItemAvatar,
   LoginItemWrapper,
