@@ -77,7 +77,7 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: changeset release
+          publish: changeset publish
           createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
