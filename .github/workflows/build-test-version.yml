@@ -80,14 +80,6 @@ jobs:
         with:
           path: ./packages/app/out
 
-      - name: Create changelog
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          createGithubReleases: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   push_to_registry:
     # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
     name: Push Docker image to Docker Hub

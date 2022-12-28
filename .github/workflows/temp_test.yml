@@ -20,7 +20,8 @@ jobs:
     if: github.ref != 'refs/heads/master'
     runs-on: self-hosted
     environment: development
-
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v2
       - uses: pnpm/action-setup@v2
@@ -72,6 +73,13 @@ jobs:
         with:
           path: ./packages/app/.next
 
+      - name: Create changelog
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   lint:
     name: Lint and E2E Test
     runs-on: ubuntu-latest
