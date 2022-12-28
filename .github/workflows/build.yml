@@ -116,7 +116,8 @@ jobs:
         run: |
           pnpm lint --max-warnings=0
           PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
-          PLAYWRIGHT_BROWSERS_PATH=0 pnpm test -- --forbid-only
+          PLAYWRIGHT_BROWSERS_PATH=0 pnpm test
+          PLAYWRIGHT_BROWSERS_PATH=0 pnpm test:dc
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
