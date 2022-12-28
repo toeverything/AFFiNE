@@ -18,7 +18,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-40-orange.svg?style=flat-square
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-41-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
@@ -177,6 +177,7 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
     <td align="center"><a href="https://github.com/MuhammedFaraz"><img src="https://avatars.githubusercontent.com/u/92734739?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Mohammed Faraz</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=MuhammedFaraz" title="Documentation">📖</a></td>
     <td align="center"><a href="https://pranavsriram.dev/"><img src="https://avatars.githubusercontent.com/u/28348429?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Pranav Sriram </b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Pranav4399" title="Code">💻</a></td>
     <td align="center"><a href="https://www.notion.so/houjoe/Joe-2a85f5be01004cd2b6a5ad26fbb948b1"><img src="https://avatars.githubusercontent.com/u/22443345?v=4?s=50" width="50px;" alt=""/><br /><sub><b>houjoe</b></sub></a><br /><a href="#research-joebeijing" title="Research">🔬</a></td>
+    <td align="center"><a href="https://github.com/VelikaHF"><img src="https://avatars.githubusercontent.com/u/121547898?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Velika</b></sub></a><br /><a href="#design-VelikaHF" title="Design">🎨</a></td>
   </tr>
 </table>
 
