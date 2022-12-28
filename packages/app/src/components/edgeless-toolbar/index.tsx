@@ -129,7 +129,7 @@ export const EdgelessToolbar = () => {
       mountOnEnter
       unmountOnExit
     >
-      <StyledEdgelessToolbar>
+      <StyledEdgelessToolbar aria-label="edgeless-toolbar">
         <StyledToolbarWrapper>
           {toolbarList1.map(
             ({ icon, toolTip, flavor, disable, callback }, index) => {
