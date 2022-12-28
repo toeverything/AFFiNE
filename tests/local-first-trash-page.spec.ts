@@ -3,18 +3,17 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe('Local first delete page', () => {
-  test('New a page , then delete it in all pages, permanently delete it', async ({
+test.describe('Local first trash page', () => {
+  test('New a page , then delete it in all pages, finally find it in trash', async ({
     page,
   }) => {
     await page.getByText('New Page').click();
     await page.getByPlaceholder('Title').click();
-    await page.getByPlaceholder('Title').fill('this is a new page to restore');
-    const originPageUrl = page.url();
+    await page.getByPlaceholder('Title').fill('this is a new page to delete');
     const newPageId = page.url().split('/').reverse()[0];
     await page.getByRole('link', { name: 'All pages' }).click();
     const cell = page.getByRole('cell', {
-      name: 'this is a new page to restore',
+      name: 'this is a new page to delete',
     });
     expect(cell).not.toBeUndefined();
 
@@ -31,19 +30,8 @@ test.describe('Local first delete page', () => {
     await page.getByRole('button', { name: 'Delete' }).click();
 
     await page.getByRole('link', { name: 'Trash' }).click();
-    // permanently delete it
-    await page
-      .getByTestId('more-actions-' + newPageId)
-      .getByRole('button')
-      .nth(1)
-      .click();
-    await page.getByText('Delete permanently?').dblclick();
-
-    // show empty tip
     expect(
-      page.getByText(
-        'Tips: Click Add to Favourites/Trash and the page will appear here.'
-      )
+      page.getByRole('cell', { name: 'this is a new page to delete' })
     ).not.toBeUndefined();
   });
 });

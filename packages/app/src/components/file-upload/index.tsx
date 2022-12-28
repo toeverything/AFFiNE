@@ -3,7 +3,7 @@ import { FC, useRef, ChangeEvent, ReactElement } from 'react';
 import { styled } from '@/styles';
 interface Props {
   uploadType?: string;
-  view?: ReactElement;
+  children?: ReactElement;
   accept?: string;
   fileChange: (file: File) => void;
 }
@@ -28,7 +28,7 @@ export const Upload: FC<Props> = props => {
   };
   return (
     <UploadStyle onClick={_chooseFile}>
-      {props.view ?? <Button>Upload</Button>}
+      {props.children ?? <Button>Upload</Button>}
       <input
         ref={input_ref}
         type="file"

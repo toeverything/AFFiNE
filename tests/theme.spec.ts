@@ -5,6 +5,7 @@ loadPage();
 
 test.describe('Change Theme', () => {
   test('default white', async ({ page }) => {
+    await page.waitForSelector('html');
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>
       window.getComputedStyle(element).getPropertyValue('--affine-theme-mode')

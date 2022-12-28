@@ -14,6 +14,7 @@ test.describe('Shortcuts Modal', () => {
     expect(await shortcutsIcon.isVisible()).toEqual(true);
 
     await shortcutsIcon.click();
+    await page.waitForTimeout(800);
     const shortcutsModal = page.locator('[data-testid=shortcuts-modal]');
     await expect(shortcutsModal).toContainText('Keyboard Shortcuts');
   });

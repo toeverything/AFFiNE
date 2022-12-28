@@ -4,7 +4,7 @@ import { loadPage } from './libs/load-page';
 loadPage();
 
 test.describe('Local first delete page', () => {
-  test('New a page , then delete it in all pages, permanently delete it', async ({
+  test('New a page , then delete it in all pages, restore it', async ({
     page,
   }) => {
     await page.getByText('New Page').click();
@@ -31,19 +31,20 @@ test.describe('Local first delete page', () => {
     await page.getByRole('button', { name: 'Delete' }).click();
 
     await page.getByRole('link', { name: 'Trash' }).click();
-    // permanently delete it
+    // restore it
     await page
       .getByTestId('more-actions-' + newPageId)
       .getByRole('button')
-      .nth(1)
+      .first()
       .click();
-    await page.getByText('Delete permanently?').dblclick();
 
-    // show empty tip
-    expect(
-      page.getByText(
-        'Tips: Click Add to Favourites/Trash and the page will appear here.'
-      )
-    ).not.toBeUndefined();
+    // go to page detail
+    expect(page.url()).toBe(originPageUrl);
+
+    await page.getByRole('link', { name: 'All pages' }).click();
+    const restoreCell = page.getByRole('cell', {
+      name: 'this is a new page to restore',
+    });
+    expect(restoreCell).not.toBeUndefined();
   });
 });

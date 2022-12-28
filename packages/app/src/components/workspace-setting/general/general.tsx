@@ -39,6 +39,7 @@ export const GeneralPage = ({
   } = useAppState();
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
+  const [uploading, setUploading] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(
     workspaces[workspace.id]?.meta.name ||
       (workspace.type === WorkspaceType.Private && user ? user.name : '')
@@ -75,11 +76,17 @@ export const GeneralPage = ({
   };
 
   const fileChange = async (file: File) => {
+    setUploading(true);
     const blob = new Blob([file], { type: file.type });
-    const blobId = await uploadBlob({ blob });
-    currentWorkspace?.meta.setAvatar(blobId);
-    workspaces[workspace.id]?.meta.setAvatar(blobId);
-    debouncedRefreshWorkspacesMeta();
+    const blobId = await uploadBlob({ blob }).finally(() => {
+      setUploading(false);
+    });
+    if (blobId) {
+      currentWorkspace?.meta.setAvatar(blobId);
+      workspaces[workspace.id]?.meta.setAvatar(blobId);
+      setUploading(false);
+      debouncedRefreshWorkspacesMeta();
+    }
   };
 
   return workspace ? (
@@ -99,7 +106,9 @@ export const GeneralPage = ({
         <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
           fileChange={fileChange}
-        ></Upload>
+        >
+          <Button loading={uploading}>Upload</Button>
+        </Upload>
         {/* TODO: add upload logic */}
         {/* {isOwner ? (
           <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>
