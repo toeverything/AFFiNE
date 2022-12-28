@@ -5,8 +5,8 @@
 // import TableRow from '@mui/material/TableRow';
 //
 
-export * from './table';
-export * from './table-body';
-export * from './table-cell';
-export * from './table-head';
-export * from './table-row';
+export * from './Table';
+export * from './TableRow';
+export * from './TableHead';
+export * from './TableCell';
+export * from './TableBody';

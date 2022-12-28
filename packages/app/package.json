@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@affine/data-services": "workspace:@affine/data-services@*",
     "@blocksuite/blocks": "0.3.0-20221225075400-9710eea",
     "@blocksuite/editor": "0.3.0-20221225075400-9710eea",
     "@blocksuite/icons": "^2.0.2",
@@ -44,6 +45,7 @@
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
+    "chalk-next": "^6.1.5",
     "eslint": "8.22.0",
     "eslint-config-next": "12.3.1",
     "eslint-config-prettier": "^8.5.0",
