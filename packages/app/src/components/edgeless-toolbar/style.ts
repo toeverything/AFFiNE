@@ -7,7 +7,7 @@ export const StyledEdgelessToolbar = styled.div(({ theme }) => ({
   top: 0,
   bottom: 0,
   margin: 'auto',
-  zIndex: theme.zIndex.modal,
+  zIndex: theme.zIndex.modal - 1,
 }));
 
 export const StyledToolbarWrapper = styled.div(({ theme }) => ({
