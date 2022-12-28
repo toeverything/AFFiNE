@@ -1,19 +1,20 @@
 const chalk = require('chalk');
 const printer = {
-  debug: () => {
-    void 0;
-  },
-  verbose: () => {
-    void 0;
+  debug: msg => {
+    const result = chalk.green`debug` + chalk.white('  - ' + msg);
+    console.log(result);
+    return result;
   },
   info: msg => {
-    console.log(chalk.rgb(19, 167, 205)`info` + chalk.white('  - ' + msg));
+    const result = chalk.rgb(19, 167, 205)`info` + chalk.white('  - ' + msg);
+    console.log(result);
+    return result;
   },
-  warn: () => {
-    void 0;
-  },
-  fatal: () => {
-    void 0;
+  warn: msg => {
+    const result = chalk.yellow`warn` + chalk.white('  - ' + msg);
+    console.log(result);
+    return result;
   },
 };
+
 module.exports = { printer };

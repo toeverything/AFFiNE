@@ -3,3 +3,4 @@
 **/scripts/*.js
 **/node_modules/**
 .github/**
+**/__tests__/**
