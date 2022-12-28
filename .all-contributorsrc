@@ -118,6 +118,17 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/79301703?v=4",
       "profile": "https://github.com/HeJiachen-PM",
       "contributions": [
+        "research",
+        "doc"
+      ]
+    },
+    {
+      "login": "joebeijing",
+      "name": "houjoe",
+      "avatar_url": "https://avatars.githubusercontent.com/u/22443345?v=4",
+      "profile": "https://www.notion.so/houjoe/Joe-2a85f5be01004cd2b6a5ad26fbb948b1",
+      "contributions": [
+        "research",
         "doc"
       ]
     },
@@ -385,15 +396,6 @@
       "profile": "https://pranavsriram.dev/",
       "contributions": [
         "code"
-      ]
-    },
-    {
-      "login": "joebeijing",
-      "name": "houjoe",
-      "avatar_url": "https://avatars.githubusercontent.com/u/22443345?v=4",
-      "profile": "https://www.notion.so/houjoe/Joe-2a85f5be01004cd2b6a5ad26fbb948b1",
-      "contributions": [
-        "research"
       ]
     }
   ]
