@@ -20,9 +20,6 @@ jobs:
     if: github.ref != 'refs/heads/master'
     runs-on: self-hosted
     environment: development
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v2
       - uses: pnpm/action-setup@v2
