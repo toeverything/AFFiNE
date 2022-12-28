@@ -24,8 +24,11 @@ const config: PlaywrightTestConfig = {
     // Record video only when retrying a test for the first time.
     video: 'on-first-retry',
   },
-  retries: process.env.CI ? 3 : 0,
-  workers: '100%',
+
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? '100%' : undefined,
 
   webServer: {
     command: 'pnpm build && pnpm start -p 8080',
