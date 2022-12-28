@@ -46,7 +46,7 @@ importers:
 
   packages/app:
     specifiers:
-      '@affine/data-services': workspace:@affine/data-services@*
+      '@affine/data-services': workspace:*
       '@blocksuite/blocks': 0.3.0-20221225075400-9710eea
       '@blocksuite/editor': 0.3.0-20221225075400-9710eea
       '@blocksuite/icons': ^2.0.2
@@ -60,7 +60,7 @@ importers:
       '@mui/base': ^5.0.0-alpha.87
       '@mui/icons-material': ^5.10.9
       '@mui/material': ^5.8.6
-      '@toeverything/pathfinder-logger': workspace:@affine/logger@*
+      '@toeverything/pathfinder-logger': workspace:*
       '@types/node': 18.7.18
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
