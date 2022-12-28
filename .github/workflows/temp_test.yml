@@ -22,6 +22,7 @@ jobs:
     environment: development
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v2
       - uses: pnpm/action-setup@v2
@@ -76,8 +77,6 @@ jobs:
       - name: Create changelog
         id: changesets
         uses: changesets/action@v1
-        with:
-          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   lint:
