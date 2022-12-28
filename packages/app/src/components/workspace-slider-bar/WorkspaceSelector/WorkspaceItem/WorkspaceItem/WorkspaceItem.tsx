@@ -7,7 +7,7 @@ import {
 } from '../styles';
 import { FooterSetting } from './FooterSetting';
 import { FooterUsers } from './FooterUsers';
-import { WorkspaceType } from '@pathfinder/data-services';
+import { WorkspaceType } from '@affine/data-services';
 import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceItemProps {

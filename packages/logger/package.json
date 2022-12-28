@@ -1,5 +1,5 @@
 {
-  "name": "@pathfinder/logger",
+  "name": "@affine/logger",
   "version": "0.0.1",
   "description": "",
   "main": "dist/src/index.js",

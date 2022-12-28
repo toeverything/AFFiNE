@@ -5,7 +5,7 @@ import {
   token,
   AccessTokenMessage,
   getWorkspaces,
-} from '@pathfinder/data-services';
+} from '@affine/data-services';
 import { AppState, AppStateContext } from './context';
 import type {
   AppStateValue,

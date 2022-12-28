@@ -42,6 +42,7 @@ importers:
 
   packages/app:
     specifiers:
+      '@affine/data-services': workspace:@affine/data-services@*
       '@blocksuite/blocks': 0.3.0-20221225075400-9710eea
       '@blocksuite/editor': 0.3.0-20221225075400-9710eea
       '@blocksuite/icons': ^2.0.2
@@ -55,8 +56,7 @@ importers:
       '@mui/base': ^5.0.0-alpha.87
       '@mui/icons-material': ^5.10.9
       '@mui/material': ^5.8.6
-      '@pathfinder/data-services': workspace:@pathfinder/data-services@*
-      '@toeverything/pathfinder-logger': workspace:@pathfinder/logger@*
+      '@toeverything/pathfinder-logger': workspace:@affine/logger@*
       '@types/node': 18.7.18
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
@@ -81,6 +81,7 @@ importers:
       typescript: 4.8.3
       yjs: ^13.5.43
     dependencies:
+      '@affine/data-services': link:../data-services
       '@blocksuite/blocks': 0.3.0-20221225075400-9710eea_yjs@13.5.43
       '@blocksuite/editor': 0.3.0-20221225075400-9710eea_yjs@13.5.43
       '@blocksuite/icons': 2.0.2_w5j4k42lgipnm43s3brx6h3c34
@@ -94,7 +95,6 @@ importers:
       '@mui/base': 5.0.0-alpha.101_7ey2zzynotv32rpkwno45fsx4e
       '@mui/icons-material': 5.10.9_5fncb4nagb4cvvcnwamw2rozfa
       '@mui/material': 5.10.9_af5ln35zuaotaffazii6n6bke4
-      '@pathfinder/data-services': link:../data-services
       '@toeverything/pathfinder-logger': link:../logger
       cmdk: 0.1.20_7ey2zzynotv32rpkwno45fsx4e
       css-spring: 4.1.0

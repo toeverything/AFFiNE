@@ -1,4 +1,4 @@
-import { signInWithGoogle } from '@pathfinder/data-services';
+import { signInWithGoogle } from '@affine/data-services';
 import { styled } from '@/styles';
 import { Button } from '@/ui/button';
 import { useModal } from '@/providers/GlobalModalProvider';

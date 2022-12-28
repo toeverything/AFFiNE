@@ -3,7 +3,7 @@ import {
   AccessTokenMessage,
   getWorkspaces,
   token,
-} from '@pathfinder/data-services';
+} from '@affine/data-services';
 import { LoadWorkspaceHandler } from '../context';
 
 export const useSyncData = ({
