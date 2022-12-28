@@ -113,6 +113,36 @@
       ]
     },
     {
+      "login": "linonetwo",
+      "name": "lin onetwo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3746270?v=4",
+      "profile": "https://onetwo.ren/wiki",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "colelawrence",
+      "name": "Cole Lawrence",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2925395?v=4",
+      "profile": "https://colelawrence.com/",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "thorseraq",
+      "name": "x1a0t",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20554850?v=4",
+      "profile": "https://github.com/thorseraq",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
       "login": "HeJiachen-PM",
       "name": "HeJiachen-PM",
       "avatar_url": "https://avatars.githubusercontent.com/u/79301703?v=4",
@@ -394,6 +424,15 @@
       "name": "Pranav Sriram ",
       "avatar_url": "https://avatars.githubusercontent.com/u/28348429?v=4",
       "profile": "https://pranavsriram.dev/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Reson-a",
+      "name": "Reson-a",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20806266?v=4",
+      "profile": "https://github.com/Reson-a",
       "contributions": [
         "code"
       ]
