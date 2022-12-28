@@ -16,7 +16,8 @@
     "test:e2e:codegen": "npx playwright codegen http://localhost:8080",
     "test:unit": "jest",
     "postinstall": "husky install",
-    "notify": "node --experimental-modules scripts/notify.mjs"
+    "notify": "node --experimental-modules scripts/notify.mjs",
+    "changeset": "changeset"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",

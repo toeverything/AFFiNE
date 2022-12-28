@@ -72,6 +72,14 @@ jobs:
         with:
           path: ./packages/app/.next
 
+      - name: Create Release Pull Request
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   lint:
     name: Lint and E2E Test
     runs-on: ubuntu-latest

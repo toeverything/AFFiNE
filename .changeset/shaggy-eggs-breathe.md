@@ -4,4 +4,4 @@
 '@affine/logger': major
 ---
 
-fix changeset config
+feat: add changeset
