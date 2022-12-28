@@ -31,22 +31,22 @@ const nextConfig = {
   },
   // XXX not test yet
   rewrites: async () => {
-    if (process.env.NODE_API_SERVER === 'ac') {
-      console.log('use ac server');
-      return [
-        {
-          source: '/api/:path*',
-          destination: 'http://100.85.73.88:12001/api/:path*',
-        },
-      ];
-    } else {
-      return [
-        {
-          source: '/api/:path*',
-          destination: 'http://100.77.180.48:11001/api/:path*',
-        },
-      ];
-    }
+    // if (process.env.NODE_API_SERVER === 'ac') {
+    console.log('use ac server');
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://100.85.73.88:12001/api/:path*',
+      },
+    ];
+    // } else {
+    //   return [
+    //     {
+    //       source: '/api/:path*',
+    //       destination: 'http://100.77.180.48:11001/api/:path*',
+    //     },
+    //   ];
+    // }
   },
   basePath: process.env.BASE_PATH,
 };
