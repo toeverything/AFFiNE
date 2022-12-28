@@ -13,7 +13,7 @@ import {
   downloadWorkspace,
   token,
   WebsocketProvider,
-} from '@pathfinder/data-services';
+} from '@affine/data-services';
 
 interface Props {
   setLoadWorkspaceHandler: (handler: LoadWorkspaceHandler) => void;

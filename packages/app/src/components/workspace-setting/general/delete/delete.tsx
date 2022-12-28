@@ -11,7 +11,7 @@ import {
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { deleteWorkspace } from '@pathfinder/data-services';
+import { deleteWorkspace } from '@affine/data-services';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
 

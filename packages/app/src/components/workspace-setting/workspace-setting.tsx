@@ -42,7 +42,7 @@ import {
   Member,
   removeMember,
   updateWorkspace,
-} from '@pathfinder/data-services';
+} from '@affine/data-services';
 import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
 import { toast } from '@/ui/toast';

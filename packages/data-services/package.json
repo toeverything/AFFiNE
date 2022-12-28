@@ -1,6 +1,6 @@
 {
-  "name": "@pathfinder/data-services",
-  "version": "1.0.0",
+  "name": "@affine/data-services",
+  "version": "0.3.0",
   "description": "",
   "type": "module",
   "main": "dist/src/index.js",

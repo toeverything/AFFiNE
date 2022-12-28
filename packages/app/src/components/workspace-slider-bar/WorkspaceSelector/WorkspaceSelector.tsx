@@ -3,7 +3,7 @@ import { Avatar, WorkspaceName, SelectorWrapper } from './styles';
 import { SelectorPopperContent } from './SelectorPopperContent';
 import { useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
-import { WorkspaceType } from '@pathfinder/data-services';
+import { WorkspaceType } from '@affine/data-services';
 import { AffineIcon } from '../icons/icons';
 
 export const WorkspaceSelector = () => {
