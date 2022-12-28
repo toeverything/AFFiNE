@@ -12,7 +12,7 @@
     "start": "pnpm --filter @affine/app start",
     "lint": "pnpm --filter @affine/app lint",
     "test": "playwright test",
-    "test:e2e": "playwright test",
+    "test:dc": "pnpm --filter @affine/data-services test",
     "test:e2e:codegen": "npx playwright codegen http://localhost:8080",
     "test:unit": "jest",
     "postinstall": "husky install",
@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.3.1",
-    "@playwright/test": "^1.28.1",
+    "@playwright/test": "^1.29.1",
     "@typescript-eslint/eslint-plugin": "^5.47.0",
     "@typescript-eslint/parser": "^5.47.0",
     "@types/eslint": "^8.4.10",
