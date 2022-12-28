@@ -113,36 +113,6 @@
       ]
     },
     {
-      "login": "mitsuhatu",
-      "name": "mitsuhatu",
-      "avatar_url": "https://avatars.githubusercontent.com/u/110213079?v=4",
-      "profile": "https://github.com/mitsuhatu",
-      "contributions": [
-        "code",
-        "doc"
-      ]
-    },
-    {
-      "login": "Austaras",
-      "name": "Austaras",
-      "avatar_url": "https://avatars.githubusercontent.com/u/15013925?v=4",
-      "profile": "https://shockwave.me/",
-      "contributions": [
-        "code",
-        "doc"
-      ]
-    },
-    {
-      "login": "uptonking",
-      "name": "Jin Yao",
-      "avatar_url": "https://avatars.githubusercontent.com/u/11391549?v=4",
-      "profile": "https://github.com/uptonking",
-      "contributions": [
-        "code",
-        "doc"
-      ]
-    },
-    {
       "login": "HeJiachen-PM",
       "name": "HeJiachen-PM",
       "avatar_url": "https://avatars.githubusercontent.com/u/79301703?v=4",
@@ -213,6 +183,36 @@
       "profile": "https://github.com/JimmFly",
       "contributions": [
         "code"
+      ]
+    },
+    {
+      "login": "mitsuhatu",
+      "name": "mitsuhatu",
+      "avatar_url": "https://avatars.githubusercontent.com/u/110213079?v=4",
+      "profile": "https://github.com/mitsuhatu",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "Austaras",
+      "name": "Austaras",
+      "avatar_url": "https://avatars.githubusercontent.com/u/15013925?v=4",
+      "profile": "https://shockwave.me/",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "uptonking",
+      "name": "Jin Yao",
+      "avatar_url": "https://avatars.githubusercontent.com/u/11391549?v=4",
+      "profile": "https://github.com/uptonking",
+      "contributions": [
+        "code",
+        "doc"
       ]
     },
     {
