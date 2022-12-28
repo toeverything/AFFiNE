@@ -2,6 +2,7 @@
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
 const { dependencies } = require('./package.json');
 const path = require('node:path');
+const printer = require('./scripts/printer').printer;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -32,7 +33,7 @@ const nextConfig = {
   // XXX not test yet
   rewrites: async () => {
     if (process.env.NODE_API_SERVER === 'ac') {
-      console.log('use ac server');
+      printer.info('API request proxy to [AC Server]');
       return [
         {
           source: '/api/:path*',
@@ -40,6 +41,7 @@ const nextConfig = {
         },
       ];
     } else {
+      printer.info('API request proxy to [Standard Server]');
       return [
         {
           source: '/api/:path*',
