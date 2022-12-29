@@ -64,7 +64,7 @@ const Page: NextPageWithLayout = () => {
     }
 
     return ret;
-  }, [currentWorkspace, currentPage, createEditor, setEditor]);
+  }, [currentWorkspace, currentPage, createEditor, setEditor, metaTitle]);
 
   return (
     <>
