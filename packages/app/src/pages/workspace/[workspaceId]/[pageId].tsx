@@ -16,6 +16,7 @@ import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 const StyledEditorContainer = styled('div')(() => {
   return {
     height: 'calc(100vh - 60px)',
@@ -26,6 +27,7 @@ const Page: NextPageWithLayout = () => {
   const editorContainer = useRef<HTMLDivElement>(null);
   const { createEditor, setEditor, currentPage, currentWorkspace } =
     useAppState();
+  const { title: metaTitle } = useCurrentPageMeta() || {};
 
   useEffect(() => {
     const ret = () => {
@@ -41,7 +43,8 @@ const Page: NextPageWithLayout = () => {
       setEditor?.current?.(editor);
       if (currentPage!.isEmpty) {
         const isFirstPage = currentWorkspace?.meta.pageMetas.length === 1;
-        const title = isFirstPage ? 'Welcome to the AFFiNE Alpha' : '';
+        const title =
+          metaTitle || isFirstPage ? 'Welcome to the AFFiNE Alpha' : '';
         const pageId = currentPage!.addBlock({
           flavour: 'affine:page',
           title,

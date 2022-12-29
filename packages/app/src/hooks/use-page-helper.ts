@@ -46,6 +46,7 @@ export const usePageHelper = (): EditorHandlers => {
         }
         currentWorkspace.createPage(pageId);
         currentWorkspace.signals.pageAdded.once(addedPageId => {
+          currentWorkspace.setPageMeta(addedPageId, { title });
           resolve(addedPageId);
         });
       });
