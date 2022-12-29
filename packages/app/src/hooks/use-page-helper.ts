@@ -1,4 +1,4 @@
-import { Workspace } from '@blocksuite/store';
+import { Workspace, uuidv4 } from '@blocksuite/store';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import { PageMeta, useAppState } from '@/providers/app-state-provider';
 import { EditorContainer } from '@blocksuite/editor';
@@ -6,7 +6,10 @@ import { useChangePageMeta } from '@/hooks/use-change-page-meta';
 import { useRouter } from 'next/router';
 
 export type EditorHandlers = {
-  // createPage: (params?: { pageId?: string; title?: string }) => Promise<Page>;
+  createPage: (params?: {
+    pageId?: string;
+    title?: string;
+  }) => Promise<string | null>;
   openPage: (
     pageId: string,
     query?: { [key: string]: string },
@@ -33,6 +36,21 @@ export const usePageHelper = (): EditorHandlers => {
   const { currentWorkspace, editor, currentWorkspaceId } = useAppState();
 
   return {
+    createPage: ({
+      pageId = uuidv4().replaceAll('-', ''),
+      title = '',
+    } = {}) => {
+      return new Promise(resolve => {
+        if (!currentWorkspace) {
+          return resolve(null);
+        }
+        currentWorkspace.createPage(pageId);
+        currentWorkspace.signals.pageAdded.once(addedPageId => {
+          currentWorkspace.setPageMeta(addedPageId, { title });
+          resolve(addedPageId);
+        });
+      });
+    },
     toggleFavoritePage: async pageId => {
       const pageMeta = getPageMeta(currentWorkspace, pageId);
       if (!pageMeta) {

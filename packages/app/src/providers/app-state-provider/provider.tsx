@@ -14,7 +14,6 @@ import type {
 } from './context';
 import { Page, Workspace as StoreWorkspace } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
-import { uuidv4 as uuidv4IdGenerator } from '@blocksuite/store';
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
 });
@@ -151,25 +150,6 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     setState(state => ({ ...state, editor }));
   };
 
-  const createPage = useRef<AppStateContext['createPage']>(() =>
-    Promise.resolve(null)
-  );
-
-  createPage.current = (
-    pageId: string = uuidv4IdGenerator().replaceAll('-', '')
-  ) =>
-    new Promise<string | null>(resolve => {
-      const { currentWorkspace } = state;
-      if (!currentWorkspace) {
-        resolve(null);
-        return;
-      }
-      currentWorkspace.createPage(pageId);
-      currentWorkspace.signals.pageAdded.once(addedPageId => {
-        resolve(addedPageId);
-      });
-    });
-
   useEffect(() => {
     if (!loadWorkspaceHandler) {
       return;
@@ -211,7 +191,6 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       setEditor,
       loadWorkspace: loadWorkspace.current,
       loadPage: loadPage.current,
-      createPage: createPage.current,
     }),
     [state, setState, loadPage, loadWorkspace]
   );

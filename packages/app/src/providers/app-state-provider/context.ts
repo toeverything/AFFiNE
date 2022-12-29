@@ -37,7 +37,6 @@ export interface AppStateContext extends AppStateValue {
   setEditor?: MutableRefObject<((page: EditorContainer) => void) | undefined>;
   loadWorkspace: (workspaceId: string) => Promise<StoreWorkspace | null>;
   loadPage: (pageId: string) => Promise<StorePage | null>;
-  createPage: (pageId?: string) => Promise<string | null>;
 }
 
 export const AppState = createContext<AppStateContext>({
@@ -57,7 +56,6 @@ export const AppState = createContext<AppStateContext>({
   setEditor: undefined,
   loadWorkspace: () => Promise.resolve(null),
   loadPage: () => Promise.resolve(null),
-  createPage: () => Promise.resolve(null),
   synced: false,
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   refreshWorkspacesMeta: () => {},
