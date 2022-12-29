@@ -36,7 +36,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && e.metaKey) {
+      if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
         const selection = window.getSelection();
         if (selection?.toString()) {
           triggerQuickSearchModal(false);
