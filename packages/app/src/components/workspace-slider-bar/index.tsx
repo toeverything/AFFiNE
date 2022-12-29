@@ -67,8 +67,8 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
-  const { createPage, currentWorkspaceId } = useAppState();
-  const { openPage } = usePageHelper();
+  const { currentWorkspaceId } = useAppState();
+  const { openPage, createPage } = usePageHelper();
   const router = useRouter();
 
   const [showTip, setShowTip] = useState(false);
@@ -164,7 +164,7 @@ export const WorkSpaceSliderBar = () => {
           </Link>
           <StyledNewPageButton
             onClick={async () => {
-              const pageId = await createPage?.();
+              const pageId = await createPage();
               if (pageId) {
                 openPage(pageId);
               }
