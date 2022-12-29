@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@affine/data-services": "workspace:@affine/data-services@*",
-    "@blocksuite/blocks": "0.3.0-20221228162706-9576a3a",
-    "@blocksuite/editor": "0.3.0-20221228162706-9576a3a",
+    "@blocksuite/blocks": "0.3.0-20221229073953-c859d99",
+    "@blocksuite/editor": "0.3.0-20221229073953-c859d99",
     "@blocksuite/icons": "^2.0.2",
-    "@blocksuite/store": "0.3.0-20221228162706-9576a3a",
+    "@blocksuite/store": "0.3.0-20221229073953-c859d99",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
