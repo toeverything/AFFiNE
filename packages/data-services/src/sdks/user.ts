@@ -2,7 +2,7 @@ import { client } from '../request';
 
 export interface GetUserByEmailParams {
   email: string;
-  workspaceId: string;
+  workspace_id: string;
 }
 
 export interface User {
