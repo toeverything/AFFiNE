@@ -131,6 +131,7 @@ importers:
 
   packages/data-center:
     specifiers:
+      '@blocksuite/store': 0.3.0-20221228162706-9576a3a
       '@playwright/test': ^1.29.1
       encoding: ^0.1.13
       fake-indexeddb: 4.0.1
@@ -143,6 +144,7 @@ importers:
       y-protocols: ^1.0.5
       yjs: ^13.5.43
     dependencies:
+      '@blocksuite/store': 0.3.0-20221228162706-9576a3a_yjs@13.5.43
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
       idb-keyval: 6.2.0
