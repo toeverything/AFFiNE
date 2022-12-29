@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "encoding": "^0.1.13",
-    "firebase": "^9.13.0",
+    "firebase": "^9.15.0",
+    "idb-keyval": "^6.2.0",
     "ky": "^0.33.0",
     "lib0": "^0.2.58",
     "swr": "^2.0.0",
