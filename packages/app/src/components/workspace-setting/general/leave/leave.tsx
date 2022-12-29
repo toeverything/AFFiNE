@@ -7,7 +7,7 @@ import {
 } from './style';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { leaveWorkspace } from '@affine/data-services';
+import { leaveWorkspace } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
 

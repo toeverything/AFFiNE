@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { getWorkspaces } from '@affine/data-services';
+import { getWorkspaces } from '@affine/datacenter';
 import { AppState, AppStateContext } from './context';
 import type {
   AppStateValue,

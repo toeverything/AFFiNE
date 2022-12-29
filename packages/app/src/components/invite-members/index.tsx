@@ -4,7 +4,7 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { useState } from 'react';
-import { inviteMember, getUserByEmail } from '@affine/data-services';
+import { inviteMember, getUserByEmail } from '@affine/datacenter';
 import { Avatar } from '@mui/material';
 interface LoginModalProps {
   open: boolean;

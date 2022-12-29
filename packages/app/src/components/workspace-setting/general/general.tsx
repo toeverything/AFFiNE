@@ -9,7 +9,7 @@ import { StyledSettingH2 } from '../style';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
-import { uploadBlob, Workspace, WorkspaceType } from '@affine/data-services';
+import { uploadBlob, Workspace, WorkspaceType } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { WorkspaceDelete } from './delete';

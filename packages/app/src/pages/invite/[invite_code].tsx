@@ -1,7 +1,7 @@
 import { styled } from '@/styles';
 import { Empty } from '@/ui/empty';
 import { Avatar } from '@mui/material';
-import { acceptInviting } from '@affine/data-services';
+import { acceptInviting } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
