@@ -1,6 +1,6 @@
 {
-  "name": "@pathfinder/app",
-  "version": "0.1.0",
+  "name": "@affine/app",
+  "version": "0.3.0",
   "scripts": {
     "dev": "next dev -p 8080",
     "dev:ac": "NODE_API_SERVER=ac next dev -p 8080",
@@ -10,10 +10,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.3.0-20221225075400-9710eea",
-    "@blocksuite/editor": "0.3.0-20221225075400-9710eea",
+    "@affine/data-services": "workspace:@affine/data-services@*",
+    "@blocksuite/blocks": "0.3.0-20221228162706-9576a3a",
+    "@blocksuite/editor": "0.3.0-20221228162706-9576a3a",
     "@blocksuite/icons": "^2.0.2",
-    "@blocksuite/store": "0.3.0-20221225075400-9710eea",
+    "@blocksuite/store": "0.3.0-20221228162706-9576a3a",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
@@ -23,8 +24,7 @@
     "@mui/base": "^5.0.0-alpha.87",
     "@mui/icons-material": "^5.10.9",
     "@mui/material": "^5.8.6",
-    "@pathfinder/data-services": "workspace:@pathfinder/data-services@*",
-    "@toeverything/pathfinder-logger": "workspace:@pathfinder/logger@*",
+    "@toeverything/pathfinder-logger": "workspace:@affine/logger@*",
     "cmdk": "^0.1.20",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
@@ -44,6 +44,7 @@
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
+    "chalk-next": "^6.1.5",
     "eslint": "8.22.0",
     "eslint-config-next": "12.3.1",
     "eslint-config-prettier": "^8.5.0",

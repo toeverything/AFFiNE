@@ -1,6 +1,6 @@
 import { createContext, MutableRefObject, useContext } from 'react';
-import type { Workspace } from '@pathfinder/data-services';
-import { AccessTokenMessage } from '@pathfinder/data-services';
+import type { Workspace } from '@affine/data-services';
+import { AccessTokenMessage } from '@affine/data-services';
 import type {
   Page as StorePage,
   Workspace as StoreWorkspace,
@@ -37,7 +37,6 @@ export interface AppStateContext extends AppStateValue {
   setEditor?: MutableRefObject<((page: EditorContainer) => void) | undefined>;
   loadWorkspace: (workspaceId: string) => Promise<StoreWorkspace | null>;
   loadPage: (pageId: string) => Promise<StorePage | null>;
-  createPage: (pageId?: string) => Promise<string | null>;
 }
 
 export const AppState = createContext<AppStateContext>({
@@ -57,7 +56,6 @@ export const AppState = createContext<AppStateContext>({
   setEditor: undefined,
   loadWorkspace: () => Promise.resolve(null),
   loadPage: () => Promise.resolve(null),
-  createPage: () => Promise.resolve(null),
   synced: false,
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   refreshWorkspacesMeta: () => {},

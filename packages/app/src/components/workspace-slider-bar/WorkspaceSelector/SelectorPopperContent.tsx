@@ -12,7 +12,7 @@ import {
 } from './WorkspaceItem';
 import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useCallback, useEffect, useState } from 'react';
-import { getWorkspaceDetail, WorkspaceType } from '@pathfinder/data-services';
+import { getWorkspaceDetail, WorkspaceType } from '@affine/data-services';
 import { useModal } from '@/providers/global-modal-provider';
 
 export type WorkspaceDetails = Record<

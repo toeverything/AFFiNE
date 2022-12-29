@@ -5,7 +5,7 @@ importers:
   .:
     specifiers:
       '@jest/globals': ^29.3.1
-      '@playwright/test': ^1.28.1
+      '@playwright/test': ^1.29.1
       '@types/eslint': ^8.4.10
       '@types/node': ^18.11.17
       '@typescript-eslint/eslint-plugin': ^5.47.0
@@ -23,7 +23,7 @@ importers:
       typescript: ^4.9.3
     devDependencies:
       '@jest/globals': 29.3.1
-      '@playwright/test': 1.28.1
+      '@playwright/test': 1.29.1
       '@types/eslint': 8.4.10
       '@types/node': 18.11.17
       '@typescript-eslint/eslint-plugin': 5.47.0_dvmqlqg4r5ba7a4i47pzcunkky
@@ -42,10 +42,11 @@ importers:
 
   packages/app:
     specifiers:
-      '@blocksuite/blocks': 0.3.0-20221225075400-9710eea
-      '@blocksuite/editor': 0.3.0-20221225075400-9710eea
+      '@affine/data-services': workspace:@affine/data-services@*
+      '@blocksuite/blocks': 0.3.0-20221228162706-9576a3a
+      '@blocksuite/editor': 0.3.0-20221228162706-9576a3a
       '@blocksuite/icons': ^2.0.2
-      '@blocksuite/store': 0.3.0-20221225075400-9710eea
+      '@blocksuite/store': 0.3.0-20221228162706-9576a3a
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -55,11 +56,11 @@ importers:
       '@mui/base': ^5.0.0-alpha.87
       '@mui/icons-material': ^5.10.9
       '@mui/material': ^5.8.6
-      '@pathfinder/data-services': workspace:@pathfinder/data-services@*
-      '@toeverything/pathfinder-logger': workspace:@pathfinder/logger@*
+      '@toeverything/pathfinder-logger': workspace:@affine/logger@*
       '@types/node': 18.7.18
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
+      chalk-next: ^6.1.5
       cmdk: ^0.1.20
       css-spring: ^4.1.0
       dayjs: ^1.11.7
@@ -81,10 +82,11 @@ importers:
       typescript: 4.8.3
       yjs: ^13.5.43
     dependencies:
-      '@blocksuite/blocks': 0.3.0-20221225075400-9710eea_yjs@13.5.43
-      '@blocksuite/editor': 0.3.0-20221225075400-9710eea_yjs@13.5.43
+      '@affine/data-services': link:../data-services
+      '@blocksuite/blocks': 0.3.0-20221228162706-9576a3a_yjs@13.5.43
+      '@blocksuite/editor': 0.3.0-20221228162706-9576a3a_yjs@13.5.43
       '@blocksuite/icons': 2.0.2_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.3.0-20221225075400-9710eea_yjs@13.5.43
+      '@blocksuite/store': 0.3.0-20221228162706-9576a3a_yjs@13.5.43
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -94,7 +96,6 @@ importers:
       '@mui/base': 5.0.0-alpha.101_7ey2zzynotv32rpkwno45fsx4e
       '@mui/icons-material': 5.10.9_5fncb4nagb4cvvcnwamw2rozfa
       '@mui/material': 5.10.9_af5ln35zuaotaffazii6n6bke4
-      '@pathfinder/data-services': link:../data-services
       '@toeverything/pathfinder-logger': link:../logger
       cmdk: 0.1.20_7ey2zzynotv32rpkwno45fsx4e
       css-spring: 4.1.0
@@ -114,6 +115,7 @@ importers:
       '@types/node': 18.7.18
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
+      chalk-next: 6.1.5
       eslint: 8.22.0
       eslint-config-next: 12.3.1_76twfck5d7crjqrmw4yltga7zm
       eslint-config-prettier: 8.5.0_eslint@8.22.0
@@ -123,7 +125,7 @@ importers:
 
   packages/data-services:
     specifiers:
-      axios: ^1.2.0
+      '@playwright/test': ^1.29.1
       encoding: ^0.1.13
       firebase: ^9.13.0
       ky: ^0.33.0
@@ -132,7 +134,6 @@ importers:
       typescript: ^4.8.4
       y-protocols: ^1.0.5
     dependencies:
-      axios: 1.2.0
       encoding: 0.1.13
       firebase: 9.13.0_encoding@0.1.13
       ky: 0.33.0
@@ -140,6 +141,7 @@ importers:
       swr: 2.0.0
       y-protocols: 1.0.5
     devDependencies:
+      '@playwright/test': 1.29.1
       typescript: 4.9.3
 
   packages/logger:
@@ -523,10 +525,10 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@blocksuite/blocks/0.3.0-20221225075400-9710eea_yjs@13.5.43:
-    resolution: {integrity: sha512-/8BChYFh5Pb9zDWCq9ysmpZGPe7WHbcz0lByFd0JE+lwA5smZ5cQEPz2weS9EGG21VCUuY7g7GtZ2Sm7TQtR1g==}
+  /@blocksuite/blocks/0.3.0-20221228162706-9576a3a_yjs@13.5.43:
+    resolution: {integrity: sha512-gBwqynM0WQuUbsJbazBKIe+jkyoXYZPalYQlz0f1TT51kXmvyhQ1TlvsnZx94aW1JwT2st3z65Q197MmfZ8jSw==}
     dependencies:
-      '@blocksuite/store': 0.3.0-20221225075400-9710eea_yjs@13.5.43
+      '@blocksuite/store': 0.3.0-20221228162706-9576a3a_yjs@13.5.43
       '@tldraw/intersect': 1.8.0
       highlight.js: 11.7.0
       hotkeys-js: 3.10.1
@@ -541,11 +543,11 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/editor/0.3.0-20221225075400-9710eea_yjs@13.5.43:
-    resolution: {integrity: sha512-SI1o446Gl362ZLgDYh1eb5gqG7ifcSU5J6vqp5gDmcu+PvUVXFx7SILZ+p5zzwNQNPCL1oQbnlC5HhpmZkP8qQ==}
+  /@blocksuite/editor/0.3.0-20221228162706-9576a3a_yjs@13.5.43:
+    resolution: {integrity: sha512-J2D2RpAqBWRH3Gmtpzr3nKTES80LmfAVcnkB3zsA7j4bsK30RZhEAAwjDWe9STcCAfN/vVPbEFkJksrI+6+Xjg==}
     dependencies:
-      '@blocksuite/blocks': 0.3.0-20221225075400-9710eea_yjs@13.5.43
-      '@blocksuite/store': 0.3.0-20221225075400-9710eea_yjs@13.5.43
+      '@blocksuite/blocks': 0.3.0-20221228162706-9576a3a_yjs@13.5.43
+      '@blocksuite/store': 0.3.0-20221228162706-9576a3a_yjs@13.5.43
       lit: 2.5.0
       marked: 4.2.5
       turndown: 7.1.1
@@ -566,8 +568,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/store/0.3.0-20221225075400-9710eea_yjs@13.5.43:
-    resolution: {integrity: sha512-24Gv9u2jknJuGPOhkuV46mKXl13sntuWYSN8//FIOotqLXfF3hFW6+w8RBvSqMxTGRpl3wC9dyCIyJ5oBmpYvA==}
+  /@blocksuite/store/0.3.0-20221228162706-9576a3a_yjs@13.5.43:
+    resolution: {integrity: sha512-uMbLD+zfhHasDwCmE1ZTtFtK9GNwN37Iaugbj/rtdwhQbdE6qfKHidSY0UzwKtNrQaUdAmp2IpnBpQ0vgk0ArQ==}
     peerDependencies:
       yjs: ^13
     dependencies:
@@ -2037,13 +2039,13 @@ packages:
       fastq: 1.13.0
     dev: true
 
-  /@playwright/test/1.28.1:
-    resolution: {integrity: sha512-xN6spdqrNlwSn9KabIhqfZR7IWjPpFK1835tFNgjrlysaSezuX8PYUwaz38V/yI8TJLG9PkAMEXoHRXYXlpTPQ==}
+  /@playwright/test/1.29.1:
+    resolution: {integrity: sha512-iQxk2DX5U9wOGV3+/Jh9OHPsw5H3mleUL2S4BgQuwtlAfK3PnKvn38m4Rg9zIViGHVW24opSm99HQm/UFLEy6w==}
     engines: {node: '>=14'}
     hasBin: true
     dependencies:
       '@types/node': 18.11.17
-      playwright-core: 1.28.1
+      playwright-core: 1.29.1
     dev: true
 
   /@popperjs/core/2.11.6:
@@ -2824,24 +2826,18 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /asynckit/0.4.0:
-    resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
-    dev: false
-
   /axe-core/4.4.3:
     resolution: {integrity: sha512-32+ub6kkdhhWick/UjvEwRchgoetXqTK14INLqbGm5U2TzBkBNF3nQtLYm8ovxSkQWArjEQvftCKryjZaATu3w==}
     engines: {node: '>=4'}
     dev: true
 
-  /axios/1.2.0:
-    resolution: {integrity: sha512-zT7wZyNYu3N5Bu0wuZ6QccIf93Qk1eV8LOewxgjOZFd2DenOs98cJ7+Y6703d0wkaXGY6/nZd4EweJaHz9uzQw==}
+  /axios/0.21.4:
+    resolution: {integrity: sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==}
     dependencies:
       follow-redirects: 1.15.2
-      form-data: 4.0.0
-      proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
-    dev: false
+    dev: true
 
   /axobject-query/2.2.0:
     resolution: {integrity: sha512-Td525n+iPOOyUQIeBfcASuG6uJsDOITl7Mds5gFyerkWiX7qhUTdYUBlSgNMyVqtSJqwpt1kXGLdUt6SykLMRA==}
@@ -3031,6 +3027,18 @@ packages:
   /caniuse-lite/1.0.30001419:
     resolution: {integrity: sha512-aFO1r+g6R7TW+PNQxKzjITwLOyDhVRLjW0LcwS/HCZGUUKTGNp9+IwLC4xyDSZBygVL/mxaFR3HIV6wEKQuSzw==}
 
+  /chalk-next/6.1.5:
+    resolution: {integrity: sha512-OAx9F3vSk18qpfCohk0849/j3GyaoIpv8eXjmpdbmLZt+5+sWYq8xwt3B5ue25irLcxFcLL2hAbxxHSsBxupbw==}
+    engines: {node: '>=10'}
+    dependencies:
+      ansi-styles: 4.3.0
+      axios: 0.21.4
+      fs: 0.0.1-security
+      supports-color: 7.2.0
+    transitivePeerDependencies:
+      - debug
+    dev: true
+
   /chalk/2.4.2:
     resolution: {integrity: sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ==}
     engines: {node: '>=4'}
@@ -3163,13 +3171,6 @@ packages:
   /colorette/2.0.19:
     resolution: {integrity: sha512-3tlv/dIP7FWvj3BsbHrGLJ6l/oKh1O3TcgBqMn+yyCagOxc23fyzDS6HypQbgxWbkpDnf52p1LuR4eWDQ/K9WQ==}
     dev: true
-
-  /combined-stream/1.0.8:
-    resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
-    engines: {node: '>= 0.8'}
-    dependencies:
-      delayed-stream: 1.0.0
-    dev: false
 
   /command-score/0.1.2:
     resolution: {integrity: sha512-VtDvQpIJBvBatnONUsPzXYFVKQQAhuf3XTNOAsdBxCNO/QCtUUd8LSgjn0GVarBkCad6aJCZfXgrjYbl/KRr7w==}
@@ -3311,11 +3312,6 @@ packages:
     dependencies:
       has-property-descriptors: 1.0.0
       object-keys: 1.1.1
-
-  /delayed-stream/1.0.0:
-    resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
-    engines: {node: '>=0.4.0'}
-    dev: false
 
   /detect-newline/3.1.0:
     resolution: {integrity: sha512-TLz+x/vEXm/Y7P7wn1EJFNLxYpUD4TgMosxY6fAVJUnJMbupHBOncxyWUG9OpTaH9EBD7uFI5LfEgmMOc54DsA==}
@@ -4229,24 +4225,19 @@ packages:
     peerDependenciesMeta:
       debug:
         optional: true
-    dev: false
+    dev: true
 
   /form-data-encoder/2.1.4:
     resolution: {integrity: sha512-yDYSgNMraqvnxiEXO4hi88+YZxaHC6QKzb5N84iRCTDeRO7ZALpir/lVmf/uXUhnwUr2O4HU8s/n6x+yNjQkHw==}
     engines: {node: '>= 14.17'}
     dev: true
 
-  /form-data/4.0.0:
-    resolution: {integrity: sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==}
-    engines: {node: '>= 6'}
-    dependencies:
-      asynckit: 0.4.0
-      combined-stream: 1.0.8
-      mime-types: 2.1.35
-    dev: false
-
   /fs.realpath/1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
+
+  /fs/0.0.1-security:
+    resolution: {integrity: sha512-3XY9e1pP0CVEUCdj5BmfIZxRBTSDycnbqhIOGec9QYtmVH2fbLpj86CFWkrNOkt/Fvty4KZG5lTglL9j/gJ87w==}
+    dev: true
 
   /fsevents/2.3.2:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
@@ -5523,18 +5514,6 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /mime-db/1.52.0:
-    resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
-    engines: {node: '>= 0.6'}
-    dev: false
-
-  /mime-types/2.1.35:
-    resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
-    engines: {node: '>= 0.6'}
-    dependencies:
-      mime-db: 1.52.0
-    dev: false
-
   /mimic-fn/2.1.0:
     resolution: {integrity: sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==}
     engines: {node: '>=6'}
@@ -5956,8 +5935,8 @@ packages:
       find-up: 4.1.0
     dev: true
 
-  /playwright-core/1.28.1:
-    resolution: {integrity: sha512-3PixLnGPno0E8rSBJjtwqTwJe3Yw72QwBBBxNoukIj3lEeBNXwbNiKrNuB1oyQgTBw5QHUhNO3SteEtHaMK6ag==}
+  /playwright-core/1.29.1:
+    resolution: {integrity: sha512-20Ai3d+lMkWpI9YZYlxk8gxatfgax5STW8GaMozAHwigLiyiKQrdkt7gaoT9UQR8FIVDg6qVXs9IoZUQrDjIIg==}
     engines: {node: '>=14'}
     hasBin: true
     dev: true
@@ -6052,10 +6031,6 @@ packages:
       '@protobufjs/utf8': 1.1.0
       '@types/node': 18.11.17
       long: 5.2.0
-    dev: false
-
-  /proxy-from-env/1.1.0:
-    resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
     dev: false
 
   /punycode/2.1.1:
