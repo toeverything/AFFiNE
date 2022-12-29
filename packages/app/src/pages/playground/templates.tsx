@@ -40,18 +40,20 @@ const All = () => {
     const page = currentWorkspace?.getPage(pageId);
 
     const title = template.name;
-    currentWorkspace?.setPageMeta(page?.id, { title });
-    if (page && page.root === null) {
-      setTimeout(() => {
-        const editor = document.querySelector('editor-container');
-        if (editor) {
-          const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
-          // TODO blocksuite should offer a method to import markdown from store
-          editor.clipboard.importMarkdown(template.source, `${groupId}`);
-          page.resetHistory();
-          editor.requestUpdate();
-        }
-      }, 300);
+    if (page) {
+      currentWorkspace?.setPageMeta(page.id, { title });
+      if (page && page.root === null) {
+        setTimeout(() => {
+          const editor = document.querySelector('editor-container');
+          if (editor) {
+            const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
+            // TODO blocksuite should offer a method to import markdown from store
+            editor.clipboard.importMarkdown(template.source, `${groupId}`);
+            page.resetHistory();
+            editor.requestUpdate();
+          }
+        }, 300);
+      }
     }
   };
   const _handleAppleTemplate = async function (template: Template) {
@@ -62,6 +64,9 @@ const All = () => {
     }
   };
   const _handleAppleTemplateFromRemoteUrl = async () => {
+    if (!window.showOpenFilePicker) {
+      return;
+    }
     const arrFileHandle = await window.showOpenFilePicker({
       types: [
         {
