@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@affine/data-services": "workspace:*",
-    "@blocksuite/blocks": "0.3.0-20221225075400-9710eea",
-    "@blocksuite/editor": "0.3.0-20221225075400-9710eea",
+    "@blocksuite/blocks": "0.3.0-20221228162706-9576a3a",
+    "@blocksuite/editor": "0.3.0-20221228162706-9576a3a",
     "@blocksuite/icons": "^2.0.2",
     "@blocksuite/store": "0.3.0-20221228162706-9576a3a",
     "@emotion/css": "^11.10.0",
