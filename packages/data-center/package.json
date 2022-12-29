@@ -25,6 +25,7 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
+    "@blocksuite/store": "0.3.0-20221228162706-9576a3a",
     "encoding": "^0.1.13",
     "firebase": "^9.15.0",
     "idb-keyval": "^6.2.0",

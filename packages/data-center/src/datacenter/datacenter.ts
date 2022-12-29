@@ -1,4 +1,4 @@
-import { Doc } from 'yjs';
+import { Workspace } from '@blocksuite/store';
 
 import type { BaseProvider } from './provider/index.js';
 import { MemoryProvider } from './provider/index.js';
@@ -6,7 +6,7 @@ import { getKVConfigure } from './store.js';
 
 export class DataCenter {
   private readonly _providers = new Map<string, typeof BaseProvider>();
-  private readonly _workspaces = new Map<string, Promise<Doc | undefined>>();
+  private readonly _workspaces = new Map<string, Promise<Workspace>>();
   private readonly _config;
 
   static async init(): Promise<DataCenter> {
@@ -24,25 +24,34 @@ export class DataCenter {
     this._providers.set(provider.id, provider);
   }
 
-  private async _initWorkspace(id: string): Promise<Doc> {
-    const workspace = new Doc();
-
-    const providerId = await this._config.get(`workspace:${id}:provider`);
-    if (this._providers.has(providerId)) {
+  private async _initWorkspace(
+    id: string,
+    workspace: Workspace,
+    providerId: string
+  ): Promise<Workspace> {
+    const providerKey = `workspace:${id}:provider`;
+    const providerValue = await this._config.get(providerKey);
+    if (this._providers.has(providerValue || providerId)) {
+      if (!providerValue) {
+        await this._config.set(providerKey, providerId);
+      }
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const Provider = this._providers.get(providerId)!;
       const provider = new Provider();
-      provider.init(getKVConfigure(id));
+      await provider.init(getKVConfigure(id), workspace);
     }
     return workspace;
   }
 
-  async getWorkspace(id: string): Promise<Doc | undefined> {
+  async initWorkspace(
+    id: string,
+    workspace: Workspace,
+    provider = 'memory'
+  ): Promise<Workspace> {
     if (!this._workspaces.has(id)) {
-      const workspace = this._initWorkspace(id);
-      this._workspaces.set(id, workspace);
+      this._workspaces.set(id, this._initWorkspace(id, workspace, provider));
     }
 
-    return this._workspaces.get(id);
+    return this._workspaces.get(id)!;
   }
 }

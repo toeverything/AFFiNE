@@ -44,4 +44,11 @@ const scopedIndexedDB = () => {
   };
 };
 
-export const getKVConfigure = scopedIndexedDB();
+let lazyKVConfigure: ReturnType<typeof scopedIndexedDB> | undefined = undefined;
+
+export const getKVConfigure = (scope: string) => {
+  if (!lazyKVConfigure) {
+    lazyKVConfigure = scopedIndexedDB();
+  }
+  return lazyKVConfigure(scope);
+};
