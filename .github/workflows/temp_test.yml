@@ -74,12 +74,6 @@ jobs:
         with:
           path: ./packages/app/.next
 
-      - name: Create changelog
-        id: changesets
-        uses: changesets/action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   lint:
     name: Lint and E2E Test
     runs-on: ubuntu-latest
