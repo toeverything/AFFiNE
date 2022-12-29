@@ -1,4 +1,4 @@
-import { ReactElement, useRef } from 'react';
+import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
 import exampleMarkdown1 from '@/templates/Welcome-to-the-AFFiNE-Alpha.md';
 import exampleMarkdown2 from '@/templates/AFFiNE-Docs.md';
@@ -34,7 +34,6 @@ const TEMPLATES: Template[] = [
 const All = () => {
   const { openPage, createPage } = usePageHelper();
   const { currentWorkspace } = useAppState();
-  const selectFile = useRef<HTMLInputElement>(null);
   const _applyTemplate = function (pageId: string, template: Template) {
     const page = currentWorkspace?.getPage(pageId);
 
