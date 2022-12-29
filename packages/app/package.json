@@ -10,7 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@affine/data-services": "workspace:*",
+    "@affine/datacenter": "workspace:*",
     "@blocksuite/blocks": "0.3.1",
     "@blocksuite/editor": "0.3.1",
     "@blocksuite/icons": "^2.0.2",

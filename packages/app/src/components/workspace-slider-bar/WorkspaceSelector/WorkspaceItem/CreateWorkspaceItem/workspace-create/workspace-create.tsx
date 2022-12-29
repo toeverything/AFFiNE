@@ -1,4 +1,4 @@
-import { createWorkspace, uploadBlob } from '@affine/data-services';
+import { createWorkspace, uploadBlob } from '@affine/datacenter';
 import Modal from '@/ui/modal';
 import Input from '@/ui/input';
 import {

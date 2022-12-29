@@ -1,9 +1,5 @@
 import { useEffect } from 'react';
-import {
-  AccessTokenMessage,
-  getWorkspaces,
-  token,
-} from '@affine/data-services';
+import { AccessTokenMessage, getWorkspaces, token } from '@affine/datacenter';
 import { LoadWorkspaceHandler } from '../context';
 
 export const useSyncData = ({

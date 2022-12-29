@@ -1,6 +1,6 @@
 import { createContext, MutableRefObject, useContext } from 'react';
-import type { Workspace } from '@affine/data-services';
-import { AccessTokenMessage } from '@affine/data-services';
+import type { Workspace } from '@affine/datacenter';
+import { AccessTokenMessage } from '@affine/datacenter';
 import type {
   Page as StorePage,
   Workspace as StoreWorkspace,

@@ -44,7 +44,7 @@ importers:
 
   packages/app:
     specifiers:
-      '@affine/data-services': workspace:*
+      '@affine/datacenter': workspace:*
       '@blocksuite/blocks': 0.3.1
       '@blocksuite/editor': 0.3.1
       '@blocksuite/icons': ^2.0.2
@@ -86,7 +86,7 @@ importers:
       typescript: 4.8.3
       yjs: ^13.5.44
     dependencies:
-      '@affine/data-services': link:../data-services
+      '@affine/datacenter': link:../data-center
       '@blocksuite/blocks': 0.3.1_yjs@13.5.44
       '@blocksuite/editor': 0.3.1_yjs@13.5.44
       '@blocksuite/icons': 2.0.4_w5j4k42lgipnm43s3brx6h3c34
@@ -129,7 +129,7 @@ importers:
       raw-loader: 4.0.2
       typescript: 4.8.3
 
-  packages/data-services:
+  packages/data-center:
     specifiers:
       '@playwright/test': ^1.29.1
       encoding: ^0.1.13
