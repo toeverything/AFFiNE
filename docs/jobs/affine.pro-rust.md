@@ -28,3 +28,17 @@ We, `AFFiNE` believe in shaping a world semantically connected through block com
 - Experience in using a collaborative algorithm on your own or participating in projects
 - Experienced in working with a globally distributed team.
 - Enthusiastic about AFFiNE products as a user or contributor.
+
+### What we offer:
+
+- $2800 vouchers for latest generation MacBook Pr or working equipment of your choice.
+- Public holidays and paid annual leave starting at 12 days.
+- Free lunch, unlimited drinks and snacks.
+- Free English language lessons (including free IELTS test) open to all employees.
+- Become a maintainer of great open source projects and use Copilot powered by GitHub for free if you want.
+
+### Contact us:
+
+Interested? Send us your CV to [contact@toeverything.info](mailto:contact@toeverything.info).
+
+Feel free to include any extra information (GitHub link, previous projects, personal blog etc.).
