@@ -11,7 +11,6 @@ interface Template {
 }
 const TemplateItemContainer = styled('div')(() => {
   return {
-    color: 'blue',
     padding: '10px 15px',
     borderBottom: '1px solid #eee',
     cursor: 'pointer',
@@ -34,8 +33,8 @@ const TEMPLATES: Template[] = [
 
 const All = () => {
   const { openPage, createPage } = usePageHelper();
-  const { createEditor, setEditor, currentWorkspace } = useAppState();
-
+  const { currentWorkspace } = useAppState();
+  const selectFile = useRef<HTMLInputElement>(null);
   const _applyTemplate = function (pageId: string, template: Template) {
     const page = currentWorkspace?.getPage(pageId);
 
@@ -55,11 +54,30 @@ const All = () => {
     }
   };
   const _handleAppleTemplate = async function (template: Template) {
-    console.log(template);
     const pageId = await createPage();
     if (pageId) {
       openPage(pageId);
       _applyTemplate(pageId, template);
+    }
+  };
+  const _handleAppleTemplateFromRemoteUrl = async () => {
+    const arrFileHandle = await window.showOpenFilePicker({
+      types: [
+        {
+          accept: {
+            'image/*': ['.md'],
+          },
+        },
+      ],
+      multiple: false,
+    });
+    for (const fileHandle of arrFileHandle) {
+      const file = await fileHandle.getFile();
+      const text = await file.text();
+      _handleAppleTemplate({
+        name: file.name,
+        source: text,
+      });
     }
   };
 
@@ -73,10 +91,17 @@ const All = () => {
               onClick={() => _handleAppleTemplate(template)}
             >
               {template.name}
-              <button style={{ marginLeft: '20px' }}> Apply Template</button>
+              <a style={{ marginLeft: '20px' }}> Apply Template</a>
             </TemplateItemContainer>
           );
         })}
+        <TemplateItemContainer
+          onClick={() => _handleAppleTemplateFromRemoteUrl()}
+        >
+          <a style={{ marginLeft: '20px' }}>
+            Apply Template From Select Markdown File
+          </a>
+        </TemplateItemContainer>
       </div>
     </div>
   );
