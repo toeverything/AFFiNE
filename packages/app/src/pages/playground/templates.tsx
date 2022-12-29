@@ -1,6 +1,8 @@
 import { ReactElement, useRef } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
-import exampleMarkdown from '@/templates/Welcome-to-the-AFFiNE-Alpha.md';
+import exampleMarkdown1 from '@/templates/Welcome-to-the-AFFiNE-Alpha.md';
+import exampleMarkdown2 from '@/templates/AFFiNE-Docs.md';
+
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider/context';
 interface Template {
@@ -9,6 +11,7 @@ interface Template {
 }
 const TemplateItemContainer = styled('div')(() => {
   return {
+    color: 'blue',
     padding: '10px 15px',
     borderBottom: '1px solid #eee',
     cursor: 'pointer',
@@ -20,16 +23,12 @@ const TemplateItemContainer = styled('div')(() => {
 import { styled } from '@/styles';
 const TEMPLATES: Template[] = [
   {
-    name: 'Template xx',
-    source: exampleMarkdown,
+    name: 'Welcome-to-the-AFFiNE-Alpha.md',
+    source: exampleMarkdown1,
   },
   {
-    name: 'Template xx1',
-    source: exampleMarkdown,
-  },
-  {
-    name: 'Template xx2',
-    source: exampleMarkdown,
+    name: 'AFFiNE-Docs.md',
+    source: exampleMarkdown2,
   },
 ];
 
@@ -45,10 +44,18 @@ const All = () => {
     if (page && page.root === null) {
       // console.log(page);
       // const pageBlockId = page.addBlock({ flavour: 'affine:page' });
-      // const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
+      //
       // page.addBlock({ flavour: 'affine:paragraph' });
-      // page.resetHistory();
-      // page.setBlockContent(groupId, template.source);
+      //
+      setTimeout(() => {
+        const editor = createEditor?.current?.(page!);
+        if (editor) {
+          const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
+
+          editor.clipboard.importMarkdown(template.source, `${groupId}`);
+          page.resetHistory();
+        }
+      }, 2000);
     }
   };
   const _handleAppleTemplate = async function (template: Template) {
@@ -70,7 +77,7 @@ const All = () => {
               onClick={() => _handleAppleTemplate(template)}
             >
               {template.name}
-              <a style={{ marginLeft: '20px' }}> New Page by this Template</a>
+              <button style={{ marginLeft: '20px' }}> Apply Template</button>
             </TemplateItemContainer>
           );
         })}
