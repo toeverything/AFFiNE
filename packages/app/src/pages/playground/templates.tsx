@@ -42,20 +42,16 @@ const All = () => {
     const title = template.name;
     currentWorkspace?.setPageMeta(page!.id, { title });
     if (page && page.root === null) {
-      // console.log(page);
-      // const pageBlockId = page.addBlock({ flavour: 'affine:page' });
-      //
-      // page.addBlock({ flavour: 'affine:paragraph' });
-      //
       setTimeout(() => {
-        const editor = createEditor?.current?.(page!);
+        const editor = document.querySelector('editor-container');
         if (editor) {
           const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
-
+          // TODO blocksuite should offer a method to import markdown from store
           editor.clipboard.importMarkdown(template.source, `${groupId}`);
           page.resetHistory();
+          editor.requestUpdate();
         }
-      }, 2000);
+      }, 300);
     }
   };
   const _handleAppleTemplate = async function (template: Template) {
