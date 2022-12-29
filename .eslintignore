@@ -1,4 +1,6 @@
 **/webpack.config.js
 **/jest.config.js
+**/scripts/*.js
 **/node_modules/**
 .github/**
+**/__tests__/**

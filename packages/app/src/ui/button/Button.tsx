@@ -3,7 +3,7 @@ import { StyledButton } from './styles';
 
 import { ButtonProps } from './interface';
 import { getSize } from './utils';
-import { Loading } from './loading';
+import { Loading } from './Loading';
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
