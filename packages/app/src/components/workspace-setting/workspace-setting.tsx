@@ -307,7 +307,7 @@ const PublishPage = ({ workspace }: { workspace: Workspace }) => {
   };
   const copyUrl = () => {
     navigator.clipboard.writeText(shareUrl);
-    toast('Copied');
+    toast('Copied url to clipboard');
   };
   return (
     <div>
