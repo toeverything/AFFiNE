@@ -9,7 +9,7 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
     const box = await switcher.boundingBox();
     expect(box?.x).not.toBeUndefined();
 
-    // mouse hover trigger animation for showing full switcher
+    //  mouse hover trigger animation for showing full switcher
     // await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
     await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
 
