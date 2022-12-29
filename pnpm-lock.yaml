@@ -62,6 +62,7 @@ importers:
       '@types/node': 18.7.18
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
+      '@types/wicg-file-system-access': ^2020.9.5
       chalk-next: ^6.1.5
       cmdk: ^0.1.20
       css-spring: ^4.1.0
@@ -117,6 +118,7 @@ importers:
       '@types/node': 18.7.18
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
+      '@types/wicg-file-system-access': 2020.9.5
       chalk-next: 6.1.5
       eslint: 8.22.0
       eslint-config-next: 12.3.1_76twfck5d7crjqrmw4yltga7zm
@@ -2718,6 +2720,10 @@ packages:
   /@types/trusted-types/2.0.2:
     resolution: {integrity: sha512-F5DIZ36YVLE+PN+Zwws4kJogq47hNgX3Nx6WyDJ3kcplxyke3XIzB8uK5n/Lpm1HBsbGzd6nmGehL8cPekP+Tg==}
     dev: false
+
+  /@types/wicg-file-system-access/2020.9.5:
+    resolution: {integrity: sha512-UYK244awtmcUYQfs7FR8710MJcefL2WvkyHMjA8yJzxd1mo0Gfn88sRZ1Bls7hiUhA2w7ne1gpJ9T5g3G0wOyA==}
+    dev: true
 
   /@types/yargs-parser/21.0.0:
     resolution: {integrity: sha512-iO9ZQHkZxHn4mSakYV0vFHAVDyEOIJQrV2uZ06HxEPcx+mt8swXoZHIbaaJ2crJYFfErySgktuTZ3BeLz+XmFA==}
