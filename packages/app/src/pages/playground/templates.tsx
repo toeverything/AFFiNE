@@ -5,12 +5,14 @@ import exampleMarkdown2 from '@/templates/AFFiNE-Docs.md';
 
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider/context';
+import { Button } from '@/ui/button';
 interface Template {
   name: string;
   source: string;
 }
 const TemplateItemContainer = styled('div')(() => {
   return {
+    color: 'blue',
     padding: '10px 15px',
     borderBottom: '1px solid #eee',
     cursor: 'pointer',
@@ -83,6 +85,7 @@ const All = () => {
   return (
     <div style={{ padding: '50px' }}>
       <div>
+        <h2>Templates</h2>
         {TEMPLATES.map(template => {
           return (
             <TemplateItemContainer
@@ -90,17 +93,15 @@ const All = () => {
               onClick={() => _handleAppleTemplate(template)}
             >
               {template.name}
-              <a style={{ marginLeft: '20px' }}> Apply Template</a>
+              <Button style={{ marginLeft: '20px' }}> Apply Template</Button>
             </TemplateItemContainer>
           );
         })}
-        <TemplateItemContainer
-          onClick={() => _handleAppleTemplateFromRemoteUrl()}
-        >
-          <a style={{ marginLeft: '20px' }}>
-            Apply Template From Select Markdown File
-          </a>
-        </TemplateItemContainer>
+        <br />
+        <h2>Import Markdown</h2>
+        <Button onClick={() => _handleAppleTemplateFromRemoteUrl()}>
+          <a style={{ marginLeft: '20px' }}>Select File To Import Markdown</a>
+        </Button>
       </div>
     </div>
   );
