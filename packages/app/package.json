@@ -1,6 +1,6 @@
 {
   "name": "@affine/app",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "scripts": {
     "dev": "next dev -p 8080",
     "dev:ac": "NODE_API_SERVER=ac next dev -p 8080",
