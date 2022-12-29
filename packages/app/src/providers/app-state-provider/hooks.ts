@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAppState } from './context';
-
+import { usePageHelper } from '@/hooks/use-page-helper';
 export const useLoadWorkspace = () => {
   const router = useRouter();
   const { loadWorkspace, currentWorkspace, currentWorkspaceId } = useAppState();
@@ -17,8 +17,8 @@ export const useLoadWorkspace = () => {
 
 export const useLoadPage = () => {
   const router = useRouter();
-  const { loadPage, currentPage, createPage, currentWorkspaceId } =
-    useAppState();
+  const { loadPage, currentPage, currentWorkspaceId } = useAppState();
+  const { createPage } = usePageHelper();
   const workspace = useLoadWorkspace();
 
   const pageId = router.query.pageId as string;
@@ -39,7 +39,7 @@ export const useLoadPage = () => {
       return;
     }
 
-    createPage?.()?.then(async pageId => {
+    createPage().then(async pageId => {
       if (!pageId) {
         return;
       }
