@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import type { Page } from '@blocksuite/store';
 import {
-  // createWebsocketDocProvider,
   IndexedDBDocProvider,
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
@@ -9,11 +8,6 @@ import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import type { LoadWorkspaceHandler, CreateEditorHandler } from './context';
-import {
-  downloadWorkspace,
-  token,
-  WebsocketProvider,
-} from '@affine/data-services';
 
 interface Props {
   setLoadWorkspaceHandler: (handler: LoadWorkspaceHandler) => void;
@@ -37,6 +31,7 @@ const DynamicBlocksuite = ({
           providers: [IndexedDBDocProvider],
         }).register(BlockSchema);
         console.log('websocket', websocket);
+        console.log('user', user);
 
         // if (websocket && token.refresh) {
         //   // FIXME: if add websocket provider, the first page will be blank
