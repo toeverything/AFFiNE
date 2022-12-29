@@ -40,7 +40,7 @@ const All = () => {
     const page = currentWorkspace?.getPage(pageId);
 
     const title = template.name;
-    currentWorkspace?.setPageMeta(page!.id, { title });
+    currentWorkspace?.setPageMeta(page?.id, { title });
     if (page && page.root === null) {
       setTimeout(() => {
         const editor = document.querySelector('editor-container');
