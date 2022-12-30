@@ -11,6 +11,7 @@
     "export": "pnpm --filter @affine/app export",
     "start": "pnpm --filter @affine/app start",
     "lint": "pnpm --filter @affine/app lint",
+    "check": "pnpm lint && pnpm test",
     "test": "playwright test",
     "test:dc": "pnpm --filter @affine/data-services test",
     "test:e2e:codegen": "npx playwright codegen http://localhost:8080",

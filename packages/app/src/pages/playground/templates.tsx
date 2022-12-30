@@ -63,7 +63,7 @@ const All = () => {
       _applyTemplate(pageId, template);
     }
   };
-  const _handleAppleTemplateFromRemoteUrl = async () => {
+  const _handleAppleTemplateFromFilePicker = async () => {
     if (!window.showOpenFilePicker) {
       return;
     }
@@ -104,7 +104,7 @@ const All = () => {
         })}
         <br />
         <h2>Import Markdown</h2>
-        <Button onClick={() => _handleAppleTemplateFromRemoteUrl()}>
+        <Button onClick={() => _handleAppleTemplateFromFilePicker()}>
           <a style={{ marginLeft: '20px' }}>Select File To Import Markdown</a>
         </Button>
       </div>
