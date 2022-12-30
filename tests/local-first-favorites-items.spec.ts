@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-import { newPage } from './libs/page-logic';
+import { newPage, clickPageMoreActions } from './libs/page-logic';
 loadPage();
 
-test.describe.skip('Local first favorite items ui', () => {
+test.describe('Local first favorite items ui', () => {
   test('Show favorite items in sidebar', async ({ page }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();
@@ -15,11 +15,7 @@ test.describe.skip('Local first favorite items ui', () => {
     });
     expect(cell).not.toBeUndefined();
     await cell.click();
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+    await clickPageMoreActions(page);
 
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();
@@ -41,11 +37,7 @@ test.describe.skip('Local first favorite items ui', () => {
     });
     expect(cell).not.toBeUndefined();
     await cell.click();
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+    await clickPageMoreActions(page);
 
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();

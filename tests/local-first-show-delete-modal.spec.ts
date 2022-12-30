@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-import { newPage } from './libs/page-logic';
+import { newPage, clickPageMoreActions } from './libs/page-logic';
 loadPage();
 
-test.describe.skip('Local first delete page', () => {
+test.describe('Local first delete page', () => {
   test('New a page ,then open it and show delete modal', async ({ page }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();
@@ -15,11 +15,7 @@ test.describe.skip('Local first delete page', () => {
     expect(cell).not.toBeUndefined();
 
     await cell.click();
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+    await clickPageMoreActions(page);
     const deleteBtn = page.getByTestId('editor-option-menu-delete');
     await deleteBtn.click();
     const confirmTip = page.getByText('Delete page?');

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-
+import { clickPageMoreActions } from './libs/page-logic';
 loadPage();
 
 test.describe('Change page mode(Paper or Edgeless)', () => {
@@ -35,12 +35,8 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
     expect(await edgeless.isVisible()).toBe(true);
   });
 
-  test.skip('Convert to edgeless by editor header items', async ({ page }) => {
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+  test('Convert to edgeless by editor header items', async ({ page }) => {
+    await clickPageMoreActions(page);
     const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
     await menusEdgelessItem.click();
 
