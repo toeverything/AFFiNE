@@ -24,7 +24,7 @@ const scopedIndexedDB = () => {
   return <T = any>(scope: string): Readonly<ConfigStore<T>> => {
     if (!storeCache.has(scope)) {
       const store = {
-        get: (key: string) => idb.get(`${scope}:${key}`),
+        get: async (key: string) => idb.get(`${scope}:${key}`),
         set: (key: string, value: T) => idb.set(`${scope}:${key}`, value),
         keys: () =>
           idb
