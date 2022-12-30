@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-
+import { newPage } from './libs/page-logic';
 loadPage();
 
 test.describe('Local first favorite items ui', () => {
   test('Show favorite items in sidebar', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to favorite');
     const newPageId = page.url().split('/').reverse()[0];
@@ -32,7 +32,7 @@ test.describe('Local first favorite items ui', () => {
   });
 
   test('Show favorite items in favorite list', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to favorite');
     await page.getByRole('link', { name: 'All pages' }).click();

@@ -6,6 +6,7 @@ import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { useEffect, useState } from 'react';
+// import { Tooltip } from '@/ui/tooltip';
 type ImportModalProps = {
   open: boolean;
   onClose: () => void;
@@ -94,13 +95,13 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
             >
               Markdown
             </Button>
-            <Button
+            {/* <Button
               onClick={() => {
                 _handleAppleTemplateFromFilePicker();
               }}
             >
               HTML
-            </Button>
+            </Button> */}
           </StyledButtonWrapper>
         )}
 

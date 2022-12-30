@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-
+import { newPage } from './libs/page-logic';
 loadPage();
 
 test.describe('Local first favorite and cancel favorite  page', () => {
   test('New a page and open it ,then favorite it', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to favorite');
     await page.getByRole('link', { name: 'All pages' }).click();
@@ -24,7 +24,7 @@ test.describe('Local first favorite and cancel favorite  page', () => {
     await favoriteBtn.click();
   });
   test('Cancel favorite', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to favorite');
     await page.getByRole('link', { name: 'All pages' }).click();

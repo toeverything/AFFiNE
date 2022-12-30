@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
+import { newPage } from './libs/page-logic';
 
 loadPage();
 
@@ -7,7 +8,7 @@ test.describe('Local first delete page', () => {
   test('New a page , then delete it in all pages, permanently delete it', async ({
     page,
   }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to restore');
     const originPageUrl = page.url();
