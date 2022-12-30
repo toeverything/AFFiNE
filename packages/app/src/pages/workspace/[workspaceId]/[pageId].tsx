@@ -11,7 +11,7 @@ import { EditorHeader } from '@/components/header';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
 import { useAppState } from '@/providers/app-state-provider/context';
-import exampleMarkdown from '@/templates/Welcome-to-the-AFFiNE-Alpha.md';
+import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-v2.0.md';
 import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
@@ -46,7 +46,7 @@ const Page: NextPageWithLayout = () => {
         const title = metaTitle
           ? metaTitle
           : isFirstPage
-          ? 'Welcome to the AFFiNE Alpha'
+          ? 'Welcome to AFFiNE Alpha v2.0'
           : '';
         currentWorkspace?.setPageMeta(currentPage!.id, { title });
 
