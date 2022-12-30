@@ -1,11 +1,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import {
-  token,
-  AccessTokenMessage,
-  getWorkspaces,
-} from '@affine/data-services';
+import { getWorkspaces } from '@affine/data-services';
 import { AppState, AppStateContext } from './context';
 import type {
   AppStateValue,
@@ -154,33 +150,11 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     if (!loadWorkspaceHandler) {
       return;
     }
-    const callback = async (user: AccessTokenMessage | null) => {
-      const isLogin = token.isLogin;
-      setState(state => ({
-        ...state,
-        user,
-      }));
-
-      const workspacesMeta = user
-        ? await getWorkspaces().catch(() => {
-            return [];
-          })
-        : [];
-
-      setState(state => ({
-        ...state,
-        workspacesMeta,
-        synced: isLogin ? !!user : true,
-      }));
-    };
-    token.onChange(callback);
-    token.refreshToken().catch(err => {
-      // FIXME: should resolve invalid refresh token
-      console.log(err);
-    });
-    return () => {
-      token.offChange(callback);
-    };
+    setState(state => ({
+      ...state,
+      workspacesMeta: [],
+      synced: true,
+    }));
   }, [loadWorkspaceHandler]);
 
   const context = useMemo(
