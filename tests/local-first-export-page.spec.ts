@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-
+import { newPage } from './libs/page-logic';
 loadPage();
 
 test.describe.skip('Local first export page', () => {
@@ -37,7 +37,7 @@ test.describe.skip('Local first export page', () => {
   });
 
   test('New a page ,then open it and export markdown', async ({ page }) => {
-    await page.getByTestId('sliderBar').getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page
       .getByPlaceholder('Title')
