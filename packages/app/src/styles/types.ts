@@ -60,7 +60,7 @@ export interface AffineTheme {
     h6: string;
 
     family: string;
-    family2: string;
+    mono: string;
 
     lineHeightBase: string | number;
   };
@@ -121,7 +121,7 @@ export interface AffineThemeCSSVariables {
   '--affine-z-index-popover': AffineTheme['zIndex']['popover'];
 
   '--affine-font-family': AffineTheme['font']['family'];
-  '--affine-font-family2': AffineTheme['font']['family2'];
+  '--affine-font-mono': AffineTheme['font']['mono'];
 
   '--affine-paragraph-space': AffineTheme['space']['paragraph'];
 
