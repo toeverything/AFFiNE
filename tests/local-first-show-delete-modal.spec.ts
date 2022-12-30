@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-
+import { newPage, clickPageMoreActions } from './libs/page-logic';
 loadPage();
 
 test.describe('Local first delete page', () => {
   test('New a page ,then open it and show delete modal', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to delete');
     await page.getByRole('link', { name: 'All pages' }).click();
@@ -15,11 +15,7 @@ test.describe('Local first delete page', () => {
     expect(cell).not.toBeUndefined();
 
     await cell.click();
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+    await clickPageMoreActions(page);
     const deleteBtn = page.getByTestId('editor-option-menu-delete');
     await deleteBtn.click();
     const confirmTip = page.getByText('Delete page?');
@@ -29,7 +25,7 @@ test.describe('Local first delete page', () => {
   test('New a page ,then go to all pages and show delete modal', async ({
     page,
   }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to delete');
     const newPageId = page.url().split('/').reverse()[0];

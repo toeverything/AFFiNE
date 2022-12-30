@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-
+import { newPage, clickPageMoreActions } from './libs/page-logic';
 loadPage();
 
 test.describe('Local first favorite and cancel favorite  page', () => {
   test('New a page and open it ,then favorite it', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to favorite');
     await page.getByRole('link', { name: 'All pages' }).click();
@@ -15,16 +15,12 @@ test.describe('Local first favorite and cancel favorite  page', () => {
     expect(cell).not.toBeUndefined();
 
     await cell.click();
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+    await clickPageMoreActions(page);
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();
   });
   test('Cancel favorite', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to favorite');
     await page.getByRole('link', { name: 'All pages' }).click();
@@ -34,11 +30,7 @@ test.describe('Local first favorite and cancel favorite  page', () => {
     expect(cell).not.toBeUndefined();
 
     await cell.click();
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+    await clickPageMoreActions(page);
 
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();
