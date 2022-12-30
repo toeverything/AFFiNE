@@ -113,7 +113,7 @@ export const WorkSpaceSliderBar = () => {
           </StyledArrowButton>
         </Tooltip>
 
-        <StyledSliderBarWrapper>
+        <StyledSliderBarWrapper data-testid="sliderBar">
           <StyledListItemForWorkspace>
             <WorkspaceSelector />
           </StyledListItemForWorkspace>
