@@ -16,6 +16,10 @@ export class BaseProvider {
     this._workspace = workspace;
   }
 
+  async destroy() {
+    // Nothing to do here
+  }
+
   async initData() {
     throw Error('Not implemented: initData');
   }

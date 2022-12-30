@@ -1,7 +1,7 @@
 import { Workspace } from '@blocksuite/store';
 import assert from 'assert';
 
-import type { BaseProvider } from './provider/index.js';
+import { AffineProvider, BaseProvider } from './provider/index.js';
 import { MemoryProvider } from './provider/index.js';
 import { getKVConfigure } from './store.js';
 
@@ -12,6 +12,7 @@ export class DataCenter {
 
   static async init(): Promise<DataCenter> {
     const dc = new DataCenter();
+    dc.addProvider(AffineProvider);
     dc.addProvider(MemoryProvider);
 
     return dc;
@@ -31,10 +32,10 @@ export class DataCenter {
     const Provider = this._providers.get(providerId);
     assert(Provider);
     const provider = new Provider();
+
     console.log(`Loading workspace ${id} with provider ${Provider.id}`);
     await provider.init(getKVConfigure(id), workspace);
     await provider.initData();
-
     console.log(`Workspace ${id} loaded`);
 
     return provider;
