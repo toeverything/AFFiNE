@@ -53,7 +53,7 @@ export const getLightTheme = (
       h6: '20px',
 
       family: `Avenir Next, Poppins, ${basicFontFamily}`,
-      family2: `Space Mono, ${basicFontFamily}`,
+      mono: `Space Mono, ${basicFontFamily}`,
       lineHeightBase: '26px',
     },
     zIndex: {
@@ -174,7 +174,7 @@ export const globalThemeVariables: (
     '--affine-z-index-popover': theme.zIndex.popover,
 
     '--affine-font-family': theme.font.family,
-    '--affine-font-family2': theme.font.family2,
+    '--affine-font-mono': theme.font.mono,
 
     '--affine-paragraph-space': theme.space.paragraph,
     '--affine-popover-radius': theme.radius.popover,
