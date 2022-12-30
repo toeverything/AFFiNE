@@ -4,15 +4,23 @@ import type { ConfigStore } from '../store.js';
 
 export class BaseProvider {
   static id = 'memory';
-  protected _config: ConfigStore | undefined;
-  protected _workspace: Workspace | undefined;
+  protected _config!: ConfigStore;
+  protected _workspace!: Workspace;
 
   constructor() {
-    // TODO
+    // Nothing to do here
   }
 
   async init(config: ConfigStore, workspace: Workspace) {
     this._config = config;
     this._workspace = workspace;
+  }
+
+  async initData() {
+    throw Error('Not implemented: initData');
+  }
+
+  get workspace() {
+    return this._workspace;
   }
 }

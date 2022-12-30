@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { Workspace } from '@blocksuite/store';
 
 import { getDataCenter } from './utils.js';
 
@@ -9,11 +8,16 @@ test('can init data center', async () => {
   const dataCenter = await getDataCenter();
   expect(dataCenter).toBeTruthy();
 
-  const workspace = await dataCenter.initWorkspace(
-    'test',
-    new Workspace({
-      room: 'test',
-    })
-  );
+  dataCenter.setWorkspaceConfig('test', 'key', 'value');
+
+  const workspace = await dataCenter.initWorkspace('test');
+
   expect(workspace).toBeTruthy();
+});
+
+test('should init error', async () => {
+  const dataCenter = await getDataCenter();
+
+  test.fail();
+  await dataCenter.initWorkspace('test', 'not exist provider');
 });
