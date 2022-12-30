@@ -6,6 +6,7 @@ import {
   StyledListItem,
   // StyledListItemForWorkspace,
   StyledNewPageButton,
+  StyledQuickSearch,
   StyledSliderBar,
   StyledSliderBarWrapper,
   StyledSubListItem,
@@ -31,7 +32,11 @@ import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
+import { getUaHelper } from '@/utils';
 
+const isMac = () => {
+  return getUaHelper().isMacOs;
+};
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
   const pageList = usePageMetaList();
@@ -108,19 +113,21 @@ export const WorkSpaceSliderBar = () => {
           </StyledArrowButton>
         </Tooltip>
 
-        <StyledSliderBarWrapper>
-          {/*<StyledListItemForWorkspace>*/}
-          {/*  <WorkspaceSelector />*/}
-          {/*</StyledListItemForWorkspace>*/}
-          <StyledListItem
+        <StyledSliderBarWrapper data-testid="sliderBar">
+          {/* <StyledListItemForWorkspace>
+            <WorkspaceSelector />
+          </StyledListItemForWorkspace> */}
+          <StyledQuickSearch
             data-testid="sliderBar-quickSearchButton"
             style={{ cursor: 'pointer' }}
             onClick={() => {
               triggerQuickSearchModal();
             }}
           >
-            <SearchIcon /> Quick search
-          </StyledListItem>
+            <SearchIcon />
+            Quick search
+            <span>{isMac() ? '⌘ + K' : 'Ctrl + K'}</span>
+          </StyledQuickSearch>
           <Link href={{ pathname: paths.all }}>
             <StyledListItem active={router.asPath === paths.all}>
               <AllPagesIcon /> <span>All pages</span>
