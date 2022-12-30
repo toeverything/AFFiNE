@@ -8,7 +8,14 @@ test.describe('Open contact us', () => {
     const currentWorkspace = page.getByTestId('current-workspace');
     await currentWorkspace.click();
     // await page.waitForTimeout(1000);
-    await page.getByText('About AFFiNE').click();
+    await page
+      .getByRole('tooltip', {
+        name: 'AFFiNE Log in to sync with affine About AFFiNE',
+      })
+      .locator('div')
+      .filter({ hasText: 'About AFFiNE' })
+      .nth(2)
+      .click();
     const contactUsModal = page.locator(
       '[data-testid=contact-us-modal-content]'
     );
