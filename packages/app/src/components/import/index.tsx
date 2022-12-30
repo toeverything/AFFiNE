@@ -53,7 +53,9 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
       types: [
         {
           accept: {
-            'image/*': ['.md'],
+            'text/markdown': ['.md'],
+            'text/html': ['.html', '.htm'],
+            'text/plain': ['.text'],
           },
         },
       ],
@@ -87,7 +89,6 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
           <StyledButtonWrapper>
             <Button
               onClick={() => {
-                // setStatus('importing');
                 _handleAppleTemplateFromFilePicker();
               }}
             >
@@ -95,7 +96,7 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
             </Button>
             <Button
               onClick={() => {
-                setStatus('importing');
+                _handleAppleTemplateFromFilePicker();
               }}
             >
               HTML
