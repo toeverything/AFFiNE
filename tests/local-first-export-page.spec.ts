@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
-import { newPage } from './libs/page-logic';
+import { newPage, clickPageMoreActions } from './libs/page-logic';
 loadPage();
 
 test.describe('Local first export page', () => {
@@ -18,11 +18,7 @@ test.describe('Local first export page', () => {
     expect(cell).not.toBeUndefined();
 
     await cell.click();
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+    await clickPageMoreActions(page);
     const exportParentBtn = page.getByRole('tooltip', {
       name: 'Add to favourites Convert to Edgeless Export Delete',
     });
@@ -49,11 +45,7 @@ test.describe('Local first export page', () => {
     expect(cell).not.toBeUndefined();
 
     await cell.click();
-    await page
-      .getByTestId('editor-header-items')
-      .getByRole('button')
-      .nth(2)
-      .click();
+    await clickPageMoreActions(page);
     const exportParentBtn = page.getByRole('tooltip', {
       name: 'Add to favourites Convert to Edgeless Export Delete',
     });
