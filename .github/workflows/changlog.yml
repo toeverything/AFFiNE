@@ -34,9 +34,6 @@ jobs:
           scope: '@toeverything'
           cache: 'pnpm'
 
-      - name: Restore cache
-        uses: actions/cache@v3
-
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
         env:

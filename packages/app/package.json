@@ -1,6 +1,6 @@
 {
   "name": "@affine/app",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "scripts": {
     "dev": "next dev -p 8080",
     "dev:ac": "NODE_API_SERVER=ac next dev -p 8080",
@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@affine/data-services": "workspace:*",
-    "@blocksuite/blocks": "0.3.0-20221229073953-c859d99",
-    "@blocksuite/editor": "0.3.0-20221229073953-c859d99",
+    "@blocksuite/blocks": "0.3.0-alpha.19",
+    "@blocksuite/editor": "0.3.0-alpha.19",
     "@blocksuite/icons": "^2.0.2",
-    "@blocksuite/store": "0.3.0-20221229073953-c859d99",
+    "@blocksuite/store": "0.3.0-alpha.19",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
@@ -44,6 +44,7 @@
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
+    "@types/wicg-file-system-access": "^2020.9.5",
     "chalk-next": "^6.1.5",
     "eslint": "8.22.0",
     "eslint-config-next": "12.3.1",
