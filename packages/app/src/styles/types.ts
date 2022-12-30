@@ -23,8 +23,10 @@ export interface AffineTheme {
     popoverBackground: string;
     tooltipBackground: string;
     hoverBackground: string;
+    innerHoverBackground: string;
     codeBackground: string;
     warningBackground: string;
+    errorBackground: string;
     // Use for the page`s text
     textColor: string;
     // Use for the editor`s text, because in edgeless mode text is different form other
@@ -35,6 +37,7 @@ export interface AffineTheme {
     linkVisitedColor: string;
     iconColor: string;
     popoverColor: string;
+    inputColor: string;
     tooltipColor: string;
     codeColor: string;
     quoteColor: string;
@@ -43,14 +46,21 @@ export interface AffineTheme {
     borderColor: string;
     disableColor: string;
     warningColor: string;
+    errorColor: string;
   };
   font: {
     xs: string; // tiny
     sm: string; // small
     base: string;
+    h1: string;
+    h2: string;
+    h3: string;
+    h4: string;
+    h5: string;
+    h6: string;
 
     family: string;
-    family2: string;
+    mono: string;
 
     lineHeightBase: string | number;
   };
@@ -111,7 +121,7 @@ export interface AffineThemeCSSVariables {
   '--affine-z-index-popover': AffineTheme['zIndex']['popover'];
 
   '--affine-font-family': AffineTheme['font']['family'];
-  '--affine-font-family2': AffineTheme['font']['family2'];
+  '--affine-font-mono': AffineTheme['font']['mono'];
 
   '--affine-paragraph-space': AffineTheme['space']['paragraph'];
 
@@ -119,5 +129,6 @@ export interface AffineThemeCSSVariables {
 }
 
 declare module '@emotion/react' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
   export interface Theme extends AffineTheme {}
 }

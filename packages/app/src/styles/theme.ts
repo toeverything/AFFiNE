@@ -16,18 +16,21 @@ export const getLightTheme = (
 
       pageBackground: '#fff',
       hoverBackground: '#F1F3FF',
+      innerHoverBackground: '#E0E6FF',
       popoverBackground: '#fff',
       tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
       warningBackground: '#FFF9C7',
+      errorBackground: '#FFDED8',
 
       textColor: '#3A4C5C',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#9096A5',
+      iconColor: '#888a9e',
       linkColor: '#6880FF',
       linkColor2: '#6880FF',
       linkVisitedColor: '#ABB8FE',
       popoverColor: '#4C6275',
+      inputColor: '#4C6275',
       tooltipColor: '#fff',
       codeColor: '#517ea6',
       quoteColor: '#4C6275',
@@ -36,13 +39,21 @@ export const getLightTheme = (
       borderColor: '#D0D7E3',
       disableColor: '#C0C0C0',
       warningColor: '#906616',
+      errorColor: '#EB4335',
     },
     font: {
       xs: '12px',
       sm: '16px',
       base: '18px',
+      h1: '30px',
+      h2: '28px',
+      h3: '26px',
+      h4: '24px',
+      h5: '22px',
+      h6: '20px',
+
       family: `Avenir Next, Poppins, ${basicFontFamily}`,
-      family2: `Space Mono, ${basicFontFamily}`,
+      mono: `Space Mono, ${basicFontFamily}`,
       lineHeightBase: '26px',
     },
     zIndex: {
@@ -78,6 +89,7 @@ export const getDarkTheme = (
 
       pageBackground: '#2c2c2c',
       hoverBackground: '#3C3C42',
+      innerHoverBackground: '#E0E6FF',
       popoverBackground: '#1F2021',
       tooltipBackground: '#1F2021',
       codeBackground:
@@ -85,14 +97,16 @@ export const getDarkTheme = (
           ? lightTheme.colors.codeBackground
           : '#505662',
       warningBackground: '#FFF9C7',
+      errorBackground: '#FFDED8',
 
       textColor: '#fff',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#9096A5',
+      iconColor: '#888a9e',
       linkColor: '#7D91FF',
       linkColor2: '#6880FF',
       linkVisitedColor: '#505FAB',
       popoverColor: '#C6CBD9',
+      inputColor: '#C6CBD9',
       tooltipColor: '#fff',
       codeColor:
         editorMode === 'edgeless' ? lightTheme.colors.codeColor : '#BDDBFD',
@@ -102,6 +116,7 @@ export const getDarkTheme = (
       borderColor: '#4D4C53',
       disableColor: '#4b4b4b',
       warningColor: '#906616',
+      errorColor: '#EB4335',
     },
     shadow: {
       popover:
@@ -137,6 +152,7 @@ export const globalThemeVariables: (
     '--affine-link-visited-color': theme.colors.linkVisitedColor,
     '--affine-icon-color': theme.colors.iconColor,
     '--affine-popover-color': theme.colors.popoverColor,
+    '--affine-input-color': theme.colors.inputColor,
     '--affine-code-color': theme.colors.codeColor,
     '--affine-quote-color': theme.colors.quoteColor,
     '--affine-selected-color': theme.colors.selectedColor,
@@ -158,7 +174,7 @@ export const globalThemeVariables: (
     '--affine-z-index-popover': theme.zIndex.popover,
 
     '--affine-font-family': theme.font.family,
-    '--affine-font-family2': theme.font.family2,
+    '--affine-font-mono': theme.font.mono,
 
     '--affine-paragraph-space': theme.space.paragraph,
     '--affine-popover-radius': theme.radius.popover,

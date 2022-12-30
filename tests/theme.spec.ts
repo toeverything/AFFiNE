@@ -1,22 +1,22 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
 
 loadPage();
 
 test.describe('Change Theme', () => {
   test('default white', async ({ page }) => {
+    await page.waitForSelector('html');
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>
       window.getComputedStyle(element).getPropertyValue('--affine-theme-mode')
     );
-
-    await expect(themeMode).toBe('light');
+    expect(themeMode).toBe('light');
 
     const lightButton = page.locator('[data-testid=change-theme-light]');
     const buttonPositionTop = await lightButton.evaluate(
       element => window.getComputedStyle(element).top
     );
-    await expect(buttonPositionTop).toBe('0px');
+    expect(buttonPositionTop).toBe('0px');
   });
 
   test('change theme to dark', async ({ page }) => {
@@ -24,24 +24,21 @@ test.describe('Change Theme', () => {
       '[data-testid=change-theme-container]'
     );
     const box = await changeThemeContainer.boundingBox();
-    await expect(box?.x).not.toBeUndefined();
+    expect(box?.x).not.toBeUndefined();
+
     await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
-
     await page.waitForTimeout(1000);
-
     const darkButton = page.locator('[data-testid=change-theme-dark]');
     const darkButtonPositionTop = await darkButton.evaluate(
       element => element.getBoundingClientRect().y
     );
-    await expect(darkButtonPositionTop).toBe(box?.y);
+    expect(darkButtonPositionTop).toBe(box?.y);
 
     await page.mouse.click((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
-
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>
       window.getComputedStyle(element).getPropertyValue('--affine-theme-mode')
     );
-
-    await expect(themeMode).toBe('dark');
+    expect(themeMode).toBe('dark');
   });
 });

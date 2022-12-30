@@ -2,12 +2,12 @@ import { styled, displayFlex } from '@/styles';
 
 export const StyledEdgelessToolbar = styled.div(({ theme }) => ({
   height: '320px',
-  position: 'fixed',
+  position: 'absolute',
   left: '12px',
   top: 0,
   bottom: 0,
   margin: 'auto',
-  zIndex: theme.zIndex.modal,
+  zIndex: theme.zIndex.modal - 1,
 }));
 
 export const StyledToolbarWrapper = styled.div(({ theme }) => ({

@@ -16,7 +16,9 @@ import {
 } from './icons';
 import { Tooltip } from '@/ui/tooltip';
 import Slide from '@mui/material/Slide';
-import { useEditor } from '@/components/editor-provider';
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
+import { useAppState } from '@/providers/app-state-provider';
+import useHistoryUpdated from '@/hooks/use-history-update';
 
 const toolbarList1 = [
   {
@@ -24,6 +26,15 @@ const toolbarList1 = [
     icon: <SelectIcon />,
     toolTip: 'Select',
     disable: false,
+    callback: () => {
+      window.dispatchEvent(
+        new CustomEvent('affine.switch-mouse-mode', {
+          detail: {
+            type: 'default',
+          },
+        })
+      );
+    },
   },
   {
     flavor: 'text',
@@ -34,8 +45,19 @@ const toolbarList1 = [
   {
     flavor: 'shape',
     icon: <ShapeIcon />,
-    toolTip: 'Shape (coming soon)',
-    disable: true,
+    toolTip: 'Shape',
+    disable: false,
+    callback: () => {
+      window.dispatchEvent(
+        new CustomEvent('affine.switch-mouse-mode', {
+          detail: {
+            type: 'shape',
+            color: 'black',
+            shape: 'rectangle',
+          },
+        })
+      );
+    },
   },
   {
     flavor: 'sticky',
@@ -57,34 +79,19 @@ const toolbarList1 = [
     disable: true,
   },
 ];
-const toolbarList2 = [
-  {
-    flavor: 'undo',
-    icon: <UndoIcon />,
-    toolTip: 'Undo',
-    disable: false,
-  },
-  {
-    flavor: 'redo',
-    icon: <RedoIcon />,
-    toolTip: 'Redo',
-    disable: false,
-  },
-];
 
 const UndoRedo = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const { editor } = useEditor();
-  useEffect(() => {
-    if (!editor) return;
-    const { page } = editor;
+  const { currentPage } = useAppState();
+  const onHistoryUpdated = useHistoryUpdated();
 
-    page.signals.historyUpdated.on(() => {
+  useEffect(() => {
+    onHistoryUpdated(page => {
       setCanUndo(page.canUndo);
       setCanRedo(page.canRedo);
     });
-  }, [editor]);
+  }, [onHistoryUpdated]);
 
   return (
     <StyledToolbarWrapper>
@@ -92,7 +99,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canUndo}
           onClick={() => {
-            editor?.page?.undo();
+            currentPage?.undo();
           }}
         >
           <UndoIcon />
@@ -102,7 +109,7 @@ const UndoRedo = () => {
         <StyledToolbarItem
           disable={!canRedo}
           onClick={() => {
-            editor?.page?.redo();
+            currentPage?.redo();
           }}
         >
           <RedoIcon />
@@ -113,7 +120,7 @@ const UndoRedo = () => {
 };
 
 export const EdgelessToolbar = () => {
-  const { mode } = useEditor();
+  const { mode } = useCurrentPageMeta() || {};
 
   return (
     <Slide
@@ -122,22 +129,25 @@ export const EdgelessToolbar = () => {
       mountOnEnter
       unmountOnExit
     >
-      <StyledEdgelessToolbar>
+      <StyledEdgelessToolbar aria-label="edgeless-toolbar">
         <StyledToolbarWrapper>
-          {toolbarList1.map(({ icon, toolTip, flavor, disable }, index) => {
-            return (
-              <Tooltip key={index} content={toolTip} placement="right-start">
-                <StyledToolbarItem
-                  disable={disable}
-                  onClick={() => {
-                    console.log('flavor', flavor);
-                  }}
-                >
-                  {icon}
-                </StyledToolbarItem>
-              </Tooltip>
-            );
-          })}
+          {toolbarList1.map(
+            ({ icon, toolTip, flavor, disable, callback }, index) => {
+              return (
+                <Tooltip key={index} content={toolTip} placement="right-start">
+                  <StyledToolbarItem
+                    disable={disable}
+                    onClick={() => {
+                      console.log('click toolbar button:', flavor);
+                      callback?.();
+                    }}
+                  >
+                    {icon}
+                  </StyledToolbarItem>
+                </Tooltip>
+              );
+            }
+          )}
         </StyledToolbarWrapper>
         <UndoRedo />
       </StyledEdgelessToolbar>

@@ -1,5 +1,4 @@
-import Modal from '@/ui/modal';
-import CloseIcon from '@mui/icons-material/Close';
+import { Modal, ModalCloseButton, ModalWrapper } from '@/ui/modal';
 import {
   LogoIcon,
   DocIcon,
@@ -12,7 +11,6 @@ import {
 } from './icons';
 import logo from './affine-text-logo.png';
 import {
-  StyledModalWrapper,
   StyledBigLink,
   StyledSmallLink,
   StyledSubTitle,
@@ -22,9 +20,9 @@ import {
   StyledLogo,
   StyledModalHeader,
   StyledModalHeaderLeft,
-  StyledCloseButton,
   StyledModalFooter,
 } from './style';
+import bg from '@/components/contact-modal/bg.png';
 
 const linkList = [
   {
@@ -62,9 +60,9 @@ const rightLinkList = [
   },
   {
     icon: <DocIcon />,
-    title: 'Check Our Docs',
-    subTitle: 'docs.AFFiNE.pro',
-    link: 'https://docs.affine.pro',
+    title: 'AFFiNE Community',
+    subTitle: 'community.affine.pro',
+    link: 'https://community.affine.pro',
   },
 ];
 
@@ -75,20 +73,24 @@ type TransitionsModalProps = {
 
 export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
   return (
-    <Modal open={open} onClose={onClose}>
-      <StyledModalWrapper data-testid="contact-us-modal-content">
+    <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
+      <ModalWrapper
+        width={860}
+        height={540}
+        style={{ backgroundImage: `url(${bg.src})` }}
+      >
         <StyledModalHeader>
           <StyledModalHeaderLeft>
             <StyledLogo src={logo.src} alt="" />
             <span>Alpha</span>
           </StyledModalHeaderLeft>
-          <StyledCloseButton
+          <ModalCloseButton
+            top={6}
+            right={6}
             onClick={() => {
               onClose();
             }}
-          >
-            <CloseIcon width={12} height={12} />
-          </StyledCloseButton>
+          />
         </StyledModalHeader>
 
         <StyledContent>
@@ -107,10 +109,7 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
             })}
           </StyledLeftContainer>
           <StyledRightContainer>
-            <StyledSubTitle>
-              Get in touch! <br />
-              Join our community.
-            </StyledSubTitle>
+            <StyledSubTitle>Get in touch!</StyledSubTitle>
             {linkList.map(({ icon, title, link }) => {
               return (
                 <StyledSmallLink key={title} href={link} target="_blank">
@@ -134,7 +133,7 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
           </p>
           <p>Copyright &copy; 2022 Toeverything</p>
         </StyledModalFooter>
-      </StyledModalWrapper>
+      </ModalWrapper>
     </Modal>
   );
 };

@@ -1,45 +1,47 @@
 import { displayFlex, keyframes, styled } from '@/styles';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import spring, { toString } from 'css-spring';
 import type { ItemStatus } from './type';
 
 const ANIMATE_DURATION = 500;
 
-export const StyledAnimateRadioContainer = styled('div')<{ shrink: boolean }>(
-  ({ shrink, theme }) => {
-    const animateScaleStretch = keyframes`${toString(
-      spring({ width: '36px' }, { width: '160px' }, { preset: 'gentle' })
-    )}`;
-    const animateScaleShrink = keyframes(
-      `${toString(
-        spring({ width: '160px' }, { width: '36px' }, { preset: 'gentle' })
-      )}`
-    );
-    const shrinkStyle = shrink
-      ? {
-          animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
-          background: 'transparent',
-        }
-      : {
-          animation: `${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
-        };
+export const StyledAnimateRadioContainer = styled('div')<{
+  shrink: boolean;
+  disabled: boolean;
+}>(({ shrink, theme, disabled }) => {
+  const animateScaleStretch = keyframes`${toString(
+    spring({ width: '36px' }, { width: '160px' }, { preset: 'gentle' })
+  )}`;
+  const animateScaleShrink = keyframes(
+    `${toString(
+      spring({ width: '160px' }, { width: '36px' }, { preset: 'gentle' })
+    )}`
+  );
+  const shrinkStyle = shrink
+    ? {
+        animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
+        background: 'transparent',
+      }
+    : {
+        animation: `${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
+      };
 
-    return {
-      height: '36px',
-      borderRadius: '18px',
-      background: theme.colors.hoverBackground,
-      position: 'relative',
-      display: 'flex',
-      transition: `background ${ANIMATE_DURATION}ms, border ${ANIMATE_DURATION}ms`,
-      border: '1px solid transparent',
+  return {
+    height: '36px',
+    borderRadius: '18px',
+    background: disabled ? 'transparent' : theme.colors.hoverBackground,
+    position: 'relative',
+    display: 'flex',
+    transition: `background ${ANIMATE_DURATION}ms, border ${ANIMATE_DURATION}ms`,
+    border: '1px solid transparent',
 
-      ...shrinkStyle,
-      ':hover': {
-        border: `1px solid ${theme.colors.primaryColor}`,
-      },
-    };
-  }
-);
+    ...(disabled ? { pointerEvents: 'none' } : shrinkStyle),
+    ':hover': {
+      border: disabled ? '' : `1px solid ${theme.colors.primaryColor}`,
+    },
+  };
+});
 
 export const StyledMiddleLine = styled('div')<{
   hidden: boolean;

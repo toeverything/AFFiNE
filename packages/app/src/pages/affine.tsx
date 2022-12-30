@@ -1,8 +1,10 @@
 import { displayFlex, styled } from '@/styles';
-import { ThemeModeSwitch } from '@/components/theme-mode-switch';
-import { Loading } from '@/components/loading';
+import Loading from '@/components/loading';
 import Modal from '@/ui/modal';
 import { useState } from 'react';
+import { Button } from '@/ui/button';
+import { FavouritedIcon } from '@blocksuite/icons';
+import { toast } from '@/ui/toast';
 export const StyledHeader = styled('div')({
   height: '60px',
   width: '100vw',
@@ -17,7 +19,6 @@ const Affine = () => {
   return (
     <>
       <StyledHeader>
-        <ThemeModeSwitch></ThemeModeSwitch>
         <button
           onClick={() => {
             setShow(true);
@@ -35,6 +36,29 @@ const Affine = () => {
         <div>hi</div>
       </Modal>
       <Loading />
+
+      <Button
+        icon={<FavouritedIcon />}
+        onClick={() => {
+          toast('hello, world!!');
+        }}
+      >
+        click me!
+      </Button>
+      <Button icon={<FavouritedIcon />} type={'primary'}>
+        click me!
+      </Button>
+      <Button icon={<FavouritedIcon />} type={'warning'}>
+        click me!
+      </Button>
+      <Button icon={<FavouritedIcon />} type={'danger'}>
+        click me!
+      </Button>
+
+      <Button icon={<FavouritedIcon />}></Button>
+      <Button icon={<FavouritedIcon />} shape="round"></Button>
+      <Button loading={true}></Button>
+      <Button loading={true} type="primary"></Button>
     </>
   );
 };

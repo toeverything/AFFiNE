@@ -6,7 +6,6 @@ import {
   StyledShortcutsModal,
   StyledSubTitle,
   StyledTitle,
-  CloseButton,
 } from './style';
 import {
   macKeyboardShortcuts,
@@ -14,15 +13,16 @@ import {
   windowsKeyboardShortcuts,
   winMarkdownShortcuts,
 } from '@/components/shortcuts-modal/config';
-import CloseIcon from '@mui/icons-material/Close';
 import Slide from '@mui/material/Slide';
+import { ModalCloseButton } from '@/ui/modal';
+import { getUaHelper } from '@/utils';
 type ModalProps = {
   open: boolean;
   onClose: () => void;
 };
 
 const isMac = () => {
-  return /macintosh|mac os x/i.test(navigator.userAgent);
+  return getUaHelper().isMacOs;
 };
 
 export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
@@ -42,13 +42,15 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
               Shortcuts
             </StyledTitle>
 
-            <CloseButton
+            <ModalCloseButton
+              top={6}
+              right={6}
+              size={[24, 24]}
+              iconSize={[15, 15]}
               onClick={() => {
                 onClose();
               }}
-            >
-              <CloseIcon />
-            </CloseButton>
+            />
           </StyledModalHeader>
           <StyledSubTitle style={{ marginTop: 0 }}>
             Keyboard Shortcuts

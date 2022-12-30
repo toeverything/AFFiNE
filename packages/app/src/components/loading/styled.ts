@@ -1,14 +1,19 @@
 import { styled } from '@/styles';
 
 // Inspired by https://codepen.io/graphilla/pen/rNvBMYY
-const loadingItemSize = '40px';
+export const StyledLoadingWrapper = styled.div<{ size?: number }>(
+  ({ size = 40 }) => {
+    return {
+      width: size * 4,
+      height: size * 4,
+      position: 'relative',
+    };
+  }
+);
 export const StyledLoading = styled.div`
-  position: relative;
-  left: 50%;
-  transform: rotateX(55deg) rotateZ(-45deg)
-    translate(calc(${loadingItemSize} * -2), 0);
-  margin-bottom: calc(3 * ${loadingItemSize});
-
+  position: absolute;
+  left: 25%;
+  top: 25%;
   @keyframes slide {
     0% {
       transform: translate(var(--sx), var(--sy));
@@ -21,24 +26,14 @@ export const StyledLoading = styled.div`
       transform: translate(var(--ex), var(--ey));
     }
   }
-  @keyframes load {
-    20% {
-      content: '.';
-    }
-    40% {
-      content: '..';
-    }
-    80%,
-    100% {
-      content: '...';
-    }
-  }
 `;
 
-export const StyledLoadingItem = styled.div`
+export const StyledLoadingItem = styled.div<{ size: number }>(
+  ({ size = 40 }) => {
+    return `
   position: absolute;
-  width: ${loadingItemSize};
-  height: ${loadingItemSize};
+  width: ${size}px;
+  height: ${size}px;
   background: #9dacf9;
   animation: slide 0.9s cubic-bezier(0.65, 0.53, 0.59, 0.93) infinite;
 
@@ -92,3 +87,5 @@ export const StyledLoadingItem = styled.div`
     --ey: -50%;
   }
 `;
+  }
+);

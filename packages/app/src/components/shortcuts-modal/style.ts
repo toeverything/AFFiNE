@@ -38,7 +38,7 @@ export const StyledSubTitle = styled.div(({ theme }) => ({
   marginTop: '28px',
   padding: '0 16px',
 }));
-export const StyledModalHeader = styled.div(({ theme }) => ({
+export const StyledModalHeader = styled.div(() => ({
   ...displayFlex('space-between', 'center'),
   paddingTop: '8px 4px 0 4px',
   width: '100%',
@@ -57,22 +57,3 @@ export const StyledListItem = styled.div(({ theme }) => ({
   fontSize: theme.font.sm,
   padding: '0 16px',
 }));
-
-export const CloseButton = styled('div')(({ theme }) => {
-  return {
-    width: '24px',
-    height: '24px',
-    borderRadius: '5px',
-    color: theme.colors.iconColor,
-    cursor: 'pointer',
-    ...displayFlex('center', 'center'),
-    svg: {
-      width: '15px',
-      height: '15px',
-    },
-    ':hover': {
-      background: theme.colors.hoverBackground,
-      color: theme.colors.primaryColor,
-    },
-  };
-});

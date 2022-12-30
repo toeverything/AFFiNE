@@ -108,6 +108,7 @@ export const Popper = ({
           onClick: (e: MouseEvent) => {
             children.props.onClick?.(e);
             if (!hasClickTrigger || visibleControlledByParent) {
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
               onClick?.(e);
               return;
@@ -116,8 +117,9 @@ export const Popper = ({
           },
           onPointerEnter: onPointerEnterHandler,
           onPointerLeave: onPointerLeaveHandler,
-          className: anchorClassName,
-          popperVisible: visible,
+          className: `${anchorClassName ? anchorClassName + ' ' : ''}${
+            children.props.className
+          }`,
         })}
         {content && (
           <BasicStyledPopper
@@ -152,6 +154,7 @@ export const Popper = ({
                   className={popoverClassName}
                 >
                   {showArrow && (
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
                     <PopperArrow placement={placement} ref={setArrowRef} />
                   )}

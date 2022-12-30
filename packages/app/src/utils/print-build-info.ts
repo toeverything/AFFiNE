@@ -1,9 +1,10 @@
 import getConfig from 'next/config';
-
+// import { isDev } from './env';
 type Config = {
   BUILD_DATE: string;
   NODE_ENV: string;
   PROJECT_NAME: string;
+  EDITOR_VERSION: string;
   VERSION: string;
   CI?: string;
   COMMIT_HASH: string;
@@ -13,9 +14,9 @@ const nextConfig = getConfig();
 const publicRuntimeConfig: Config = nextConfig.publicRuntimeConfig;
 
 const printBuildInfo = () => {
-  if (process.env.NODE_ENV === 'development') {
-    return;
-  }
+  // if (isDev) {
+  //   return;
+  // }
   console.group('Build info');
   console.log('Project:', publicRuntimeConfig.PROJECT_NAME);
   console.log(
@@ -28,6 +29,7 @@ const printBuildInfo = () => {
     'Environment:',
     `${publicRuntimeConfig.NODE_ENV}${publicRuntimeConfig.CI ? '(ci)' : ''}`
   );
+  console.log('Editor Version:', publicRuntimeConfig.EDITOR_VERSION);
   console.log('Version:', publicRuntimeConfig.VERSION);
   console.log(
     'AFFiNE is an open source project, you can view its source code on GitHub!'

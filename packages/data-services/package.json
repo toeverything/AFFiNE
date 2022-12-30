@@ -1,0 +1,34 @@
+{
+  "name": "@affine/data-services",
+  "version": "0.3.0",
+  "description": "",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    "./src/*": "./dist/src/*.js",
+    ".": "./dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc --project ./tsconfig.json",
+    "test": "playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.29.1",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "encoding": "^0.1.13",
+    "firebase": "^9.13.0",
+    "ky": "^0.33.0",
+    "lib0": "^0.2.58",
+    "swr": "^2.0.0",
+    "y-protocols": "^1.0.5"
+  }
+}

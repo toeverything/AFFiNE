@@ -17,6 +17,23 @@ export const displayFlex = (
     alignContent,
   };
 };
+export const displayInlineFlex = (
+  justifyContent: CSSProperties['justifyContent'] = 'unset',
+  alignItems: CSSProperties['alignContent'] = 'unset',
+  alignContent: CSSProperties['alignContent'] = 'unset'
+): {
+  display: CSSProperties['display'];
+  justifyContent: CSSProperties['justifyContent'];
+  alignItems: CSSProperties['alignContent'];
+  alignContent: CSSProperties['alignContent'];
+} => {
+  return {
+    display: 'inline-flex',
+    justifyContent,
+    alignItems,
+    alignContent,
+  };
+};
 
 export const absoluteCenter = ({
   horizontal = false,
@@ -80,5 +97,23 @@ export const fixedCenter = ({
     transform: `translate(${horizontal ? '-50%' : '0'}, ${
       vertical ? '-50%' : '0'
     })`,
+  };
+};
+
+export const textEllipsis = (lineNum = 1): CSSProperties => {
+  if (lineNum > 1) {
+    return {
+      display: '-webkit-box',
+      wordBreak: 'break-all',
+      WebkitBoxOrient: 'vertical',
+      WebkitLineClamp: `${lineNum}`, //需要显示的行数
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    };
+  }
+  return {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   };
 };

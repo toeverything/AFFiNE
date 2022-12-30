@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 // Inspire by https://stackoverflow.com/a/11381730/8415727
 export function isMobile(userAgent: string) {
   return !!(
@@ -12,6 +13,7 @@ export function isMobile(userAgent: string) {
 
 export const getIsMobile = function () {
   return isMobile(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     navigator?.userAgent || navigator?.vendor || (window as any)?.opera
   );
 };

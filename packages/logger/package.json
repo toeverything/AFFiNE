@@ -1,6 +1,6 @@
 {
-  "name": "@pathfinder/logger",
-  "version": "0.0.1",
+  "name": "@affine/logger",
+  "version": "0.3.0",
   "description": "",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -15,7 +15,7 @@
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/toeverything/AFFINE.git"
+    "url": "git+https://github.com/toeverything/AFFiNE.git"
   },
   "dependencies": {
     "next": "^12.3.1",

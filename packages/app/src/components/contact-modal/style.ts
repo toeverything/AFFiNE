@@ -1,28 +1,11 @@
 import { absoluteCenter, displayFlex, styled } from '@/styles';
-import bg from './bg.png';
-
-export const StyledModalWrapper = styled('div')(({ theme }) => {
-  return {
-    width: '860px',
-    height: '540px',
-    backgroundColor: theme.colors.popoverBackground,
-    backgroundImage: `url(${bg.src})`,
-    borderRadius: '20px',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    margin: 'auto',
-  };
-});
 
 export const StyledBigLink = styled('a')(({ theme }) => {
   return {
-    width: '320px',
+    width: '334px',
     height: '100px',
     marginBottom: '48px',
-    paddingLeft: '114px',
+    paddingLeft: '90px',
     fontSize: '24px',
     lineHeight: '36px',
     fontWeight: '600',
@@ -46,7 +29,7 @@ export const StyledBigLink = styled('a')(({ theme }) => {
       height: '50px',
       marginRight: '40px',
       color: theme.colors.primaryColor,
-      ...absoluteCenter({ vertical: true, position: { left: '32px' } }),
+      ...absoluteCenter({ vertical: true, position: { left: '20px' } }),
     },
     p: {
       width: '100%',
@@ -102,6 +85,7 @@ export const StyledSmallLink = styled('a')(({ theme }) => {
 });
 export const StyledSubTitle = styled('div')(({ theme }) => {
   return {
+    width: '190px',
     fontSize: '18px',
     fontWeight: '600',
     color: theme.colors.textColor,
@@ -136,7 +120,7 @@ export const StyledLogo = styled('img')({
   width: 'auto',
 });
 
-export const StyledModalHeader = styled('div')(({ theme }) => {
+export const StyledModalHeader = styled('div')(() => {
   return {
     height: '20px',
     marginTop: '36px',
@@ -158,40 +142,6 @@ export const StyledModalHeaderLeft = styled('div')(({ theme }) => {
       fontSize: '14px',
       marginLeft: '12px',
       ...displayFlex('center', 'center'),
-    },
-  };
-});
-
-export const StyledCloseButton = styled('div')(({ theme }) => {
-  return {
-    width: '60px',
-    height: '60px',
-    color: theme.colors.iconColor,
-    cursor: 'pointer',
-    ...displayFlex('center', 'center'),
-    position: 'absolute',
-    right: '0',
-    top: '0',
-
-    // TODO: we need to add @emotion/babel-plugin
-    '::after': {
-      content: '""',
-      width: '30px',
-      height: '30px',
-      borderRadius: '6px',
-      ...absoluteCenter({ horizontal: true, vertical: true }),
-    },
-    ':hover': {
-      color: theme.colors.primaryColor,
-      '::after': {
-        background: theme.colors.hoverBackground,
-      },
-    },
-    svg: {
-      width: '20px',
-      height: '20px',
-      position: 'relative',
-      zIndex: 1,
     },
   };
 });

@@ -1,14 +1,3 @@
-import { StyledLoading, StyledLoadingItem } from './styled';
-
-export const Loading = () => {
-  return (
-    <StyledLoading>
-      <StyledLoadingItem />
-      <StyledLoadingItem />
-      <StyledLoadingItem />
-      <StyledLoadingItem />
-    </StyledLoading>
-  );
-};
-
+import Loading from './loading';
+export * from './page-loading';
 export default Loading;

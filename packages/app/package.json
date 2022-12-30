@@ -1,17 +1,20 @@
 {
-  "name": "@pathfinder/app",
-  "version": "0.1.0",
+  "name": "@affine/app",
+  "version": "0.3.1",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 8080",
+    "dev:ac": "NODE_API_SERVER=ac next dev -p 8080",
     "build": "next build",
     "export": "next export",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.3.0-alpha.4",
-    "@blocksuite/editor": "0.3.0-alpha.4",
-    "@blocksuite/store": "0.3.0-alpha.4",
+    "@affine/data-services": "workspace:*",
+    "@blocksuite/blocks": "0.3.0-20221230100352-5dfe65e",
+    "@blocksuite/editor": "0.3.0-20221230100352-5dfe65e",
+    "@blocksuite/icons": "^2.0.2",
+    "@blocksuite/store": "0.3.0-20221230100352-5dfe65e",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
@@ -21,24 +24,43 @@
     "@mui/base": "^5.0.0-alpha.87",
     "@mui/icons-material": "^5.10.9",
     "@mui/material": "^5.8.6",
-    "@toeverything/pathfinder-logger": "workspace:@pathfinder/logger@*",
+    "@toeverything/pathfinder-logger": "workspace:@affine/logger@*",
+    "cmdk": "^0.1.20",
     "css-spring": "^4.1.0",
+    "dayjs": "^1.11.7",
+    "i18next": "^21.9.1",
     "lit": "^2.3.1",
-    "next": "13.0.1",
+    "next": "13.1.0",
+    "next-debug-local": "^0.1.5",
     "prettier": "^2.7.1",
     "quill": "^1.3.7",
     "quill-cursors": "^4.0.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "react-i18next": "^11.18.4",
+    "yjs": "^13.5.43"
   },
   "devDependencies": {
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
+    "@types/wicg-file-system-access": "^2020.9.5",
+    "chalk-next": "^6.1.5",
     "eslint": "8.22.0",
     "eslint-config-next": "12.3.1",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "raw-loader": "^4.0.2",
     "typescript": "4.8.3"
+  },
+  "eslintConfig": {
+    "extends": [
+      "next/core-web-vitals",
+      "plugin:@next/next/recommended"
+    ],
+    "rules": {
+      "prettier/prettier": "warn"
+    },
+    "reportUnusedDisableDirectives": true
   }
 }

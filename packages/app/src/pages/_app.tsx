@@ -3,31 +3,67 @@ import dynamic from 'next/dynamic';
 import '../../public/globals.css';
 import '../../public/variable.css';
 import './temporary.css';
-import { EditorProvider } from '@/components/editor-provider';
-import { ModalProvider } from '@/components/global-modal-provider';
 import { Logger } from '@toeverything/pathfinder-logger';
-
 import '@fontsource/space-mono';
 import '@fontsource/poppins';
 import '../utils/print-build-info';
-
-const ThemeProvider = dynamic(() => import('@/styles/themeProvider'), {
+import ProviderComposer from '@/components/provider-composer';
+import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
+import type { NextPage } from 'next';
+import { AppStateProvider } from '@/providers/app-state-provider/provider';
+import ConfirmProvider from '@/providers/confirm-provider';
+import { ModalProvider } from '@/providers/global-modal-provider';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
+import { useAppState } from '@/providers/app-state-provider';
+import { PageLoading } from '@/components/loading';
+const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
 });
 
-function MyApp({ Component, pageProps }: AppProps) {
+export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
+  P,
+  IP
+> & {
+  getLayout?: (page: ReactElement) => ReactNode;
+};
+
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
+
+const App = ({ Component, pageProps }: AppPropsWithLayout) => {
+  const getLayout = Component.getLayout || (page => page);
+
   return (
     <>
       <Logger />
-      <EditorProvider>
-        <ThemeProvider>
-          <ModalProvider>
-            <Component {...pageProps} />
-          </ModalProvider>
-        </ThemeProvider>
-      </EditorProvider>
+      <ProviderComposer
+        contexts={[
+          <ThemeProvider key="ThemeProvider" />,
+          <AppStateProvider key="appStateProvider" />,
+          <ModalProvider key="ModalProvider" />,
+          <ConfirmProvider key="ConfirmProvider" />,
+        ]}
+      >
+        <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
+      </ProviderComposer>
     </>
   );
-}
+};
 
-export default MyApp;
+const AppDefender = ({ children }: PropsWithChildren) => {
+  const router = useRouter();
+
+  const { synced } = useAppState();
+
+  useEffect(() => {
+    if (router.pathname === '/') {
+      router.replace('/workspace');
+    }
+  }, [router]);
+
+  return <div>{synced ? children : <PageLoading />}</div>;
+};
+
+export default App;
