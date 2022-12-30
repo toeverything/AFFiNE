@@ -3,9 +3,9 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('local first new page', () => {
+test.describe('local first new page', () => {
   test('click btn bew page and open in tab', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await page.getByTestId('sliderBar').getByText('New Page').click();
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page');
     const newPageUrl = page.url();

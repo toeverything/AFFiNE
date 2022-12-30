@@ -37,7 +37,7 @@ test.describe.skip('Local first export page', () => {
   });
 
   test('New a page ,then open it and export markdown', async ({ page }) => {
-    await page.getByText('New Page').click();
+    await page.getByTestId('sliderBar').getByText('New Page').click();
     await page.getByPlaceholder('Title').click();
     await page
       .getByPlaceholder('Title')

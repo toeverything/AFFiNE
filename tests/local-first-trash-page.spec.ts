@@ -3,11 +3,11 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('Local first trash page', () => {
+test.describe('Local first trash page', () => {
   test('New a page , then delete it in all pages, finally find it in trash', async ({
     page,
   }) => {
-    await page.getByText('New Page').click();
+    await page.getByTestId('sliderBar').getByText('New Page').click();
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to delete');
     const newPageId = page.url().split('/').reverse()[0];
