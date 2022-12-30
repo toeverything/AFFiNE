@@ -2,9 +2,9 @@ name: Pathfinder Check
 
 on:
   push:
-    branches: [feat/filesystem_and_search]
+    branches: [feat/filesystem_and_search, pathfinder1.1]
   pull_request:
-    branches: [feat/filesystem_and_search]
+    branches: [feat/filesystem_and_search, pathfinder1.1]
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
