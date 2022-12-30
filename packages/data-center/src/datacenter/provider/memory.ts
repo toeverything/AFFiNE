@@ -5,7 +5,7 @@ export class MemoryProvider extends BaseProvider {
     super();
   }
 
-  test() {
-    console.log(this._config, this._workspace);
+  async initData() {
+    console.log('Skip data reload in memory provider');
   }
 }

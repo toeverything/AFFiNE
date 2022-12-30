@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
 import type { Page } from '@blocksuite/store';
-import { Workspace as StoreWorkspace } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import type { LoadWorkspaceHandler, CreateEditorHandler } from './context';
-import { downloadWorkspace, getDataCenter } from '@affine/datacenter';
+import { getDataCenter } from '@affine/datacenter';
 
 interface Props {
   setLoadWorkspaceHandler: (handler: LoadWorkspaceHandler) => void;
@@ -20,13 +19,9 @@ const DynamicBlocksuite = ({
     const openWorkspace: LoadWorkspaceHandler = (workspaceId: string, user) =>
       // eslint-disable-next-line no-async-promise-executor
       new Promise(async resolve => {
-        const dc = await getDataCenter();
-        const workspace = await dc.initWorkspace(
-          workspaceId,
-          new StoreWorkspace({
-            room: workspaceId,
-          }).register(BlockSchema)
-        );
+        const workspace = await getDataCenter()
+          .then(dc => dc.initWorkspace(workspaceId))
+          .then(w => w.register(BlockSchema));
 
         // console.log('websocket', websocket);
         console.log('user', user);
@@ -59,16 +54,11 @@ const DynamicBlocksuite = ({
         // const indexDBProvider = workspace.providers.find(
         //   p => p instanceof IndexedDBDocProvider
         // );
-        // if (user) {
-        //   const updates = await downloadWorkspace({ workspaceId });
-        //   updates &&
-        //     StoreWorkspace.Y.applyUpdate(
-        //       workspace.doc,
-        //       new Uint8Array(updates)
-        //     );
-        //   // if after update, the space:meta is empty, then we need to get map with doc
-        //   workspace.doc.getMap('space:meta');
-        // }
+
+        if (user) {
+          // if after update, the space:meta is empty, then we need to get map with doc
+          workspace.doc.getMap('space:meta');
+        }
 
         // if (indexDBProvider) {
         //   (indexDBProvider as IndexedDBDocProvider).whenSynced.then(() => {
