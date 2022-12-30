@@ -35,7 +35,7 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
     expect(await edgeless.isVisible()).toBe(true);
   });
 
-  test.skip('Convert to edgeless by editor header items', async ({ page }) => {
+  test('Convert to edgeless by editor header items', async ({ page }) => {
     await page
       .getByTestId('editor-header-items')
       .getByRole('button')

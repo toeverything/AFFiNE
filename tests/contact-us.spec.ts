@@ -4,7 +4,7 @@ import { loadPage } from './libs/load-page';
 loadPage();
 
 test.describe('Open contact us', () => {
-  test.skip('Click about us', async ({ page }) => {
+  test('Click about us', async ({ page }) => {
     const currentWorkspace = page.getByTestId('current-workspace');
     await currentWorkspace.click();
     // await page.waitForTimeout(1000);

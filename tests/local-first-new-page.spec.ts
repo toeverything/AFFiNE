@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('local first new page', () => {
+test.describe('local first new page', () => {
   test('click btn new page', async ({ page }) => {
     const originPageId = page.url().split('/').reverse()[0];
     await page.getByText('New Page').click();

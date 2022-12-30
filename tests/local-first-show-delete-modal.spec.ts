@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('Local first delete page', () => {
+test.describe('Local first delete page', () => {
   test('New a page ,then open it and show delete modal', async ({ page }) => {
     await page.getByText('New Page').click();
     await page.getByPlaceholder('Title').click();

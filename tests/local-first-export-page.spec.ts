@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('Local first export page', () => {
+test.describe('Local first export page', () => {
   test('New a page ,then open it and export html', async ({ page }) => {
     await page.getByText('New Page').click();
     await page.getByPlaceholder('Title').click();

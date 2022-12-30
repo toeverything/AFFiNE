@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('Local first default workspace', () => {
+test.describe('Local first default workspace', () => {
   test('Default workspace name', async ({ page }) => {
     const workspaceName = page.getByTestId('workspace-name');
     expect(await workspaceName.textContent()).toBe('AFFiNE');
