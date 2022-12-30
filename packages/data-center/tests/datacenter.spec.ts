@@ -23,9 +23,13 @@ test('can init affine provider', async () => {
   const dataCenter = await getDataCenter();
 
   // TODO: set constant token for testing
-  await dataCenter.setWorkspaceConfig('test', 'token', '');
+  await dataCenter.setWorkspaceConfig(
+    '6',
+    'token',
+    'Zzq338Py_3veZwD4XTa0nyoDGsLqhd9nFeaT1p_SK43TAOCSkcV63Tn3kDUWfBI4JHKqX7mhED4IFejm_62KUpGXRWZv11c5BGay7Nhvb_br'
+  );
 
-  const workspace = await dataCenter.initWorkspace('test', 'affine');
+  const workspace = await dataCenter.initWorkspace('6', 'affine');
 
   expect(workspace).toBeTruthy();
 });

@@ -19,6 +19,7 @@ const nextConfig = {
     EDITOR_VERSION: dependencies['@blocksuite/editor'],
   },
   webpack: config => {
+    config.experiments = { ...config.experiments, topLevelAwait: true };
     config.resolve.alias['yjs'] = require.resolve('yjs');
     config.module.rules.push({
       test: /\.md$/i,

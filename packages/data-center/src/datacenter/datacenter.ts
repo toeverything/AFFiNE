@@ -1,5 +1,6 @@
-import { Workspace } from '@blocksuite/store';
 import assert from 'assert';
+import { BlockSchema } from '@blocksuite/blocks/models';
+import { Workspace } from '@blocksuite/store';
 
 import { AffineProvider, BaseProvider } from './provider/index.js';
 import { MemoryProvider } from './provider/index.js';
@@ -27,7 +28,8 @@ export class DataCenter {
   }
 
   private async _initWithProvider(id: string, providerId: string) {
-    const workspace = new Workspace({ room: id });
+    // init workspace & register block schema
+    const workspace = new Workspace({ room: id }).register(BlockSchema);
 
     const Provider = this._providers.get(providerId);
     assert(Provider);
@@ -59,13 +61,20 @@ export class DataCenter {
     }
   }
 
-  async initWorkspace(id: string, provider = 'memory'): Promise<Workspace> {
-    if (!this._workspaces.has(id)) {
-      this._workspaces.set(id, this._initWorkspace(id, provider));
+  async initWorkspace(
+    id: string,
+    provider = 'memory'
+  ): Promise<Workspace | null> {
+    if (id) {
+      console.log('initWorkspace', id);
+      if (!this._workspaces.has(id)) {
+        this._workspaces.set(id, this._initWorkspace(id, provider));
+      }
+      const workspace = this._workspaces.get(id);
+      assert(workspace);
+      return workspace.then(w => w.workspace);
     }
-    const workspace = this._workspaces.get(id);
-    assert(workspace);
-    return workspace.then(w => w.workspace);
+    return null;
   }
 
   setWorkspaceConfig(workspace: string, key: string, value: any) {

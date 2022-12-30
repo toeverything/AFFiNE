@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import type { Page } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
-import { BlockSchema } from '@blocksuite/blocks/models';
 import type { LoadWorkspaceHandler, CreateEditorHandler } from './context';
 import { getDataCenter } from '@affine/datacenter';
 
@@ -19,54 +18,15 @@ const DynamicBlocksuite = ({
     const openWorkspace: LoadWorkspaceHandler = (workspaceId: string, user) =>
       // eslint-disable-next-line no-async-promise-executor
       new Promise(async resolve => {
-        const workspace = await getDataCenter()
-          .then(dc => dc.initWorkspace(workspaceId))
-          .then(w => w.register(BlockSchema));
+        if (workspaceId) {
+          const workspace = await getDataCenter().then(dc =>
+            dc.initWorkspace(workspaceId, 'affine')
+          );
 
-        // console.log('websocket', websocket);
-        console.log('user', user);
-
-        // if (websocket && token.refresh) {
-        //   // FIXME: if add websocket provider, the first page will be blank
-        //   const ws = new WebsocketProvider(
-        //     `ws${window.location.protocol === 'https:' ? 's' : ''}://${
-        //       window.location.host
-        //     }/api/sync/`,
-        //     workspaceId,
-        //     workspace.doc,
-        //     {
-        //       params: {
-        //         token: token.refresh,
-        //       },
-        //       awareness: workspace.meta.awareness.awareness,
-        //     }
-        //   );
-        //
-        //   ws.shouldConnect = false;
-        //
-        //   // FIXME: there needs some method to destroy websocket.
-        //   // Or we need a manager to manage websocket.
-        //   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //   // @ts-expect-error
-        //   workspace.__ws__ = ws;
-        // }
-
-        // const indexDBProvider = workspace.providers.find(
-        //   p => p instanceof IndexedDBDocProvider
-        // );
-
-        if (user) {
-          // if after update, the space:meta is empty, then we need to get map with doc
-          workspace.doc.getMap('space:meta');
+          resolve(workspace);
+        } else {
+          resolve(null);
         }
-
-        // if (indexDBProvider) {
-        //   (indexDBProvider as IndexedDBDocProvider).whenSynced.then(() => {
-        //     resolve(workspace);
-        //   });
-        // } else {
-        resolve(workspace);
-        // }
       });
 
     setLoadWorkspaceHandler(openWorkspace);

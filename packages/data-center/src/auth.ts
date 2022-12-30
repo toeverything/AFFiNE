@@ -1,17 +1,9 @@
 import { initializeApp } from 'firebase/app';
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import type { User } from 'firebase/auth';
-import { token } from './request';
+// TODO: temporary reference, move all api into affine provider
+import { token } from './datacenter/provider/affine/token';
 
-/**
- * firebaseConfig reference: https://firebase.google.com/docs/web/setup#add_firebase_to_your_app
- */
 const app = initializeApp({
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -23,14 +15,6 @@ const app = initializeApp({
 });
 
 export const firebaseAuth = getAuth(app);
-
-const signUp = (email: string, password: string) => {
-  return createUserWithEmailAndPassword(firebaseAuth, email, password);
-};
-
-const signIn = (email: string, password: string) => {
-  return signInWithEmailAndPassword(firebaseAuth, email, password);
-};
 
 const googleAuthProvider = new GoogleAuthProvider();
 export const signInWithGoogle = async () => {

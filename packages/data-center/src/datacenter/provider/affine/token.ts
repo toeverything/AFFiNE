@@ -1,5 +1,4 @@
 import { bareClient } from './request.js';
-import { AuthorizationEvent, Callback } from './events.js';
 
 export interface AccessTokenMessage {
   create_at: number;
@@ -9,6 +8,8 @@ export interface AccessTokenMessage {
   name: string;
   avatar_url: string;
 }
+
+export type Callback = (user: AccessTokenMessage | null) => void;
 
 type LoginParams = {
   type: 'Google' | 'Refresh';
@@ -25,21 +26,7 @@ type LoginResponse = {
 const login = (params: LoginParams): Promise<LoginResponse> =>
   bareClient.post('api/user/token', { json: params }).json();
 
-function b64DecodeUnicode(str: string) {
-  // Going backwards: from byte stream, to percent-encoding, to original string.
-  return decodeURIComponent(
-    window
-      .atob(str)
-      .split('')
-      .map(function (c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      })
-      .join('')
-  );
-}
-
 class Token {
-  private readonly _event: AuthorizationEvent;
   private _accessToken!: string;
   private _refreshToken!: string;
 
@@ -47,16 +34,18 @@ class Token {
   private _padding?: Promise<LoginResponse>;
 
   constructor() {
-    this._event = new AuthorizationEvent();
     this._setToken(); // fill with default value
   }
 
   private _setToken(login?: LoginResponse) {
+    console.log('set login', login);
     this._accessToken = login?.token || '';
     this._refreshToken = login?.refresh || '';
 
     this._user = Token.parse(this._accessToken);
-    this._event.triggerChange(this._user);
+    if (login) {
+      this.triggerChange(this._user);
+    }
   }
 
   async initToken(token: string) {
@@ -96,21 +85,43 @@ class Token {
 
   static parse(token: string): AccessTokenMessage | null {
     try {
-      const message: AccessTokenMessage = JSON.parse(
-        b64DecodeUnicode(token.split('.')[1])
+      return JSON.parse(
+        String.fromCharCode.apply(
+          null,
+          Array.from(
+            Uint8Array.from(
+              window.atob(
+                // split jwt
+                token.split('.')[1]
+              ),
+              c => c.charCodeAt(0)
+            )
+          )
+        )
       );
-      return message;
     } catch (error) {
       return null;
     }
   }
 
+  private callbacks: Callback[] = [];
+  private lastState: AccessTokenMessage | null = null;
+
+  triggerChange(user: AccessTokenMessage | null) {
+    this.lastState = user;
+    this.callbacks.forEach(callback => callback(user));
+  }
+
   onChange(callback: Callback) {
-    this._event.onChange(callback);
+    this.callbacks.push(callback);
+    callback(this.lastState);
   }
 
   offChange(callback: Callback) {
-    this._event.removeCallback(callback);
+    const index = this.callbacks.indexOf(callback);
+    if (index > -1) {
+      this.callbacks.splice(index, 1);
+    }
   }
 }
 

@@ -17,8 +17,8 @@ export const AffineIcon = () => {
         fill="#FFF"
       />
       <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
+        fillRule="evenodd"
+        clipRule="evenodd"
         d="M18.6303 8.79688L11.2559 29.8393H15.5752L20.2661 15.2858L24.959 29.8393H29.2637L21.8881 8.79688H18.6303Z"
         fill="#6880FF"
       />
