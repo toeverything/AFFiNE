@@ -4,7 +4,7 @@ import { loadPage } from './libs/load-page';
 loadPage();
 
 test.describe('Local first delete page', () => {
-  test.skip('New a page , then delete it in all pages, permanently delete it', async ({
+  test('New a page , then delete it in all pages, permanently delete it', async ({
     page,
   }) => {
     await page.getByText('New Page').click();

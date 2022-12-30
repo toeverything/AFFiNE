@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('Local first favorite items ui', () => {
+test.describe('Local first favorite items ui', () => {
   test('Show favorite items in sidebar', async ({ page }) => {
     await page.getByText('New Page').click();
     await page.getByPlaceholder('Title').click();

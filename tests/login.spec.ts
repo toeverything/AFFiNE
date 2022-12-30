@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('Login Flow', () => {
+test.describe('Login Flow', () => {
   test('Open login modal by click current workspace', async ({ page }) => {
     await page.getByTestId('current-workspace').click();
     await page.waitForTimeout(800);

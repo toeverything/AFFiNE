@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page';
 
 loadPage();
 
-test.describe.skip('Local first favorite and cancel favorite  page', () => {
+test.describe('Local first favorite and cancel favorite  page', () => {
   test('New a page and open it ,then favorite it', async ({ page }) => {
     await page.getByText('New Page').click();
     await page.getByPlaceholder('Title').click();

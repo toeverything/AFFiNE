@@ -71,6 +71,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: ./packages/app/.next
+
   lint:
     name: Lint and E2E Test
     runs-on: ubuntu-latest
