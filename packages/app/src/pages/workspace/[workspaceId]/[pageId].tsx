@@ -46,7 +46,7 @@ const Page: NextPageWithLayout = () => {
         const title = metaTitle
           ? metaTitle
           : isFirstPage
-          ? 'Welcome to AFFiNE Alpha v2.0'
+          ? 'Welcome to AFFiNE Alpha "Abbey Wood"'
           : '';
         currentWorkspace?.setPageMeta(currentPage!.id, { title });
 

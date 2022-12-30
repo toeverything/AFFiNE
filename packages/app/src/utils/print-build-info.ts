@@ -14,9 +14,9 @@ const nextConfig = getConfig();
 const publicRuntimeConfig: Config = nextConfig.publicRuntimeConfig;
 
 const printBuildInfo = () => {
-  if (isDev) {
-    return;
-  }
+  // if (isDev) {
+  //   return;
+  // }
   console.group('Build info');
   console.log('Project:', publicRuntimeConfig.PROJECT_NAME);
   console.log(
