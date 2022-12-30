@@ -42,6 +42,7 @@ Let us know what you think of this latest version.
 [] Favourite a page
 
 **Have an enjoyable editing experience !!!** 😃
+
 Have some feedback or just want to get in touch? Use the (?), then 🎧 to get in touch and join our communities.
 
 **Interested in AFFiNE cloud?**
