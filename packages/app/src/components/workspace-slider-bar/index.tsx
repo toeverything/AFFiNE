@@ -70,7 +70,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
   );
 };
 export const WorkSpaceSliderBar = () => {
-  const { triggerQuickSearchModal } = useModal();
+  const { triggerQuickSearchModal, triggerImportModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
   const { currentWorkspaceId } = useAppState();
   const { openPage, createPage } = usePageHelper();
@@ -153,16 +153,13 @@ export const WorkSpaceSliderBar = () => {
           </StyledListItem>
           <FavoriteList showList={showSubFavorite} />
 
-          <Tooltip content="Coming soon" placement="right-start" zIndex={9999}>
-            <StyledListItem
-              disabled={true}
-              onClick={() => {
-                // triggerImportModal();
-              }}
-            >
-              <ImportIcon /> Import
-            </StyledListItem>
-          </Tooltip>
+          <StyledListItem
+            onClick={() => {
+              triggerImportModal();
+            }}
+          >
+            <ImportIcon /> Import
+          </StyledListItem>
 
           <Link href={{ pathname: paths.trash }}>
             <StyledListItem active={router.asPath === paths.trash}>

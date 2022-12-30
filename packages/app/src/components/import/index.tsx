@@ -3,14 +3,74 @@ import { StyledButtonWrapper, StyledTitle } from './styles';
 import { Button } from '@/ui/button';
 import { Wrapper, Content } from '@/ui/layout';
 import Loading from '@/components/loading';
+import { usePageHelper } from '@/hooks/use-page-helper';
+import { useAppState } from '@/providers/app-state-provider/context';
 import { useEffect, useState } from 'react';
 type ImportModalProps = {
   open: boolean;
   onClose: () => void;
 };
+type Template = {
+  name: string;
+  source: string;
+};
 export const ImportModal = ({ open, onClose }: ImportModalProps) => {
   const [status, setStatus] = useState<'unImported' | 'importing'>('importing');
+  const { openPage, createPage } = usePageHelper();
+  const { currentWorkspace } = useAppState();
+  const _applyTemplate = function (pageId: string, template: Template) {
+    const page = currentWorkspace?.getPage(pageId);
 
+    const title = template.name;
+    if (page) {
+      currentWorkspace?.setPageMeta(page.id, { title });
+      if (page && page.root === null) {
+        setTimeout(() => {
+          const editor = document.querySelector('editor-container');
+          if (editor) {
+            const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
+            // TODO blocksuite should offer a method to import markdown from store
+            editor.clipboard.importMarkdown(template.source, `${groupId}`);
+            page.resetHistory();
+            editor.requestUpdate();
+          }
+        }, 300);
+      }
+    }
+  };
+  const _handleAppleTemplate = async function (template: Template) {
+    const pageId = await createPage();
+    if (pageId) {
+      openPage(pageId);
+      _applyTemplate(pageId, template);
+    }
+  };
+  const _handleAppleTemplateFromFilePicker = async () => {
+    if (!window.showOpenFilePicker) {
+      return;
+    }
+    const arrFileHandle = await window.showOpenFilePicker({
+      types: [
+        {
+          accept: {
+            'text/markdown': ['.md'],
+            'text/html': ['.html', '.htm'],
+            'text/plain': ['.text'],
+          },
+        },
+      ],
+      multiple: false,
+    });
+    for (const fileHandle of arrFileHandle) {
+      const file = await fileHandle.getFile();
+      const text = await file.text();
+      _handleAppleTemplate({
+        name: file.name,
+        source: text,
+      });
+    }
+    onClose && onClose();
+  };
   useEffect(() => {
     if (status === 'importing') {
       setTimeout(() => {
@@ -29,14 +89,14 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
           <StyledButtonWrapper>
             <Button
               onClick={() => {
-                setStatus('importing');
+                _handleAppleTemplateFromFilePicker();
               }}
             >
               Markdown
             </Button>
             <Button
               onClick={() => {
-                setStatus('importing');
+                _handleAppleTemplateFromFilePicker();
               }}
             >
               HTML
