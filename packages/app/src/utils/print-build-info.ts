@@ -1,5 +1,5 @@
 import getConfig from 'next/config';
-// import { isDev } from './env';
+import { isDev } from './env';
 type Config = {
   BUILD_DATE: string;
   NODE_ENV: string;
@@ -14,6 +14,9 @@ const nextConfig = getConfig();
 const publicRuntimeConfig: Config = nextConfig.publicRuntimeConfig;
 
 const printBuildInfo = () => {
+  if (isDev) {
+    return;
+  }
   console.group('Build info');
   console.log('Project:', publicRuntimeConfig.PROJECT_NAME);
   console.log(
