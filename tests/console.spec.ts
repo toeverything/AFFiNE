@@ -9,16 +9,16 @@ test.describe('web console', () => {
     // https://playwright.dev/docs/evaluating
     // https://github.com/microsoft/playwright/issues/13059
     // Get the handle to a specific function.
-    // const getEditoVersionHandle = await page.evaluate(
-    //   'window.__getEditoVersion'
-    // );
     //Later on, call this function with some arguments.
     // const msg = await getEditoVersionHandle.evaluate((post, args) => post);
     // console.log(getEditoVersionHandle);
-    const documentEditorVersion = await page.inputValue('input#editor-version');
+    await page.waitForTimeout(500);
+    const editoVersion = await page.evaluate(
+      () => (window as any).__editoVersion
+    );
+    // const documentEditorVersion = await page.inputValue('input#editor-version');
     const pkgEditorVersion = pkg.dependencies['@blocksuite/editor'];
 
-    expect(documentEditorVersion).toBe(pkgEditorVersion);
-    console.log('pkgEditorVersion', pkgEditorVersion);
+    expect(editoVersion).toBe(pkgEditorVersion);
   });
 });

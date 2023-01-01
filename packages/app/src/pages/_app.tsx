@@ -6,7 +6,7 @@ import './temporary.css';
 import { Logger } from '@toeverything/pathfinder-logger';
 import '@fontsource/space-mono';
 import '@fontsource/poppins';
-import { printBuildInfo } from '../utils/print-build-info';
+import '../utils/print-build-info';
 import ProviderComposer from '@/components/provider-composer';
 import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import type { NextPage } from 'next';
@@ -17,6 +17,7 @@ import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { PageLoading } from '@/components/loading';
+
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
 });
@@ -34,9 +35,7 @@ type AppPropsWithLayout = AppProps & {
 
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout || (page => page);
-  useEffect(() => {
-    printBuildInfo();
-  }, []);
+
   return (
     <>
       <Logger />
