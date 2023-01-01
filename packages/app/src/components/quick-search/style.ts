@@ -73,7 +73,11 @@ export const StyledInputContent = styled('div')(({ theme }) => {
   };
 });
 export const StyledShortcut = styled('div')(({ theme }) => {
-  return { color: theme.colors.placeHolderColor, fontSize: theme.font.sm };
+  return {
+    color: theme.colors.placeHolderColor,
+    fontSize: theme.font.sm,
+    whiteSpace: 'nowrap',
+  };
 });
 
 export const StyledLabel = styled('label')(({ theme }) => {
