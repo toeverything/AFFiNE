@@ -134,6 +134,8 @@ importers:
       '@blocksuite/blocks': 0.3.0-20221228162706-9576a3a
       '@blocksuite/store': 0.3.0-20221228162706-9576a3a
       '@playwright/test': ^1.29.1
+      '@types/debug': ^4.1.7
+      debug: ^4.3.4
       encoding: ^0.1.13
       fake-indexeddb: 4.0.1
       firebase: ^9.15.0
@@ -148,6 +150,7 @@ importers:
     dependencies:
       '@blocksuite/blocks': 0.3.0-20221228162706-9576a3a_yjs@13.5.44
       '@blocksuite/store': 0.3.0-20221228162706-9576a3a_yjs@13.5.44
+      debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
       idb-keyval: 6.2.0
@@ -159,6 +162,7 @@ importers:
       yjs: 13.5.44
     devDependencies:
       '@playwright/test': 1.29.1
+      '@types/debug': 4.1.7
       fake-indexeddb: 4.0.1
       typescript: 4.9.3
 
@@ -3623,6 +3627,12 @@ packages:
       '@babel/types': 7.20.5
     dev: true
 
+  /@types/debug/4.1.7:
+    resolution: {integrity: sha512-9AonUzyTjXXhEOa0DnqpzZi6VHlqKMswga9EXjpXnnqxwLtdvPPtlO8evrI5D9S6asFRCQ6v+wpiUKbw+vKqyg==}
+    dependencies:
+      '@types/ms': 0.7.31
+    dev: true
+
   /@types/eslint/8.4.10:
     resolution: {integrity: sha512-Sl/HOqN8NKPmhWo2VBEPm0nvHnu2LL3v9vKo8MEq0EtbJ4eVzGPl41VNPvn5E1i5poMk4/XD8UriLHpJvEP/Nw==}
     dependencies:
@@ -3695,6 +3705,10 @@ packages:
 
   /@types/minimist/1.2.2:
     resolution: {integrity: sha512-jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==}
+    dev: true
+
+  /@types/ms/0.7.31:
+    resolution: {integrity: sha512-iiUgKzV9AuaEkZqkOLDIvlQiL6ltuZd9tGcW3gwpnX8JbuiuhFlEGmmFXEXkN50Cvq7Os88IY2v0dkDqXYWVgA==}
     dev: true
 
   /@types/node/12.20.55:

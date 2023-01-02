@@ -1,19 +1,23 @@
-import { Workspace } from '@blocksuite/store';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import type { Workspace } from '@blocksuite/store';
 
-import type { ConfigStore } from '../store.js';
+import type { Logger, InitialParams, ConfigStore } from './index';
 
 export class BaseProvider {
-  static id = 'memory';
+  static id = 'base';
   protected _config!: ConfigStore;
+  protected _logger!: Logger;
   protected _workspace!: Workspace;
 
   constructor() {
     // Nothing to do here
   }
 
-  async init(config: ConfigStore, workspace: Workspace) {
-    this._config = config;
-    this._workspace = workspace;
+  async init(params: InitialParams) {
+    this._config = params.config;
+    this._logger = params.logger;
+    this._workspace = params.workspace;
+    this._logger.enabled = true;
   }
 
   async destroy() {
@@ -22,6 +26,16 @@ export class BaseProvider {
 
   async initData() {
     throw Error('Not implemented: initData');
+  }
+
+  // should return a blob url
+  async getBlob(_id: string): Promise<string | null> {
+    throw Error('Not implemented: getBlob');
+  }
+
+  // should return a blob unique id
+  async setBlob(_blob: Blob): Promise<string> {
+    throw Error('Not implemented: setBlob');
   }
 
   get workspace() {

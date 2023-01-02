@@ -1,3 +1,4 @@
+import { getLogger } from '../../index.js';
 import { bareClient } from './request.js';
 
 export interface AccessTokenMessage {
@@ -27,6 +28,7 @@ const login = (params: LoginParams): Promise<LoginResponse> =>
   bareClient.post('api/user/token', { json: params }).json();
 
 class Token {
+  private readonly _logger;
   private _accessToken!: string;
   private _refreshToken!: string;
 
@@ -34,17 +36,22 @@ class Token {
   private _padding?: Promise<LoginResponse>;
 
   constructor() {
+    this._logger = getLogger('token');
+    this._logger.enabled = true;
+
     this._setToken(); // fill with default value
   }
 
   private _setToken(login?: LoginResponse) {
-    console.log('set login', login);
     this._accessToken = login?.token || '';
     this._refreshToken = login?.refresh || '';
 
     this._user = Token.parse(this._accessToken);
     if (login) {
+      this._logger('set login', login);
       this.triggerChange(this._user);
+    } else {
+      this._logger('empty login');
     }
   }
 
