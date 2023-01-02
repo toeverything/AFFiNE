@@ -7,6 +7,11 @@ import { AffineProvider, BaseProvider } from './provider/index.js';
 import { LocalProvider } from './provider/index.js';
 import { getKVConfigure } from './store.js';
 
+type GetWorkspaceParams = {
+  providerId?: string;
+  config?: Record<string, any>;
+};
+
 export class DataCenter {
   private readonly _providers = new Map<string, typeof BaseProvider>();
   private readonly _workspaces = new Map<string, Promise<BaseProvider>>();
@@ -69,11 +74,17 @@ export class DataCenter {
 
   async getWorkspace(
     id: string,
-    provider = 'local'
+    params: GetWorkspaceParams = {}
   ): Promise<Workspace | null> {
+    const { providerId = 'local', config = {} } = params;
     if (id) {
       if (!this._workspaces.has(id)) {
-        this._workspaces.set(id, this._getWorkspace(id, provider));
+        this._workspaces.set(
+          id,
+          this.setWorkspaceConfig(id, config).then(() =>
+            this._getWorkspace(id, providerId)
+          )
+        );
       }
       const workspace = this._workspaces.get(id);
       assert(workspace);
@@ -82,9 +93,12 @@ export class DataCenter {
     return null;
   }
 
-  setWorkspaceConfig(workspace: string, key: string, value: any) {
-    const config = getKVConfigure(workspace);
-    return config.set(key, value);
+  async setWorkspaceConfig(workspace: string, config: Record<string, any>) {
+    const values = Object.entries(config);
+    if (values.length) {
+      const configure = getKVConfigure(workspace);
+      await configure.setMany(values);
+    }
   }
 
   async listWorkspace() {
@@ -92,6 +106,14 @@ export class DataCenter {
     return keys
       .filter(k => k.startsWith('workspace:'))
       .map(k => k.split(':')[1]);
+  }
+
+  async destroyWorkspace(id: string) {
+    const provider = await this._workspaces.get(id);
+    if (provider) {
+      this._workspaces.delete(id);
+      await provider.destroy();
+    }
   }
 
   async removeWorkspace(id: string) {
