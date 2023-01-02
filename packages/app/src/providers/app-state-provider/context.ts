@@ -1,19 +1,18 @@
 import { createContext, MutableRefObject, useContext } from 'react';
 import type { Workspace } from '@affine/datacenter';
-import { AccessTokenMessage } from '@affine/datacenter';
 import type {
   Page as StorePage,
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import type { EditorContainer } from '@blocksuite/editor';
 export type LoadWorkspaceHandler = (
-  workspaceId: string,
-  user?: AccessTokenMessage | null
+  workspaceId: string
+  // user?: AccessTokenMessage | null
 ) => Promise<StoreWorkspace | null> | null;
 export type CreateEditorHandler = (page: StorePage) => EditorContainer | null;
 
 export interface AppStateValue {
-  user: AccessTokenMessage | null;
+  // user: AccessTokenMessage | null;
   workspacesMeta: Workspace[];
 
   currentWorkspaceId: string;
@@ -39,7 +38,7 @@ export interface AppStateContext extends AppStateValue {
 }
 
 export const AppState = createContext<AppStateContext>({
-  user: null,
+  // user: null,
   workspacesMeta: [],
 
   currentWorkspaceId: '',

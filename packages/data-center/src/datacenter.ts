@@ -3,6 +3,7 @@ import { BlockSchema } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
 
 import { getLogger } from './index.js';
+import { getApis, Apis } from './apis/index.js';
 import { AffineProvider, BaseProvider } from './provider/index.js';
 import { LocalProvider } from './provider/index.js';
 import { getKVConfigure } from './store.js';
@@ -13,6 +14,7 @@ type GetWorkspaceParams = {
 };
 
 export class DataCenter {
+  private readonly _apis: Apis;
   private readonly _providers = new Map<string, typeof BaseProvider>();
   private readonly _workspaces = new Map<string, Promise<BaseProvider>>();
   private readonly _config;
@@ -27,9 +29,14 @@ export class DataCenter {
   }
 
   private constructor(debug: boolean) {
+    this._apis = getApis();
     this._config = getKVConfigure('sys');
     this._logger = getLogger('dc');
     this._logger.enabled = debug;
+  }
+
+  get apis(): Readonly<Apis> {
+    return this._apis;
   }
 
   private addProvider(provider: typeof BaseProvider) {
@@ -61,6 +68,7 @@ export class DataCenter {
     const provider = new Provider();
 
     await provider.init({
+      apis: this._apis,
       config: getKVConfigure(id),
       debug: this._logger.enabled,
       logger: this._logger.extend(`${Provider.id}:${id}`),
