@@ -38,7 +38,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-i18next": "^11.18.4",
-    "yjs": "^13.5.43"
+    "yjs": "^13.5.44"
   },
   "devDependencies": {
     "@types/node": "18.7.18",
