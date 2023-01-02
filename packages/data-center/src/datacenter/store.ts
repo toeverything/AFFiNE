@@ -1,10 +1,11 @@
-import { createStore, del, get, keys, set } from 'idb-keyval';
+import { createStore, del, get, keys, set, clear } from 'idb-keyval';
 
 export type ConfigStore<T = any> = {
   get: (key: string) => Promise<T | undefined>;
   set: (key: string, value: T) => Promise<void>;
   keys: () => Promise<string[]>;
   delete: (key: string) => Promise<void>;
+  clear: () => Promise<void>;
 };
 
 const initialIndexedDB = <T = any>(database: string): ConfigStore<T> => {
@@ -14,6 +15,7 @@ const initialIndexedDB = <T = any>(database: string): ConfigStore<T> => {
     set: (key: string, value: T) => set(key, value, store),
     keys: () => keys(store),
     delete: (key: string) => del(key, store),
+    clear: () => clear(store),
   };
 };
 
@@ -34,7 +36,16 @@ const scopedIndexedDB = () => {
                 .filter(k => k.startsWith(`${scope}:`))
                 .map(k => k.replace(`${scope}:`, ''))
             ),
-        delete: (key: string) => del(`${scope}:${key}`),
+        delete: (key: string) => idb.delete(`${scope}:${key}`),
+        clear: async () => {
+          await idb
+            .keys()
+            .then(keys =>
+              Promise.all(
+                keys.filter(k => k.startsWith(`${scope}:`)).map(k => del(k))
+              )
+            );
+        },
       };
 
       storeCache.set(scope, store);

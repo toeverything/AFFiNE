@@ -1,4 +1,5 @@
-export const getDataCenter = () =>
-  import('../src/datacenter/index.js').then(async dataCenter =>
-    dataCenter.getDataCenter()
+export const getDataCenter = () => {
+  return import('../src/datacenter/index.js').then(async dataCenter =>
+    dataCenter.getDataCenter(false)
   );
+};

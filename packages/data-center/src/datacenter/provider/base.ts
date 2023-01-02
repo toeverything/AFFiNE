@@ -17,7 +17,12 @@ export class BaseProvider {
     this._config = params.config;
     this._logger = params.logger;
     this._workspace = params.workspace;
-    this._logger.enabled = true;
+    this._logger.enabled = params.debug;
+  }
+
+  async clear() {
+    await this.destroy();
+    await this._config.clear();
   }
 
   async destroy() {

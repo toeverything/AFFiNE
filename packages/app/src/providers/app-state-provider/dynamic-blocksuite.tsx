@@ -20,7 +20,7 @@ const DynamicBlocksuite = ({
       new Promise(async resolve => {
         if (workspaceId) {
           const workspace = await getDataCenter().then(dc =>
-            dc.initWorkspace(workspaceId, 'affine')
+            dc.getWorkspace(workspaceId, 'affine')
           );
 
           resolve(workspace);

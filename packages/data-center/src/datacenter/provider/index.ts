@@ -7,6 +7,7 @@ export type Logger = ReturnType<typeof getLogger>;
 
 export type InitialParams = {
   config: ConfigStore;
+  debug: boolean;
   logger: Logger;
   workspace: Workspace;
 };

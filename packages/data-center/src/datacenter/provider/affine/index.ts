@@ -5,11 +5,13 @@ import type { InitialParams } from '../index.js';
 import { LocalProvider } from '../local/index.js';
 
 import { downloadWorkspace } from './apis.js';
+import { WebsocketProvider } from './sync.js';
 import { token, Callback } from './token.js';
 
 export class AffineProvider extends LocalProvider {
   static id = 'affine';
   private _onTokenRefresh?: Callback = undefined;
+  private _ws?: WebsocketProvider;
 
   constructor() {
     super();
@@ -64,7 +66,21 @@ export class AffineProvider extends LocalProvider {
       try {
         const updates = await downloadWorkspace(workspace.room);
         if (updates) {
-          applyUpdate(doc, new Uint8Array(updates));
+          await new Promise(resolve => {
+            doc.once('update', resolve);
+            applyUpdate(doc, new Uint8Array(updates));
+          });
+          // TODO: wait util data loaded
+          this._ws = new WebsocketProvider('/', workspace.room, doc);
+          // Wait for ws synchronization to complete, otherwise the data will be modified in reverse, which can be optimized later
+          await new Promise<void>((resolve, reject) => {
+            // TODO: synced will also be triggered on reconnection after losing sync
+            // There needs to be an event mechanism to emit the synchronization state to the upper layer
+            assert(this._ws);
+            this._ws.once('synced', () => resolve());
+            this._ws.once('lost-connection', () => resolve());
+            this._ws.once('connection-error', () => reject());
+          });
         }
       } catch (e) {
         this._logger('Failed to init cloud workspace', e);

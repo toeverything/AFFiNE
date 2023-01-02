@@ -4,9 +4,9 @@ import { DataCenter } from './datacenter.js';
 const _initializeDataCenter = () => {
   let _dataCenterInstance: Promise<DataCenter>;
 
-  return () => {
+  return (debug = true) => {
     if (!_dataCenterInstance) {
-      _dataCenterInstance = DataCenter.init();
+      _dataCenterInstance = DataCenter.init(debug);
     }
 
     return _dataCenterInstance;
