@@ -52,6 +52,9 @@ export class AffineProvider extends LocalProvider {
     if (this._onTokenRefresh) {
       token.offChange(this._onTokenRefresh);
     }
+    if (this._ws) {
+      this._ws.disconnect();
+    }
   }
 
   async initData() {
