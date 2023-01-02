@@ -1,3 +1,4 @@
+import debug from 'debug';
 import { DataCenter } from './datacenter.js';
 
 const _initializeDataCenter = () => {
@@ -13,3 +14,9 @@ const _initializeDataCenter = () => {
 };
 
 export const getDataCenter = _initializeDataCenter();
+
+export function getLogger(namespace: string) {
+  const logger = debug(namespace);
+  logger.log = console.log.bind(console);
+  return logger;
+}

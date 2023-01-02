@@ -2,32 +2,52 @@ import assert from 'assert';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { Workspace } from '@blocksuite/store';
 
+import { getLogger } from './index.js';
 import { AffineProvider, BaseProvider } from './provider/index.js';
-import { MemoryProvider } from './provider/index.js';
+import { LocalProvider } from './provider/index.js';
 import { getKVConfigure } from './store.js';
 
 export class DataCenter {
   private readonly _providers = new Map<string, typeof BaseProvider>();
   private readonly _workspaces = new Map<string, Promise<BaseProvider>>();
   private readonly _config;
+  private readonly _logger;
 
   static async init(): Promise<DataCenter> {
     const dc = new DataCenter();
     dc.addProvider(AffineProvider);
-    dc.addProvider(MemoryProvider);
+    dc.addProvider(LocalProvider);
 
     return dc;
   }
 
   private constructor() {
     this._config = getKVConfigure('sys');
+    this._logger = getLogger('dc');
+    this._logger.enabled = true;
   }
 
-  addProvider(provider: typeof BaseProvider) {
+  private addProvider(provider: typeof BaseProvider) {
     this._providers.set(provider.id, provider);
   }
 
-  private async _initWithProvider(id: string, providerId: string) {
+  private async _getProvider(id: string, providerId: string): Promise<string> {
+    const providerKey = `workspace:${id}:provider`;
+    if (this._providers.has(providerId)) {
+      await this._config.set(providerKey, providerId);
+      return providerId;
+    } else {
+      const providerValue = await this._config.get(providerKey);
+      if (providerValue) return providerValue;
+    }
+    throw Error(`Provider ${providerId} not found`);
+  }
+
+  private async _initWorkspace(id: string, pid: string): Promise<BaseProvider> {
+    this._logger(`Init workspace ${id} with ${pid}`);
+
+    const providerId = await this._getProvider(id, pid);
+
     // init workspace & register block schema
     const workspace = new Workspace({ room: id }).register(BlockSchema);
 
@@ -35,38 +55,22 @@ export class DataCenter {
     assert(Provider);
     const provider = new Provider();
 
-    console.log(`Loading workspace ${id} with provider ${Provider.id}`);
-    await provider.init(getKVConfigure(id), workspace);
+    await provider.init({
+      config: getKVConfigure(id),
+      logger: this._logger.extend(`${Provider.id}:${id}`),
+      workspace,
+    });
     await provider.initData();
-    console.log(`Workspace ${id} loaded`);
+    this._logger(`Workspace ${id} loaded`);
 
     return provider;
   }
 
-  private async _initWorkspace(
-    id: string,
-    providerId: string
-  ): Promise<BaseProvider> {
-    const providerKey = `workspace:${id}:provider`;
-    const providerValue = await this._config.get(providerKey);
-
-    if (this._providers.has(providerValue || providerId)) {
-      if (!providerValue) {
-        await this._config.set(providerKey, providerId);
-      }
-
-      return this._initWithProvider(id, await this._config.get(providerKey));
-    } else {
-      throw Error(`provider ${providerId} not found`);
-    }
-  }
-
   async initWorkspace(
     id: string,
-    provider = 'memory'
+    provider = 'local'
   ): Promise<Workspace | null> {
     if (id) {
-      console.log('initWorkspace', id);
       if (!this._workspaces.has(id)) {
         this._workspaces.set(id, this._initWorkspace(id, provider));
       }
@@ -80,5 +84,12 @@ export class DataCenter {
   setWorkspaceConfig(workspace: string, key: string, value: any) {
     const config = getKVConfigure(workspace);
     return config.set(key, value);
+  }
+
+  async getWorkspaceList() {
+    const keys = await this._config.keys();
+    return keys
+      .filter(k => k.startsWith('workspace:'))
+      .map(k => k.split(':')[1]);
   }
 }

@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test('can init data center', async () => {
+test('init data center', async () => {
   const dataCenter = await getDataCenter();
   expect(dataCenter).toBeTruthy();
 
@@ -12,24 +12,38 @@ test('can init data center', async () => {
   expect(workspace).toBeTruthy();
 });
 
-test('should init error', async () => {
+test('should init error with unknown provider', async () => {
   const dataCenter = await getDataCenter();
 
   test.fail();
   await dataCenter.initWorkspace('test', 'not exist provider');
 });
 
-test('can init affine provider', async () => {
+test.skip('init affine provider', async () => {
   const dataCenter = await getDataCenter();
 
   // TODO: set constant token for testing
-  await dataCenter.setWorkspaceConfig(
-    '6',
-    'token',
-    'Zzq338Py_3veZwD4XTa0nyoDGsLqhd9nFeaT1p_SK43TAOCSkcV63Tn3kDUWfBI4JHKqX7mhED4IFejm_62KUpGXRWZv11c5BGay7Nhvb_br'
-  );
+  await dataCenter.setWorkspaceConfig('6', 'token', 'YOUR_TOKEN');
 
   const workspace = await dataCenter.initWorkspace('6', 'affine');
 
   expect(workspace).toBeTruthy();
+});
+
+test('list workspaces', async () => {
+  const dataCenter = await getDataCenter();
+
+  await Promise.all([
+    dataCenter.initWorkspace('test1'),
+    dataCenter.initWorkspace('test2'),
+    dataCenter.initWorkspace('test3'),
+    dataCenter.initWorkspace('test4'),
+  ]);
+
+  expect(await dataCenter.getWorkspaceList()).toStrictEqual([
+    'test1',
+    'test2',
+    'test3',
+    'test4',
+  ]);
 });
