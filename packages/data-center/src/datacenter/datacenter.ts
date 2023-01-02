@@ -13,18 +13,18 @@ export class DataCenter {
   private readonly _config;
   private readonly _logger;
 
-  static async init(): Promise<DataCenter> {
-    const dc = new DataCenter();
+  static async init(debug: boolean): Promise<DataCenter> {
+    const dc = new DataCenter(debug);
     dc.addProvider(AffineProvider);
     dc.addProvider(LocalProvider);
 
     return dc;
   }
 
-  private constructor() {
+  private constructor(debug: boolean) {
     this._config = getKVConfigure('sys');
     this._logger = getLogger('dc');
-    this._logger.enabled = true;
+    this._logger.enabled = debug;
   }
 
   private addProvider(provider: typeof BaseProvider) {
@@ -43,7 +43,7 @@ export class DataCenter {
     throw Error(`Provider ${providerId} not found`);
   }
 
-  private async _initWorkspace(id: string, pid: string): Promise<BaseProvider> {
+  private async _getWorkspace(id: string, pid: string): Promise<BaseProvider> {
     this._logger(`Init workspace ${id} with ${pid}`);
 
     const providerId = await this._getProvider(id, pid);
@@ -57,6 +57,7 @@ export class DataCenter {
 
     await provider.init({
       config: getKVConfigure(id),
+      debug: this._logger.enabled,
       logger: this._logger.extend(`${Provider.id}:${id}`),
       workspace,
     });
@@ -66,13 +67,13 @@ export class DataCenter {
     return provider;
   }
 
-  async initWorkspace(
+  async getWorkspace(
     id: string,
     provider = 'local'
   ): Promise<Workspace | null> {
     if (id) {
       if (!this._workspaces.has(id)) {
-        this._workspaces.set(id, this._initWorkspace(id, provider));
+        this._workspaces.set(id, this._getWorkspace(id, provider));
       }
       const workspace = this._workspaces.get(id);
       assert(workspace);
@@ -86,10 +87,24 @@ export class DataCenter {
     return config.set(key, value);
   }
 
-  async getWorkspaceList() {
+  async listWorkspace() {
     const keys = await this._config.keys();
     return keys
       .filter(k => k.startsWith('workspace:'))
       .map(k => k.split(':')[1]);
+  }
+
+  async removeWorkspace(id: string) {
+    await this._config.delete(`workspace:${id}:provider`);
+    const provider = await this._workspaces.get(id);
+    if (provider) {
+      this._workspaces.delete(id);
+      await provider.clear();
+    }
+  }
+
+  async clearWorkspaces() {
+    const workspaces = await this.listWorkspace();
+    await Promise.all(workspaces.map(id => this.removeWorkspace(id)));
   }
 }

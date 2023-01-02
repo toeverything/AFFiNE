@@ -33,6 +33,12 @@ export class LocalProvider extends BaseProvider {
     this._logger('Local data loaded');
   }
 
+  async clear() {
+    await super.clear();
+    await this._blobs.clear();
+    this._idb?.clearData();
+  }
+
   async destroy(): Promise<void> {
     super.destroy();
     if (this._idb) {
