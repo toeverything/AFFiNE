@@ -45,10 +45,10 @@ importers:
   packages/app:
     specifiers:
       '@affine/data-services': workspace:*
-      '@blocksuite/blocks': 0.3.0-20221230100352-5dfe65e
-      '@blocksuite/editor': 0.3.0-20221230100352-5dfe65e
+      '@blocksuite/blocks': 0.3.1
+      '@blocksuite/editor': 0.3.1
       '@blocksuite/icons': ^2.0.2
-      '@blocksuite/store': 0.3.0-20221230100352-5dfe65e
+      '@blocksuite/store': 0.3.1
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -83,13 +83,13 @@ importers:
       react-dom: 18.2.0
       react-i18next: ^11.18.4
       typescript: 4.8.3
-      yjs: ^13.5.43
+      yjs: ^13.5.44
     dependencies:
       '@affine/data-services': link:../data-services
-      '@blocksuite/blocks': 0.3.0-20221230100352-5dfe65e_yjs@13.5.43
-      '@blocksuite/editor': 0.3.0-20221230100352-5dfe65e_yjs@13.5.43
+      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
+      '@blocksuite/editor': 0.3.1_yjs@13.5.44
       '@blocksuite/icons': 2.0.2_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.3.0-20221230100352-5dfe65e_yjs@13.5.43
+      '@blocksuite/store': 0.3.1_yjs@13.5.44
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -113,7 +113,7 @@ importers:
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       react-i18next: 11.18.6_vfm63zmruocgezzfl2v26zlzpy
-      yjs: 13.5.43
+      yjs: 13.5.44
     devDependencies:
       '@types/node': 18.7.18
       '@types/react': 18.0.20
@@ -536,10 +536,10 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@blocksuite/blocks/0.3.0-20221230100352-5dfe65e_yjs@13.5.43:
-    resolution: {integrity: sha512-dvjSbuedu1a5+q+FxtPMt6IDrJT46WsEcT7PhFvnGxP69I5iJwuHzrsDlg159u9Sn6/3OJjE7mYxBodPSGXxBQ==}
+  /@blocksuite/blocks/0.3.1_yjs@13.5.44:
+    resolution: {integrity: sha512-b0dGz2MG4yIgngJPRumaMY58wAsd2FEVSZl3tpCXlagK9I0HD165Bq70PxcaRHVjBSV1Gf29ZVHUF6BVTYogPw==}
     dependencies:
-      '@blocksuite/store': 0.3.0-20221230100352-5dfe65e_yjs@13.5.43
+      '@blocksuite/store': 0.3.1_yjs@13.5.44
       '@tldraw/intersect': 1.8.0
       autosize: 5.0.2
       highlight.js: 11.7.0
@@ -555,11 +555,11 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/editor/0.3.0-20221230100352-5dfe65e_yjs@13.5.43:
-    resolution: {integrity: sha512-LMl7jm5cq2/pDmtkLUOIhOwkTm5dDtEYcEKehRl05C6Hs2tHJjDeLwSyL2rXbSCdK8tK2D7tRfnTocBrsom5sw==}
+  /@blocksuite/editor/0.3.1_yjs@13.5.44:
+    resolution: {integrity: sha512-ycKcyvPW6R8R2GZOFneGH1xNi5gJBx5WtWjW9YwcQslFzXVWMCCBips1Bud2uL4kkbWQoodyua6k2vsXxGAKLw==}
     dependencies:
-      '@blocksuite/blocks': 0.3.0-20221230100352-5dfe65e_yjs@13.5.43
-      '@blocksuite/store': 0.3.0-20221230100352-5dfe65e_yjs@13.5.43
+      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
+      '@blocksuite/store': 0.3.1_yjs@13.5.44
       lit: 2.5.0
       marked: 4.2.5
       turndown: 7.1.1
@@ -580,8 +580,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/store/0.3.0-20221230100352-5dfe65e_yjs@13.5.43:
-    resolution: {integrity: sha512-KHLmPqi789kBgkITgSztr6gA5crdEiVDN9Jlslg6Sd7QuFn0jKGFn1FHBn6Myp0nXLAPAa6avBPxlbrgHI+zIQ==}
+  /@blocksuite/store/0.3.1_yjs@13.5.44:
+    resolution: {integrity: sha512-kynVTDfNCSChz2JI2rtGHxRIV2YrLzvAgVajcbfDVCuXKG0siBoEjLasG1a0kvevbvW/FabrNAj+xaIplklioA==}
     peerDependencies:
       yjs: ^13
     dependencies:
@@ -594,7 +594,7 @@ packages:
       lib0: 0.2.58
       y-protocols: 1.0.5
       y-webrtc: 10.2.3
-      yjs: 13.5.43
+      yjs: 13.5.44
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -7936,8 +7936,8 @@ packages:
       yargs-parser: 21.1.1
     dev: true
 
-  /yjs/13.5.43:
-    resolution: {integrity: sha512-NJqWuiDOseYjkhnSVo55z+FZD6TsOJBZfMbH2I4OCm5vsgY7TESUjUGb7Pt1lljvvdSfBVj8CxQqZAnVxe5Iyg==}
+  /yjs/13.5.44:
+    resolution: {integrity: sha512-UL+abIh2lQonqXfaJ+en7z9eGshpY11j1zNLc2kDYs0vrTjee4gZJUXC3ZsuhP6geQt0IRU04epCGRaVPQAVCA==}
     dependencies:
       lib0: 0.2.58
     dev: false

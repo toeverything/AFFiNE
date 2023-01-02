@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@affine/data-services": "workspace:*",
-    "@blocksuite/blocks": "0.3.0-20221230100352-5dfe65e",
-    "@blocksuite/editor": "0.3.0-20221230100352-5dfe65e",
+    "@blocksuite/blocks": "0.3.1",
+    "@blocksuite/editor": "0.3.1",
     "@blocksuite/icons": "^2.0.2",
-    "@blocksuite/store": "0.3.0-20221230100352-5dfe65e",
+    "@blocksuite/store": "0.3.1",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
@@ -38,7 +38,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-i18next": "^11.18.4",
-    "yjs": "^13.5.43"
+    "yjs": "^13.5.44"
   },
   "devDependencies": {
     "@types/node": "18.7.18",
