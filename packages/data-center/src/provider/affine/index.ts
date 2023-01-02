@@ -2,11 +2,10 @@ import assert from 'assert';
 import { applyUpdate } from 'yjs';
 
 import type { InitialParams } from '../index.js';
+import { token, Callback } from '../../apis/index.js';
 import { LocalProvider } from '../local/index.js';
 
-import { downloadWorkspace } from './apis.js';
 import { WebsocketProvider } from './sync.js';
-import { token, Callback } from './token.js';
 
 export class AffineProvider extends LocalProvider {
   static id = 'affine';
@@ -67,7 +66,7 @@ export class AffineProvider extends LocalProvider {
 
     if (workspace.room && token.isLogin) {
       try {
-        const updates = await downloadWorkspace(workspace.room);
+        const updates = await this._apis.downloadWorkspace(workspace.room);
         if (updates) {
           await new Promise(resolve => {
             doc.once('update', resolve);

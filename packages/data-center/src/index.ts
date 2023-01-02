@@ -1,8 +1,22 @@
-export { signInWithGoogle, onAuthStateChanged } from './auth';
-export * from './sdks';
+import debug from 'debug';
+import { DataCenter } from './datacenter.js';
 
-export { getDataCenter } from './datacenter';
+const _initializeDataCenter = () => {
+  let _dataCenterInstance: Promise<DataCenter>;
 
-// TODO: temporary reference, move all api into affine provider
-export { token } from './datacenter/provider/affine/token';
-export type { AccessTokenMessage } from './datacenter/provider/affine/token';
+  return (debug = true) => {
+    if (!_dataCenterInstance) {
+      _dataCenterInstance = DataCenter.init(debug);
+    }
+
+    return _dataCenterInstance;
+  };
+};
+
+export const getDataCenter = _initializeDataCenter();
+
+export function getLogger(namespace: string) {
+  const logger = debug(namespace);
+  logger.log = console.log.bind(console);
+  return logger;
+}

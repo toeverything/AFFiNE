@@ -1,5 +1,4 @@
-// TODO: temporary reference, move all api into affine provider
-import { client } from '../datacenter/provider/affine/request';
+import { client } from './request.js';
 
 export interface GetUserByEmailParams {
   email: string;

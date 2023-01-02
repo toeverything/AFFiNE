@@ -1,6 +1,5 @@
-// TODO: temporary reference, move all api into affine provider
-import { bareClient, client } from '../datacenter/provider/affine/request';
-import { User } from './user';
+import { bareClient, client } from './request.js';
+import type { User } from './user';
 
 export interface GetWorkspaceDetailParams {
   id: string;
@@ -165,6 +164,13 @@ export async function getBlob(params: {
 export interface LeaveWorkspaceParams {
   id: number | string;
 }
+
 export async function leaveWorkspace({ id }: LeaveWorkspaceParams) {
   await client.delete(`api/workspace/${id}/permission`).json();
+}
+
+export async function downloadWorkspace(
+  workspaceId: string
+): Promise<ArrayBuffer> {
+  return client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
 }

@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Workspace } from '@blocksuite/store';
 
-import type { Logger, InitialParams, ConfigStore } from './index';
+import type { Apis, Logger, InitialParams, ConfigStore } from './index';
 
 export class BaseProvider {
   static id = 'base';
-  protected _config!: ConfigStore;
+  protected _apis!: Readonly<Apis>;
+  protected _config!: Readonly<ConfigStore>;
   protected _logger!: Logger;
   protected _workspace!: Workspace;
 
@@ -14,6 +15,7 @@ export class BaseProvider {
   }
 
   async init(params: InitialParams) {
+    this._apis = params.apis;
     this._config = params.config;
     this._logger = params.logger;
     this._workspace = params.workspace;
