@@ -56,12 +56,20 @@ test('list workspaces', async () => {
     dataCenter.load('test6'),
   ]);
 
-  expect(await dataCenter.list()).toStrictEqual([
-    'test3',
-    'test4',
-    'test5',
-    'test6',
-  ]);
+  expect(await dataCenter.list()).toStrictEqual({
+    test3: { local: true },
+    test4: { local: true },
+    test5: { local: true },
+    test6: { local: true },
+  });
+
+  await dataCenter.reload('test3', { providerId: 'affine' });
+  expect(await dataCenter.list()).toStrictEqual({
+    test3: { affine: true, local: true },
+    test4: { local: true },
+    test5: { local: true },
+    test6: { local: true },
+  });
 });
 
 test('destroy workspaces', async () => {
@@ -87,5 +95,5 @@ test('remove workspaces', async () => {
   // remove workspace will remove workspace data
   await Promise.all([dataCenter.load('test9'), dataCenter.load('test10')]);
   await dataCenter.delete('test9');
-  expect(await dataCenter.list()).toStrictEqual(['test10']);
+  expect(await dataCenter.list()).toStrictEqual({ test10: { local: true } });
 });
