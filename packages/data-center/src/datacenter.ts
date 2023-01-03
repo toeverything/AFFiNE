@@ -8,8 +8,11 @@ import { AffineProvider, BaseProvider } from './provider/index.js';
 import { LocalProvider } from './provider/index.js';
 import { getKVConfigure } from './store.js';
 
-type GetWorkspaceParams = {
+// load workspace's config
+type LoadConfig = {
+  // use witch provider load data
   providerId?: string;
+  // provider config
   config?: Record<string, any>;
 };
 
@@ -80,28 +83,7 @@ export class DataCenter {
     return provider;
   }
 
-  async getWorkspace(
-    id: string,
-    params: GetWorkspaceParams = {}
-  ): Promise<Workspace | null> {
-    const { providerId = 'local', config = {} } = params;
-    if (id) {
-      if (!this._workspaces.has(id)) {
-        this._workspaces.set(
-          id,
-          this.setWorkspaceConfig(id, config).then(() =>
-            this._getWorkspace(id, providerId)
-          )
-        );
-      }
-      const workspace = this._workspaces.get(id);
-      assert(workspace);
-      return workspace.then(w => w.workspace);
-    }
-    return null;
-  }
-
-  async setWorkspaceConfig(workspace: string, config: Record<string, any>) {
+  async setConfig(workspace: string, config: Record<string, any>) {
     const values = Object.entries(config);
     if (values.length) {
       const configure = getKVConfigure(workspace);
@@ -109,32 +91,66 @@ export class DataCenter {
     }
   }
 
-  async listWorkspace() {
+  // load workspace data to memory
+  async load(
+    workspaceId: string,
+    params: LoadConfig = {}
+  ): Promise<Workspace | null> {
+    const { providerId = 'local', config = {} } = params;
+    if (workspaceId) {
+      if (!this._workspaces.has(workspaceId)) {
+        this._workspaces.set(
+          workspaceId,
+          this.setConfig(workspaceId, config).then(() =>
+            this._getWorkspace(workspaceId, providerId)
+          )
+        );
+      }
+      const workspace = this._workspaces.get(workspaceId);
+      assert(workspace);
+      return workspace.then(w => w.workspace);
+    }
+    return null;
+  }
+
+  // destroy workspace's instance in memory
+  async destroy(workspaceId: string) {
+    const provider = await this._workspaces.get(workspaceId);
+    if (provider) {
+      this._workspaces.delete(workspaceId);
+      await provider.destroy();
+    }
+  }
+
+  async reload(
+    workspaceId: string,
+    config: LoadConfig = {}
+  ): Promise<Workspace | null> {
+    await this.destroy(workspaceId);
+    return this.load(workspaceId, config);
+  }
+
+  async list() {
     const keys = await this._config.keys();
     return keys
       .filter(k => k.startsWith('workspace:'))
       .map(k => k.split(':')[1]);
   }
 
-  async destroyWorkspace(id: string) {
-    const provider = await this._workspaces.get(id);
+  // delete local workspace's data
+  async delete(workspaceId: string) {
+    await this._config.delete(`workspace:${workspaceId}:provider`);
+    const provider = await this._workspaces.get(workspaceId);
     if (provider) {
-      this._workspaces.delete(id);
-      await provider.destroy();
-    }
-  }
-
-  async removeWorkspace(id: string) {
-    await this._config.delete(`workspace:${id}:provider`);
-    const provider = await this._workspaces.get(id);
-    if (provider) {
-      this._workspaces.delete(id);
+      this._workspaces.delete(workspaceId);
+      // clear workspace data implement by provider
       await provider.clear();
     }
   }
 
-  async clearWorkspaces() {
-    const workspaces = await this.listWorkspace();
-    await Promise.all(workspaces.map(id => this.removeWorkspace(id)));
+  // clear all local workspace's data
+  async clear() {
+    const workspaces = await this.list();
+    await Promise.all(workspaces.map(id => this.delete(id)));
   }
 }
