@@ -150,7 +150,8 @@ export class DataCenter {
   }
 
   /**
-   * get workspace list
+   * get workspace list，return a map of workspace id and data state
+   * data state is also map, the key is the provider id, and the data exists locally when the value is true, otherwise it does not exist
    */
   async list(): Promise<Record<string, Record<string, boolean>>> {
     const lists = await Promise.all(
