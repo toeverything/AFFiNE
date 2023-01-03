@@ -21,6 +21,7 @@ export const StyledSliderBarWrapper = styled.div(() => {
     height: '100%',
     overflowX: 'hidden',
     overflowY: 'auto',
+    position: 'relative',
   };
 });
 
