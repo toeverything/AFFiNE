@@ -18,4 +18,4 @@ export const getApis = (): Apis => {
 
 export type { AccessTokenMessage } from './token';
 export type { Member, Workspace } from './workspace';
-export { WorkspaceType } from './workspace';
+export { WorkspaceType } from './workspace.js';
