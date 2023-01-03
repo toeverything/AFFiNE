@@ -48,4 +48,14 @@ test.describe('workspace', () => {
     await dataCenter.delete('test9');
     expect(await dataCenter.list()).toStrictEqual(['test10']);
   });
+
+  test('create workspace', async () => {});
+  test('get the workspace', async () => {});
+
+  test('get  workspace name', async () => {});
+  test('set  workspace name', async () => {});
+
+  test('get  workspace avatar', async () => {});
+
+  test('set  workspace avatar', async () => {});
 });
