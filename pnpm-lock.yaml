@@ -131,8 +131,8 @@ importers:
 
   packages/data-center:
     specifiers:
-      '@blocksuite/blocks': 0.3.0-20221228162706-9576a3a
-      '@blocksuite/store': 0.3.0-20221228162706-9576a3a
+      '@blocksuite/blocks': ^0.3.1
+      '@blocksuite/store': ^0.3.1
       '@playwright/test': ^1.29.1
       '@types/debug': ^4.1.7
       debug: ^4.3.4
@@ -146,10 +146,10 @@ importers:
       swr: ^2.0.0
       typescript: ^4.8.4
       y-protocols: ^1.0.5
-      yjs: ^13.5.43
+      yjs: ^13.5.44
     dependencies:
-      '@blocksuite/blocks': 0.3.0-20221228162706-9576a3a_yjs@13.5.44
-      '@blocksuite/store': 0.3.0-20221228162706-9576a3a_yjs@13.5.44
+      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
+      '@blocksuite/store': 0.3.1_yjs@13.5.44
       debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
@@ -1496,24 +1496,6 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@blocksuite/blocks/0.3.0-20221228162706-9576a3a_yjs@13.5.44:
-    resolution: {integrity: sha512-gBwqynM0WQuUbsJbazBKIe+jkyoXYZPalYQlz0f1TT51kXmvyhQ1TlvsnZx94aW1JwT2st3z65Q197MmfZ8jSw==}
-    dependencies:
-      '@blocksuite/store': 0.3.0-20221228162706-9576a3a_yjs@13.5.44
-      '@tldraw/intersect': 1.8.0
-      highlight.js: 11.7.0
-      hotkeys-js: 3.10.1
-      lit: 2.5.0
-      perfect-freehand: 1.2.0
-      quill: 1.3.7
-      quill-cursors: 4.0.0
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - yjs
-    dev: false
-
   /@blocksuite/blocks/0.3.1_yjs@13.5.44:
     resolution: {integrity: sha512-b0dGz2MG4yIgngJPRumaMY58wAsd2FEVSZl3tpCXlagK9I0HD165Bq70PxcaRHVjBSV1Gf29ZVHUF6BVTYogPw==}
     dependencies:
@@ -1556,27 +1538,6 @@ packages:
     dependencies:
       '@types/react': 18.0.20
       react: 18.2.0
-    dev: false
-
-  /@blocksuite/store/0.3.0-20221228162706-9576a3a_yjs@13.5.44:
-    resolution: {integrity: sha512-uMbLD+zfhHasDwCmE1ZTtFtK9GNwN37Iaugbj/rtdwhQbdE6qfKHidSY0UzwKtNrQaUdAmp2IpnBpQ0vgk0ArQ==}
-    peerDependencies:
-      yjs: ^13
-    dependencies:
-      '@types/flexsearch': 0.7.3
-      '@types/quill': 1.3.10
-      buffer: 6.0.3
-      flexsearch: 0.7.21
-      idb-keyval: 6.2.0
-      ky: 0.33.1
-      lib0: 0.2.58
-      y-protocols: 1.0.5
-      y-webrtc: 10.2.3
-      yjs: 13.5.44
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
     dev: false
 
   /@blocksuite/store/0.3.1_yjs@13.5.44:

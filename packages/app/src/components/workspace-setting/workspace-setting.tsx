@@ -36,13 +36,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button, IconButton } from '@/ui/button';
 import Input from '@/ui/input';
 import { InviteMembers } from '../invite-members/index';
-import {
-  getWorkspaceMembers,
-  Workspace,
-  Member,
-  removeMember,
-  updateWorkspace,
-} from '@affine/datacenter';
+import { Workspace, Member, getDataCenter } from '@affine/datacenter';
 import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
 import { toast } from '@/ui/toast';
@@ -169,9 +163,12 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const refreshMembers = useCallback(() => {
-    getWorkspaceMembers({
-      id: workspace.id,
-    })
+    getDataCenter()
+      .then(dc =>
+        dc.apis.getWorkspaceMembers({
+          id: workspace.id,
+        })
+      )
       .then(data => {
         setMembers(data);
       })
@@ -236,13 +233,17 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                             //   confirmText: 'Delete',
                             //   confirmType: 'danger',
                             // }).then(confirm => {
-                            removeMember({
-                              permissionId: member.id,
-                            }).then(() => {
-                              // console.log('data: ', data);
-                              toast('Moved to Trash');
-                              refreshMembers();
-                            });
+                            getDataCenter()
+                              .then(dc =>
+                                dc.apis.removeMember({
+                                  permissionId: member.id,
+                                })
+                              )
+                              .then(() => {
+                                // console.log('data: ', data);
+                                toast('Moved to Trash');
+                                refreshMembers();
+                              });
                             // });
                           }}
                           icon={<TrashIcon />}
@@ -297,13 +298,17 @@ const PublishPage = ({ workspace }: { workspace: Workspace }) => {
     workspace.public
   );
   const togglePublic = (flag: boolean) => {
-    updateWorkspace({
-      id: workspace.id,
-      public: flag,
-    }).then(data => {
-      setPublicStatus(data?.public);
-      toast('Updated Public Status Success');
-    });
+    getDataCenter()
+      .then(dc =>
+        dc.apis.updateWorkspace({
+          id: workspace.id,
+          public: flag,
+        })
+      )
+      .then(data => {
+        setPublicStatus(data?.public);
+        toast('Updated Public Status Success');
+      });
   };
   const copyUrl = () => {
     navigator.clipboard.writeText(shareUrl);

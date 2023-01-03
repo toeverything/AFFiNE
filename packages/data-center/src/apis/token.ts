@@ -5,7 +5,7 @@ import type { User } from 'firebase/auth';
 import { getLogger } from '../index.js';
 import { bareClient } from './request.js';
 
-interface AccessTokenMessage {
+export interface AccessTokenMessage {
   create_at: number;
   exp: number;
   email: string;

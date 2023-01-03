@@ -20,3 +20,6 @@ export function getLogger(namespace: string) {
   logger.log = console.log.bind(console);
   return logger;
 }
+
+export type { AccessTokenMessage, Member, Workspace } from './apis';
+export { WorkspaceType } from './apis';

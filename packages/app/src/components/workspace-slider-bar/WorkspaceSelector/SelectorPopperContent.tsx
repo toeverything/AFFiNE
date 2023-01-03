@@ -12,7 +12,7 @@ import {
 } from './WorkspaceItem';
 import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useCallback, useEffect, useState } from 'react';
-import { getWorkspaceDetail, WorkspaceType } from '@affine/datacenter';
+import { getDataCenter, WorkspaceType } from '@affine/datacenter';
 import { useModal } from '@/providers/global-modal-provider';
 
 export type WorkspaceDetails = Record<
@@ -54,7 +54,8 @@ export const SelectorPopperContent = ({
           if (type === WorkspaceType.Private) {
             return { id, member_count: 1, owner: user };
           } else {
-            const data = await getWorkspaceDetail({ id });
+            const dc = await getDataCenter();
+            const data = await dc.apis.getWorkspaceDetail({ id });
             return { id, ...data } || { id, member_count: 0, owner: user };
           }
         }

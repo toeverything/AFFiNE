@@ -1,4 +1,4 @@
-import { createWorkspace, uploadBlob } from '@affine/datacenter';
+import { getDataCenter } from '@affine/datacenter';
 import Modal from '@/ui/modal';
 import Input from '@/ui/input';
 import {
@@ -52,7 +52,9 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
         ctx.fillText(workspaceName[0], 50, 50);
         canvas.toBlob(blob => {
           if (blob) {
-            const blobId = uploadBlob({ blob });
+            const blobId = getDataCenter().then(dc =>
+              dc.apis.uploadBlob({ blob })
+            );
             resolve(blobId);
           } else {
             reject();
@@ -69,7 +71,10 @@ export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
       setCreating(false);
     });
     if (blobId) {
-      createWorkspace({ name: workspaceName, avatar: blobId })
+      getDataCenter()
+        .then(dc =>
+          dc.apis.createWorkspace({ name: workspaceName, avatar: blobId })
+        )
         .then(async data => {
           await refreshWorkspacesMeta();
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment

@@ -15,3 +15,7 @@ export const getApis = (): Apis => {
   const [signInWithGoogle, onAuthStateChanged] = getAuthorizer();
   return { ...user, ...workspace, signInWithGoogle, onAuthStateChanged };
 };
+
+export type { AccessTokenMessage } from './token';
+export type { Member, Workspace } from './workspace';
+export { WorkspaceType } from './workspace';
