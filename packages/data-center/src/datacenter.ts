@@ -83,7 +83,7 @@ export class DataCenter {
     return provider;
   }
 
-  async setConfig(workspace: string, config: Record<string, any>) {
+  private async _setConfig(workspace: string, config: Record<string, any>) {
     const values = Object.entries(config);
     if (values.length) {
       const configure = getKVConfigure(workspace);
@@ -101,7 +101,7 @@ export class DataCenter {
       if (!this._workspaces.has(workspaceId)) {
         this._workspaces.set(
           workspaceId,
-          this.setConfig(workspaceId, config).then(() =>
+          this._setConfig(workspaceId, config).then(() =>
             this._getWorkspace(workspaceId, providerId)
           )
         );
@@ -122,6 +122,7 @@ export class DataCenter {
     }
   }
 
+  // reload new workspace instance to memory to refresh config
   async reload(
     workspaceId: string,
     config: LoadConfig = {}

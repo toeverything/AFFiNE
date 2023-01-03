@@ -36,14 +36,12 @@ export class LocalProvider extends BaseProvider {
   async clear() {
     await super.clear();
     await this._blobs.clear();
-    this._idb?.clearData();
+    await this._idb?.clearData();
   }
 
   async destroy(): Promise<void> {
     super.destroy();
-    if (this._idb) {
-      await this._idb.destroy();
-    }
+    await this._idb?.destroy();
   }
 
   async getBlob(id: string): Promise<string | null> {
