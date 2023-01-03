@@ -22,4 +22,4 @@ export function getLogger(namespace: string) {
 }
 
 export type { AccessTokenMessage, Member, Workspace } from './apis';
-export { WorkspaceType } from './apis';
+export { WorkspaceType } from './apis/index.js';

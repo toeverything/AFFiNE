@@ -15,10 +15,7 @@ const DynamicBlocksuite = ({
   setCreateEditorHandler,
 }: Props) => {
   useEffect(() => {
-    const openWorkspace: LoadWorkspaceHandler = async (
-      workspaceId: string,
-      user
-    ) => {
+    const openWorkspace: LoadWorkspaceHandler = async (workspaceId: string) => {
       if (workspaceId) {
         const dc = await getDataCenter();
         return dc.getWorkspace(workspaceId, { providerId: 'affine' });
