@@ -12,4 +12,10 @@ test.describe('cloud-sync', () => {
   test('close [cloud sync feature]', async () => {});
 
   test('editor cloud storage', async () => {});
+
+  test('cloud sync is in-progresss', async () => {});
+
+  test('cloud sync is completed', async () => {});
+
+  test('cloud sync is error', async () => {});
 });
