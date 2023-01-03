@@ -31,11 +31,7 @@ import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { getUaHelper } from '@/utils';
 
-const isMac = () => {
-  return getUaHelper().isMacOs;
-};
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
   const pageList = usePageMetaList();
