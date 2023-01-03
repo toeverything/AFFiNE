@@ -8,7 +8,7 @@ export const FeatureCardDiv = styled('section')({
   width: '800px',
   border: '1px #eee solid',
   margin: '20px auto',
-  minHeight: '200px',
+  minHeight: '100px',
   padding: '15px',
 });
 const FeatureCard = (props: {
@@ -34,14 +34,48 @@ export const Playground = () => {
       <FeatureCard name="Workspace List">
         <ul>
           <li>AFFiNE Demo</li>
+          <li>AFFiNE XXX</li>
         </ul>
+        <button>New Workspace</button>
       </FeatureCard>
 
       <FeatureCard name="Active Workspace">
-        <Button>Upate Workspace Name</Button>
-        <Button>Upate Workspace Aavartor</Button>
+        <div>Workspace Name</div>
+        <div>Workspace Avatar</div>
+        <div>Workspace Members Count</div>
+        <div>Cloud Sync [Yes/No]</div>
+        <div>Auth [Public/Private]</div>
+
+        <Button>Update Workspace Name</Button>
+        <Button>Upload Workspace Avatar</Button>
+        <Button>Update Workspace Avatar</Button>
         <Button>Leave Workspace</Button>
         <Button>Delete Workspace </Button>
+        <div>
+          Cloud Sync <Button>Enalbe</Button>
+          <Button>Disable</Button>
+        </div>
+      </FeatureCard>
+
+      <FeatureCard name="Workspace Members">
+        <div>Add Member</div>
+        <ul>
+          <li>
+            terrychinaz@gmail <button>Delete Members</button>
+          </li>
+        </ul>
+      </FeatureCard>
+
+      <FeatureCard name="Cloud Search">
+        <input type="text" value="AFFiNE Keywords" />
+        <Button>Search</Button>
+        <ul></ul>
+      </FeatureCard>
+
+      <FeatureCard name="Import/Exeport Worpsace">
+        <div>Workspace Name</div>
+        <Button> Export Workspace</Button>
+        <Button> Import Workspace</Button>
       </FeatureCard>
     </>
   );
