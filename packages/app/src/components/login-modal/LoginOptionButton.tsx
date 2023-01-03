@@ -10,7 +10,7 @@ export const GoogleLoginButton = () => {
     <StyledGoogleButton
       onClick={() => {
         getDataCenter()
-          .then(dc => dc.apis.signInWithGoogle())
+          .then(dc => dc.apis.signInWithGoogle?.())
           .then(() => {
             triggerLoginModal();
           })

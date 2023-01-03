@@ -11,7 +11,7 @@ import {
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { deleteWorkspace } from '@affine/datacenter';
+import { getDataCenter } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
 
@@ -39,7 +39,8 @@ export const WorkspaceDelete = ({
   };
 
   const handleDelete = async () => {
-    await deleteWorkspace({ id: workspaceId });
+    const dc = await getDataCenter();
+    await dc.apis.deleteWorkspace({ id: workspaceId });
     router.push(`/workspace/${nextWorkSpaceId}`);
     refreshWorkspacesMeta();
     onClose();

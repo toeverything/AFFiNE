@@ -15,19 +15,17 @@ const DynamicBlocksuite = ({
   setCreateEditorHandler,
 }: Props) => {
   useEffect(() => {
-    const openWorkspace: LoadWorkspaceHandler = (workspaceId: string, user) =>
-      // eslint-disable-next-line no-async-promise-executor
-      new Promise(async resolve => {
-        if (workspaceId) {
-          const workspace = await getDataCenter().then(dc =>
-            dc.getWorkspace(workspaceId, 'affine')
-          );
-
-          resolve(workspace);
-        } else {
-          resolve(null);
-        }
-      });
+    const openWorkspace: LoadWorkspaceHandler = async (
+      workspaceId: string,
+      user
+    ) => {
+      if (workspaceId) {
+        const dc = await getDataCenter();
+        return dc.getWorkspace(workspaceId, { providerId: 'affine' });
+      } else {
+        return null;
+      }
+    };
 
     setLoadWorkspaceHandler(openWorkspace);
   }, [setLoadWorkspaceHandler]);

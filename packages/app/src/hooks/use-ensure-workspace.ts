@@ -26,7 +26,6 @@ export const useEnsureWorkspace = () => {
         meta => meta.id.toString() === router.query.workspaceId
       ) === -1
     ) {
-      debugger;
       router.push('/404');
       return;
     }
