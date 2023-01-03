@@ -17,6 +17,7 @@ import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { PageLoading } from '@/components/loading';
+import Head from 'next/head';
 
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,
@@ -38,6 +39,15 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 
   return (
     <>
+      <Head>
+        <meta name="theme-color" content="#fafafa" />
+        <link rel="manifest" href="/manifest.json" />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/icons/apple-touch-icon.png"
+        />
+      </Head>
       <Logger />
       <ProviderComposer
         contexts={[
