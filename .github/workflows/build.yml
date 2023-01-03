@@ -35,8 +35,6 @@ jobs:
           scope: '@toeverything'
           cache: 'pnpm'
 
-      - run: node scripts/module-resolve/ci.js
-
       - name: Restore cache
         uses: actions/cache@v3
         with:
@@ -48,13 +46,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
-
       - name: Build
-        run: pnpm build
+        run: pnpm install && pnpm build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -71,6 +64,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: ./packages/app/.next
+
   lint:
     name: Lint and E2E Test
     runs-on: ubuntu-latest
@@ -130,7 +124,7 @@ jobs:
     name: Build Community
     if: github.ref == 'refs/heads/master'
     runs-on: self-hosted
-    environment: production
+    environment: development
 
     steps:
       - uses: actions/checkout@v2
@@ -234,7 +228,7 @@ jobs:
     name: Build LiveDemo
     if: github.ref == 'refs/heads/master'
     runs-on: self-hosted
-    environment: production
+    environment: development
 
     steps:
       - uses: actions/checkout@v2
