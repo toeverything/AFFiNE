@@ -36,21 +36,23 @@ export const Playground = () => {
           <li>AFFiNE Demo</li>
           <li>AFFiNE XXX</li>
         </ul>
-        <button>New Workspace</button>
+        <Button>New Workspace</Button>
       </FeatureCard>
 
       <FeatureCard name="Active Workspace">
-        <div>Workspace Name</div>
-        <div>Workspace Avatar</div>
-        <div>Workspace Members Count</div>
+        <div>Workspace Name /[Workspace Members Count]/[Workspace Avatar]</div>
         <div>Cloud Sync [Yes/No]</div>
         <div>Auth [Public/Private]</div>
+        <div>
+          <Button>Update Workspace Name</Button>
+          <Button>Upload Workspace Avatar</Button>
+          <Button>Update Workspace Avatar</Button>
+        </div>
 
-        <Button>Update Workspace Name</Button>
-        <Button>Upload Workspace Avatar</Button>
-        <Button>Update Workspace Avatar</Button>
-        <Button>Leave Workspace</Button>
-        <Button>Delete Workspace </Button>
+        <div>
+          <Button>Leave Workspace</Button>
+          <Button>Delete Workspace </Button>
+        </div>
         <div>
           Cloud Sync <Button>Enalbe</Button>
           <Button>Disable</Button>
@@ -58,7 +60,7 @@ export const Playground = () => {
       </FeatureCard>
 
       <FeatureCard name="Workspace Members">
-        <div>Add Member</div>
+        <Button>Add Member</Button>
         <ul>
           <li>
             terrychinaz@gmail <button>Delete Members</button>
