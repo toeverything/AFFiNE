@@ -6,7 +6,6 @@ import {
   StyledListItem,
   // StyledListItemForWorkspace,
   StyledNewPageButton,
-  StyledQuickSearch,
   StyledSliderBar,
   StyledSliderBarWrapper,
   StyledSubListItem,
@@ -117,7 +116,7 @@ export const WorkSpaceSliderBar = () => {
           {/* <StyledListItemForWorkspace>
             <WorkspaceSelector />
           </StyledListItemForWorkspace> */}
-          <StyledQuickSearch
+          <StyledListItem
             data-testid="sliderBar-quickSearchButton"
             style={{ cursor: 'pointer' }}
             onClick={() => {
@@ -126,8 +125,7 @@ export const WorkSpaceSliderBar = () => {
           >
             <SearchIcon />
             Quick search
-            <span>{isMac() ? '⌘ + K' : 'Ctrl + K'}</span>
-          </StyledQuickSearch>
+          </StyledListItem>
           <Link href={{ pathname: paths.all }}>
             <StyledListItem active={router.asPath === paths.all}>
               <AllPagesIcon /> <span>All pages</span>
