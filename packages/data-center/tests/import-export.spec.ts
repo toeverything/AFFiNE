@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('import export', () => {
+test.describe('Import Export Workspace', () => {
   test('import workspace', async () => {});
 
   test('export workspace', async () => {});

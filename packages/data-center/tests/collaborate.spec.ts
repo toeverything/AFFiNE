@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('collaborate', () => {
+test.describe('Collaborate', () => {
   test('collaborate editor content', async () => {});
 
   test('collaborate workspace name', async () => {});

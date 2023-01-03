@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('auth', () => {
+test.describe('Auth', () => {
   test('signin', async () => {});
 
   test('signout', async () => {});

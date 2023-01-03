@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('workspace', () => {
+test.describe('Workspace', () => {
   test('list workspaces', async () => {
     const dataCenter = await getDataCenter();
     await dataCenter.clear();

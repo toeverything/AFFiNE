@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('share', () => {
+test.describe('Share', () => {
   test('add(invite) member by email', async () => {});
 
   test('accept invite member link', async () => {});

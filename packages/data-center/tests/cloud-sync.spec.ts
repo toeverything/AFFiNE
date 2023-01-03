@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('cloud-sync', () => {
+test.describe('Cloud Sync', () => {
   test('get cloud the sync flag of workspace  ', async () => {});
 
   test('enable [cloud sync feature]', async () => {});
@@ -18,4 +18,6 @@ test.describe('cloud-sync', () => {
   test('cloud sync is completed', async () => {});
 
   test('cloud sync is error', async () => {});
+
+  test('cloud storage is right', async () => {});
 });

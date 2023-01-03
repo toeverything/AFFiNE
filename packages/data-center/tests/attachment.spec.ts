@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('attachment', () => {
+test.describe('Attachment', () => {
   test('upload blob', async () => {});
 
   test('get blob', async () => {});

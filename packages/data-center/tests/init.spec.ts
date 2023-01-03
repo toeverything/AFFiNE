@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('init data center', () => {
+test.describe('Init Data Center', () => {
   test('init', async () => {
     const dataCenter = await getDataCenter();
     expect(dataCenter).toBeTruthy();

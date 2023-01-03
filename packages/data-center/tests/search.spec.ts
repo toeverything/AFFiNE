@@ -4,6 +4,6 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('search', () => {
-  test('search service', async () => {});
+test.describe('Search', () => {
+  test('search result', async () => {});
 });

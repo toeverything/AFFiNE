@@ -4,7 +4,7 @@ import { getDataCenter } from './utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('share', () => {
+test.describe('Permission', () => {
   test('get the public of workspace', async () => {});
 
   test('make workspace public', async () => {});
