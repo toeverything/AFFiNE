@@ -18,7 +18,7 @@ Let us know what you think of this latest version.
 ### In this release, you can now:
 
 - Manage your pages from the collapsible **sidebar**, which allows you to add **favourites** and restore deleted files from the **trash**
-- Search through all your content with the quick search - activate with `Ctrl/⌘ + ?`
+- Search through all your content with the quick search - activate with `Ctrl/⌘ + K`
 - Quickly format text with the **pop-up toolbar** (highlight any text to give it a try)
 - Copy and paste **images** into your pages, resize them and add captions
 - Add horizontal line dividers to your text with `---` and `***`

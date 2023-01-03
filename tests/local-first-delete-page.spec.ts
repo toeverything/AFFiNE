@@ -11,7 +11,6 @@ test.describe('Local first delete page', () => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page.getByPlaceholder('Title').fill('this is a new page to restore');
-    const originPageUrl = page.url();
     const newPageId = page.url().split('/').reverse()[0];
     await page.getByRole('link', { name: 'All pages' }).click();
     const cell = page.getByRole('cell', {
