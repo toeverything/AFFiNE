@@ -68,6 +68,7 @@ const Page: NextPageWithLayout = () => {
       }
     }
 
+    document.title = currentPage?.meta.title || 'Untitled';
     return ret;
   }, [currentWorkspace, currentPage, createEditor, setEditor]);
 
