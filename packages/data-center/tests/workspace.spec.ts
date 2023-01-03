@@ -5,7 +5,17 @@ import { getDataCenter } from './utils.js';
 import 'fake-indexeddb/auto';
 
 test.describe('workspace', () => {
-  test('list workspaces', async () => {
+  test('create', async () => {});
+
+  test('load', async () => {});
+
+  test('get workspace name', async () => {});
+  test('set workspace name', async () => {});
+
+  test('get workspace avatar', async () => {});
+  test('set workspace avatar', async () => {});
+
+  test('list', async () => {
     const dataCenter = await getDataCenter();
     await dataCenter.clear();
 
@@ -16,14 +26,23 @@ test.describe('workspace', () => {
       dataCenter.load('test6'),
     ]);
 
-    expect(await dataCenter.list()).toStrictEqual([
-      'test3',
-      'test4',
-      'test5',
-      'test6',
-    ]);
+    expect(await dataCenter.list()).toStrictEqual({
+      test3: { local: true },
+      test4: { local: true },
+      test5: { local: true },
+      test6: { local: true },
+    });
+
+    await dataCenter.reload('test3', { providerId: 'affine' });
+    expect(await dataCenter.list()).toStrictEqual({
+      test3: { affine: true, local: true },
+      test4: { local: true },
+      test5: { local: true },
+      test6: { local: true },
+    });
   });
-  test('destroy workspaces', async () => {
+
+  test('destroy', async () => {
     const dataCenter = await getDataCenter();
     await dataCenter.clear();
 
@@ -39,23 +58,13 @@ test.describe('workspace', () => {
     expect(ws3 !== ws4).toBeTruthy();
   });
 
-  test('remove workspaces', async () => {
+  test('remove', async () => {
     const dataCenter = await getDataCenter();
     await dataCenter.clear();
 
     // remove workspace will remove workspace data
     await Promise.all([dataCenter.load('test9'), dataCenter.load('test10')]);
     await dataCenter.delete('test9');
-    expect(await dataCenter.list()).toStrictEqual(['test10']);
+    expect(await dataCenter.list()).toStrictEqual({ test10: { local: true } });
   });
-
-  test('create workspace', async () => {});
-  test('get the workspace', async () => {});
-
-  test('get  workspace name', async () => {});
-  test('set  workspace name', async () => {});
-
-  test('get  workspace avatar', async () => {});
-
-  test('set  workspace avatar', async () => {});
 });

@@ -1,10 +1,20 @@
-import { createStore, del, get, keys, set, setMany, clear } from 'idb-keyval';
+import {
+  createStore,
+  del,
+  get,
+  keys,
+  set,
+  setMany,
+  clear,
+  entries,
+} from 'idb-keyval';
 
 export type ConfigStore<T = any> = {
   get: (key: string) => Promise<T | undefined>;
   set: (key: string, value: T) => Promise<void>;
   setMany: (values: [string, T][]) => Promise<void>;
   keys: () => Promise<string[]>;
+  entries: () => Promise<[string, T][]>;
   delete: (key: string) => Promise<void>;
   clear: () => Promise<void>;
 };
@@ -16,6 +26,7 @@ const initialIndexedDB = <T = any>(database: string): ConfigStore<T> => {
     set: (key: string, value: T) => set(key, value, store),
     setMany: (values: [string, T][]) => setMany(values, store),
     keys: () => keys(store),
+    entries: () => entries(store),
     delete: (key: string) => del(key, store),
     clear: () => clear(store),
   };
@@ -27,9 +38,10 @@ const scopedIndexedDB = () => {
 
   return <T = any>(scope: string): Readonly<ConfigStore<T>> => {
     if (!storeCache.has(scope)) {
+      const prefix = `${scope}:`;
       const store = {
-        get: async (key: string) => idb.get(`${scope}:${key}`),
-        set: (key: string, value: T) => idb.set(`${scope}:${key}`, value),
+        get: async (key: string) => idb.get(prefix + key),
+        set: (key: string, value: T) => idb.set(prefix + key, value),
         setMany: (values: [string, T][]) =>
           idb.setMany(values.map(([k, v]) => [`${scope}:${k}`, v])),
         keys: () =>
@@ -37,16 +49,24 @@ const scopedIndexedDB = () => {
             .keys()
             .then(keys =>
               keys
-                .filter(k => k.startsWith(`${scope}:`))
-                .map(k => k.replace(`${scope}:`, ''))
+                .filter(k => k.startsWith(prefix))
+                .map(k => k.slice(prefix.length))
             ),
-        delete: (key: string) => idb.delete(`${scope}:${key}`),
+        entries: () =>
+          idb
+            .entries()
+            .then(entries =>
+              entries
+                .filter(([k]) => k.startsWith(prefix))
+                .map(([k, v]) => [k.slice(prefix.length), v] as [string, T])
+            ),
+        delete: (key: string) => idb.delete(prefix + key),
         clear: async () => {
           await idb
             .keys()
             .then(keys =>
               Promise.all(
-                keys.filter(k => k.startsWith(`${scope}:`)).map(k => del(k))
+                keys.filter(k => k.startsWith(prefix)).map(k => del(k))
               )
             );
         },

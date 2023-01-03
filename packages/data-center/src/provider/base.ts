@@ -7,6 +7,7 @@ export class BaseProvider {
   static id = 'base';
   protected _apis!: Readonly<Apis>;
   protected _config!: Readonly<ConfigStore>;
+  protected _globalConfig!: Readonly<ConfigStore>;
   protected _logger!: Logger;
   protected _workspace!: Workspace;
 
@@ -14,9 +15,14 @@ export class BaseProvider {
     // Nothing to do here
   }
 
+  get id(): string {
+    return (this.constructor as any).id;
+  }
+
   async init(params: InitialParams) {
     this._apis = params.apis;
     this._config = params.config;
+    this._globalConfig = params.globalConfig;
     this._logger = params.logger;
     this._workspace = params.workspace;
     this._logger.enabled = params.debug;
@@ -47,5 +53,13 @@ export class BaseProvider {
 
   get workspace() {
     return this._workspace;
+  }
+
+  // get workspace list，return a map of workspace id and boolean
+  // if value is true, it exists locally, otherwise it does not exist locally
+  static async list(
+    _config: Readonly<ConfigStore>
+  ): Promise<Map<string, boolean> | undefined> {
+    throw Error('Not implemented: list');
   }
 }
