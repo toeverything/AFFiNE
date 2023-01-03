@@ -11,7 +11,7 @@ test.describe('Permission', () => {
 
   test('make workspace private', async () => {});
 
-  test('unlogin user open the public workspace ', async () => {});
+  test('un-login user open the public workspace ', async () => {});
 
-  test('unlogin user open the private workspace ', async () => {});
+  test('un-login user open the private workspace ', async () => {});
 });

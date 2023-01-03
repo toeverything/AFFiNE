@@ -8,7 +8,8 @@ export type Logger = ReturnType<typeof getLogger>;
 
 export type InitialParams = {
   apis: Apis;
-  config: ConfigStore;
+  config: Readonly<ConfigStore>;
+  globalConfig: Readonly<ConfigStore>;
   debug: boolean;
   logger: Logger;
   workspace: Workspace;

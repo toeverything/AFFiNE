@@ -46,8 +46,11 @@ export class DataCenter {
     this._providers.set(provider.id, provider);
   }
 
-  private async _getProvider(id: string, providerId: string): Promise<string> {
-    const providerKey = `workspace:${id}:provider`;
+  private async _getProvider(
+    id: string,
+    providerId = 'local'
+  ): Promise<string> {
+    const providerKey = `${id}:provider`;
     if (this._providers.has(providerId)) {
       await this._config.set(providerKey, providerId);
       return providerId;
@@ -58,21 +61,32 @@ export class DataCenter {
     throw Error(`Provider ${providerId} not found`);
   }
 
-  private async _getWorkspace(id: string, pid: string): Promise<BaseProvider> {
-    this._logger(`Init workspace ${id} with ${pid}`);
+  private async _getWorkspace(
+    id: string,
+    params: LoadConfig
+  ): Promise<BaseProvider> {
+    this._logger(`Init workspace ${id} with ${params.providerId}`);
 
-    const providerId = await this._getProvider(id, pid);
+    const providerId = await this._getProvider(id, params.providerId);
 
     // init workspace & register block schema
     const workspace = new Workspace({ room: id }).register(BlockSchema);
 
     const Provider = this._providers.get(providerId);
     assert(Provider);
-    const provider = new Provider();
 
+    // initial configurator
+    const config = getKVConfigure(`workspace:${id}`);
+    // set workspace configs
+    const values = Object.entries(params.config || {});
+    if (values.length) await config.setMany(values);
+
+    // init data by provider
+    const provider = new Provider();
     await provider.init({
       apis: this._apis,
-      config: getKVConfigure(id),
+      config,
+      globalConfig: getKVConfigure(`provider:${providerId}`),
       debug: this._logger.enabled,
       logger: this._logger.extend(`${Provider.id}:${id}`),
       workspace,
@@ -83,27 +97,22 @@ export class DataCenter {
     return provider;
   }
 
-  async setConfig(workspace: string, config: Record<string, any>) {
-    const values = Object.entries(config);
-    if (values.length) {
-      const configure = getKVConfigure(workspace);
-      await configure.setMany(values);
-    }
-  }
-
-  // load workspace data to memory
+  /**
+   * load workspace data to memory
+   * @param workspaceId workspace id
+   * @param config.providerId provider id
+   * @param config.config provider config
+   * @returns Workspace instance
+   */
   async load(
     workspaceId: string,
     params: LoadConfig = {}
   ): Promise<Workspace | null> {
-    const { providerId = 'local', config = {} } = params;
     if (workspaceId) {
       if (!this._workspaces.has(workspaceId)) {
         this._workspaces.set(
           workspaceId,
-          this.setConfig(workspaceId, config).then(() =>
-            this._getWorkspace(workspaceId, providerId)
-          )
+          this._getWorkspace(workspaceId, params)
         );
       }
       const workspace = this._workspaces.get(workspaceId);
@@ -113,7 +122,10 @@ export class DataCenter {
     return null;
   }
 
-  // destroy workspace's instance in memory
+  /**
+   * destroy workspace's instance in memory
+   * @param workspaceId workspace id
+   */
   async destroy(workspaceId: string) {
     const provider = await this._workspaces.get(workspaceId);
     if (provider) {
@@ -122,6 +134,13 @@ export class DataCenter {
     }
   }
 
+  /**
+   * reload new workspace instance to memory to refresh config
+   * @param workspaceId workspace id
+   * @param config.providerId provider id
+   * @param config.config provider config
+   * @returns Workspace instance
+   */
   async reload(
     workspaceId: string,
     config: LoadConfig = {}
@@ -130,16 +149,34 @@ export class DataCenter {
     return this.load(workspaceId, config);
   }
 
-  async list() {
-    const keys = await this._config.keys();
-    return keys
-      .filter(k => k.startsWith('workspace:'))
-      .map(k => k.split(':')[1]);
+  /**
+   * get workspace list
+   */
+  async list(): Promise<Record<string, Record<string, boolean>>> {
+    const lists = await Promise.all(
+      Array.from(this._providers.entries()).map(([providerId, provider]) =>
+        provider
+          .list(getKVConfigure(`provider:${providerId}`))
+          .then(list => [providerId, list || []] as const)
+      )
+    );
+
+    return lists.reduce((ret, [providerId, list]) => {
+      for (const [item, isLocal] of list) {
+        const workspace = ret[item] || {};
+        workspace[providerId] = isLocal;
+        ret[item] = workspace;
+      }
+      return ret;
+    }, {} as Record<string, Record<string, boolean>>);
   }
 
-  // delete local workspace's data
+  /**
+   * delete local workspace's data
+   * @param workspaceId workspace id
+   */
   async delete(workspaceId: string) {
-    await this._config.delete(`workspace:${workspaceId}:provider`);
+    await this._config.delete(`${workspaceId}:provider`);
     const provider = await this._workspaces.get(workspaceId);
     if (provider) {
       this._workspaces.delete(workspaceId);
@@ -148,9 +185,11 @@ export class DataCenter {
     }
   }
 
-  // clear all local workspace's data
+  /**
+   * clear all local workspace's data
+   */
   async clear() {
     const workspaces = await this.list();
-    await Promise.all(workspaces.map(id => this.delete(id)));
+    await Promise.all(Object.keys(workspaces).map(id => this.delete(id)));
   }
 }

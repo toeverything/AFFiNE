@@ -1,7 +1,7 @@
 import type { BlobStorage } from '@blocksuite/store';
 import assert from 'assert';
 
-import type { InitialParams } from '../index.js';
+import type { ConfigStore, InitialParams } from '../index.js';
 import { BaseProvider } from '../base.js';
 import { IndexedDBProvider } from './indexeddb.js';
 
@@ -31,19 +31,20 @@ export class LocalProvider extends BaseProvider {
 
     await this._idb.whenSynced;
     this._logger('Local data loaded');
+
+    await this._globalConfig.set(this._workspace.room, true);
   }
 
   async clear() {
     await super.clear();
     await this._blobs.clear();
-    this._idb?.clearData();
+    await this._idb?.clearData();
+    await this._globalConfig.delete(this._workspace.room!);
   }
 
   async destroy(): Promise<void> {
     super.destroy();
-    if (this._idb) {
-      await this._idb.destroy();
-    }
+    await this._idb?.destroy();
   }
 
   async getBlob(id: string): Promise<string | null> {
@@ -52,5 +53,12 @@ export class LocalProvider extends BaseProvider {
 
   async setBlob(blob: Blob): Promise<string> {
     return this._blobs.set(blob);
+  }
+
+  static async list(
+    config: Readonly<ConfigStore<boolean>>
+  ): Promise<Map<string, boolean> | undefined> {
+    const entries = await config.entries();
+    return new Map(entries);
   }
 }

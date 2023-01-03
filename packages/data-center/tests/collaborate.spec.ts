@@ -9,7 +9,7 @@ test.describe('Collaborate', () => {
 
   test('collaborate workspace name', async () => {});
 
-  test('collaborate workspace avator', async () => {});
+  test('collaborate workspace avatar', async () => {});
 
   test('collaborate workspace list', async () => {});
 });

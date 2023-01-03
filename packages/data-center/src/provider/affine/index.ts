@@ -51,9 +51,7 @@ export class AffineProvider extends LocalProvider {
     if (this._onTokenRefresh) {
       token.offChange(this._onTokenRefresh);
     }
-    if (this._ws) {
-      this._ws.disconnect();
-    }
+    this._ws?.disconnect();
   }
 
   async initData() {
@@ -72,9 +70,8 @@ export class AffineProvider extends LocalProvider {
             doc.once('update', resolve);
             applyUpdate(doc, new Uint8Array(updates));
           });
-          // TODO: wait util data loaded
-          this._ws = new WebsocketProvider('/', workspace.room, doc);
           // Wait for ws synchronization to complete, otherwise the data will be modified in reverse, which can be optimized later
+          this._ws = new WebsocketProvider('/', workspace.room, doc);
           await new Promise<void>((resolve, reject) => {
             // TODO: synced will also be triggered on reconnection after losing sync
             // There needs to be an event mechanism to emit the synchronization state to the upper layer
