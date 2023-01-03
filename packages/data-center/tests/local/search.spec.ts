@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { test, expect } from '@playwright/test';
 
-import { getDataCenter, waitOnce } from './utils.js';
+import { getDataCenter, waitOnce } from '../utils.js';
 
 import 'fake-indexeddb/auto';
 

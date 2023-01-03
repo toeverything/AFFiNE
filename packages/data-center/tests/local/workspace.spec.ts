@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-import { getDataCenter } from './utils.js';
+import { getDataCenter } from '../utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('workspace', () => {
+test.describe('Workspace', () => {
   test('create', async () => {});
 
   test('load', async () => {});

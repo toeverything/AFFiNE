@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-import { getDataCenter } from './utils.js';
+import { getDataCenter } from '../utils.js';
 
 import 'fake-indexeddb/auto';
 
-test.describe('Cloud Sync', () => {
+test.describe('Sync', () => {
   test('get cloud the sync flag of workspace', async () => {});
 
   test('enable [cloud sync feature]', async () => {});
