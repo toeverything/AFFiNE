@@ -54,6 +54,7 @@ test.describe('Add new page in quick search', () => {
     await openQuickSearchByShortcut(page);
     const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
     await addNewPage.click();
+    await page.waitForTimeout(200);
     await assertTitleTexts(page, ['']);
   });
 
@@ -63,6 +64,7 @@ test.describe('Add new page in quick search', () => {
     await page.keyboard.insertText('test123456');
     const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
     await addNewPage.click();
+    await page.waitForTimeout(200);
     await assertTitleTexts(page, ['test123456']);
   });
 });
