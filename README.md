@@ -90,7 +90,7 @@ Calling all developers, testers, tech writers and more! Contributions of all typ
 
 For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropiate template for your feedback.
 
-For **translation** and **language support** you can visit our docs for the [internationalization guide].(https://docs.affine.pro/affine/internationalization/welcome)
+For **translation** and **language support** you can visit our docs for the [internationalization guide](https://docs.affine.pro/affine/internationalization/welcome).
 
 Looking for **others ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome), we work closely with passionate members of our community and provide them with a wide-range of support and resources.
 
@@ -105,7 +105,7 @@ We would also like to give thanks to open-source projects that make AFFiNE possi
 - [BlockSuite](https://github.com/toeverything/BlockSuite) - AFFiNE is built with and powered by BlockSuite.
 - [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
 - [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
-- [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, JWST.
+- [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, OctoBase.
 - [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
 - [slatejs](https://github.com/ianstormtaylor/slate) -- Customizable rich-text editor.
 - [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend.

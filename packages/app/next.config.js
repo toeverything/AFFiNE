@@ -70,4 +70,9 @@ const withDebugLocal = require('next-debug-local')(
   }
 );
 
-module.exports = withDebugLocal(nextConfig);
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  disable: process.env.NODE_ENV !== 'production',
+});
+
+module.exports = withDebugLocal(withPWA(nextConfig));
