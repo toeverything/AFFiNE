@@ -30,18 +30,18 @@ export const useEnsureWorkspace = () => {
       return;
     }
     // If user is not login and input a custom workspaceId, jump to 404 page
-    if (
-      !user &&
-      router.query.workspaceId &&
-      router.query.workspaceId !== defaultOutLineWorkspaceId
-    ) {
-      router.push('/404');
-      return;
-    }
+    // if (
+    //   !user &&
+    //   router.query.workspaceId &&
+    //   router.query.workspaceId !== defaultOutLineWorkspaceId
+    // ) {
+    //   router.push('/404');
+    //   return;
+    // }
 
     const workspaceId = user
-      ? (router.query.workspaceId as string) || workspacesMeta?.[0]?.id
-      : defaultOutLineWorkspaceId;
+      ? (router.query.workspaceId as string) || workspacesMeta[0]?.id
+      : (router.query.workspaceId as string) || defaultOutLineWorkspaceId;
 
     loadWorkspace(workspaceId).finally(() => {
       setWorkspaceLoaded(true);

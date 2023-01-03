@@ -1,4 +1,4 @@
-import { client } from '../request';
+import { client } from './request.js';
 
 export interface GetUserByEmailParams {
   email: string;
@@ -17,5 +17,5 @@ export async function getUserByEmail(
   params: GetUserByEmailParams
 ): Promise<User | null> {
   const searchParams = new URLSearchParams({ ...params });
-  return client.get('/api/user', { searchParams }).json<User | null>();
+  return client.get('api/user', { searchParams }).json<User | null>();
 }

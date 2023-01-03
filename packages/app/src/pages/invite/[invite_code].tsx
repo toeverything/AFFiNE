@@ -1,7 +1,7 @@
 import { styled } from '@/styles';
 import { Empty } from '@/ui/empty';
 import { Avatar } from '@mui/material';
-import { acceptInviting } from '@affine/data-services';
+import { getDataCenter } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -24,7 +24,12 @@ export default function DevPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [inviteData, setInviteData] = useState<any>(null);
   useEffect(() => {
-    acceptInviting({ invitingCode: router.query.invite_code as string })
+    getDataCenter()
+      .then(dc =>
+        dc.apis.acceptInviting({
+          invitingCode: router.query.invite_code as string,
+        })
+      )
       .then(data => {
         setSuccessInvited(true);
         setInviteData(data);

@@ -1,4 +1,4 @@
-import { signInWithGoogle } from '@affine/data-services';
+import { getDataCenter } from '@affine/datacenter';
 import { styled } from '@/styles';
 import { Button } from '@/ui/button';
 import { useModal } from '@/providers/global-modal-provider';
@@ -9,7 +9,8 @@ export const GoogleLoginButton = () => {
   return (
     <StyledGoogleButton
       onClick={() => {
-        signInWithGoogle()
+        getDataCenter()
+          .then(dc => dc.apis.signInWithGoogle?.())
           .then(() => {
             triggerLoginModal();
           })

@@ -21,6 +21,7 @@ export const StyledSliderBarWrapper = styled.div(() => {
     height: '100%',
     overflowX: 'hidden',
     overflowY: 'auto',
+    position: 'relative',
   };
 });
 
@@ -139,36 +140,5 @@ export const StyledSubListItem = styled.button<{
           color: theme.colors.primaryColor,
           backgroundColor: theme.colors.hoverBackground,
         },
-  };
-});
-
-export const StyledQuickSearch = styled.div(({ theme }) => {
-  return {
-    width: '296px',
-    height: '32px',
-    marginTop: '12px',
-    fontSize: theme.font.sm,
-    backgroundColor: theme.colors.hoverBackground,
-    color: theme.colors.popoverColor,
-    paddingLeft: '12px',
-    borderRadius: '5px',
-    ...displayFlex('flex-start', 'center'),
-    '>svg': {
-      fontSize: '20px',
-      marginRight: '12px',
-    },
-    '>span': {
-      fontSize: theme.font.xs,
-      margin: 'auto',
-      marginRight: '12px',
-      color: theme.colors.hoverBackground,
-      transition: 'all .15s',
-    },
-    ':hover': {
-      color: theme.colors.popoverColor,
-      '>span': {
-        color: theme.colors.popoverColor,
-      },
-    },
   };
 });

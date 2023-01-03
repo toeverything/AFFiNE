@@ -87,7 +87,7 @@ const PopoverContent = () => {
             confirmType: 'danger',
           }).then(confirm => {
             confirm && toggleDeletePage(id);
-            toast('Moved to Trash');
+            confirm && toast('Moved to Trash');
           });
         }}
         icon={<TrashIcon />}

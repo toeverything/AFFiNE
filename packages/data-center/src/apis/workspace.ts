@@ -1,5 +1,5 @@
-import { client, bareClient } from '../request';
-import { User } from './user';
+import { bareClient, client } from './request.js';
+import type { User } from './user';
 
 export interface GetWorkspaceDetailParams {
   id: string;
@@ -27,7 +27,7 @@ export interface Workspace {
 
 export async function getWorkspaces(): Promise<Workspace[]> {
   return client
-    .get('/api/workspace', {
+    .get('api/workspace', {
       headers: {
         'Cache-Control': 'no-cache',
       },
@@ -43,7 +43,7 @@ export interface WorkspaceDetail extends Workspace {
 export async function getWorkspaceDetail(
   params: GetWorkspaceDetailParams
 ): Promise<WorkspaceDetail | null> {
-  return client.get(`/api/workspace/${params.id}`).json();
+  return client.get(`api/workspace/${params.id}`).json();
 }
 
 export interface Permission {
@@ -74,7 +74,7 @@ export interface GetWorkspaceMembersParams {
 export async function getWorkspaceMembers(
   params: GetWorkspaceDetailParams
 ): Promise<Member[]> {
-  return client.get(`/api/workspace/${params.id}/permission`).json();
+  return client.get(`api/workspace/${params.id}/permission`).json();
 }
 
 export interface CreateWorkspaceParams {
@@ -85,7 +85,7 @@ export interface CreateWorkspaceParams {
 export async function createWorkspace(
   params: CreateWorkspaceParams
 ): Promise<void> {
-  return client.post('/api/workspace', { json: params }).json();
+  return client.post('api/workspace', { json: params }).json();
 }
 
 export interface UpdateWorkspaceParams {
@@ -97,7 +97,7 @@ export async function updateWorkspace(
   params: UpdateWorkspaceParams
 ): Promise<{ public: boolean | null }> {
   return client
-    .post(`/api/workspace/${params.id}`, {
+    .post(`api/workspace/${params.id}`, {
       json: {
         public: params.public,
       },
@@ -112,7 +112,7 @@ export interface DeleteWorkspaceParams {
 export async function deleteWorkspace(
   params: DeleteWorkspaceParams
 ): Promise<void> {
-  await client.delete(`/api/workspace/${params.id}`);
+  await client.delete(`api/workspace/${params.id}`);
 }
 
 export interface InviteMemberParams {
@@ -125,7 +125,7 @@ export interface InviteMemberParams {
  */
 export async function inviteMember(params: InviteMemberParams): Promise<void> {
   return client
-    .post(`/api/workspace/${params.id}/permission`, {
+    .post(`api/workspace/${params.id}/permission`, {
       json: {
         email: params.email,
       },
@@ -138,7 +138,7 @@ export interface RemoveMemberParams {
 }
 
 export async function removeMember(params: RemoveMemberParams): Promise<void> {
-  await client.delete(`/api/permission/${params.permissionId}`);
+  await client.delete(`api/permission/${params.permissionId}`);
 }
 
 export interface AcceptInvitingParams {
@@ -148,31 +148,29 @@ export interface AcceptInvitingParams {
 export async function acceptInviting(
   params: AcceptInvitingParams
 ): Promise<void> {
-  await bareClient.post(`/api/invitation/${params.invitingCode}`);
-}
-
-export interface DownloadWOrkspaceParams {
-  workspaceId: string;
-}
-export async function downloadWorkspace(
-  params: DownloadWOrkspaceParams
-): Promise<ArrayBuffer> {
-  return client.get(`/api/workspace/${params.workspaceId}/doc`).arrayBuffer();
+  await bareClient.post(`api/invitation/${params.invitingCode}`);
 }
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {
-  return client.put('/api/blob', { body: params.blob }).text();
+  return client.put('api/blob', { body: params.blob }).text();
 }
 
 export async function getBlob(params: {
   blobId: string;
 }): Promise<ArrayBuffer> {
-  return client.get(`/api/blob/${params.blobId}`).arrayBuffer();
+  return client.get(`api/blob/${params.blobId}`).arrayBuffer();
 }
 
 export interface LeaveWorkspaceParams {
   id: number | string;
 }
+
 export async function leaveWorkspace({ id }: LeaveWorkspaceParams) {
-  await client.delete(`/api/workspace/${id}/permission`).json();
+  await client.delete(`api/workspace/${id}/permission`).json();
+}
+
+export async function downloadWorkspace(
+  workspaceId: string
+): Promise<ArrayBuffer> {
+  return client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
 }

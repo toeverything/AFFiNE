@@ -1,6 +1,5 @@
 import { createContext, MutableRefObject, useContext } from 'react';
-import type { Workspace } from '@affine/data-services';
-import { AccessTokenMessage } from '@affine/data-services';
+import type { AccessTokenMessage, Workspace } from '@affine/datacenter';
 import type {
   Page as StorePage,
   Workspace as StoreWorkspace,
@@ -8,7 +7,6 @@ import type {
 import type { EditorContainer } from '@blocksuite/editor';
 export type LoadWorkspaceHandler = (
   workspaceId: string,
-  websocket?: boolean,
   user?: AccessTokenMessage | null
 ) => Promise<StoreWorkspace | null> | null;
 export type CreateEditorHandler = (page: StorePage) => EditorContainer | null;

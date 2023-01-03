@@ -1,7 +1,9 @@
-import ky from 'ky';
-import { token } from './token';
+import kyOrigin from 'ky';
+import ky from 'ky-universal';
+import { token } from './token.js';
 
 export const bareClient = ky.extend({
+  prefixUrl: 'http://localhost:8080',
   retry: 1,
   hooks: {
     // afterResponse: [
@@ -19,6 +21,7 @@ export const bareClient = ky.extend({
     // ],
   },
 });
+
 export const client = bareClient.extend({
   hooks: {
     beforeRequest: [
@@ -40,6 +43,3 @@ export const client = bareClient.extend({
     ],
   },
 });
-
-export type { AccessTokenMessage } from './token';
-export { token };

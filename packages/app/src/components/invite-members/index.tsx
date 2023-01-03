@@ -4,7 +4,7 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { useState } from 'react';
-import { inviteMember, getUserByEmail } from '@affine/data-services';
+import { getDataCenter } from '@affine/datacenter';
 import { Avatar } from '@mui/material';
 interface LoginModalProps {
   open: boolean;
@@ -60,15 +60,19 @@ export const InviteMembers = ({
       setShowTip(false);
       debounce(
         () => {
-          getUserByEmail({
-            email: value,
-            workspace_id: workspaceId,
-          }).then(data => {
-            if (data?.name) {
-              setUserData(data);
-              setShowTip(false);
-            }
-          });
+          getDataCenter()
+            .then(dc =>
+              dc.apis.getUserByEmail({
+                email: value,
+                workspace_id: workspaceId,
+              })
+            )
+            .then(data => {
+              if (data?.name) {
+                setUserData(data);
+                setShowTip(false);
+              }
+            });
         },
         300,
         true
@@ -130,7 +134,8 @@ export const InviteMembers = ({
               shape="circle"
               type="primary"
               onClick={() => {
-                inviteMember({ id: workspaceId, email: email })
+                getDataCenter()
+                  .then(dc => dc.apis.inviteMember({ id: workspaceId, email }))
                   .then(() => {
                     onClose();
                     onInviteSuccess && onInviteSuccess();

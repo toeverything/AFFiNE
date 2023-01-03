@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { getWorkspaces } from '@affine/data-services';
+import { getDataCenter } from '@affine/datacenter';
 import { AppState, AppStateContext } from './context';
 import type {
   AppStateValue,
@@ -16,7 +16,8 @@ const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
 
 export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   const refreshWorkspacesMeta = async () => {
-    const workspacesMeta = await getWorkspaces().catch(() => {
+    const dc = await getDataCenter();
+    const workspacesMeta = await dc.apis.getWorkspaces().catch(() => {
       return [];
     });
     setState(state => ({ ...state, workspacesMeta }));
@@ -41,7 +42,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       const workspacesList = await Promise.all(
         state.workspacesMeta.map(async ({ id }) => {
           const workspace =
-            (await loadWorkspaceHandler?.(id, false, state.user)) || null;
+            (await loadWorkspaceHandler?.(id, state.user)) || null;
           return { id, workspace };
         })
       );
@@ -84,7 +85,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       return state.currentWorkspace;
     }
     const workspace =
-      (await loadWorkspaceHandler?.(workspaceId, true, state.user)) || null;
+      (await loadWorkspaceHandler?.(workspaceId, state.user)) || null;
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
