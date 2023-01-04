@@ -1,0 +1,9 @@
+[package]
+name = "ipc_types"
+version = "0.1.0"
+
+[dependencies]
+project-root = "0.2.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+schemars = "0.8.3"

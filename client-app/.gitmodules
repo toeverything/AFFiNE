@@ -1,0 +1,6 @@
+[submodule "src-affine"]
+	path = src-affine
+	url = https://github.com/toeverything/AFFiNE
+[submodule "src-OctoBase"]
+	path = src-OctoBase
+	url = https://github.com/toeverything/OctoBase

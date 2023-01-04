@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev",
     "dev:ac": "pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev:ac",
+    "dev:client": "pnpm --filter=@affine/client-app dev:app",
     "build": " pnpm --filter=!@affine/app build && pnpm --filter!=@affine/datacenter -r build",
+    "build:client": " pnpm --filter=@affine/client-app build",
     "export": "pnpm --filter @affine/app export",
     "start": "pnpm --filter @affine/app start",
     "lint": "pnpm --filter @affine/app lint",
