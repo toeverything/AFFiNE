@@ -27,7 +27,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
       <Modal open={open} onClose={onClose}>
         <ModalWrapper width={620} height={334} style={{ padding: '10px' }}>
           <Header>
-            <ContentTitle>My workspace</ContentTitle>
+            <ContentTitle>My Workspace List</ContentTitle>
             <ModalCloseButton
               top={6}
               right={6}
@@ -42,16 +42,17 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                 return (
                   <WorkspaceItem key={item.id}>
                     <span></span>
-                    <span>{item.name}</span>
-                    {item.type === 'local' && <span>local</span>}
-                    {item.type === 'share' && <span>share</span>}
-                    {item.isPublish ? 'public' : 'private'}
-                    {item.isLocal ? 'local' : 'local'}
+                    <span>{item.name}</span>/
+                    {item.type === 'local' && <b>local</b>}
+                    {item.type === 'share' && <b>share</b>}/
+                    {item.isPublish ? 'isPublish' : 'isPrivate'}/
+                    {item.isLocal ? 'isLocal' : ''}/
                   </WorkspaceItem>
                 );
               })}
               <li>
                 <Button
+                  type="primary"
                   onClick={() => {
                     setCreateWorkspaceOpen(true);
                   }}
@@ -114,4 +115,9 @@ const WorkspaceList = styled('div')({
 
 const WorkspaceItem = styled('div')({
   border: '1px solid #e5e5e5',
+  padding: '10px',
+  cursor: 'pointer',
+  ':hover': {
+    background: '#eee',
+  },
 });

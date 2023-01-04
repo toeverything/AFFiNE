@@ -5,7 +5,7 @@ import { styled } from '@/styles';
 import Button from '@/ui/button/Button';
 
 const Page = () => {
-  const [open, setOpen] = useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(true);
 
   useEffect(() => {
     const data = getWorkspaceList();
@@ -15,14 +15,14 @@ const Page = () => {
   }, []);
   return (
     <Workspace>
-      <div>workspace</div>
+      <h1>workspace</h1>
       <div>
         <Button
           onClick={() => {
             setOpen(true);
           }}
         >
-          workspaceList
+          View Workspace List
         </Button>
       </div>
       <WorkspaceModal
