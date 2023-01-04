@@ -44,9 +44,6 @@ importers:
 
   client-app:
     specifiers:
-      '@blocksuite/blocks': 0.3.0-alpha.18
-      '@blocksuite/editor': 0.3.0-alpha.18
-      '@blocksuite/store': 0.3.0-alpha.18
       '@emotion/react': ^11.10.5
       '@emotion/styled': ^11.10.5
       '@tauri-apps/api': ^1.2.0
@@ -94,9 +91,6 @@ importers:
       yjs: ^13.5.43
       zx: ^7.1.1
     dependencies:
-      '@blocksuite/blocks': 0.3.0-alpha.18
-      '@blocksuite/editor': 0.3.0-alpha.18
-      '@blocksuite/store': 0.3.0-alpha.18
       '@emotion/react': 11.10.5_kzbn2opkn2327fwg5yzwzya5o4
       '@emotion/styled': 11.10.5_qvatmowesywn4ye42qoh247szu
       '@tauri-apps/api': 1.2.0
@@ -1608,23 +1602,6 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@blocksuite/blocks/0.3.0-alpha.18:
-    resolution: {integrity: sha512-1s86UvQj1oG+b0ca0EBwNCW5krtbkAaq4brNITioS+2Q40k1RPO0SOno81E2an7xX3ZepUC+5h4TLAHlR42Qfw==}
-    dependencies:
-      '@blocksuite/store': 0.3.0-alpha.18
-      '@tldraw/intersect': 1.8.0
-      highlight.js: 11.7.0
-      hotkeys-js: 3.10.1
-      lit: 2.5.0
-      perfect-freehand: 1.2.0
-      quill: 1.3.7
-      quill-cursors: 4.0.0
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-    dev: false
-
   /@blocksuite/blocks/0.3.1_yjs@13.5.44:
     resolution: {integrity: sha512-b0dGz2MG4yIgngJPRumaMY58wAsd2FEVSZl3tpCXlagK9I0HD165Bq70PxcaRHVjBSV1Gf29ZVHUF6BVTYogPw==}
     dependencies:
@@ -1642,20 +1619,6 @@ packages:
       - supports-color
       - utf-8-validate
       - yjs
-    dev: false
-
-  /@blocksuite/editor/0.3.0-alpha.18:
-    resolution: {integrity: sha512-GSA9CJCVu2RwFcxzShJtM+lSNXovKz2OzqXn0C0GUJt244Q+HYeJ4Am3djsJy1x+RD454qgqeCU7JTKnSj1ciA==}
-    dependencies:
-      '@blocksuite/blocks': 0.3.0-alpha.18
-      '@blocksuite/store': 0.3.0-alpha.18
-      lit: 2.5.0
-      marked: 4.2.5
-      turndown: 7.1.1
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
     dev: false
 
   /@blocksuite/editor/0.3.1_yjs@13.5.44:
@@ -1681,27 +1644,6 @@ packages:
     dependencies:
       '@types/react': 18.0.20
       react: 18.2.0
-    dev: false
-
-  /@blocksuite/store/0.3.0-alpha.18:
-    resolution: {integrity: sha512-1XLV85Qz16gcLSjkiINC4/29OlFLOtcY2KzcmQ3ajhJ/KS9dvnfayt3XWd/Xj0KVcWeDMh87CaIPXohI8sQtJw==}
-    dependencies:
-      '@types/flexsearch': 0.7.3
-      '@types/quill': 1.3.10
-      buffer: 6.0.3
-      flexsearch: 0.7.21
-      idb-keyval: 6.2.0
-      ky: 0.32.2
-      lib0: 0.2.58
-      sha3: 2.1.4
-      y-indexeddb: 9.0.9_yjs@13.5.44
-      y-protocols: 1.0.5
-      y-webrtc: 10.2.3
-      yjs: 13.5.44
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
     dev: false
 
   /@blocksuite/store/0.3.1_yjs@13.5.44:
@@ -8772,11 +8714,6 @@ packages:
       node-fetch: 3.3.0
     dev: false
 
-  /ky/0.32.2:
-    resolution: {integrity: sha512-eBJeF6IXNwX5rksdwBrE2rIJrU2d84GoTvdM7OmmTIwUVXEMd72wIwvT+nyhrqtv7AzbSNsWz7yRsHgVhj1uog==}
-    engines: {node: '>=14.16'}
-    dev: false
-
   /ky/0.33.1:
     resolution: {integrity: sha512-zZ9OlhgM4UEunvgJBH1bBl7+a7vas1HnCLSezu2CJawc4Ka+yJculRAVKbakUece4gW7kC5Dz+UGvbXIlpDt1w==}
     engines: {node: '>=14.16'}
@@ -10457,12 +10394,6 @@ packages:
     resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}
     dev: true
 
-  /sha3/2.1.4:
-    resolution: {integrity: sha512-S8cNxbyb0UGUM2VhRD4Poe5N58gJnJsLJ5vC7FYWGUmGhcsj4++WaIOBFVDxlG0W3To6xBuiRh+i0Qp2oNCOtg==}
-    dependencies:
-      buffer: 6.0.3
-    dev: false
-
   /shebang-command/1.2.0:
     resolution: {integrity: sha512-EV3L1+UQWGor21OmnvojK36mhg+TyIKDh3iFBKBohr5xeXIhNBcx8oWdgkTEEQ+BEFFYdLRuqMfd5L84N1V5Vg==}
     engines: {node: '>=0.10.0'}
@@ -11775,15 +11706,6 @@ packages:
     engines: {node: '>=0.4'}
     dependencies:
       object-keys: 0.4.0
-    dev: false
-
-  /y-indexeddb/9.0.9_yjs@13.5.44:
-    resolution: {integrity: sha512-GcJbiJa2eD5hankj46Hea9z4hbDnDjvh1fT62E5SpZRsv8GcEemw34l1hwI2eknGcv5Ih9JfusT37JLx9q3LFg==}
-    peerDependencies:
-      yjs: ^13.0.0
-    dependencies:
-      lib0: 0.2.58
-      yjs: 13.5.44
     dev: false
 
   /y-protocols/1.0.5:

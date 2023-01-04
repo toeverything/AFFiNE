@@ -7,11 +7,12 @@
   "module": "true",
   "scripts": {
     "dev:app": "tauri dev",
-    "build:prerequisite": "pnpm build:submodules && pnpm build:preload",
+    "build:prerequisite": "pnpm build:submodules && pnpm build:affine && pnpm build:preload",
     "dev:web": "vite",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
     "build:web": "tsc && vite build",
     "build:submodules": "zx scripts/buildSubModules.mjs",
+    "build:affine": "zx scripts/buildAffine.mjs",
     "build:preload": "esbuild src/preload/index.ts --outdir=public/preload",
     "build:app": "tauri build",
     "preview": "vite preview"
