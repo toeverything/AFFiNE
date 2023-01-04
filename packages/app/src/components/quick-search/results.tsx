@@ -7,6 +7,7 @@ import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { config } from './config';
 import { NoResultSVG } from './noResultSVG';
+import { useTranslation } from 'react-i18next';
 import usePageHelper from '@/hooks/use-page-helper';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 export const Results = (props: {
@@ -27,6 +28,7 @@ export const Results = (props: {
   const { search } = usePageHelper();
   const List = config(currentWorkspaceId);
   const [results, setResults] = useState(new Map<string, string | undefined>());
+  const { t } = useTranslation();
   useEffect(() => {
     setResults(search(query));
     setLoading(false);
@@ -47,7 +49,9 @@ export const Results = (props: {
     <>
       {query ? (
         resultsPageMeta.length ? (
-          <Command.Group heading={`Find ${resultsPageMeta.length} results`}>
+          <Command.Group
+            heading={t('Find results', { number: resultsPageMeta.length })}
+          >
             {resultsPageMeta.map(result => {
               return (
                 <Command.Item
@@ -72,12 +76,12 @@ export const Results = (props: {
           </Command.Group>
         ) : (
           <StyledNotFound>
-            <span>Find 0 result</span>
+            <span>{t('Find 0 result')}</span>
             <NoResultSVG />
           </StyledNotFound>
         )
       ) : (
-        <Command.Group heading="Switch to">
+        <Command.Group heading={t('Switch to')}>
           {List.map(link => {
             return (
               <Command.Item

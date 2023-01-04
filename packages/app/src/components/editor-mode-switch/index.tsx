@@ -15,7 +15,7 @@ import { useTheme } from '@/providers/themeProvider';
 import { EdgelessIcon, PaperIcon } from './icons';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { usePageHelper } from '@/hooks/use-page-helper';
-
+import { useTranslation } from 'react-i18next';
 const PaperItem = ({ active }: { active?: boolean }) => {
   const {
     theme: {
@@ -96,7 +96,7 @@ export const EditorModeSwitch = ({
     setRadioItemStatus(modifyRadioItemStatus());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHover, mode]);
-
+  const { t } = useTranslation();
   return (
     <StyledAnimateRadioContainer
       data-testid="editor-mode-switcher"
@@ -106,7 +106,7 @@ export const EditorModeSwitch = ({
     >
       <AnimateRadioItem
         isLeft={true}
-        label="Paper"
+        label={t('Paper')}
         icon={<PaperItem />}
         active={mode === 'page'}
         status={radioItemStatus.left}
@@ -126,7 +126,7 @@ export const EditorModeSwitch = ({
       <StyledMiddleLine hidden={!isHover} dark={themeMode === 'dark'} />
       <AnimateRadioItem
         isLeft={false}
-        label="Edgeless"
+        label={t('Edgeless')}
         data-testid="switch-edgeless-item"
         icon={<EdgelessItem />}
         active={mode === 'edgeless'}

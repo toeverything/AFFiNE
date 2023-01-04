@@ -25,18 +25,18 @@ import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
 import { useModal } from '@/providers/global-modal-provider';
 import { useAppState } from '@/providers/app-state-provider/context';
-
 import { IconButton } from '@/ui/button';
 // import { WorkspaceSelector } from './WorkspaceSelector';
 import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
+import { useTranslation } from 'react-i18next';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
   const pageList = usePageMetaList();
   const router = useRouter();
-
+  const { t } = useTranslation();
   const favoriteList = pageList.filter(p => p.favorite && !p.trash);
   return (
     <Collapse in={showList}>
@@ -59,7 +59,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
         );
       })}
       {favoriteList.length === 0 && (
-        <StyledSubListItem disable={true}>No item</StyledSubListItem>
+        <StyledSubListItem disable={true}>{t('No item')}</StyledSubListItem>
       )}
     </Collapse>
   );
@@ -70,7 +70,7 @@ export const WorkSpaceSliderBar = () => {
   const { currentWorkspaceId } = useAppState();
   const { openPage, createPage } = usePageHelper();
   const router = useRouter();
-
+  const { t } = useTranslation();
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
 
@@ -86,7 +86,7 @@ export const WorkSpaceSliderBar = () => {
     <>
       <StyledSliderBar show={show}>
         <Tooltip
-          content={show ? 'Collapse sidebar' : 'Expand sidebar'}
+          content={show ? t('Collapse sidebar') : t('Expand sidebar')}
           placement="right"
           visible={showTip}
         >
@@ -120,17 +120,17 @@ export const WorkSpaceSliderBar = () => {
             }}
           >
             <SearchIcon />
-            Quick search
+            {t('Quick search')}
           </StyledListItem>
           <Link href={{ pathname: paths.all }}>
             <StyledListItem active={router.asPath === paths.all}>
-              <AllPagesIcon /> <span>All pages</span>
+              <AllPagesIcon /> <span>{t('All pages')}</span>
             </StyledListItem>
           </Link>
           <StyledListItem active={router.asPath === paths.favorite}>
             <StyledLink href={{ pathname: paths.favorite }}>
               <FavouritesIcon />
-              Favourites
+              {t('Favourites')}
             </StyledLink>
             <IconButton
               darker={true}
@@ -152,12 +152,12 @@ export const WorkSpaceSliderBar = () => {
               triggerImportModal();
             }}
           >
-            <ImportIcon /> Import
+            <ImportIcon /> {t('Import')}
           </StyledListItem>
 
           <Link href={{ pathname: paths.trash }}>
             <StyledListItem active={router.asPath === paths.trash}>
-              <TrashIcon /> Trash
+              <TrashIcon /> {t('Trash')}
             </StyledListItem>
           </Link>
           <StyledNewPageButton
@@ -168,7 +168,7 @@ export const WorkSpaceSliderBar = () => {
               }
             }}
           >
-            <AddIcon /> New Page
+            <AddIcon /> {t('New Page')}
           </StyledNewPageButton>
         </StyledSliderBarWrapper>
       </StyledSliderBar>

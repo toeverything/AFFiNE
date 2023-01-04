@@ -23,7 +23,7 @@ import {
   StyledModalFooter,
 } from './style';
 import bg from '@/components/contact-modal/bg.png';
-
+import { useTranslation } from 'react-i18next';
 const linkList = [
   {
     icon: <GithubIcon />,
@@ -51,20 +51,6 @@ const linkList = [
     link: 'https://discord.gg/Arn7TqJBvG',
   },
 ];
-const rightLinkList = [
-  {
-    icon: <LogoIcon />,
-    title: 'Official Website ',
-    subTitle: 'AFFiNE.pro',
-    link: 'https://affine.pro',
-  },
-  {
-    icon: <DocIcon />,
-    title: 'AFFiNE Community',
-    subTitle: 'community.affine.pro',
-    link: 'https://community.affine.pro',
-  },
-];
 
 type TransitionsModalProps = {
   open: boolean;
@@ -72,6 +58,21 @@ type TransitionsModalProps = {
 };
 
 export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
+  const { t } = useTranslation();
+  const rightLinkList = [
+    {
+      icon: <LogoIcon />,
+      title: t('Official Website'),
+      subTitle: 'AFFiNE.pro',
+      link: 'https://affine.pro',
+    },
+    {
+      icon: <DocIcon />,
+      title: t('AFFiNE Community'),
+      subTitle: 'community.affine.pro',
+      link: 'https://community.affine.pro',
+    },
+  ];
   return (
     <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
       <ModalWrapper
@@ -109,7 +110,7 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
             })}
           </StyledLeftContainer>
           <StyledRightContainer>
-            <StyledSubTitle>Get in touch!</StyledSubTitle>
+            <StyledSubTitle>{t('Get in touch!')}</StyledSubTitle>
             {linkList.map(({ icon, title, link }) => {
               return (
                 <StyledSmallLink key={title} href={link} target="_blank">
@@ -128,7 +129,7 @@ export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
               target="_blank"
               rel="noreferrer"
             >
-              How is AFFiNE Alpha different？
+              {t('How is AFFiNE Alpha different?')}
             </a>
           </p>
           <p>Copyright &copy; 2022 Toeverything</p>
