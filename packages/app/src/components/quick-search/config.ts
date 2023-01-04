@@ -1,21 +1,22 @@
 import { AllPagesIcon, FavouritesIcon, TrashIcon } from '@blocksuite/icons';
-
-export const config = (currentWorkspaceId: string) => {
+import { useTranslation } from 'react-i18next';
+export const useSwitchToConfig = (currentWorkspaceId: string) => {
+  const { t } = useTranslation();
   const List = [
     {
-      title: 'All pages',
+      title: t('All pages'),
       href: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
       icon: AllPagesIcon,
     },
     {
-      title: 'Favourites',
+      title: t('Favourites'),
       href: currentWorkspaceId
         ? `/workspace/${currentWorkspaceId}/favorite`
         : '',
       icon: FavouritesIcon,
     },
     {
-      title: 'Trash',
+      title: t('Trash'),
       href: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/trash` : '',
       icon: TrashIcon,
     },

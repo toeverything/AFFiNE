@@ -7,6 +7,7 @@ import {
   StyledModalWrapper,
 } from '@/ui/confirm/styles';
 import { Button } from '@/ui/button';
+import { useTranslation } from 'react-i18next';
 export type ConfirmProps = {
   title?: string;
   content?: string;
@@ -26,6 +27,7 @@ export const Confirm = ({
   onCancel,
 }: ConfirmProps) => {
   const [open, setOpen] = useState(true);
+  const { t } = useTranslation();
   return (
     <Modal open={open}>
       <StyledModalWrapper>
@@ -48,7 +50,7 @@ export const Confirm = ({
             }}
             style={{ marginRight: '24px' }}
           >
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button
             type={confirmType}
