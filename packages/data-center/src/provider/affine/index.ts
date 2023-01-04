@@ -1,8 +1,8 @@
 import assert from 'assert';
 import { applyUpdate } from 'yjs';
 
-import type { InitialParams } from '../index.js';
-import { token, Callback } from '../../apis/index.js';
+import type { ConfigStore, InitialParams, Logger } from '../index.js';
+import { token, Callback, getApis } from '../../apis/index.js';
 import { LocalProvider } from '../local/index.js';
 
 import { WebsocketProvider } from './sync.js';
@@ -90,5 +90,27 @@ export class AffineProvider extends LocalProvider {
     // then we need to get map with doc
     // just a workaround for yjs
     doc.getMap('space:meta');
+  }
+
+  static async auth(config: Readonly<ConfigStore<string>>, logger: Logger) {
+    const refreshToken = await config.get('token');
+    if (refreshToken) {
+      await token.refreshToken(refreshToken);
+      if (token.isLogin && !token.isExpired) {
+        logger('check login success');
+        // login success
+        return;
+      }
+    }
+
+    logger('start login');
+    // login with google
+    const apis = getApis();
+    assert(apis.signInWithGoogle);
+    const user = await apis.signInWithGoogle();
+    assert(user);
+    logger(`login success: ${user.displayName}`);
+
+    // TODO: refresh local workspace data
   }
 }

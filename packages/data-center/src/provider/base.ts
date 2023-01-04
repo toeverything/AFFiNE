@@ -55,6 +55,10 @@ export class BaseProvider {
     return this._workspace;
   }
 
+  static async auth(_config: Readonly<ConfigStore>, _logger: Logger) {
+    throw Error('Not implemented: auth');
+  }
+
   // get workspace list，return a map of workspace id and boolean
   // if value is true, it exists locally, otherwise it does not exist locally
   static async list(

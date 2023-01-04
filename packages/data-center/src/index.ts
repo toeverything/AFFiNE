@@ -7,6 +7,10 @@ const _initializeDataCenter = () => {
   return (debug = true) => {
     if (!_dataCenterInstance) {
       _dataCenterInstance = DataCenter.init(debug);
+      _dataCenterInstance.then(dc => {
+        (window as any).dc = dc;
+        return dc;
+      });
     }
 
     return _dataCenterInstance;

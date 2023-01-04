@@ -97,6 +97,21 @@ export class DataCenter {
     return provider;
   }
 
+  async auth(providerId: string, globalConfig?: Record<string, any>) {
+    const Provider = this._providers.get(providerId);
+    if (Provider) {
+      // initial configurator
+      const config = getKVConfigure(`provider:${providerId}`);
+      // set workspace configs
+      const values = Object.entries(globalConfig || {});
+      if (values.length) await config.setMany(values);
+
+      const logger = this._logger.extend(`auth:${providerId}`);
+      logger.enabled = this._logger.enabled;
+      await Provider.auth(config, logger);
+    }
+  }
+
   /**
    * load workspace data to memory
    * @param workspaceId workspace id

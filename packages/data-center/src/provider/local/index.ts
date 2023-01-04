@@ -1,7 +1,7 @@
 import type { BlobStorage } from '@blocksuite/store';
 import assert from 'assert';
 
-import type { ConfigStore, InitialParams } from '../index.js';
+import type { ConfigStore, InitialParams, Logger } from '../index.js';
 import { BaseProvider } from '../base.js';
 import { IndexedDBProvider } from './indexeddb.js';
 
@@ -32,14 +32,14 @@ export class LocalProvider extends BaseProvider {
     await this._idb.whenSynced;
     this._logger('Local data loaded');
 
-    await this._globalConfig.set(this._workspace.room, true);
+    await this._globalConfig.set(`list:${this._workspace.room}`, true);
   }
 
   async clear() {
     await super.clear();
     await this._blobs.clear();
     await this._idb?.clearData();
-    await this._globalConfig.delete(this._workspace.room!);
+    await this._globalConfig.delete(`list:${this._workspace.room}`);
   }
 
   async destroy(): Promise<void> {
@@ -55,10 +55,18 @@ export class LocalProvider extends BaseProvider {
     return this._blobs.set(blob);
   }
 
+  static async auth(_config: Readonly<ConfigStore>, logger: Logger) {
+    logger("Local provider doesn't require authentication");
+  }
+
   static async list(
     config: Readonly<ConfigStore<boolean>>
   ): Promise<Map<string, boolean> | undefined> {
     const entries = await config.entries();
-    return new Map(entries);
+    return new Map(
+      entries
+        .filter(([key]) => key.startsWith('list:'))
+        .map(([key, value]) => [key.slice(5), value])
+    );
   }
 }
