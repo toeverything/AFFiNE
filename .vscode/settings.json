@@ -24,5 +24,6 @@
   },
   "[toml]": {
     "editor.defaultFormatter": "tamasfe.even-better-toml"
-  }
+  },
+  "rust-analyzer.linkedProjects": ["client-app/src-tauri/Cargo.toml"]
 }
