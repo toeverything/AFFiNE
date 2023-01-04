@@ -24,7 +24,7 @@ import { useAppState } from '@/providers/app-state-provider/context';
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTheme } from '@/providers/themeProvider';
-
+import { useTranslation } from 'react-i18next';
 const FavoriteTag = ({
   pageMeta: { favorite, id },
 }: {
@@ -32,9 +32,10 @@ const FavoriteTag = ({
 }) => {
   const { toggleFavoritePage } = usePageHelper();
   const { theme } = useTheme();
+  const { t } = useTranslation();
   return (
     <Tooltip
-      content={favorite ? 'Favourited' : 'Favourite'}
+      content={favorite ? t('Favourited') : t('Favourite')}
       placement="top-start"
     >
       <IconButton
@@ -43,7 +44,9 @@ const FavoriteTag = ({
         onClick={e => {
           e.stopPropagation();
           toggleFavoritePage(id);
-          toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
+          toast(
+            !favorite ? t('Removed to Favourites') : t('Added to Favourites')
+          );
         }}
         style={{
           color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
@@ -71,6 +74,7 @@ export const PageList = ({
 }) => {
   const router = useRouter();
   const { currentWorkspaceId } = useAppState();
+  const { t } = useTranslation();
   if (pageList.length === 0) {
     return <Empty />;
   }
@@ -80,10 +84,10 @@ export const PageList = ({
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell proportion={0.5}>Title</TableCell>
-            <TableCell proportion={0.2}>Created</TableCell>
+            <TableCell proportion={0.5}>{t('Title')}</TableCell>
+            <TableCell proportion={0.2}>{t('Created')}</TableCell>
             <TableCell proportion={0.2}>
-              {isTrash ? 'Moved to Trash' : 'Updated'}
+              {isTrash ? t('Moved to Trash') : t('Updated')}
             </TableCell>
             <TableCell proportion={0.1}></TableCell>
           </TableRow>
@@ -108,7 +112,7 @@ export const PageList = ({
                         <PaperIcon />
                       )}
                       <Content ellipsis={true} color="inherit">
-                        {pageMeta.title || 'Untitled'}
+                        {pageMeta.title || t('Untitled')}
                       </Content>
                     </StyledTitleLink>
                     {showFavoriteTag && <FavoriteTag pageMeta={pageMeta} />}

@@ -5,7 +5,7 @@ import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-import { config } from './config';
+import { useSwitchToConfig } from './config';
 import { NoResultSVG } from './noResultSVG';
 import { useTranslation } from 'react-i18next';
 import usePageHelper from '@/hooks/use-page-helper';
@@ -26,7 +26,7 @@ export const Results = (props: {
   const router = useRouter();
   const { currentWorkspaceId } = useAppState();
   const { search } = usePageHelper();
-  const List = config(currentWorkspaceId);
+  const List = useSwitchToConfig(currentWorkspaceId);
   const [results, setResults] = useState(new Map<string, string | undefined>());
   const { t } = useTranslation();
   useEffect(() => {
