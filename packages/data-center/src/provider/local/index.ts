@@ -1,7 +1,7 @@
 import type { BlobStorage } from '@blocksuite/store';
 import assert from 'assert';
 
-import type { ConfigStore, InitialParams, Logger } from '../index.js';
+import type { ConfigStore, InitialParams } from '../index.js';
 import { BaseProvider } from '../base.js';
 import { IndexedDBProvider } from './indexeddb.js';
 
@@ -21,7 +21,7 @@ export class LocalProvider extends BaseProvider {
     this._blobs = blobs;
   }
 
-  async initData() {
+  async initData(locally = true) {
     assert(this._workspace.room);
     this._logger('Loading local data');
     this._idb = new IndexedDBProvider(
@@ -35,7 +35,7 @@ export class LocalProvider extends BaseProvider {
     this._signals.listAdd.emit({
       workspace: this._workspace.room,
       provider: this.id,
-      locally: true,
+      locally,
     });
   }
 
@@ -58,10 +58,6 @@ export class LocalProvider extends BaseProvider {
 
   async setBlob(blob: Blob): Promise<string> {
     return this._blobs.set(blob);
-  }
-
-  static async auth(_config: Readonly<ConfigStore>, logger: Logger) {
-    logger("Local provider doesn't require authentication");
   }
 
   static async list(

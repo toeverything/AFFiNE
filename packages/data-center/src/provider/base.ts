@@ -61,8 +61,12 @@ export class BaseProvider {
     return this._workspace;
   }
 
-  static async auth(_config: Readonly<ConfigStore>, _logger: Logger) {
-    throw Error('Not implemented: auth');
+  static async auth(
+    _config: Readonly<ConfigStore>,
+    logger: Logger,
+    _signals: DataCenterSignals
+  ) {
+    logger("This provider doesn't require authentication");
   }
 
   // get workspace list，return a map of workspace id and boolean

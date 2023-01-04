@@ -37,7 +37,6 @@ export class DataCenter {
   readonly signals = {
     listAdd: new Signal<WorkspaceLoadEvent>(),
     listRemove: new Signal<string>(),
-    workspaceLoaded: new Signal<WorkspaceLoadEvent>(),
   };
 
   static async init(debug: boolean): Promise<DataCenter> {
@@ -62,12 +61,6 @@ export class DataCenter {
     });
     this.signals.listRemove.on(workspace => {
       this._config.delete(`list:${workspace}`);
-    });
-    this.signals.workspaceLoaded.on(e => {
-      this._config.set(`list:${e.workspace}`, {
-        provider: e.provider,
-        locally: e.locally,
-      });
     });
   }
 
@@ -141,7 +134,7 @@ export class DataCenter {
 
       const logger = this._logger.extend(`auth:${providerId}`);
       logger.enabled = this._logger.enabled;
-      await Provider.auth(config, logger);
+      await Provider.auth(config, logger, this.signals);
     }
   }
 
