@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { BlockSchema } from '@blocksuite/blocks/models';
-import { Workspace } from '@blocksuite/store';
+import { Workspace, Signal } from '@blocksuite/store';
 
 import { getLogger } from './index.js';
 import { getApis, Apis } from './apis/index.js';
@@ -16,12 +16,29 @@ type LoadConfig = {
   config?: Record<string, any>;
 };
 
+export type DataCenterSignals = DataCenter['signals'];
+type WorkspaceItem = {
+  // provider id
+  provider: string;
+  // data exists locally
+  locally: boolean;
+};
+type WorkspaceLoadEvent = WorkspaceItem & {
+  workspace: string;
+};
+
 export class DataCenter {
   private readonly _apis: Apis;
   private readonly _providers = new Map<string, typeof BaseProvider>();
   private readonly _workspaces = new Map<string, Promise<BaseProvider>>();
   private readonly _config;
   private readonly _logger;
+
+  readonly signals = {
+    listAdd: new Signal<WorkspaceLoadEvent>(),
+    listRemove: new Signal<string>(),
+    workspaceLoaded: new Signal<WorkspaceLoadEvent>(),
+  };
 
   static async init(debug: boolean): Promise<DataCenter> {
     const dc = new DataCenter(debug);
@@ -36,6 +53,22 @@ export class DataCenter {
     this._config = getKVConfigure('sys');
     this._logger = getLogger('dc');
     this._logger.enabled = debug;
+
+    this.signals.listAdd.on(e => {
+      this._config.set(`list:${e.workspace}`, {
+        provider: e.provider,
+        locally: e.locally,
+      });
+    });
+    this.signals.listRemove.on(workspace => {
+      this._config.delete(`list:${workspace}`);
+    });
+    this.signals.workspaceLoaded.on(e => {
+      this._config.set(`list:${e.workspace}`, {
+        provider: e.provider,
+        locally: e.locally,
+      });
+    });
   }
 
   get apis(): Readonly<Apis> {
@@ -86,9 +119,9 @@ export class DataCenter {
     await provider.init({
       apis: this._apis,
       config,
-      globalConfig: getKVConfigure(`provider:${providerId}`),
       debug: this._logger.enabled,
       logger: this._logger.extend(`${Provider.id}:${id}`),
+      signals: this.signals,
       workspace,
     });
     await provider.initData();
@@ -169,21 +202,14 @@ export class DataCenter {
    * data state is also map, the key is the provider id, and the data exists locally when the value is true, otherwise it does not exist
    */
   async list(): Promise<Record<string, Record<string, boolean>>> {
-    const lists = await Promise.all(
-      Array.from(this._providers.entries()).map(([providerId, provider]) =>
-        provider
-          .list(getKVConfigure(`provider:${providerId}`))
-          .then(list => [providerId, list || []] as const)
-      )
-    );
-
-    return lists.reduce((ret, [providerId, list]) => {
-      for (const [item, isLocal] of list) {
-        const workspace = ret[item] || {};
-        workspace[providerId] = isLocal;
-        ret[item] = workspace;
+    const entries: [string, WorkspaceItem][] = await this._config.entries();
+    return entries.reduce((acc, [k, i]) => {
+      if (k.startsWith('list:')) {
+        const key = k.slice(5);
+        acc[key] = acc[key] || {};
+        acc[key][i.provider] = i.locally;
       }
-      return ret;
+      return acc;
     }, {} as Record<string, Record<string, boolean>>);
   }
 

@@ -8,7 +8,14 @@ const _initializeDataCenter = () => {
     if (!_dataCenterInstance) {
       _dataCenterInstance = DataCenter.init(debug);
       _dataCenterInstance.then(dc => {
-        (window as any).dc = dc;
+        try {
+          if (window) {
+            (window as any).dc = dc;
+          }
+        } catch (_) {
+          // ignore
+        }
+
         return dc;
       });
     }

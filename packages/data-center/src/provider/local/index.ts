@@ -32,14 +32,19 @@ export class LocalProvider extends BaseProvider {
     await this._idb.whenSynced;
     this._logger('Local data loaded');
 
-    await this._globalConfig.set(`list:${this._workspace.room}`, true);
+    this._signals.listAdd.emit({
+      workspace: this._workspace.room,
+      provider: this.id,
+      locally: true,
+    });
   }
 
   async clear() {
+    assert(this._workspace.room);
     await super.clear();
     await this._blobs.clear();
     await this._idb?.clearData();
-    await this._globalConfig.delete(`list:${this._workspace.room}`);
+    this._signals.listRemove.emit(this._workspace.room);
   }
 
   async destroy(): Promise<void> {

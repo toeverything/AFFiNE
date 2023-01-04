@@ -35,7 +35,7 @@ test.describe('Workspace', () => {
 
     await dataCenter.reload('test3', { providerId: 'affine' });
     expect(await dataCenter.list()).toStrictEqual({
-      test3: { affine: true, local: true },
+      test3: { affine: true },
       test4: { local: true },
       test5: { local: true },
       test6: { local: true },
