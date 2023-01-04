@@ -8,3 +8,11 @@ export function AffineBasicPage() {
   }, []);
   return null;
 }
+
+export function AffineDevPage() {
+  useEffect(() => {
+    location.href = 'http://localhost:8080';
+    redirect('http://localhost:8080');
+  }, []);
+  return null;
+}
