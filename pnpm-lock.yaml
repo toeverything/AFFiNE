@@ -12,6 +12,7 @@ importers:
       '@typescript-eslint/eslint-plugin': ^5.47.0
       '@typescript-eslint/parser': ^5.47.0
       concurrently: ^7.6.0
+      cross-env: ^7.0.3
       eslint: ^8.30.0
       eslint-config-next: 12.3.1
       eslint-config-prettier: ^8.5.0
@@ -32,6 +33,7 @@ importers:
       '@typescript-eslint/eslint-plugin': 5.48.0_wxmz6cyorqfuzhhglktlvr5lve
       '@typescript-eslint/parser': 5.48.0_p4cjf2r47dnfiqufepc5hp43sq
       concurrently: 7.6.0
+      cross-env: 7.0.3
       eslint: 8.31.0
       eslint-config-next: 12.3.1_p4cjf2r47dnfiqufepc5hp43sq
       eslint-config-prettier: 8.5.0_eslint@8.31.0
@@ -46,6 +48,7 @@ importers:
 
   client-app:
     specifiers:
+      '@blocksuite/store': ^0.3.1
       '@emotion/react': ^11.10.5
       '@emotion/styled': ^11.10.5
       '@tauri-apps/api': ^1.2.0
@@ -93,6 +96,7 @@ importers:
       yjs: ^13.5.43
       zx: ^7.1.1
     dependencies:
+      '@blocksuite/store': 0.3.1_yjs@13.5.44
       '@emotion/react': 11.10.5_kzbn2opkn2327fwg5yzwzya5o4
       '@emotion/styled': 11.10.5_qvatmowesywn4ye42qoh247szu
       '@tauri-apps/api': 1.2.0
@@ -11523,6 +11527,7 @@ packages:
   /which/2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
     engines: {node: '>= 8'}
+    hasBin: true
     dependencies:
       isexe: 2.0.0
     dev: true

@@ -7,6 +7,7 @@ name = "AFFiNE"
 version = "0.0.0"
 dependencies = [
  "bytes",
+ "dotenvy",
  "futures",
  "ipc_types",
  "js-sys",
