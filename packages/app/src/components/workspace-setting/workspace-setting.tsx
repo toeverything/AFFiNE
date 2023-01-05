@@ -438,7 +438,7 @@ const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                 <Button
                   onClick={() => {
                     updateWorkspaceMeta(workspace.id, {
-                      workspaceType: 'cloud',
+                      type: 'cloud',
                     });
                     setType();
                   }}

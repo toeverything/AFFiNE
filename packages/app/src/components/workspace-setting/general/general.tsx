@@ -1,6 +1,6 @@
 import {
   StyledDeleteButtonContainer,
-  StyledSettingAvatar,
+  // StyledSettingAvatar,
   StyledSettingAvatarContent,
   StyledSettingInputContainer,
 } from './style';
@@ -21,7 +21,7 @@ import {
   User,
   Workspace,
 } from '@/hooks/mock-data/mock';
-
+import { stringToColour } from '@/utils';
 export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
   const { currentWorkspace, refreshWorkspacesMeta } = useAppState();
   useEffect(() => {
@@ -79,9 +79,27 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
     <div>
       <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
       <StyledSettingAvatarContent>
-        <StyledSettingAvatar alt="workspace avatar" src={''}>
+        {/* <StyledSettingAvatar alt="workspace avatar" src={''}>
           AFFiNE
-        </StyledSettingAvatar>
+        </StyledSettingAvatar> */}
+        <div
+          style={{
+            float: 'left',
+            width: '60px',
+            height: '60px',
+            border: '1px solid #fff',
+            color: '#fff',
+            fontSize: '26px',
+            padding: '5px 0 0 5px;',
+            background: stringToColour(workspace?.name ?? 'AFFiNE'),
+            borderRadius: '50%',
+            textAlign: 'center',
+            lineHeight: '60px',
+            marginRight: '5px',
+          }}
+        >
+          {(workspace?.name ?? 'AFFiNE').substring(0, 1)}
+        </div>
         <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
           fileChange={fileChange}
