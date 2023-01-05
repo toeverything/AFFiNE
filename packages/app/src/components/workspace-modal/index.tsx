@@ -37,6 +37,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
 
   const setList = () => {
     const data = getWorkspaces();
+    console.log('data: ', data);
     setWorkspaceList(data);
   };
   const setUserInfo = () => {
@@ -62,14 +63,14 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
           </Header>
           <Content>
             <WorkspaceList>
-              {workspaceList.map(item => {
+              {workspaceList.map((item, index) => {
                 return (
                   <WorkspaceItem
                     onClick={() => {
                       setActiveWorkspace(item);
                       onClose();
                     }}
-                    key={item.id}
+                    key={index}
                   >
                     <span style={{ width: '100px', marginRight: '20px' }}>
                       <svg

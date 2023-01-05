@@ -31,6 +31,7 @@ import {
   MoreVerticalIcon,
   EmailIcon,
   TrashIcon,
+  DownloadIcon,
 } from '@blocksuite/icons';
 import { useCallback, useEffect, useState } from 'react';
 import { Button, IconButton } from '@/ui/button';
@@ -50,6 +51,7 @@ import {
   getUserInfo,
   Login,
   setWorkspacePublish,
+  updateWorkspaceMeta,
   User,
   Workspace,
 } from '@/hooks/mock-data/mock';
@@ -58,6 +60,7 @@ enum ActiveTab {
   'general' = 'general',
   'members' = 'members',
   'publish' = 'publish',
+  'sync' = 'sync',
 }
 
 type SettingTabProps = {
@@ -84,6 +87,19 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         </StyledSettingTagIconContainer>
         General
       </WorkspaceSettingTagItem>
+
+      <WorkspaceSettingTagItem
+        isActive={activeTab === ActiveTab.sync}
+        onClick={() => {
+          onTabChange && onTabChange(ActiveTab.sync);
+        }}
+      >
+        <StyledSettingTagIconContainer>
+          <EditIcon />
+        </StyledSettingTagIconContainer>
+        Sync
+      </WorkspaceSettingTagItem>
+
       <WorkspaceSettingTagItem
         isActive={activeTab === ActiveTab.members}
         onClick={() => {
@@ -150,6 +166,7 @@ export const WorkspaceSetting = ({
           {activeTab === ActiveTab.general && (
             <GeneralPage workspace={workspace} />
           )}
+          {activeTab === ActiveTab.sync && <SyncPage workspace={workspace} />}
           {activeTab === ActiveTab.members && workspace && (
             <MembersPage workspace={workspace} />
           )}
@@ -215,9 +232,9 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
               ></Empty>
             )}
             {members.length ? (
-              members.map(member => {
+              members.map((member, index) => {
                 return (
-                  <StyledMemberListItem key={member.id}>
+                  <StyledMemberListItem key={index}>
                     <StyledMemberNameContainer>
                       <StyledMemberAvatar alt="member avatar">
                         <EmailIcon></EmailIcon>
@@ -392,6 +409,82 @@ const PublishPage = ({ workspace }: { workspace: Workspace }) => {
           Stop publishing
         </Button>
       )}
+    </div>
+  );
+};
+const SyncPage = ({ workspace }: { workspace: Workspace }) => {
+  const [workspaceType, setWorkspaceType] = useState('local');
+  useEffect(() => {
+    setType();
+  });
+  const setType = () => {
+    const ACTIVEworkspace = getActiveWorkspace();
+    console.log('ACTIVEworkspace: ', ACTIVEworkspace);
+    ACTIVEworkspace && setWorkspaceType(ACTIVEworkspace.type);
+  };
+  return (
+    <div>
+      <StyledPublishContent>
+        {workspaceType === 'local' ? (
+          <>
+            <StyledPublishExplanation>
+              {workspace.name} is Local Workspace. All data is stored on the
+              current device. You can enable AFFiNE Cloud for this workspace to
+              keep data in sync with the cloud.
+            </StyledPublishExplanation>
+
+            <StyledPublishCopyContainer>
+              <StyledCopyButtonContainer>
+                <Button
+                  onClick={() => {
+                    updateWorkspaceMeta(workspace.id, {
+                      workspaceType: 'cloud',
+                    });
+                    setType();
+                  }}
+                  type="primary"
+                  shape="circle"
+                >
+                  Enable AFFiNE Cloud
+                </Button>
+              </StyledCopyButtonContainer>
+            </StyledPublishCopyContainer>
+          </>
+        ) : (
+          <StyledPublishExplanation>
+            {workspace.name} is Cloud Workspace. All data will be synchronized
+            and saved to the AFFiNE account
+            <div>
+              <Menu
+                content={
+                  <>
+                    <MenuItem
+                      onClick={() => {
+                        deleteMember(workspace.id, 0);
+                      }}
+                      icon={<DownloadIcon />}
+                    >
+                      Download core data to device
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        deleteMember(workspace.id, 0);
+                      }}
+                      icon={<DownloadIcon />}
+                    >
+                      Download all data to device
+                    </MenuItem>
+                  </>
+                }
+                placement="bottom-end"
+                disablePortal={true}
+              >
+                <Button>Download all data to device</Button>
+              </Menu>
+            </div>
+          </StyledPublishExplanation>
+        )}
+      </StyledPublishContent>
     </div>
   );
 };

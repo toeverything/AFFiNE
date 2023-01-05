@@ -1,3 +1,5 @@
+import { type } from 'os';
+
 export interface Workspace {
   name: string; // 名称
   id: string; //唯一标识
@@ -17,13 +19,19 @@ export interface User {
 
 export function updateWorkspaceMeta(
   workspaceId: string,
-  workspaceData: { name?: string; avatar?: string }
+  workspaceData: {
+    name?: string;
+    avatar?: string;
+    workspaceType?: 'local' | 'cloud' | 'join';
+  }
 ) {
   const workspacesMeta = getWorkspaces();
   const newWorkspacesMeta = workspacesMeta.map((workspace: Workspace) => {
     if (workspace.id === workspaceId) {
       workspaceData.name && (workspace.name = workspaceData.name);
       workspaceData.avatar && (workspace.avatar = workspaceData.avatar);
+      workspaceData.workspaceType &&
+        (workspace.type = workspaceData.workspaceType);
       return workspaceData;
     }
     return workspace;
@@ -32,6 +40,8 @@ export function updateWorkspaceMeta(
   const activeWorkspace = getActiveWorkspace();
   workspaceData.name && (activeWorkspace.name = workspaceData.name);
   workspaceData.avatar && (activeWorkspace.avatar = workspaceData.avatar);
+  workspaceData.workspaceType &&
+    (activeWorkspace.type = workspaceData.workspaceType);
   setActiveWorkspace(activeWorkspace);
 }
 export function createWorkspace(workspaceName: string) {
@@ -122,6 +132,7 @@ export function getActiveWorkspace(): Workspace {
 }
 
 export function setActiveWorkspace(workspaceData: Workspace) {
+  console.log('workspaceData: ', workspaceData);
   localStorage.setItem(
     'affine-active-workspace',
     JSON.stringify(workspaceData)
