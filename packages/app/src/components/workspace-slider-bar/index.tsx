@@ -4,13 +4,14 @@ import {
   StyledArrowButton,
   StyledLink,
   StyledListItem,
-  // StyledListItemForWorkspace,
+  StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
   StyledSliderBarWrapper,
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
+import { WorkspaceSelector } from './WorkspaceSelector';
 import Collapse from '@mui/material/Collapse';
 import {
   ArrowDownIcon,
@@ -26,7 +27,6 @@ import { Tooltip } from '@/ui/tooltip';
 import { useModal } from '@/providers/global-modal-provider';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { IconButton } from '@/ui/button';
-// import { WorkspaceSelector } from './WorkspaceSelector';
 import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
@@ -109,9 +109,9 @@ export const WorkSpaceSliderBar = () => {
         </Tooltip>
 
         <StyledSliderBarWrapper data-testid="sliderBar">
-          {/* <StyledListItemForWorkspace>
+          <StyledListItemForWorkspace>
             <WorkspaceSelector />
-          </StyledListItemForWorkspace> */}
+          </StyledListItemForWorkspace>
           <StyledListItem
             data-testid="sliderBar-quickSearchButton"
             style={{ cursor: 'pointer' }}
