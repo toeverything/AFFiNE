@@ -16,10 +16,10 @@ import {
   CloudUnsyncedIcon,
   CloudInsyncIcon,
   UsersIcon,
+  AddIcon,
 } from '@blocksuite/icons';
 import { useConfirm } from '@/providers/confirm-provider';
 import { toast } from '@/ui/toast';
-
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -76,6 +76,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                         style={{
                           float: 'left',
                           marginTop: '6px',
+                          marginLeft: '10px',
                           marginRight: '10px',
                         }}
                         width="24"
@@ -122,6 +123,14 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                     setCreateWorkspaceOpen(true);
                   }}
                 >
+                  <AddIcon
+                    style={{
+                      fontSize: '20px',
+                      top: '4px',
+                      position: 'relative',
+                      marginRight: '10px',
+                    }}
+                  />
                   Create Or Import
                 </Button>
               </li>
