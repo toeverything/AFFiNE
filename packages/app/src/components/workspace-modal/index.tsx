@@ -8,6 +8,11 @@ import {
   setActiveWorkspace,
 } from '@/hooks/mock-data/mock';
 import { CreateWorkspaceModal } from '../create-workspace';
+import {
+  CloudUnsyncedIcon,
+  CloudInsyncIcon,
+  UsersIcon,
+} from '@blocksuite/icons';
 
 interface LoginModalProps {
   open: boolean;
@@ -29,9 +34,9 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
   return (
     <div>
       <Modal open={open} onClose={onClose}>
-        <ModalWrapper width={620} style={{ padding: '10px' }}>
+        <ModalWrapper width={820} style={{ padding: '10px' }}>
           <Header>
-            <ContentTitle>My Workspace List</ContentTitle>
+            <ContentTitle>My Workspaces</ContentTitle>
             <ModalCloseButton
               top={6}
               right={6}
@@ -51,11 +56,47 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                     }}
                     key={item.id}
                   >
-                    <span>{item.name}</span>/
-                    {item.type === 'local' && <b>local</b>}
-                    {item.type === 'join' && <b>join</b>}/
-                    {item.isPublish ? 'isPublish' : 'isPrivate'}/
-                    {item.isLocal ? 'isLocal' : ''}/
+                    <span style={{ width: '100px', marginRight: '20px' }}>
+                      <svg
+                        style={{
+                          float: 'left',
+                          marginTop: '6px',
+                          marginRight: '10px',
+                        }}
+                        width="24"
+                        height="24"
+                        viewBox="0 0 40 40"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <rect
+                          x="0.5"
+                          y="0.5"
+                          width="39"
+                          height="39"
+                          rx="19.5"
+                          stroke="#6880FF"
+                          fill="#FFF"
+                        />
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M18.6303 8.79688L11.2559 29.8393H15.5752L20.2661 15.2858L24.959 29.8393H29.2637L21.8881 8.79688H18.6303Z"
+                          fill="#6880FF"
+                        />
+                      </svg>
+                      {item.name}
+                    </span>
+                    <span style={{ position: 'relative', top: '6px' }}>
+                      {item.type === 'local' && (
+                        <CloudUnsyncedIcon fontSize={24} />
+                      )}
+                      {item.type === 'cloud' && (
+                        <CloudInsyncIcon fontSize={24} />
+                      )}
+                      {item.isPublish && <UsersIcon fontSize={24} />}
+                    </span>
+                    {/* {item.isLocal ? 'isLocal' : ''}/ */}
                   </WorkspaceItem>
                 );
               })}
@@ -66,12 +107,16 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                     setCreateWorkspaceOpen(true);
                   }}
                 >
-                  Create Workspace
+                  Create Or Import
                 </Button>
               </li>
             </WorkspaceList>
           </Content>
           <Footer>
+            <p style={{ fontSize: '14px', color: '#ccc', margin: '12px 0' }}>
+              Tips:Workspace is your virtual space to capture, create and plan
+              as just one person or together as a team.
+            </p>
             <Button>Sign in AFFiNE Cloud</Button>
           </Footer>
           <CreateWorkspaceModal
@@ -124,9 +169,10 @@ const WorkspaceList = styled('div')({
 });
 
 const WorkspaceItem = styled('div')({
-  border: '1px solid #e5e5e5',
-  padding: '10px',
   cursor: 'pointer',
+  padding: '8px',
+  border: '1px solid #eee',
+  fontWeight: 'bold',
   ':hover': {
     background: '#eee',
   },
