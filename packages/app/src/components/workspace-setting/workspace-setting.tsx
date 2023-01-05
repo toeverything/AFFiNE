@@ -44,7 +44,9 @@ import { Empty } from '@/ui/empty';
 import { useAppState } from '@/providers/app-state-provider';
 import { GeneralPage } from './general';
 import {
+  deleteMember,
   getActiveWorkspace,
+  getMembers,
   getUserInfo,
   Login,
   setWorkspacePublish,
@@ -162,7 +164,7 @@ export const WorkspaceSetting = ({
 
 const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<User[]>([]);
   const [userInfo, setUserInfo] = useState<User>();
   // const refreshMembers = useCallback(() => {
   //   getDataCenter()
@@ -181,12 +183,17 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 
   useEffect(() => {
     setUser();
+    setMembersList();
     // refreshMembers();
   }, []);
 
   const setUser = () => {
     const user = getUserInfo();
     user && setUserInfo(user);
+  };
+  const setMembersList = () => {
+    const members = getMembers(workspace.id);
+    members && setMembers(members);
   };
 
   return (
@@ -212,33 +219,23 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                 return (
                   <StyledMemberListItem key={member.id}>
                     <StyledMemberNameContainer>
-                      {member.user.type === 'Registered' ? (
-                        <Avatar src={member.user.avatar_url}></Avatar>
-                      ) : (
-                        <StyledMemberAvatar alt="member avatar">
-                          <EmailIcon></EmailIcon>
-                        </StyledMemberAvatar>
-                      )}
+                      <StyledMemberAvatar alt="member avatar">
+                        <EmailIcon></EmailIcon>
+                      </StyledMemberAvatar>
 
                       <StyledMemberInfo>
-                        {member.user.type === 'Registered' ? (
-                          <StyledMemberName>
-                            {member.user.name}
-                          </StyledMemberName>
-                        ) : (
-                          <></>
-                        )}
-                        <StyledMemberEmail>
-                          {member.user.email}
-                        </StyledMemberEmail>
+                        <StyledMemberName>{member.name}</StyledMemberName>
+
+                        <StyledMemberEmail>{member.email}</StyledMemberEmail>
                       </StyledMemberInfo>
                     </StyledMemberNameContainer>
                     <StyledMemberRoleContainer>
-                      {member.accepted
+                      {/* {member.accepted
                         ? member.type !== 99
                           ? 'Member'
                           : 'Workspace Owner'
-                        : 'Pending'}
+                        : 'Pending'} */}
+                      Pending
                     </StyledMemberRoleContainer>
                     <StyledMoreVerticalButton>
                       <Menu
@@ -246,23 +243,25 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                           <>
                             <MenuItem
                               onClick={() => {
+                                deleteMember(workspace.id, 0);
+                                setMembersList();
                                 // confirm({
                                 //   title: 'Delete Member?',
                                 //   content: `will delete member`,
                                 //   confirmText: 'Delete',
                                 //   confirmType: 'danger',
                                 // }).then(confirm => {
-                                getDataCenter()
-                                  .then(dc =>
-                                    dc.apis.removeMember({
-                                      permissionId: member.id,
-                                    })
-                                  )
-                                  .then(() => {
-                                    // console.log('data: ', data);
-                                    toast('Moved to Trash');
-                                    // refreshMembers();
-                                  });
+                                // getDataCenter()
+                                //   .then(dc =>
+                                //     dc.apis.removeMember({
+                                //       permissionId: member.id,
+                                //     })
+                                //   )
+                                //   .then(() => {
+                                //     // console.log('data: ', data);
+                                //     toast('Moved to Trash');
+                                //     // refreshMembers();
+                                //   });
                                 // });
                               }}
                               icon={<TrashIcon />}
@@ -301,6 +300,8 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                 setIsInviteModalShow(false);
               }}
               onInviteSuccess={() => {
+                setMembersList();
+                setIsInviteModalShow(false);
                 // refreshMembers();
               }}
               workspaceId={workspace.id}

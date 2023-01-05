@@ -6,6 +6,7 @@ import Input from '@/ui/input';
 import { useState } from 'react';
 import { getDataCenter } from '@affine/datacenter';
 import { Avatar } from '@mui/material';
+import { setMember } from '@/hooks/mock-data/mock';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -54,29 +55,34 @@ export const InviteMembers = ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [userData, setUserData] = useState<any>({});
   const inputChange = (value: string) => {
-    setEmail(value);
     setShowMember(true);
     if (gmailReg.test(value)) {
+      setEmail(value);
       setShowTip(false);
-      debounce(
-        () => {
-          getDataCenter()
-            .then(dc =>
-              dc.apis.getUserByEmail({
-                email: value,
-                workspace_id: workspaceId,
-              })
-            )
-            .then(data => {
-              if (data?.name) {
-                setUserData(data);
-                setShowTip(false);
-              }
-            });
-        },
-        300,
-        true
-      )();
+      setUserData({
+        name: 'wxl',
+        avatar: 'https://avatars.githubusercontent.com/u/20501502?v=4',
+        email: value,
+      });
+      // debounce(
+      //   () => {
+      //     getDataCenter()
+      //       .then(dc =>
+      //         dc.apis.getUserByEmail({
+      //           email: value,
+      //           workspace_id: workspaceId,
+      //         })
+      //       )
+      //       .then(data => {
+      //         if (data?.name) {
+      //           setUserData(data);
+      //           setShowTip(false);
+      //         }
+      //       });
+      //   },
+      //   300,
+      //   true
+      // )();
     } else {
       setShowTip(true);
     }
@@ -134,16 +140,18 @@ export const InviteMembers = ({
               shape="circle"
               type="primary"
               onClick={() => {
-                getDataCenter()
-                  .then(dc => dc.apis.inviteMember({ id: workspaceId, email }))
-                  .then(() => {
-                    onClose();
-                    onInviteSuccess && onInviteSuccess();
-                  })
-                  .catch(err => {
-                    // toast('Invite failed');
-                    console.log(err);
-                  });
+                setMember(workspaceId, userData);
+                onInviteSuccess();
+                // getDataCenter()
+                //   .then(dc => dc.apis.inviteMember({ id: workspaceId, email }))
+                //   .then(() => {
+                //     onClose();
+                //     onInviteSuccess && onInviteSuccess();
+                //   })
+                //   .catch(err => {
+                //     // toast('Invite failed');
+                //     console.log(err);
+                //   });
               }}
             >
               Invite

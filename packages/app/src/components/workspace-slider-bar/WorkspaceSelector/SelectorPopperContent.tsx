@@ -27,8 +27,7 @@ type SelectorPopperContentProps = {
 export const SelectorPopperContent = ({
   isShow,
 }: SelectorPopperContentProps) => {
-  const { user, workspacesMeta, workspaces, refreshWorkspacesMeta } =
-    useAppState();
+  const { user, workspacesMeta, refreshWorkspacesMeta } = useAppState();
   const [settingWorkspaceId, setSettingWorkspaceId] = useState<string | null>(
     null
   );
@@ -115,13 +114,9 @@ export const SelectorPopperContent = ({
               type={workspace.type}
               key={workspace.id}
               id={workspace.id}
-              icon={
-                (workspaces[workspace.id]?.meta.avatar &&
-                  `/api/blob/${workspaces[workspace.id]?.meta.avatar}`) ||
-                `loading...`
-              }
+              icon={`loading...`}
               onClickSetting={handleClickSettingWorkspace}
-              name={workspaces[workspace.id]?.meta.name || `loading...`}
+              name={`loading...`}
               memberCount={workSpaceDetails[workspace.id]?.memberCount || 1}
             />
           ) : null;

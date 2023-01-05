@@ -69,6 +69,20 @@ export function getMembers(id: string): User[] {
   return memberMap[id] || [];
 }
 
+export function setMember(workspaceId: string, member: User) {
+  const memberMap = JSON.parse(localStorage.getItem('affine-member') ?? '{}');
+  memberMap[workspaceId] = memberMap[workspaceId] || [];
+  memberMap[workspaceId].push(member);
+  localStorage.setItem('affine-member', JSON.stringify(memberMap));
+}
+
+export function deleteMember(workspaceId: string, index: number) {
+  const memberMap = JSON.parse(localStorage.getItem('affine-member') ?? '{}');
+  const memberList = memberMap[workspaceId];
+  memberList.splice(index, 1);
+  memberMap[workspaceId] = memberList;
+  localStorage.setItem('affine-member', JSON.stringify(memberMap));
+}
 export function leaveWorkspace(id: string) {
   return true;
 }
