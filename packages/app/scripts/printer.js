@@ -1,4 +1,4 @@
-const chalk = require('chalk');
+const chalk = require('chalk-next');
 const printer = {
   debug: msg => {
     const result = chalk.green`debug` + chalk.white('  - ' + msg);
