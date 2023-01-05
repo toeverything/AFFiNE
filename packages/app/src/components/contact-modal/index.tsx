@@ -57,7 +57,10 @@ type TransitionsModalProps = {
   onClose: () => void;
 };
 
-export const ContactModal = ({ open, onClose }: TransitionsModalProps) => {
+export const ContactModal = ({
+  open,
+  onClose,
+}: TransitionsModalProps): JSX.Element => {
   const { t } = useTranslation();
   const rightLinkList = [
     {
