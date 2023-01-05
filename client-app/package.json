@@ -7,7 +7,7 @@
   "module": "true",
   "scripts": {
     "dev:app": "cross-env NODE_ENV=development tauri dev",
-    "build:prerequisite": "pnpm build:submodules && pnpm build:affine && pnpm build:preload",
+    "build:prerequisite": "pnpm build:submodules && pnpm build:rs-types && pnpm build:affine && pnpm build:preload",
     "dev:web": "vite",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
     "build:web": "tsc && vite build",

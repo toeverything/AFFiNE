@@ -23,7 +23,7 @@ We will provide its binary binding soon, to replace the git-submodule, before Oc
 On this folder:
 
 - `pnpm dev:app` will start a vite server
-- `pnpm build:prerequisite` will link the Octobase and prepare affine dist html and tauri preload script
+- `pnpm build:prerequisite` will link the Octobase and prepare affine dist html and tauri preload script, also will generate ts type from rs. You should run this before start your first development time.
 
 On project root folder:
 
