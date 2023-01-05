@@ -6,7 +6,6 @@ export interface Workspace {
   isPublish?: boolean; // 是否公开
   isLocal?: boolean; // 是否全部数据都在本地
   avatar?: string; // 封面
-  workspaceType: 'local' | 'cloud' | 'join'; // cloud: 云端（本次暂不支持），local: 本地，join : 加入别人的
   type: 'local' | 'cloud' | 'join'; // cloud: 云端（本次暂不支持），local: 本地，join : 加入别人的
   workspaceOwner?: User; // 本地工作空间的拥有者
 }
@@ -23,7 +22,7 @@ export function updateWorkspaceMeta(
   workspaceData: {
     name?: string;
     avatar?: string;
-    workspaceType?: 'local' | 'cloud' | 'join';
+    type?: 'local' | 'cloud' | 'join';
   }
 ) {
   const workspacesMeta = getWorkspaces();
@@ -31,8 +30,7 @@ export function updateWorkspaceMeta(
     if (workspace.id === workspaceId) {
       workspaceData.name && (workspace.name = workspaceData.name);
       workspaceData.avatar && (workspace.avatar = workspaceData.avatar);
-      workspaceData.workspaceType &&
-        (workspace.type = workspaceData.workspaceType);
+      workspaceData.type && (workspace.type = workspaceData.type);
       return workspaceData;
     }
     return workspace;
@@ -42,8 +40,7 @@ export function updateWorkspaceMeta(
   workspaceData.name && (activeWorkspace.name = workspaceData.name);
   workspaceData.avatar && (activeWorkspace.avatar = workspaceData.avatar);
 
-  workspaceData.workspaceType &&
-    (activeWorkspace.type = workspaceData.workspaceType);
+  workspaceData.type && (activeWorkspace.type = workspaceData.type);
   setActiveWorkspace(activeWorkspace);
 }
 export function createWorkspace(workspaceName: string) {

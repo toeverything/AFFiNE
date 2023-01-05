@@ -109,7 +109,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                           top: '20px',
                         }}
                       >
-                        {item.name || 'untitled'}
+                        {item.name || 'AFFiNE'}
                       </span>
                     </span>
                     <span
@@ -118,11 +118,10 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                         top: '20px',
                       }}
                     >
-                      {(item.workspaceType === 'local' ||
-                        !item.workspaceType) && (
+                      {(item.type === 'local' || !item.type) && (
                         <CloudUnsyncedIcon fontSize={24} />
                       )}
-                      {item.workspaceType === 'cloud' && (
+                      {item.type === 'cloud' && (
                         <CloudInsyncIcon fontSize={24} />
                       )}
                       {item.isPublish && <UsersIcon fontSize={24} />}
@@ -133,6 +132,9 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
               })}
               <li>
                 <Button
+                  style={{
+                    marginTop: '20px',
+                  }}
                   type="primary"
                   onClick={() => {
                     setCreateWorkspaceOpen(true);
@@ -141,7 +143,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                   <AddIcon
                     style={{
                       fontSize: '20px',
-                      top: '4px',
+                      top: '5px',
                       position: 'relative',
                       marginRight: '10px',
                     }}
@@ -194,7 +196,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                   workspaceId &&
                     setTimeout(() => {
                       updateWorkspaceMeta(workspaceId as string, {
-                        workspaceType: 'cloud',
+                        type: 'cloud',
                       });
                     }, 1000);
                 } else {
