@@ -1,6 +1,6 @@
 import { uuidv4 } from '@blocksuite/store';
-import { getDataCenter } from 'src';
-import { DataCenter } from 'src/datacenter';
+import { getDataCenter } from './../index';
+import { DataCenter } from './../datacenter';
 import { Workspace, WorkspaceMeta, WorkspaceType } from '../style';
 import { token } from './token';
 
@@ -51,6 +51,18 @@ export class Business {
     return dc.workspacesList.getWorkspaces();
   }
 
+  /**
+   * Get page list  by workspace id
+   * @param {string} id ID of workspace.
+   */
+  getPagesByWorkspaceId(id: string) {
+    return [];
+  }
+
+  /**
+   * Observe the update of the workspace
+   * @param {function} callback({Workspace[]}).
+   */
   async onWorkspaceChange(cb: (workspaces: Workspace[]) => void) {
     const dc = await this._getDc();
     dc.workspacesList.on('change', cb);
@@ -65,6 +77,10 @@ export class Business {
     dc.delete(id);
   }
 
+  /**
+   * The member of the workspace go to  leave workspace
+   * @param {string} id ID of workspace.
+   */
   async leaveWorkspace(id: string) {
     const dc = await this._getDc();
     const workspace = dc.workspacesList.getWorkspaces().find(w => w.id === id);
@@ -74,10 +90,19 @@ export class Business {
     }
   }
 
+  /**
+   * Let the workspace to be public
+   * @param {string} id ID of workspace.
+   * @param {string} isPublish publish flag of workspace.
+   */
   setWorkspacePublish(id: string, isPublish: boolean): boolean {
     return isPublish;
   }
 
+  /**
+   * Get workspace by workspace id
+   * @param {string} id ID of workspace.
+   */
   async getWorkspaceById(id: string) {
     const dc = await this._getDc();
     const workspace = dc.workspacesList.getWorkspaces().find(w => w.id === id);
@@ -89,9 +114,21 @@ export class Business {
   }
 
   // no time
-  // getMembers(id: string): any {}
-
-  // inviteMember(id: string, email: string) {}
+  /**
+   * Get the members of the workspace
+   * @param {string} id ID of workspace.
+   */
+  getMembers(id: string): any {
+    void 0;
+  }
+  /**
+   * Add a new member to the workspace
+   * @param {string} id ID of workspace.
+   * @param {string} email new member email.
+   */
+  inviteMember(id: string, email: string) {
+    void 0;
+  }
 
   async acceptInvitation(invitingCode: string) {
     const dc = await this._getDc();
@@ -99,7 +136,12 @@ export class Business {
   }
 
   // check with dark sky
-  // getUserInfo(): any {}
+  /**
+   * Get login user info
+   */
+  getUserInfo() {
+    void 0;
+  }
 
   // TODO check with dark sky
   async login() {
@@ -108,17 +150,45 @@ export class Business {
   }
 
   // just has no time
-  // logout() {}
+  /**
+   * Logout and clear login session
+   */
+  logout() {
+    void 0;
+  }
 
   // need discuss
+  /**
+   * Create a connection between local and cloud, sync cloud data to local
+   * @param {string} id ID of workspace.
+   * @param {string} id type of workspace.
+   */
   // setWorkspaceSyncType(id: string, type: 'local' | 'cloud') {}
 
   // need discuss
-  // importWorkspace(file: File) {}
+  /**
+   * Select a file to import the workspace
+   * @param {File} file file of workspace.
+   */
+  importWorkspace(file: File) {
+    void 0;
+  }
 
   // need discuss may be not in apis
-  // exportWorkspace(id: string) {}
+  // /**
+  //  * Generate a file ,and export it to local file system
+  //  * @param {string} id ID of workspace.
+  //  */
+  exportWorkspace(id: string) {
+    void 0;
+  }
 
   // need discuss
-  // enableWorkspaceCloud(id: string) {}
+  // /**
+  //  * Enable workspace cloud flag
+  //  * @param {string} id ID of workspace.
+  //  */
+  enableWorkspaceCloud(id: string) {
+    void 0;
+  }
 }

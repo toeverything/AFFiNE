@@ -1,8 +1,8 @@
 import { Workspace } from '@blocksuite/store';
 import { Observable } from 'lib0/observable';
 import { WorkspaceDetail } from 'src/apis/workspace';
-import { DataCenter } from 'src/datacenter';
-import { User, Workspace as Wp, WorkspaceType } from 'src/style';
+import { DataCenter } from './../datacenter';
+import { User, Workspace as Wp, WorkspaceType } from './../style';
 
 function getProvider(providerList: Record<string, boolean>) {
   return Object.keys(providerList)[0];
