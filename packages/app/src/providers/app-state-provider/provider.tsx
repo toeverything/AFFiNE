@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useState, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { getDataCenter } from '@affine/datacenter';
@@ -8,12 +8,20 @@ import type {
   CreateEditorHandler,
   LoadWorkspaceHandler,
 } from './context';
-import { Page, Workspace as StoreWorkspace } from '@blocksuite/store';
+import { Page } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
 const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
   ssr: false,
 });
 
+const loadWorkspaceHandler: LoadWorkspaceHandler = async workspaceId => {
+  if (workspaceId) {
+    const dc = await getDataCenter();
+    return dc.load(workspaceId, { providerId: 'affine' });
+  } else {
+    return null;
+  }
+};
 export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
   const refreshWorkspacesMeta = async () => {
     const dc = await getDataCenter();
@@ -30,42 +38,9 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     currentWorkspace: null,
     currentPage: null,
     editor: null,
-    // Synced is used to ensure that the provider has synced with the server,
-    // So after Synced set to true, the other state is sure to be set.
-    synced: false,
     refreshWorkspacesMeta,
-    workspaces: {},
+    synced: true,
   });
-
-  useEffect(() => {
-    (async () => {
-      const workspacesList = await Promise.all(
-        state.workspacesMeta.map(async ({ id }) => {
-          const workspace =
-            (await loadWorkspaceHandler?.(id, state.user)) || null;
-          return { id, workspace };
-        })
-      );
-      const workspaces: Record<string, StoreWorkspace | null> = {};
-      workspacesList.forEach(({ id, workspace }) => {
-        workspaces[id] = workspace;
-      });
-      setState(state => ({
-        ...state,
-        workspaces,
-      }));
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.workspacesMeta]);
-
-  const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =
-    useState<LoadWorkspaceHandler>();
-  const setLoadWorkspaceHandler = useCallback(
-    (handler: LoadWorkspaceHandler) => {
-      _setLoadWorkspaceHandler(() => handler);
-    },
-    [_setLoadWorkspaceHandler]
-  );
 
   const [createEditorHandler, _setCreateEditorHandler] =
     useState<CreateEditorHandler>();
@@ -85,7 +60,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
       return state.currentWorkspace;
     }
     const workspace =
-      (await loadWorkspaceHandler?.(workspaceId, state.user)) || null;
+      (await loadWorkspaceHandler(workspaceId, state.user)) || null;
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
@@ -103,6 +78,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     }));
     return workspace;
   };
+
   const loadPage = useRef<AppStateContext['loadPage']>(() =>
     Promise.resolve(null)
   );
@@ -147,17 +123,6 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
     setState(state => ({ ...state, editor }));
   };
 
-  useEffect(() => {
-    if (!loadWorkspaceHandler) {
-      return;
-    }
-    setState(state => ({
-      ...state,
-      workspacesMeta: [],
-      synced: true,
-    }));
-  }, [loadWorkspaceHandler]);
-
   const context = useMemo(
     () => ({
       ...state,
@@ -172,10 +137,7 @@ export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
 
   return (
     <AppState.Provider value={context}>
-      <DynamicBlocksuite
-        setLoadWorkspaceHandler={setLoadWorkspaceHandler}
-        setCreateEditorHandler={setCreateEditorHandler}
-      />
+      <DynamicBlocksuite setCreateEditorHandler={setCreateEditorHandler} />
       {children}
     </AppState.Provider>
   );

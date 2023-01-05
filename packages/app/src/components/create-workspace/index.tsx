@@ -4,7 +4,6 @@ import { Button } from '@/ui/button';
 import { useState } from 'react';
 import { createWorkspace } from '@/hooks/mock-data/mock';
 import Input from '@/ui/input';
-
 interface ModalProps {
   open: boolean;
   onClose: () => void;

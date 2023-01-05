@@ -5,6 +5,7 @@ import type {
   Workspace as StoreWorkspace,
 } from '@blocksuite/store';
 import type { EditorContainer } from '@blocksuite/editor';
+
 export type LoadWorkspaceHandler = (
   workspaceId: string,
   user?: AccessTokenMessage | null
@@ -20,7 +21,7 @@ export interface AppStateValue {
 
   currentPage: StorePage | null;
 
-  workspaces: Record<string, StoreWorkspace | null>;
+  // workspaces: Record<string, StoreWorkspace | null>;
 
   editor: EditorContainer | null;
   synced: boolean;
@@ -53,7 +54,6 @@ export const AppState = createContext<AppStateContext>({
   synced: false,
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   refreshWorkspacesMeta: () => {},
-  workspaces: {},
 });
 
 export const useAppState = () => {
