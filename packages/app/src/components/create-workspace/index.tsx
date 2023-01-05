@@ -9,7 +9,7 @@ interface ICloseParams {
 }
 interface ModalProps {
   open: boolean;
-  onClose: (opts?: ICloseParams) => void;
+  onClose: (opts: ICloseParams) => void;
 }
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
@@ -28,7 +28,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
               top={6}
               right={6}
               onClick={() => {
-                onClose();
+                onClose({});
               }}
             />
           </Header>

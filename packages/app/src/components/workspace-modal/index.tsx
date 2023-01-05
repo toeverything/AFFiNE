@@ -45,6 +45,26 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
     const data = getUserInfo();
     setUser(data);
   };
+  const stringToColour = function (str: string) {
+    str = str || 'affine';
+    let colour = '#';
+    let hash = 0;
+    // str to hash
+    for (
+      let i = 0;
+      i < str.length;
+      hash = str.charCodeAt(i++) + ((hash << 5) - hash)
+    );
+
+    // int/hash to hex
+    for (
+      let i = 0;
+      i < 3;
+      colour += ('00' + ((hash >> (i++ * 8)) & 0xff).toString(16)).slice(-2)
+    );
+
+    return colour;
+  };
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -74,45 +94,37 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                     key={index}
                   >
                     <span style={{ width: '100px', marginRight: '20px' }}>
-                      <svg
+                      <div
                         style={{
                           float: 'left',
                           marginTop: '6px',
                           marginLeft: '10px',
                           marginRight: '10px',
+                          width: '50px',
+                          height: '50px',
+                          border: '1px solid #fff',
+                          color: '#fff',
+                          fontSize: '22px',
+                          padding: '5px 0 0 5px;',
+                          background: stringToColour(item.name || 'AFFiNE'),
+                          borderRadius: '50%',
+                          textAlign: 'center',
+                          lineHeight: '50px',
                         }}
-                        width="24"
-                        height="24"
-                        viewBox="0 0 40 40"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
                       >
-                        <rect
-                          x="0.5"
-                          y="0.5"
-                          width="39"
-                          height="39"
-                          rx="19.5"
-                          stroke="#6880FF"
-                          fill="#FFF"
-                        />
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M18.6303 8.79688L11.2559 29.8393H15.5752L20.2661 15.2858L24.959 29.8393H29.2637L21.8881 8.79688H18.6303Z"
-                          fill="#6880FF"
-                        />
-                      </svg>
+                        {(item.name || 'AFFiNE').substring(0, 1)}
+                      </div>
 
                       <span
                         style={{
-                          width: '255px',
+                          width: '235px',
+                          fontSize: '16px',
                           display: 'inline-block',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           position: 'relative',
-                          top: '5px',
+                          top: '20px',
                         }}
                       >
                         {item.name || 'untitled'}
@@ -121,7 +133,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                     <span
                       style={{
                         position: 'relative',
-                        top: '6px',
+                        top: '20px',
                       }}
                     >
                       {(item.workspaceType === 'local' ||
@@ -255,7 +267,6 @@ const WorkspaceItem = styled('div')({
   cursor: 'pointer',
   padding: '8px',
   border: '1px solid #eee',
-  fontWeight: 'bold',
   ':hover': {
     background: '#eee',
   },
