@@ -21,6 +21,7 @@ import {
 } from '@blocksuite/icons';
 import { useConfirm } from '@/providers/confirm-provider';
 import { toast } from '@/ui/toast';
+import { stringToColour } from '@/utils';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -45,26 +46,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
     const data = getUserInfo();
     setUser(data);
   };
-  const stringToColour = function (str: string) {
-    str = str || 'affine';
-    let colour = '#';
-    let hash = 0;
-    // str to hash
-    for (
-      let i = 0;
-      i < str.length;
-      hash = str.charCodeAt(i++) + ((hash << 5) - hash)
-    );
 
-    // int/hash to hex
-    for (
-      let i = 0;
-      i < 3;
-      colour += ('00' + ((hash >> (i++ * 8)) & 0xff).toString(16)).slice(-2)
-    );
-
-    return colour;
-  };
   return (
     <div>
       <Modal open={open} onClose={onClose}>
