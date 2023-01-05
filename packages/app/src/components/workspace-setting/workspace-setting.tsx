@@ -123,6 +123,18 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         </StyledSettingTagIconContainer>
         Publish
       </WorkspaceSettingTagItem>
+
+      <WorkspaceSettingTagItem
+        isActive={activeTab === ActiveTab.publish}
+        onClick={() => {
+          onTabChange && onTabChange(ActiveTab.publish);
+        }}
+      >
+        <StyledSettingTagIconContainer>
+          <PublishIcon />
+        </StyledSettingTagIconContainer>
+        Export
+      </WorkspaceSettingTagItem>
     </StyledSettingTabContainer>
   );
 };
