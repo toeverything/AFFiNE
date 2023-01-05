@@ -130,6 +130,19 @@ export class Business {
     void 0;
   }
 
+  /**
+   * remove the new member to the workspace
+   * @param {string} workspaceId ID of workspace.
+   * @param {string} memberId ID of member
+   */
+  removeMember(workspaceId: string, memberId: string) {
+    void 0;
+  }
+
+  /**
+   * A new member click the invite link, finish to join the workspace
+   * @param {string} inviteCode token for invitation.
+   */
   async acceptInvitation(invitingCode: string) {
     const dc = await this._getDc();
     dc.apis.acceptInviting({ invitingCode });
