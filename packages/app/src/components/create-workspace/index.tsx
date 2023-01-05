@@ -4,16 +4,19 @@ import { Button } from '@/ui/button';
 import { useState } from 'react';
 import { createWorkspace } from '@/hooks/mock-data/mock';
 import Input from '@/ui/input';
+interface ICloseParams {
+  workspaceId?: string;
+}
 interface ModalProps {
   open: boolean;
-  onClose: () => void;
+  onClose: (opts?: ICloseParams) => void;
 }
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
   const handleCreateWorkspace = () => {
-    createWorkspace(workspaceName);
-    onClose();
+    const { workspaceId } = createWorkspace(workspaceName);
+    onClose({ workspaceId });
   };
   return (
     <div>

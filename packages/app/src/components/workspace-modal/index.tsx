@@ -10,6 +10,7 @@ import {
   User,
   getUserInfo,
   SignOut,
+  updateWorkspaceMeta,
 } from '@/hooks/mock-data/mock';
 import { CreateWorkspaceModal } from '../create-workspace';
 import {
@@ -102,13 +103,23 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                           fill="#6880FF"
                         />
                       </svg>
-                      {item.name}
+
+                      <span style={{ width: '100px', display: 'inline-block' }}>
+                        {item.name || ' undefined'}
+                      </span>
                     </span>
-                    <span style={{ position: 'relative', top: '6px' }}>
-                      {item.type === 'local' && (
+                    <span
+                      style={{
+                        position: 'relative',
+                        top: '6px',
+                        marginLeft: '100px',
+                      }}
+                    >
+                      {(item.workspaceType === 'local' ||
+                        !item.workspaceType) && (
                         <CloudUnsyncedIcon fontSize={24} />
                       )}
-                      {item.type === 'cloud' && (
+                      {item.workspaceType === 'cloud' && (
                         <CloudInsyncIcon fontSize={24} />
                       )}
                       {item.isPublish && <UsersIcon fontSize={24} />}
@@ -165,7 +176,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
           </Footer>
           <CreateWorkspaceModal
             open={createWorkspaceOpen}
-            onClose={() => {
+            onClose={({ workspaceId }) => {
               setCreateWorkspaceOpen(false);
               setList();
               onClose();
@@ -177,6 +188,12 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
               }).then(confirm => {
                 if (user) {
                   console.log('enable cloud');
+                  workspaceId &&
+                    setTimeout(() => {
+                      updateWorkspaceMeta(workspaceId as string, {
+                        workspaceType: 'cloud',
+                      });
+                    }, 1000);
                 } else {
                   confirm && Login();
                 }
