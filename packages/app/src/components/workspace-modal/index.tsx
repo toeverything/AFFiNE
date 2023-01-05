@@ -104,7 +104,17 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                         />
                       </svg>
 
-                      <span style={{ width: '100px', display: 'inline-block' }}>
+                      <span
+                        style={{
+                          width: '255px',
+                          display: 'inline-block',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          top: '5px',
+                        }}
+                      >
                         {item.name || 'untitled'}
                       </span>
                     </span>
@@ -112,7 +122,6 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                       style={{
                         position: 'relative',
                         top: '6px',
-                        marginLeft: '100px',
                       }}
                     >
                       {(item.workspaceType === 'local' ||
