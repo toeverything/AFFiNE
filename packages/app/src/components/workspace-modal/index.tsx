@@ -105,7 +105,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                       </svg>
 
                       <span style={{ width: '100px', display: 'inline-block' }}>
-                        {item.name || ' undefined'}
+                        {item.name || 'untitled'}
                       </span>
                     </span>
                     <span
