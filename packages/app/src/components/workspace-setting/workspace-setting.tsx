@@ -46,6 +46,7 @@ import { GeneralPage } from './general';
 import {
   getActiveWorkspace,
   getUserInfo,
+  Login,
   setWorkspacePublish,
   User,
   Workspace,
@@ -179,119 +180,151 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   // }, [workspace.id]);
 
   useEffect(() => {
-    const user = getUserInfo();
-    user && setUserInfo(user);
+    setUser();
     // refreshMembers();
   }, []);
 
+  const setUser = () => {
+    const user = getUserInfo();
+    user && setUserInfo(user);
+  };
+
   return (
     <div>
-      <StyledMemberTitleContainer>
-        <StyledMemberNameContainer>
-          Users({members.length})
-        </StyledMemberNameContainer>
-        <StyledMemberRoleContainer>Access level</StyledMemberRoleContainer>
-      </StyledMemberTitleContainer>
-      <StyledMemberListContainer>
-        {members.length === 0 && (
-          <Empty width={648} sx={{ marginTop: '60px' }} height={300}></Empty>
-        )}
-        {members.length ? (
-          members.map(member => {
-            return (
-              <StyledMemberListItem key={member.id}>
-                <StyledMemberNameContainer>
-                  {member.user.type === 'Registered' ? (
-                    <Avatar src={member.user.avatar_url}></Avatar>
-                  ) : (
-                    <StyledMemberAvatar alt="member avatar">
-                      <EmailIcon></EmailIcon>
-                    </StyledMemberAvatar>
-                  )}
+      {userInfo ? (
+        <>
+          <StyledMemberTitleContainer>
+            <StyledMemberNameContainer>
+              Users({members.length})
+            </StyledMemberNameContainer>
+            <StyledMemberRoleContainer>Access level</StyledMemberRoleContainer>
+          </StyledMemberTitleContainer>
+          <StyledMemberListContainer>
+            {members.length === 0 && (
+              <Empty
+                width={648}
+                sx={{ marginTop: '60px' }}
+                height={300}
+              ></Empty>
+            )}
+            {members.length ? (
+              members.map(member => {
+                return (
+                  <StyledMemberListItem key={member.id}>
+                    <StyledMemberNameContainer>
+                      {member.user.type === 'Registered' ? (
+                        <Avatar src={member.user.avatar_url}></Avatar>
+                      ) : (
+                        <StyledMemberAvatar alt="member avatar">
+                          <EmailIcon></EmailIcon>
+                        </StyledMemberAvatar>
+                      )}
 
-                  <StyledMemberInfo>
-                    {member.user.type === 'Registered' ? (
-                      <StyledMemberName>{member.user.name}</StyledMemberName>
-                    ) : (
-                      <></>
-                    )}
-                    <StyledMemberEmail>{member.user.email}</StyledMemberEmail>
-                  </StyledMemberInfo>
-                </StyledMemberNameContainer>
-                <StyledMemberRoleContainer>
-                  {member.accepted
-                    ? member.type !== 99
-                      ? 'Member'
-                      : 'Workspace Owner'
-                    : 'Pending'}
-                </StyledMemberRoleContainer>
-                <StyledMoreVerticalButton>
-                  <Menu
-                    content={
-                      <>
-                        <MenuItem
-                          onClick={() => {
-                            // confirm({
-                            //   title: 'Delete Member?',
-                            //   content: `will delete member`,
-                            //   confirmText: 'Delete',
-                            //   confirmType: 'danger',
-                            // }).then(confirm => {
-                            getDataCenter()
-                              .then(dc =>
-                                dc.apis.removeMember({
-                                  permissionId: member.id,
-                                })
-                              )
-                              .then(() => {
-                                // console.log('data: ', data);
-                                toast('Moved to Trash');
-                                // refreshMembers();
-                              });
-                            // });
-                          }}
-                          icon={<TrashIcon />}
-                        >
-                          Delete
-                        </MenuItem>
-                      </>
-                    }
-                    placement="bottom-end"
-                    disablePortal={true}
-                  >
-                    <IconButton>
-                      <MoreVerticalIcon />
-                    </IconButton>
-                  </Menu>
-                </StyledMoreVerticalButton>
-              </StyledMemberListItem>
-            );
-          })
-        ) : (
-          <></>
-        )}
-      </StyledMemberListContainer>
-      <StyledMemberButtonContainer>
-        <Button
-          onClick={() => {
-            setIsInviteModalShow(true);
-          }}
-          type="primary"
-          shape="circle"
-        >
-          Invite Members
-        </Button>
-        <InviteMembers
-          onClose={() => {
-            setIsInviteModalShow(false);
-          }}
-          onInviteSuccess={() => {
-            // refreshMembers();
-          }}
-          workspaceId={workspace.id}
-          open={isInviteModalShow}
-        ></InviteMembers>
-      </StyledMemberButtonContainer>
+                      <StyledMemberInfo>
+                        {member.user.type === 'Registered' ? (
+                          <StyledMemberName>
+                            {member.user.name}
+                          </StyledMemberName>
+                        ) : (
+                          <></>
+                        )}
+                        <StyledMemberEmail>
+                          {member.user.email}
+                        </StyledMemberEmail>
+                      </StyledMemberInfo>
+                    </StyledMemberNameContainer>
+                    <StyledMemberRoleContainer>
+                      {member.accepted
+                        ? member.type !== 99
+                          ? 'Member'
+                          : 'Workspace Owner'
+                        : 'Pending'}
+                    </StyledMemberRoleContainer>
+                    <StyledMoreVerticalButton>
+                      <Menu
+                        content={
+                          <>
+                            <MenuItem
+                              onClick={() => {
+                                // confirm({
+                                //   title: 'Delete Member?',
+                                //   content: `will delete member`,
+                                //   confirmText: 'Delete',
+                                //   confirmType: 'danger',
+                                // }).then(confirm => {
+                                getDataCenter()
+                                  .then(dc =>
+                                    dc.apis.removeMember({
+                                      permissionId: member.id,
+                                    })
+                                  )
+                                  .then(() => {
+                                    // console.log('data: ', data);
+                                    toast('Moved to Trash');
+                                    // refreshMembers();
+                                  });
+                                // });
+                              }}
+                              icon={<TrashIcon />}
+                            >
+                              Delete
+                            </MenuItem>
+                          </>
+                        }
+                        placement="bottom-end"
+                        disablePortal={true}
+                      >
+                        <IconButton>
+                          <MoreVerticalIcon />
+                        </IconButton>
+                      </Menu>
+                    </StyledMoreVerticalButton>
+                  </StyledMemberListItem>
+                );
+              })
+            ) : (
+              <></>
+            )}
+          </StyledMemberListContainer>
+          <StyledMemberButtonContainer>
+            <Button
+              onClick={() => {
+                setIsInviteModalShow(true);
+              }}
+              type="primary"
+              shape="circle"
+            >
+              Invite Members
+            </Button>
+            <InviteMembers
+              onClose={() => {
+                setIsInviteModalShow(false);
+              }}
+              onInviteSuccess={() => {
+                // refreshMembers();
+              }}
+              workspaceId={workspace.id}
+              open={isInviteModalShow}
+            ></InviteMembers>
+          </StyledMemberButtonContainer>
+        </>
+      ) : (
+        <>
+          <div>
+            Collaborating with other members requires AFFiNE Cloud service.
+          </div>
+          <div>
+            <Button
+              onClick={() => {
+                Login();
+                setUser();
+              }}
+            >
+              Enable AFFiNE Cloud
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
