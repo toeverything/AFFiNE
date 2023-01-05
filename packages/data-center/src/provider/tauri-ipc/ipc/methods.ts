@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api';
-import { YDocumentUpdate } from '../types/ipc/document';
-import { CreateWorkspace } from '../types/ipc/workspace';
-import { GetBlob, PutBlob } from '../types/ipc/blob';
+import { YDocumentUpdate } from './types/document';
+import { CreateWorkspace } from './types/workspace';
+import { GetBlob, PutBlob } from './types/blob';
 
 export const updateYDocument = async (parameters: YDocumentUpdate) =>
   await invoke<boolean>('update_y_document', {
