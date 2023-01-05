@@ -1,5 +1,8 @@
 import { useTranslation } from 'react-i18next';
-export const useMacKeyboardShortcuts = () => {
+interface ShortcutTip {
+  [x: string]: string;
+}
+export const useMacKeyboardShortcuts = (): ShortcutTip => {
   const { t } = useTranslation();
   return {
     [t('Undo')]: '⌘+Z',
@@ -23,7 +26,7 @@ export const useMacKeyboardShortcuts = () => {
   };
 };
 
-export const useMacMarkdownShortcuts = () => {
+export const useMacMarkdownShortcuts = (): ShortcutTip => {
   const { t } = useTranslation();
   return {
     [t('Bold')]: '**Text** ',
@@ -42,7 +45,7 @@ export const useMacMarkdownShortcuts = () => {
   };
 };
 
-export const useWindowsKeyboardShortcuts = () => {
+export const useWindowsKeyboardShortcuts = (): ShortcutTip => {
   const { t } = useTranslation();
   return {
     [t('Undo')]: 'Ctrl+Z',
@@ -65,7 +68,7 @@ export const useWindowsKeyboardShortcuts = () => {
     [t('Reduce indent')]: 'Shift+Tab',
   };
 };
-export const useWinMarkdownShortcuts = () => {
+export const useWinMarkdownShortcuts = (): ShortcutTip => {
   const { t } = useTranslation();
   return {
     [t('Bold')]: '**Text** ',

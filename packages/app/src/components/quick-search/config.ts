@@ -1,6 +1,13 @@
 import { AllPagesIcon, FavouritesIcon, TrashIcon } from '@blocksuite/icons';
 import { useTranslation } from 'react-i18next';
-export const useSwitchToConfig = (currentWorkspaceId: string) => {
+
+export const useSwitchToConfig = (
+  currentWorkspaceId: string
+): {
+  title: string;
+  href: string;
+  icon: React.FC<React.SVGProps<SVGSVGElement>>;
+}[] => {
   const { t } = useTranslation();
   const List = [
     {
