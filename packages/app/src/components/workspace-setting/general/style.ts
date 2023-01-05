@@ -9,7 +9,7 @@ export const StyledSettingInputContainer = styled('div')(() => {
 
 export const StyledDeleteButtonContainer = styled('div')(() => {
   return {
-    marginTop: '154px',
+    marginTop: '30px',
   };
 });
 

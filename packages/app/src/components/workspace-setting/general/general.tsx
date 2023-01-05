@@ -6,8 +6,8 @@ import {
 } from './style';
 import { StyledSettingH2 } from '../style';
 
-import { useState } from 'react';
-import { Button } from '@/ui/button';
+import { useEffect, useState } from 'react';
+import { Button, TextButton } from '@/ui/button';
 import Input from '@/ui/input';
 import { getDataCenter } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
@@ -16,7 +16,12 @@ import { Workspace as StoreWorkspace } from '@blocksuite/store';
 import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
-import { getUserInfo, Workspace } from '@/hooks/mock-data/mock';
+import {
+  getUserInfo,
+  updateWorkspaceMeta,
+  User,
+  Workspace,
+} from '@/hooks/mock-data/mock';
 
 export const GeneralPage = ({
   workspace,
@@ -30,8 +35,13 @@ export const GeneralPage = ({
     workspaces,
     refreshWorkspacesMeta,
   } = useAppState();
-  // const user = getUserInfo();
+  useEffect(() => {
+    setWorkspaceName(workspace.name);
+    const user = getUserInfo();
+    setUserInfo(user);
+  }, []);
   const [showDelete, setShowDelete] = useState<boolean>(false);
+  const [userInfo, setUserInfo] = useState<User>();
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>('');
@@ -62,6 +72,9 @@ export const GeneralPage = ({
   };
   const handleCloseLeave = () => {
     setShowLeave(false);
+  };
+  const handleUpdateWorkspaceName = () => {
+    updateWorkspaceMeta(workspace.id, { name: workspaceName });
   };
 
   const fileChange = async (file: File) => {
@@ -106,7 +119,7 @@ export const GeneralPage = ({
         ) : null} */}
         {/* <Button shape="round">remove</Button> */}
       </StyledSettingAvatarContent>
-      <StyledSettingH2 marginTop={36}>Workspace Name</StyledSettingH2>
+      <StyledSettingH2 marginTop={20}>Workspace Name</StyledSettingH2>
       <StyledSettingInputContainer>
         <Input
           width={327}
@@ -116,15 +129,34 @@ export const GeneralPage = ({
           minLength={1}
           onChange={handleChangeWorkSpaceName}
         ></Input>
+        <TextButton
+          onClick={() => {
+            handleUpdateWorkspaceName();
+          }}
+          style={{ marginLeft: '10px' }}
+        >
+          ✔️
+        </TextButton>
       </StyledSettingInputContainer>
-      <StyledSettingH2 marginTop={36}>Workspace Owner</StyledSettingH2>
+      {userInfo ? (
+        <div>
+          <StyledSettingH2 marginTop={20}>Workspace Owner</StyledSettingH2>
+          <StyledSettingInputContainer>
+            <Input
+              width={327}
+              disabled
+              value={userInfo?.name}
+              placeholder="Workspace Owner"
+            ></Input>
+          </StyledSettingInputContainer>
+        </div>
+      ) : (
+        ''
+      )}
+
+      <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
-        <Input
-          width={327}
-          disabled
-          // value={owner.name}
-          placeholder="Workspace Owner"
-        ></Input>
+        {workspace.type}
       </StyledSettingInputContainer>
       <StyledDeleteButtonContainer>
         {isOwner ? (

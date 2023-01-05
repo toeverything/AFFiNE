@@ -17,7 +17,7 @@ export interface User {
 
 export function updateWorkspaceMeta(
   workspaceId: string,
-  workspaceData: Workspace
+  workspaceData: { name?: string; avatar?: string }
 ) {
   const workspacesMeta = getWorkspaces();
   const newWorkspacesMeta = workspacesMeta.map((workspace: Workspace) => {
@@ -29,6 +29,10 @@ export function updateWorkspaceMeta(
     return workspace;
   });
   localStorage.setItem('affine-workspace', JSON.stringify(newWorkspacesMeta));
+  const activeWorkspace = getActiveWorkspace();
+  workspaceData.name && (activeWorkspace.name = workspaceData.name);
+  workspaceData.avatar && (activeWorkspace.avatar = workspaceData.avatar);
+  setActiveWorkspace(activeWorkspace);
 }
 export function createWorkspace(workspaceName: string) {
   const workspaceData = {

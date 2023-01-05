@@ -14,6 +14,7 @@ import { Button } from '@/ui/button';
 import { getDataCenter } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
+import { deleteWorkspace, getWorkspaces } from '@/hooks/mock-data/mock';
 
 interface WorkspaceDeleteProps {
   open: boolean;
@@ -31,7 +32,6 @@ export const WorkspaceDelete = ({
   nextWorkSpaceId,
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
-  const { refreshWorkspacesMeta } = useAppState();
   const router = useRouter();
 
   const handlerInputChange = (workspaceName: string) => {
@@ -39,10 +39,16 @@ export const WorkspaceDelete = ({
   };
 
   const handleDelete = async () => {
-    const dc = await getDataCenter();
-    await dc.apis.deleteWorkspace({ id: workspaceId });
-    router.push(`/workspace/${nextWorkSpaceId}`);
-    refreshWorkspacesMeta();
+    // const dc = await getDataCenter();
+    // await dc.apis.deleteWorkspace({ id: workspaceId });
+    // router.push(`/workspace/${nextWorkSpaceId}`);
+    deleteWorkspace(workspaceId);
+    const workspaceList = getWorkspaces();
+    if (workspaceList.length) {
+      router.push(`/workspace/${workspaceList[0].id}`);
+    } else {
+      router.push(`/workspace`);
+    }
     onClose();
   };
 

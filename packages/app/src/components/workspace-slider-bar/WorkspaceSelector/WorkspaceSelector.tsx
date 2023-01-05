@@ -2,15 +2,22 @@ import { Avatar, WorkspaceName, SelectorWrapper } from './styles';
 import { useEffect, useState } from 'react';
 import { AffineIcon } from '../icons/icons';
 import { WorkspaceModal } from '@/components/workspace-modal';
-import { getActiveWorkspace } from '@/hooks/mock-data/mock';
+import { getActiveWorkspace, getWorkspaces } from '@/hooks/mock-data/mock';
 
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);
   const [workspace, setWorkSpace] = useState(getActiveWorkspace());
   useEffect(() => {
-    getWorkspace();
+    setWorkspace();
   }, [workspaceListShow]);
-  const getWorkspace = () => {
+  useEffect(() => {
+    const workspaceList = getWorkspaces();
+    if (workspaceList.length === 0) {
+      setWorkspaceListShow(true);
+    }
+  });
+
+  const setWorkspace = () => {
     const workspace = getActiveWorkspace();
     setWorkSpace(workspace);
   };
@@ -38,7 +45,7 @@ export const WorkspaceSelector = () => {
         open={workspaceListShow}
         onClose={() => {
           setWorkspaceListShow(false);
-          getWorkspace();
+          setWorkspace();
         }}
       ></WorkspaceModal>
     </>

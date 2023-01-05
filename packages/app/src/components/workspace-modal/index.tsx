@@ -174,7 +174,11 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                 confirmText: user ? 'Enable' : 'Sign in and Enable',
                 cancelText: 'Skip',
               }).then(confirm => {
-                confirm && Login();
+                if (user) {
+                  console.log('enable cloud');
+                } else {
+                  confirm && Login();
+                }
               });
             }}
           ></CreateWorkspaceModal>
