@@ -2,6 +2,7 @@
 import type { Workspace } from '@blocksuite/store';
 
 import type { Apis, Logger, InitialParams, ConfigStore } from './index';
+import type { BlobURL } from '@blocksuite/store/dist/blob/types';
 
 export class BaseProvider {
   static id = 'base';
@@ -41,8 +42,10 @@ export class BaseProvider {
     throw Error('Not implemented: initData');
   }
 
-  // should return a blob url
-  async getBlob(_id: string): Promise<string | null> {
+  /**
+   * should return a blob url
+   */
+  async getBlob(_id: string): Promise<BlobURL | null> {
     throw Error('Not implemented: getBlob');
   }
 

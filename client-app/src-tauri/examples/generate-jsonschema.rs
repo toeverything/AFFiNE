@@ -1,4 +1,4 @@
-use ipc_types::{blob::IBlobParameters, document::YDocumentUpdate, workspace::CreateWorkspace};
+use ipc_types::{blob::IBlobParameters, document::YDocumentUpdate, workspace::IWorkspaceParameters};
 /**
  * convert serde to jsonschema: https://imfeld.dev/writing/generating_typescript_types_from_rust
  *  with way to optimize
@@ -28,6 +28,6 @@ fn main() {
     "packages/data-center/src/provider/tauri-ipc/ipc/types",
   );
   generate::<YDocumentUpdate>(Path::join(&data_center_ipc_type_folder, "document.json"));
-  generate::<CreateWorkspace>(Path::join(&data_center_ipc_type_folder, "workspace.json"));
+  generate::<IWorkspaceParameters>(Path::join(&data_center_ipc_type_folder, "workspace.json"));
   generate::<IBlobParameters>(Path::join(&data_center_ipc_type_folder, "blob.json"));
 }

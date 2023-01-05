@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api';
 import { YDocumentUpdate } from './types/document';
-import { CreateWorkspace } from './types/workspace';
+import { CreateWorkspace, CreateWorkspaceResult } from './types/workspace';
 import { GetBlob, PutBlob } from './types/blob';
 
 export const updateYDocument = async (parameters: YDocumentUpdate) =>
@@ -9,7 +9,7 @@ export const updateYDocument = async (parameters: YDocumentUpdate) =>
   });
 
 export const createWorkspace = async (parameters: CreateWorkspace) =>
-  await invoke<boolean>('create_workspace', {
+  await invoke<CreateWorkspaceResult>('create_workspace', {
     parameters,
   });
 

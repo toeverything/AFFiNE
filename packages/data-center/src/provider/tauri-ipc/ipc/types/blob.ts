@@ -15,11 +15,11 @@ export type IBlobParameters =
 
 export interface PutBlob {
   blob: number[];
-  workspace_id: number;
+  workspace_id: string;
   [k: string]: unknown;
 }
 export interface GetBlob {
   id: string;
-  workspace_id: number;
+  workspace_id: string;
   [k: string]: unknown;
 }

@@ -5,9 +5,32 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+export type IWorkspaceParameters =
+  | {
+      CreateWorkspace: CreateWorkspace;
+    }
+  | {
+      UpdateWorkspace: UpdateWorkspace;
+    }
+  | {
+      CreateWorkspaceResult: CreateWorkspaceResult;
+    };
+
 export interface CreateWorkspace {
-  avatar: string;
+  /**
+   * only set name, avatar is update in datacenter to yDoc directly
+   */
+  name: string;
+  user_id: number;
+  [k: string]: unknown;
+}
+export interface UpdateWorkspace {
   id: number;
+  public: boolean;
+  [k: string]: unknown;
+}
+export interface CreateWorkspaceResult {
+  id: string;
   name: string;
   [k: string]: unknown;
 }

@@ -1,18 +1,77 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CreateWorkspace",
-  "type": "object",
-  "required": ["avatar", "id", "name"],
-  "properties": {
-    "avatar": {
-      "type": "string"
+  "title": "IWorkspaceParameters",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["CreateWorkspace"],
+      "properties": {
+        "CreateWorkspace": {
+          "$ref": "#/definitions/CreateWorkspace"
+        }
+      },
+      "additionalProperties": false
     },
-    "id": {
-      "type": "integer",
-      "format": "int64"
+    {
+      "type": "object",
+      "required": ["UpdateWorkspace"],
+      "properties": {
+        "UpdateWorkspace": {
+          "$ref": "#/definitions/UpdateWorkspace"
+        }
+      },
+      "additionalProperties": false
     },
-    "name": {
-      "type": "string"
+    {
+      "type": "object",
+      "required": ["CreateWorkspaceResult"],
+      "properties": {
+        "CreateWorkspaceResult": {
+          "$ref": "#/definitions/CreateWorkspaceResult"
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "CreateWorkspace": {
+      "type": "object",
+      "required": ["name", "user_id"],
+      "properties": {
+        "name": {
+          "description": "only set name, avatar is update in datacenter to yDoc directly",
+          "type": "string"
+        },
+        "user_id": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "CreateWorkspaceResult": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "UpdateWorkspace": {
+      "type": "object",
+      "required": ["id", "public"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "public": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }
