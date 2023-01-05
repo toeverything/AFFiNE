@@ -43,7 +43,11 @@ import { toast } from '@/ui/toast';
 import { Empty } from '@/ui/empty';
 import { useAppState } from '@/providers/app-state-provider';
 import { GeneralPage } from './general';
-import { getActiveWorkspace, Workspace } from '@/hooks/mock-data/mock';
+import {
+  getActiveWorkspace,
+  setWorkspacePublish,
+  Workspace,
+} from '@/hooks/mock-data/mock';
 
 enum ActiveTab {
   'general' = 'general',
@@ -112,6 +116,7 @@ export const WorkspaceSetting = ({
   };
 
   const workspace = getActiveWorkspace();
+  console.log('workspace: ', workspace);
   const handleClickClose = () => {
     onClose && onClose();
   };
@@ -123,7 +128,7 @@ export const WorkspaceSetting = ({
     }
   }, [isShow]);
   return (
-    <Modal open={false}>
+    <Modal open={isShow}>
       <StyledSettingContainer>
         <ModalCloseButton onClick={handleClickClose} />
         {isOwner ? (
@@ -287,23 +292,16 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 };
 
 const PublishPage = ({ workspace }: { workspace: Workspace }) => {
-  const shareUrl = window.location.host + '/workspace/' + workspace.id;
+  const shareUrl =
+    window.location.host + '/workspace/' + workspace.id + '?share=true';
   const [publicStatus, setPublicStatus] = useState<boolean | null>(
     workspace.isPublish ?? false
   );
   const togglePublic = (flag: boolean) => {
-    getDataCenter()
-      .then(dc =>
-        dc.apis.updateWorkspace({
-          id: workspace.id,
-          public: flag,
-        })
-      )
-      .then(data => {
-        setPublicStatus(data?.public);
-        toast('Updated Public Status Success');
-      });
+    const isPublic = setWorkspacePublish(workspace.id, flag);
+    setPublicStatus(isPublic);
   };
+
   const copyUrl = () => {
     navigator.clipboard.writeText(shareUrl);
     toast('Copied url to clipboard');

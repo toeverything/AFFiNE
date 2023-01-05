@@ -6,8 +6,14 @@ import {
   getWorkspaces,
   Workspace,
   setActiveWorkspace,
+  Login,
+  User,
+  getUserInfo,
+  SignOut,
 } from '@/hooks/mock-data/mock';
 import { CreateWorkspaceModal } from '../create-workspace';
+import { useConfirm } from '@/providers/confirm-provider';
+import { toast } from '@/ui/toast';
 
 interface LoginModalProps {
   open: boolean;
@@ -16,20 +22,30 @@ interface LoginModalProps {
 
 export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
   const [workspaceList, setWorkspaceList] = useState<Workspace[]>([]);
+  const [user, setUser] = useState<User | null>();
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-
+  const { confirm } = useConfirm();
   useEffect(() => {
-    getList();
+    setList();
+    setUserInfo();
   }, []);
 
-  const getList = () => {
+  const setList = () => {
     const data = getWorkspaces();
     setWorkspaceList(data);
+  };
+  const setUserInfo = () => {
+    const data = getUserInfo();
+    setUser(data);
   };
   return (
     <div>
       <Modal open={open} onClose={onClose}>
-        <ModalWrapper width={620} height={334} style={{ padding: '10px' }}>
+        <ModalWrapper
+          width={620}
+          height={334}
+          style={{ padding: '10px', display: 'flex', flexDirection: 'column' }}
+        >
           <Header>
             <ContentTitle>My Workspace List</ContentTitle>
             <ModalCloseButton
@@ -72,14 +88,41 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
             </WorkspaceList>
           </Content>
           <Footer>
-            <Button>Sign in AFFiNE Cloud</Button>
+            {!user ? (
+              <Button
+                onClick={() => {
+                  Login();
+                  toast('login success');
+                  setUserInfo();
+                }}
+              >
+                Sign in AFFiNE Cloud
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  SignOut();
+                  setUserInfo();
+                }}
+              >
+                Sign out of AFFiNE Cloud
+              </Button>
+            )}
           </Footer>
           <CreateWorkspaceModal
             open={createWorkspaceOpen}
             onClose={() => {
               setCreateWorkspaceOpen(false);
-              getList();
+              setList();
               onClose();
+              confirm({
+                title: 'Enable AFFiNE Cloud?',
+                content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+                confirmText: user ? 'Enable' : 'Sign in and Enable',
+                cancelText: 'Skip',
+              }).then(confirm => {
+                confirm && Login();
+              });
             }}
           ></CreateWorkspaceModal>
         </ModalWrapper>
@@ -98,6 +141,7 @@ const Content = styled('div')({
   flexDirection: 'column',
   alignItems: 'center',
   gap: '16px',
+  flex: 1,
 });
 
 const ContentTitle = styled('span')({

@@ -8,7 +8,7 @@ export interface Workspace {
   workspaceOwner?: User; // 本地工作空间的拥有者
 }
 
-interface User {
+export interface User {
   name: string;
   id: string;
   email: string;
@@ -108,4 +108,24 @@ export function setActiveWorkspace(workspaceData: Workspace) {
     'affine-active-workspace',
     JSON.stringify(workspaceData)
   );
+}
+
+export function getUserInfo(): User {
+  return JSON.parse(localStorage.getItem('affine-user') ?? 'null');
+}
+
+export function Login(): void {
+  localStorage.setItem(
+    'affine-user',
+    JSON.stringify({
+      name: 'Diamond',
+      id: 'ttt',
+      email: 'diamond.shx@gmail.com',
+      avatar: 'string',
+    })
+  );
+}
+
+export function SignOut(): void {
+  localStorage.removeItem('affine-user');
 }
