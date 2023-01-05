@@ -37,6 +37,7 @@ export class Business {
     };
   }
 
+  // not think out a good way to update workspace meta
   // updateWorkspaceMeta(
   //   id: string,
   //   meta: { name?: string; avatar: Partial<WorkspaceMeta> }
@@ -87,6 +88,7 @@ export class Business {
     }
   }
 
+  // no time
   // getMembers(id: string): any {}
 
   // inviteMember(id: string, email: string) {}
@@ -96,20 +98,27 @@ export class Business {
     dc.apis.acceptInviting({ invitingCode });
   }
 
+  // check with dark sky
   // getUserInfo(): any {}
 
+  // TODO check with dark sky
   async login() {
     const dc = await this._getDc();
     await dc.auth('affine');
   }
 
+  // just has no time
   // logout() {}
 
+  // need discuss
   // setWorkspaceSyncType(id: string, type: 'local' | 'cloud') {}
 
+  // need discuss
   // importWorkspace(file: File) {}
 
+  // need discuss may be not in apis
   // exportWorkspace(id: string) {}
 
+  // need discuss
   // enableWorkspaceCloud(id: string) {}
 }
