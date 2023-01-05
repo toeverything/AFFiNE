@@ -6,7 +6,7 @@ import { LocalProvider } from '../local/index.js';
 import * as ipcMethods from './ipc/methods.js';
 
 export class TauriIPCProvider extends LocalProvider {
-  static id = 'local';
+  static id = 'tauri-ipc';
   #ipc = ipcMethods;
 
   async init(params: InitialParams) {
