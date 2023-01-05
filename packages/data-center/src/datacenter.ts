@@ -7,6 +7,7 @@ import { getApis, Apis } from './apis/index.js';
 import { AffineProvider, BaseProvider } from './provider/index.js';
 import { LocalProvider } from './provider/index.js';
 import { getKVConfigure } from './store.js';
+import { TauriIPCProvider } from './provider/tauri-ipc/index.js';
 
 // load workspace's config
 type LoadConfig = {
@@ -43,6 +44,10 @@ export class DataCenter {
     const dc = new DataCenter(debug);
     dc.addProvider(AffineProvider);
     dc.addProvider(LocalProvider);
+    // use ipc provider when client app's preload script inject the global flag.
+    if (typeof window !== 'undefined' && window.CLIENT_APP) {
+      dc.addProvider(TauriIPCProvider);
+    }
 
     return dc;
   }
