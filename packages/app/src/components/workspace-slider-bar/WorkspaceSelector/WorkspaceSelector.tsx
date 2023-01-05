@@ -42,7 +42,6 @@ export const WorkspaceSelector = () => {
               border: '1px solid #fff',
               color: '#fff',
               fontSize: '14px',
-              padding: '5px 0 0 5px;',
               background: stringToColour(workspace?.name ?? 'AFFiNE'),
               borderRadius: '50%',
               textAlign: 'center',

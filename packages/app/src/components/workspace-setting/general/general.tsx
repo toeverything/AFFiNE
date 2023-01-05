@@ -90,7 +90,6 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
             border: '1px solid #fff',
             color: '#fff',
             fontSize: '26px',
-            padding: '5px 0 0 5px;',
             background: stringToColour(workspace?.name ?? 'AFFiNE'),
             borderRadius: '50%',
             textAlign: 'center',

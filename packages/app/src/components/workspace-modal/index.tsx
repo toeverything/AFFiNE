@@ -87,7 +87,6 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                           border: '1px solid #fff',
                           color: '#fff',
                           fontSize: '22px',
-                          padding: '5px 0 0 5px;',
                           background: stringToColour(item.name || 'AFFiNE'),
                           borderRadius: '50%',
                           textAlign: 'center',
