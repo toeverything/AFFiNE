@@ -116,7 +116,6 @@ export const WorkspaceSetting = ({
   };
 
   const workspace = getActiveWorkspace();
-  console.log('workspace: ', workspace);
   const handleClickClose = () => {
     onClose && onClose();
   };

@@ -2,7 +2,7 @@ import { Avatar, WorkspaceName, SelectorWrapper } from './styles';
 import { useEffect, useState } from 'react';
 import { AffineIcon } from '../icons/icons';
 import { WorkspaceModal } from '@/components/workspace-modal';
-import { getActiveWorkspace } from '@/hooks/mock-data/mock';
+import { getActiveWorkspace, getWorkspaces } from '@/hooks/mock-data/mock';
 
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);
@@ -10,6 +10,10 @@ export const WorkspaceSelector = () => {
   useEffect(() => {
     getWorkspace();
   }, [workspaceListShow]);
+  const workspaceList = getWorkspaces();
+  if (workspaceList.length === 0) {
+    setWorkspaceListShow(true);
+  }
   const getWorkspace = () => {
     const workspace = getActiveWorkspace();
     setWorkSpace(workspace);
