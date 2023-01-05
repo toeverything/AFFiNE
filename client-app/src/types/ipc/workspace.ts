@@ -6,8 +6,8 @@
  */
 
 export interface CreateWorkspace {
-  [k: string]: unknown;
   avatar: string;
   id: number;
   name: string;
+  [k: string]: unknown;
 }

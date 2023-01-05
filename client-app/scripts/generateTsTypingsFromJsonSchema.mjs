@@ -10,16 +10,24 @@ import path from 'path';
 import { compileFromFile } from 'json-schema-to-typescript';
 import { cd } from 'zx/core';
 
+const projectRoot = path.join(__dirname, '..', '..');
+const tsTypingsFolder = path.join(
+  projectRoot,
+  'packages/data-center/src/provider/tauri-ipc/ipc/types'
+);
+
 /**
  * 1. generate JSONSchema using rs crate `schemars`, this happened on rs side script `src-tauri/examples/generate-jsonschema.rs`
  */
 cd('./src-tauri');
+try {
+  fs.mkdirSync(tsTypingsFolder);
+} catch {}
 await $`cargo run --example generate-jsonschema`;
 
 /**
  * 2. generate TS from JSON schema, this is efficient on NodeJS side.
  */
-const tsTypingsFolder = path.join(__dirname, '..', 'src', 'types', 'ipc');
 const fileNames = fs.readdirSync(tsTypingsFolder);
 const jsonSchemaFilePaths = fileNames
   .filter(fileName => fileName.endsWith('.json'))
@@ -37,6 +45,7 @@ await Promise.all(
 /**
  * 3. fix eslint error on generated ts files
  */
+cd(path.join(projectRoot, 'packages/data-center'));
 await $`eslint ${tsTypingsFolder} --ext ts --fix`;
 
 /**

@@ -237,6 +237,7 @@ importers:
       '@blocksuite/blocks': ^0.3.1
       '@blocksuite/store': ^0.3.1
       '@playwright/test': ^1.29.1
+      '@tauri-apps/api': ^1.2.0
       '@types/debug': ^4.1.7
       debug: ^4.3.4
       encoding: ^0.1.13
@@ -253,6 +254,7 @@ importers:
     dependencies:
       '@blocksuite/blocks': 0.3.1_yjs@13.5.44
       '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@tauri-apps/api': 1.2.0
       debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13

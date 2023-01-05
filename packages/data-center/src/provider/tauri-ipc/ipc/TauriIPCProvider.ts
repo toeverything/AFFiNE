@@ -21,7 +21,7 @@ export class TauriIPCProvider
     super();
     this.#yDocument = yDocument;
     this.#yDocument.on(
-      'updateV2',
+      'update',
       async (
         update: Uint8Array,
         origin: any,
@@ -37,7 +37,7 @@ export class TauriIPCProvider
           });
         } catch (error) {
           // TODO: write error log to disk, and add button to open them in settings panel
-          console.error("#yDocument.on('updateV2'", error);
+          console.error("#yDocument.on('update'", error);
         }
       }
     );

@@ -6,7 +6,7 @@
  */
 
 export interface YDocumentUpdate {
-  [k: string]: unknown;
   room: string;
   update: number[];
+  [k: string]: unknown;
 }
