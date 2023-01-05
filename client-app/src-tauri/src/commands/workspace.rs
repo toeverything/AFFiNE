@@ -1,7 +1,4 @@
-use ipc_types::{
-  document::YDocumentUpdate,
-  workspace::{CreateWorkspace, CreateWorkspaceResult, UpdateWorkspace},
-};
+use ipc_types::workspace::{CreateWorkspace, CreateWorkspaceResult, UpdateWorkspace};
 use jwst::{DocStorage, Workspace as OctoBaseWorkspace};
 use lib0::any::Any;
 
@@ -24,8 +21,10 @@ pub async fn create_workspace<'s>(
       let workspace_doc = OctoBaseWorkspace::new(new_workspace.id.to_string());
 
       workspace_doc.with_trx(|mut workspace_doc_transaction| {
-        workspace_doc_transaction
-          .set_metadata("name", Any::String(parameters.name.clone().into_boxed_str()));
+        workspace_doc_transaction.set_metadata(
+          "name",
+          Any::String(parameters.name.clone().into_boxed_str()),
+        );
       });
       if let Err(error_message) = &state
         .0
@@ -52,11 +51,7 @@ pub async fn update_workspace<'s>(
   state: tauri::State<'s, AppState>,
   parameters: UpdateWorkspace,
 ) -> Result<bool, String> {
+  // TODO: check user permission
   // No thing to update now. The avatar is update in YDoc using websocket or yrs.update
-  Ok(true)
-}
-
-#[tauri::command]
-pub fn update_y_document(parameters: YDocumentUpdate) -> Result<bool, String> {
   Ok(true)
 }

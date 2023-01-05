@@ -5,8 +5,27 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+export type IDocumentParameters =
+  | {
+      YDocumentUpdate: YDocumentUpdate;
+    }
+  | {
+      GetDocumentParameter: GetDocumentParameter;
+    }
+  | {
+      GetDocumentResponse: GetDocumentResponse;
+    };
+
 export interface YDocumentUpdate {
-  room: string;
+  id: number;
+  update: number[];
+  [k: string]: unknown;
+}
+export interface GetDocumentParameter {
+  id: number;
+  [k: string]: unknown;
+}
+export interface GetDocumentResponse {
   update: number[];
   [k: string]: unknown;
 }

@@ -16,7 +16,12 @@ export class TauriIPCProvider extends LocalProvider {
   async initData() {
     assert(this._workspace.room);
     this._logger('Loading local data');
-    const { doc, room } = this._workspace;
+    const {
+      doc,
+      room,
+      meta: { id },
+    } = this._workspace;
+    this.#initDocFromIPC(id, doc);
     doc.on(
       'update',
       async (
@@ -30,7 +35,7 @@ export class TauriIPCProvider extends LocalProvider {
           // TODO: update seems too frequent upon each keydown, why no batching?
           const success = await this.#ipc.updateYDocument({
             update: Array.from(update),
-            room,
+            id: Number(id),
           });
           if (!success) {
             throw new Error(
@@ -44,8 +49,25 @@ export class TauriIPCProvider extends LocalProvider {
       }
     );
     this._logger('Local data loaded');
+  }
 
-    await this._globalConfig.set(this._workspace.room, true);
+  async #initDocFromIPC(workspaceID: string, doc: Y.Doc) {
+    this._logger(`Loading ${workspaceID}...`);
+    const updates = await this.#ipc.getYDocument({ id: Number(workspaceID) });
+    if (updates) {
+      await new Promise(resolve => {
+        doc.once('update', resolve);
+        Y.applyUpdate(doc, new Uint8Array(updates.update));
+      });
+      this._logger(`Loaded: ${workspaceID}`);
+
+      // only add to list as online workspace
+      this._signals.listAdd.emit({
+        workspace: workspaceID,
+        provider: this.id,
+        locally: true,
+      });
+    }
   }
 
   async clear() {

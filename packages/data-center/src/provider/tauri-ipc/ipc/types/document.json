@@ -1,18 +1,79 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "YDocumentUpdate",
-  "type": "object",
-  "required": ["room", "update"],
-  "properties": {
-    "room": {
-      "type": "string"
+  "title": "IDocumentParameters",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["YDocumentUpdate"],
+      "properties": {
+        "YDocumentUpdate": {
+          "$ref": "#/definitions/YDocumentUpdate"
+        }
+      },
+      "additionalProperties": false
     },
-    "update": {
-      "type": "array",
-      "items": {
-        "type": "integer",
-        "format": "uint8",
-        "minimum": 0.0
+    {
+      "type": "object",
+      "required": ["GetDocumentParameter"],
+      "properties": {
+        "GetDocumentParameter": {
+          "$ref": "#/definitions/GetDocumentParameter"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["GetDocumentResponse"],
+      "properties": {
+        "GetDocumentResponse": {
+          "$ref": "#/definitions/GetDocumentResponse"
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "GetDocumentParameter": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "GetDocumentResponse": {
+      "type": "object",
+      "required": ["update"],
+      "properties": {
+        "update": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    "YDocumentUpdate": {
+      "type": "object",
+      "required": ["id", "update"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "update": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        }
       }
     }
   }

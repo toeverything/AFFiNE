@@ -21,6 +21,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tokio",
+ "yrs",
 ]
 
 [[package]]
