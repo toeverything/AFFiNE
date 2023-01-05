@@ -7,6 +7,7 @@ import { getApis, Apis } from './apis/index.js';
 import { AffineProvider, BaseProvider } from './provider/index.js';
 import { LocalProvider } from './provider/index.js';
 import { getKVConfigure } from './store.js';
+import { Workspaces } from './workspaces';
 
 // load workspace's config
 type LoadConfig = {
@@ -33,6 +34,7 @@ export class DataCenter {
   private readonly _workspaces = new Map<string, Promise<BaseProvider>>();
   private readonly _config;
   private readonly _logger;
+  public readonly workspacesList = new Workspaces(this);
 
   readonly signals = {
     listAdd: new Signal<WorkspaceLoadEvent>(),
@@ -62,6 +64,7 @@ export class DataCenter {
     this.signals.listRemove.on(workspace => {
       this._config.delete(`list:${workspace}`);
     });
+    this.workspacesList.init();
   }
 
   get apis(): Readonly<Apis> {
@@ -195,10 +198,11 @@ export class DataCenter {
    * data state is also map, the key is the provider id, and the data exists locally when the value is true, otherwise it does not exist
    */
   async list(): Promise<Record<string, Record<string, boolean>>> {
+    const listString = 'list:';
     const entries: [string, WorkspaceItem][] = await this._config.entries();
     return entries.reduce((acc, [k, i]) => {
-      if (k.startsWith('list:')) {
-        const key = k.slice(5);
+      if (k.startsWith(listString)) {
+        const key = k.slice(listString.length);
         acc[key] = acc[key] || {};
         acc[key][i.provider] = i.locally;
       }
