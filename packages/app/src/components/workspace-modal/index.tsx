@@ -29,7 +29,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
   return (
     <div>
       <Modal open={open} onClose={onClose}>
-        <ModalWrapper width={620} height={334} style={{ padding: '10px' }}>
+        <ModalWrapper width={620} style={{ padding: '10px' }}>
           <Header>
             <ContentTitle>My Workspace List</ContentTitle>
             <ModalCloseButton
