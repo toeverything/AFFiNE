@@ -62,6 +62,7 @@ export const StyledListItem = styled.div<{
     color: active ? theme.colors.primaryColor : theme.colors.popoverColor,
     paddingLeft: '12px',
     borderRadius: '5px',
+    cursor: 'pointer',
     ...displayFlex('flex-start', 'center'),
     ...(disabled
       ? {

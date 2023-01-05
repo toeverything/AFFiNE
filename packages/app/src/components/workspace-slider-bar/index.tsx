@@ -76,6 +76,8 @@ export const WorkSpaceSliderBar = () => {
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
 
+  const [showWorkspaceSetting, setShowWorkspaceSetting] = useState(false);
+
   const paths = {
     all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
     favorite: currentWorkspaceId
@@ -150,16 +152,16 @@ export const WorkSpaceSliderBar = () => {
           <FavoriteList showList={showSubFavorite} />
           <StyledListItem
             onClick={() => {
-              console.log('ttt');
+              setShowWorkspaceSetting(true);
             }}
           >
             <SettingsIcon /> Setting
           </StyledListItem>
 
           <WorkspaceSetting
-            isShow={true}
+            isShow={showWorkspaceSetting}
             onClose={() => {
-              console.log(1231231);
+              setShowWorkspaceSetting(false);
             }}
           />
 

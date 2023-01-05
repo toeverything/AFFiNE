@@ -16,7 +16,7 @@ import { Workspace as StoreWorkspace } from '@blocksuite/store';
 import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
-import { Workspace } from '@/hooks/mock-data/mock';
+import { getUserInfo, Workspace } from '@/hooks/mock-data/mock';
 
 export const GeneralPage = ({
   workspace,
@@ -30,6 +30,7 @@ export const GeneralPage = ({
     workspaces,
     refreshWorkspacesMeta,
   } = useAppState();
+  // const user = getUserInfo();
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
@@ -38,11 +39,9 @@ export const GeneralPage = ({
     refreshWorkspacesMeta();
   }, 100);
   const isOwner = true;
+
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
-    currentWorkspace?.meta.setName(newName);
-    workspaces[workspace.id]?.meta.setName(newName);
-    debouncedRefreshWorkspacesMeta();
   };
   const currentWorkspaceIndex = workspacesMeta.findIndex(
     meta => meta.id === workspace.id
