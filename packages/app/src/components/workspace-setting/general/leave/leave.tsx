@@ -16,13 +16,11 @@ interface WorkspaceDeleteProps {
   onClose: () => void;
   workspaceName: string;
   workspaceId: string;
-  nextWorkSpaceId: string;
 }
 
 export const WorkspaceLeave = ({
   open,
   onClose,
-  nextWorkSpaceId,
   workspaceId,
 }: WorkspaceDeleteProps) => {
   const router = useRouter();
@@ -30,7 +28,7 @@ export const WorkspaceLeave = ({
   const handleLeave = async () => {
     const dc = await getDataCenter();
     await dc.apis.leaveWorkspace({ id: workspaceId });
-    router.push(`/workspace/${nextWorkSpaceId}`);
+    // router.push(`/workspace/${nextWorkSpaceId}`);
     refreshWorkspacesMeta();
     onClose();
   };

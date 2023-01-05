@@ -45,7 +45,9 @@ import { useAppState } from '@/providers/app-state-provider';
 import { GeneralPage } from './general';
 import {
   getActiveWorkspace,
+  getUserInfo,
   setWorkspacePublish,
+  User,
   Workspace,
 } from '@/hooks/mock-data/mock';
 
@@ -109,7 +111,7 @@ export const WorkspaceSetting = ({
   isShow,
   onClose,
 }: WorkspaceSettingProps) => {
-  const { workspaces } = useAppState();
+  // const { workspaces } = useAppState();
   const [activeTab, setActiveTab] = useState<ActiveTab>(ActiveTab.general);
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -143,7 +145,7 @@ export const WorkspaceSetting = ({
         ) : null}
         <StyledSettingContent>
           {activeTab === ActiveTab.general && (
-            <GeneralPage workspace={workspace} workspaces={workspaces} />
+            <GeneralPage workspace={workspace} />
           )}
           {activeTab === ActiveTab.members && workspace && (
             <MembersPage workspace={workspace} />
@@ -160,23 +162,27 @@ export const WorkspaceSetting = ({
 const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
-  const refreshMembers = useCallback(() => {
-    getDataCenter()
-      .then(dc =>
-        dc.apis.getWorkspaceMembers({
-          id: workspace.id,
-        })
-      )
-      .then(data => {
-        setMembers(data);
-      })
-      .catch(err => {
-        console.log(err);
-      });
-  }, [workspace.id]);
+  const [userInfo, setUserInfo] = useState<User>();
+  // const refreshMembers = useCallback(() => {
+  //   getDataCenter()
+  //     .then(dc =>
+  //       dc.apis.getWorkspaceMembers({
+  //         id: workspace.id,
+  //       })
+  //     )
+  //     .then(data => {
+  //       setMembers(data);
+  //     })
+  //     .catch(err => {
+  //       console.log(err);
+  //     });
+  // }, [workspace.id]);
+
   useEffect(() => {
-    refreshMembers();
-  }, [refreshMembers]);
+    const user = getUserInfo();
+    user && setUserInfo(user);
+    // refreshMembers();
+  }, []);
 
   return (
     <div>
@@ -240,7 +246,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                               .then(() => {
                                 // console.log('data: ', data);
                                 toast('Moved to Trash');
-                                refreshMembers();
+                                // refreshMembers();
                               });
                             // });
                           }}
@@ -280,7 +286,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
             setIsInviteModalShow(false);
           }}
           onInviteSuccess={() => {
-            refreshMembers();
+            // refreshMembers();
           }}
           workspaceId={workspace.id}
           open={isInviteModalShow}

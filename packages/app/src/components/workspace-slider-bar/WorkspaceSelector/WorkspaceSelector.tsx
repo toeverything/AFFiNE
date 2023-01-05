@@ -16,7 +16,6 @@ export const WorkspaceSelector = () => {
       setWorkspaceListShow(true);
     }
   });
-
   const setWorkspace = () => {
     const workspace = getActiveWorkspace();
     setWorkSpace(workspace);

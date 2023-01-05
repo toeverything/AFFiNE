@@ -21,7 +21,6 @@ interface WorkspaceDeleteProps {
   onClose: () => void;
   workspaceName: string;
   workspaceId: string;
-  nextWorkSpaceId: string;
 }
 
 export const WorkspaceDelete = ({
@@ -29,7 +28,6 @@ export const WorkspaceDelete = ({
   onClose,
   workspaceId,
   workspaceName,
-  nextWorkSpaceId,
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
   const router = useRouter();

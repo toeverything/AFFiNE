@@ -12,7 +12,6 @@ import Input from '@/ui/input';
 import { getDataCenter } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
-import { Workspace as StoreWorkspace } from '@blocksuite/store';
 import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
@@ -23,18 +22,8 @@ import {
   Workspace,
 } from '@/hooks/mock-data/mock';
 
-export const GeneralPage = ({
-  workspace,
-}: {
-  workspace: Workspace;
-  workspaces: Record<string, StoreWorkspace | null>;
-}) => {
-  const {
-    currentWorkspace,
-    workspacesMeta,
-    workspaces,
-    refreshWorkspacesMeta,
-  } = useAppState();
+export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
+  const { currentWorkspace, refreshWorkspacesMeta } = useAppState();
   useEffect(() => {
     setWorkspaceName(workspace.name);
     const user = getUserInfo();
@@ -53,13 +42,6 @@ export const GeneralPage = ({
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
   };
-  const currentWorkspaceIndex = workspacesMeta.findIndex(
-    meta => meta.id === workspace.id
-  );
-  const nextWorkSpaceId =
-    currentWorkspaceIndex === workspacesMeta.length - 1
-      ? workspacesMeta[currentWorkspaceIndex - 1]?.id
-      : workspacesMeta[currentWorkspaceIndex + 1]?.id;
   const handleClickDelete = () => {
     setShowDelete(true);
   };
@@ -87,7 +69,7 @@ export const GeneralPage = ({
       });
     if (blobId) {
       currentWorkspace?.meta.setAvatar(blobId);
-      workspaces[workspace.id]?.meta.setAvatar(blobId);
+      // workspaces[workspace.id]?.meta.setAvatar(blobId);
       setUploading(false);
       debouncedRefreshWorkspacesMeta();
     }
@@ -97,15 +79,8 @@ export const GeneralPage = ({
     <div>
       <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
       <StyledSettingAvatarContent>
-        <StyledSettingAvatar
-          alt="workspace avatar"
-          src={
-            workspaces[workspace.id]?.meta.avatar
-              ? '/api/blob/' + workspaces[workspace.id]?.meta.avatar
-              : ''
-          }
-        >
-          {workspaces[workspace.id]?.meta.name[0]}
+        <StyledSettingAvatar alt="workspace avatar" src={''}>
+          AFFiNE
         </StyledSettingAvatar>
         <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
@@ -169,7 +144,6 @@ export const GeneralPage = ({
               onClose={handleCloseDelete}
               workspaceName={workspaceName}
               workspaceId={workspace.id}
-              nextWorkSpaceId={nextWorkSpaceId}
             />
           </>
         ) : (
@@ -182,7 +156,6 @@ export const GeneralPage = ({
               onClose={handleCloseLeave}
               workspaceName={workspaceName}
               workspaceId={workspace.id}
-              nextWorkSpaceId={nextWorkSpaceId}
             />
           </>
         )}
