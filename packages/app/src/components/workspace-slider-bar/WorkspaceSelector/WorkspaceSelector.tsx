@@ -8,13 +8,16 @@ export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);
   const [workspace, setWorkSpace] = useState(getActiveWorkspace());
   useEffect(() => {
-    getWorkspace();
+    setWorkspace();
   }, [workspaceListShow]);
-  const workspaceList = getWorkspaces();
-  if (workspaceList.length === 0) {
-    setWorkspaceListShow(true);
-  }
-  const getWorkspace = () => {
+  useEffect(() => {
+    const workspaceList = getWorkspaces();
+    if (workspaceList.length === 0) {
+      setWorkspaceListShow(true);
+    }
+  });
+
+  const setWorkspace = () => {
     const workspace = getActiveWorkspace();
     setWorkSpace(workspace);
   };
@@ -42,7 +45,7 @@ export const WorkspaceSelector = () => {
         open={workspaceListShow}
         onClose={() => {
           setWorkspaceListShow(false);
-          getWorkspace();
+          setWorkspace();
         }}
       ></WorkspaceModal>
     </>
