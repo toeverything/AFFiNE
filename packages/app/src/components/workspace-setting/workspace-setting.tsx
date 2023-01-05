@@ -32,17 +32,18 @@ import {
   EmailIcon,
   TrashIcon,
   DownloadIcon,
+  CloudInsyncIcon,
 } from '@blocksuite/icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, IconButton } from '@/ui/button';
 import Input from '@/ui/input';
 import { InviteMembers } from '../invite-members/index';
-import { Member, getDataCenter } from '@affine/datacenter';
-import { Avatar } from '@mui/material';
+// import { Member, getDataCenter } from '@affine/datacenter';
+// import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
 import { toast } from '@/ui/toast';
 import { Empty } from '@/ui/empty';
-import { useAppState } from '@/providers/app-state-provider';
+// import { useAppState } from '@/providers/app-state-provider';
 import { GeneralPage } from './general';
 import {
   deleteMember,
@@ -95,7 +96,7 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         }}
       >
         <StyledSettingTagIconContainer>
-          <EditIcon />
+          <CloudInsyncIcon />
         </StyledSettingTagIconContainer>
         Sync
       </WorkspaceSettingTagItem>

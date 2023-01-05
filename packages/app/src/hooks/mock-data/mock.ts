@@ -41,6 +41,7 @@ export function updateWorkspaceMeta(
   workspaceData.avatar && (activeWorkspace.avatar = workspaceData.avatar);
 
   workspaceData.type && (activeWorkspace.type = workspaceData.type);
+  console.log(workspaceData);
   setActiveWorkspace(activeWorkspace);
 }
 export function createWorkspace(workspaceName: string) {
