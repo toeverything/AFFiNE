@@ -9,25 +9,22 @@ import { StyledSettingH2 } from '../style';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
-import { getDataCenter, Workspace, WorkspaceType } from '@affine/datacenter';
+import { getDataCenter } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
-import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { WorkspaceDelete } from './delete';
 import { Workspace as StoreWorkspace } from '@blocksuite/store';
 import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
+import { Workspace } from '@/hooks/mock-data/mock';
 
 export const GeneralPage = ({
   workspace,
-  owner,
 }: {
   workspace: Workspace;
-  owner: WorkspaceDetails[string]['owner'];
   workspaces: Record<string, StoreWorkspace | null>;
 }) => {
   const {
-    user,
     currentWorkspace,
     workspacesMeta,
     workspaces,
@@ -36,14 +33,11 @@ export const GeneralPage = ({
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
-  const [workspaceName, setWorkspaceName] = useState<string>(
-    workspaces[workspace.id]?.meta.name ||
-      (workspace.type === WorkspaceType.Private && user ? user.name : '')
-  );
+  const [workspaceName, setWorkspaceName] = useState<string>('');
   const debouncedRefreshWorkspacesMeta = debounce(() => {
     refreshWorkspacesMeta();
   }, 100);
-  const isOwner = user && owner.id === user.id;
+  const isOwner = true;
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
     currentWorkspace?.meta.setName(newName);
@@ -119,7 +113,6 @@ export const GeneralPage = ({
           width={327}
           value={workspaceName}
           placeholder="Workspace Name"
-          disabled={!isOwner}
           maxLength={14}
           minLength={1}
           onChange={handleChangeWorkSpaceName}
@@ -130,7 +123,7 @@ export const GeneralPage = ({
         <Input
           width={327}
           disabled
-          value={owner.name}
+          // value={owner.name}
           placeholder="Workspace Owner"
         ></Input>
       </StyledSettingInputContainer>

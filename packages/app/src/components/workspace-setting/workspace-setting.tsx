@@ -36,14 +36,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button, IconButton } from '@/ui/button';
 import Input from '@/ui/input';
 import { InviteMembers } from '../invite-members/index';
-import { Workspace, Member, getDataCenter } from '@affine/datacenter';
+import { Member, getDataCenter } from '@affine/datacenter';
 import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
 import { toast } from '@/ui/toast';
 import { Empty } from '@/ui/empty';
 import { useAppState } from '@/providers/app-state-provider';
-import { WorkspaceDetails } from '../workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { GeneralPage } from './general';
+import { getActiveWorkspace, Workspace } from '@/hooks/mock-data/mock';
 
 enum ActiveTab {
   'general' = 'general',
@@ -59,8 +59,6 @@ type SettingTabProps = {
 type WorkspaceSettingProps = {
   isShow: boolean;
   onClose?: () => void;
-  workspace: Workspace;
-  owner: WorkspaceDetails[string]['owner'];
 };
 
 const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
@@ -106,18 +104,18 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
 export const WorkspaceSetting = ({
   isShow,
   onClose,
-  workspace,
-  owner,
 }: WorkspaceSettingProps) => {
-  const { user, workspaces } = useAppState();
+  const { workspaces } = useAppState();
   const [activeTab, setActiveTab] = useState<ActiveTab>(ActiveTab.general);
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
   };
+
+  const workspace = getActiveWorkspace();
   const handleClickClose = () => {
     onClose && onClose();
   };
-  const isOwner = user && owner.id === user.id;
+  const isOwner = true;
   useEffect(() => {
     // reset tab when modal is closed
     if (!isShow) {
@@ -125,7 +123,7 @@ export const WorkspaceSetting = ({
     }
   }, [isShow]);
   return (
-    <Modal open={isShow}>
+    <Modal open={false}>
       <StyledSettingContainer>
         <ModalCloseButton onClick={handleClickClose} />
         {isOwner ? (
@@ -141,11 +139,7 @@ export const WorkspaceSetting = ({
         ) : null}
         <StyledSettingContent>
           {activeTab === ActiveTab.general && (
-            <GeneralPage
-              workspace={workspace}
-              owner={owner}
-              workspaces={workspaces}
-            />
+            <GeneralPage workspace={workspace} workspaces={workspaces} />
           )}
           {activeTab === ActiveTab.members && workspace && (
             <MembersPage workspace={workspace} />
@@ -295,7 +289,7 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 const PublishPage = ({ workspace }: { workspace: Workspace }) => {
   const shareUrl = window.location.host + '/workspace/' + workspace.id;
   const [publicStatus, setPublicStatus] = useState<boolean | null>(
-    workspace.public
+    workspace.isPublish ?? false
   );
   const togglePublic = (flag: boolean) => {
     getDataCenter()

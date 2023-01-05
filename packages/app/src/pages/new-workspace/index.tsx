@@ -1,14 +1,14 @@
 import { WorkspaceModal } from '@/components/workspace-modal';
-import { getWorkspaceList } from '@/hooks/mock-data/mock';
+import { getWorkspaces } from '@/hooks/mock-data/mock';
 import { useEffect, useState } from 'react';
 import { styled } from '@/styles';
 import Button from '@/ui/button/Button';
 
 const Page = () => {
-  const [open, setOpen] = useState<boolean>(true);
+  const [open, setOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    const data = getWorkspaceList();
+    const data = getWorkspaces();
     if (!data.length) {
       setOpen(true);
     }

@@ -2,7 +2,11 @@ import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useEffect, useState } from 'react';
-import { getWorkspaceList, Workspace } from '@/hooks/mock-data/mock';
+import {
+  getWorkspaces,
+  Workspace,
+  setActiveWorkspace,
+} from '@/hooks/mock-data/mock';
 import { CreateWorkspaceModal } from '../create-workspace';
 
 interface LoginModalProps {
@@ -19,7 +23,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
   }, []);
 
   const getList = () => {
-    const data = getWorkspaceList();
+    const data = getWorkspaces();
     setWorkspaceList(data);
   };
   return (
@@ -40,11 +44,16 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
             <WorkspaceList>
               {workspaceList.map(item => {
                 return (
-                  <WorkspaceItem key={item.id}>
-                    <span></span>
+                  <WorkspaceItem
+                    onClick={() => {
+                      setActiveWorkspace(item);
+                      onClose();
+                    }}
+                    key={item.id}
+                  >
                     <span>{item.name}</span>/
                     {item.type === 'local' && <b>local</b>}
-                    {item.type === 'share' && <b>share</b>}/
+                    {item.type === 'join' && <b>join</b>}/
                     {item.isPublish ? 'isPublish' : 'isPrivate'}/
                     {item.isLocal ? 'isLocal' : ''}/
                   </WorkspaceItem>
@@ -70,6 +79,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
             onClose={() => {
               setCreateWorkspaceOpen(false);
               getList();
+              onClose();
             }}
           ></CreateWorkspaceModal>
         </ModalWrapper>

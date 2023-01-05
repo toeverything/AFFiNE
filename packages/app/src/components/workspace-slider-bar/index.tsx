@@ -21,6 +21,7 @@ import {
   ImportIcon,
   TrashIcon,
   AddIcon,
+  SettingsIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
@@ -31,6 +32,7 @@ import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
+import { WorkspaceSetting } from '@/components/workspace-setting';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
@@ -146,6 +148,20 @@ export const WorkSpaceSliderBar = () => {
             </IconButton>
           </StyledListItem>
           <FavoriteList showList={showSubFavorite} />
+          <StyledListItem
+            onClick={() => {
+              console.log('ttt');
+            }}
+          >
+            <SettingsIcon /> Setting
+          </StyledListItem>
+
+          <WorkspaceSetting
+            isShow={true}
+            onClose={() => {
+              console.log(1231231);
+            }}
+          />
 
           <StyledListItem
             onClick={() => {

@@ -40,14 +40,10 @@ export interface AppStateContext extends AppStateValue {
 export const AppState = createContext<AppStateContext>({
   user: null,
   workspacesMeta: [],
-
   currentWorkspaceId: '',
   currentWorkspace: null,
-
   currentPage: null,
-
   editor: null,
-
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   setState: () => {},
   createEditor: undefined,

@@ -1,53 +1,46 @@
-import { Popper } from '@/ui/popper';
 import { Avatar, WorkspaceName, SelectorWrapper } from './styles';
-import { SelectorPopperContent } from './SelectorPopperContent';
-import { useState } from 'react';
-import { useAppState } from '@/providers/app-state-provider';
-import { WorkspaceType } from '@affine/datacenter';
+import { useEffect, useState } from 'react';
 import { AffineIcon } from '../icons/icons';
+import { WorkspaceModal } from '@/components/workspace-modal';
+import { getActiveWorkspace } from '@/hooks/mock-data/mock';
 
 export const WorkspaceSelector = () => {
-  const [isShow, setIsShow] = useState(false);
-  const { currentWorkspace, workspacesMeta, currentWorkspaceId, user } =
-    useAppState();
-  const workspaceMeta = workspacesMeta.find(
-    meta => String(meta.id) === String(currentWorkspaceId)
-  );
+  const [workspaceListShow, setWorkspaceListShow] = useState(false);
+  const [workspace, setWorkSpace] = useState(getActiveWorkspace());
+  useEffect(() => {
+    getWorkspace();
+  }, [workspaceListShow]);
+  const getWorkspace = () => {
+    const workspace = getActiveWorkspace();
+    setWorkSpace(workspace);
+  };
+
   return (
-    <Popper
-      content={<SelectorPopperContent isShow={isShow} />}
-      zIndex={1000}
-      placement="bottom-start"
-      trigger="click"
-      onVisibleChange={setIsShow}
-    >
-      <SelectorWrapper data-testid="current-workspace">
+    <>
+      <SelectorWrapper
+        onClick={() => {
+          setWorkspaceListShow(true);
+        }}
+        data-testid="current-workspace"
+      >
         <Avatar
           alt="Affine"
           data-testid="workspace-avatar"
-          src={
-            workspaceMeta?.type === WorkspaceType.Private
-              ? user
-                ? user.avatar_url
-                : ''
-              : currentWorkspace?.meta.avatar &&
-                `/api/blob/${currentWorkspace?.meta.avatar}`
-          }
+          src={workspace.avatar}
         >
-          {workspaceMeta?.type === WorkspaceType.Private && user ? (
-            user?.name[0]
-          ) : (
-            <AffineIcon />
-          )}
+          <AffineIcon />
         </Avatar>
         <WorkspaceName data-testid="workspace-name">
-          {workspaceMeta?.type === WorkspaceType.Private
-            ? user
-              ? user.name
-              : 'AFFiNE'
-            : currentWorkspace?.meta.name || 'AFFiNE'}
+          {workspace?.name ?? 'AFFiNE'}
         </WorkspaceName>
       </SelectorWrapper>
-    </Popper>
+      <WorkspaceModal
+        open={workspaceListShow}
+        onClose={() => {
+          setWorkspaceListShow(false);
+          getWorkspace();
+        }}
+      ></WorkspaceModal>
+    </>
   );
 };

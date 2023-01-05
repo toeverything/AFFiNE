@@ -130,16 +130,16 @@ export const SelectorPopperContent = ({
       <CreateWorkspaceItem />
       {settingWorkspace ? (
         <WorkspaceSetting
-          isShow={Boolean(settingWorkspaceId)}
+          isShow={false}
           onClose={handleCloseWorkSpace}
-          workspace={settingWorkspace}
-          owner={
-            (settingWorkspaceId &&
-              workSpaceDetails[settingWorkspaceId]?.owner) || {
-              id: user.id,
-              name: user.name,
-            }
-          }
+          // workspace={settingWorkspace}
+          // owner={
+          //   (settingWorkspaceId &&
+          //     workSpaceDetails[settingWorkspaceId]?.owner) || {
+          //     id: user.id,
+          //     name: user.name,
+          //   }
+          // }
         />
       ) : null}
       <StyledDivider />
