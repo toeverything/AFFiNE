@@ -1,15 +1,24 @@
 import * as Y from 'yjs';
 import assert from 'assert';
 
-import type { ConfigStore, InitialParams } from '../index.js';
+import type {
+  ConfigStore,
+  DataCenterSignals,
+  InitialParams,
+  Logger,
+} from '../index.js';
 import { LocalProvider } from '../local/index.js';
 import * as ipcMethods from './ipc/methods.js';
+import { getApis } from 'src/apis/index.js';
+import { token } from 'src/apis/token.js';
+import { IndexedDBProvider } from '../local/indexeddb.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
   #ipc = ipcMethods;
 
   async init(params: InitialParams) {
+    // set members like this._workspace in super
     super.init(params);
   }
 
@@ -22,32 +31,7 @@ export class TauriIPCProvider extends LocalProvider {
       meta: { id },
     } = this._workspace;
     this.#initDocFromIPC(id, doc);
-    doc.on(
-      'update',
-      async (
-        update: Uint8Array,
-        _origin: any,
-        _yDocument: Y.Doc,
-        _transaction: Y.Transaction
-      ) => {
-        try {
-          // TODO: need handle potential data race when update is frequent?
-          // TODO: update seems too frequent upon each keydown, why no batching?
-          const success = await this.#ipc.updateYDocument({
-            update: Array.from(update),
-            id: Number(id),
-          });
-          if (!success) {
-            throw new Error(
-              `YDoc update failed, id: ${this.workspace.meta.id}`
-            );
-          }
-        } catch (error) {
-          // TODO: write error log to disk, and add button to open them in settings panel
-          console.error("#yDocument.on('update'", error);
-        }
-      }
-    );
+    this.#connectDocToIPC(id, doc);
     this._logger('Local data loaded');
   }
 
@@ -68,6 +52,44 @@ export class TauriIPCProvider extends LocalProvider {
         locally: true,
       });
     }
+  }
+
+  async #connectDocToIPC(workspaceID: string, doc: Y.Doc) {
+    this._logger(`Connecting yDoc for ${workspaceID}...`);
+    doc.on(
+      'update',
+      async (
+        update: Uint8Array,
+        _origin: any,
+        _yDocument: Y.Doc,
+        _transaction: Y.Transaction
+      ) => {
+        try {
+          // TODO: need handle potential data race when update is frequent?
+          // TODO: update seems too frequent upon each keydown, why no batching?
+          const success = await this.#ipc.updateYDocument({
+            update: Array.from(update),
+            id: Number(workspaceID),
+          });
+          if (!success) {
+            throw new Error(
+              `YDoc update failed, id: ${this.workspace.meta.id}`
+            );
+          }
+        } catch (error) {
+          // TODO: write error log to disk, and add button to open them in settings panel
+          console.error("#yDocument.on('update'", error);
+        }
+      }
+    );
+  }
+
+  static async auth(
+    _config: Readonly<ConfigStore<string>>,
+    _logger: Logger,
+    _signals: DataCenterSignals
+  ) {
+    // no auth on local provider
   }
 
   async clear() {
