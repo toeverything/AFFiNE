@@ -5,6 +5,7 @@ use yrs::StateVector;
 use crate::state::AppState;
 
 #[tauri::command]
+/// get yDoc created by create_workspace, using same id
 pub async fn get_doc<'s>(
   state: tauri::State<'s, AppState>,
   parameters: GetDocumentParameter,

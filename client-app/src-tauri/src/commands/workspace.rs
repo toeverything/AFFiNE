@@ -5,6 +5,7 @@ use lib0::any::Any;
 use crate::state::AppState;
 
 #[tauri::command]
+/// create yDoc for a workspace
 pub async fn create_workspace<'s>(
   state: tauri::State<'s, AppState>,
   parameters: CreateWorkspace,
