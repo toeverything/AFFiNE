@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
-  useRef,
-  useEffect,
-  useState,
-  ReactElement,
   PropsWithChildren,
+  ReactElement,
+  useEffect,
+  useRef,
+  useState,
 } from 'react';
 import { styled } from '@/styles';
 import { EditorHeader } from '@/components/header';
@@ -16,6 +16,7 @@ import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
+
 const StyledEditorContainer = styled('div')(() => {
   return {
     height: 'calc(100vh - 60px)',
@@ -63,8 +64,12 @@ const Page: NextPageWithLayout = () => {
         currentPage!.addBlock({ flavour: 'affine:frame' }, pageId);
         // If this is a first page in workspace, init an introduction markdown
         if (isFirstPage) {
-          editor.clipboard.importMarkdown(exampleMarkdown, `${frameId}`);
-          currentWorkspace!.setPageMeta(currentPage!.id, { title });
+          editor.clipboard
+            .importMarkdown(exampleMarkdown, `${frameId}`)
+            .then(() => {
+              currentWorkspace!.setPageMeta(currentPage!.id, { title });
+              currentPage!.resetHistory();
+            });
         }
         currentPage!.resetHistory();
       }
