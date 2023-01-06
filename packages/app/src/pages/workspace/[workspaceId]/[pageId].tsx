@@ -19,6 +19,7 @@ import { usePageHelper } from '@/hooks/use-page-helper';
 const StyledEditorContainer = styled('div')(() => {
   return {
     height: 'calc(100vh - 60px)',
+    padding: '0 32px',
   };
 });
 
