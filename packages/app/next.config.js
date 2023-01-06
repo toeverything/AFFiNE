@@ -46,6 +46,10 @@ const nextConfig = {
           source: '/api/:path*',
           destination: destinationAC,
         },
+        {
+          source: '/collaboration/:path*',
+          destination: 'http://localhost:3000/collaboration/:path*',
+        },
       ];
     } else {
       let destinationStandard = 'http://100.77.180.48:11001/api/:path*';
@@ -57,6 +61,10 @@ const nextConfig = {
         {
           source: '/api/:path*',
           destination: destinationStandard,
+        },
+        {
+          source: '/collaboration/:path*',
+          destination: 'http://localhost:3000/collaboration/:path*',
         },
       ];
     }
