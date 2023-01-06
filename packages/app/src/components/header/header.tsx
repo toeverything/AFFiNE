@@ -11,7 +11,7 @@ import { getWarningMessage, shouldShowWarning } from './utils';
 import EditorOptionMenu from './header-right-items/editor-option-menu';
 import TrashButtonGroup from './header-right-items/trash-button-group';
 import ThemeModeSwitch from './header-right-items/theme-mode-switch';
-// import SyncUser from './header-right-items/sync-user';
+import SyncUser from './header-right-items/sync-user';
 
 const BrowserWarning = ({
   show,
@@ -40,7 +40,7 @@ const HeaderRightItems: Record<HeaderRightItemNames, ReactNode> = {
   editorOptionMenu: <EditorOptionMenu key="editorOptionMenu" />,
   trashButtonGroup: <TrashButtonGroup key="trashButtonGroup" />,
   themeModeSwitch: <ThemeModeSwitch key="themeModeSwitch" />,
-  syncUser: null,
+  syncUser: <SyncUser key="syncUser" />,
 };
 
 export const Header = ({
