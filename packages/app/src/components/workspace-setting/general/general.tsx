@@ -15,12 +15,12 @@ import { WorkspaceDelete } from './delete';
 import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
-import { updateWorkspaceMeta, Workspace } from '@/hooks/mock-data/mock';
+import { Workspace } from '@/hooks/mock-data/mock';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
   const { refreshWorkspacesMeta } = useAppState();
-  const { currentWorkspace } = useTemporaryHelper();
+  const { updateWorkspaceMeta } = useTemporaryHelper();
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
@@ -47,7 +47,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
     setShowLeave(false);
   };
   const handleUpdateWorkspaceName = () => {
-    updateWorkspaceMeta(workspace.id, { name: workspaceName });
+    workspace && updateWorkspaceMeta(workspace.id, { name: workspaceName });
   };
 
   const fileChange = async (file: File) => {

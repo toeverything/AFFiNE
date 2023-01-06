@@ -16,7 +16,6 @@ import {
 } from '@blocksuite/icons';
 import { useEffect, useState } from 'react';
 import { GeneralPage } from './general';
-import { getActiveWorkspace } from '@/hooks/mock-data/mock';
 import { MembersPage } from './MembersPage';
 import { PublishPage } from './PublishPage';
 import { SyncPage } from './SyncPage';
@@ -142,16 +141,16 @@ export const WorkspaceSetting = ({
           </StyledSettingSidebar>
         ) : null}
         <StyledSettingContent>
-          {activeTab === ActiveTab.general && (
+          {activeTab === ActiveTab.general && currentWorkspace && (
             <GeneralPage workspace={currentWorkspace} />
           )}
-          {activeTab === ActiveTab.sync && (
+          {activeTab === ActiveTab.sync && currentWorkspace && (
             <SyncPage workspace={currentWorkspace} />
           )}
           {activeTab === ActiveTab.members && currentWorkspace && (
             <MembersPage workspace={currentWorkspace} />
           )}
-          {activeTab === ActiveTab.publish && (
+          {activeTab === ActiveTab.publish && currentWorkspace && (
             <PublishPage workspace={currentWorkspace} />
           )}
         </StyledSettingContent>

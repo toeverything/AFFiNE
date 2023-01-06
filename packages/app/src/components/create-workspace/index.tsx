@@ -14,10 +14,11 @@ interface ModalProps {
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
-  const { createWorkspace } = useTemporaryHelper();
+  const { createWorkspace, setActiveWorkspace } = useTemporaryHelper();
   const handleCreateWorkspace = () => {
-    const { id } = createWorkspace(workspaceName);
-    onClose({ workspaceId: id });
+    const workspace = createWorkspace(workspaceName);
+    onClose({ workspaceId: workspace.id });
+    setActiveWorkspace(workspace);
   };
   return (
     <div>

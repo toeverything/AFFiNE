@@ -4,14 +4,9 @@ import {
   StyledPublishExplanation,
 } from './style';
 import { DownloadIcon } from '@blocksuite/icons';
-import { useEffect, useState } from 'react';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
-import {
-  deleteMember,
-  updateWorkspaceMeta,
-  Workspace,
-} from '@/hooks/mock-data/mock';
+import { deleteMember, Workspace } from '@/hooks/mock-data/mock';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 
 export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
@@ -20,18 +15,18 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
   return (
     <div>
       <StyledPublishContent>
-        {currentWorkspace.type === 'local' ? (
+        {currentWorkspace?.type === 'local' ? (
           <>
             <StyledPublishExplanation>
-              {workspace.name} is Local Workspace. All data is stored on the
-              current device. You can enable AFFiNE Cloud for this workspace to
-              keep data in sync with the cloud.
+              {currentWorkspace.name} is Local Workspace. All data is stored on
+              the current device. You can enable AFFiNE Cloud for this workspace
+              to keep data in sync with the cloud.
             </StyledPublishExplanation>
 
             <StyledPublishCopyContainer>
               <Button
                 onClick={() => {
-                  updateWorkspaceMeta(workspace.id, {
+                  updateWorkspaceMeta(currentWorkspace.id, {
                     type: 'cloud',
                   });
                 }}
@@ -45,8 +40,8 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
         ) : (
           <>
             <StyledPublishExplanation>
-              <code>{workspace.name}</code> is Cloud Workspace. All data will be
-              synchronized and saved to the AFFiNE
+              <code>{currentWorkspace && currentWorkspace.name}</code> is Cloud
+              Workspace. All data will be synchronized and saved to the AFFiNE
             </StyledPublishExplanation>
             <StyledPublishCopyContainer>
               <Menu
