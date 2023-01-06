@@ -31,7 +31,6 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
     updateWorkspaceMeta,
   } = useTemporaryHelper();
 
-  console.log('workspaceMetaList: ', workspaceMetaList);
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -164,16 +163,15 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                 confirmText: user ? 'Enable' : 'Sign in and Enable',
                 cancelText: 'Skip',
               }).then(confirm => {
-                if (user) {
-                  console.log('enable cloud');
-                  workspaceId &&
-                    setTimeout(() => {
-                      updateWorkspaceMeta(workspaceId as string, {
-                        type: 'cloud',
-                      });
-                    }, 1000);
-                } else {
-                  confirm && login();
+                if (confirm) {
+                  if (user) {
+                    workspaceId &&
+                      updateWorkspaceMeta(workspaceId, { isPublish: true });
+                  } else {
+                    login();
+                    workspaceId &&
+                      updateWorkspaceMeta(workspaceId, { isPublish: true });
+                  }
                 }
               });
             }}

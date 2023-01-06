@@ -75,7 +75,7 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         <StyledSettingTagIconContainer>
           <UsersIcon />
         </StyledSettingTagIconContainer>
-        Members
+        Collaboration
       </WorkspaceSettingTagItem>
       <WorkspaceSettingTagItem
         isActive={activeTab === ActiveTab.publish}

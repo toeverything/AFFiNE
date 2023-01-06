@@ -14,15 +14,15 @@ import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { useConfirm } from '@/providers/confirm-provider';
 
 export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
+  console.log('workspace: ', workspace);
   const shareUrl =
     window.location.host + '/workspace/' + workspace.id + '?share=true';
 
-  const { login, updateWorkspaceMeta, user, currentWorkspace } =
-    useTemporaryHelper();
+  const { login, updateWorkspaceMeta, user } = useTemporaryHelper();
   const { confirm } = useConfirm();
 
   const togglePublic = (flag: boolean) => {
-    updateWorkspaceMeta(currentWorkspace.id, { isPublish: flag });
+    updateWorkspaceMeta(workspace.id, { isPublish: flag });
   };
 
   const copyUrl = () => {
@@ -37,20 +37,22 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
       confirmText: user ? 'Enable' : 'Sign in and Enable',
       cancelText: 'Skip',
     }).then(confirm => {
-      if (user) {
-        updateWorkspaceMeta(currentWorkspace.id, { isPublish: true });
-      } else {
-        confirm && login();
-        updateWorkspaceMeta(currentWorkspace.id, { isPublish: true });
+      if (confirm) {
+        if (user) {
+          updateWorkspaceMeta(workspace.id, { isPublish: true });
+        } else {
+          login();
+          updateWorkspaceMeta(workspace.id, { isPublish: true });
+        }
       }
     });
   };
   return (
     <>
-      {currentWorkspace.type === 'cloud' ? (
+      {workspace.type === 'cloud' ? (
         <div>
           <StyledPublishContent>
-            {currentWorkspace?.isPublish ? (
+            {workspace?.isPublish ? (
               <>
                 <StyledPublishExplanation>
                   Publishing to web requires AFFiNE Cloud service .
@@ -74,7 +76,7 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
-          {!currentWorkspace?.isPublish ? (
+          {!workspace.isPublish ? (
             <Button
               onClick={() => {
                 togglePublic(true);

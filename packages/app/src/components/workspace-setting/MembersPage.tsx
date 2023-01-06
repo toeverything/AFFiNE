@@ -24,12 +24,15 @@ import {
   Workspace,
 } from '@/hooks/mock-data/mock';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+import { StyledMemberWarp } from './general/style';
+import { useConfirm } from '@/providers/confirm-provider';
 
 // import { useAppState } from '@/providers/app-state-provider';
 export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const [members, setMembers] = useState<User[]>([]);
-  const { user, login } = useTemporaryHelper();
+  const { user, login, updateWorkspaceMeta } = useTemporaryHelper();
+  const { confirm } = useConfirm();
   // const refreshMembers = useCallback(() => {
   //   getDataCenter()
   //     .then(dc =>
@@ -57,7 +60,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 
   return (
     <div>
-      {user ? (
+      {workspace.type === 'cloud' ? (
         <>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>
@@ -169,20 +172,36 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
           </StyledMemberButtonContainer>
         </>
       ) : (
-        <>
-          <div>
+        <StyledMemberWarp>
+          <div style={{ flex: 1 }}>
             Collaborating with other members requires AFFiNE Cloud service.
           </div>
-          <div>
+          <div style={{ height: '40px' }}>
             <Button
+              type="primary"
+              shape="circle"
               onClick={() => {
-                login();
+                confirm({
+                  title: 'Enable AFFiNE Cloud?',
+                  content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+                  confirmText: user ? 'Enable' : 'Sign in and Enable',
+                  cancelText: 'Skip',
+                }).then(confirm => {
+                  if (confirm) {
+                    if (user) {
+                      updateWorkspaceMeta(workspace.id, { isPublish: true });
+                    } else {
+                      login();
+                      updateWorkspaceMeta(workspace.id, { isPublish: true });
+                    }
+                  }
+                });
               }}
             >
               Enable AFFiNE Cloud
             </Button>
           </div>
-        </>
+        </StyledMemberWarp>
       )}
     </div>
   );

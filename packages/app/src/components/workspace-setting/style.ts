@@ -117,6 +117,7 @@ export const StyledMemberTitleContainer = styled('div')(() => {
     display: 'flex',
     marginTop: '60px',
     fontWeight: '500',
+    flex: 1,
   };
 });
 
