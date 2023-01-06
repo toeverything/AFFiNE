@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getWorkspaces, Workspace, User } from './mock-data/mock';
 
 export function getActiveWorkspace(): Workspace {
@@ -12,16 +12,19 @@ export const useTemporaryHelper = () => {
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace>(
     JSON.parse(localStorage.getItem('affine-active-workspace') ?? '{}')
   );
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>();
 
   return {
-    updateWorkspaceMeta: (workspaceId: string, workspaceData: Workspace) => {
+    updateWorkspaceMeta: (
+      workspaceId: string,
+      workspaceData: { name?: string; avatar?: string; isPublish?: boolean }
+    ) => {
       const workspacesMeta = getWorkspaces();
       const newWorkspacesMeta = workspacesMeta.map((workspace: Workspace) => {
         if (workspace.id === workspaceId) {
           workspaceData.name && (workspace.name = workspaceData.name);
           workspaceData.avatar && (workspace.avatar = workspaceData.avatar);
-          return workspaceData;
+          return workspace;
         }
         return workspace;
       });
@@ -94,7 +97,7 @@ export const useTemporaryHelper = () => {
         avatar: 'string',
       };
       localStorage.setItem('affine-user', JSON.stringify(userInfo));
-
+      console.log('login');
       setUser(userInfo);
     },
     getUserInfo: () => {

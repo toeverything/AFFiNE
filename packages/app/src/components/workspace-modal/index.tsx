@@ -9,7 +9,6 @@ import {
   setActiveWorkspace,
   Login,
   User,
-  getUserInfo,
   SignOut,
   updateWorkspaceMeta,
 } from '@/hooks/mock-data/mock';
@@ -23,6 +22,7 @@ import {
 import { useConfirm } from '@/providers/confirm-provider';
 import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
+import useTemporaryHelper from '@/hooks/use-temporary-helper';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -30,22 +30,16 @@ interface LoginModalProps {
 
 export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
   const [workspaceList, setWorkspaceList] = useState<Workspace[]>([]);
-  const [user, setUser] = useState<User | null>();
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const { confirm } = useConfirm();
+  const { user, login } = useTemporaryHelper();
   useEffect(() => {
     setList();
-    setUserInfo();
   }, []);
 
   const setList = () => {
     const data = getWorkspaces();
-    console.log('data: ', data);
     setWorkspaceList(data);
-  };
-  const setUserInfo = () => {
-    const data = getUserInfo();
-    setUser(data);
   };
 
   return (
@@ -153,9 +147,8 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
             {!user ? (
               <Button
                 onClick={() => {
-                  Login();
+                  login();
                   toast('login success');
-                  setUserInfo();
                 }}
               >
                 Sign in AFFiNE Cloud
@@ -164,7 +157,6 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
               <Button
                 onClick={() => {
                   SignOut();
-                  setUserInfo();
                 }}
               >
                 Sign out of AFFiNE Cloud

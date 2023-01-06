@@ -77,11 +77,8 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
 
   return workspace ? (
     <div>
-      <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
+      <StyledSettingH2 marginTop={56}>Workspace Icon</StyledSettingH2>
       <StyledSettingAvatarContent>
-        {/* <StyledSettingAvatar alt="workspace avatar" src={''}>
-          AFFiNE
-        </StyledSettingAvatar> */}
         <div
           style={{
             float: 'left',
@@ -98,10 +95,6 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
           <Button loading={uploading}>Upload</Button>
         </Upload>
         {/* TODO: add upload logic */}
-        {/* {isOwner ? (
-          <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>
-        ) : null} */}
-        {/* <Button shape="round">remove</Button> */}
       </StyledSettingAvatarContent>
       <StyledSettingH2 marginTop={20}>Workspace Name</StyledSettingH2>
       <StyledSettingInputContainer>
@@ -122,7 +115,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
           ✔️
         </TextButton>
       </StyledSettingInputContainer>
-      {userInfo ? (
+      {/* {userInfo ? (
         <div>
           <StyledSettingH2 marginTop={20}>Workspace Owner</StyledSettingH2>
           <StyledSettingInputContainer>
@@ -136,7 +129,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
         </div>
       ) : (
         ''
-      )}
+      )} */}
 
       <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
@@ -151,8 +144,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
             <WorkspaceDelete
               open={showDelete}
               onClose={handleCloseDelete}
-              workspaceName={workspaceName}
-              workspaceId={workspace.id}
+              workspace={workspace}
             />
           </>
         ) : (

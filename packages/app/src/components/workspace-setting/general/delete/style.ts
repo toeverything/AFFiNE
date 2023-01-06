@@ -16,7 +16,8 @@ export const StyledModalHeader = styled('div')(({ theme }) => {
     width: '460px',
     fontWeight: '600',
     fontSize: '20px;',
-    textAlign: 'center',
+    textAlign: 'left',
+    paddingLeft: '20px',
     color: theme.colors.popoverColor,
   };
 });
@@ -32,7 +33,7 @@ export const StyledTextContent = styled('div')(() => {
     fontWeight: '400',
     fontSize: '18px',
     lineHeight: '26px',
-    textAlign: 'center',
+    textAlign: 'left',
   };
 });
 
@@ -41,7 +42,7 @@ export const StyledInputContent = styled('div')(() => {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
-    margin: '40px 0 24px 0',
+    margin: '20px 0 24px 0',
   };
 });
 
