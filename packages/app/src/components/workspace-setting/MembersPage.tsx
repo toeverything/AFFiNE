@@ -15,24 +15,21 @@ import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useEffect, useState } from 'react';
 import { Button, IconButton } from '@/ui/button';
 import { InviteMembers } from '../invite-members/index';
-// import { Member, getDataCenter } from '@affine/datacenter';
-// import { Avatar } from '@mui/material';
 import { Menu, MenuItem } from '@/ui/menu';
 import { Empty } from '@/ui/empty';
 import {
   deleteMember,
   getMembers,
-  getUserInfo,
-  Login,
   User,
   Workspace,
 } from '@/hooks/mock-data/mock';
+import useTemporaryHelper from '@/hooks/use-temporary-helper';
 
 // import { useAppState } from '@/providers/app-state-provider';
 export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const [members, setMembers] = useState<User[]>([]);
-  const [userInfo, setUserInfo] = useState<User>();
+  const { user, login } = useTemporaryHelper();
   // const refreshMembers = useCallback(() => {
   //   getDataCenter()
   //     .then(dc =>
@@ -49,15 +46,10 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   // }, [workspace.id]);
 
   useEffect(() => {
-    setUser();
     setMembersList();
     // refreshMembers();
   }, []);
 
-  const setUser = () => {
-    const user = getUserInfo();
-    user && setUserInfo(user);
-  };
   const setMembersList = () => {
     const members = getMembers(workspace.id);
     members && setMembers(members);
@@ -65,7 +57,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 
   return (
     <div>
-      {userInfo ? (
+      {user ? (
         <>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>
@@ -184,8 +176,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
           <div>
             <Button
               onClick={() => {
-                Login();
-                setUser();
+                login();
               }}
             >
               Enable AFFiNE Cloud

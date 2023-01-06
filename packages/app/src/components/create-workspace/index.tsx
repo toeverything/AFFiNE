@@ -2,8 +2,8 @@ import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useState } from 'react';
-import { createWorkspace } from '@/hooks/mock-data/mock';
 import Input from '@/ui/input';
+import useTemporaryHelper from '@/hooks/use-temporary-helper';
 interface ICloseParams {
   workspaceId?: string;
 }
@@ -14,9 +14,10 @@ interface ModalProps {
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
+  const { createWorkspace } = useTemporaryHelper();
   const handleCreateWorkspace = () => {
-    const { workspaceId } = createWorkspace(workspaceName);
-    onClose({ workspaceId });
+    const { id } = createWorkspace(workspaceName);
+    onClose({ workspaceId: id });
   };
   return (
     <div>

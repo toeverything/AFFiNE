@@ -6,7 +6,7 @@ import {
 } from './style';
 import { StyledSettingH2 } from '../style';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button, TextButton } from '@/ui/button';
 import Input from '@/ui/input';
 import { getDataCenter } from '@affine/datacenter';
@@ -15,22 +15,13 @@ import { WorkspaceDelete } from './delete';
 import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
-import {
-  getUserInfo,
-  updateWorkspaceMeta,
-  User,
-  Workspace,
-} from '@/hooks/mock-data/mock';
+import { updateWorkspaceMeta, Workspace } from '@/hooks/mock-data/mock';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
+import useTemporaryHelper from '@/hooks/use-temporary-helper';
 export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
-  const { currentWorkspace, refreshWorkspacesMeta } = useAppState();
-  useEffect(() => {
-    setWorkspaceName(workspace.name);
-    const user = getUserInfo();
-    setUserInfo(user);
-  }, []);
+  const { refreshWorkspacesMeta } = useAppState();
+  const { currentWorkspace } = useTemporaryHelper();
   const [showDelete, setShowDelete] = useState<boolean>(false);
-  const [userInfo, setUserInfo] = useState<User>();
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>('');
@@ -61,18 +52,18 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
 
   const fileChange = async (file: File) => {
     setUploading(true);
-    const blob = new Blob([file], { type: file.type });
-    const blobId = await getDataCenter()
-      .then(dc => dc.apis.uploadBlob({ blob }))
-      .finally(() => {
-        setUploading(false);
-      });
-    if (blobId) {
-      currentWorkspace?.meta.setAvatar(blobId);
-      // workspaces[workspace.id]?.meta.setAvatar(blobId);
-      setUploading(false);
-      debouncedRefreshWorkspacesMeta();
-    }
+    // const blob = new Blob([file], { type: file.type });
+    // const blobId = await getDataCenter()
+    //   .then(dc => dc.apis.uploadBlob({ blob }))
+    //   .finally(() => {
+    //     setUploading(false);
+    //   });
+    // if (blobId) {
+    //   currentWorkspace?.meta.setAvatar(blobId);
+    //   // workspaces[workspace.id]?.meta.setAvatar(blobId);
+    //   setUploading(false);
+    //   debouncedRefreshWorkspacesMeta();
+    // }
   };
 
   return workspace ? (

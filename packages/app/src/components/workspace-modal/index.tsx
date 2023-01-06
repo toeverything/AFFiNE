@@ -1,16 +1,8 @@
 import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { useEffect, useState } from 'react';
-import {
-  getWorkspaces,
-  Workspace,
-  setActiveWorkspace,
-  Login,
-  User,
-  SignOut,
-  updateWorkspaceMeta,
-} from '@/hooks/mock-data/mock';
+import { useState } from 'react';
+import { SignOut } from '@/hooks/mock-data/mock';
 import { CreateWorkspaceModal } from '../create-workspace';
 import {
   CloudUnsyncedIcon,
@@ -28,19 +20,17 @@ interface LoginModalProps {
 }
 
 export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
-  const [workspaceList, setWorkspaceList] = useState<Workspace[]>([]);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const { confirm } = useConfirm();
-  const { user, login } = useTemporaryHelper();
-  useEffect(() => {
-    setList();
-  }, []);
+  const {
+    user,
+    login,
+    workspaceMetaList,
+    setActiveWorkspace,
+    updateWorkspaceMeta,
+  } = useTemporaryHelper();
 
-  const setList = () => {
-    const data = getWorkspaces();
-    setWorkspaceList(data);
-  };
-
+  console.log('workspaceMetaList: ', workspaceMetaList);
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -60,7 +50,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
           </Header>
           <Content>
             <WorkspaceList>
-              {workspaceList.map((item, index) => {
+              {workspaceMetaList.map((item, index) => {
                 return (
                   <WorkspaceItem
                     onClick={() => {
@@ -165,7 +155,6 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
             open={createWorkspaceOpen}
             onClose={({ workspaceId }) => {
               setCreateWorkspaceOpen(false);
-              setList();
               onClose();
               confirm({
                 title: 'Enable AFFiNE Cloud?',
@@ -182,7 +171,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                       });
                     }, 1000);
                 } else {
-                  confirm && Login();
+                  confirm && login();
                 }
               });
             }}

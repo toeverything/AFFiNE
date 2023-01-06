@@ -17,13 +17,21 @@ export const useTemporaryHelper = () => {
   return {
     updateWorkspaceMeta: (
       workspaceId: string,
-      workspaceData: { name?: string; avatar?: string; isPublish?: boolean }
+      workspaceData: {
+        name?: string;
+        avatar?: string;
+        isPublish?: boolean;
+        type?: 'local' | 'cloud' | 'join';
+      }
     ) => {
       const workspacesMeta = getWorkspaces();
       const newWorkspacesMeta = workspacesMeta.map((workspace: Workspace) => {
         if (workspace.id === workspaceId) {
           workspaceData.name && (workspace.name = workspaceData.name);
           workspaceData.avatar && (workspace.avatar = workspaceData.avatar);
+          workspaceData.type && (workspace.type = workspaceData.type);
+          workspaceData.isPublish &&
+            (workspace.isPublish = workspaceData.isPublish);
           return workspace;
         }
         return workspace;
@@ -53,7 +61,9 @@ export const useTemporaryHelper = () => {
       const workspacesMeta = getWorkspaces();
       workspacesMeta.push(workspaceData);
       localStorage.setItem('affine-workspace', JSON.stringify(workspacesMeta));
+      console.log('workspacesMeta: ', workspacesMeta);
       setWorkspaceMetaList(workspacesMeta);
+      return workspaceData;
     },
     deleteWorkspace: (workspaceId: string) => {
       const workspacesMeta = getWorkspaces();
@@ -82,6 +92,7 @@ export const useTemporaryHelper = () => {
       setWorkspaceMetaList(workspacesMeta);
     },
     setActiveWorkspace(workspaceData: Workspace) {
+      console.log('workspaceData: ', workspaceData);
       localStorage.setItem(
         'affine-active-workspace',
         JSON.stringify(workspaceData)

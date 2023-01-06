@@ -17,9 +17,10 @@ import {
 import { useEffect, useState } from 'react';
 import { GeneralPage } from './general';
 import { getActiveWorkspace } from '@/hooks/mock-data/mock';
-import MembersPage from './MembersPage';
-import PublishPage from './PublishPage';
-import SyncPage from './SyncPage';
+import { MembersPage } from './MembersPage';
+import { PublishPage } from './PublishPage';
+import { SyncPage } from './SyncPage';
+import useTemporaryHelper from '@/hooks/use-temporary-helper';
 
 enum ActiveTab {
   'general' = 'general',
@@ -114,7 +115,7 @@ export const WorkspaceSetting = ({
     setActiveTab(tab);
   };
 
-  const workspace = getActiveWorkspace();
+  const { currentWorkspace } = useTemporaryHelper();
   const handleClickClose = () => {
     onClose && onClose();
   };
@@ -142,14 +143,16 @@ export const WorkspaceSetting = ({
         ) : null}
         <StyledSettingContent>
           {activeTab === ActiveTab.general && (
-            <GeneralPage workspace={workspace} />
+            <GeneralPage workspace={currentWorkspace} />
           )}
-          {activeTab === ActiveTab.sync && <SyncPage workspace={workspace} />}
-          {activeTab === ActiveTab.members && workspace && (
-            <MembersPage workspace={workspace} />
+          {activeTab === ActiveTab.sync && (
+            <SyncPage workspace={currentWorkspace} />
+          )}
+          {activeTab === ActiveTab.members && currentWorkspace && (
+            <MembersPage workspace={currentWorkspace} />
           )}
           {activeTab === ActiveTab.publish && (
-            <PublishPage workspace={workspace} />
+            <PublishPage workspace={currentWorkspace} />
           )}
         </StyledSettingContent>
       </StyledSettingContainer>

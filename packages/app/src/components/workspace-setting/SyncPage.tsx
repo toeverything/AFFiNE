@@ -9,24 +9,18 @@ import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
 import {
   deleteMember,
-  getActiveWorkspace,
   updateWorkspaceMeta,
   Workspace,
 } from '@/hooks/mock-data/mock';
+import useTemporaryHelper from '@/hooks/use-temporary-helper';
 
 export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
-  const [workspaceType, setWorkspaceType] = useState('local');
-  useEffect(() => {
-    setType();
-  });
-  const setType = () => {
-    const ACTIVEworkspace = getActiveWorkspace();
-    ACTIVEworkspace && setWorkspaceType(ACTIVEworkspace.type);
-  };
+  const { currentWorkspace, updateWorkspaceMeta } = useTemporaryHelper();
+
   return (
     <div>
       <StyledPublishContent>
-        {workspaceType === 'local' ? (
+        {currentWorkspace.type === 'local' ? (
           <>
             <StyledPublishExplanation>
               {workspace.name} is Local Workspace. All data is stored on the
@@ -40,7 +34,6 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                   updateWorkspaceMeta(workspace.id, {
                     type: 'cloud',
                   });
-                  setType();
                 }}
                 type="primary"
                 shape="circle"
