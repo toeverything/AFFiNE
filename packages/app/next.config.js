@@ -4,6 +4,11 @@ const { dependencies } = require('./package.json');
 const path = require('node:path');
 const printer = require('./scripts/printer').printer;
 
+const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
+const EDITOR_VERSION = enableDebugLocal
+  ? 'local-version'
+  : dependencies['@blocksuite/editor'];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   productionBrowserSourceMaps: true,
@@ -16,7 +21,7 @@ const nextConfig = {
     CI: process.env.CI || null,
     VERSION: getGitVersion(),
     COMMIT_HASH: getCommitHash(),
-    EDITOR_VERSION: dependencies['@blocksuite/editor'],
+    EDITOR_VERSION,
   },
   webpack: config => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
@@ -63,11 +68,25 @@ const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
 const withDebugLocal = require('next-debug-local')(
   {
     '@blocksuite/editor': path.resolve(baseDir, 'packages', 'editor'),
+    '@blocksuite/blocks/models': path.resolve(
+      baseDir,
+      'packages',
+      'blocks',
+      'src',
+      'models'
+    ),
+    '@blocksuite/blocks/std': path.resolve(
+      baseDir,
+      'packages',
+      'blocks',
+      'src',
+      'std'
+    ),
     '@blocksuite/blocks': path.resolve(baseDir, 'packages', 'blocks'),
     '@blocksuite/store': path.resolve(baseDir, 'packages', 'store'),
   },
   {
-    enable: path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? ''),
+    enable: enableDebugLocal,
   }
 );
 

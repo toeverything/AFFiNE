@@ -27,7 +27,7 @@ Let us know what you think of this latest version.
 
 ### Playground:
 
-[] Try a horiztaonl line: `---`
+[] Try a horizontal line: `---`
 
 [] What about a code block? ```
 
