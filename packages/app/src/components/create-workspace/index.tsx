@@ -20,6 +20,12 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
     onClose({ workspaceId: workspace.id });
     setActiveWorkspace(workspace);
   };
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      // 👇 Get input value
+      handleCreateWorkspace();
+    }
+  };
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -40,6 +46,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
               just one person or together as a team.
             </p>
             <Input
+              onKeyDown={handleKeyDown}
               onChange={value => {
                 setWorkspaceName(value);
               }}

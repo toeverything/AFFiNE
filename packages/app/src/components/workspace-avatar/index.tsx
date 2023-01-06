@@ -20,7 +20,8 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
           background: stringToColour(props.name || 'AFFiNE'),
           borderRadius: '50%',
           textAlign: 'center',
-          lineHeight: sizeStr,
+          // Let the text inside the avatar be absolutely in the play
+          lineHeight: size - 2 + '[x',
         }}
       >
         {(props.name || 'AFFiNE').substring(0, 1)}
