@@ -14,23 +14,25 @@ import {
 } from '@blocksuite/icons';
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
-
+import { useTranslation } from 'react-i18next';
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
   const { openPage } = usePageHelper();
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
   const { confirm } = useConfirm();
-
+  const { t } = useTranslation();
   const OperationMenu = (
     <>
       <MenuItem
         onClick={() => {
           toggleFavoritePage(id);
-          toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
+          toast(
+            favorite ? t('Removed from Favourites') : t('Added to Favourites')
+          );
         }}
         icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
-        {favorite ? 'Remove' : 'Add'} to favourites
+        {favorite ? t('Remove from favourites') : t('Add to favourites')}
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -38,23 +40,25 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         }}
         icon={<OpenInNewIcon />}
       >
-        Open in new tab
+        {t('Open in new tab')}
       </MenuItem>
       <MenuItem
         onClick={() => {
           confirm({
-            title: 'Delete page?',
-            content: `${pageMeta.title || 'Untitled'} will be moved to Trash`,
-            confirmText: 'Delete',
+            title: t('Delete page?'),
+            content: t('will be moved to Trash', {
+              title: pageMeta.title || 'Untitled',
+            }),
+            confirmText: t('Delete'),
             confirmType: 'danger',
           }).then(confirm => {
             confirm && toggleDeletePage(id);
-            toast('Moved to Trash');
+            toast(t('Moved to Trash'));
           });
         }}
         icon={<TrashIcon />}
       >
-        Delete
+        {t('Delete')}
       </MenuItem>
     </>
   );
@@ -74,7 +78,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { openPage, getPageMeta } = usePageHelper();
   const { toggleDeletePage, permanentlyDeletePage } = usePageHelper();
   const { confirm } = useConfirm();
-
+  const { t } = useTranslation();
   return (
     <Wrapper>
       <IconButton
@@ -82,7 +86,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         style={{ marginRight: '12px' }}
         onClick={() => {
           toggleDeletePage(id);
-          toast(`${getPageMeta(id)?.title || 'Untitled'} restored`);
+          toast(t('restored', { title: getPageMeta(id)?.title || 'Untitled' }));
           openPage(id);
         }}
       >
@@ -92,13 +96,13 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         darker={true}
         onClick={() => {
           confirm({
-            title: 'Delete permanently?',
-            content: "Once deleted, you can't undo this action.",
-            confirmText: 'Delete',
+            title: t('Delete permanently?'),
+            content: t("Once deleted, you can't undo this action."),
+            confirmText: t('Delete'),
             confirmType: 'danger',
           }).then(confirm => {
             confirm && permanentlyDeletePage(id);
-            toast('Permanently deleted');
+            toast(t('Permanently deleted'));
           });
         }}
       >

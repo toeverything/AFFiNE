@@ -12,10 +12,7 @@ test.describe('web console', () => {
     //Later on, call this function with some arguments.
     // const msg = await getEditoVersionHandle.evaluate((post, args) => post);
     // console.log(getEditoVersionHandle);
-    await page.waitForTimeout(500);
-    const editoVersion = await page.evaluate(
-      () => (window as any).__editoVersion
-    );
+    const editoVersion = await page.evaluate(() => window.__editoVersion);
     // const documentEditorVersion = await page.inputValue('input#editor-version');
     const pkgEditorVersion = pkg.dependencies['@blocksuite/editor'];
 

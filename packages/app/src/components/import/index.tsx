@@ -6,6 +6,7 @@ import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 // import { Tooltip } from '@/ui/tooltip';
 type ImportModalProps = {
   open: boolean;
@@ -19,6 +20,7 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
   const [status, setStatus] = useState<'unImported' | 'importing'>('importing');
   const { openPage, createPage } = usePageHelper();
   const { currentWorkspace } = useAppState();
+  const { t } = useTranslation();
   const _applyTemplate = function (pageId: string, template: Template) {
     const page = currentWorkspace?.getPage(pageId);
 
@@ -84,7 +86,7 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
     <Modal open={open} onClose={onClose}>
       <ModalWrapper width={460} minHeight={240}>
         <ModalCloseButton onClick={onClose} />
-        <StyledTitle>Import</StyledTitle>
+        <StyledTitle>{t('Import')}</StyledTitle>
 
         {status === 'unImported' && (
           <StyledButtonWrapper>
