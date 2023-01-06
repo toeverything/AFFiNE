@@ -1,4 +1,7 @@
 import { displayFlex, styled } from '@/styles';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
 
 export const StyledTitle = styled.div(() => {
   return {
@@ -35,4 +38,21 @@ export const StyledButton = styled.div(({ theme }) => {
     cursor: 'pointer',
     ...displayFlex('center', 'center'),
   };
+});
+export const StyledFormControl = styled(FormControl)(({ theme }) => {
+  return {
+    position: 'absolute',
+    minWidth: '100px',
+    right: '50px',
+    backgroundColor: theme.colors.popoverBackground,
+  };
+});
+export const StyledSelect = styled(Select)(({ theme }) => {
+  return {
+    backgroundColor: theme.colors.popoverBackground,
+    color: theme.colors.popoverColor,
+  };
+});
+export const StyledMenuItem = styled(MenuItem)(() => {
+  return {};
 });

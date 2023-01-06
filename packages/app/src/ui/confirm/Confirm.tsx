@@ -52,7 +52,7 @@ export const Confirm = ({
             }}
             style={{ marginRight: '24px' }}
           >
-            {cancelText}
+            {cancelText === 'Cancel' ? t('Cancel') : cancelText}
           </Button>
           <Button
             type={confirmType}

@@ -2,6 +2,7 @@ import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useEffect, useState } from 'react';
+import { LanguageMenu } from './languageMenu';
 import {
   getWorkspaces,
   Workspace,
@@ -56,6 +57,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
         >
           <Header>
             <ContentTitle>My Workspaces</ContentTitle>
+            <LanguageMenu />
             <ModalCloseButton
               top={6}
               right={6}
