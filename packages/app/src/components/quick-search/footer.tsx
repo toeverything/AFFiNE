@@ -4,10 +4,11 @@ import { StyledModalFooterContent } from './style';
 import { useModal } from '@/providers/global-modal-provider';
 import { Command } from 'cmdk';
 import { usePageHelper } from '@/hooks/use-page-helper';
-
+import { useTranslation } from 'react-i18next';
 export const Footer = (props: { query: string }) => {
   const { triggerQuickSearchModal } = useModal();
   const { openPage, createPage } = usePageHelper();
+  const { t } = useTranslation();
   const query = props.query;
 
   return (
@@ -25,9 +26,9 @@ export const Footer = (props: { query: string }) => {
       <StyledModalFooterContent>
         <AddIcon />
         {query ? (
-          <span>New &quot;{query}&quot; page</span>
+          <span>{t('New Keyword Page', { query: query })}</span>
         ) : (
-          <span>New page</span>
+          <span>{t('New Page')}</span>
         )}
       </StyledModalFooterContent>
     </Command.Item>

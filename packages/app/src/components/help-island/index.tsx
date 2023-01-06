@@ -8,6 +8,7 @@ import {
 import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import Grow from '@mui/material/Grow';
 import { Tooltip } from '@/ui/tooltip';
+import { useTranslation } from 'react-i18next';
 import { useModal } from '@/providers/global-modal-provider';
 import { useTheme } from '@/providers/themeProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
@@ -22,7 +23,7 @@ export const HelpIsland = ({
   const { mode: editorMode } = useCurrentPageMeta() || {};
   const { triggerShortcutsModal, triggerContactModal } = useModal();
   const isEdgelessDark = mode === 'dark' && editorMode === 'edgeless';
-
+  const { t } = useTranslation();
   return (
     <>
       <StyledIsland
@@ -37,7 +38,7 @@ export const HelpIsland = ({
         <Grow in={showContent}>
           <StyledIslandWrapper>
             {showList.includes('contact') && (
-              <Tooltip content="Contact Us" placement="left-end">
+              <Tooltip content={t('Contact Us')} placement="left-end">
                 <StyledIconWrapper
                   data-testid="right-bottom-contact-us-icon"
                   isEdgelessDark={isEdgelessDark}
@@ -51,7 +52,7 @@ export const HelpIsland = ({
               </Tooltip>
             )}
             {showList.includes('shortcuts') && (
-              <Tooltip content="Keyboard Shortcuts" placement="left-end">
+              <Tooltip content={t('Keyboard Shortcuts')} placement="left-end">
                 <StyledIconWrapper
                   data-testid="shortcuts-icon"
                   isEdgelessDark={isEdgelessDark}
