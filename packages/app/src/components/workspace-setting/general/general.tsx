@@ -21,7 +21,7 @@ import {
   User,
   Workspace,
 } from '@/hooks/mock-data/mock';
-import { stringToColour } from '@/utils';
+import { WorkspaceAvatar } from '@/components/workspace-avatar';
 export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
   const { currentWorkspace, refreshWorkspacesMeta } = useAppState();
   useEffect(() => {
@@ -85,19 +85,11 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
         <div
           style={{
             float: 'left',
-            width: '60px',
-            height: '60px',
-            border: '1px solid #fff',
-            color: '#fff',
-            fontSize: '26px',
-            background: stringToColour(workspace?.name ?? 'AFFiNE'),
-            borderRadius: '50%',
-            textAlign: 'center',
-            lineHeight: '60px',
+
             marginRight: '5px',
           }}
         >
-          {(workspace?.name ?? 'AFFiNE').substring(0, 1)}
+          <WorkspaceAvatar size={60} name={workspace.name} />
         </div>
         <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"

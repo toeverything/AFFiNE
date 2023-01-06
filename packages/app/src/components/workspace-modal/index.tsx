@@ -21,7 +21,7 @@ import {
 } from '@blocksuite/icons';
 import { useConfirm } from '@/providers/confirm-provider';
 import { toast } from '@/ui/toast';
-import { stringToColour } from '@/utils';
+import { WorkspaceAvatar } from '@/components/workspace-avatar';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -82,18 +82,9 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                           marginTop: '6px',
                           marginLeft: '10px',
                           marginRight: '10px',
-                          width: '50px',
-                          height: '50px',
-                          border: '1px solid #fff',
-                          color: '#fff',
-                          fontSize: '22px',
-                          background: stringToColour(item.name || 'AFFiNE'),
-                          borderRadius: '50%',
-                          textAlign: 'center',
-                          lineHeight: '50px',
                         }}
                       >
-                        {(item.name || 'AFFiNE').substring(0, 1)}
+                        <WorkspaceAvatar size={50} name={item.name} />
                       </div>
 
                       <span

@@ -2,8 +2,8 @@ import { Avatar, WorkspaceName, SelectorWrapper } from './styles';
 import { useEffect, useState } from 'react';
 // import { AffineIcon } from '../icons/icons';
 import { WorkspaceModal } from '@/components/workspace-modal';
+import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { getActiveWorkspace, getWorkspaces } from '@/hooks/mock-data/mock';
-import { stringToColour } from '@/utils';
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);
   const [workspace, setWorkSpace] = useState(getActiveWorkspace());
@@ -37,18 +37,9 @@ export const WorkspaceSelector = () => {
           <div
             style={{
               float: 'left',
-              width: '28px',
-              height: '28px',
-              border: '1px solid #fff',
-              color: '#fff',
-              fontSize: '14px',
-              background: stringToColour(workspace?.name ?? 'AFFiNE'),
-              borderRadius: '50%',
-              textAlign: 'center',
-              lineHeight: '28px',
             }}
           >
-            {(workspace?.name ?? 'AFFiNE').substring(0, 1)}
+            <WorkspaceAvatar size={28} name={workspace.name} />
           </div>
         </Avatar>
         <WorkspaceName data-testid="workspace-name">

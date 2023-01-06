@@ -62,6 +62,7 @@ enum ActiveTab {
   'members' = 'members',
   'publish' = 'publish',
   'sync' = 'sync',
+  'export' = 'export',
 }
 
 type SettingTabProps = {
@@ -125,9 +126,9 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
       </WorkspaceSettingTagItem>
 
       <WorkspaceSettingTagItem
-        isActive={activeTab === ActiveTab.publish}
+        isActive={activeTab === ActiveTab.export}
         onClick={() => {
-          onTabChange && onTabChange(ActiveTab.publish);
+          onTabChange && onTabChange(ActiveTab.export);
         }}
       >
         <StyledSettingTagIconContainer>
