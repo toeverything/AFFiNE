@@ -26,7 +26,7 @@ export const usePropsUpdated: UsePropsUpdated = () => {
 
     return () => {
       callbackQueue.current = [];
-      editor?.model?.propsUpdated?.dispose();
+      editor?.pageBlockModel?.propsUpdated?.dispose();
     };
   }, [editor]);
 

@@ -131,8 +131,8 @@ importers:
 
   packages/data-center:
     specifiers:
-      '@blocksuite/blocks': ^0.3.1
-      '@blocksuite/store': ^0.3.1
+      '@blocksuite/blocks': '=0.3.1-20230106060050-1aad55d'
+      '@blocksuite/store': '=0.3.1-20230106060050-1aad55d'
       '@playwright/test': ^1.29.1
       '@types/debug': ^4.1.7
       debug: ^4.3.4
@@ -148,8 +148,8 @@ importers:
       y-protocols: ^1.0.5
       yjs: ^13.5.44
     dependencies:
-      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/blocks': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
@@ -1516,25 +1516,6 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/blocks/0.3.1_yjs@13.5.44:
-    resolution: {integrity: sha512-b0dGz2MG4yIgngJPRumaMY58wAsd2FEVSZl3tpCXlagK9I0HD165Bq70PxcaRHVjBSV1Gf29ZVHUF6BVTYogPw==}
-    dependencies:
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
-      '@tldraw/intersect': 1.8.0
-      autosize: 5.0.2
-      highlight.js: 11.7.0
-      hotkeys-js: 3.10.1
-      lit: 2.5.0
-      perfect-freehand: 1.2.0
-      quill: 1.3.7
-      quill-cursors: 4.0.0
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - yjs
-    dev: false
-
   /@blocksuite/editor/0.3.1-20230106060050-1aad55d_yjs@13.5.44:
     resolution: {integrity: sha512-wSlAF9XVxIkHFJ1qCzn7oQ/gwXybFYMrzRl35UTJV509D+DuWZefRZWvpdIDCOUJ24uQscr1HxwsON11ltfWgA==}
     dependencies:
@@ -1570,27 +1551,6 @@ packages:
 
   /@blocksuite/store/0.3.1-20230106060050-1aad55d_yjs@13.5.44:
     resolution: {integrity: sha512-dRy+YzlWMwiYq0Im9NogK/NTkV+NKK+lgejYq56m6nH2m16/G9AMODqP0oQy/XeYFevUpL9i9RdV0rHsJ2gc0Q==}
-    peerDependencies:
-      yjs: ^13
-    dependencies:
-      '@types/flexsearch': 0.7.3
-      '@types/quill': 1.3.10
-      buffer: 6.0.3
-      flexsearch: 0.7.21
-      idb-keyval: 6.2.0
-      ky: 0.33.1
-      lib0: 0.2.58
-      y-protocols: 1.0.5
-      y-webrtc: 10.2.3
-      yjs: 13.5.44
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-    dev: false
-
-  /@blocksuite/store/0.3.1_yjs@13.5.44:
-    resolution: {integrity: sha512-kynVTDfNCSChz2JI2rtGHxRIV2YrLzvAgVajcbfDVCuXKG0siBoEjLasG1a0kvevbvW/FabrNAj+xaIplklioA==}
     peerDependencies:
       yjs: ^13
     dependencies:
