@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { GeneralPage } from './general';
 import { MembersPage } from './MembersPage';
 import { PublishPage } from './PublishPage';
+import { ExportPage } from './ExportPage';
 import { SyncPage } from './SyncPage';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 
@@ -152,6 +153,9 @@ export const WorkspaceSetting = ({
           )}
           {activeTab === ActiveTab.publish && currentWorkspace && (
             <PublishPage workspace={currentWorkspace} />
+          )}
+          {activeTab === ActiveTab.export && currentWorkspace && (
+            <ExportPage workspace={currentWorkspace} />
           )}
         </StyledSettingContent>
       </StyledSettingContainer>

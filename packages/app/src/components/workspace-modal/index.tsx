@@ -60,7 +60,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                     }}
                     key={index}
                   >
-                    <span style={{ width: '100px', marginRight: '20px' }}>
+                    <span style={{ width: '100px' }}>
                       <div
                         style={{
                           float: 'left',
