@@ -17,7 +17,7 @@ export const usePropsUpdated: UsePropsUpdated = () => {
       return;
     }
     setTimeout(() => {
-      editor.model?.propsUpdated.on(() => {
+      editor.pageBlockModel?.propsUpdated.on(() => {
         callbackQueue.current.forEach(callback => {
           callback(editor);
         });

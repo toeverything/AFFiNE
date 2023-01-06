@@ -46,9 +46,10 @@ const All = () => {
         setTimeout(() => {
           const editor = document.querySelector('editor-container');
           if (editor) {
-            const groupId = page.addBlock({ flavour: 'affine:group' }, pageId);
+            page.addBlock({ flavour: 'affine:surface' }, null);
+            const frameId = page.addBlock({ flavour: 'affine:frame' }, pageId);
             // TODO blocksuite should offer a method to import markdown from store
-            editor.clipboard.importMarkdown(template.source, `${groupId}`);
+            editor.clipboard.importMarkdown(template.source, `${frameId}`);
             page.resetHistory();
             editor.requestUpdate();
           }

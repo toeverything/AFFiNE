@@ -55,14 +55,15 @@ const Page: NextPageWithLayout = () => {
           flavour: 'affine:page',
           title,
         });
-        const groupId = currentPage!.addBlock(
-          { flavour: 'affine:group' },
+        currentPage!.addBlock({ flavour: 'affine:surface' }, null);
+        const frameId = currentPage!.addBlock(
+          { flavour: 'affine:frame' },
           pageId
         );
-        currentPage!.addBlock({ flavour: 'affine:group' }, pageId);
+        currentPage!.addBlock({ flavour: 'affine:frame' }, pageId);
         // If this is a first page in workspace, init an introduction markdown
         if (isFirstPage) {
-          editor.clipboard.importMarkdown(exampleMarkdown, `${groupId}`);
+          editor.clipboard.importMarkdown(exampleMarkdown, `${frameId}`);
           currentWorkspace!.setPageMeta(currentPage!.id, { title });
         }
         currentPage!.resetHistory();
