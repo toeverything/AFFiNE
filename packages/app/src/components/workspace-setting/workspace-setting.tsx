@@ -466,8 +466,8 @@ const SyncPage = ({ workspace }: { workspace: Workspace }) => {
           </>
         ) : (
           <StyledPublishExplanation>
-            {workspace.name} is Cloud Workspace. All data will be synchronized
-            and saved to the AFFiNE account
+            <code>{workspace.name}</code> is Cloud Workspace. All data will be
+            synchronized and saved to the AFFiNE account
             <div>
               <Menu
                 content={

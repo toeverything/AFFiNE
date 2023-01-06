@@ -140,7 +140,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
 
       <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
-        {workspace.type}
+        <code>{workspace.type} </code>
       </StyledSettingInputContainer>
       <StyledDeleteButtonContainer>
         {isOwner ? (
