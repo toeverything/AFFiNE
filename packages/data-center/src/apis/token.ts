@@ -60,7 +60,9 @@ class Token {
   }
 
   async initToken(token: string) {
-    this._setToken(await login({ token, type: 'Google' }));
+    const tokens = await login({ token, type: 'Google' });
+    this._setToken(tokens);
+    return this._user;
   }
 
   async refreshToken(token?: string) {
@@ -153,10 +155,27 @@ export const getAuthorizer = () => {
 
     const googleAuthProvider = new GoogleAuthProvider();
 
+    const getToken = async () => {
+      const currentUser = firebaseAuth.currentUser;
+      if (currentUser) {
+        await currentUser.getIdTokenResult(true);
+        if (!currentUser.isAnonymous) {
+          return currentUser.getIdToken();
+        }
+      }
+      return;
+    };
+
     const signInWithGoogle = async () => {
-      const user = await signInWithPopup(firebaseAuth, googleAuthProvider);
-      const idToken = await user.user.getIdToken();
-      await token.initToken(idToken);
+      const idToken = await getToken();
+      if (idToken) {
+        await token.initToken(idToken);
+      } else {
+        const user = await signInWithPopup(firebaseAuth, googleAuthProvider);
+        const idToken = await user.user.getIdToken();
+        await token.initToken(idToken);
+      }
+      return firebaseAuth.currentUser;
     };
 
     const onAuthStateChanged = (callback: (user: User | null) => void) => {

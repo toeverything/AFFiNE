@@ -16,12 +16,13 @@ import { usePageHelper } from '@/hooks/use-page-helper';
 import { useConfirm } from '@/providers/confirm-provider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { toast } from '@/ui/toast';
-
+import { useTranslation } from 'react-i18next';
 const PopoverContent = () => {
   const { editor } = useAppState();
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
   const { changePageMode } = usePageHelper();
   const { confirm } = useConfirm();
+  const { t } = useTranslation();
   const {
     mode = 'page',
     id = '',
@@ -35,11 +36,13 @@ const PopoverContent = () => {
         data-testid="editor-option-menu-favorite"
         onClick={() => {
           toggleFavoritePage(id);
-          toast(!favorite ? 'Removed to Favourites' : 'Added to Favourites');
+          toast(
+            favorite ? t('Removed from Favourites') : t('Added to Favourites')
+          );
         }}
         icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
-        {favorite ? 'Remove' : 'Add'} to favourites
+        {favorite ? t('Remove from favourites') : t('Add to favourites')}
       </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
@@ -48,7 +51,8 @@ const PopoverContent = () => {
           changePageMode(id, mode === 'page' ? 'edgeless' : 'page');
         }}
       >
-        Convert to {mode === 'page' ? 'Edgeless' : 'Page'}
+        {t('Convert to ')}
+        {mode === 'page' ? t('Edgeless') : t('Page')}
       </MenuItem>
       <Menu
         placement="left-start"
@@ -60,7 +64,7 @@ const PopoverContent = () => {
               }}
               icon={<ExportToHtmlIcon />}
             >
-              Export to HTML
+              {t('Export to HTML')}
             </MenuItem>
             <MenuItem
               onClick={() => {
@@ -68,31 +72,33 @@ const PopoverContent = () => {
               }}
               icon={<ExportToMarkdownIcon />}
             >
-              Export to Markdown
+              {t('Export to Markdown')}
             </MenuItem>
           </>
         }
       >
         <MenuItem icon={<ExportIcon />} isDir={true}>
-          Export
+          {t('Export')}
         </MenuItem>
       </Menu>
       <MenuItem
         data-testid="editor-option-menu-delete"
         onClick={() => {
           confirm({
-            title: 'Delete page?',
-            content: `${title || 'Untitled'} will be moved to Trash`,
-            confirmText: 'Delete',
+            title: t('Delete page?'),
+            content: t('will be moved to Trash', {
+              title: title || 'Untitled',
+            }),
+            confirmText: t('Delete'),
             confirmType: 'danger',
           }).then(confirm => {
             confirm && toggleDeletePage(id);
-            confirm && toast('Moved to Trash');
+            confirm && toast(t('Moved to Trash'));
           });
         }}
         icon={<TrashIcon />}
       >
-        Delete
+        {t('Delete')}
       </MenuItem>
     </>
   );

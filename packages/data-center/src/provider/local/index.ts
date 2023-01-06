@@ -21,7 +21,7 @@ export class LocalProvider extends BaseProvider {
     this._blobs = blobs;
   }
 
-  async initData() {
+  async initData(locally = true) {
     assert(this._workspace.room);
     this._logger('Loading local data');
     this._idb = new IndexedDBProvider(
@@ -32,14 +32,19 @@ export class LocalProvider extends BaseProvider {
     await this._idb.whenSynced;
     this._logger('Local data loaded');
 
-    await this._globalConfig.set(this._workspace.room, true);
+    this._signals.listAdd.emit({
+      workspace: this._workspace.room,
+      provider: this.id,
+      locally,
+    });
   }
 
   async clear() {
+    assert(this._workspace.room);
     await super.clear();
     await this._blobs.clear();
     await this._idb?.clearData();
-    await this._globalConfig.delete(this._workspace.room!);
+    this._signals.listRemove.emit(this._workspace.room);
   }
 
   async destroy(): Promise<void> {
@@ -59,6 +64,10 @@ export class LocalProvider extends BaseProvider {
     config: Readonly<ConfigStore<boolean>>
   ): Promise<Map<string, boolean> | undefined> {
     const entries = await config.entries();
-    return new Map(entries);
+    return new Map(
+      entries
+        .filter(([key]) => key.startsWith('list:'))
+        .map(([key, value]) => [key.slice(5), value])
+    );
   }
 }

@@ -40,6 +40,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
         >
           <Header>
             <ContentTitle>My Workspaces</ContentTitle>
+            {/* <LanguageMenu /> */}
             <ModalCloseButton
               top={6}
               right={6}

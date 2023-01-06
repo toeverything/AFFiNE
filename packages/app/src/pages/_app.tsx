@@ -18,6 +18,7 @@ import { useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { PageLoading } from '@/components/loading';
 import Head from 'next/head';
+import '@/libs/i18n';
 
 const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
   ssr: false,

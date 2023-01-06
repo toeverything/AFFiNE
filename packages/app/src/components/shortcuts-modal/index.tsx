@@ -8,14 +8,15 @@ import {
   StyledTitle,
 } from './style';
 import {
-  macKeyboardShortcuts,
-  macMarkdownShortcuts,
-  windowsKeyboardShortcuts,
-  winMarkdownShortcuts,
+  useMacKeyboardShortcuts,
+  useMacMarkdownShortcuts,
+  useWindowsKeyboardShortcuts,
+  useWinMarkdownShortcuts,
 } from '@/components/shortcuts-modal/config';
 import Slide from '@mui/material/Slide';
 import { ModalCloseButton } from '@/ui/modal';
 import { getUaHelper } from '@/utils';
+import { useTranslation } from 'react-i18next';
 type ModalProps = {
   open: boolean;
   onClose: () => void;
@@ -26,12 +27,18 @@ const isMac = () => {
 };
 
 export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
+  const { t } = useTranslation();
+  const macMarkdownShortcuts = useMacMarkdownShortcuts();
+  const winMarkdownShortcuts = useWinMarkdownShortcuts();
+  const macKeyboardShortcuts = useMacKeyboardShortcuts();
+  const windowsKeyboardShortcuts = useWindowsKeyboardShortcuts();
   const markdownShortcuts = isMac()
     ? macMarkdownShortcuts
     : winMarkdownShortcuts;
   const keyboardShortcuts = isMac()
     ? macKeyboardShortcuts
     : windowsKeyboardShortcuts;
+
   return createPortal(
     <Slide direction="left" in={open} mountOnEnter unmountOnExit>
       <StyledShortcutsModal data-testid="shortcuts-modal">
@@ -39,7 +46,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
           <StyledModalHeader>
             <StyledTitle>
               <KeyboardIcon />
-              Shortcuts
+              {t('Shortcuts')}
             </StyledTitle>
 
             <ModalCloseButton
@@ -53,7 +60,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
             />
           </StyledModalHeader>
           <StyledSubTitle style={{ marginTop: 0 }}>
-            Keyboard Shortcuts
+            {t('Keyboard Shortcuts')}
           </StyledSubTitle>
           {Object.entries(keyboardShortcuts).map(([title, shortcuts]) => {
             return (
@@ -63,7 +70,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
               </StyledListItem>
             );
           })}
-          <StyledSubTitle>Markdown Syntax</StyledSubTitle>
+          <StyledSubTitle>{t('Markdown Syntax')}</StyledSubTitle>
           {Object.entries(markdownShortcuts).map(([title, shortcuts]) => {
             return (
               <StyledListItem key={title}>
