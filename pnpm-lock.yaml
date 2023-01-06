@@ -45,10 +45,10 @@ importers:
   packages/app:
     specifiers:
       '@affine/datacenter': workspace:*
-      '@blocksuite/blocks': 0.3.1
-      '@blocksuite/editor': 0.3.1
+      '@blocksuite/blocks': '=0.3.1-20230106060050-1aad55d'
+      '@blocksuite/editor': '=0.3.1-20230106060050-1aad55d'
       '@blocksuite/icons': ^2.0.2
-      '@blocksuite/store': 0.3.1
+      '@blocksuite/store': '=0.3.1-20230106060050-1aad55d'
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -87,10 +87,10 @@ importers:
       yjs: ^13.5.44
     dependencies:
       '@affine/datacenter': link:../data-center
-      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
-      '@blocksuite/editor': 0.3.1_yjs@13.5.44
+      '@blocksuite/blocks': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
+      '@blocksuite/editor': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       '@blocksuite/icons': 2.0.4_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -131,8 +131,8 @@ importers:
 
   packages/data-center:
     specifiers:
-      '@blocksuite/blocks': ^0.3.1
-      '@blocksuite/store': ^0.3.1
+      '@blocksuite/blocks': '=0.3.1-20230106060050-1aad55d'
+      '@blocksuite/store': '=0.3.1-20230106060050-1aad55d'
       '@playwright/test': ^1.29.1
       '@types/debug': ^4.1.7
       debug: ^4.3.4
@@ -148,8 +148,8 @@ importers:
       y-protocols: ^1.0.5
       yjs: ^13.5.44
     dependencies:
-      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/blocks': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
@@ -1496,10 +1496,11 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@blocksuite/blocks/0.3.1_yjs@13.5.44:
-    resolution: {integrity: sha512-b0dGz2MG4yIgngJPRumaMY58wAsd2FEVSZl3tpCXlagK9I0HD165Bq70PxcaRHVjBSV1Gf29ZVHUF6BVTYogPw==}
+  /@blocksuite/blocks/0.3.1-20230106060050-1aad55d_yjs@13.5.44:
+    resolution: {integrity: sha512-qRNXmhjw+GAGsV1mI2XXPxYTlHfsFHv9ttTCNQ6IIcxvc5Hh6lWmdwVibxvlpYUkgEc1zv3/GxOEsR/ngpZXzQ==}
     dependencies:
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/phasor': 0.3.1_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       '@tldraw/intersect': 1.8.0
       autosize: 5.0.2
       highlight.js: 11.7.0
@@ -1515,11 +1516,11 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/editor/0.3.1_yjs@13.5.44:
-    resolution: {integrity: sha512-ycKcyvPW6R8R2GZOFneGH1xNi5gJBx5WtWjW9YwcQslFzXVWMCCBips1Bud2uL4kkbWQoodyua6k2vsXxGAKLw==}
+  /@blocksuite/editor/0.3.1-20230106060050-1aad55d_yjs@13.5.44:
+    resolution: {integrity: sha512-wSlAF9XVxIkHFJ1qCzn7oQ/gwXybFYMrzRl35UTJV509D+DuWZefRZWvpdIDCOUJ24uQscr1HxwsON11ltfWgA==}
     dependencies:
-      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/blocks': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       lit: 2.5.0
       marked: 4.2.5
       turndown: 7.1.1
@@ -1540,8 +1541,16 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/store/0.3.1_yjs@13.5.44:
-    resolution: {integrity: sha512-kynVTDfNCSChz2JI2rtGHxRIV2YrLzvAgVajcbfDVCuXKG0siBoEjLasG1a0kvevbvW/FabrNAj+xaIplklioA==}
+  /@blocksuite/phasor/0.3.1_yjs@13.5.44:
+    resolution: {integrity: sha512-aJmAQn2qoF6HxFZWgq7xa/pWVyzg3MmD6dynIHAKdfN7rBdKk3PNA+lRX919QkD2e270N/zgHEGFFQI1Nj5xrA==}
+    peerDependencies:
+      yjs: ^13
+    dependencies:
+      yjs: 13.5.44
+    dev: false
+
+  /@blocksuite/store/0.3.1-20230106060050-1aad55d_yjs@13.5.44:
+    resolution: {integrity: sha512-dRy+YzlWMwiYq0Im9NogK/NTkV+NKK+lgejYq56m6nH2m16/G9AMODqP0oQy/XeYFevUpL9i9RdV0rHsJ2gc0Q==}
     peerDependencies:
       yjs: ^13
     dependencies:
