@@ -4,8 +4,13 @@ import { Workspace, Signal } from '@blocksuite/store';
 
 import { getLogger } from './index.js';
 import { getApis, Apis } from './apis/index.js';
-import { AffineProvider, BaseProvider } from './provider/index.js';
-import { LocalProvider } from './provider/index.js';
+import {
+  AffineProvider,
+  BaseProvider,
+  LocalProvider,
+  SelfHostedProvider,
+} from './provider/index.js';
+
 import { getKVConfigure } from './store.js';
 
 // load workspace's config
@@ -43,6 +48,7 @@ export class DataCenter {
     const dc = new DataCenter(debug);
     dc.addProvider(AffineProvider);
     dc.addProvider(LocalProvider);
+    dc.addProvider(SelfHostedProvider);
 
     return dc;
   }

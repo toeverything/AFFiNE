@@ -20,3 +20,4 @@ export type { Apis, ConfigStore, DataCenterSignals, Workspace };
 export type { BaseProvider } from './base.js';
 export { AffineProvider } from './affine/index.js';
 export { LocalProvider } from './local/index.js';
+export { SelfHostedProvider } from './selfhosted/index.js';
