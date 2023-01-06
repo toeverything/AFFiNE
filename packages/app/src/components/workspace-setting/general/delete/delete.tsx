@@ -14,20 +14,22 @@ import { Button } from '@/ui/button';
 import { getDataCenter } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
-import { deleteWorkspace, getWorkspaces } from '@/hooks/mock-data/mock';
+import {
+  deleteWorkspace,
+  getWorkspaces,
+  Workspace,
+} from '@/hooks/mock-data/mock';
 
 interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
-  workspaceName: string;
-  workspaceId: string;
+  workspace: Workspace;
 }
 
 export const WorkspaceDelete = ({
   open,
   onClose,
-  workspaceId,
-  workspaceName,
+  workspace,
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
   const router = useRouter();
@@ -40,7 +42,7 @@ export const WorkspaceDelete = ({
     // const dc = await getDataCenter();
     // await dc.apis.deleteWorkspace({ id: workspaceId });
     // router.push(`/workspace/${nextWorkSpaceId}`);
-    deleteWorkspace(workspaceId);
+    deleteWorkspace(workspace.id);
     const workspaceList = getWorkspaces();
     if (workspaceList.length) {
       router.push(`/workspace/${workspaceList[0].id}`);
@@ -55,11 +57,20 @@ export const WorkspaceDelete = ({
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
         <StyledModalHeader>Delete Workspace</StyledModalHeader>
-        <StyledTextContent>
-          This action cannot be undone. This will permanently delete (
-          <StyledWorkspaceName>{workspaceName}</StyledWorkspaceName>) along with
-          all its content.
-        </StyledTextContent>
+        {workspace.type === 'local' ? (
+          <StyledTextContent>
+            Deleting (
+            <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>) cannot
+            be undone, please proceed with caution. along with all its content.
+          </StyledTextContent>
+        ) : (
+          <StyledTextContent>
+            Deleting (
+            <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>) will
+            delete both local and cloud data, this operation cannot be undone,
+            please proceed with caution.
+          </StyledTextContent>
+        )}
         <StyledInputContent>
           <Input
             onChange={handlerInputChange}

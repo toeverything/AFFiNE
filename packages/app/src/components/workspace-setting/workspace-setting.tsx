@@ -56,6 +56,8 @@ import {
   User,
   Workspace,
 } from '@/hooks/mock-data/mock';
+import useTemporaryHelper from '@/hooks/use-temporary-helper';
+import { useConfirm } from '@/providers/confirm-provider';
 
 enum ActiveTab {
   'general' = 'general',
@@ -364,66 +366,108 @@ const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 const PublishPage = ({ workspace }: { workspace: Workspace }) => {
   const shareUrl =
     window.location.host + '/workspace/' + workspace.id + '?share=true';
-  const [publicStatus, setPublicStatus] = useState<boolean | null>(
-    workspace.isPublish ?? false
-  );
+
+  const { login, updateWorkspaceMeta, user, currentWorkspace } =
+    useTemporaryHelper();
+  const { confirm } = useConfirm();
+
   const togglePublic = (flag: boolean) => {
-    const isPublic = setWorkspacePublish(workspace.id, flag);
-    setPublicStatus(isPublic);
+    updateWorkspaceMeta(currentWorkspace.id, { isPublish: flag });
   };
 
   const copyUrl = () => {
     navigator.clipboard.writeText(shareUrl);
     toast('Copied url to clipboard');
   };
+
+  const enableAffineCloud = () => {
+    confirm({
+      title: 'Enable AFFiNE Cloud?',
+      content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+      confirmText: user ? 'Enable' : 'Sign in and Enable',
+      cancelText: 'Skip',
+    }).then(confirm => {
+      if (user) {
+        updateWorkspaceMeta(currentWorkspace.id, { isPublish: true });
+      } else {
+        confirm && login();
+        updateWorkspaceMeta(currentWorkspace.id, { isPublish: true });
+      }
+    });
+  };
   return (
-    <div>
-      <StyledPublishContent>
-        {publicStatus ? (
+    <>
+      {user ? (
+        <div>
+          <StyledPublishContent>
+            {currentWorkspace?.isPublish ? (
+              <>
+                <StyledPublishExplanation>
+                  Publishing to web requires AFFiNE Cloud service .
+                </StyledPublishExplanation>
+                <StyledSettingH2 marginTop={48}>
+                  Share with link
+                </StyledSettingH2>
+                <StyledPublishCopyContainer>
+                  <Input width={500} value={shareUrl} disabled={true}></Input>
+                  <StyledCopyButtonContainer>
+                    <Button onClick={copyUrl} type="primary" shape="circle">
+                      Copy Link
+                    </Button>
+                  </StyledCopyButtonContainer>
+                </StyledPublishCopyContainer>
+              </>
+            ) : (
+              <StyledPublishExplanation>
+                After publishing to the web, everyone can view the content of
+                this workspace through the link.
+              </StyledPublishExplanation>
+            )}
+          </StyledPublishContent>
+          {!currentWorkspace?.isPublish ? (
+            <Button
+              onClick={() => {
+                togglePublic(true);
+              }}
+              type="primary"
+              shape="circle"
+            >
+              Publish to web
+            </Button>
+          ) : (
+            <Button
+              onClick={() => {
+                togglePublic(false);
+              }}
+              type="primary"
+              shape="circle"
+            >
+              Stop publishing
+            </Button>
+          )}
+        </div>
+      ) : (
+        <StyledPublishContent>
           <>
             <StyledPublishExplanation>
-              The current workspace has been published to the web, everyone can
-              view the contents of this workspace through the link.
+              Publishing to web requires AFFiNE Cloud service.
             </StyledPublishExplanation>
-            <StyledSettingH2 marginTop={48}>Share with link</StyledSettingH2>
+
             <StyledPublishCopyContainer>
-              <Input width={500} value={shareUrl} disabled={true}></Input>
-              <StyledCopyButtonContainer>
-                <Button onClick={copyUrl} type="primary" shape="circle">
-                  Copy Link
-                </Button>
-              </StyledCopyButtonContainer>
+              <Button
+                onClick={() => {
+                  enableAffineCloud();
+                }}
+                type="primary"
+                shape="circle"
+              >
+                Enable AFFiNE Cloud
+              </Button>
             </StyledPublishCopyContainer>
           </>
-        ) : (
-          <StyledPublishExplanation>
-            After publishing to the web, everyone can view the content of this
-            workspace through the link.
-          </StyledPublishExplanation>
-        )}
-      </StyledPublishContent>
-      {!publicStatus ? (
-        <Button
-          onClick={() => {
-            togglePublic(true);
-          }}
-          type="primary"
-          shape="circle"
-        >
-          Publish to web
-        </Button>
-      ) : (
-        <Button
-          onClick={() => {
-            togglePublic(false);
-          }}
-          type="primary"
-          shape="circle"
-        >
-          Stop publishing
-        </Button>
+        </StyledPublishContent>
       )}
-    </div>
+    </>
   );
 };
 const SyncPage = ({ workspace }: { workspace: Workspace }) => {
@@ -433,7 +477,6 @@ const SyncPage = ({ workspace }: { workspace: Workspace }) => {
   });
   const setType = () => {
     const ACTIVEworkspace = getActiveWorkspace();
-    console.log('ACTIVEworkspace: ', ACTIVEworkspace);
     ACTIVEworkspace && setWorkspaceType(ACTIVEworkspace.type);
   };
   return (
@@ -448,27 +491,27 @@ const SyncPage = ({ workspace }: { workspace: Workspace }) => {
             </StyledPublishExplanation>
 
             <StyledPublishCopyContainer>
-              <StyledCopyButtonContainer>
-                <Button
-                  onClick={() => {
-                    updateWorkspaceMeta(workspace.id, {
-                      type: 'cloud',
-                    });
-                    setType();
-                  }}
-                  type="primary"
-                  shape="circle"
-                >
-                  Enable AFFiNE Cloud
-                </Button>
-              </StyledCopyButtonContainer>
+              <Button
+                onClick={() => {
+                  updateWorkspaceMeta(workspace.id, {
+                    type: 'cloud',
+                  });
+                  setType();
+                }}
+                type="primary"
+                shape="circle"
+              >
+                Enable AFFiNE Cloud
+              </Button>
             </StyledPublishCopyContainer>
           </>
         ) : (
-          <StyledPublishExplanation>
-            <code>{workspace.name}</code> is Cloud Workspace. All data will be
-            synchronized and saved to the AFFiNE account
-            <div>
+          <>
+            <StyledPublishExplanation>
+              <code>{workspace.name}</code> is Cloud Workspace. All data will be
+              synchronized and saved to the AFFiNE
+            </StyledPublishExplanation>
+            <StyledPublishCopyContainer>
               <Menu
                 content={
                   <>
@@ -495,8 +538,8 @@ const SyncPage = ({ workspace }: { workspace: Workspace }) => {
               >
                 <Button>Download all data to device</Button>
               </Menu>
-            </div>
-          </StyledPublishExplanation>
+            </StyledPublishCopyContainer>
+          </>
         )}
       </StyledPublishContent>
     </div>
