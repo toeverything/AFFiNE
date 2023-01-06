@@ -166,7 +166,7 @@ importers:
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
       '@types/wicg-file-system-access': ^2020.9.5
-      chalk-next: ^6.1.5
+      chalk: ^4.1.2
       cmdk: ^0.1.20
       css-spring: ^4.1.0
       dayjs: ^1.11.7
@@ -223,7 +223,7 @@ importers:
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
       '@types/wicg-file-system-access': 2020.9.5
-      chalk-next: 6.1.5
+      chalk: 4.1.2
       eslint: 8.22.0
       eslint-config-next: 12.3.1_76twfck5d7crjqrmw4yltga7zm
       eslint-config-prettier: 8.5.0_eslint@8.22.0
@@ -5298,18 +5298,6 @@ packages:
   /caniuse-lite/1.0.30001419:
     resolution: {integrity: sha512-aFO1r+g6R7TW+PNQxKzjITwLOyDhVRLjW0LcwS/HCZGUUKTGNp9+IwLC4xyDSZBygVL/mxaFR3HIV6wEKQuSzw==}
 
-  /chalk-next/6.1.5:
-    resolution: {integrity: sha512-OAx9F3vSk18qpfCohk0849/j3GyaoIpv8eXjmpdbmLZt+5+sWYq8xwt3B5ue25irLcxFcLL2hAbxxHSsBxupbw==}
-    engines: {node: '>=10'}
-    dependencies:
-      ansi-styles: 4.3.0
-      axios: 0.21.4
-      fs: 0.0.1-security
-      supports-color: 7.2.0
-    transitivePeerDependencies:
-      - debug
-    dev: true
-
   /chalk/2.4.2:
     resolution: {integrity: sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ==}
     engines: {node: '>=4'}
@@ -7340,16 +7328,6 @@ packages:
     resolution: {integrity: sha512-W7cHV7Hrwjid6lWmy0IhsWDFQboWSng25U3VVywpHOTJnnAZNPScog67G+cVpeX9f7yDD21ih0WDrMMT+JoaYg==}
     dev: false
 
-  /follow-redirects/1.15.2:
-    resolution: {integrity: sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-    dev: true
-
   /form-data-encoder/2.1.4:
     resolution: {integrity: sha512-yDYSgNMraqvnxiEXO4hi88+YZxaHC6QKzb5N84iRCTDeRO7ZALpir/lVmf/uXUhnwUr2O4HU8s/n6x+yNjQkHw==}
     engines: {node: '>= 14.17'}
@@ -7413,10 +7391,6 @@ packages:
 
   /fs.realpath/1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
-
-  /fs/0.0.1-security:
-    resolution: {integrity: sha512-3XY9e1pP0CVEUCdj5BmfIZxRBTSDycnbqhIOGec9QYtmVH2fbLpj86CFWkrNOkt/Fvty4KZG5lTglL9j/gJ87w==}
-    dev: true
 
   /fsevents/2.3.2:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}

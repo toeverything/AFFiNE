@@ -37,12 +37,12 @@ const PopoverContent = () => {
         onClick={() => {
           toggleFavoritePage(id);
           toast(
-            !favorite ? t('Removed to Favourites') : t('Added to Favourites')
+            favorite ? t('Removed from Favourites') : t('Added to Favourites')
           );
         }}
         icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
-        {favorite ? t('Remove to favourites') : t('Add to favourites')}
+        {favorite ? t('Remove from favourites') : t('Add to favourites')}
       </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}

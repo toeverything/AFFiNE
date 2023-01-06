@@ -45,7 +45,7 @@ const FavoriteTag = ({
           e.stopPropagation();
           toggleFavoritePage(id);
           toast(
-            !favorite ? t('Removed to Favourites') : t('Added to Favourites')
+            favorite ? t('Removed from Favourites') : t('Added to Favourites')
           );
         }}
         style={{
