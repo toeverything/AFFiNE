@@ -13,7 +13,8 @@ import {
 import { useConfirm } from '@/providers/confirm-provider';
 import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import useTemporaryHelper from '@/hooks/use-temporary-helper';
+import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;

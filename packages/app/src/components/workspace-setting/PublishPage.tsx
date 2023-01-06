@@ -10,7 +10,7 @@ import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { toast } from '@/ui/toast';
 import { Workspace } from '@/hooks/mock-data/mock';
-import useTemporaryHelper from '@/hooks/use-temporary-helper';
+import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { useConfirm } from '@/providers/confirm-provider';
 
 export const PublishPage = ({ workspace }: { workspace: Workspace }) => {

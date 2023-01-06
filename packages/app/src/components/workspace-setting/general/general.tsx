@@ -17,7 +17,7 @@ import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
 import { updateWorkspaceMeta, Workspace } from '@/hooks/mock-data/mock';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import useTemporaryHelper from '@/hooks/use-temporary-helper';
+import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
   const { refreshWorkspacesMeta } = useAppState();
   const { currentWorkspace } = useTemporaryHelper();

@@ -12,7 +12,7 @@ import {
   updateWorkspaceMeta,
   Workspace,
 } from '@/hooks/mock-data/mock';
-import useTemporaryHelper from '@/hooks/use-temporary-helper';
+import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 
 export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
   const { currentWorkspace, updateWorkspaceMeta } = useTemporaryHelper();

@@ -3,7 +3,7 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useState } from 'react';
 import Input from '@/ui/input';
-import useTemporaryHelper from '@/hooks/use-temporary-helper';
+import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 interface ICloseParams {
   workspaceId?: string;
 }

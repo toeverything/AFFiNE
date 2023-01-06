@@ -12,6 +12,7 @@ import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import type { NextPage } from 'next';
 import { AppStateProvider } from '@/providers/app-state-provider/provider';
 import ConfirmProvider from '@/providers/confirm-provider';
+import TemporaryHelperProvider from '@/providers/temporary-helper-provider';
 import { ModalProvider } from '@/providers/global-modal-provider';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -52,6 +53,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
       <Logger />
       <ProviderComposer
         contexts={[
+          <TemporaryHelperProvider key="TemporaryHelperProvider" />,
           <ThemeProvider key="ThemeProvider" />,
           <AppStateProvider key="appStateProvider" />,
           <ModalProvider key="ModalProvider" />,

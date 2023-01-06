@@ -23,7 +23,7 @@ import {
   User,
   Workspace,
 } from '@/hooks/mock-data/mock';
-import useTemporaryHelper from '@/hooks/use-temporary-helper';
+import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 
 // import { useAppState } from '@/providers/app-state-provider';
 export const MembersPage = ({ workspace }: { workspace: Workspace }) => {

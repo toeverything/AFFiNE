@@ -20,7 +20,7 @@ import { getActiveWorkspace } from '@/hooks/mock-data/mock';
 import { MembersPage } from './MembersPage';
 import { PublishPage } from './PublishPage';
 import { SyncPage } from './SyncPage';
-import useTemporaryHelper from '@/hooks/use-temporary-helper';
+import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 
 enum ActiveTab {
   'general' = 'general',
