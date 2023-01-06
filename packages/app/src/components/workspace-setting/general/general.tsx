@@ -9,25 +9,24 @@ import { StyledSettingH2 } from '../style';
 import { useState } from 'react';
 import { Button, TextButton } from '@/ui/button';
 import Input from '@/ui/input';
-import { getDataCenter } from '@affine/datacenter';
-import { useAppState } from '@/providers/app-state-provider';
+// import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
-import { debounce } from '@/utils';
+// import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
 import { Workspace } from '@/hooks/mock-data/mock';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
-  const { refreshWorkspacesMeta } = useAppState();
+  // const { refreshWorkspacesMeta } = useAppState();
   const { updateWorkspaceMeta } = useTemporaryHelper();
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>('');
-  const debouncedRefreshWorkspacesMeta = debounce(() => {
-    refreshWorkspacesMeta();
-  }, 100);
+  // const debouncedRefreshWorkspacesMeta = debounce(() => {
+  //   refreshWorkspacesMeta();
+  // }, 100);
   const isOwner = true;
 
   const handleChangeWorkSpaceName = (newName: string) => {
@@ -51,6 +50,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
   };
 
   const fileChange = async (file: File) => {
+    console.log('file: ', file);
     setUploading(true);
     // const blob = new Blob([file], { type: file.type });
     // const blobId = await getDataCenter()

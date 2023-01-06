@@ -4,7 +4,7 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { useState } from 'react';
-import { getDataCenter } from '@affine/datacenter';
+// import { getDataCenter } from '@affine/datacenter';
 import { Avatar } from '@mui/material';
 import { setMember } from '@/hooks/mock-data/mock';
 interface LoginModalProps {

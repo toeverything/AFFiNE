@@ -11,7 +11,7 @@ export const WorkspaceSelector = () => {
     if (workspaceMetaList.length === 0) {
       setWorkspaceListShow(true);
     }
-  });
+  }, [workspaceMetaList]);
 
   return (
     <>
@@ -24,14 +24,17 @@ export const WorkspaceSelector = () => {
         <Avatar
           alt="Affine"
           data-testid="workspace-avatar"
-          src={currentWorkspace.avatar}
+          src={currentWorkspace?.avatar}
         >
           <div
             style={{
               float: 'left',
             }}
           >
-            <WorkspaceAvatar size={28} name={currentWorkspace.name} />
+            <WorkspaceAvatar
+              size={28}
+              name={currentWorkspace?.name ?? 'AFFiNE'}
+            />
           </div>
         </Avatar>
         <WorkspaceName data-testid="workspace-name">

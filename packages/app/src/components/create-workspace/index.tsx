@@ -79,9 +79,9 @@ const ContentTitle = styled('span')({
   paddingBottom: '16px',
 });
 
-const Footer = styled('div')({
-  height: '70px',
-  paddingLeft: '24px',
-  marginTop: '32px',
-  textAlign: 'center',
-});
+// const Footer = styled('div')({
+//   height: '70px',
+//   paddingLeft: '24px',
+//   marginTop: '32px',
+//   textAlign: 'center',
+// });

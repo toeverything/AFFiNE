@@ -1,5 +1,3 @@
-import { type } from 'os';
-
 export interface Workspace {
   name: string; // 名称
   id: string; //唯一标识
@@ -95,7 +93,7 @@ export function deleteMember(workspaceId: string, index: number) {
   memberMap[workspaceId] = memberList;
   localStorage.setItem('affine-member', JSON.stringify(memberMap));
 }
-export function leaveWorkspace(id: string) {
+export function leaveWorkspace() {
   return true;
 }
 
