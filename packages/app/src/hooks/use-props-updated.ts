@@ -26,7 +26,7 @@ export const usePropsUpdated: UsePropsUpdated = () => {
 
     return () => {
       callbackQueue.current = [];
-      editor?.model?.propsUpdated.dispose();
+      editor?.model?.propsUpdated?.dispose();
     };
   }, [editor]);
 
