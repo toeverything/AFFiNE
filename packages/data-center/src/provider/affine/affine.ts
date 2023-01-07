@@ -18,7 +18,7 @@ import { token, Callback } from 'src/apis';
 import { varStorage as storage } from 'lib0/storage';
 import assert from 'assert';
 import { getAuthorizer } from 'src/apis/token';
-import { WebsocketProvider } from 'src/provider/sync';
+import { WebsocketProvider } from './sync';
 import { IndexedDBProvider } from '../indexeddb';
 
 export class AffineProvider extends BaseProvider {
