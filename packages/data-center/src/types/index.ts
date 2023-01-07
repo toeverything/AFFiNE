@@ -1,17 +1,14 @@
-export enum WorkspaceType {
-  local = 'local',
-  cloud = 'cloud',
-}
+import { getLogger } from 'src';
 
 export type Workspace = {
   name: string;
   id: string;
   isPublish?: boolean;
   avatar?: string;
-  type: WorkspaceType;
   owner?: User;
   isLocal?: boolean;
   memberCount: number;
+  provider: string;
 };
 
 export type User = {
@@ -22,3 +19,5 @@ export type User = {
 };
 
 export type WorkspaceMeta = Pick<Workspace, 'name' | 'avatar'>;
+
+export type Logger = ReturnType<typeof getLogger>;

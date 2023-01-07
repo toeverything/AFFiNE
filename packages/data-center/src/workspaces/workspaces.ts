@@ -1,113 +1,101 @@
-import { Workspace } from '@blocksuite/store';
+import { Workspace as WS } from 'src/types';
+
 import { Observable } from 'lib0/observable';
-import { WorkspaceDetail } from 'src/apis/workspace';
-import { DataCenter } from './../datacenter';
-import { User, Workspace as Wp, WorkspaceType } from './../style';
-
-function getProvider(providerList: Record<string, boolean>) {
-  return Object.keys(providerList)[0];
-}
-
-function isCloudWorkspace(provider: string) {
-  return provider === 'affine';
-}
+import { uuidv4 } from '@blocksuite/store';
+import { DataCenter } from 'src/dataCenterNew';
 
 export class Workspaces extends Observable<string> {
-  private _workspaces: Wp[];
-  private readonly workspaceInstances: Map<string, Workspace> = new Map();
-  // cache cloud workspace owner
-  _dc: DataCenter;
+  private _workspaces: WS[];
+  private readonly _dc: DataCenter;
 
-  constructor(dataCenter: DataCenter) {
+  constructor(dc: DataCenter) {
     super();
     this._workspaces = [];
-    this.workspaceInstances = new Map();
-    this._dc = dataCenter;
+    this._dc = dc;
   }
 
-  init() {
-    // IMP: init local providers
-    this._dc.auth('local');
-    // add listener on list change
-    this._dc.signals.listAdd.on(e => {
-      this.refreshWorkspaceList();
-    });
-    this._dc.signals.listRemove.on(e => {
-      this.refreshWorkspaceList();
-    });
+  public init() {
+    this._loadWorkspaces();
   }
 
-  async refreshWorkspaceList() {
-    const workspaceList = await this._dc.list();
-
-    const workspaceMap = Object.keys(workspaceList).map(([id]) => {
-      return this._dc.load(id).then(w => {
-        return { id, workspace: w, provider: getProvider(workspaceList[id]) };
-      });
-    });
-
-    const workspaces = (await Promise.all(workspaceMap)).map(w => {
-      const { id, workspace, provider } = w;
-      if (workspace && !this.workspaceInstances.has(id)) {
-        this.workspaceInstances.set(id, workspace);
-      }
-      return {
-        id,
-        name: (workspace?.doc?.meta.name as string) || '',
-        avatar: (workspace?.meta.avatar as string) || '',
-        type: isCloudWorkspace(provider)
-          ? WorkspaceType.cloud
-          : WorkspaceType.local,
-        isLocal: false,
-        isPublish: false,
-        owner: undefined,
-        memberCount: 1,
-      } as Wp;
-    });
-    const getDetailList = (await Promise.all(workspaceMap)).map(w => {
-      const { id, provider } = w;
-      if (provider === 'workspaces') {
-        return new Promise<{ id: string; detail: WorkspaceDetail | null }>(
-          resolve => {
-            this._dc.apis.getWorkspaceDetail({ id }).then(data => {
-              resolve({ id, detail: data || null });
-            });
-          }
-        );
-      }
-    });
-    const ownerList = await Promise.all(getDetailList);
-    (await Promise.all(ownerList)).forEach(detail => {
-      if (detail) {
-        const { id, detail: workspaceDetail } = detail;
-        if (workspaceDetail) {
-          const { owner, member_count } = workspaceDetail;
-          const currentWorkspace = workspaces.find(w => w.id === id);
-          if (currentWorkspace) {
-            currentWorkspace.owner = {
-              id: owner.id,
-              name: owner.name,
-              avatar: owner.avatar_url,
-              email: owner.email,
-            };
-            currentWorkspace.memberCount = member_count;
-          }
-        }
-      }
-    });
-    this._updateWorkspaces(workspaces);
-  }
-
-  getWorkspaces() {
+  get workspaces() {
     return this._workspaces;
   }
 
-  _updateWorkspaces(workspaces: Wp[]) {
+  /**
+   * emit when workspaces changed
+   * @param {(workspace: WS[]) => void} cb
+   */
+  onWorkspacesChange(cb: (workspace: WS[]) => void) {
+    this.on('change', cb);
+  }
+
+  private async _loadWorkspaces() {
+    const providers = this._dc.providers;
+    let workspaces: WS[] = [];
+    providers.forEach(async p => {
+      const pWorkspaces = await p.loadWorkspaces();
+      workspaces = [...workspaces, ...pWorkspaces];
+      this._updateWorkspaces([...workspaces, ...pWorkspaces]);
+    });
+  }
+
+  /**
+   * focus load all workspaces list
+   */
+  public async refreshWorkspaces() {
+    this._loadWorkspaces();
+  }
+
+  private _updateWorkspaces(workspaces: WS[]) {
     this._workspaces = workspaces;
     this.emit('change', this._workspaces);
   }
 
-  onWorkspaceChange(cb: (workspace: Wp) => void) {
-    this.on('change', cb);
+  private _getDefaultWorkspace(name: string): WS {
+    return {
+      name,
+      id: uuidv4(),
+      isPublish: false,
+      avatar: '',
+      owner: undefined,
+      isLocal: true,
+      memberCount: 1,
+      provider: 'local',
+    };
+  }
+
+  /** add a local workspaces */
+  public addLocalWorkspace(name: string) {
+    const workspace = this._getDefaultWorkspace(name);
+    this._updateWorkspaces([...this._workspaces, workspace]);
+    return workspace;
+  }
+
+  /** delete a workspaces by id */
+  public delete(id: string) {
+    const index = this._workspaces.findIndex(w => w.id === id);
+    if (index >= 0) {
+      this._workspaces.splice(index, 1);
+      this._updateWorkspaces(this._workspaces);
+    }
+  }
+
+  /** get workspace info by id */
+  public getWorkspace(id: string) {
+    return this._workspaces.find(w => w.id === id);
+  }
+
+  /** check if workspace exists */
+  public hasWorkspace(id: string) {
+    return this._workspaces.some(w => w.id === id);
+  }
+
+  public updateWorkspaceMeta(id: string, meta: Partial<WS>) {
+    const index = this._workspaces.findIndex(w => w.id === id);
+    if (index >= 0) {
+      this._workspaces[index] = { ...this._workspaces[index], ...meta };
+      this._updateWorkspaces(this._workspaces);
+    }
   }
 }

@@ -65,7 +65,8 @@
     "reportUnusedDisableDirectives": true,
     "ignorePatterns": [
       "src/**/*.test.ts",
-      "package/**/dist/*"
+      "package/**/dist/*",
+      "package/**/sync.js"
     ]
   }
 }

@@ -1,234 +1,275 @@
-import assert from 'assert';
-import { BlockSchema } from '@blocksuite/blocks/models';
-import { Workspace, Signal } from '@blocksuite/store';
-
-import { getLogger } from './index.js';
-import { getApis, Apis } from './apis/index.js';
-import { AffineProvider, BaseProvider } from './provider/index.js';
-import { LocalProvider } from './provider/index.js';
-import { getKVConfigure } from './store.js';
 import { Workspaces } from './workspaces';
+import { Workspace } from '@blocksuite/store';
+import { BaseProvider } from './provider/base';
+import { LocalProvider } from './provider/local/local';
+import { AffineProvider } from './provider';
+import { Workspace as WS, WorkspaceMeta } from 'src/types';
+import assert from 'assert';
+import { getLogger } from 'src';
+import { BlockSchema } from '@blocksuite/blocks/models';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-// load workspace's config
-type LoadConfig = {
-  // use witch provider load data
-  providerId?: string;
-  // provider config
-  config?: Record<string, any>;
-};
-
-export type DataCenterSignals = DataCenter['signals'];
-type WorkspaceItem = {
-  // provider id
-  provider: string;
-  // data exists locally
-  locally: boolean;
-};
-type WorkspaceLoadEvent = WorkspaceItem & {
-  workspace: string;
-};
-
+/**
+ * @class DataCenter
+ * @classdesc DataCenter is a data center, it can manage different providers for business
+ */
 export class DataCenter {
-  private readonly _apis: Apis;
-  private readonly _providers = new Map<string, typeof BaseProvider>();
-  private readonly _workspaces = new Map<string, Promise<BaseProvider>>();
-  private readonly _config;
-  private readonly _logger;
-  public readonly workspacesList = new Workspaces(this);
+  private readonly workspaces = new Workspaces(this);
+  private currentWorkspace: Workspace | null = null;
+  private readonly _logger = getLogger('dc');
+  providerMap: Map<string, BaseProvider> = new Map();
 
-  readonly signals = {
-    listAdd: new Signal<WorkspaceLoadEvent>(),
-    listRemove: new Signal<string>(),
-  };
+  constructor(debug: boolean) {
+    this._logger.enabled = debug;
+  }
 
   static async init(debug: boolean): Promise<DataCenter> {
     const dc = new DataCenter(debug);
-    dc.addProvider(AffineProvider);
-    dc.addProvider(LocalProvider);
+    // TODO: switch different provider
+    dc.registerProvider(new LocalProvider());
+    dc.registerProvider(new AffineProvider());
+    dc.workspaces.init();
 
     return dc;
   }
 
-  private constructor(debug: boolean) {
-    this._apis = getApis();
-    this._config = getKVConfigure('sys');
-    this._logger = getLogger('dc');
-    this._logger.enabled = debug;
-
-    this.signals.listAdd.on(e => {
-      this._config.set(`list:${e.workspace}`, {
-        provider: e.provider,
-        locally: e.locally,
-      });
-    });
-    this.signals.listRemove.on(workspace => {
-      this._config.delete(`list:${workspace}`);
-    });
-    this.workspacesList.init();
+  registerProvider(provider: BaseProvider) {
+    // inject data in provider
+    provider.inject({ logger: this._logger, workspaces: this.workspaces });
+    provider.init();
+    this.providerMap.set(provider.id, provider);
   }
 
-  get apis(): Readonly<Apis> {
-    return this._apis;
+  get providers() {
+    return Array.from(this.providerMap.values());
   }
 
-  private addProvider(provider: typeof BaseProvider) {
-    this._providers.set(provider.id, provider);
+  /**
+   * create new workspace , new workspace is a local workspace
+   * @param {string} name workspace name
+   * @returns
+   */
+  public async createWorkspace(name: string) {
+    const workspaceInfo = this.workspaces.addLocalWorkspace(name);
+    return workspaceInfo;
   }
 
-  private async _getProvider(
-    id: string,
-    providerId = 'local'
-  ): Promise<string> {
-    const providerKey = `${id}:provider`;
-    if (this._providers.has(providerId)) {
-      await this._config.set(providerKey, providerId);
-      return providerId;
-    } else {
-      const providerValue = await this._config.get(providerKey);
-      if (providerValue) return providerValue;
-    }
-    throw Error(`Provider ${providerId} not found`);
-  }
-
-  private async _getWorkspace(
-    id: string,
-    params: LoadConfig
-  ): Promise<BaseProvider> {
-    this._logger(`Init workspace ${id} with ${params.providerId}`);
-
-    const providerId = await this._getProvider(id, params.providerId);
-
-    // init workspace & register block schema
-    const workspace = new Workspace({ room: id }).register(BlockSchema);
-
-    const Provider = this._providers.get(providerId);
-    assert(Provider);
-
-    // initial configurator
-    const config = getKVConfigure(`workspace:${id}`);
-    // set workspace configs
-    const values = Object.entries(params.config || {});
-    if (values.length) await config.setMany(values);
-
-    // init data by provider
-    const provider = new Provider();
-    await provider.init({
-      apis: this._apis,
-      config,
-      debug: this._logger.enabled,
-      logger: this._logger.extend(`${Provider.id}:${id}`),
-      signals: this.signals,
-      workspace,
-    });
-    await provider.initData();
-    this._logger(`Workspace ${id} loaded`);
-
-    return provider;
-  }
-
-  async auth(providerId: string, globalConfig?: Record<string, any>) {
-    const Provider = this._providers.get(providerId);
-    if (Provider) {
-      // initial configurator
-      const config = getKVConfigure(`provider:${providerId}`);
-      // set workspace configs
-      const values = Object.entries(globalConfig || {});
-      if (values.length) await config.setMany(values);
-
-      const logger = this._logger.extend(`auth:${providerId}`);
-      logger.enabled = this._logger.enabled;
-      await Provider.auth(config, logger, this.signals);
+  /**
+   * delete workspace by id
+   * @param {string} workspaceId workspace id
+   */
+  public async deleteWorkspace(workspaceId: string) {
+    const workspaceInfo = this.workspaces.getWorkspace(workspaceId);
+    assert(workspaceInfo, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceInfo.provider);
+    if (provider && this.workspaces.hasWorkspace(workspaceId)) {
+      await provider.delete(workspaceId);
+      // may be refresh all workspaces
+      this.workspaces.delete(workspaceId);
     }
   }
 
   /**
-   * load workspace data to memory
-   * @param workspaceId workspace id
-   * @param config.providerId provider id
-   * @param config.config provider config
-   * @returns Workspace instance
+   * get a new workspace only has room id
+   * @param {string} workspaceId workspace id
    */
-  async load(
-    workspaceId: string,
-    params: LoadConfig = {}
-  ): Promise<Workspace | null> {
-    if (workspaceId) {
-      if (!this._workspaces.has(workspaceId)) {
-        this._workspaces.set(
-          workspaceId,
-          this._getWorkspace(workspaceId, params)
-        );
-      }
-      const workspace = this._workspaces.get(workspaceId);
-      assert(workspace);
-      return workspace.then(w => w.workspace);
-    }
-    return null;
+  private _getWorkspace(workspaceId: string) {
+    return new Workspace({
+      room: workspaceId,
+    }).register(BlockSchema);
   }
 
   /**
-   * destroy workspace's instance in memory
-   * @param workspaceId workspace id
+   * login to all providers, it will default run all auth ,
+   *  maybe need a params to control which provider to auth
    */
-  async destroy(workspaceId: string) {
-    const provider = await this._workspaces.get(workspaceId);
+  public async login() {
+    this.providers.forEach(p => {
+      // TODO: may be add params of auth
+      p.auth();
+    });
+  }
+
+  /**
+   * logout from all providers
+   */
+  public async logout() {
+    this.providers.forEach(p => {
+      p.logout();
+    });
+  }
+
+  /**
+   * load workspace instance by id
+   * @param {string} workspaceId workspace id
+   */
+  public async loadWorkspace(workspaceId: string) {
+    const workspaceInfo = this.workspaces.getWorkspace(workspaceId);
+    assert(workspaceInfo, 'Workspace not found');
+    const currentProvider = this.providerMap.get(workspaceInfo.provider);
+    if (currentProvider) {
+      currentProvider.close(workspaceId);
+    }
+    const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      this._workspaces.delete(workspaceId);
-      await provider.destroy();
+      this._logger(`Loading ${provider} workspace: `, workspaceId);
+      const workspace = this._getWorkspace(workspaceId);
+      this.currentWorkspace = await provider.warpWorkspace(workspace);
+      return this.currentWorkspace;
     }
+    return workspaceInfo;
   }
 
   /**
-   * reload new workspace instance to memory to refresh config
-   * @param workspaceId workspace id
-   * @param config.providerId provider id
-   * @param config.config provider config
-   * @returns Workspace instance
+   * get user info by provider id
+   * @param {string} providerId the provider name of workspace
    */
-  async reload(
-    workspaceId: string,
-    config: LoadConfig = {}
-  ): Promise<Workspace | null> {
-    await this.destroy(workspaceId);
-    return this.load(workspaceId, config);
+  public async getUserInfo(providerId = 'affine') {
+    // XXX: maybe return all user info
+    const provider = this.providerMap.get(providerId);
+    assert(provider, 'Provider not found');
+    return provider.getUserInfo();
   }
 
   /**
-   * get workspace list，return a map of workspace id and data state
-   * data state is also map, the key is the provider id, and the data exists locally when the value is true, otherwise it does not exist
+   * listen workspaces list change
    */
-  async list(): Promise<Record<string, Record<string, boolean>>> {
-    const listString = 'list:';
-    const entries: [string, WorkspaceItem][] = await this._config.entries();
-    return entries.reduce((acc, [k, i]) => {
-      if (k.startsWith(listString)) {
-        const key = k.slice(listString.length);
-        acc[key] = acc[key] || {};
-        acc[key][i.provider] = i.locally;
-      }
-      return acc;
-    }, {} as Record<string, Record<string, boolean>>);
+  public async onWorkspacesChange(callback: (workspaces: WS[]) => void) {
+    this.workspaces.onWorkspacesChange(callback);
   }
 
   /**
-   * delete local workspace's data
-   * @param workspaceId workspace id
+   * change workspaces meta
+   * @param {WorkspaceMeta} workspaceMeta workspace meta
+   * @param {Workspace} workspace workspace instance
    */
-  async delete(workspaceId: string) {
-    await this._config.delete(`${workspaceId}:provider`);
-    const provider = await this._workspaces.get(workspaceId);
+  public async resetWorkspaceMeta(
+    { name, avatar }: WorkspaceMeta,
+    workspace?: Workspace
+  ) {
+    const w = workspace ?? this.currentWorkspace;
+    assert(w?.room, 'No workspace to set meta');
+    const update: Partial<WorkspaceMeta> = {};
+    if (name) {
+      w.doc.meta.setName(name);
+      update.name = name;
+    }
+    if (avatar) {
+      w.doc.meta.setAvatar(avatar);
+      update.avatar = avatar;
+    }
+    this.workspaces.updateWorkspaceMeta(w.room, update);
+  }
+
+  /**
+   *
+   * leave workspace by id
+   * @param id workspace id
+   */
+  public async leaveWorkspace(workspaceId: string) {
+    const workspaceInfo = this.workspaces.getWorkspace(workspaceId);
+    assert(workspaceInfo, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      this._workspaces.delete(workspaceId);
-      // clear workspace data implement by provider
-      await provider.clear();
+      provider.close(workspaceId);
+      provider.leave(workspaceId);
+    }
+  }
+
+  public async setWorkspacePublish() {
+    // TODO: set workspace publish
+  }
+
+  public async inviteMember(id: string, email: string) {
+    const workspaceInfo = this.workspaces.getWorkspace(id);
+    assert(workspaceInfo, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceInfo.provider);
+    if (provider) {
+      provider.invite(id, email);
     }
   }
 
   /**
-   * clear all local workspace's data
+   * remove the new member to the workspace
+   * @param {number} permissionId permission id
    */
-  async clear() {
-    const workspaces = await this.list();
-    await Promise.all(Object.keys(workspaces).map(id => this.delete(id)));
+  public async removeMember(workspaceId: string, permissionId: number) {
+    const workspaceInfo = this.workspaces.getWorkspace(workspaceId);
+    assert(workspaceInfo, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceInfo.provider);
+    if (provider) {
+      provider.removeMember(permissionId);
+    }
+  }
+
+  /**
+   *
+   * do close current workspace
+   */
+  public async closeCurrentWorkspace() {
+    assert(this.currentWorkspace?.room, 'No workspace to close');
+    const currentWorkspace = this.workspaces.getWorkspace(
+      this.currentWorkspace.room
+    );
+    assert(currentWorkspace, 'Workspace not found');
+    const provider = this.providerMap.get(currentWorkspace.provider);
+    assert(provider, 'Provider not found');
+    provider.close(currentWorkspace.id);
+  }
+
+  private async _transWorkspaceProvider(
+    workspace: Workspace,
+    provider: string
+  ) {
+    assert(workspace.room, 'No workspace');
+    const workspaceInfo = this.workspaces.getWorkspace(workspace.room);
+    assert(workspaceInfo, 'Workspace not found');
+    if (workspaceInfo.provider === provider) {
+      this._logger('Workspace provider is same');
+      return;
+    }
+    const currentProvider = this.providerMap.get(workspaceInfo.provider);
+    assert(currentProvider, 'Provider not found');
+    const newProvider = this.providerMap.get(provider);
+    assert(newProvider, 'AffineProvider is not registered');
+    const newWorkspace = await newProvider.createWorkspace({
+      name: workspaceInfo.name,
+      avatar: workspaceInfo.avatar,
+    });
+    assert(newWorkspace, 'Create workspace failed');
+    // load doc to another workspace
+    applyUpdate(newWorkspace.doc, encodeStateAsUpdate(workspace.doc));
+    assert(newWorkspace, 'Create workspace failed');
+    currentProvider.delete(workspace.room);
+    this.workspaces.refreshWorkspaces();
+  }
+
+  /**
+   * Enable workspace cloud flag
+   * @param {string} id ID of workspace.
+   */
+  public async enableWorkspaceCloud(
+    workspace: Workspace | null = this.currentWorkspace
+  ) {
+    assert(workspace?.room, 'No workspace to enable cloud');
+    return await this._transWorkspaceProvider(workspace, 'affine');
+  }
+
+  /**
+   * Select a file to import the workspace
+   * @param {File} file file of workspace.
+   */
+  public async importWorkspace(file: File) {
+    file;
+    return;
+  }
+
+  /**
+   * Generate a file ,and export it to local file system
+   * @param {string} id ID of workspace.
+   */
+  public async exportWorkspace(id: string) {
+    id;
+    return;
   }
 }

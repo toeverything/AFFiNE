@@ -1,5 +1,5 @@
 import debug from 'debug';
-import { DataCenter } from './datacenter.js';
+import { DataCenter } from './dataCenter';
 
 const _initializeDataCenter = () => {
   let _dataCenterInstance: Promise<DataCenter>;
@@ -32,5 +32,5 @@ export function getLogger(namespace: string) {
   return logger;
 }
 
-export type { AccessTokenMessage, Member, Workspace } from './apis';
-export { WorkspaceType } from './apis/index.js';
+export type { AccessTokenMessage } from './apis';
+export type { Workspace } from './types';
