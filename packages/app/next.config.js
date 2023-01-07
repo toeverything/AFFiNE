@@ -9,6 +9,27 @@ const EDITOR_VERSION = enableDebugLocal
   ? 'local-version'
   : dependencies['@blocksuite/editor'];
 
+const profileTarget = {
+  ac: '100.85.73.88:12001',
+  dev: '100.85.73.88:12001',
+  local: '127.0.0.1:3000',
+};
+
+const getRedirectConfig = profile => {
+  const target = profileTarget[profile || 'dev'] || profileTarget['dev'];
+
+  return [
+    [
+      { source: '/api/:path*', destination: `http://${target}/api/:path*` },
+      {
+        source: '/collaboration/:path*',
+        destination: `http://${target}/collaboration/:path*`,
+      },
+    ],
+    target,
+  ];
+};
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   productionBrowserSourceMaps: true,
@@ -36,38 +57,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // XXX not test yet
   rewrites: async () => {
-    if (process.env.NODE_API_SERVER === 'ac') {
-      let destinationAC = 'http://100.85.73.88:12001/api/:path*';
-      printer.info('API request proxy to [AC Server] ' + destinationAC);
-      return [
-        {
-          source: '/api/:path*',
-          destination: destinationAC,
-        },
-        {
-          source: '/collaboration/:path*',
-          destination: 'http://localhost:3000/collaboration/:path*',
-        },
-      ];
-    } else {
-      let destinationStandard = 'http://100.77.180.48:11001/api/:path*';
-      printer.info(
-        'API request proxy to [Standard Server] ' + destinationStandard
-      );
-
-      return [
-        {
-          source: '/api/:path*',
-          destination: destinationStandard,
-        },
-        {
-          source: '/collaboration/:path*',
-          destination: 'http://localhost:3000/collaboration/:path*',
-        },
-      ];
-    }
+    const [profile, desc] = getRedirectConfig(process.env.NODE_API_SERVER);
+    printer.info(
+      `API request proxy to [${process.env.NODE_API_SERVER} Server]: ` + desc
+    );
+    return profile;
   },
   basePath: process.env.BASE_PATH,
 };

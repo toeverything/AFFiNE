@@ -3,7 +3,6 @@
   "version": "0.3.1",
   "scripts": {
     "dev": "next dev -p 8080",
-    "dev:ac": "NODE_API_SERVER=ac next dev -p 8080",
     "build": "next build",
     "export": "next export",
     "start": "next start",
