@@ -1,4 +1,10 @@
-import { InputHTMLAttributes, useEffect, useState } from 'react';
+import {
+  InputHTMLAttributes,
+  useEffect,
+  useState,
+  FocusEventHandler,
+  KeyboardEventHandler,
+} from 'react';
 import { StyledInput } from './style';
 
 type inputProps = {
@@ -9,9 +15,8 @@ type inputProps = {
   maxLength?: number;
   minLength?: number;
   onChange?: (value: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onBlur?: (e: any) => void;
-  onKeyDown?: (e: any) => void;
+  onBlur?: FocusEventHandler<HTMLInputElement>;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 };
 
 export const Input = (props: inputProps) => {

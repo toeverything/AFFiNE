@@ -54,7 +54,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   useEffect(() => {
     setMembersList();
     // refreshMembers();
-  }, [setMembersList]);
+  });
 
   return (
     <div>
