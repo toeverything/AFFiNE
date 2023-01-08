@@ -280,6 +280,16 @@ export class DataCenter {
   }
 
   /**
+   * @deprecated
+   * clear all workspaces and data
+   */
+  public async clear() {
+    for (const provider of this.providerMap.values()) {
+      await provider.clear();
+    }
+  }
+
+  /**
    * Select a file to import the workspace
    * @param {File} file file of workspace.
    */

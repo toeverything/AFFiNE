@@ -185,12 +185,21 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async delete(id: string): Promise<void> {
-    // TODO delete workspace all local data
+    await this.close(id);
+    IndexedDBProvider.delete(id);
     await deleteWorkspace({ id });
   }
 
   public override async clear(): Promise<void> {
-    // TODO: clear all workspaces source
+    for (const w of this._workspacesCache.values()) {
+      if (w.room) {
+        try {
+          await this.delete(w.room);
+        } catch (e) {
+          this._logger('has a problem of delete workspace ', e);
+        }
+      }
+    }
     this._workspacesCache.clear();
   }
 

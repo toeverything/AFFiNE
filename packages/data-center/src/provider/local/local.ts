@@ -38,22 +38,23 @@ export class LocalProvider extends BaseProvider {
     return workspace;
   }
 
-  override loadWorkspaces() {
+  override loadWorkspaces(): Promise<WS[]> {
     const workspaceStr = storage.getItem(WORKSPACE_KEY);
+    let workspaces: WS[] = [];
     if (workspaceStr) {
       try {
-        return JSON.parse(workspaceStr);
+        workspaces = JSON.parse(workspaceStr) as WS[];
       } catch (error) {
         this._logger(`Failed to parse workspaces from storage`);
       }
     }
-    return [];
+    return Promise.resolve(workspaces);
   }
 
   public override async delete(id: string): Promise<void> {
     const index = this._workspacesList.findIndex(ws => ws.id === id);
     if (index !== -1) {
-      // TODO delete workspace all data
+      IndexedDBProvider.delete(id);
       this._workspacesList.splice(index, 1);
       this._storeWorkspaces(this._workspacesList);
     } else {
@@ -75,7 +76,8 @@ export class LocalProvider extends BaseProvider {
   }
 
   public override async clear(): Promise<void> {
-    // TODO: clear all data
+    const workspaces = await this.loadWorkspaces();
+    workspaces.forEach(ws => IndexedDBProvider.delete(ws.id));
     this._storeWorkspaces([]);
   }
 }
