@@ -45,12 +45,26 @@ export class DataCenter {
   }
 
   /**
+   * get workspaces list if focusUpdate is true, it will refresh workspaces
+   * @param {string} name workspace name
+   * @returns {Promise<WS[]>}
+   */
+  public async getWorkspaces(focusUpdate = false) {
+    if (focusUpdate) {
+      this.workspaces.refreshWorkspaces();
+    }
+    return this.workspaces.workspaces;
+  }
+
+  /**
    * create new workspace , new workspace is a local workspace
    * @param {string} name workspace name
-   * @returns
+   * @returns {Promise<WS>}
    */
   public async createWorkspace(name: string) {
     const workspaceInfo = this.workspaces.addLocalWorkspace(name);
+    // IMP: create workspace in local provider
+    this.providerMap.get('local')?.createWorkspace({ name });
     return workspaceInfo;
   }
 
@@ -102,6 +116,7 @@ export class DataCenter {
   /**
    * load workspace instance by id
    * @param {string} workspaceId workspace id
+   * @returns {Promise<Workspace>}
    */
   public async loadWorkspace(workspaceId: string) {
     const workspaceInfo = this.workspaces.getWorkspace(workspaceId);
@@ -111,13 +126,11 @@ export class DataCenter {
       currentProvider.close(workspaceId);
     }
     const provider = this.providerMap.get(workspaceInfo.provider);
-    if (provider) {
-      this._logger(`Loading ${provider} workspace: `, workspaceId);
-      const workspace = this._getWorkspace(workspaceId);
-      this.currentWorkspace = await provider.warpWorkspace(workspace);
-      return this.currentWorkspace;
-    }
-    return workspaceInfo;
+    assert(provider, `provide '${workspaceInfo.provider}' is not registered`);
+    this._logger(`Loading ${workspaceInfo.provider} workspace: `, workspaceId);
+    const workspace = this._getWorkspace(workspaceId);
+    this.currentWorkspace = await provider.warpWorkspace(workspace);
+    return this.currentWorkspace;
   }
 
   /**
@@ -127,7 +140,7 @@ export class DataCenter {
   public async getUserInfo(providerId = 'affine') {
     // XXX: maybe return all user info
     const provider = this.providerMap.get(providerId);
-    assert(provider, 'Provider not found');
+    assert(provider, `provide '${providerId}' is not registered`);
     return provider.getUserInfo();
   }
 
@@ -219,28 +232,31 @@ export class DataCenter {
 
   private async _transWorkspaceProvider(
     workspace: Workspace,
-    provider: string
+    providerId: string
   ) {
-    assert(workspace.room, 'No workspace');
+    assert(workspace.room, 'No workspace id');
     const workspaceInfo = this.workspaces.getWorkspace(workspace.room);
     assert(workspaceInfo, 'Workspace not found');
-    if (workspaceInfo.provider === provider) {
+    if (workspaceInfo.provider === providerId) {
       this._logger('Workspace provider is same');
       return;
     }
     const currentProvider = this.providerMap.get(workspaceInfo.provider);
     assert(currentProvider, 'Provider not found');
-    const newProvider = this.providerMap.get(provider);
-    assert(newProvider, `${provider} provider is not registered`);
+    const newProvider = this.providerMap.get(providerId);
+    assert(newProvider, `provide '${providerId}' is not registered`);
+    this._logger(`create ${providerId} workspace: `, workspaceInfo.name);
     const newWorkspace = await newProvider.createWorkspace({
       name: workspaceInfo.name,
       avatar: workspaceInfo.avatar,
     });
     assert(newWorkspace, 'Create workspace failed');
-    // load doc to another workspace
+    this._logger(
+      `update workspace data from ${workspaceInfo.provider} to ${providerId}`
+    );
     applyUpdate(newWorkspace.doc, encodeStateAsUpdate(workspace.doc));
     assert(newWorkspace, 'Create workspace failed');
-    currentProvider.delete(workspace.room);
+    await currentProvider.delete(workspace.room);
     this.workspaces.refreshWorkspaces();
   }
 

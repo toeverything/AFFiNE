@@ -1,8 +1,8 @@
-import { Workspace as WS } from '../types';
+import { Workspace as WS } from 'src/types';
 
 import { Observable } from 'lib0/observable';
 import { uuidv4 } from '@blocksuite/store';
-import { DataCenter } from '../datacenter';
+import { DataCenter } from 'src/datacenter';
 
 export class Workspaces extends Observable<string> {
   private _workspaces: WS[];

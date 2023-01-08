@@ -41,7 +41,7 @@ export class BaseProvider {
   }
 
   /**
-   * warp workspace with workspace functions
+   * warp workspace with provider functions
    * @param workspace
    * @returns
    */
