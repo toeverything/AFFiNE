@@ -119,9 +119,8 @@ export class AffineProvider extends BaseProvider {
         return Promise.resolve(null);
       }
     });
-    await (
-      await Promise.all(workspaceInstances)
-    ).forEach((workspace, i) => {
+
+    (await Promise.all(workspaceInstances)).forEach((workspace, i) => {
       if (workspace) {
         workspaces[i] = {
           ...workspaces[i],
@@ -159,6 +158,11 @@ export class AffineProvider extends BaseProvider {
         }
       }
     });
+
+    workspaces.forEach(workspace => {
+      this._workspaces.add(workspace);
+    });
+
     return workspaces;
   }
 
@@ -185,17 +189,19 @@ export class AffineProvider extends BaseProvider {
     return this._user;
   }
 
-  public override async delete(id: string): Promise<void> {
-    await this.close(id);
+  public override async deleteWorkspace(id: string): Promise<void> {
+    await this.closeWorkspace(id);
     IndexedDBProvider.delete(id);
     await deleteWorkspace({ id });
+    this._workspaces.remove(id);
   }
 
   public override async clear(): Promise<void> {
     for (const w of this._workspacesCache.values()) {
       if (w.room) {
         try {
-          await this.delete(w.room);
+          await this.deleteWorkspace(w.room);
+          this._workspaces.remove(w.room);
         } catch (e) {
           this._logger('has a problem of delete workspace ', e);
         }
@@ -204,14 +210,14 @@ export class AffineProvider extends BaseProvider {
     this._workspacesCache.clear();
   }
 
-  public override async close(id: string) {
+  public override async closeWorkspace(id: string) {
     const idb = this._idbMap.get(id);
     idb?.destroy();
     const ws = this._wsMap.get(id);
     ws?.disconnect();
   }
 
-  public override async leave(id: string): Promise<void> {
+  public override async leaveWorkspace(id: string): Promise<void> {
     await leaveWorkspace({ id });
   }
 
@@ -251,6 +257,19 @@ export class AffineProvider extends BaseProvider {
     nw.meta.setName(meta.name);
     nw.meta.setAvatar(meta.avatar);
     this._initWorkspaceDb(nw);
+
+    const workspaceInfo: WS = {
+      name: meta.name,
+      id,
+      isPublish: false,
+      avatar: '',
+      owner: undefined,
+      isLocal: true,
+      memberCount: 1,
+      provider: 'local',
+    };
+
+    this._workspaces.add(workspaceInfo);
     return nw;
   }
 

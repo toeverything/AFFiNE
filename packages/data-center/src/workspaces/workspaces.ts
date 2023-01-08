@@ -1,101 +1,127 @@
-import { Workspace as WS } from '../types';
-
 import { Observable } from 'lib0/observable';
-import { uuidv4 } from '@blocksuite/store';
-import { DataCenter } from '../datacenter';
+import type { Workspace, WorkspaceMeta } from '../types';
 
-export class Workspaces extends Observable<string> {
-  private _workspaces: WS[];
-  private readonly _dc: DataCenter;
+export interface WorkspacesScope {
+  get: (workspaceId: string) => Workspace | undefined;
+  list: () => Workspace[];
+  add: (workspace: Workspace) => void;
+  remove: (workspaceId: string) => boolean;
+  clear: () => void;
+  update: (workspaceId: string, workspaceMeta: Partial<WorkspaceMeta>) => void;
+}
 
-  constructor(dc: DataCenter) {
-    super();
-    this._workspaces = [];
-    this._dc = dc;
+export interface WorkspacesChangeEvent {
+  added?: Workspace;
+  deleted?: Workspace;
+  updated?: Workspace;
+}
+
+export class Workspaces extends Observable<'change'> {
+  private _workspacesMap = new Map<string, Workspace>();
+
+  get workspaces(): Workspace[] {
+    return Object.values(this._workspacesMap);
   }
 
-  public init() {
-    this._loadWorkspaces();
+  find(workspaceId: string) {
+    return this._workspacesMap.get(workspaceId);
   }
 
-  get workspaces() {
-    return this._workspaces;
-  }
+  createScope(): WorkspacesScope {
+    const scopedWorkspaceIds = new Set<string>();
 
-  /**
-   * emit when workspaces changed
-   * @param {(workspace: WS[]) => void} cb
-   */
-  onWorkspacesChange(cb: (workspace: WS[]) => void) {
-    this.on('change', cb);
-  }
-
-  private async _loadWorkspaces() {
-    const providers = this._dc.providers;
-    let workspaces: WS[] = [];
-    providers.forEach(async p => {
-      const pWorkspaces = await p.loadWorkspaces();
-      workspaces = [...workspaces, ...pWorkspaces];
-      this._updateWorkspaces([...workspaces, ...pWorkspaces]);
-    });
-  }
-
-  /**
-   * focus load all workspaces list
-   */
-  public async refreshWorkspaces() {
-    this._loadWorkspaces();
-  }
-
-  private _updateWorkspaces(workspaces: WS[]) {
-    this._workspaces = workspaces;
-    this.emit('change', this._workspaces);
-  }
-
-  private _getDefaultWorkspace(name: string): WS {
-    return {
-      name,
-      id: uuidv4(),
-      isPublish: false,
-      avatar: '',
-      owner: undefined,
-      isLocal: true,
-      memberCount: 1,
-      provider: 'local',
+    const get = (workspaceId: string) => {
+      if (!scopedWorkspaceIds.has(workspaceId)) {
+        return;
+      }
+      return this._workspacesMap.get(workspaceId);
     };
-  }
 
-  /** add a local workspaces */
-  public addLocalWorkspace(name: string) {
-    const workspace = this._getDefaultWorkspace(name);
-    this._updateWorkspaces([...this._workspaces, workspace]);
-    return workspace;
-  }
+    const add = (workspace: Workspace) => {
+      if (this._workspacesMap.has(workspace.id)) {
+        throw new Error(`Duplicate workspace id.`);
+      }
+      this._workspacesMap.set(workspace.id, workspace);
+      scopedWorkspaceIds.add(workspace.id);
 
-  /** delete a workspaces by id */
-  public delete(id: string) {
-    const index = this._workspaces.findIndex(w => w.id === id);
-    if (index >= 0) {
-      this._workspaces.splice(index, 1);
-      this._updateWorkspaces(this._workspaces);
-    }
-  }
+      this.emit('change', [
+        {
+          added: workspace,
+        } as WorkspacesChangeEvent,
+      ]);
+    };
 
-  /** get workspace info by id */
-  public getWorkspace(id: string) {
-    return this._workspaces.find(w => w.id === id);
-  }
+    const remove = (workspaceId: string) => {
+      if (!scopedWorkspaceIds.has(workspaceId)) {
+        return true;
+      }
 
-  /** check if workspace exists */
-  public hasWorkspace(id: string) {
-    return this._workspaces.some(w => w.id === id);
-  }
+      const workspace = this._workspacesMap.get(workspaceId);
+      if (workspace) {
+        const ret = this._workspacesMap.delete(workspaceId);
+        // If deletion failed, return.
+        if (!ret) {
+          return ret;
+        }
 
-  public updateWorkspaceInfo(id: string, info: Partial<WS>) {
-    const index = this._workspaces.findIndex(w => w.id === id);
-    if (index >= 0) {
-      this._workspaces[index] = { ...this._workspaces[index], ...info };
-      this._updateWorkspaces(this._workspaces);
-    }
+        scopedWorkspaceIds.delete(workspaceId);
+
+        this.emit('change', [
+          {
+            deleted: workspace,
+          } as WorkspacesChangeEvent,
+        ]);
+      }
+      return true;
+    };
+
+    const clear = () => {
+      scopedWorkspaceIds.forEach(id => {
+        remove(id);
+      });
+    };
+
+    const update = (
+      workspaceId: string,
+      workspaceMeta: Partial<WorkspaceMeta>
+    ) => {
+      if (!scopedWorkspaceIds.has(workspaceId)) {
+        return true;
+      }
+
+      const workspace = this._workspacesMap.get(workspaceId);
+      if (!workspace) {
+        return true;
+      }
+
+      this._workspacesMap.set(workspaceId, { ...workspace, ...workspaceMeta });
+
+      this.emit('change', [
+        {
+          updated: this._workspacesMap.get(workspaceId),
+        } as WorkspacesChangeEvent,
+      ]);
+    };
+
+    // TODO: need to optimize
+    const list = () => {
+      const workspaces: Workspace[] = [];
+      scopedWorkspaceIds.forEach(id => {
+        const workspace = this._workspacesMap.get(id);
+        if (workspace) {
+          workspaces.push(workspace);
+        }
+      });
+      return workspaces;
+    };
+
+    return {
+      get,
+      list,
+      add,
+      remove,
+      clear,
+      update,
+    };
   }
 }

@@ -1,10 +1,10 @@
 import { BlobStorage, Workspace } from '@blocksuite/store';
 import { Logger, User, Workspace as WS, WorkspaceMeta } from '../types';
-import { Workspaces } from '../workspaces';
+import type { WorkspacesScope } from '../workspaces';
 
 export class BaseProvider {
   public readonly id: string = 'base';
-  protected _workspaces!: Workspaces;
+  protected _workspaces!: WorkspacesScope;
   protected _logger!: Logger;
   protected _blobs!: BlobStorage;
 
@@ -13,7 +13,7 @@ export class BaseProvider {
     workspaces,
   }: {
     logger: Logger;
-    workspaces: Workspaces;
+    workspaces: WorkspacesScope;
   }) {
     this._logger = logger;
     this._workspaces = workspaces;
@@ -83,7 +83,7 @@ export class BaseProvider {
    * delete workspace include all data
    * @param id workspace id
    */
-  public async delete(id: string): Promise<void> {
+  public async deleteWorkspace(id: string): Promise<void> {
     id;
     return;
   }
@@ -92,7 +92,7 @@ export class BaseProvider {
    * leave workspace by workspace id
    * @param id workspace id
    */
-  public async leave(id: string): Promise<void> {
+  public async leaveWorkspace(id: string): Promise<void> {
     id;
     return;
   }
@@ -101,7 +101,7 @@ export class BaseProvider {
    * close db link and websocket connection and other resources
    * @param id workspace id
    */
-  public async close(id: string) {
+  public async closeWorkspace(id: string) {
     id;
     return;
   }

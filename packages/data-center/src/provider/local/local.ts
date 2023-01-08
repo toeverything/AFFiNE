@@ -1,7 +1,7 @@
 import { BaseProvider } from '../base';
 import { varStorage as storage } from 'lib0/storage';
 import { Workspace as WS, WorkspaceMeta } from '../../types';
-import { Workspace } from '@blocksuite/store';
+import { Workspace, uuidv4 } from '@blocksuite/store';
 import { IndexedDBProvider } from '../indexeddb';
 import assert from 'assert';
 import { getDefaultHeadImgBlob } from '../../utils';
@@ -11,11 +11,10 @@ const WORKSPACE_KEY = 'workspaces';
 export class LocalProvider extends BaseProvider {
   public id = 'local';
   private _idbMap: Map<string, IndexedDBProvider> = new Map();
-  private _workspacesList: WS[] = [];
 
   constructor() {
     super();
-    this._workspacesList = [];
+    this.loadWorkspaces();
   }
 
   private _storeWorkspaces(workspaces: WS[]) {
@@ -46,6 +45,9 @@ export class LocalProvider extends BaseProvider {
     if (workspaceStr) {
       try {
         workspaces = JSON.parse(workspaceStr) as WS[];
+        workspaces.forEach(workspace => {
+          this._workspaces.add(workspace);
+        });
       } catch (error) {
         this._logger(`Failed to parse workspaces from storage`);
       }
@@ -53,12 +55,12 @@ export class LocalProvider extends BaseProvider {
     return Promise.resolve(workspaces);
   }
 
-  public override async delete(id: string): Promise<void> {
-    const index = this._workspacesList.findIndex(ws => ws.id === id);
-    if (index !== -1) {
+  public override async deleteWorkspace(id: string): Promise<void> {
+    const workspace = this._workspaces.get(id);
+    if (workspace) {
       IndexedDBProvider.delete(id);
-      this._workspacesList.splice(index, 1);
-      this._storeWorkspaces(this._workspacesList);
+      this._workspaces.remove(id);
+      this._storeWorkspaces(this._workspaces.list());
     } else {
       this._logger(`Failed to delete workspace ${id}`);
     }
@@ -68,15 +70,8 @@ export class LocalProvider extends BaseProvider {
     id: string,
     meta: Partial<WorkspaceMeta>
   ) {
-    const index = this._workspacesList.findIndex(ws => ws.id === id);
-    if (index !== -1) {
-      const workspace = this._workspacesList[index];
-      meta.name && (workspace.name = meta.name);
-      meta.avatar && (workspace.avatar = meta.avatar);
-      this._storeWorkspaces(this._workspacesList);
-    } else {
-      this._logger(`Failed to update workspace ${id}`);
-    }
+    this._workspaces.update(id, meta);
+    this._storeWorkspaces(this._workspaces.list());
   }
 
   public override async createWorkspace(
@@ -88,13 +83,27 @@ export class LocalProvider extends BaseProvider {
       const blob = await getDefaultHeadImgBlob(meta.name);
       meta.avatar = (await this.setBlob(blob)) || '';
     }
-    const workspaceInfos = this._workspaces.addLocalWorkspace(meta.name);
     this._logger('Creating affine workspace');
-    const workspace = new Workspace({ room: workspaceInfos.id });
+
+    const workspaceInfo: WS = {
+      name: meta.name,
+      id: uuidv4(),
+      isPublish: false,
+      avatar: '',
+      owner: undefined,
+      isLocal: true,
+      memberCount: 1,
+      provider: 'local',
+    };
+
+    const workspace = new Workspace({ room: workspaceInfo.id });
+    this._initWorkspaceDb(workspace);
     workspace.meta.setName(meta.name);
     workspace.meta.setAvatar(meta.avatar);
-    this._storeWorkspaces([...this._workspacesList, workspaceInfos]);
-    this._initWorkspaceDb(workspace);
+
+    this._workspaces.add(workspaceInfo);
+    this._storeWorkspaces(this._workspaces.list());
+
     return workspace;
   }
 
@@ -102,5 +111,6 @@ export class LocalProvider extends BaseProvider {
     const workspaces = await this.loadWorkspaces();
     workspaces.forEach(ws => IndexedDBProvider.delete(ws.id));
     this._storeWorkspaces([]);
+    this._workspaces.clear();
   }
 }
