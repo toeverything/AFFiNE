@@ -5,7 +5,7 @@ import { LocalProvider } from './provider/local/local';
 import { AffineProvider } from './provider';
 import { Workspace as WS, WorkspaceMeta } from 'src/types';
 import assert from 'assert';
-import { getLogger } from 'src';
+import { getLogger } from './logger';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
@@ -231,7 +231,7 @@ export class DataCenter {
     const currentProvider = this.providerMap.get(workspaceInfo.provider);
     assert(currentProvider, 'Provider not found');
     const newProvider = this.providerMap.get(provider);
-    assert(newProvider, 'AffineProvider is not registered');
+    assert(newProvider, `${provider} provider is not registered`);
     const newWorkspace = await newProvider.createWorkspace({
       name: workspaceInfo.name,
       avatar: workspaceInfo.avatar,

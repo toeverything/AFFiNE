@@ -8,16 +8,16 @@ import {
   inviteMember,
   removeMember,
   createWorkspace,
-} from 'src/apis/workspace';
+} from './apis/workspace';
 import { BaseProvider } from '../base';
-import { User, Workspace as WS, WorkspaceMeta } from 'src/types';
+import { User, Workspace as WS, WorkspaceMeta } from '../../types';
 import { Workspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate } from 'yjs';
-import { token, Callback } from 'src/apis';
+import { token, Callback } from './apis';
 import { varStorage as storage } from 'lib0/storage';
 import assert from 'assert';
-import { getAuthorizer } from 'src/apis/token';
+import { getAuthorizer } from './apis/token';
 import { WebsocketProvider } from './sync';
 import { IndexedDBProvider } from '../indexeddb';
 
