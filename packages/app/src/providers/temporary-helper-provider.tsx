@@ -84,13 +84,8 @@ export const TemporaryHelperProvider = ({
           const newWorkspacesMeta = workspacesMeta.map(
             (workspace: Workspace) => {
               if (workspace.id === workspaceId) {
-                workspaceData.name && (workspace.name = workspaceData.name);
-                workspaceData.avatar &&
-                  (workspace.avatar = workspaceData.avatar);
-                workspaceData.type && (workspace.type = workspaceData.type);
-                workspaceData.isPublish &&
-                  (workspace.isPublish = workspaceData.isPublish);
-                return workspace;
+                const workspaceObj = Object.assign(workspace, workspaceData);
+                return workspaceObj;
               }
               return workspace;
             }
