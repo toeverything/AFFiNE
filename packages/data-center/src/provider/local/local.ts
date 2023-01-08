@@ -1,10 +1,10 @@
 import { BaseProvider } from '../base';
 import { varStorage as storage } from 'lib0/storage';
-import { Workspace as WS, WorkspaceMeta } from 'src/types';
+import { Workspace as WS, WorkspaceMeta } from '../../types';
 import { Workspace } from '@blocksuite/store';
 import { IndexedDBProvider } from '../indexeddb';
 import assert from 'assert';
-import { getDefaultHeadImgBlob } from 'src/utils';
+import { getDefaultHeadImgBlob } from '../../utils';
 
 const WORKSPACE_KEY = 'workspaces';
 

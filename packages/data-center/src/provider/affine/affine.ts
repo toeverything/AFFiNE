@@ -21,7 +21,7 @@ import assert from 'assert';
 import { getAuthorizer } from './apis/token';
 import { WebsocketProvider } from './sync';
 import { IndexedDBProvider } from '../indexeddb';
-import { getDefaultHeadImgBlob } from 'src/utils';
+import { getDefaultHeadImgBlob } from '../../utils';
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';

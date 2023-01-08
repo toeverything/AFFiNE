@@ -3,7 +3,7 @@ import { Workspace } from '@blocksuite/store';
 import { BaseProvider } from './provider/base';
 import { LocalProvider } from './provider/local/local';
 import { AffineProvider } from './provider';
-import type { Workspace as WS, WorkspaceMeta } from 'src/types';
+import type { Workspace as WS, WorkspaceMeta } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
 import { BlockSchema } from '@blocksuite/blocks/models';

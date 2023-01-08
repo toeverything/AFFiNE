@@ -1,6 +1,6 @@
 import { BlobStorage, Workspace } from '@blocksuite/store';
-import { Logger, User, Workspace as WS, WorkspaceMeta } from 'src/types';
-import { Workspaces } from 'src/workspaces';
+import { Logger, User, Workspace as WS, WorkspaceMeta } from '../types';
+import { Workspaces } from '../workspaces';
 
 export class BaseProvider {
   public readonly id: string = 'base';
