@@ -91,10 +91,10 @@ export class Workspaces extends Observable<string> {
     return this._workspaces.some(w => w.id === id);
   }
 
-  public updateWorkspaceMeta(id: string, meta: Partial<WS>) {
+  public updateWorkspaceInfo(id: string, info: Partial<WS>) {
     const index = this._workspaces.findIndex(w => w.id === id);
     if (index >= 0) {
-      this._workspaces[index] = { ...this._workspaces[index], ...meta };
+      this._workspaces[index] = { ...this._workspaces[index], ...info };
       this._updateWorkspaces(this._workspaces);
     }
   }

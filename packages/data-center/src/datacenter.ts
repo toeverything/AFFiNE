@@ -3,7 +3,7 @@ import { Workspace } from '@blocksuite/store';
 import { BaseProvider } from './provider/base';
 import { LocalProvider } from './provider/local/local';
 import { AffineProvider } from './provider';
-import { Workspace as WS, WorkspaceMeta } from 'src/types';
+import type { Workspace as WS, WorkspaceMeta } from 'src/types';
 import assert from 'assert';
 import { getLogger } from './logger';
 import { BlockSchema } from '@blocksuite/blocks/models';
@@ -136,6 +136,7 @@ export class DataCenter {
   /**
    * get user info by provider id
    * @param {string} providerId the provider name of workspace
+   * @returns {Promise<User>}
    */
   public async getUserInfo(providerId = 'affine') {
     // XXX: maybe return all user info
@@ -146,6 +147,7 @@ export class DataCenter {
 
   /**
    * listen workspaces list change
+   * @param {Function} callback callback function
    */
   public async onWorkspacesChange(callback: (workspaces: WS[]) => void) {
     this.workspaces.onWorkspacesChange(callback);
@@ -171,7 +173,7 @@ export class DataCenter {
       w.doc.meta.setAvatar(avatar);
       update.avatar = avatar;
     }
-    this.workspaces.updateWorkspaceMeta(w.room, update);
+    this.workspaces.updateWorkspaceInfo(w.room, update);
   }
 
   /**
@@ -184,13 +186,19 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      provider.close(workspaceId);
-      provider.leave(workspaceId);
+      await provider.close(workspaceId);
+      await provider.leave(workspaceId);
     }
   }
 
-  public async setWorkspacePublish() {
-    // TODO: set workspace publish
+  public async setWorkspacePublish(workspaceId: string, isPublish: boolean) {
+    const workspaceInfo = this.workspaces.getWorkspace(workspaceId);
+    assert(workspaceInfo, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceInfo.provider);
+    if (provider) {
+      await provider.publish(workspaceId, isPublish);
+      this.workspaces.updateWorkspaceInfo(workspaceId, { isPublish });
+    }
   }
 
   public async inviteMember(id: string, email: string) {
@@ -198,7 +206,7 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      provider.invite(id, email);
+      await provider.invite(id, email);
     }
   }
 
@@ -211,7 +219,7 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      provider.removeMember(permissionId);
+      await provider.removeMember(permissionId);
     }
   }
 
@@ -227,7 +235,7 @@ export class DataCenter {
     assert(currentWorkspace, 'Workspace not found');
     const provider = this.providerMap.get(currentWorkspace.provider);
     assert(provider, 'Provider not found');
-    provider.close(currentWorkspace.id);
+    await provider.close(currentWorkspace.id);
   }
 
   private async _transWorkspaceProvider(
@@ -261,7 +269,7 @@ export class DataCenter {
   }
 
   /**
-   * Enable workspace cloud flag
+   * Enable workspace cloud
    * @param {string} id ID of workspace.
    */
   public async enableWorkspaceCloud(

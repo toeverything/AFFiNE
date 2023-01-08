@@ -125,6 +125,12 @@ export class BaseProvider {
     return;
   }
 
+  public async publish(id: string, isPublish: boolean): Promise<void> {
+    id;
+    isPublish;
+    return;
+  }
+
   public async createWorkspace(
     meta: WorkspaceMeta
   ): Promise<Workspace | undefined> {

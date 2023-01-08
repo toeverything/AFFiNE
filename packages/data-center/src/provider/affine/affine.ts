@@ -8,6 +8,7 @@ import {
   inviteMember,
   removeMember,
   createWorkspace,
+  updateWorkspace,
 } from './apis/workspace';
 import { BaseProvider } from '../base';
 import { User, Workspace as WS, WorkspaceMeta } from '../../types';
@@ -234,5 +235,9 @@ export class AffineProvider extends BaseProvider {
     this._initWorkspaceDb(nw);
     this._logger('Local data loaded');
     return nw;
+  }
+
+  public override async publish(id: string, isPublish: boolean): Promise<void> {
+    await updateWorkspace({ id, public: isPublish });
   }
 }
