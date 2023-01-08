@@ -4,6 +4,7 @@ import { Button } from '@/ui/button';
 import { useState } from 'react';
 import Input from '@/ui/input';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+import { KeyboardEvent } from 'react';
 interface ICloseParams {
   workspaceId?: string;
 }
@@ -20,7 +21,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
     onClose({ workspaceId: workspace.id });
     setActiveWorkspace(workspace);
   };
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       // 👇 Get input value
       handleCreateWorkspace();
