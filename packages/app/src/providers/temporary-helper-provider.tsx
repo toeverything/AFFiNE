@@ -156,7 +156,6 @@ export const TemporaryHelperProvider = ({
           setWorkspaceMetaList(workspacesMeta);
         },
         setActiveWorkspace(workspaceData) {
-          console.log('workspaceData: ', workspaceData);
           localStorage.setItem(
             'affine-active-workspace',
             JSON.stringify(workspaceData)

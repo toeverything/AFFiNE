@@ -39,10 +39,10 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
     }).then(confirm => {
       if (confirm) {
         if (user) {
-          updateWorkspaceMeta(workspace.id, { isPublish: true });
+          updateWorkspaceMeta(workspace.id, { type: 'cloud' });
         } else {
           login();
-          updateWorkspaceMeta(workspace.id, { isPublish: true });
+          updateWorkspaceMeta(workspace.id, { type: 'cloud' });
         }
       }
     });
@@ -57,9 +57,7 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
                 <StyledPublishExplanation>
                   Publishing to web requires AFFiNE Cloud service .
                 </StyledPublishExplanation>
-                <StyledSettingH2 marginTop={48}>
-                  Share with link
-                </StyledSettingH2>
+                <StyledSettingH2>Share with link</StyledSettingH2>
                 <StyledPublishCopyContainer>
                   <Input width={500} value={shareUrl} disabled={true}></Input>
                   <StyledCopyButtonContainer>
@@ -76,17 +74,7 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
-          {!workspace.isPublish ? (
-            <Button
-              onClick={() => {
-                togglePublic(true);
-              }}
-              type="primary"
-              shape="circle"
-            >
-              Publish to web
-            </Button>
-          ) : (
+          {workspace.isPublish ? (
             <Button
               onClick={() => {
                 togglePublic(false);
@@ -95,6 +83,16 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
               shape="circle"
             >
               Stop publishing
+            </Button>
+          ) : (
+            <Button
+              onClick={() => {
+                togglePublic(true);
+              }}
+              type="primary"
+              shape="circle"
+            >
+              Publish to web
             </Button>
           )}
         </div>

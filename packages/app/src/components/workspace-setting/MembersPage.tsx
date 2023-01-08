@@ -47,16 +47,14 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   //       console.log(err);
   //     });
   // }, [workspace.id]);
-
-  useEffect(() => {
-    setMembersList();
-    // refreshMembers();
-  });
-
   const setMembersList = () => {
     const members = getMembers(workspace.id);
     members && setMembers(members);
   };
+  useEffect(() => {
+    setMembersList();
+    // refreshMembers();
+  }, [setMembersList]);
 
   return (
     <div>

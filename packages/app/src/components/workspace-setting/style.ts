@@ -215,8 +215,7 @@ export const StyledPublishCopyContainer = styled('div')(() => {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-
-    height: '38px',
+    marginBottom: '20px',
     paddingTop: '20px',
   };
 });
