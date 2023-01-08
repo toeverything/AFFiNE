@@ -11,6 +11,7 @@ import {
   updateWorkspace,
 } from './apis/workspace';
 import { BaseProvider } from '../base';
+import type { ProviderConstructorParams } from '../base';
 import { User, Workspace as WS, WorkspaceMeta } from '../../types';
 import { Workspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
@@ -32,8 +33,8 @@ export class AffineProvider extends BaseProvider {
   private _wsMap: Map<string, WebsocketProvider> = new Map();
   private _idbMap: Map<string, IndexedDBProvider> = new Map();
 
-  constructor() {
-    super();
+  constructor(params: ProviderConstructorParams) {
+    super(params);
   }
 
   override async init() {

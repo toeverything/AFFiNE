@@ -20,7 +20,7 @@ export class Workspaces extends Observable<'change'> {
   private _workspacesMap = new Map<string, Workspace>();
 
   get workspaces(): Workspace[] {
-    return Object.values(this._workspacesMap);
+    return Array.from(this._workspacesMap.values());
   }
 
   find(workspaceId: string) {

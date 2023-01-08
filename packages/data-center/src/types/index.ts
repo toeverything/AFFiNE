@@ -1,4 +1,4 @@
-import { getLogger } from 'src';
+import { getLogger } from '../logger';
 
 export type Workspace = {
   name: string;

@@ -2,20 +2,23 @@ import { BlobStorage, Workspace } from '@blocksuite/store';
 import { Logger, User, Workspace as WS, WorkspaceMeta } from '../types';
 import type { WorkspacesScope } from '../workspaces';
 
+const defaultLogger = () => {
+  return;
+};
+
+export interface ProviderConstructorParams {
+  logger?: Logger;
+  workspaces: WorkspacesScope;
+}
+
 export class BaseProvider {
   public readonly id: string = 'base';
   protected _workspaces!: WorkspacesScope;
   protected _logger!: Logger;
   protected _blobs!: BlobStorage;
 
-  public inject({
-    logger,
-    workspaces,
-  }: {
-    logger: Logger;
-    workspaces: WorkspacesScope;
-  }) {
-    this._logger = logger;
+  public constructor({ logger, workspaces }: ProviderConstructorParams) {
+    this._logger = (logger || defaultLogger) as Logger;
     this._workspaces = workspaces;
   }
 

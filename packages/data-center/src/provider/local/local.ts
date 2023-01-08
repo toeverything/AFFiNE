@@ -1,4 +1,5 @@
 import { BaseProvider } from '../base';
+import type { ProviderConstructorParams } from '../base';
 import { varStorage as storage } from 'lib0/storage';
 import { Workspace as WS, WorkspaceMeta } from '../../types';
 import { Workspace, uuidv4 } from '@blocksuite/store';
@@ -12,8 +13,8 @@ export class LocalProvider extends BaseProvider {
   public id = 'local';
   private _idbMap: Map<string, IndexedDBProvider> = new Map();
 
-  constructor() {
-    super();
+  constructor(params: ProviderConstructorParams) {
+    super(params);
     this.loadWorkspaces();
   }
 

@@ -1,4 +1,4 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 import { isMobile } from '../get-is-mobile';
 
 describe('get-is-mobile', () => {

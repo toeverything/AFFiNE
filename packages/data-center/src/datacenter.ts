@@ -28,8 +28,18 @@ export class DataCenter {
   static async init(debug: boolean): Promise<DataCenter> {
     const dc = new DataCenter(debug);
     // TODO: switch different provider
-    dc.registerProvider(new LocalProvider());
-    dc.registerProvider(new AffineProvider());
+    dc.registerProvider(
+      new LocalProvider({
+        logger: dc._logger,
+        workspaces: dc._workspaces.createScope(),
+      })
+    );
+    dc.registerProvider(
+      new AffineProvider({
+        logger: dc._logger,
+        workspaces: dc._workspaces.createScope(),
+      })
+    );
 
     return dc;
   }
@@ -42,11 +52,7 @@ export class DataCenter {
     if (!this._defaultProvider) {
       this._defaultProvider = provider;
     }
-    // inject data in provider
-    provider.inject({
-      logger: this._logger,
-      workspaces: this._workspaces.createScope(),
-    });
+
     provider.init();
     this.providerMap.set(provider.id, provider);
   }
