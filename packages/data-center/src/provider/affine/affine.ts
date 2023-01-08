@@ -21,6 +21,7 @@ import assert from 'assert';
 import { getAuthorizer } from './apis/token';
 import { WebsocketProvider } from './sync';
 import { IndexedDBProvider } from '../indexeddb';
+import { getDefaultHeadImgBlob } from 'src/utils';
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
@@ -229,6 +230,7 @@ export class AffineProvider extends BaseProvider {
     idb = new IndexedDBProvider(workspace.room, workspace.doc);
     this._idbMap.set(workspace.room, idb);
     await idb.whenSynced;
+    this._logger('Local data loaded');
     return idb;
   }
 
@@ -236,13 +238,19 @@ export class AffineProvider extends BaseProvider {
     meta: WorkspaceMeta
   ): Promise<Workspace | undefined> {
     assert(meta.name, 'Workspace name is required');
-    meta.avatar ?? (meta.avatar = '');
+    if (!meta.avatar) {
+      // set default avatar
+      const blob = await getDefaultHeadImgBlob(meta.name);
+      meta.avatar = (await this.setBlob(blob)) || '';
+    }
     const { id } = await createWorkspace(meta as Required<WorkspaceMeta>);
+    this._logger('Creating affine workspace');
     const nw = new Workspace({
       room: id,
     }).register(BlockSchema);
+    nw.meta.setName(meta.name);
+    nw.meta.setAvatar(meta.avatar);
     this._initWorkspaceDb(nw);
-    this._logger('Local data loaded');
     return nw;
   }
 

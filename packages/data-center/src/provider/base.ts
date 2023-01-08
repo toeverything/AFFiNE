@@ -65,11 +65,11 @@ export class BaseProvider {
   }
 
   async getBlob(id: string): Promise<string | null> {
-    return this._blobs.get(id);
+    return await this._blobs.get(id);
   }
 
   async setBlob(blob: Blob): Promise<string> {
-    return this._blobs.set(blob);
+    return await this._blobs.set(blob);
   }
 
   /**
@@ -128,6 +128,21 @@ export class BaseProvider {
   public async publish(id: string, isPublish: boolean): Promise<void> {
     id;
     isPublish;
+    return;
+  }
+
+  /**
+   * change workspace meta by workspace id , work for cached list in different provider
+   * @param id
+   * @param meta
+   * @returns
+   */
+  public async updateWorkspaceMeta(
+    id: string,
+    meta: Partial<WorkspaceMeta>
+  ): Promise<void> {
+    id;
+    meta;
     return;
   }
 

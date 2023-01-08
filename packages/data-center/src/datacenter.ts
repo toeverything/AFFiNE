@@ -173,6 +173,12 @@ export class DataCenter {
       w.doc.meta.setAvatar(avatar);
       update.avatar = avatar;
     }
+    // may run for change workspace meta
+    const workspaceInfo = this.workspaces.getWorkspace(w.room);
+    assert(workspaceInfo, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceInfo.provider);
+    provider?.updateWorkspaceMeta(w.room, update);
+    // update workspace list directly
     this.workspaces.updateWorkspaceInfo(w.room, update);
   }
 

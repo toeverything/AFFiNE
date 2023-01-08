@@ -4,6 +4,7 @@ import { Workspace as WS, WorkspaceMeta } from 'src/types';
 import { Workspace } from '@blocksuite/store';
 import { IndexedDBProvider } from '../indexeddb';
 import assert from 'assert';
+import { getDefaultHeadImgBlob } from 'src/utils';
 
 const WORKSPACE_KEY = 'workspaces';
 
@@ -27,6 +28,7 @@ export class LocalProvider extends BaseProvider {
     idb?.destroy();
     idb = new IndexedDBProvider(workspace.room, workspace.doc);
     this._idbMap.set(workspace.room, idb);
+    this._logger('Local data loaded');
     return idb;
   }
 
@@ -62,14 +64,35 @@ export class LocalProvider extends BaseProvider {
     }
   }
 
+  public override async updateWorkspaceMeta(
+    id: string,
+    meta: Partial<WorkspaceMeta>
+  ) {
+    const index = this._workspacesList.findIndex(ws => ws.id === id);
+    if (index !== -1) {
+      const workspace = this._workspacesList[index];
+      meta.name && (workspace.name = meta.name);
+      meta.avatar && (workspace.avatar = meta.avatar);
+      this._storeWorkspaces(this._workspacesList);
+    } else {
+      this._logger(`Failed to update workspace ${id}`);
+    }
+  }
+
   public override async createWorkspace(
     meta: WorkspaceMeta
   ): Promise<Workspace | undefined> {
     assert(meta.name, 'Workspace name is required');
-    meta.avatar ?? (meta.avatar = '');
+    if (!meta.avatar) {
+      // set default avatar
+      const blob = await getDefaultHeadImgBlob(meta.name);
+      meta.avatar = (await this.setBlob(blob)) || '';
+    }
     const workspaceInfos = this._workspaces.addLocalWorkspace(meta.name);
+    this._logger('Creating affine workspace');
     const workspace = new Workspace({ room: workspaceInfos.id });
-    // TODO: add avatar
+    workspace.meta.setName(meta.name);
+    workspace.meta.setAvatar(meta.avatar);
     this._storeWorkspaces([...this._workspacesList, workspaceInfos]);
     this._initWorkspaceDb(workspace);
     return workspace;
