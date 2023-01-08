@@ -18,7 +18,10 @@ export class DataCenter {
   private readonly _workspaces = new Workspaces();
   private currentWorkspace: Workspace | null = null;
   private readonly _logger = getLogger('dc');
-  private _defaultProvider?: BaseProvider;
+  /**
+   * A mainProvider must exist as the only data trustworthy source.
+   */
+  private _mainProvider?: BaseProvider;
   providerMap: Map<string, BaseProvider> = new Map();
 
   constructor(debug: boolean) {
@@ -49,16 +52,16 @@ export class DataCenter {
    * We will automatically set the first provider to default provider.
    */
   registerProvider(provider: BaseProvider) {
-    if (!this._defaultProvider) {
-      this._defaultProvider = provider;
+    if (!this._mainProvider) {
+      this._mainProvider = provider;
     }
 
     provider.init();
     this.providerMap.set(provider.id, provider);
   }
 
-  setDefaultProvider(providerId: string) {
-    this._defaultProvider = this.providerMap.get(providerId);
+  setMainProvider(providerId: string) {
+    this._mainProvider = this.providerMap.get(providerId);
   }
 
   get providers() {
@@ -82,13 +85,11 @@ export class DataCenter {
    */
   public async createWorkspace(workspaceMeta: WorkspaceMeta) {
     assert(
-      this._defaultProvider,
+      this._mainProvider,
       'There is no provider. You should add provider first.'
     );
 
-    const workspace = await this._defaultProvider.createWorkspace(
-      workspaceMeta
-    );
+    const workspace = await this._mainProvider.createWorkspace(workspaceMeta);
     return workspace;
   }
 
