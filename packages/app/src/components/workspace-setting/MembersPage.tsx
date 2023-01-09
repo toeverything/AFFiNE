@@ -51,6 +51,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   //     });
   // }, [workspace.id]);
   const setMembersList = () => {
+    setMembers([]);
     // const members = getMembers(workspace.id);
     // members && setMembers(members);
   };

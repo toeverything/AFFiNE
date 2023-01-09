@@ -5,7 +5,6 @@ import { useState } from 'react';
 import Input from '@/ui/input';
 import { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppState } from '@/providers/app-state-provider';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useRouter } from 'next/router';
 

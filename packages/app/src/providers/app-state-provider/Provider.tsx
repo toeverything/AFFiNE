@@ -52,7 +52,7 @@ export const AppStateProvider = ({
     };
 
     init();
-  }, []);
+  });
 
   useEffect(() => {
     if (!appState?.currentWorkspace) {

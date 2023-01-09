@@ -9,7 +9,7 @@ import {
 import type { PropsWithChildren } from 'react';
 import ShortcutsModal from '@/components/shortcuts-modal';
 import ContactModal from '@/components/contact-modal';
-import QuickSearch from '@/components/quick-search';
+// import QuickSearch from '@/components/quick-search';
 import { ImportModal } from '@/components/import';
 import { LoginModal } from '@/components/login-modal';
 

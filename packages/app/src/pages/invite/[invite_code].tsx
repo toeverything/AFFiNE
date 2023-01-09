@@ -1,7 +1,7 @@
 import { styled } from '@/styles';
 import { Empty } from '@/ui/empty';
 import { Avatar } from '@mui/material';
-import { getDataCenter } from '@affine/datacenter';
+// import { getDataCenter } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -37,6 +37,8 @@ export default function DevPage() {
     //   .catch(err => {
     //     console.log('err: ', err);
     //   });
+    setSuccessInvited(true);
+    setInviteData(null);
   }, [router.query.invite_code]);
 
   return (
