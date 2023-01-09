@@ -78,6 +78,12 @@ export class AffineProvider extends BaseProvider {
       ws = new WebsocketProvider('/', room, doc);
       this._wsMap.set(room, ws);
     }
+    // close all websocket links
+    Array.from(this._wsMap.entries()).forEach(([id, ws]) => {
+      if (id !== room) {
+        ws.disconnect();
+      }
+    });
     ws.connect();
     await new Promise<void>((resolve, reject) => {
       // TODO: synced will also be triggered on reconnection after losing sync
