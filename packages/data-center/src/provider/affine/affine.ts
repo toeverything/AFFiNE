@@ -1,15 +1,3 @@
-import {
-  getWorkspaces,
-  getWorkspaceDetail,
-  WorkspaceDetail,
-  downloadWorkspace,
-  deleteWorkspace,
-  leaveWorkspace,
-  inviteMember,
-  removeMember,
-  createWorkspace,
-  updateWorkspace,
-} from './apis/workspace';
 import { BaseProvider } from '../base';
 import type { ProviderConstructorParams } from '../base';
 import { User, Workspace as WS, WorkspaceMeta } from '../../types';
@@ -23,7 +11,13 @@ import { getAuthorizer } from './apis/token';
 import { WebsocketProvider } from './sync';
 // import { IndexedDBProvider } from '../local/indexeddb';
 import { getDefaultHeadImgBlob } from '../../utils';
-import { getUserByEmail } from './apis/user';
+import { getApis } from './apis/index.js';
+import type { Apis, WorkspaceDetail } from './apis';
+
+export interface AffineProviderConstructorParams
+  extends ProviderConstructorParams {
+  apis?: Apis;
+}
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
@@ -32,10 +26,12 @@ export class AffineProvider extends BaseProvider {
   private readonly _authorizer = getAuthorizer();
   private _user: User | undefined = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
+  private _apis: Apis;
   // private _idbMap: Map<string, IndexedDBProvider> = new Map();
 
-  constructor(params: ProviderConstructorParams) {
+  constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
+    this._apis = apis || getApis();
   }
 
   override async init() {
@@ -70,7 +66,7 @@ export class AffineProvider extends BaseProvider {
     const { doc, room } = workspace;
     assert(room);
     this.linkLocal(workspace);
-    const updates = await downloadWorkspace(room);
+    const updates = await this._apis.downloadWorkspace(room);
     if (updates) {
       await new Promise(resolve => {
         doc.once('update', resolve);
@@ -98,7 +94,7 @@ export class AffineProvider extends BaseProvider {
     if (!token.isLogin) {
       return [];
     }
-    const workspacesList = await getWorkspaces();
+    const workspacesList = await this._apis.getWorkspaces();
     const workspaces: WS[] = workspacesList.map(w => {
       return {
         ...w,
@@ -116,7 +112,7 @@ export class AffineProvider extends BaseProvider {
       this._workspacesCache.set(id, workspace);
       if (workspace) {
         return new Promise<Workspace>(resolve => {
-          downloadWorkspace(id).then(data => {
+          this._apis.downloadWorkspace(id).then(data => {
             applyUpdate(workspace.doc, new Uint8Array(data));
             resolve(workspace);
           });
@@ -139,7 +135,7 @@ export class AffineProvider extends BaseProvider {
       const { id } = w;
       return new Promise<{ id: string; detail: WorkspaceDetail | null }>(
         resolve => {
-          getWorkspaceDetail({ id }).then(data => {
+          this._apis.getWorkspaceDetail({ id }).then(data => {
             resolve({ id, detail: data || null });
           });
         }
@@ -198,7 +194,7 @@ export class AffineProvider extends BaseProvider {
   public override async deleteWorkspace(id: string): Promise<void> {
     await this.closeWorkspace(id);
     // IndexedDBProvider.delete(id);
-    await deleteWorkspace({ id });
+    await this._apis.deleteWorkspace({ id });
     this._workspaces.remove(id);
   }
 
@@ -224,15 +220,15 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async leaveWorkspace(id: string): Promise<void> {
-    await leaveWorkspace({ id });
+    await this._apis.leaveWorkspace({ id });
   }
 
   public override async invite(id: string, email: string): Promise<void> {
-    return await inviteMember({ id, email });
+    return await this._apis.inviteMember({ id, email });
   }
 
   public override async removeMember(permissionId: number): Promise<void> {
-    return await removeMember({ permissionId });
+    return await this._apis.removeMember({ permissionId });
   }
 
   public override async linkLocal(workspace: Workspace) {
@@ -251,7 +247,9 @@ export class AffineProvider extends BaseProvider {
     meta: WorkspaceMeta
   ): Promise<Workspace | undefined> {
     assert(meta.name, 'Workspace name is required');
-    const { id } = await createWorkspace(meta as Required<WorkspaceMeta>);
+    const { id } = await this._apis.createWorkspace(
+      meta as Required<WorkspaceMeta>
+    );
     this._logger('Creating affine workspace');
     const nw = new Workspace({
       room: id,
@@ -287,14 +285,14 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async publish(id: string, isPublish: boolean): Promise<void> {
-    await updateWorkspace({ id, public: isPublish });
+    await this._apis.updateWorkspace({ id, public: isPublish });
   }
 
   public override async getUserByEmail(
     workspace_id: string,
     email: string
   ): Promise<User | null> {
-    const user = await getUserByEmail({ workspace_id, email });
+    const user = await this._apis.getUserByEmail({ workspace_id, email });
     return user
       ? {
           id: user.id,
