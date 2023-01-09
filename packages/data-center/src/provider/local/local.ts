@@ -82,7 +82,8 @@ export class LocalProvider extends BaseProvider {
     if (!meta.avatar) {
       // set default avatar
       const blob = await getDefaultHeadImgBlob(meta.name);
-      meta.avatar = (await this.setBlob(blob)) || '';
+      const blobId = await this.setBlob(blob);
+      meta.avatar = (await this.getBlob(blobId)) || '';
     }
     this._logger('Creating affine workspace');
 
