@@ -93,7 +93,7 @@ export class LocalProvider extends BaseProvider {
     };
 
     const workspace = new BlocksuiteWorkspace({ room: workspaceInfo.id });
-    this.linkLocal(workspace);
+    await this.linkLocal(workspace);
     workspace.meta.setName(meta.name);
     if (!meta.avatar) {
       // set default avatar
