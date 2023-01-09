@@ -196,7 +196,13 @@ module.exports = function (webpackConfig) {
                     {
                         from: path.resolve(
                             __dirname,
-                            './src/assets/images/logo.png'
+                            './src/assets/images/logo-192.png'
+                        ),
+                    },
+                    {
+                        from: path.resolve(
+                            __dirname,
+                            './src/assets/images/logo-512.png'
                         ),
                     },
                 ],
@@ -208,10 +214,21 @@ module.exports = function (webpackConfig) {
                 // and not allow any straggling "old" SWs to hang around
                 clientsClaim: true,
                 skipWaiting: true,
+                // use StaleWhileRevalidate for HTML and JS, and CacheFirst for images
                 runtimeCaching: [
                     {
-                        handler: 'NetworkFirst',
-                        urlPattern: /.*/,
+                        urlPattern: /\.(?:png|jpg|jpeg|webp|gif|svg)$/,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'images',
+                        },
+                    },
+                    {
+                        urlPattern: /\.(?:js|css|html)$/,
+                        handler: 'StaleWhileRevalidate',
+                        options: {
+                            cacheName: 'resources',
+                        },
                     },
                 ],
             }),
