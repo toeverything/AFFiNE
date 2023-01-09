@@ -22,14 +22,14 @@ export const EditorHeader = () => {
 
   useEffect(() => {
     onPropsUpdated(editor => {
-      setTitle(editor.model?.title || 'Untitled');
+      setTitle(editor.pageBlockModel?.title || 'Untitled');
     });
   }, [onPropsUpdated]);
 
   useEffect(() => {
     setTimeout(() => {
       // If first time in, need to wait for editor to be inserted into DOM
-      setTitle(editor?.model?.title || 'Untitled');
+      setTitle(editor?.pageBlockModel?.title || 'Untitled');
     }, 300);
   }, [editor]);
 

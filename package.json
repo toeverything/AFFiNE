@@ -6,7 +6,8 @@
   "license": "MPL-2.0",
   "scripts": {
     "dev": "pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev",
-    "dev:ac": "pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev:ac",
+    "dev:ac": "pnpm --filter=!@affine/app build && NODE_API_SERVER=ac pnpm --filter @affine/app dev",
+    "dev:local": "pnpm --filter=!@affine/app build && NODE_API_SERVER=local pnpm --filter @affine/app dev",
     "build": " pnpm --filter=!@affine/app build && pnpm --filter!=@affine/datacenter -r build",
     "export": "pnpm --filter @affine/app export",
     "start": "pnpm --filter @affine/app start",

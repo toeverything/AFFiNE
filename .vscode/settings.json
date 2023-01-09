@@ -3,5 +3,12 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "file",
-  "cSpell.words": ["blocksuite", "datacenter", "livedemo", "pnpm", "testid"]
+  "cSpell.words": [
+    "blocksuite",
+    "datacenter",
+    "livedemo",
+    "pnpm",
+    "selfhosted",
+    "testid"
+  ]
 }

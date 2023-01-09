@@ -8,6 +8,6 @@ export function loadPage() {
   test.beforeEach(async ({ page }: IType) => {
     await page.goto('http://localhost:8080');
     // waiting for page loading end
-    // await page.waitForTimeout(1000);
+    await page.waitForSelector('#__next');
   });
 }

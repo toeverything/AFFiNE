@@ -43,10 +43,10 @@ importers:
   packages/app:
     specifiers:
       '@affine/datacenter': workspace:*
-      '@blocksuite/blocks': 0.3.1
-      '@blocksuite/editor': 0.3.1
+      '@blocksuite/blocks': '=0.3.1-20230106060050-1aad55d'
+      '@blocksuite/editor': '=0.3.1-20230106060050-1aad55d'
       '@blocksuite/icons': ^2.0.2
-      '@blocksuite/store': 0.3.1
+      '@blocksuite/store': '=0.3.1-20230106060050-1aad55d'
       '@emotion/css': ^11.10.0
       '@emotion/react': ^11.10.4
       '@emotion/server': ^11.10.0
@@ -61,7 +61,7 @@ importers:
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
       '@types/wicg-file-system-access': ^2020.9.5
-      chalk-next: ^6.1.5
+      chalk: ^4.1.2
       cmdk: ^0.1.20
       css-spring: ^4.1.0
       dayjs: ^1.11.7
@@ -85,10 +85,10 @@ importers:
       yjs: ^13.5.44
     dependencies:
       '@affine/datacenter': link:../data-center
-      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
-      '@blocksuite/editor': 0.3.1_yjs@13.5.44
+      '@blocksuite/blocks': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
+      '@blocksuite/editor': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       '@blocksuite/icons': 2.0.4_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       '@emotion/css': 11.10.0
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.0
@@ -118,7 +118,7 @@ importers:
       '@types/react': 18.0.20
       '@types/react-dom': 18.0.6
       '@types/wicg-file-system-access': 2020.9.5
-      chalk-next: 6.1.5
+      chalk: 4.1.2
       eslint: 8.22.0
       eslint-config-next: 12.3.1_76twfck5d7crjqrmw4yltga7zm
       eslint-config-prettier: 8.5.0_eslint@8.22.0
@@ -129,8 +129,8 @@ importers:
 
   packages/data-center:
     specifiers:
-      '@blocksuite/blocks': ^0.3.1
-      '@blocksuite/store': ^0.3.1
+      '@blocksuite/blocks': '=0.3.1-20230106060050-1aad55d'
+      '@blocksuite/store': '=0.3.1-20230106060050-1aad55d'
       '@playwright/test': ^1.29.1
       '@types/debug': ^4.1.7
       debug: ^4.3.4
@@ -146,8 +146,8 @@ importers:
       y-protocols: ^1.0.5
       yjs: ^13.5.44
     dependencies:
-      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/blocks': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
@@ -1443,10 +1443,11 @@ packages:
       to-fast-properties: 2.0.0
     dev: true
 
-  /@blocksuite/blocks/0.3.1_yjs@13.5.44:
-    resolution: {integrity: sha512-b0dGz2MG4yIgngJPRumaMY58wAsd2FEVSZl3tpCXlagK9I0HD165Bq70PxcaRHVjBSV1Gf29ZVHUF6BVTYogPw==}
+  /@blocksuite/blocks/0.3.1-20230106060050-1aad55d_yjs@13.5.44:
+    resolution: {integrity: sha512-qRNXmhjw+GAGsV1mI2XXPxYTlHfsFHv9ttTCNQ6IIcxvc5Hh6lWmdwVibxvlpYUkgEc1zv3/GxOEsR/ngpZXzQ==}
     dependencies:
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/phasor': 0.3.1_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       '@tldraw/intersect': 1.8.0
       autosize: 5.0.2
       highlight.js: 11.7.0
@@ -1462,11 +1463,11 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/editor/0.3.1_yjs@13.5.44:
-    resolution: {integrity: sha512-ycKcyvPW6R8R2GZOFneGH1xNi5gJBx5WtWjW9YwcQslFzXVWMCCBips1Bud2uL4kkbWQoodyua6k2vsXxGAKLw==}
+  /@blocksuite/editor/0.3.1-20230106060050-1aad55d_yjs@13.5.44:
+    resolution: {integrity: sha512-wSlAF9XVxIkHFJ1qCzn7oQ/gwXybFYMrzRl35UTJV509D+DuWZefRZWvpdIDCOUJ24uQscr1HxwsON11ltfWgA==}
     dependencies:
-      '@blocksuite/blocks': 0.3.1_yjs@13.5.44
-      '@blocksuite/store': 0.3.1_yjs@13.5.44
+      '@blocksuite/blocks': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
+      '@blocksuite/store': 0.3.1-20230106060050-1aad55d_yjs@13.5.44
       lit: 2.5.0
       marked: 4.2.5
       turndown: 7.1.1
@@ -1487,8 +1488,16 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/store/0.3.1_yjs@13.5.44:
-    resolution: {integrity: sha512-kynVTDfNCSChz2JI2rtGHxRIV2YrLzvAgVajcbfDVCuXKG0siBoEjLasG1a0kvevbvW/FabrNAj+xaIplklioA==}
+  /@blocksuite/phasor/0.3.1_yjs@13.5.44:
+    resolution: {integrity: sha512-aJmAQn2qoF6HxFZWgq7xa/pWVyzg3MmD6dynIHAKdfN7rBdKk3PNA+lRX919QkD2e270N/zgHEGFFQI1Nj5xrA==}
+    peerDependencies:
+      yjs: ^13
+    dependencies:
+      yjs: 13.5.44
+    dev: false
+
+  /@blocksuite/store/0.3.1-20230106060050-1aad55d_yjs@13.5.44:
+    resolution: {integrity: sha512-dRy+YzlWMwiYq0Im9NogK/NTkV+NKK+lgejYq56m6nH2m16/G9AMODqP0oQy/XeYFevUpL9i9RdV0rHsJ2gc0Q==}
     peerDependencies:
       yjs: ^13
     dependencies:
@@ -4006,14 +4015,6 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /axios/0.21.4:
-    resolution: {integrity: sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==}
-    dependencies:
-      follow-redirects: 1.15.2
-    transitivePeerDependencies:
-      - debug
-    dev: true
-
   /axobject-query/2.2.0:
     resolution: {integrity: sha512-Td525n+iPOOyUQIeBfcASuG6uJsDOITl7Mds5gFyerkWiX7qhUTdYUBlSgNMyVqtSJqwpt1kXGLdUt6SykLMRA==}
     dev: true
@@ -4213,18 +4214,6 @@ packages:
       loupe: 2.3.6
       pathval: 1.1.1
       type-detect: 4.0.8
-    dev: true
-
-  /chalk-next/6.1.5:
-    resolution: {integrity: sha512-OAx9F3vSk18qpfCohk0849/j3GyaoIpv8eXjmpdbmLZt+5+sWYq8xwt3B5ue25irLcxFcLL2hAbxxHSsBxupbw==}
-    engines: {node: '>=10'}
-    dependencies:
-      ansi-styles: 4.3.0
-      axios: 0.21.4
-      fs: 0.0.1-security
-      supports-color: 7.2.0
-    transitivePeerDependencies:
-      - debug
     dev: true
 
   /chalk/2.4.2:
@@ -5562,16 +5551,6 @@ packages:
     resolution: {integrity: sha512-W7cHV7Hrwjid6lWmy0IhsWDFQboWSng25U3VVywpHOTJnnAZNPScog67G+cVpeX9f7yDD21ih0WDrMMT+JoaYg==}
     dev: false
 
-  /follow-redirects/1.15.2:
-    resolution: {integrity: sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-    dev: true
-
   /form-data-encoder/2.1.4:
     resolution: {integrity: sha512-yDYSgNMraqvnxiEXO4hi88+YZxaHC6QKzb5N84iRCTDeRO7ZALpir/lVmf/uXUhnwUr2O4HU8s/n6x+yNjQkHw==}
     engines: {node: '>= 14.17'}
@@ -5614,10 +5593,6 @@ packages:
 
   /fs.realpath/1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
-    dev: true
-
-  /fs/0.0.1-security:
-    resolution: {integrity: sha512-3XY9e1pP0CVEUCdj5BmfIZxRBTSDycnbqhIOGec9QYtmVH2fbLpj86CFWkrNOkt/Fvty4KZG5lTglL9j/gJ87w==}
     dev: true
 
   /fsevents/2.3.2:

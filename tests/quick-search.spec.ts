@@ -7,10 +7,13 @@ loadPage();
 const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
 
-async function assertTitleTexts(page: Page, texts: string[]) {
-  const actual = await page
-    .locator('.affine-default-page-block-title')
-    .allTextContents();
+async function assertTitleTexts(page: Page, texts: string) {
+  const actual = await page.evaluate(() => {
+    const titleElement = <HTMLTextAreaElement>(
+      document.querySelector('.affine-default-page-block-title')
+    );
+    return titleElement.value;
+  });
   expect(actual).toEqual(texts);
 }
 async function assertResultList(page: Page, texts: string[]) {
@@ -55,7 +58,7 @@ test.describe('Add new page in quick search', () => {
     const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
     await addNewPage.click();
     await page.waitForTimeout(200);
-    await assertTitleTexts(page, ['']);
+    await assertTitleTexts(page, '');
   });
 
   test('Create a new page with keyword', async ({ page }) => {
@@ -65,7 +68,7 @@ test.describe('Add new page in quick search', () => {
     const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
     await addNewPage.click();
     await page.waitForTimeout(200);
-    await assertTitleTexts(page, ['test123456']);
+    await assertTitleTexts(page, 'test123456');
   });
 });
 
@@ -81,6 +84,6 @@ test.describe('Search and select', () => {
     await page.keyboard.insertText('test123456');
     await assertResultList(page, ['test123456']);
     await page.keyboard.press('Enter', { delay: 50 });
-    await assertTitleTexts(page, ['test123456']);
+    await assertTitleTexts(page, 'test123456');
   });
 });
