@@ -63,7 +63,7 @@ export class AffineProvider extends BaseProvider {
     assert(room);
     this.linkLocal(workspace);
     const updates = await this._apis.downloadWorkspace(room);
-    if (updates) {
+    if (updates && updates.byteLength) {
       await new Promise(resolve => {
         doc.once('update', resolve);
         applyUpdate(doc, new Uint8Array(updates));

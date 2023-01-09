@@ -7,7 +7,7 @@ import * as workspace from './workspace.js';
 import { token } from './token.js';
 
 export type Apis = typeof user &
-  typeof workspace & {
+  Omit<typeof workspace, 'WorkspaceType' | 'PermissionType'> & {
     signInWithGoogle: ReturnType<typeof getAuthorizer>[0];
     onAuthStateChanged: ReturnType<typeof getAuthorizer>[1];
   } & { token: typeof token };
