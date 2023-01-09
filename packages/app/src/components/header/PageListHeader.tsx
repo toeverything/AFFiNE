@@ -1,7 +1,7 @@
 import { PropsWithChildren, ReactNode } from 'react';
-import Header from './header';
+import Header from './Header';
 import { StyledPageListTittleWrapper } from './styles';
-import QuickSearchButton from './quick-search-button';
+import QuickSearchButton from './QuickSearchButton';
 
 export type PageListHeaderProps = PropsWithChildren<{
   icon?: ReactNode;

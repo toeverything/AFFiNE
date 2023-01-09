@@ -1,3 +1,3 @@
-export * from './header';
-export * from './editor-header';
-export * from './page-list-header';
+export * from './Header';
+export * from './EditorHeader';
+export * from './PageListHeader';

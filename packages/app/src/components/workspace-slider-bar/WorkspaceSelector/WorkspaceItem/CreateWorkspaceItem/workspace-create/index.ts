@@ -1,1 +1,1 @@
-export * from './workspace-create';
+export * from './WorkspaceCreate';
