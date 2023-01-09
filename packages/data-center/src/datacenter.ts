@@ -1,6 +1,6 @@
 import { Workspaces } from './workspaces';
 import type { WorkspacesChangeEvent } from './workspaces';
-import { Workspace } from '@blocksuite/store';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BaseProvider } from './provider/base';
 import { LocalProvider } from './provider/local/local';
 import { AffineProvider } from './provider';
@@ -17,7 +17,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 export class DataCenter {
   private readonly _workspaces = new Workspaces();
   private readonly _logger = getLogger('dc');
-  private _workspaceInstances: Map<string, Workspace> = new Map();
+  private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -114,7 +114,7 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     return (
       this._workspaceInstances.get(workspaceId) ||
-      new Workspace({
+      new BlocksuiteWorkspace({
         room: workspaceId,
       }).register(BlockSchema)
     );
@@ -143,7 +143,7 @@ export class DataCenter {
   /**
    * load workspace instance by id
    * @param {string} workspaceId workspace id
-   * @returns {Promise<Workspace>}
+   * @returns {Promise<BlocksuiteWorkspace>}
    */
   public async loadWorkspace(workspaceId: string) {
     const workspaceInfo = this._workspaces.find(workspaceId);
@@ -185,11 +185,11 @@ export class DataCenter {
   /**
    * change workspaces meta
    * @param {WorkspaceMeta} workspaceMeta workspace meta
-   * @param {Workspace} workspace workspace instance
+   * @param {BlocksuiteWorkspace} workspace workspace instance
    */
   public async resetWorkspaceMeta(
     { name, avatar }: WorkspaceMeta,
-    workspace: Workspace
+    workspace: BlocksuiteWorkspace
   ) {
     assert(workspace?.room, 'No workspace to set meta');
     const update: Partial<WorkspaceMeta> = {};
@@ -273,7 +273,7 @@ export class DataCenter {
   }
 
   private async _transWorkspaceProvider(
-    workspace: Workspace,
+    workspace: BlocksuiteWorkspace,
     providerId: string
   ) {
     assert(workspace.room, 'No workspace id');
@@ -306,7 +306,7 @@ export class DataCenter {
    * Enable workspace cloud
    * @param {string} id ID of workspace.
    */
-  public async enableWorkspaceCloud(workspace: Workspace) {
+  public async enableWorkspaceCloud(workspace: BlocksuiteWorkspace) {
     assert(workspace?.room, 'No workspace to enable cloud');
     return await this._transWorkspaceProvider(workspace, 'affine');
   }
@@ -344,7 +344,10 @@ export class DataCenter {
    * @param id
    * @returns {Promise<string | null>} blob url
    */
-  async getBlob(workspace: Workspace, id: string): Promise<string | null> {
+  async getBlob(
+    workspace: BlocksuiteWorkspace,
+    id: string
+  ): Promise<string | null> {
     const blob = await workspace.blobs;
     return (await blob?.get(id)) || '';
   }
@@ -354,7 +357,7 @@ export class DataCenter {
    * @param id
    * @returns {Promise<string | null>} blob url
    */
-  async setBlob(workspace: Workspace, blob: Blob): Promise<string> {
+  async setBlob(workspace: BlocksuiteWorkspace, blob: Blob): Promise<string> {
     const blobStorage = await workspace.blobs;
     return (await blobStorage?.set(blob)) || '';
   }

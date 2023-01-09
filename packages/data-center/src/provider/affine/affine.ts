@@ -1,18 +1,16 @@
-import { BaseProvider } from '../base';
+import { BaseProvider } from '../base.js';
 import type { ProviderConstructorParams } from '../base';
-import { User, Workspace as WS, WorkspaceMeta } from '../../types';
-import { Workspace } from '@blocksuite/store';
+import type { User, WorkspaceInfo, WorkspaceMeta } from '../../types';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate } from 'yjs';
-import { token, Callback } from './apis';
-import { varStorage as storage } from 'lib0/storage';
+import { storage } from './storage.js';
 import assert from 'assert';
-import { getAuthorizer } from './apis/token';
-import { WebsocketProvider } from './sync';
+import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
-import { getDefaultHeadImgBlob } from '../../utils';
+import { getDefaultHeadImgBlob } from '../../utils/index.js';
 import { getApis } from './apis/index.js';
-import type { Apis, WorkspaceDetail } from './apis';
+import type { Apis, WorkspaceDetail, Callback } from './apis';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
@@ -21,10 +19,8 @@ export interface AffineProviderConstructorParams
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
-  private _workspacesCache: Map<string, Workspace> = new Map();
+  private _workspacesCache: Map<string, BlocksuiteWorkspace> = new Map();
   private _onTokenRefresh?: Callback = undefined;
-  private readonly _authorizer = getAuthorizer();
-  private _user: User | undefined = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
   private _apis: Apis;
   // private _idbMap: Map<string, IndexedDBProvider> = new Map();
@@ -36,38 +32,38 @@ export class AffineProvider extends BaseProvider {
 
   override async init() {
     this._onTokenRefresh = () => {
-      if (token.refresh) {
-        storage.setItem('token', token.refresh);
+      if (this._apis.token.refresh) {
+        storage.setItem('token', this._apis.token.refresh);
       }
     };
 
-    token.onChange(this._onTokenRefresh);
+    this._apis.token.onChange(this._onTokenRefresh);
 
     // initial login token
-    if (token.isExpired) {
+    if (this._apis.token.isExpired) {
       try {
         const refreshToken = storage.getItem('token');
-        await token.refreshToken(refreshToken);
+        await this._apis.token.refreshToken(refreshToken);
 
-        if (token.refresh) {
-          storage.set('token', token.refresh);
+        if (this._apis.token.refresh) {
+          storage.set('token', this._apis.token.refresh);
         }
 
-        assert(token.isLogin);
+        assert(this._apis.token.isLogin);
       } catch (_) {
         // this._logger('Authorization failed, fallback to local mode');
       }
     } else {
-      storage.setItem('token', token.refresh);
+      storage.setItem('token', this._apis.token.refresh);
     }
   }
 
-  override async warpWorkspace(workspace: Workspace) {
+  override async warpWorkspace(workspace: BlocksuiteWorkspace) {
     const { doc, room } = workspace;
     assert(room);
     this.linkLocal(workspace);
     const updates = await this._apis.downloadWorkspace(room);
-    if (updates) {
+    if (updates && updates.byteLength) {
       await new Promise(resolve => {
         doc.once('update', resolve);
         applyUpdate(doc, new Uint8Array(updates));
@@ -97,11 +93,11 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async loadWorkspaces() {
-    if (!token.isLogin) {
+    if (!this._apis.token.isLogin) {
       return [];
     }
     const workspacesList = await this._apis.getWorkspaces();
-    const workspaces: WS[] = workspacesList.map(w => {
+    const workspaces: WorkspaceInfo[] = workspacesList.map(w => {
       return {
         ...w,
         memberCount: 0,
@@ -112,12 +108,12 @@ export class AffineProvider extends BaseProvider {
     const workspaceInstances = workspaces.map(({ id }) => {
       const workspace =
         this._workspacesCache.get(id) ||
-        new Workspace({
+        new BlocksuiteWorkspace({
           room: id,
         }).register(BlockSchema);
       this._workspacesCache.set(id, workspace);
       if (workspace) {
-        return new Promise<Workspace>(resolve => {
+        return new Promise<BlocksuiteWorkspace>(resolve => {
           this._apis.downloadWorkspace(id).then(data => {
             applyUpdate(workspace.doc, new Uint8Array(data));
             resolve(workspace);
@@ -177,24 +173,25 @@ export class AffineProvider extends BaseProvider {
   override async auth() {
     const refreshToken = await storage.getItem('token');
     if (refreshToken) {
-      await token.refreshToken(refreshToken);
-      if (token.isLogin && !token.isExpired) {
+      await this._apis.token.refreshToken(refreshToken);
+      if (this._apis.token.isLogin && !this._apis.token.isExpired) {
         // login success
         return;
       }
     }
-    const user = await this._authorizer[0]?.();
-    assert(user);
-    this._user = {
-      id: user.id,
-      name: user.name,
-      avatar: user.avatar_url,
-      email: user.email,
-    };
+    await this._apis.signInWithGoogle?.();
   }
 
   public override async getUserInfo(): Promise<User | undefined> {
-    return this._user;
+    const user = this._apis.token.user;
+    return user
+      ? {
+          id: user.id,
+          name: user.name,
+          avatar: user.avatar_url,
+          email: user.email,
+        }
+      : undefined;
   }
 
   public override async deleteWorkspace(id: string): Promise<void> {
@@ -237,7 +234,7 @@ export class AffineProvider extends BaseProvider {
     return await this._apis.removeMember({ permissionId });
   }
 
-  public override async linkLocal(workspace: Workspace) {
+  public override async linkLocal(workspace: BlocksuiteWorkspace) {
     return workspace;
     // assert(workspace.room);
     // let idb = this._idbMap.get(workspace.room);
@@ -251,19 +248,19 @@ export class AffineProvider extends BaseProvider {
 
   public override async createWorkspace(
     meta: WorkspaceMeta
-  ): Promise<Workspace | undefined> {
+  ): Promise<BlocksuiteWorkspace | undefined> {
     assert(meta.name, 'Workspace name is required');
     const { id } = await this._apis.createWorkspace(
       meta as Required<WorkspaceMeta>
     );
     this._logger('Creating affine workspace');
-    const nw = new Workspace({
+    const nw = new BlocksuiteWorkspace({
       room: id,
     }).register(BlockSchema);
     nw.meta.setName(meta.name);
     this.linkLocal(nw);
 
-    const workspaceInfo: WS = {
+    const workspaceInfo: WorkspaceInfo = {
       name: meta.name,
       id,
       isPublish: false,
@@ -271,7 +268,7 @@ export class AffineProvider extends BaseProvider {
       owner: undefined,
       isLocal: true,
       memberCount: 1,
-      provider: 'local',
+      provider: 'affine',
     };
 
     if (!meta.avatar) {
