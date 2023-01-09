@@ -1,10 +1,10 @@
 import { Workspaces } from './workspaces';
 import type { WorkspacesChangeEvent } from './workspaces';
-import { Workspace } from '@blocksuite/store';
+import { BlobStorage, Workspace } from '@blocksuite/store';
 import { BaseProvider } from './provider/base';
 import { LocalProvider } from './provider/local/local';
 import { AffineProvider } from './provider';
-import type { Workspace as WS, WorkspaceMeta } from './types';
+import type { WorkspaceMeta } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
 import { BlockSchema } from '@blocksuite/blocks/models';
@@ -17,6 +17,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 export class DataCenter {
   private readonly _workspaces = new Workspaces();
   private readonly _logger = getLogger('dc');
+  private readonly _blobStorage: BlobStorage = new BlobStorage();
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -34,12 +35,14 @@ export class DataCenter {
       new LocalProvider({
         logger: dc._logger,
         workspaces: dc._workspaces.createScope(),
+        blobs: dc._blobStorage,
       })
     );
     dc.registerProvider(
       new AffineProvider({
         logger: dc._logger,
         workspaces: dc._workspaces.createScope(),
+        blobs: dc._blobStorage,
       })
     );
 
@@ -247,6 +250,24 @@ export class DataCenter {
     }
   }
 
+  /**
+   * get user info by email
+   * @param workspaceId
+   * @param email
+   * @param provider
+   * @returns {Promise<User>} User info
+   */
+  public async getUserByEmail(
+    workspaceId: string,
+    email: string,
+    provider = 'affine'
+  ) {
+    const providerInstance = this.providerMap.get(provider);
+    if (providerInstance) {
+      return await providerInstance.getUserByEmail(workspaceId, email);
+    }
+  }
+
   private async _transWorkspaceProvider(
     workspace: Workspace,
     providerId: string
@@ -311,5 +332,23 @@ export class DataCenter {
   public async exportWorkspace(id: string) {
     id;
     return;
+  }
+
+  /**
+   * get blob url by workspaces id
+   * @param id
+   * @returns {Promise<string | null>} blob url
+   */
+  async getBlob(id: string): Promise<string | null> {
+    return await this._blobStorage.get(id);
+  }
+
+  /**
+   * up load blob and get a blob url
+   * @param id
+   * @returns {Promise<string | null>} blob url
+   */
+  async setBlob(blob: Blob): Promise<string> {
+    return await this._blobStorage.set(blob);
   }
 }

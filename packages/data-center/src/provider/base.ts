@@ -9,6 +9,7 @@ const defaultLogger = () => {
 export interface ProviderConstructorParams {
   logger?: Logger;
   workspaces: WorkspacesScope;
+  blobs: BlobStorage;
 }
 
 export class BaseProvider {
@@ -17,9 +18,10 @@ export class BaseProvider {
   protected _logger!: Logger;
   protected _blobs!: BlobStorage;
 
-  public constructor({ logger, workspaces }: ProviderConstructorParams) {
+  public constructor({ logger, workspaces, blobs }: ProviderConstructorParams) {
     this._logger = (logger || defaultLogger) as Logger;
     this._workspaces = workspaces;
+    this._blobs = blobs;
   }
 
   /**
@@ -149,10 +151,25 @@ export class BaseProvider {
     return;
   }
 
+  /**
+   * create workspace by workspace meta
+   * @param {WorkspaceMeta} meta
+   */
   public async createWorkspace(
     meta: WorkspaceMeta
   ): Promise<Workspace | undefined> {
     meta;
     return;
+  }
+
+  /**
+   * get user by email
+   * @param {string} id
+   * @param {string} email
+   * @returns
+   */
+  public async getUserByEmail(id: string, email: string): Promise<User | null> {
+    email;
+    return null;
   }
 }
