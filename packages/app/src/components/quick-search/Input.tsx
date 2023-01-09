@@ -17,11 +17,10 @@ export const Input = (props: {
   const [isComposition, setIsComposition] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const { currentWorkspaceId, workspacesMeta, currentWorkspace } =
-    useAppState();
-  const isPublic = workspacesMeta.find(
+  const { currentWorkspaceId, workspaceList, currentWorkspace } = useAppState();
+  const isPublish = workspaceList.find(
     meta => String(meta.id) === String(currentWorkspaceId)
-  )?.public;
+  )?.isPublish;
   useEffect(() => {
     inputRef.current?.addEventListener(
       'blur',
@@ -80,7 +79,7 @@ export const Input = (props: {
           }
         }}
         placeholder={
-          isPublic
+          isPublish
             ? `Search in ${currentWorkspace?.meta.name}`
             : 'Quick Search...'
         }

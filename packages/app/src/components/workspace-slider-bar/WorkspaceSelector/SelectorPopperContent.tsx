@@ -1,7 +1,7 @@
 import { InformationIcon, LogOutIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { Divider } from '@/ui/divider';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { SelectorPopperContainer } from './styles';
 import {
   PrivateWorkspaceItem,

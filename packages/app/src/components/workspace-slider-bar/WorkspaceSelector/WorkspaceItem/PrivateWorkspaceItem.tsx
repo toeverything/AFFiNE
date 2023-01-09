@@ -1,5 +1,5 @@
 import { styled } from '@/styles';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import {
   WorkspaceItemAvatar,
   PrivateWorkspaceWrapper,

@@ -22,16 +22,17 @@ const isMac = () => {
   return getUaHelper().isMacOs;
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
+  const { currentWorkspaceId, workspaceList } = useAppState();
+
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
-  const { currentWorkspaceId, workspacesMeta } = useAppState();
 
-  const currentWorkspace = workspacesMeta.find(
+  const currentWorkspace = workspaceList.find(
     meta => String(meta.id) === String(currentWorkspaceId)
   );
-  const isPublic = currentWorkspace?.public;
+  const isPublish = currentWorkspace?.isPublish;
 
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
@@ -98,7 +99,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                 setShowCreatePage={setShowCreatePage}
               />
             </StyledContent>
-            {isPublic ? (
+            {isPublish ? (
               <></>
             ) : showCreatePage ? (
               <>

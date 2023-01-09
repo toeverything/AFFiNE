@@ -10,9 +10,11 @@ import '../utils/print-build-info';
 import ProviderComposer from '@/components/provider-composer';
 import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import type { NextPage } from 'next';
-import { AppStateProvider } from '@/providers/app-state-provider/Provider';
+import { AppStateProvider } from '@/providers/app-state-provider';
 import ConfirmProvider from '@/providers/ConfirmProvider';
 import { ModalProvider } from '@/providers/GlobalModalProvider';
+// import AppStateProvider2 from '@/providers/app-state-provider2/provider';
+
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
@@ -56,6 +58,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
           <TemporaryHelperProvider key="TemporaryHelperProvider" />,
           <ThemeProvider key="ThemeProvider" />,
           <AppStateProvider key="appStateProvider" />,
+          // <AppStateProvider2 key="appStateProvider2" />,
           <ModalProvider key="ModalProvider" />,
           <ConfirmProvider key="ConfirmProvider" />,
         ]}
@@ -67,9 +70,8 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 };
 
 const AppDefender = ({ children }: PropsWithChildren) => {
-  const router = useRouter();
-
   const { synced } = useAppState();
+  const router = useRouter();
 
   useEffect(() => {
     if (router.pathname === '/') {

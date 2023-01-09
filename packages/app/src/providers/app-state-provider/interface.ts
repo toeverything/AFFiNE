@@ -1,17 +1,31 @@
-import { PageMeta as OriginalPageMeta } from '@blocksuite/store/dist/workspace/workspace';
+import { DataCenter, User, Workspace } from '@affine/datacenter';
+import type { EditorContainer } from '@blocksuite/editor';
 
-// export type PageMeta = {
-//   favorite: boolean;
-//   trash: boolean;
-//   trashDate: number | void;
-//   updatedDate: number | void;
-//   mode: EditorContainer['mode'];
-// } & OriginalPageMeta;
+import type {
+  Page as StorePage,
+  Workspace as StoreWorkspace,
+  PageMeta,
+} from '@blocksuite/store';
 
-export interface PageMeta extends OriginalPageMeta {
-  favorite: boolean;
-  trash: boolean;
-  trashDate: number;
-  updatedDate: number;
-  mode: 'edgeless' | 'page';
-}
+export type AppStateValue = {
+  dataCenter: DataCenter;
+  user: User | null;
+  workspaceList: Workspace[];
+  currentWorkspace: StoreWorkspace;
+  currentWorkspaceId: string;
+  pageList: PageMeta[];
+  currentPage: StorePage | null;
+  editor?: EditorContainer | null;
+  synced: boolean;
+};
+
+export type AppStateFunction = {
+  createEditor: (page: StorePage) => EditorContainer | null;
+  setEditor: (page: EditorContainer) => void;
+  loadWorkspace: (workspaceId: string) => Promise<void>;
+  loadPage: (pageId: string) => void;
+};
+
+export type AppStateContext = AppStateValue & AppStateFunction;
+
+export type CreateEditorHandler = (page: StorePage) => EditorContainer | null;

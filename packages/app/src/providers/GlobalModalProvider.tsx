@@ -97,12 +97,12 @@ export const ModalProvider = ({
           triggerHandler('shortcuts', false);
         }}
       ></ShortcutsModal>
-      <QuickSearch
-        open={modalMap.quickSearch}
-        onClose={() => {
-          triggerHandler('quickSearch', false);
-        }}
-      ></QuickSearch>
+      {/*<QuickSearch*/}
+      {/*  open={modalMap.quickSearch}*/}
+      {/*  onClose={() => {*/}
+      {/*    triggerHandler('quickSearch', false);*/}
+      {/*  }}*/}
+      {/*></QuickSearch>*/}
       <ImportModal
         open={modalMap.import}
         onClose={() => {

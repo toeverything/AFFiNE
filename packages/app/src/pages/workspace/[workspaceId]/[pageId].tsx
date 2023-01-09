@@ -10,7 +10,7 @@ import { styled } from '@/styles';
 import { EditorHeader } from '@/components/header';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-v2.0.md';
 import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';

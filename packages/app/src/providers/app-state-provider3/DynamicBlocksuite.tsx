@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import type { Page } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
-import { CreateEditorHandler } from './interface';
+import type { CreateEditorHandler } from './context';
 
-type Props = {
+interface Props {
   setCreateEditorHandler: (handler: CreateEditorHandler) => void;
-};
+}
 
 const DynamicBlocksuite = ({ setCreateEditorHandler }: Props) => {
   useEffect(() => {

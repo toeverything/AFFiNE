@@ -26,7 +26,7 @@ import {
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
 import { useModal } from '@/providers/GlobalModalProvider';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
