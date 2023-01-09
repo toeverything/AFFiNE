@@ -9,19 +9,16 @@ const defaultLogger = () => {
 export interface ProviderConstructorParams {
   logger?: Logger;
   workspaces: WorkspacesScope;
-  blobs: BlobStorage;
 }
 
 export class BaseProvider {
   public readonly id: string = 'base';
   protected _workspaces!: WorkspacesScope;
   protected _logger!: Logger;
-  protected _blobs!: BlobStorage;
 
-  public constructor({ logger, workspaces, blobs }: ProviderConstructorParams) {
+  public constructor({ logger, workspaces }: ProviderConstructorParams) {
     this._logger = (logger || defaultLogger) as Logger;
     this._workspaces = workspaces;
-    this._blobs = blobs;
   }
 
   /**
@@ -69,19 +66,19 @@ export class BaseProvider {
     return;
   }
 
-  async getBlob(id: string): Promise<string | null> {
-    return await this._blobs.get(id);
-  }
+  // async getBlob(id: string): Promise<string | null> {
+  //   return await this._blobs.get(id);
+  // }
 
-  async setBlob(blob: Blob): Promise<string> {
-    return await this._blobs.set(blob);
-  }
+  // async setBlob(blob: Blob): Promise<string> {
+  //   return await this._blobs.set(blob);
+  // }
 
   /**
    * clear all local data in provider
    */
   async clear() {
-    this._blobs.clear();
+    // this._blobs.clear();
   }
 
   /**

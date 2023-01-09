@@ -18,7 +18,6 @@ import { TauriIPCProvider } from './provider/tauri-ipc';
 export class DataCenter {
   private readonly _workspaces = new Workspaces();
   private readonly _logger = getLogger('dc');
-  private readonly _blobStorage: BlobStorage = new BlobStorage();
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -36,14 +35,12 @@ export class DataCenter {
       new LocalProvider({
         logger: dc._logger,
         workspaces: dc._workspaces.createScope(),
-        blobs: dc._blobStorage,
       })
     );
     dc.registerProvider(
       new AffineProvider({
         logger: dc._logger,
         workspaces: dc._workspaces.createScope(),
-        blobs: dc._blobStorage,
       })
     );
     if (typeof window !== 'undefined' && window.CLIENT_APP) {
@@ -345,21 +342,21 @@ export class DataCenter {
     return;
   }
 
-  /**
-   * get blob url by workspaces id
-   * @param id
-   * @returns {Promise<string | null>} blob url
-   */
-  async getBlob(id: string): Promise<string | null> {
-    return await this._blobStorage.get(id);
-  }
+  // /**
+  //  * get blob url by workspaces id
+  //  * @param id
+  //  * @returns {Promise<string | null>} blob url
+  //  */
+  // async getBlob(id: string): Promise<string | null> {
+  //   return await this._blobStorage.get(id);
+  // }
 
-  /**
-   * up load blob and get a blob url
-   * @param id
-   * @returns {Promise<string | null>} blob url
-   */
-  async setBlob(blob: Blob): Promise<string> {
-    return await this._blobStorage.set(blob);
-  }
+  // /**
+  //  * up load blob and get a blob url
+  //  * @param id
+  //  * @returns {Promise<string | null>} blob url
+  //  */
+  // async setBlob(blob: Blob): Promise<string> {
+  //   return await this._blobStorage.set(blob);
+  // }
 }
