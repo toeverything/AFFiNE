@@ -21,7 +21,7 @@ import { varStorage as storage } from 'lib0/storage';
 import assert from 'assert';
 import { getAuthorizer } from './apis/token';
 import { WebsocketProvider } from './sync';
-import { IndexedDBProvider } from '../indexeddb';
+// import { IndexedDBProvider } from '../local/indexeddb';
 import { getDefaultHeadImgBlob } from '../../utils';
 import { getUserByEmail } from './apis/user';
 
@@ -32,7 +32,7 @@ export class AffineProvider extends BaseProvider {
   private readonly _authorizer = getAuthorizer();
   private _user: User | undefined = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
-  private _idbMap: Map<string, IndexedDBProvider> = new Map();
+  // private _idbMap: Map<string, IndexedDBProvider> = new Map();
 
   constructor(params: ProviderConstructorParams) {
     super(params);
@@ -197,7 +197,7 @@ export class AffineProvider extends BaseProvider {
 
   public override async deleteWorkspace(id: string): Promise<void> {
     await this.closeWorkspace(id);
-    IndexedDBProvider.delete(id);
+    // IndexedDBProvider.delete(id);
     await deleteWorkspace({ id });
     this._workspaces.remove(id);
   }
@@ -217,8 +217,8 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async closeWorkspace(id: string) {
-    const idb = this._idbMap.get(id);
-    idb?.destroy();
+    // const idb = this._idbMap.get(id);
+    // idb?.destroy();
     const ws = this._wsMap.get(id);
     ws?.disconnect();
   }
@@ -236,14 +236,15 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async linkLocal(workspace: Workspace) {
-    assert(workspace.room);
-    let idb = this._idbMap.get(workspace.room);
-    idb?.destroy();
-    idb = new IndexedDBProvider(workspace.room, workspace.doc);
-    this._idbMap.set(workspace.room, idb);
-    await idb.whenSynced;
-    this._logger('Local data loaded');
     return workspace;
+    // assert(workspace.room);
+    // let idb = this._idbMap.get(workspace.room);
+    // idb?.destroy();
+    // idb = new IndexedDBProvider(workspace.room, workspace.doc);
+    // this._idbMap.set(workspace.room, idb);
+    // await idb.whenSynced;
+    // this._logger('Local data loaded');
+    // return workspace;
   }
 
   public override async createWorkspace(
