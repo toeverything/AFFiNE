@@ -189,6 +189,7 @@ export const getAuthorizer = () => {
 
     return [signInWithGoogle, onAuthStateChanged] as const;
   } catch (e) {
+    getLogger('getAuthorizer')(e);
     return [] as const;
   }
 };

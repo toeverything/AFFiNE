@@ -124,20 +124,19 @@ export class DataCenter {
    * login to all providers, it will default run all auth ,
    *  maybe need a params to control which provider to auth
    */
-  public async login() {
-    this.providers.forEach(p => {
-      // TODO: may be add params of auth
-      p.auth();
-    });
+  public async login(providerId = 'affine') {
+    const provider = this.providerMap.get(providerId);
+    assert(provider, `provide '${providerId}' is not registered`);
+    await provider.auth();
   }
 
   /**
    * logout from all providers
    */
-  public async logout() {
-    this.providers.forEach(p => {
-      p.logout();
-    });
+  public async logout(providerId = 'affine') {
+    const provider = this.providerMap.get(providerId);
+    assert(provider, `provide '${providerId}' is not registered`);
+    await provider.logout();
   }
 
   /**
