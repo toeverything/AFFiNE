@@ -2,8 +2,8 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 
-import { getLogger } from '../index.js';
-import { bareClient } from './request.js';
+import { getLogger } from '../../../logger';
+import { bareClient } from './request';
 
 export interface AccessTokenMessage {
   create_at: number;
@@ -168,14 +168,15 @@ export const getAuthorizer = () => {
 
     const signInWithGoogle = async () => {
       const idToken = await getToken();
+      let loginUser: AccessTokenMessage | null = null;
       if (idToken) {
-        await token.initToken(idToken);
+        loginUser = await token.initToken(idToken);
       } else {
         const user = await signInWithPopup(firebaseAuth, googleAuthProvider);
         const idToken = await user.user.getIdToken();
-        await token.initToken(idToken);
+        loginUser = await token.initToken(idToken);
       }
-      return firebaseAuth.currentUser;
+      return loginUser;
     };
 
     const onAuthStateChanged = (callback: (user: User | null) => void) => {

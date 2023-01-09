@@ -4,14 +4,14 @@ import {
   StyledArrowButton,
   StyledLink,
   StyledListItem,
-  StyledListItemForWorkspace,
+  // StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
   StyledSliderBarWrapper,
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
-import { WorkspaceSelector } from './WorkspaceSelector';
+// import { WorkspaceSelector } from './WorkspaceSelector';
 import Collapse from '@mui/material/Collapse';
 import {
   ArrowDownIcon,
@@ -113,9 +113,9 @@ export const WorkSpaceSliderBar = () => {
         </Tooltip>
 
         <StyledSliderBarWrapper data-testid="sliderBar">
-          <StyledListItemForWorkspace>
+          {/* <StyledListItemForWorkspace>
             <WorkspaceSelector />
-          </StyledListItemForWorkspace>
+          </StyledListItemForWorkspace> */}
           <StyledListItem
             data-testid="sliderBar-quickSearchButton"
             style={{ cursor: 'pointer' }}

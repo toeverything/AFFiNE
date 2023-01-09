@@ -53,9 +53,9 @@ export const SelectorPopperContent = ({
           if (type === WorkspaceType.Private) {
             return { id, member_count: 1, owner: user };
           } else {
-            const dc = await getDataCenter();
-            const data = await dc.apis.getWorkspaceDetail({ id });
-            return { id, ...data } || { id, member_count: 0, owner: user };
+            // const dc = await getDataCenter();
+            // const data = await dc.apis.getWorkspaceDetail({ id });
+            // return { id, ...data } || { id, member_count: 0, owner: user };
           }
         }
       })

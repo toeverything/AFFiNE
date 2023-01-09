@@ -1,4 +1,4 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 import { printer } from './../printer';
 const chalk = require('chalk');
 describe('printer', () => {

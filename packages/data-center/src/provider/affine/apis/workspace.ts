@@ -84,7 +84,7 @@ export interface CreateWorkspaceParams {
 
 export async function createWorkspace(
   params: CreateWorkspaceParams
-): Promise<void> {
+): Promise<{ id: string }> {
   return client.post('api/workspace', { json: params }).json();
 }
 

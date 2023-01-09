@@ -10,6 +10,11 @@ Let us know what you think of this latest version.
 2. More complete Markdown support and improved keyboard shortcuts;
 3. New features such as dark mode; Switch between view styles using the ☀ and 🌙.
 4. Clean and modern UI/UX design.
+5. You can self-host locally with Docker.
+
+```basic
+docker run -d -v [YOUR_PATH]:/app/data -p 3000:3000 ghcr.io/toeverything/affine-self-hosted:alpha-abbey-wood
+```
 
 **Looking for Markdown syntax or keyboard shortcuts?**
 
@@ -23,15 +28,21 @@ Let us know what you think of this latest version.
 - Copy and paste **images** into your pages, resize them and add captions
 - Add horizontal line dividers to your text with `---` and `***`
 - Changes are saved **locally**, but we still recommend you export your data to avoid data loss
-- Insert code blocks with syntax highlighting support using ```
+- Insert code blocks with syntax highlighting support using `````
 
 ### Playground:
 
 [] Try a horizontal line: `---`
 
-[] What about a code block? ```
+[] What about a code block? `````
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;console.log('Hello world');
+```javascript
+console.log('Hello world');
+```
+
+[] Can you resize this image?
+
+![](https://cdn.affine.pro/694fdbab78e0da3ed7922eba7d506dcf12f57308e1904dd694f53eb2.jpg)
 
 **How about page management?**
 

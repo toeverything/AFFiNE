@@ -24,19 +24,19 @@ export default function DevPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [inviteData, setInviteData] = useState<any>(null);
   useEffect(() => {
-    getDataCenter()
-      .then(dc =>
-        dc.apis.acceptInviting({
-          invitingCode: router.query.invite_code as string,
-        })
-      )
-      .then(data => {
-        setSuccessInvited(true);
-        setInviteData(data);
-      })
-      .catch(err => {
-        console.log('err: ', err);
-      });
+    // getDataCenter()
+    //   .then(dc =>
+    //     dc.apis.acceptInviting({
+    //       invitingCode: router.query.invite_code as string,
+    //     })
+    //   )
+    //   .then(data => {
+    //     setSuccessInvited(true);
+    //     setInviteData(data);
+    //   })
+    //   .catch(err => {
+    //     console.log('err: ', err);
+    //   });
   }, [router.query.invite_code]);
 
   return (

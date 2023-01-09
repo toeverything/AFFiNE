@@ -17,7 +17,7 @@ export const usePropsUpdated: UsePropsUpdated = () => {
       return;
     }
     setTimeout(() => {
-      editor.model?.propsUpdated.on(() => {
+      editor.pageBlockModel?.propsUpdated.on(() => {
         callbackQueue.current.forEach(callback => {
           callback(editor);
         });
@@ -26,7 +26,7 @@ export const usePropsUpdated: UsePropsUpdated = () => {
 
     return () => {
       callbackQueue.current = [];
-      editor?.model?.propsUpdated.dispose();
+      editor?.pageBlockModel?.propsUpdated?.dispose();
     };
   }, [editor]);
 
