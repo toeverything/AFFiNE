@@ -79,12 +79,6 @@ export class LocalProvider extends BaseProvider {
     meta: WorkspaceMeta
   ): Promise<Workspace | undefined> {
     assert(meta.name, 'Workspace name is required');
-    if (!meta.avatar) {
-      // set default avatar
-      const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobId = await this.setBlob(blob);
-      meta.avatar = (await this.getBlob(blobId)) || '';
-    }
     this._logger('Creating affine workspace');
 
     const workspaceInfo: WS = {
@@ -101,7 +95,18 @@ export class LocalProvider extends BaseProvider {
     const workspace = new Workspace({ room: workspaceInfo.id });
     this._initWorkspaceDb(workspace);
     workspace.meta.setName(meta.name);
-    workspace.meta.setAvatar(meta.avatar);
+    if (!meta.avatar) {
+      // set default avatar
+      const blob = await getDefaultHeadImgBlob(meta.name);
+      const blobStorage = await workspace.blobs;
+      assert(blobStorage, 'No blob storage');
+      const blobId = await blobStorage.set(blob);
+      const avatar = await blobStorage.get(blobId);
+      if (avatar) {
+        workspace.meta.setAvatar(avatar);
+        workspaceInfo.avatar = avatar;
+      }
+    }
 
     this._workspaces.add(workspaceInfo);
     this._storeWorkspaces(this._workspaces.list());
