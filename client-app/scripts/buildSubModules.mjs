@@ -15,3 +15,4 @@ cd(`${path.join(repoDirectory, 'src-OctoBase')}`);
 await $`git checkout ${octoBaseBranchName}`;
 await $`git submodule update --recursive && git submodule update --remote`;
 await $`git pull origin ${octoBaseBranchName}`;
+await $`git reset --hard origin/${octoBaseBranchName}`;
