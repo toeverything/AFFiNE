@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loadPage } from './libs/load-page';
+import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
