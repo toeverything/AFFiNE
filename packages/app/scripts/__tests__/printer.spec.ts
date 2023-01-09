@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'vitest';
+import { test, expect } from '@playwright/test';
 import { printer } from './../printer';
 const chalk = require('chalk');
-describe('printer', () => {
+test.describe('printer', () => {
   test('test debug', () => {
     expect(printer.debug('test debug')).toBe(
       chalk.green`debug` + chalk.white('  - test debug')
