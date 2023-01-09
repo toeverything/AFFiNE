@@ -1,5 +1,5 @@
 import { NotFoundTitle, PageContainer } from './styles';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 export const NotfoundPage = () => {
   const { t } = useTranslation();
   return (

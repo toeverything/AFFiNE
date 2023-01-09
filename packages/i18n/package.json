@@ -1,0 +1,29 @@
+{
+  "name": "@affine/i18n",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/src/index.js",
+  "type": "module",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    "./src/*": "./dist/src/*.js",
+    ".": "./dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc --project ./tsconfig.json"
+  },
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git"
+  },
+  "dependencies": {
+    "i18next": "^21.9.1",
+    "prettier": "^2.7.1",
+    "react-i18next": "^11.18.4"
+  },
+  "devDependencies": {
+    "@types/prettier": "^2.7.2",
+    "typescript": "^4.8.4"
+  }
+}

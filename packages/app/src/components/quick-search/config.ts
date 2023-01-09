@@ -1,5 +1,5 @@
 import { AllPagesIcon, FavouritesIcon, TrashIcon } from '@blocksuite/icons';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 
 export const useSwitchToConfig = (
   currentWorkspaceId: string

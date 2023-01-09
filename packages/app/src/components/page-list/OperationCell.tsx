@@ -14,7 +14,7 @@ import {
 } from '@blocksuite/icons';
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
   const { openPage } = usePageHelper();

@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 interface ShortcutTip {
   [x: string]: string;
 }
@@ -13,7 +13,7 @@ export const useMacKeyboardShortcuts = (): ShortcutTip => {
     [t('Strikethrough')]: '⌘+⇧+S',
     [t('Inline code')]: ' ⌘+E',
     [t('Code block')]: '⌘+⌥+C',
-    [t('Hyperlink(with selected text)')]: '⌘+K',
+    [t('Link')]: '⌘+K',
     [t('Quick search')]: '⌘+K',
     [t('Body text')]: '⌘+⌥+0',
     [t('Heading', { number: '1' })]: '⌘+⌥+1',
@@ -57,7 +57,7 @@ export const useWindowsKeyboardShortcuts = (): ShortcutTip => {
     [t('Strikethrough')]: 'Ctrl+Shift+S',
     [t('Inline code')]: ' Ctrl+E',
     [t('Code block')]: 'Ctrl+Alt+C',
-    [t('Hyperlink(with selected text)')]: 'Ctrl+K',
+    [t('Link')]: 'Ctrl+K',
     [t('Quick search')]: 'Ctrl+K',
     [t('Body text')]: 'Ctrl+Shift+0',
     [t('Heading', { number: '1' })]: 'Ctrl+Shift+1',

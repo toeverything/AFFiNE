@@ -1,10 +1,6 @@
 import i18next, { Resource } from 'i18next';
-import {
-  I18nextProvider,
-  initReactI18next,
-  useTranslation,
-} from 'react-i18next';
-import { LOCALES } from './resources';
+import { initReactI18next, useTranslation } from 'react-i18next';
+import { LOCALES } from './resources/index.js';
 import type en_US from './resources/en.json';
 
 // const localStorage = {
@@ -27,7 +23,7 @@ declare module 'react-i18next' {
 
 // const STORAGE_KEY = 'i18n_lng';
 
-export { i18n, useTranslation, I18nProvider, LOCALES };
+export { i18n, useTranslation, LOCALES };
 
 const resources = LOCALES.reduce<Resource>(
   (acc, { tag, res }) => ({ ...acc, [tag]: { translation: res } }),
@@ -63,4 +59,4 @@ i18n.on('languageChanged', () => {
   //   localStorage.setItem(STORAGE_KEY, lng);
 });
 
-const I18nProvider = I18nextProvider;
+// const I18nProvider = I18nextProvider;

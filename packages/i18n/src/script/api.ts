@@ -43,7 +43,19 @@ import { fetchTolgee } from './request';
  * ]
  * ```
  */
-export const getAllProjectLanguages = async (size = 1000) => {
+
+export const getAllProjectLanguages = async (
+  size = 1000
+): Promise<
+  {
+    id: number;
+    name: string;
+    tag: string;
+    originalName: string;
+    flagEmoji: string;
+    base: boolean;
+  }[]
+> => {
   const url = `/languages?size=${size}`;
   const resp = await fetchTolgee(url);
   if (resp.status < 200 || resp.status >= 300) {
@@ -70,7 +82,7 @@ export const getAllProjectLanguages = async (size = 1000) => {
  *
  * See https://tolgee.io/api#operation/getTranslations_
  */
-export const getTranslations = async () => {
+export const getTranslations = async (): Promise<unknown> => {
   const url = '/translations';
   const resp = await fetchTolgee(url);
   if (resp.status < 200 || resp.status >= 300) {
@@ -87,17 +99,19 @@ export const getTranslations = async () => {
  */
 export const getLanguagesTranslations = async <T extends string>(
   languages: T
-) => {
+): Promise<{ [key in T]?: Record<string, string> }> => {
   const url = `/translations/${languages}`;
   const resp = await fetchTolgee(url);
   if (resp.status < 200 || resp.status >= 300) {
     throw new Error(url + ' ' + resp.status + '\n' + (await resp.text()));
   }
-  const json: { [key in T]?: Record<string, string> } = await resp.json();
+  const json = await resp.json();
   return json;
 };
 
-export const getRemoteTranslations = async (languages: string) => {
+export const getRemoteTranslations = async (
+  languages: string
+): Promise<Record<string, string>> => {
   const translations = await getLanguagesTranslations(languages);
   if (!(languages in translations)) {
     return {};
@@ -115,7 +129,7 @@ export const getRemoteTranslations = async (languages: string) => {
 export const createsNewKey = async (
   key: string,
   translations: Record<string, string>
-) => {
+): Promise<unknown> => {
   const url = '/translations/keys/create';
   const resp = await fetchTolgee(url, {
     method: 'POST',
@@ -133,7 +147,10 @@ export const createsNewKey = async (
  *
  * See https://tolgee.io/api#operation/tagKey_1
  */
-export const addTag = async (keyId: string, tagName: string) => {
+export const addTag = async (
+  keyId: string,
+  tagName: string
+): Promise<unknown> => {
   const url = `/keys/${keyId}/tags`;
   const resp = await fetchTolgee(url, {
     method: 'PUT',
@@ -151,7 +168,10 @@ export const addTag = async (keyId: string, tagName: string) => {
  *
  * See https://tolgee.io/api#operation/tagKey_1
  */
-export const removeTag = async (keyId: string, tagId: number) => {
+export const removeTag = async (
+  keyId: string,
+  tagId: number
+): Promise<unknown> => {
   const url = `/keys/${keyId}/tags/${tagId}`;
   const resp = await fetchTolgee(url, {
     method: 'DELETE',
@@ -174,7 +194,7 @@ export const removeTag = async (keyId: string, tagId: number) => {
  *
  * See https://tolgee.io/api#operation/export_1
  */
-export const exportResources = async () => {
+export const exportResources = async (): Promise<Response> => {
   const url = `/export`;
   const resp = await fetchTolgee(url);
 

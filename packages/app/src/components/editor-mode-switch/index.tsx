@@ -15,7 +15,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { EdgelessIcon, PaperIcon } from './Icons';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 const PaperItem = ({ active }: { active?: boolean }) => {
   const {
     theme: {
