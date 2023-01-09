@@ -11,6 +11,8 @@
     "jwst",
     "testid",
     "octobase",
+    "selfhosted",
+    "testid",
     "schemars"
   ],
   "explorer.fileNesting.enabled": true,

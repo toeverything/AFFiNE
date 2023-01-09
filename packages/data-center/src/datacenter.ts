@@ -4,8 +4,13 @@ import { Workspace, Signal } from '@blocksuite/store';
 
 import { getLogger } from './index.js';
 import { getApis, Apis } from './apis/index.js';
-import { AffineProvider, BaseProvider } from './provider/index.js';
-import { LocalProvider } from './provider/index.js';
+import {
+  AffineProvider,
+  BaseProvider,
+  LocalProvider,
+  SelfHostedProvider,
+} from './provider/index.js';
+
 import { getKVConfigure } from './store.js';
 import { TauriIPCProvider } from './provider/tauri-ipc/index.js';
 
@@ -48,6 +53,7 @@ export class DataCenter {
     if (typeof window !== 'undefined' && window.CLIENT_APP) {
       dc.addProvider(TauriIPCProvider);
     }
+    dc.addProvider(SelfHostedProvider);
 
     return dc;
   }

@@ -26,9 +26,9 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@blocksuite/blocks": "^0.3.1",
-    "@blocksuite/store": "^0.3.1",
     "@tauri-apps/api": "^1.2.0",
+    "@blocksuite/blocks": "=0.3.1-20230106060050-1aad55d",
+    "@blocksuite/store": "=0.3.1-20230106060050-1aad55d",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
     "firebase": "^9.15.0",
