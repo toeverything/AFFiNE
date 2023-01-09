@@ -49,6 +49,9 @@ export const AppStateProvider = ({
           dataCenter.workspaces[0].id
         );
       }
+      const currentMetaWorkSpace = dataCenter.workspaces.find(item => {
+        return item.id === currentWorkspace.room;
+      });
 
       setAppState({
         dataCenter,
@@ -60,6 +63,7 @@ export const AppStateProvider = ({
         currentPage: null,
         editor: null,
         synced: true,
+        currentMetaWorkSpace: currentMetaWorkSpace ?? null,
       });
     };
 
@@ -106,7 +110,6 @@ export const AppStateProvider = ({
   };
 
   const loadWorkspace = async (workspaceId: string) => {
-    console.log('workspaceId: ', workspaceId);
     const { dataCenter, workspaceList, currentWorkspaceId } = appState;
     if (!workspaceList.find(v => v.id === workspaceId)) {
       return;
@@ -115,12 +118,14 @@ export const AppStateProvider = ({
       return;
     }
     const workspace = await dataCenter.loadWorkspace(workspaceId);
-    console.log('workspace: ', workspace);
-
+    const currentMetaWorkSpace = dataCenter.workspaces.find(item => {
+      return item.id === workspace.room;
+    });
     setAppState({
       ...appState,
-      currentWorkspace: await dataCenter.loadWorkspace(workspaceId),
+      currentWorkspace: workspace,
       currentWorkspaceId: workspaceId,
+      currentMetaWorkSpace: currentMetaWorkSpace ?? null,
     });
   };
 

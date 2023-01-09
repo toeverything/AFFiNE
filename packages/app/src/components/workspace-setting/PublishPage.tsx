@@ -9,20 +9,20 @@ import {
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { toast } from '@/ui/toast';
-import { Workspace } from '@/hooks/mock-data/mock';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';
+// import { useAppState } from '@/providers/app-state-provider3';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { Workspace } from '@affine/datacenter';
 
 export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
-  console.log('workspace: ', workspace);
   const shareUrl =
     window.location.host + '/workspace/' + workspace.id + '?share=true';
+  const { publishWorkspace } = useWorkspaceHelper();
 
-  const { login, updateWorkspaceMeta, user } = useTemporaryHelper();
   const { confirm } = useConfirm();
 
   const togglePublic = (flag: boolean) => {
-    updateWorkspaceMeta(workspace.id, { isPublish: flag });
+    workspace.id && publishWorkspace(workspace?.id, flag);
   };
 
   const copyUrl = () => {
@@ -34,22 +34,23 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
     confirm({
       title: 'Enable AFFiNE Cloud?',
       content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-      confirmText: user ? 'Enable' : 'Sign in and Enable',
+      confirmText:
+        workspace.provider === 'local' ? 'Enable' : 'Sign in and Enable',
       cancelText: 'Skip',
     }).then(confirm => {
       if (confirm) {
-        if (user) {
-          updateWorkspaceMeta(workspace.id, { type: 'cloud' });
-        } else {
-          login();
-          updateWorkspaceMeta(workspace.id, { type: 'cloud' });
-        }
+        // if (user) {
+        //   updateWorkspaceMeta(workspace.id, { type: 'cloud' });
+        // } else {
+        //   login();
+        //   updateWorkspaceMeta(workspace.id, { type: 'cloud' });
+        // }
       }
     });
   };
   return (
     <>
-      {workspace.type === 'cloud' ? (
+      {workspace.provider === 'cloud' ? (
         <div>
           <StyledPublishContent>
             {workspace?.isPublish ? (

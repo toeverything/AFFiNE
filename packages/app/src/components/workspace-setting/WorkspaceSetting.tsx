@@ -20,7 +20,7 @@ import { MembersPage } from './MembersPage';
 import { PublishPage } from './PublishPage';
 import { ExportPage } from './ExportPage';
 import { SyncPage } from './SyncPage';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+import { useAppState } from '@/providers/app-state-provider';
 
 enum ActiveTab {
   'general' = 'general',
@@ -115,7 +115,7 @@ export const WorkspaceSetting = ({
     setActiveTab(tab);
   };
 
-  const { currentWorkspace } = useTemporaryHelper();
+  const { currentMetaWorkSpace } = useAppState();
   const handleClickClose = () => {
     onClose && onClose();
   };
@@ -142,20 +142,20 @@ export const WorkspaceSetting = ({
           </StyledSettingSidebar>
         ) : null}
         <StyledSettingContent>
-          {activeTab === ActiveTab.general && currentWorkspace && (
-            <GeneralPage workspace={currentWorkspace} />
+          {activeTab === ActiveTab.general && currentMetaWorkSpace && (
+            <GeneralPage workspace={currentMetaWorkSpace} />
           )}
-          {activeTab === ActiveTab.sync && currentWorkspace && (
-            <SyncPage workspace={currentWorkspace} />
+          {activeTab === ActiveTab.sync && currentMetaWorkSpace && (
+            <SyncPage workspace={currentMetaWorkSpace} />
           )}
-          {activeTab === ActiveTab.members && currentWorkspace && (
-            <MembersPage workspace={currentWorkspace} />
+          {activeTab === ActiveTab.members && currentMetaWorkSpace && (
+            <MembersPage workspace={currentMetaWorkSpace} />
           )}
-          {activeTab === ActiveTab.publish && currentWorkspace && (
-            <PublishPage workspace={currentWorkspace} />
+          {activeTab === ActiveTab.publish && currentMetaWorkSpace && (
+            <PublishPage workspace={currentMetaWorkSpace} />
           )}
-          {activeTab === ActiveTab.export && currentWorkspace && (
-            <ExportPage workspace={currentWorkspace} />
+          {activeTab === ActiveTab.export && currentMetaWorkSpace && (
+            <ExportPage workspace={currentMetaWorkSpace} />
           )}
         </StyledSettingContent>
       </StyledSettingContainer>

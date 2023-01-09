@@ -1,5 +1,5 @@
-import { Workspace } from '@/hooks/mock-data/mock';
 import { styled } from '@/styles';
+import { Workspace } from '@affine/datacenter';
 
 export const ExportPageTitleContainer = styled('div')(() => {
   return {

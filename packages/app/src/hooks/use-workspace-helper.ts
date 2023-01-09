@@ -13,7 +13,15 @@ export const useWorkspaceHelper = () => {
     }
     return null;
   };
+
+  // const updateWorkspace = async (workspace: Workspace) => {};
+
+  const publishWorkspace = async (workspaceId: string, publish: boolean) => {
+    dataCenter.setWorkspacePublish(workspaceId, publish);
+  };
+
   return {
     createWorkspace,
+    publishWorkspace,
   };
 };

@@ -6,9 +6,8 @@ import {
 import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
-import { deleteMember, Workspace } from '@/hooks/mock-data/mock';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
-
+import { Workspace } from '@affine/datacenter';
 export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
   const { currentWorkspace, updateWorkspaceMeta } = useTemporaryHelper();
 
@@ -49,7 +48,7 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                   <>
                     <MenuItem
                       onClick={() => {
-                        deleteMember(workspace.id, 0);
+                        // deleteMember(workspace.id, 0);
                       }}
                       icon={<DownloadIcon />}
                     >
@@ -57,7 +56,7 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                     </MenuItem>
                     <MenuItem
                       onClick={() => {
-                        deleteMember(workspace.id, 0);
+                        // deleteMember(workspace.id, 0);
                       }}
                       icon={<DownloadIcon />}
                     >

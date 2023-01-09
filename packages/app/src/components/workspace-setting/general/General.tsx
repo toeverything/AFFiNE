@@ -14,9 +14,9 @@ import { WorkspaceDelete } from './delete';
 // import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
-import { Workspace } from '@/hooks/mock-data/mock';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+import { Workspace } from '@affine/datacenter';
 export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
   // const { refreshWorkspacesMeta } = useAppState();
   const { updateWorkspaceMeta } = useTemporaryHelper();
@@ -124,7 +124,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
 
       <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
-        <code>{workspace.type} </code>
+        <code>{workspace.provider} </code>
       </StyledSettingInputContainer>
       <StyledDeleteButtonContainer>
         {isOwner ? (

@@ -12,6 +12,7 @@ export type AppStateValue = {
   user: User | undefined;
   workspaceList: Workspace[];
   currentWorkspace: StoreWorkspace;
+  currentMetaWorkSpace: Workspace | null;
   currentWorkspaceId: string;
   pageList: PageMeta[];
   currentPage: StorePage | null;
