@@ -47,7 +47,6 @@ export const AppStateProvider = ({
       const currentWorkspace = await dataCenter.loadWorkspace(
         dataCenter.workspaces[0].id
       );
-      console.log('currentWorkspace: ', currentWorkspace);
 
       setAppState({
         dataCenter,
@@ -150,18 +149,6 @@ export const AppStateProvider = ({
     });
   };
 
-  const createWorkspace = async (name: string) => {
-    const { dataCenter } = appState;
-    const workspaceInfo = await dataCenter.createWorkspace({
-      name: name,
-      avatar: 'cccc',
-    });
-    if (workspaceInfo && workspaceInfo.room) {
-      const workspace = await dataCenter.loadWorkspace(workspaceInfo.room);
-      console.log('workspace: ', workspace);
-    }
-  };
-
   return (
     <AppState.Provider
       value={{
@@ -170,7 +157,6 @@ export const AppStateProvider = ({
         loadPage,
         loadWorkspace,
         createEditor,
-        createWorkspace,
       }}
     >
       <DynamicBlocksuite setCreateEditorHandler={setCreateEditorHandler} />

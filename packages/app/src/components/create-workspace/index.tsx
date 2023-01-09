@@ -3,10 +3,10 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useState } from 'react';
 import Input from '@/ui/input';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/providers/app-state-provider';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 interface ICloseParams {
   workspaceId?: string;
 }
@@ -17,11 +17,15 @@ interface ModalProps {
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
-  const { createWorkspace } = useAppState();
-  const handleCreateWorkspace = () => {
-    const workspace = createWorkspace(workspaceName);
-    // onClose({ workspaceId: workspace.id });
-    // setActiveWorkspace(workspace);
+  const { createWorkspace } = useWorkspaceHelper();
+  const { loadWorkspace } = useAppState();
+  const handleCreateWorkspace = async () => {
+    const workspace = await createWorkspace(workspaceName);
+    if (workspace && workspace.room) {
+      await loadWorkspace(workspace.room);
+    } else {
+      console.log('create error');
+    }
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
