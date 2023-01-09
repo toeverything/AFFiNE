@@ -10,10 +10,11 @@ import {
   UsersIcon,
   AddIcon,
 } from '@blocksuite/icons';
-import { useConfirm } from '@/providers/confirm-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+// import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+import { useAppState } from '@/providers/app-state-provider';
 
 interface LoginModalProps {
   open: boolean;
@@ -23,13 +24,7 @@ interface LoginModalProps {
 export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const { confirm } = useConfirm();
-  const {
-    user,
-    login,
-    workspaceMetaList,
-    setActiveWorkspace,
-    updateWorkspaceMeta,
-  } = useTemporaryHelper();
+  const { user, workspaceList } = useAppState();
 
   return (
     <div>
@@ -51,11 +46,11 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
           </Header>
           <Content>
             <WorkspaceList>
-              {workspaceMetaList.map((item, index) => {
+              {workspaceList.map((item, index) => {
                 return (
                   <WorkspaceItem
                     onClick={() => {
-                      setActiveWorkspace(item);
+                      // setActiveWorkspace(item);
                       onClose();
                     }}
                     key={index}
@@ -93,10 +88,10 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                         top: '20px',
                       }}
                     >
-                      {(item.type === 'local' || !item.type) && (
+                      {(item.provider === 'local' || !item.provider) && (
                         <CloudUnsyncedIcon fontSize={24} />
                       )}
-                      {item.type === 'cloud' && (
+                      {item.provider === 'affine' && (
                         <CloudInsyncIcon fontSize={24} />
                       )}
                       {item.isPublish && <UsersIcon fontSize={24} />}
@@ -136,7 +131,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
             {!user ? (
               <Button
                 onClick={() => {
-                  login();
+                  // login();
                   toast('login success');
                 }}
               >
@@ -165,12 +160,12 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
               }).then(confirm => {
                 if (confirm) {
                   if (user) {
-                    workspaceId &&
-                      updateWorkspaceMeta(workspaceId, { isPublish: true });
+                    // workspaceId &&
+                    //   updateWorkspaceMeta(workspaceId, { isPublish: true });
                   } else {
-                    login();
-                    workspaceId &&
-                      updateWorkspaceMeta(workspaceId, { isPublish: true });
+                    // login();
+                    // workspaceId &&
+                    //   updateWorkspaceMeta(workspaceId, { isPublish: true });
                   }
                 }
               });

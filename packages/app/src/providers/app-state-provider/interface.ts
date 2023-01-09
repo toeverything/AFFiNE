@@ -9,7 +9,7 @@ import type {
 
 export type AppStateValue = {
   dataCenter: DataCenter;
-  user: User | null;
+  user: User | undefined;
   workspaceList: Workspace[];
   currentWorkspace: StoreWorkspace;
   currentWorkspaceId: string;
@@ -24,6 +24,7 @@ export type AppStateFunction = {
   setEditor: (page: EditorContainer) => void;
   loadWorkspace: (workspaceId: string) => Promise<void>;
   loadPage: (pageId: string) => void;
+  createWorkspace: (name: string) => Promise<void>;
 };
 
 export type AppStateContext = AppStateValue & AppStateFunction;

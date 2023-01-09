@@ -4,6 +4,7 @@ import {
   StyledArrowButton,
   StyledLink,
   StyledListItem,
+  StyledListItemForWorkspace,
   // StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
@@ -33,6 +34,7 @@ import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useTranslation } from 'react-i18next';
+import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
@@ -113,9 +115,9 @@ export const WorkSpaceSliderBar = () => {
         </Tooltip>
 
         <StyledSliderBarWrapper data-testid="sliderBar">
-          {/* <StyledListItemForWorkspace>
+          <StyledListItemForWorkspace>
             <WorkspaceSelector />
-          </StyledListItemForWorkspace> */}
+          </StyledListItemForWorkspace>
           <StyledListItem
             data-testid="sliderBar-quickSearchButton"
             style={{ cursor: 'pointer' }}

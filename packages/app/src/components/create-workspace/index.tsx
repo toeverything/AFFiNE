@@ -6,6 +6,7 @@ import Input from '@/ui/input';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAppState } from '@/providers/app-state-provider';
 interface ICloseParams {
   workspaceId?: string;
 }
@@ -16,11 +17,11 @@ interface ModalProps {
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
-  const { createWorkspace, setActiveWorkspace } = useTemporaryHelper();
+  const { createWorkspace } = useAppState();
   const handleCreateWorkspace = () => {
     const workspace = createWorkspace(workspaceName);
-    onClose({ workspaceId: workspace.id });
-    setActiveWorkspace(workspace);
+    // onClose({ workspaceId: workspace.id });
+    // setActiveWorkspace(workspace);
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
