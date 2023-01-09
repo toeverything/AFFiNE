@@ -48,7 +48,6 @@ export class DataCenter {
         new TauriIPCProvider({
           logger: dc._logger,
           workspaces: dc._workspaces.createScope(),
-          blobs: dc._blobStorage,
         })
       );
     }

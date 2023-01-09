@@ -4,7 +4,12 @@ import {
   GetDocumentResponse,
   YDocumentUpdate,
 } from './types/document';
-import { CreateWorkspace, CreateWorkspaceResult } from './types/workspace';
+import {
+  CreateWorkspace,
+  CreateWorkspaceResult,
+  GetWorkspaces,
+  GetWorkspacesResult,
+} from './types/workspace';
 import { GetBlob, PutBlob } from './types/blob';
 
 export const updateYDocument = async (parameters: YDocumentUpdate) =>
@@ -19,6 +24,10 @@ export const getYDocument = async (parameters: GetDocumentParameter) =>
 
 export const createWorkspace = async (parameters: CreateWorkspace) =>
   await invoke<CreateWorkspaceResult>('create_workspace', {
+    parameters,
+  });
+export const getWorkspaces = async (parameters: GetWorkspaces) =>
+  await invoke<GetWorkspacesResult>('create_workspace', {
     parameters,
   });
 

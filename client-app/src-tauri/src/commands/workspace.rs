@@ -1,8 +1,31 @@
-use ipc_types::workspace::{CreateWorkspace, CreateWorkspaceResult, UpdateWorkspace};
+use ipc_types::workspace::{
+  CreateWorkspace, CreateWorkspaceResult, GetWorkspacesResult, UpdateWorkspace,
+};
 use jwst::{DocStorage, Workspace as OctoBaseWorkspace};
 use lib0::any::Any;
 
 use crate::state::AppState;
+
+#[tauri::command]
+/// create yDoc for a workspace
+pub async fn get_workspaces<'s>(
+  state: tauri::State<'s, AppState>,
+  parameters: CreateWorkspace,
+) -> Result<GetWorkspacesResult, String> {
+  match &state
+    .0
+    .lock()
+    .await
+    .metadata_db
+    .get_user_workspaces(parameters.user_id)
+    .await
+  {
+    Ok(user_workspaces) => Ok(GetWorkspacesResult {
+      workspaces: user_workspaces.clone(),
+    }),
+    Err(error_message) => Err(error_message.to_string()),
+  }
+}
 
 #[tauri::command]
 /// create yDoc for a workspace

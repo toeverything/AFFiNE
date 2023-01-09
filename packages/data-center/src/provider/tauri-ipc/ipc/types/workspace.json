@@ -14,6 +14,26 @@
     },
     {
       "type": "object",
+      "required": ["GetWorkspaces"],
+      "properties": {
+        "GetWorkspaces": {
+          "$ref": "#/definitions/GetWorkspaces"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["GetWorkspacesResult"],
+      "properties": {
+        "GetWorkspacesResult": {
+          "$ref": "#/definitions/GetWorkspacesResult"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
       "required": ["UpdateWorkspace"],
       "properties": {
         "UpdateWorkspace": {
@@ -60,6 +80,32 @@
         }
       }
     },
+    "GetWorkspaces": {
+      "type": "object",
+      "required": ["user_id"],
+      "properties": {
+        "user_id": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "GetWorkspacesResult": {
+      "type": "object",
+      "required": ["workspaces"],
+      "properties": {
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WorkspaceWithPermission"
+          }
+        }
+      }
+    },
+    "PermissionType": {
+      "type": "string",
+      "enum": ["Read", "Write", "Admin", "Owner"]
+    },
     "UpdateWorkspace": {
       "type": "object",
       "required": ["id", "public"],
@@ -70,6 +116,32 @@
         },
         "public": {
           "type": "boolean"
+        }
+      }
+    },
+    "WorkspaceType": {
+      "type": "string",
+      "enum": ["Private", "Normal"]
+    },
+    "WorkspaceWithPermission": {
+      "type": "object",
+      "required": ["created_at", "id", "permission", "public", "type"],
+      "properties": {
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "permission": {
+          "$ref": "#/definitions/PermissionType"
+        },
+        "public": {
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/WorkspaceType"
         }
       }
     }

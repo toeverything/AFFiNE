@@ -1599,6 +1599,7 @@ dependencies = [
 name = "ipc_types"
 version = "0.1.0"
 dependencies = [
+ "jwst-storage",
  "project-root",
  "schemars",
  "serde",
@@ -1751,6 +1752,7 @@ dependencies = [
  "jwst",
  "jwst-logger",
  "path-ext",
+ "schemars",
  "serde",
  "serde_json",
  "serde_repr",

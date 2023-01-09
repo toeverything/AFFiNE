@@ -10,11 +10,19 @@ export type IWorkspaceParameters =
       CreateWorkspace: CreateWorkspace;
     }
   | {
+      GetWorkspaces: GetWorkspaces;
+    }
+  | {
+      GetWorkspacesResult: GetWorkspacesResult;
+    }
+  | {
       UpdateWorkspace: UpdateWorkspace;
     }
   | {
       CreateWorkspaceResult: CreateWorkspaceResult;
     };
+export type PermissionType = 'Read' | 'Write' | 'Admin' | 'Owner';
+export type WorkspaceType = 'Private' | 'Normal';
 
 export interface CreateWorkspace {
   /**
@@ -22,6 +30,22 @@ export interface CreateWorkspace {
    */
   name: string;
   user_id: number;
+  [k: string]: unknown;
+}
+export interface GetWorkspaces {
+  user_id: number;
+  [k: string]: unknown;
+}
+export interface GetWorkspacesResult {
+  workspaces: WorkspaceWithPermission[];
+  [k: string]: unknown;
+}
+export interface WorkspaceWithPermission {
+  created_at: number;
+  id: string;
+  permission: PermissionType;
+  public: boolean;
+  type: WorkspaceType;
   [k: string]: unknown;
 }
 export interface UpdateWorkspace {
