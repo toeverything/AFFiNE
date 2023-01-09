@@ -5,12 +5,12 @@ import {
   StyledIslandWrapper,
   StyledTransformIcon,
 } from './style';
-import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './icons';
+import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
 import Grow from '@mui/material/Grow';
 import { Tooltip } from '@/ui/tooltip';
 import { useTranslation } from 'react-i18next';
-import { useModal } from '@/providers/global-modal-provider';
-import { useTheme } from '@/providers/themeProvider';
+import { useModal } from '@/providers/GlobalModalProvider';
+import { useTheme } from '@/providers/ThemeProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({

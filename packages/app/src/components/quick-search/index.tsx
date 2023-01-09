@@ -6,12 +6,12 @@ import {
   StyledModalDivider,
   StyledShortcut,
 } from './style';
-import { Input } from './input';
-import { Results } from './results';
-import { Footer } from './footer';
+import { Input } from './Input';
+import { Results } from './Results';
+import { Footer } from './Footer';
 import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 import { getUaHelper } from '@/utils';
 import { useAppState } from '@/providers/app-state-provider';
 type TransitionsModalProps = {

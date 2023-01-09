@@ -8,10 +8,10 @@ import {
 } from './styles';
 import CloseIcon from '@mui/icons-material/Close';
 import { getWarningMessage, shouldShowWarning } from './utils';
-import EditorOptionMenu from './header-right-items/editor-option-menu';
-import TrashButtonGroup from './header-right-items/trash-button-group';
+import EditorOptionMenu from './header-right-items/EditorOptionMenu';
+import TrashButtonGroup from './header-right-items/TrashButtonGroup';
 import ThemeModeSwitch from './header-right-items/theme-mode-switch';
-import SyncUser from './header-right-items/sync-user';
+import SyncUser from './header-right-items/SyncUser';
 
 const BrowserWarning = ({
   show,

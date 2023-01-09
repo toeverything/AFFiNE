@@ -1,7 +1,7 @@
 import React from 'react';
 import { AddIcon } from '@blocksuite/icons';
 import { StyledModalFooterContent } from './style';
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 import { Command } from 'cmdk';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTranslation } from 'react-i18next';

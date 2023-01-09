@@ -1,1 +1,1 @@
-export * from './workspace-setting';
+export * from './WorkspaceSetting';

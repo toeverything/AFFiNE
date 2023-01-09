@@ -36,7 +36,7 @@ jobs:
           scope: '@toeverything'
           cache: 'pnpm'
 
-      - run: node scripts/module-resolve/ci.js
+      - run: node scripts/module-resolve/ci.cjs
 
       - name: Restore cache
         uses: actions/cache@v3

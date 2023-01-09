@@ -25,7 +25,7 @@ import {
 } from '@blocksuite/icons';
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';

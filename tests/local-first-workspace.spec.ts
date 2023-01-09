@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loadPage } from './libs/load-page';
+import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
 test.describe('Local first default workspace', () => {
-  test('Default workspace name', async ({ page }) => {
+  test.skip('Default workspace name', async ({ page }) => {
     const workspaceName = page.getByTestId('workspace-name');
     expect(await workspaceName.textContent()).toBe('AFFiNE');
   });

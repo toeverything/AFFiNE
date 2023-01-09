@@ -2,7 +2,7 @@ import React from 'react';
 import { IconButton, IconButtonProps } from '@/ui/button';
 import { Tooltip } from '@/ui/tooltip';
 import { ArrowDownIcon } from '@blocksuite/icons';
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 import { useTranslation } from 'react-i18next';
 export const QuickSearchButton = ({
   onClick,

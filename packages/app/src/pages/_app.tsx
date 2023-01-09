@@ -10,18 +10,18 @@ import '../utils/print-build-info';
 import ProviderComposer from '@/components/provider-composer';
 import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import type { NextPage } from 'next';
-import { AppStateProvider } from '@/providers/app-state-provider/provider';
-import ConfirmProvider from '@/providers/confirm-provider';
-import TemporaryHelperProvider from '@/providers/temporary-helper-provider';
-import { ModalProvider } from '@/providers/global-modal-provider';
+import { AppStateProvider } from '@/providers/app-state-provider/Provider';
+import ConfirmProvider from '@/providers/ConfirmProvider';
+import { ModalProvider } from '@/providers/GlobalModalProvider';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { PageLoading } from '@/components/loading';
 import Head from 'next/head';
 import '@/libs/i18n';
+import TemporaryHelperProvider from '@/providers/temporary-helper-provider';
 
-const ThemeProvider = dynamic(() => import('@/providers/themeProvider'), {
+const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
 });
 
