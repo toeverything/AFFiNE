@@ -4,6 +4,7 @@ import { useAppState } from '@/providers/app-state-provider';
 import { useConfirm } from '@/providers/confirm-provider';
 import { useRouter } from 'next/router';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
+import { useTranslation } from 'react-i18next';
 
 export const TrashButtonGroup = () => {
   const { permanentlyDeletePage } = usePageHelper();
@@ -12,7 +13,7 @@ export const TrashButtonGroup = () => {
   const { confirm } = useConfirm();
   const router = useRouter();
   const { id = '' } = useCurrentPageMeta() || {};
-
+  const { t } = useTranslation();
   return (
     <>
       <Button
@@ -23,7 +24,7 @@ export const TrashButtonGroup = () => {
           toggleDeletePage(id);
         }}
       >
-        Restore it
+        {t('Restore it')}
       </Button>
       <Button
         bold={true}
@@ -31,10 +32,9 @@ export const TrashButtonGroup = () => {
         type="danger"
         onClick={() => {
           confirm({
-            title: 'Permanently delete',
-            content:
-              "Once deleted, you can't undo this action. Do you confirm?",
-            confirmText: 'Delete',
+            title: t('TrashButtonGroupTitle'),
+            content: t('TrashButtonGroupDescription'),
+            confirmText: t('Delete'),
             confirmType: 'danger',
           }).then(confirm => {
             if (confirm) {
@@ -44,7 +44,7 @@ export const TrashButtonGroup = () => {
           });
         }}
       >
-        Delete permanently
+        {t('Delete permanently')}
       </Button>
     </>
   );
