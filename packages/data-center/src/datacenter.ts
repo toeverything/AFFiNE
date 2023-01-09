@@ -127,16 +127,16 @@ export class DataCenter {
   public async login(providerId = 'affine') {
     const provider = this.providerMap.get(providerId);
     assert(provider, `provide '${providerId}' is not registered`);
-    provider.auth();
+    await provider.auth();
   }
 
   /**
    * logout from all providers
    */
-  public async logout() {
-    this.providers.forEach(p => {
-      p.logout();
-    });
+  public async logout(providerId = 'affine') {
+    const provider = this.providerMap.get(providerId);
+    assert(provider, `provide '${providerId}' is not registered`);
+    await provider.logout();
   }
 
   /**
