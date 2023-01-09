@@ -24,7 +24,7 @@ interface WorkspaceModalProps {
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const { confirm } = useConfirm();
-  const { user, workspaceList } = useAppState();
+  const { user, workspaceList, currentWorkspace } = useAppState();
   const router = useRouter();
   return (
     <div>
@@ -53,6 +53,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                       router.replace(`/workspace/${item.id}`);
                       onClose();
                     }}
+                    active={item.id === currentWorkspace.room}
                     key={index}
                   >
                     <span style={{ width: '100px' }}>
@@ -152,23 +153,23 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
             onClose={() => {
               setCreateWorkspaceOpen(false);
               onClose();
-              confirm({
-                title: 'Enable AFFiNE Cloud?',
-                content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-                confirmText: user ? 'Enable' : 'Sign in and Enable',
-                cancelText: 'Skip',
-              }).then(confirm => {
-                if (confirm) {
-                  if (user) {
-                    // workspaceId &&
-                    //   updateWorkspaceMeta(workspaceId, { isPublish: true });
-                  } else {
-                    // login();
-                    // workspaceId &&
-                    //   updateWorkspaceMeta(workspaceId, { isPublish: true });
-                  }
-                }
-              });
+              // confirm({
+              //   title: 'Enable AFFiNE Cloud?',
+              //   content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+              //   confirmText: user ? 'Enable' : 'Sign in and Enable',
+              //   cancelText: 'Skip',
+              // }).then(confirm => {
+              //   if (confirm) {
+              //     if (user) {
+              //       // workspaceId &&
+              //       //   updateWorkspaceMeta(workspaceId, { isPublish: true });
+              //     } else {
+              //       // login();
+              //       // workspaceId &&
+              //       //   updateWorkspaceMeta(workspaceId, { isPublish: true });
+              //     }
+              //   }
+              // });
             }}
           ></CreateWorkspaceModal>
         </ModalWrapper>
@@ -213,11 +214,17 @@ const WorkspaceList = styled('div')({
   gridTemplateColumns: 'repeat(2, 1fr)',
 });
 
-const WorkspaceItem = styled('div')({
-  cursor: 'pointer',
-  padding: '8px',
-  border: '1px solid #eee',
-  ':hover': {
-    background: '#eee',
-  },
+export const WorkspaceItem = styled.div<{
+  active: boolean;
+}>(({ theme, active }) => {
+  const backgroundColor = active ? theme.colors.hoverBackground : 'transparent';
+  return {
+    cursor: 'pointer',
+    padding: '8px',
+    border: '1px solid #eee',
+    backgroundColor: backgroundColor,
+    ':hover': {
+      background: theme.colors.hoverBackground,
+    },
+  };
 });

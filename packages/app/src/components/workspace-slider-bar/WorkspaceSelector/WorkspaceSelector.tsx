@@ -15,7 +15,6 @@ export const WorkspaceSelector = () => {
 
   return (
     <>
-      <div>{currentWorkspace.meta.name}</div>
       <SelectorWrapper
         onClick={() => {
           setWorkspaceListShow(true);

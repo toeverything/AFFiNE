@@ -7,6 +7,7 @@ import { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/providers/app-state-provider';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { useRouter } from 'next/router';
 
 interface ModalProps {
   open: boolean;
@@ -16,11 +17,11 @@ interface ModalProps {
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
   const { createWorkspace } = useWorkspaceHelper();
-  const { loadWorkspace } = useAppState();
+  const router = useRouter();
   const handleCreateWorkspace = async () => {
     const workspace = await createWorkspace(workspaceName);
     if (workspace && workspace.room) {
-      await loadWorkspace(workspace.room);
+      router.replace(`/workspace/${workspace.room}`);
       onClose();
     } else {
       console.log('create error');
