@@ -4,12 +4,20 @@ import type { EditorContainer } from '@blocksuite/editor';
 import type {
   Page as StorePage,
   Workspace as StoreWorkspace,
-  PageMeta,
+  PageMeta as StorePageMeta,
 } from '@blocksuite/store';
+import { MutableRefObject } from 'react';
+export interface PageMeta extends StorePageMeta {
+  favorite: boolean;
+  trash: boolean;
+  trashDate: number;
+  updatedDate: number;
+  mode: 'edgeless' | 'page';
+}
 
 export type AppStateValue = {
   dataCenter: DataCenter;
-  user: User | undefined;
+  user: User | null;
   workspaceList: Workspace[];
   currentWorkspace: StoreWorkspace;
   currentMetaWorkSpace: Workspace | null;
@@ -21,9 +29,9 @@ export type AppStateValue = {
 };
 
 export type AppStateFunction = {
-  createEditor: (page: StorePage) => EditorContainer | null;
-  setEditor: (page: EditorContainer) => void;
-  loadWorkspace: (workspaceId: string) => Promise<void>;
+  setEditor: MutableRefObject<(page: EditorContainer) => void>;
+
+  loadWorkspace: (workspaceId: string) => Promise<StoreWorkspace | null>;
   loadPage: (pageId: string) => void;
 };
 
