@@ -24,7 +24,7 @@ interface LoginModalProps {
 export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const { confirm } = useConfirm();
-  const { user, workspaceList } = useAppState();
+  const { user, workspaceList, loadWorkspace } = useAppState();
 
   return (
     <div>
@@ -51,6 +51,8 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                   <WorkspaceItem
                     onClick={() => {
                       // setActiveWorkspace(item);
+                      console.log(item);
+                      loadWorkspace(item.id);
                       onClose();
                     }}
                     key={index}
@@ -149,7 +151,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
           </Footer>
           <CreateWorkspaceModal
             open={createWorkspaceOpen}
-            onClose={({ workspaceId }) => {
+            onClose={() => {
               setCreateWorkspaceOpen(false);
               onClose();
               confirm({

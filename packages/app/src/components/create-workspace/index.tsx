@@ -7,12 +7,10 @@ import { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/providers/app-state-provider';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-interface ICloseParams {
-  workspaceId?: string;
-}
+
 interface ModalProps {
   open: boolean;
-  onClose: (opts: ICloseParams) => void;
+  onClose: () => void;
 }
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
@@ -23,6 +21,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
     const workspace = await createWorkspace(workspaceName);
     if (workspace && workspace.room) {
       await loadWorkspace(workspace.room);
+      onClose();
     } else {
       console.log('create error');
     }
@@ -44,7 +43,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
               top={6}
               right={6}
               onClick={() => {
-                onClose({});
+                onClose();
               }}
             />
           </Header>
