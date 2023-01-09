@@ -196,4 +196,8 @@ export class IndexedDBProvider extends Observable<string> {
       return undefined;
     });
   }
+
+  static delete(name: string): Promise<void> {
+    return idb.deleteDB(name);
+  }
 }
