@@ -81,7 +81,7 @@ export class DataCenter {
   /**
    * create new workspace , new workspace is a local workspace
    * @param {string} name workspace name
-   * @returns {Promise<WS>}
+   * @returns {Promise<Workspace>}
    */
   public async createWorkspace(workspaceMeta: WorkspaceMeta) {
     assert(
