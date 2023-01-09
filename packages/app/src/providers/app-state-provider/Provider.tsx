@@ -81,6 +81,17 @@ export const AppStateProvider = ({
     };
   }, [appState]);
 
+  useEffect(() => {
+    const { dataCenter } = appState;
+    // FIXME: onWorkspacesChange should have dispose function
+    dataCenter?.onWorkspacesChange(() => {
+      setAppState({
+        ...appState,
+        workspaceList: dataCenter.workspaces,
+      });
+    });
+  }, [appState]);
+
   const loadPage = (pageId: string) => {
     const { currentWorkspace, currentPage } = appState;
     if (pageId === currentPage?.id) {
