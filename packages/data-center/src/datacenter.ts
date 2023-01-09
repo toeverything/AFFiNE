@@ -44,12 +44,7 @@ export class DataCenter {
         workspaces: dc._workspaces.createScope(),
       })
     );
-    dc.registerProvider(
-      new SelfHostedProvider({
-        logger: dc._logger,
-        workspaces: dc._workspaces.createScope(),
-      })
-    );
+    dc.registerProvider(new SelfHostedProvider());
     if (typeof window !== 'undefined' && window.CLIENT_APP) {
       dc.registerProvider(
         new TauriIPCProvider({

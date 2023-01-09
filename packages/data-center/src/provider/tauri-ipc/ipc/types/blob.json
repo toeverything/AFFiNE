@@ -26,19 +26,19 @@
   "definitions": {
     "GetBlob": {
       "type": "object",
-      "required": ["id", "workspace_id"],
+      "required": ["id"],
       "properties": {
         "id": {
           "type": "string"
         },
         "workspace_id": {
-          "type": "string"
+          "type": ["string", "null"]
         }
       }
     },
     "PutBlob": {
       "type": "object",
-      "required": ["blob", "workspace_id"],
+      "required": ["blob"],
       "properties": {
         "blob": {
           "type": "array",
@@ -49,7 +49,7 @@
           }
         },
         "workspace_id": {
-          "type": "string"
+          "type": ["string", "null"]
         }
       }
     }

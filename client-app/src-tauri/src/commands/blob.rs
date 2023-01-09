@@ -18,7 +18,7 @@ pub async fn put_blob<'s>(
   if let Ok(path) = blob_storage
     .put_blob(
       // TODO: ask octobase to accept blob directly or wrap/await tauri command to create a real stream, so we don't need to construct stream manually
-      Some(parameters.workspace_id),
+      parameters.workspace_id,
       stream::iter::<Vec<Bytes>>(vec![Bytes::from(parameters.blob)]),
     )
     .await
@@ -37,7 +37,7 @@ pub async fn get_blob<'s>(
   let GetBlob { workspace_id, id } = parameters;
   // TODO: check user permission? Or just assume there will only be one user
   let blob_storage = &state.0.lock().await.blob_storage;
-  if let Ok(mut file_stream) = blob_storage.get_blob(Some(workspace_id.clone()), id.clone()).await {
+  if let Ok(mut file_stream) = blob_storage.get_blob(workspace_id.clone(), id.clone()).await {
     // Read all of the chunks into a vector.
     let mut stream_contents = Vec::new();
     let mut error_message = "".to_string();
@@ -47,7 +47,7 @@ pub async fn get_blob<'s>(
         Err(err) => {
           error_message = format!(
             "Failed to read blob file {}/{} from stream, error: {}",
-            workspace_id.to_string(),
+            workspace_id.clone().unwrap_or_default().to_string(),
             id,
             err
           );
@@ -61,7 +61,7 @@ pub async fn get_blob<'s>(
   } else {
     Err(format!(
       "Failed to read blob file {}/{} ",
-      workspace_id.to_string(),
+      workspace_id.unwrap_or_default().to_string(),
       id
     ))
   }

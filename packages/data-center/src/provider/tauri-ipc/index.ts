@@ -1,25 +1,24 @@
 import * as Y from 'yjs';
 import assert from 'assert';
 
-import type {
-  ConfigStore,
-  DataCenterSignals,
-  InitialParams,
-  Logger,
-} from '../index.js';
 import { LocalProvider } from '../local/index.js';
 import * as ipcMethods from './ipc/methods.js';
-import { getApis } from 'src/apis/index.js';
-import { token } from 'src/apis/token.js';
-import { IndexedDBProvider } from '../local/indexeddb.js';
+import { ProviderConstructorParams } from '../base.js';
+import { BlockSchema } from '@blocksuite/blocks/models.js';
+import { Workspace } from '@blocksuite/store';
+import { ConfigStore } from 'src/store.js';
+import { User, Workspace as WS, WorkspaceMeta, Logger } from '../../types';
+import { getDefaultHeadImgBlob } from 'src/utils/index.js';
+import { IPCBlobProvider } from './blocksuite-provider/blob.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
   #ipc = ipcMethods;
 
-  async init(params: InitialParams) {
-    // set members like this._workspace in super
-    super.init(params);
+  constructor(params: ProviderConstructorParams) {
+    super(params);
+    // TODO: let blocksuite's blob provider get blob receive workspace id. Currently, all blobs are placed together
+    this._blobs = new IPCBlobProvider();
   }
 
   async initData() {
@@ -96,32 +95,41 @@ export class TauriIPCProvider extends LocalProvider {
     await super.clear();
   }
 
-  async destroy(): Promise<void> {
-    super.destroy();
-  }
+  public override async createWorkspace(
+    meta: WorkspaceMeta
+  ): Promise<Workspace | undefined> {
+    assert(meta.name, 'Workspace name is required');
+    if (!meta.avatar) {
+      // set default avatar
+      const blob = await getDefaultHeadImgBlob(meta.name);
+      meta.avatar = (await this.setBlob(blob)) || '';
+    }
+    const { id } = await this.#ipc.createWorkspace({
+      name: meta.name,
+      // TODO: get userID here
+      user_id: 0,
+    });
+    this._logger('Creating affine workspace');
+    const nw = new Workspace({
+      room: id,
+    }).register(BlockSchema);
+    nw.meta.setName(meta.name);
+    nw.meta.setAvatar(meta.avatar);
+    // this._initWorkspaceDb(nw);
 
-  async getBlob(id: string) {
-    const blobArray = await this.#ipc.getBlob({
-      workspace_id: this.id,
+    const workspaceInfo: WS = {
+      name: meta.name,
       id,
-    });
-    // Make a Blob from the bytes
-    const blob = new Blob([new Uint8Array(blobArray)], { type: 'image/bmp' });
-    return window.URL.createObjectURL(blob);
-  }
+      isPublish: false,
+      avatar: '',
+      owner: undefined,
+      isLocal: true,
+      memberCount: 1,
+      provider: 'local',
+    };
 
-  async setBlob(blob: Blob) {
-    return this.#ipc.putBlob({
-      blob: Array.from(new Uint8Array(await blob.arrayBuffer())),
-      workspace_id: this.id,
-    });
-  }
-
-  async createWorkspace(
-    name: string
-  ): Promise<{ id: string; name: string } | undefined> {
-    // TODO: get userID here
-    return this.#ipc.createWorkspace({ name, user_id: 0 });
+    this._workspaces.add(workspaceInfo);
+    return nw;
   }
 
   async getWorkspaces(
