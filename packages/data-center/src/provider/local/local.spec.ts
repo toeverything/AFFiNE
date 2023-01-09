@@ -2,13 +2,11 @@ import { test, expect } from '@playwright/test';
 import { Workspaces } from '../../workspaces/index.js';
 import { LocalProvider } from './local.js';
 import 'fake-indexeddb/auto';
-import { BlobStorage } from '@blocksuite/store';
 
 test.describe.serial('local provider', () => {
   const workspaces = new Workspaces();
   const provider = new LocalProvider({
     workspaces: workspaces.createScope(),
-    blobs: new BlobStorage(),
   });
 
   const workspaceName = 'workspace-test';
@@ -29,7 +27,6 @@ test.describe.serial('local provider', () => {
     const workspaces1 = new Workspaces();
     const provider1 = new LocalProvider({
       workspaces: workspaces1.createScope(),
-      blobs: new BlobStorage(),
     });
     await provider1.loadWorkspaces();
     expect(workspaces1.workspaces.length).toEqual(1);
