@@ -8,7 +8,6 @@ import {
   PageMeta,
 } from './interface';
 import { createDefaultWorkspace } from './utils';
-import { Workspace } from '@blocksuite/store';
 import { WorkspaceInfo } from '@affine/datacenter/dist/src/types';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
