@@ -8,6 +8,8 @@ import {
   PageMeta,
 } from './interface';
 import { createDefaultWorkspace } from './utils';
+import { Workspace } from '@blocksuite/store';
+import { WorkspaceInfo } from '@affine/datacenter/dist/src/types';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
@@ -105,9 +107,11 @@ export const AppStateProvider = ({
       return currentWorkspace;
     }
     const workspace = await dataCenter.loadWorkspace(workspaceId);
-    const currentMetaWorkSpace = dataCenter.workspaces.find(item => {
-      return item.id === workspace.room;
-    });
+    const currentMetaWorkSpace = dataCenter.workspaces.find(
+      (item: WorkspaceInfo) => {
+        return item.id === workspace.room;
+      }
+    );
     setAppState({
       ...appState,
       currentWorkspace: workspace,
