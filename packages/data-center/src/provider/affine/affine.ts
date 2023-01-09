@@ -179,8 +179,7 @@ export class AffineProvider extends BaseProvider {
         return;
       }
     }
-    const user = await this._apis.signInWithGoogle?.();
-    assert(user);
+    await this._apis.signInWithGoogle?.();
   }
 
   public override async getUserInfo(): Promise<User | undefined> {
