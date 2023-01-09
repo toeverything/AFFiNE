@@ -12,7 +12,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 /**
  * @class DataCenter
- * @classdesc DataCenter is a data center, it can manage different providers for business
+ * @classdesc Data center is made for managing different providers for business
  */
 export class DataCenter {
   private readonly _workspaces = new Workspaces();
@@ -284,6 +284,7 @@ export class DataCenter {
     const newProvider = this.providerMap.get(providerId);
     assert(newProvider, `provide '${providerId}' is not registered`);
     this._logger(`create ${providerId} workspace: `, workspaceInfo.name);
+    // TODO optimize this function
     const newWorkspace = await newProvider.createWorkspace({
       name: workspaceInfo.name,
       avatar: workspaceInfo.avatar,
