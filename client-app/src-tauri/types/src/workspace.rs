@@ -1,4 +1,4 @@
-use jwst_storage::model::WorkspaceWithPermission;
+use jwst_storage::{model::WorkspaceWithPermission, WorkspaceDetail};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -18,15 +18,25 @@ pub struct GetWorkspaces {
   pub user_id: i32,
 }
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct GetWorkspace {
+  pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CreateWorkspaceResult {
   pub id: String,
   pub name: String,
 }
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct GetWorkspacesResult {
   pub workspaces: Vec<WorkspaceWithPermission>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct GetWorkspaceResult {
+  pub workspace: WorkspaceDetail,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -35,9 +45,10 @@ pub struct UpdateWorkspace {
   pub public: bool,
 }
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub enum IWorkspaceParameters {
   CreateWorkspace(CreateWorkspace),
+  GetWorkspace(GetWorkspace),
   GetWorkspaces(GetWorkspaces),
   GetWorkspacesResult(GetWorkspacesResult),
   UpdateWorkspace(UpdateWorkspace),

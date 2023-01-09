@@ -132,10 +132,79 @@ export class TauriIPCProvider extends LocalProvider {
     return nw;
   }
 
-  async getWorkspaces(
-    config: Readonly<ConfigStore<boolean>>
-  ): Promise<Map<string, boolean> | undefined> {
-    const entries = await config.entries();
-    return new Map(entries);
+  override async loadWorkspaces() {
+    // TODO: get user id here
+    const workspacesList = await this.#ipc.getWorkspaces({ user_id: 0 });
+    const workspaces: WS[] = workspacesList.workspaces.map(w => {
+      return {
+        ...w,
+        memberCount: 0,
+        name: '',
+        provider: 'affine',
+      };
+    });
+    const workspaceInstances = workspaces.map(({ id }) => {
+      const workspace =
+        this._workspacesCache.get(id) ||
+        new Workspace({
+          room: id,
+        }).register(BlockSchema);
+      this._workspacesCache.set(id, workspace);
+      if (workspace) {
+        return new Promise<Workspace>(resolve => {
+          downloadWorkspace(id).then(data => {
+            applyUpdate(workspace.doc, new Uint8Array(data));
+            resolve(workspace);
+          });
+        });
+      } else {
+        return Promise.resolve(null);
+      }
+    });
+
+    (await Promise.all(workspaceInstances)).forEach((workspace, i) => {
+      if (workspace) {
+        workspaces[i] = {
+          ...workspaces[i],
+          name: workspace.doc.meta.name,
+          avatar: workspace.doc.meta.avatar,
+        };
+      }
+    });
+    const getDetailList = workspacesList.map(w => {
+      const { id } = w;
+      return new Promise<{ id: string; detail: WorkspaceDetail | null }>(
+        resolve => {
+          getWorkspaceDetail({ id }).then(data => {
+            resolve({ id, detail: data || null });
+          });
+        }
+      );
+    });
+    const ownerList = await Promise.all(getDetailList);
+    (await Promise.all(ownerList)).forEach(detail => {
+      if (detail) {
+        const { id, detail: workspaceDetail } = detail;
+        if (workspaceDetail) {
+          const { owner, member_count } = workspaceDetail;
+          const currentWorkspace = workspaces.find(w => w.id === id);
+          if (currentWorkspace) {
+            currentWorkspace.owner = {
+              id: owner.id,
+              name: owner.name,
+              avatar: owner.avatar_url,
+              email: owner.email,
+            };
+            currentWorkspace.memberCount = member_count;
+          }
+        }
+      }
+    });
+
+    workspaces.forEach(workspace => {
+      this._workspaces.add(workspace);
+    });
+
+    return workspaces;
   }
 }

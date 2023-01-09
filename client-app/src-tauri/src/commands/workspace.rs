@@ -1,5 +1,6 @@
 use ipc_types::workspace::{
-  CreateWorkspace, CreateWorkspaceResult, GetWorkspacesResult, UpdateWorkspace,
+  CreateWorkspace, CreateWorkspaceResult, GetWorkspace, GetWorkspaceResult, GetWorkspaces,
+  GetWorkspacesResult, UpdateWorkspace,
 };
 use jwst::{DocStorage, Workspace as OctoBaseWorkspace};
 use lib0::any::Any;
@@ -10,7 +11,7 @@ use crate::state::AppState;
 /// create yDoc for a workspace
 pub async fn get_workspaces<'s>(
   state: tauri::State<'s, AppState>,
-  parameters: CreateWorkspace,
+  parameters: GetWorkspaces,
 ) -> Result<GetWorkspacesResult, String> {
   match &state
     .0
@@ -23,6 +24,30 @@ pub async fn get_workspaces<'s>(
     Ok(user_workspaces) => Ok(GetWorkspacesResult {
       workspaces: user_workspaces.clone(),
     }),
+    Err(error_message) => Err(error_message.to_string()),
+  }
+}
+
+#[tauri::command]
+/// create yDoc for a workspace
+pub async fn get_workspace<'s>(
+  state: tauri::State<'s, AppState>,
+  parameters: GetWorkspace,
+) -> Result<GetWorkspaceResult, String> {
+  match &state
+    .0
+    .lock()
+    .await
+    .metadata_db
+    .get_workspace_by_id(parameters.id)
+    .await
+  {
+    Ok(user_workspace_option) => match user_workspace_option {
+      Some(user_workspace) => Ok(GetWorkspaceResult {
+        workspace: user_workspace.clone(),
+      }),
+      None => Err("Get workspace has no result".to_string())
+    },
     Err(error_message) => Err(error_message.to_string()),
   }
 }

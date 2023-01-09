@@ -14,6 +14,16 @@
     },
     {
       "type": "object",
+      "required": ["GetWorkspace"],
+      "properties": {
+        "GetWorkspace": {
+          "$ref": "#/definitions/GetWorkspace"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
       "required": ["GetWorkspaces"],
       "properties": {
         "GetWorkspaces": {
@@ -80,6 +90,15 @@
         }
       }
     },
+    "GetWorkspace": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
     "GetWorkspaces": {
       "type": "object",
       "required": ["user_id"],
@@ -103,8 +122,20 @@
       }
     },
     "PermissionType": {
-      "type": "string",
-      "enum": ["Read", "Write", "Admin", "Owner"]
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "UpdateWorkspace": {
       "type": "object",
@@ -120,8 +151,14 @@
       }
     },
     "WorkspaceType": {
-      "type": "string",
-      "enum": ["Private", "Normal"]
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "WorkspaceWithPermission": {
       "type": "object",
