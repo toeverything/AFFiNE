@@ -1,6 +1,6 @@
 import { getLogger } from '../logger';
 
-export type Workspace = {
+export type WorkspaceInfo = {
   name: string;
   id: string;
   isPublish?: boolean;
@@ -18,6 +18,6 @@ export type User = {
   avatar: string;
 };
 
-export type WorkspaceMeta = Pick<Workspace, 'name' | 'avatar'>;
+export type WorkspaceMeta = Pick<WorkspaceInfo, 'name' | 'avatar'>;
 
 export type Logger = ReturnType<typeof getLogger>;
