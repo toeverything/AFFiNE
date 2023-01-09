@@ -7,7 +7,7 @@ import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useSwitchToConfig } from './config';
 import { NoResultSVG } from './NoResultSVG';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 import usePageHelper from '@/hooks/use-page-helper';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 export const Results = (props: {

@@ -8,7 +8,7 @@ import {
 import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
 import Grow from '@mui/material/Grow';
 import { Tooltip } from '@/ui/tooltip';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';

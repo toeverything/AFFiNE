@@ -23,7 +23,7 @@ import {
   StyledModalFooter,
 } from './style';
 import bg from '@/components/contact-modal/bg.png';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 const linkList = [
   {
     icon: <GithubIcon />,
