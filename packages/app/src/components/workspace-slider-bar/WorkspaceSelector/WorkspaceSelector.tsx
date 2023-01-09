@@ -2,7 +2,6 @@ import { Avatar, WorkspaceName, SelectorWrapper } from './styles';
 import { useEffect, useState } from 'react';
 import { WorkspaceModal } from '@/components/workspace-modal';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { useAppState } from '@/providers/app-state-provider';
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);

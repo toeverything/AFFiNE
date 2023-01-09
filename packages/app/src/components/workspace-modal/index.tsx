@@ -13,19 +13,19 @@ import {
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-// import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { useAppState } from '@/providers/app-state-provider';
+import { useRouter } from 'next/router';
 
-interface LoginModalProps {
+interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
+export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const { confirm } = useConfirm();
-  const { user, workspaceList, loadWorkspace } = useAppState();
-
+  const { user, workspaceList } = useAppState();
+  const router = useRouter();
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -50,9 +50,7 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                 return (
                   <WorkspaceItem
                     onClick={() => {
-                      // setActiveWorkspace(item);
-                      console.log(item);
-                      loadWorkspace(item.id);
+                      router.replace(`/workspace/${item.id}`);
                       onClose();
                     }}
                     key={index}

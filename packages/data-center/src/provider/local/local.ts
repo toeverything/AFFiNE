@@ -25,8 +25,9 @@ export class LocalProvider extends BaseProvider {
   public override async linkLocal(workspace: Workspace) {
     assert(workspace.room);
     let idb = this._idbMap.get(workspace.room);
-    idb?.destroy();
-    idb = new IndexedDBProvider(workspace.room, workspace.doc);
+    if (!idb) {
+      idb = new IndexedDBProvider(workspace.room, workspace.doc);
+    }
     this._idbMap.set(workspace.room, idb);
     this._logger('Local data loaded');
     return workspace;

@@ -43,10 +43,12 @@ export const AppStateProvider = ({
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
       }
-
-      const currentWorkspace = await dataCenter.loadWorkspace(
-        dataCenter.workspaces[0].id
-      );
+      let currentWorkspace = appState.currentWorkspace;
+      if (!currentWorkspace) {
+        currentWorkspace = await dataCenter.loadWorkspace(
+          dataCenter.workspaces[0].id
+        );
+      }
 
       setAppState({
         dataCenter,
@@ -104,6 +106,7 @@ export const AppStateProvider = ({
   };
 
   const loadWorkspace = async (workspaceId: string) => {
+    console.log('workspaceId: ', workspaceId);
     const { dataCenter, workspaceList, currentWorkspaceId } = appState;
     if (!workspaceList.find(v => v.id === workspaceId)) {
       return;
@@ -111,6 +114,8 @@ export const AppStateProvider = ({
     if (workspaceId === currentWorkspaceId) {
       return;
     }
+    const workspace = await dataCenter.loadWorkspace(workspaceId);
+    console.log('workspace: ', workspace);
 
     setAppState({
       ...appState,
