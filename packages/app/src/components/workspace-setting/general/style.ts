@@ -9,7 +9,7 @@ export const StyledSettingInputContainer = styled('div')(() => {
 
 export const StyledDeleteButtonContainer = styled('div')(() => {
   return {
-    marginTop: '154px',
+    marginTop: '30px',
   };
 });
 
@@ -25,4 +25,13 @@ export const StyledSettingAvatarContent = styled('div')(() => {
 
 export const StyledSettingAvatar = styled(MuiAvatar)(() => {
   return { height: '72px', width: '72px', marginRight: '24px' };
+});
+
+export const StyledMemberWarp = styled('div')(() => {
+  return {
+    display: 'flex',
+    height: '500px',
+    flexDirection: 'column',
+    padding: '60px 0',
+  };
 });

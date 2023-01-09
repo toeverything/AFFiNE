@@ -11,27 +11,25 @@ import {
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { getDataCenter } from '@affine/datacenter';
 import { useRouter } from 'next/router';
-import { useAppState } from '@/providers/app-state-provider';
+import {
+  deleteWorkspace,
+  getWorkspaces,
+  Workspace,
+} from '@/hooks/mock-data/mock';
 
 interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
-  workspaceName: string;
-  workspaceId: string;
-  nextWorkSpaceId: string;
+  workspace: Workspace;
 }
 
 export const WorkspaceDelete = ({
   open,
   onClose,
-  workspaceId,
-  workspaceName,
-  nextWorkSpaceId,
+  workspace,
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
-  const { refreshWorkspacesMeta } = useAppState();
   const router = useRouter();
 
   const handlerInputChange = (workspaceName: string) => {
@@ -42,8 +40,14 @@ export const WorkspaceDelete = ({
     // const dc = await getDataCenter();
     // await dc.apis.deleteWorkspace({ id: workspaceId });
     // router.push(`/workspace/${nextWorkSpaceId}`);
-    // refreshWorkspacesMeta();
-    // onClose();
+    deleteWorkspace(workspace.id);
+    const workspaceList = getWorkspaces();
+    if (workspaceList.length) {
+      router.push(`/workspace/${workspaceList[0].id}`);
+    } else {
+      router.push(`/workspace`);
+    }
+    onClose();
   };
 
   return (
@@ -51,11 +55,20 @@ export const WorkspaceDelete = ({
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
         <StyledModalHeader>Delete Workspace</StyledModalHeader>
-        <StyledTextContent>
-          This action cannot be undone. This will permanently delete (
-          <StyledWorkspaceName>{workspaceName}</StyledWorkspaceName>) along with
-          all its content.
-        </StyledTextContent>
+        {workspace.type === 'local' ? (
+          <StyledTextContent>
+            Deleting (
+            <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>) cannot
+            be undone, please proceed with caution. along with all its content.
+          </StyledTextContent>
+        ) : (
+          <StyledTextContent>
+            Deleting (
+            <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>) will
+            delete both local and cloud data, this operation cannot be undone,
+            please proceed with caution.
+          </StyledTextContent>
+        )}
         <StyledInputContent>
           <Input
             onChange={handlerInputChange}

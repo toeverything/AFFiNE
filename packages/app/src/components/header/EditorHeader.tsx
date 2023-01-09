@@ -8,8 +8,8 @@ import {
 import { Content } from '@/ui/layout';
 import { useAppState } from '@/providers/app-state-provider/context';
 import EditorModeSwitch from '@/components/editor-mode-switch';
-import QuickSearchButton from './quick-search-button';
-import Header from './header';
+import QuickSearchButton from './QuickSearchButton';
+import Header from './Header';
 import usePropsUpdated from '@/hooks/use-props-updated';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 

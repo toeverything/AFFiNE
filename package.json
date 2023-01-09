@@ -4,6 +4,7 @@
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
+  "type": "module",
   "scripts": {
     "dev": "cross-env NODE_ENV=development pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev",
     "dev:ac": "pnpm --filter=!@affine/app build && cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
@@ -47,8 +48,7 @@
     "lint-staged": "^13.1.0",
     "prettier": "^2.7.1",
     "ts-jest": "^29.0.3",
-    "typescript": "^4.9.3",
-    "vitest": "^0.26.3"
+    "typescript": "^4.9.3"
   },
   "eslintConfig": {
     "root": true,

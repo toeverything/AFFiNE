@@ -1,62 +1,37 @@
 import {
   StyledDeleteButtonContainer,
-  StyledSettingAvatar,
+  // StyledSettingAvatar,
   StyledSettingAvatarContent,
   StyledSettingInputContainer,
 } from './style';
 import { StyledSettingH2 } from '../style';
 
 import { useState } from 'react';
-import { Button } from '@/ui/button';
+import { Button, TextButton } from '@/ui/button';
 import Input from '@/ui/input';
-import { getDataCenter, Workspace, WorkspaceType } from '@affine/datacenter';
-import { useAppState } from '@/providers/app-state-provider';
-import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
+// import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
-import { Workspace as StoreWorkspace } from '@blocksuite/store';
-import { debounce } from '@/utils';
+// import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
-
-export const GeneralPage = ({
-  workspace,
-  owner,
-}: {
-  workspace: Workspace;
-  owner: WorkspaceDetails[string]['owner'];
-  workspaces: Record<string, StoreWorkspace | null>;
-}) => {
-  const {
-    user,
-    currentWorkspace,
-    workspacesMeta,
-    workspaces,
-    refreshWorkspacesMeta,
-  } = useAppState();
+import { Workspace } from '@/hooks/mock-data/mock';
+import { WorkspaceAvatar } from '@/components/workspace-avatar';
+import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
+  // const { refreshWorkspacesMeta } = useAppState();
+  const { updateWorkspaceMeta } = useTemporaryHelper();
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
-  const [workspaceName, setWorkspaceName] = useState<string>(
-    workspaces[workspace.id]?.meta.name ||
-      (workspace.type === WorkspaceType.Private && user ? user.name : '')
-  );
-  const debouncedRefreshWorkspacesMeta = debounce(() => {
-    refreshWorkspacesMeta();
-  }, 100);
-  const isOwner = user && owner.id === user.id;
+  const [workspaceName, setWorkspaceName] = useState<string>('');
+  // const debouncedRefreshWorkspacesMeta = debounce(() => {
+  //   refreshWorkspacesMeta();
+  // }, 100);
+  const isOwner = true;
+
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
-    currentWorkspace?.meta.setName(newName);
-    workspaces[workspace.id]?.meta.setName(newName);
-    debouncedRefreshWorkspacesMeta();
   };
-  const currentWorkspaceIndex = workspacesMeta.findIndex(
-    meta => meta.id === workspace.id
-  );
-  const nextWorkSpaceId =
-    currentWorkspaceIndex === workspacesMeta.length - 1
-      ? workspacesMeta[currentWorkspaceIndex - 1]?.id
-      : workspacesMeta[currentWorkspaceIndex + 1]?.id;
   const handleClickDelete = () => {
     setShowDelete(true);
   };
@@ -70,9 +45,13 @@ export const GeneralPage = ({
   const handleCloseLeave = () => {
     setShowLeave(false);
   };
+  const handleUpdateWorkspaceName = () => {
+    workspace && updateWorkspaceMeta(workspace.id, { name: workspaceName });
+  };
 
   const fileChange = async (file: File) => {
-    // setUploading(true);
+    console.log('file: ', file);
+    setUploading(true);
     // const blob = new Blob([file], { type: file.type });
     // const blobId = await getDataCenter()
     //   .then(dc => dc.apis.uploadBlob({ blob }))
@@ -81,7 +60,7 @@ export const GeneralPage = ({
     //   });
     // if (blobId) {
     //   currentWorkspace?.meta.setAvatar(blobId);
-    //   workspaces[workspace.id]?.meta.setAvatar(blobId);
+    //   // workspaces[workspace.id]?.meta.setAvatar(blobId);
     //   setUploading(false);
     //   debouncedRefreshWorkspacesMeta();
     // }
@@ -89,18 +68,17 @@ export const GeneralPage = ({
 
   return workspace ? (
     <div>
-      <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
+      <StyledSettingH2 marginTop={56}>Workspace Icon</StyledSettingH2>
       <StyledSettingAvatarContent>
-        <StyledSettingAvatar
-          alt="workspace avatar"
-          src={
-            workspaces[workspace.id]?.meta.avatar
-              ? '/api/blob/' + workspaces[workspace.id]?.meta.avatar
-              : ''
-          }
+        <div
+          style={{
+            float: 'left',
+
+            marginRight: '5px',
+          }}
         >
-          {workspaces[workspace.id]?.meta.name[0]}
-        </StyledSettingAvatar>
+          <WorkspaceAvatar size={60} name={workspace.name} />
+        </div>
         <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
           fileChange={fileChange}
@@ -108,31 +86,45 @@ export const GeneralPage = ({
           <Button loading={uploading}>Upload</Button>
         </Upload>
         {/* TODO: add upload logic */}
-        {/* {isOwner ? (
-          <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>
-        ) : null} */}
-        {/* <Button shape="round">remove</Button> */}
       </StyledSettingAvatarContent>
-      <StyledSettingH2 marginTop={36}>Workspace Name</StyledSettingH2>
+      <StyledSettingH2 marginTop={20}>Workspace Name</StyledSettingH2>
       <StyledSettingInputContainer>
         <Input
           width={327}
           value={workspaceName}
           placeholder="Workspace Name"
-          disabled={!isOwner}
           maxLength={14}
           minLength={1}
           onChange={handleChangeWorkSpaceName}
         ></Input>
+        <TextButton
+          onClick={() => {
+            handleUpdateWorkspaceName();
+          }}
+          style={{ marginLeft: '10px' }}
+        >
+          ✔️
+        </TextButton>
       </StyledSettingInputContainer>
-      <StyledSettingH2 marginTop={36}>Workspace Owner</StyledSettingH2>
+      {/* {userInfo ? (
+        <div>
+          <StyledSettingH2 marginTop={20}>Workspace Owner</StyledSettingH2>
+          <StyledSettingInputContainer>
+            <Input
+              width={327}
+              disabled
+              value={userInfo?.name}
+              placeholder="Workspace Owner"
+            ></Input>
+          </StyledSettingInputContainer>
+        </div>
+      ) : (
+        ''
+      )} */}
+
+      <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
-        <Input
-          width={327}
-          disabled
-          value={owner.name}
-          placeholder="Workspace Owner"
-        ></Input>
+        <code>{workspace.type} </code>
       </StyledSettingInputContainer>
       <StyledDeleteButtonContainer>
         {isOwner ? (
@@ -143,9 +135,7 @@ export const GeneralPage = ({
             <WorkspaceDelete
               open={showDelete}
               onClose={handleCloseDelete}
-              workspaceName={workspaceName}
-              workspaceId={workspace.id}
-              nextWorkSpaceId={nextWorkSpaceId}
+              workspace={workspace}
             />
           </>
         ) : (
@@ -158,7 +148,6 @@ export const GeneralPage = ({
               onClose={handleCloseLeave}
               workspaceName={workspaceName}
               workspaceId={workspace.id}
-              nextWorkSpaceId={nextWorkSpaceId}
             />
           </>
         )}

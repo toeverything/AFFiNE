@@ -1,5 +1,5 @@
 import { CloudUnsyncedIcon, CloudInsyncIcon } from '@blocksuite/icons';
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { IconButton } from '@/ui/button';
 

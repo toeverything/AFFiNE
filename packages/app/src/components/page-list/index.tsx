@@ -12,18 +12,18 @@ import {
   StyledTitleWrapper,
 } from './styles';
 import { Table, TableBody, TableCell, TableHead, TableRow } from '@/ui/table';
-import { OperationCell, TrashOperationCell } from './operation-cell';
-import Empty from './empty';
+import { OperationCell, TrashOperationCell } from './OperationCell';
+import Empty from './Empty';
 import { Content } from '@/ui/layout';
 import React from 'react';
-import DateCell from '@/components/page-list/date-cell';
+import DateCell from '@/components/page-list/DateCell';
 import { IconButton } from '@/ui/button';
 import { Tooltip } from '@/ui/tooltip';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useTheme } from '@/providers/themeProvider';
+import { useTheme } from '@/providers/ThemeProvider';
 import { useTranslation } from 'react-i18next';
 const FavoriteTag = ({
   pageMeta: { favorite, id },

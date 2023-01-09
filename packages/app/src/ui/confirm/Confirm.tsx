@@ -12,6 +12,7 @@ export type ConfirmProps = {
   title?: string;
   content?: string;
   confirmText?: string;
+  cancelText?: string;
   // TODO: Confirm button's color should depend on confirm type
   confirmType?: 'primary' | 'warning' | 'danger';
   onConfirm?: () => void;
@@ -25,6 +26,7 @@ export const Confirm = ({
   confirmType,
   onConfirm,
   onCancel,
+  cancelText = 'Cancel',
 }: ConfirmProps) => {
   const [open, setOpen] = useState(true);
   const { t } = useTranslation();
@@ -50,7 +52,7 @@ export const Confirm = ({
             }}
             style={{ marginRight: '24px' }}
           >
-            {t('Cancel')}
+            {cancelText === 'Cancel' ? t('Cancel') : cancelText}
           </Button>
           <Button
             type={confirmType}

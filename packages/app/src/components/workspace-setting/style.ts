@@ -117,6 +117,7 @@ export const StyledMemberTitleContainer = styled('div')(() => {
     display: 'flex',
     marginTop: '60px',
     fontWeight: '500',
+    flex: 1,
   };
 });
 
@@ -199,11 +200,12 @@ export const StyledMoreVerticalButton = styled('button')(() => {
 
 export const StyledPublishExplanation = styled('div')(() => {
   return {
-    marginTop: '56px',
     paddingRight: '48px',
     fontWeight: '500',
     fontSize: '18px',
     lineHeight: '26px',
+    flex: 1,
+    marginTop: '60px',
   };
 });
 
@@ -213,7 +215,8 @@ export const StyledPublishCopyContainer = styled('div')(() => {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    height: '38px',
+    marginBottom: '20px',
+    paddingTop: '20px',
   };
 });
 
@@ -226,5 +229,7 @@ export const StyledCopyButtonContainer = styled('div')(() => {
 export const StyledPublishContent = styled('div')(() => {
   return {
     height: '494px',
+    display: 'flex',
+    flexDirection: 'column',
   };
 });

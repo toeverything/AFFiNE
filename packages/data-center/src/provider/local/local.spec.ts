@@ -2,11 +2,13 @@ import { describe, test, expect } from 'vitest';
 import { Workspaces } from '../../workspaces';
 import { LocalProvider } from './local';
 import 'fake-indexeddb/auto';
+import { BlobStorage } from '@blocksuite/store';
 
 describe('local provider', () => {
   const workspaces = new Workspaces();
   const provider = new LocalProvider({
     workspaces: workspaces.createScope(),
+    blobs: new BlobStorage(),
   });
 
   const workspaceName = 'workspace-test';
@@ -27,6 +29,7 @@ describe('local provider', () => {
     const workspaces1 = new Workspaces();
     const provider1 = new LocalProvider({
       workspaces: workspaces1.createScope(),
+      blobs: new BlobStorage(),
     });
     await provider1.loadWorkspaces();
     expect(workspaces1.workspaces.length).toEqual(1);

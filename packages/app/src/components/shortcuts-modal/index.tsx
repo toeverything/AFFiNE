@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { KeyboardIcon } from './icons';
+import { KeyboardIcon } from './Icons';
 import {
   StyledListItem,
   StyledModalHeader,
