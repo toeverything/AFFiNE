@@ -34,6 +34,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   const [members, setMembers] = useState<[{ name: string; email: string }]>([
     { name: 'affine', email: 'tttt' },
   ]);
+  console.log('setMembers: ', setMembers);
   const { user, login, updateWorkspaceMeta } = useTemporaryHelper();
   const { confirm } = useConfirm();
   // const refreshMembers = useCallback(() => {
@@ -51,7 +52,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   //     });
   // }, [workspace.id]);
   const setMembersList = () => {
-    setMembers([]);
+    // setMembers([]);
     // const members = getMembers(workspace.id);
     // members && setMembers(members);
   };
