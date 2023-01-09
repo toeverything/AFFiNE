@@ -58,4 +58,6 @@
 //     whiteSpace: 'nowrap',
 //   };
 // });
-export default {};
+export const test = () => {
+  return <></>;
+};

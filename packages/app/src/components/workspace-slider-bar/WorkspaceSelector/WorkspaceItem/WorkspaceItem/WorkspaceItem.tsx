@@ -95,4 +95,6 @@
 //   marginLeft: '12px',
 // });
 
-export default {};
+export const test = () => {
+  return <></>;
+};
