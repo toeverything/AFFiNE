@@ -28,8 +28,8 @@ export const WorkspaceLeave = ({
   const router = useRouter();
   const { refreshWorkspacesMeta } = useAppState();
   const handleLeave = async () => {
-    const dc = await getDataCenter();
-    await dc.apis.leaveWorkspace({ id: workspaceId });
+    // const dc = await getDataCenter();
+    // await dc.apis.leaveWorkspace({ id: workspaceId });
     router.push(`/workspace/${nextWorkSpaceId}`);
     refreshWorkspacesMeta();
     onClose();

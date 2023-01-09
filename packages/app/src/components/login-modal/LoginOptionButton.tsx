@@ -9,14 +9,14 @@ export const GoogleLoginButton = () => {
   return (
     <StyledGoogleButton
       onClick={() => {
-        getDataCenter()
-          .then(dc => dc.apis.signInWithGoogle?.())
-          .then(() => {
-            triggerLoginModal();
-          })
-          .catch(error => {
-            console.log('sign google error', error);
-          });
+        // getDataCenter()
+        //   .then(dc => dc.apis.signInWithGoogle?.())
+        //   .then(() => {
+        //     triggerLoginModal();
+        //   })
+        //   .catch(error => {
+        //     console.log('sign google error', error);
+        //   });
       }}
     >
       <ButtonWrapper>

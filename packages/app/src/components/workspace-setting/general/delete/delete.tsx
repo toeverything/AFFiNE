@@ -39,11 +39,11 @@ export const WorkspaceDelete = ({
   };
 
   const handleDelete = async () => {
-    const dc = await getDataCenter();
-    await dc.apis.deleteWorkspace({ id: workspaceId });
-    router.push(`/workspace/${nextWorkSpaceId}`);
-    refreshWorkspacesMeta();
-    onClose();
+    // const dc = await getDataCenter();
+    // await dc.apis.deleteWorkspace({ id: workspaceId });
+    // router.push(`/workspace/${nextWorkSpaceId}`);
+    // refreshWorkspacesMeta();
+    // onClose();
   };
 
   return (

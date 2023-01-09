@@ -60,19 +60,19 @@ export const InviteMembers = ({
       setShowTip(false);
       debounce(
         () => {
-          getDataCenter()
-            .then(dc =>
-              dc.apis.getUserByEmail({
-                email: value,
-                workspace_id: workspaceId,
-              })
-            )
-            .then(data => {
-              if (data?.name) {
-                setUserData(data);
-                setShowTip(false);
-              }
-            });
+          // getDataCenter()
+          //   .then(dc =>
+          //     dc.apis.getUserByEmail({
+          //       email: value,
+          //       workspace_id: workspaceId,
+          //     })
+          //   )
+          //   .then(data => {
+          //     if (data?.name) {
+          //       setUserData(data);
+          //       setShowTip(false);
+          //     }
+          //   });
         },
         300,
         true
@@ -134,16 +134,16 @@ export const InviteMembers = ({
               shape="circle"
               type="primary"
               onClick={() => {
-                getDataCenter()
-                  .then(dc => dc.apis.inviteMember({ id: workspaceId, email }))
-                  .then(() => {
-                    onClose();
-                    onInviteSuccess && onInviteSuccess();
-                  })
-                  .catch(err => {
-                    // toast('Invite failed');
-                    console.log(err);
-                  });
+                // getDataCenter()
+                //   .then(dc => dc.apis.inviteMember({ id: workspaceId, email }))
+                //   .then(() => {
+                //     onClose();
+                //     onInviteSuccess && onInviteSuccess();
+                //   })
+                //   .catch(err => {
+                //     // toast('Invite failed');
+                //     console.log(err);
+                //   });
               }}
             >
               Invite
