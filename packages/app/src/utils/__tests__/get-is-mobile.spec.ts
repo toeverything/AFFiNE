@@ -1,7 +1,7 @@
-import { describe, test, expect } from '@jest/globals';
+import { test, expect } from '@playwright/test';
 import { isMobile } from '../get-is-mobile';
 
-describe('get-is-mobile', () => {
+test.describe('get-is-mobile', () => {
   test('get-is-mobile', () => {
     expect(
       isMobile(
