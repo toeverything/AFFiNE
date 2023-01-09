@@ -1,8 +1,8 @@
 import { getDataCenter } from '@affine/datacenter';
 import { styled } from '@/styles';
 import { Button } from '@/ui/button';
-import { useModal } from '@/providers/global-modal-provider';
-import { GoogleIcon, StayLogOutIcon } from './icons';
+import { useModal } from '@/providers/GlobalModalProvider';
+import { GoogleIcon, StayLogOutIcon } from './Icons';
 
 export const GoogleLoginButton = () => {
   const { triggerLoginModal } = useModal();

@@ -1,5 +1,5 @@
 import { styled } from '@/styles';
-import Loading from './loading';
+import Loading from './Loading';
 
 // Used for the full page loading
 const StyledLoadingContainer = styled('div')(() => {

@@ -4,7 +4,7 @@ import { SelectorPopperContent } from './SelectorPopperContent';
 import { useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceType } from '@affine/datacenter';
-import { AffineIcon } from '../icons/icons';
+import { AffineIcon } from '../icons/Icons';
 
 export const WorkspaceSelector = () => {
   const [isShow, setIsShow] = useState(false);
