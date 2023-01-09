@@ -16,7 +16,6 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
  */
 export class DataCenter {
   private readonly _workspaces = new Workspaces();
-  private currentWorkspace: Workspace | null = null;
   private readonly _logger = getLogger('dc');
   /**
    * A mainProvider must exist as the only data trustworthy source.
@@ -150,9 +149,8 @@ export class DataCenter {
     const provider = this.providerMap.get(workspaceInfo.provider);
     assert(provider, `provide '${workspaceInfo.provider}' is not registered`);
     this._logger(`Loading ${workspaceInfo.provider} workspace: `, workspaceId);
-    const workspace = this._getWorkspace(workspaceId);
-    this.currentWorkspace = await provider.warpWorkspace(workspace);
-    return this.currentWorkspace;
+
+    return await provider.warpWorkspace(this._getWorkspace(workspaceId));
   }
 
   /**
@@ -184,24 +182,23 @@ export class DataCenter {
    */
   public async resetWorkspaceMeta(
     { name, avatar }: WorkspaceMeta,
-    workspace?: Workspace
+    workspace: Workspace
   ) {
-    const w = workspace ?? this.currentWorkspace;
-    assert(w?.room, 'No workspace to set meta');
+    assert(workspace?.room, 'No workspace to set meta');
     const update: Partial<WorkspaceMeta> = {};
     if (name) {
-      w.meta.setName(name);
+      workspace.doc.meta.setName(name);
       update.name = name;
     }
     if (avatar) {
-      w.meta.setAvatar(avatar);
+      workspace.doc.meta.setAvatar(avatar);
       update.avatar = avatar;
     }
     // may run for change workspace meta
-    const workspaceInfo = this._workspaces.find(w.room);
+    const workspaceInfo = this._workspaces.find(workspace.room);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
-    provider?.updateWorkspaceMeta(w.room, update);
+    provider?.updateWorkspaceMeta(workspace.room, update);
   }
 
   /**
@@ -250,19 +247,6 @@ export class DataCenter {
     }
   }
 
-  /**
-   *
-   * do close current workspace
-   */
-  public async closeCurrentWorkspace() {
-    assert(this.currentWorkspace?.room, 'No workspace to close');
-    const currentWorkspace = this._workspaces.find(this.currentWorkspace.room);
-    assert(currentWorkspace, 'Workspace not found');
-    const provider = this.providerMap.get(currentWorkspace.provider);
-    assert(provider, 'Provider not found');
-    await provider.closeWorkspace(currentWorkspace.id);
-  }
-
   private async _transWorkspaceProvider(
     workspace: Workspace,
     providerId: string
@@ -296,9 +280,7 @@ export class DataCenter {
    * Enable workspace cloud
    * @param {string} id ID of workspace.
    */
-  public async enableWorkspaceCloud(
-    workspace: Workspace | null = this.currentWorkspace
-  ) {
+  public async enableWorkspaceCloud(workspace: Workspace) {
     assert(workspace?.room, 'No workspace to enable cloud');
     return await this._transWorkspaceProvider(workspace, 'affine');
   }
