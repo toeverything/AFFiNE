@@ -4,6 +4,7 @@
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
+  "type": "module",
   "scripts": {
     "dev": "pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev",
     "dev:ac": "pnpm --filter=!@affine/app build && NODE_API_SERVER=ac pnpm --filter @affine/app dev",
@@ -15,8 +16,7 @@
     "test": "playwright test",
     "test:dc": "pnpm --filter @affine/datacenter test",
     "test:e2e:codegen": "npx playwright codegen http://localhost:8080",
-    "test:unit": "vitest run",
-    "test:unit:watch": "vitest",
+    "test:unit": "playwright test --config=playwright.config.unit.ts",
     "postinstall": "husky install",
     "notify": "node --experimental-modules scripts/notify.mjs",
     "check:ci": "pnpm lint & pnpm test"
@@ -41,8 +41,7 @@
     "husky": "^8.0.2",
     "lint-staged": "^13.1.0",
     "prettier": "^2.7.1",
-    "typescript": "^4.9.3",
-    "vitest": "^0.26.3"
+    "typescript": "^4.9.3"
   },
   "eslintConfig": {
     "root": true,

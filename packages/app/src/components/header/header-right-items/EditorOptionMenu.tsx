@@ -13,7 +13,7 @@ import {
 } from '@blocksuite/icons';
 import { useAppState } from '@/providers/app-state-provider';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useConfirm } from '@/providers/confirm-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { toast } from '@/ui/toast';
 import { useTranslation } from 'react-i18next';

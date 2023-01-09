@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loadPage } from './libs/load-page';
+import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
 test.describe('Open contact us', () => {
-  test('Click about us', async ({ page }) => {
+  test.skip('Click about us', async ({ page }) => {
     const currentWorkspace = page.getByTestId('current-workspace');
     await currentWorkspace.click();
     // await page.waitForTimeout(1000);

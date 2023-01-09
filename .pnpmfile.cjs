@@ -1,11 +1,11 @@
 const fs = require('fs');
 
 function getCustomize() {
-  const customed = fs.existsSync('./module-resolve.js');
+  const customed = fs.existsSync('./module-resolve.cjs');
   if (!customed) {
     return null;
   }
-  const script = require('./module-resolve.js');
+  const script = require('./module-resolve.cjs');
   return script && script.resolve;
 }
 

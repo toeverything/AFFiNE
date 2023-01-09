@@ -1,11 +1,11 @@
-import { BaseProvider } from '../base';
+import { BaseProvider } from '../base.js';
 import type { ProviderConstructorParams } from '../base';
 import { varStorage as storage } from 'lib0/storage';
 import { Workspace as WS, WorkspaceMeta } from '../../types';
 import { Workspace, uuidv4 } from '@blocksuite/store';
-import { IndexedDBProvider } from '../indexeddb';
+import { IndexedDBProvider } from '../indexeddb.js';
 import assert from 'assert';
-import { getDefaultHeadImgBlob } from '../../utils';
+import { getDefaultHeadImgBlob } from '../../utils/index.js';
 
 const WORKSPACE_KEY = 'workspaces';
 

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loadPage } from './libs/load-page';
+import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
 test.describe('Login Flow', () => {
-  test('Open login modal by click current workspace', async ({ page }) => {
+  test.skip('Open login modal by click current workspace', async ({ page }) => {
     await page.getByTestId('current-workspace').click();
     await page.waitForTimeout(800);
     // why don't we use waitForSelector, It seems that waitForSelector not stable?

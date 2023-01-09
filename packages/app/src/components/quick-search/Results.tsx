@@ -1,12 +1,12 @@
 import { Command } from 'cmdk';
 import { StyledListItem, StyledNotFound } from './style';
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useSwitchToConfig } from './config';
-import { NoResultSVG } from './noResultSVG';
+import { NoResultSVG } from './NoResultSVG';
 import { useTranslation } from 'react-i18next';
 import usePageHelper from '@/hooks/use-page-helper';
 import usePageMetaList from '@/hooks/use-page-meta-list';

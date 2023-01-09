@@ -1,8 +1,8 @@
-import { describe, test, expect } from 'vitest';
-import { Workspaces } from './workspaces';
+import { test, expect } from '@playwright/test';
+import { Workspaces } from './workspaces.js';
 import type { WorkspacesChangeEvent } from './workspaces';
 
-describe('workspaces observable', () => {
+test.describe.serial('workspaces observable', () => {
   const workspaces = new Workspaces();
 
   const scope = workspaces.createScope();

@@ -13,7 +13,7 @@ import {
 import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useCallback, useEffect, useState } from 'react';
 import { getDataCenter, WorkspaceType } from '@affine/datacenter';
-import { useModal } from '@/providers/global-modal-provider';
+import { useModal } from '@/providers/GlobalModalProvider';
 
 export type WorkspaceDetails = Record<
   string,
