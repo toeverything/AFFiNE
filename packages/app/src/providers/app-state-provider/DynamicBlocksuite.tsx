@@ -18,7 +18,7 @@ const DynamicBlocksuite = ({
     const openWorkspace: LoadWorkspaceHandler = async (workspaceId: string) => {
       if (workspaceId) {
         const dc = await getDataCenter();
-        return dc.load(workspaceId, { providerId: 'selfhosted' });
+        return dc.load(workspaceId, { providerId: 'local' });
       } else {
         return null;
       }
