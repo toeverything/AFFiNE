@@ -1,8 +1,8 @@
 import { BaseProvider } from '../base.js';
 import type { ProviderConstructorParams } from '../base';
 import { varStorage as storage } from 'lib0/storage';
-import { Workspace as WS, WorkspaceMeta } from '../../types';
-import { Workspace, uuidv4 } from '@blocksuite/store';
+import { WorkspaceInfo, WorkspaceMeta } from '../../types';
+import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
 import { IndexedDBProvider } from './indexeddb.js';
 import assert from 'assert';
 import { getDefaultHeadImgBlob } from '../../utils/index.js';
@@ -18,11 +18,11 @@ export class LocalProvider extends BaseProvider {
     this.loadWorkspaces();
   }
 
-  private _storeWorkspaces(workspaces: WS[]) {
+  private _storeWorkspaces(workspaces: WorkspaceInfo[]) {
     storage.setItem(WORKSPACE_KEY, JSON.stringify(workspaces));
   }
 
-  public override async linkLocal(workspace: Workspace) {
+  public override async linkLocal(workspace: BlocksuiteWorkspace) {
     assert(workspace.room);
     let idb = this._idbMap.get(workspace.room);
     idb?.destroy();
@@ -33,19 +33,19 @@ export class LocalProvider extends BaseProvider {
   }
 
   public override async warpWorkspace(
-    workspace: Workspace
-  ): Promise<Workspace> {
+    workspace: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
     assert(workspace.room);
     await this.linkLocal(workspace);
     return workspace;
   }
 
-  override loadWorkspaces(): Promise<WS[]> {
+  override loadWorkspaces(): Promise<WorkspaceInfo[]> {
     const workspaceStr = storage.getItem(WORKSPACE_KEY);
-    let workspaces: WS[] = [];
+    let workspaces: WorkspaceInfo[] = [];
     if (workspaceStr) {
       try {
-        workspaces = JSON.parse(workspaceStr) as WS[];
+        workspaces = JSON.parse(workspaceStr) as WorkspaceInfo[];
         workspaces.forEach(workspace => {
           this._workspaces.add(workspace);
         });
@@ -77,11 +77,11 @@ export class LocalProvider extends BaseProvider {
 
   public override async createWorkspace(
     meta: WorkspaceMeta
-  ): Promise<Workspace | undefined> {
+  ): Promise<BlocksuiteWorkspace | undefined> {
     assert(meta.name, 'Workspace name is required');
     this._logger('Creating affine workspace');
 
-    const workspaceInfo: WS = {
+    const workspaceInfo: WorkspaceInfo = {
       name: meta.name,
       id: uuidv4(),
       isPublish: false,
@@ -92,7 +92,7 @@ export class LocalProvider extends BaseProvider {
       provider: 'local',
     };
 
-    const workspace = new Workspace({ room: workspaceInfo.id });
+    const workspace = new BlocksuiteWorkspace({ room: workspaceInfo.id });
     this.linkLocal(workspace);
     workspace.meta.setName(meta.name);
     if (!meta.avatar) {

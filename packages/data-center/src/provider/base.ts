@@ -1,5 +1,5 @@
-import { BlobStorage, Workspace } from '@blocksuite/store';
-import { Logger, User, Workspace as WS, WorkspaceMeta } from '../types';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import { Logger, User, WorkspaceInfo, WorkspaceMeta } from '../types';
 import type { WorkspacesScope } from '../workspaces';
 
 const defaultLogger = () => {
@@ -47,14 +47,16 @@ export class BaseProvider {
    * @param workspace
    * @returns
    */
-  public async warpWorkspace(workspace: Workspace): Promise<Workspace> {
+  public async warpWorkspace(
+    workspace: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
     return workspace;
   }
 
   /**
    * load workspaces
    **/
-  public async loadWorkspaces(): Promise<WS[]> {
+  public async loadWorkspaces(): Promise<WorkspaceInfo[]> {
     throw new Error(`provider: ${this.id} loadWorkSpace Not implemented`);
   }
 
@@ -154,7 +156,7 @@ export class BaseProvider {
    */
   public async createWorkspace(
     meta: WorkspaceMeta
-  ): Promise<Workspace | undefined> {
+  ): Promise<BlocksuiteWorkspace | undefined> {
     meta;
     return;
   }
@@ -175,7 +177,9 @@ export class BaseProvider {
    * @param workspace
    * @returns
    */
-  public async linkLocal(workspace: Workspace): Promise<Workspace> {
+  public async linkLocal(
+    workspace: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
     return workspace;
   }
 }

@@ -1,7 +1,7 @@
 import { BaseProvider } from '../base.js';
 import type { ProviderConstructorParams } from '../base';
-import type { User, Workspace as WS, WorkspaceMeta } from '../../types';
-import { Workspace } from '@blocksuite/store';
+import type { User, WorkspaceInfo, WorkspaceMeta } from '../../types';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate } from 'yjs';
 import { storage } from './storage.js';
@@ -19,7 +19,7 @@ export interface AffineProviderConstructorParams
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
-  private _workspacesCache: Map<string, Workspace> = new Map();
+  private _workspacesCache: Map<string, BlocksuiteWorkspace> = new Map();
   private _onTokenRefresh?: Callback = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
   private _apis: Apis;
@@ -58,7 +58,7 @@ export class AffineProvider extends BaseProvider {
     }
   }
 
-  override async warpWorkspace(workspace: Workspace) {
+  override async warpWorkspace(workspace: BlocksuiteWorkspace) {
     const { doc, room } = workspace;
     assert(room);
     this.linkLocal(workspace);
@@ -97,7 +97,7 @@ export class AffineProvider extends BaseProvider {
       return [];
     }
     const workspacesList = await this._apis.getWorkspaces();
-    const workspaces: WS[] = workspacesList.map(w => {
+    const workspaces: WorkspaceInfo[] = workspacesList.map(w => {
       return {
         ...w,
         memberCount: 0,
@@ -108,12 +108,12 @@ export class AffineProvider extends BaseProvider {
     const workspaceInstances = workspaces.map(({ id }) => {
       const workspace =
         this._workspacesCache.get(id) ||
-        new Workspace({
+        new BlocksuiteWorkspace({
           room: id,
         }).register(BlockSchema);
       this._workspacesCache.set(id, workspace);
       if (workspace) {
-        return new Promise<Workspace>(resolve => {
+        return new Promise<BlocksuiteWorkspace>(resolve => {
           this._apis.downloadWorkspace(id).then(data => {
             applyUpdate(workspace.doc, new Uint8Array(data));
             resolve(workspace);
@@ -235,7 +235,7 @@ export class AffineProvider extends BaseProvider {
     return await this._apis.removeMember({ permissionId });
   }
 
-  public override async linkLocal(workspace: Workspace) {
+  public override async linkLocal(workspace: BlocksuiteWorkspace) {
     return workspace;
     // assert(workspace.room);
     // let idb = this._idbMap.get(workspace.room);
@@ -249,19 +249,19 @@ export class AffineProvider extends BaseProvider {
 
   public override async createWorkspace(
     meta: WorkspaceMeta
-  ): Promise<Workspace | undefined> {
+  ): Promise<BlocksuiteWorkspace | undefined> {
     assert(meta.name, 'Workspace name is required');
     const { id } = await this._apis.createWorkspace(
       meta as Required<WorkspaceMeta>
     );
     this._logger('Creating affine workspace');
-    const nw = new Workspace({
+    const nw = new BlocksuiteWorkspace({
       room: id,
     }).register(BlockSchema);
     nw.meta.setName(meta.name);
     this.linkLocal(nw);
 
-    const workspaceInfo: WS = {
+    const workspaceInfo: WorkspaceInfo = {
       name: meta.name,
       id,
       isPublish: false,
