@@ -1,6 +1,6 @@
 use jwst_storage::{BlobFsStorage, DBContext, DocFsStorage};
 use std::path::Path;
-use tauri::api::path::desktop_dir;
+use tauri::api::path::document_dir;
 use tokio::sync::Mutex;
 
 pub struct AppStateRaw {
@@ -11,16 +11,12 @@ pub struct AppStateRaw {
 
 impl AppStateRaw {
   pub async fn new() -> Option<AppStateRaw> {
-    let doc_env = Path::new(&desktop_dir()?.into_os_string())
-      .join("affine-dev")
-      .join("doc");
-    let blob_env = Path::new(&(desktop_dir()?.into_os_string()))
-      .join("affine-dev")
-      .join("blob");
+    let affine_document_path = Path::new(&document_dir()?.into_os_string()).join("affine");
+    let doc_env = affine_document_path.join("doc");
+    let blob_env = affine_document_path.join("blob");
     let db_env = format!(
       "sqlite://{}?mode=rwc",
-      Path::new(&(desktop_dir()?.into_os_string()))
-        .join("affine-dev")
+      affine_document_path
         .join("db")
         .join("metadata.db")
         .into_os_string()
