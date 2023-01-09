@@ -160,6 +160,7 @@ importers:
 
   packages/i18n:
     specifiers:
+      '@types/prettier': ^2.7.2
       i18next: ^21.9.1
       prettier: ^2.7.1
       react-i18next: ^11.18.4
@@ -169,6 +170,7 @@ importers:
       prettier: 2.7.1
       react-i18next: 11.18.6_i18next@21.10.0
     devDependencies:
+      '@types/prettier': 2.7.2
       typescript: 4.9.3
 
   packages/logger:
@@ -3358,6 +3360,10 @@ packages:
   /@types/parse-json/4.0.0:
     resolution: {integrity: sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==}
     dev: false
+
+  /@types/prettier/2.7.2:
+    resolution: {integrity: sha512-KufADq8uQqo1pYKVIYzfKbJfBAc0sOeXqGbFaSpv8MRmC/zXgowNZmFcbngndGk922QDmOASEXUZCaY48gs4cg==}
+    dev: true
 
   /@types/prop-types/15.7.5:
     resolution: {integrity: sha512-JCB8C6SnDoQf0cNycqd/35A7MjcnK+ZTqE7judS6o7utxUCg6imJg3QK2qzHKszlTjcj2cn+NwMB2i96ubpj7w==}
