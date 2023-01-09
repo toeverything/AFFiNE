@@ -69,7 +69,7 @@ export class AffineProvider extends BaseProvider {
   override async warpWorkspace(workspace: Workspace) {
     const { doc, room } = workspace;
     assert(room);
-    this._initWorkspaceDb(workspace);
+    this.linkLocal(workspace);
     const updates = await downloadWorkspace(room);
     if (updates) {
       await new Promise(resolve => {
@@ -77,8 +77,12 @@ export class AffineProvider extends BaseProvider {
         applyUpdate(doc, new Uint8Array(updates));
       });
     }
-    const ws = new WebsocketProvider('/', room, doc);
-    this._wsMap.set(room, ws);
+    let ws = this._wsMap.get(room);
+    if (!ws) {
+      ws = new WebsocketProvider('/', room, doc);
+      this._wsMap.set(room, ws);
+    }
+    ws.connect();
     await new Promise<void>((resolve, reject) => {
       // TODO: synced will also be triggered on reconnection after losing sync
       // There needs to be an event mechanism to emit the synchronization state to the upper layer
@@ -231,7 +235,7 @@ export class AffineProvider extends BaseProvider {
     return await removeMember({ permissionId });
   }
 
-  private async _initWorkspaceDb(workspace: Workspace) {
+  public override async linkLocal(workspace: Workspace) {
     assert(workspace.room);
     let idb = this._idbMap.get(workspace.room);
     idb?.destroy();
@@ -239,7 +243,7 @@ export class AffineProvider extends BaseProvider {
     this._idbMap.set(workspace.room, idb);
     await idb.whenSynced;
     this._logger('Local data loaded');
-    return idb;
+    return workspace;
   }
 
   public override async createWorkspace(
@@ -252,7 +256,7 @@ export class AffineProvider extends BaseProvider {
       room: id,
     }).register(BlockSchema);
     nw.meta.setName(meta.name);
-    this._initWorkspaceDb(nw);
+    this.linkLocal(nw);
 
     const workspaceInfo: WS = {
       name: meta.name,

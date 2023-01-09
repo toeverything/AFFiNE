@@ -169,4 +169,13 @@ export class BaseProvider {
     email;
     return null;
   }
+
+  /**
+   * link workspace to local caches
+   * @param workspace
+   * @returns
+   */
+  public async linkLocal(workspace: Workspace): Promise<Workspace> {
+    return workspace;
+  }
 }

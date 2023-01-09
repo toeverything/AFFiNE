@@ -1,6 +1,6 @@
 import { Workspaces } from './workspaces';
 import type { WorkspacesChangeEvent } from './workspaces';
-import { BlobStorage, Workspace } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 import { BaseProvider } from './provider/base';
 import { LocalProvider } from './provider/local/local';
 import { AffineProvider } from './provider';
@@ -17,6 +17,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 export class DataCenter {
   private readonly _workspaces = new Workspaces();
   private readonly _logger = getLogger('dc');
+  private _workspaceInstances: Map<string, Workspace> = new Map();
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -109,9 +110,14 @@ export class DataCenter {
    * @param {string} workspaceId workspace id
    */
   private _getWorkspace(workspaceId: string) {
-    return new Workspace({
-      room: workspaceId,
-    }).register(BlockSchema);
+    const workspaceInfo = this._workspaces.find(workspaceId);
+    assert(workspaceInfo, 'Workspace not found');
+    return (
+      this._workspaceInstances.get(workspaceId) ||
+      new Workspace({
+        room: workspaceId,
+      }).register(BlockSchema)
+    );
   }
 
   /**
@@ -149,8 +155,9 @@ export class DataCenter {
     const provider = this.providerMap.get(workspaceInfo.provider);
     assert(provider, `provide '${workspaceInfo.provider}' is not registered`);
     this._logger(`Loading ${workspaceInfo.provider} workspace: `, workspaceId);
-
-    return await provider.warpWorkspace(this._getWorkspace(workspaceId));
+    const workspace = this._getWorkspace(workspaceId);
+    this._workspaceInstances.set(workspaceId, workspace);
+    return await provider.warpWorkspace(workspace);
   }
 
   /**
@@ -332,21 +339,23 @@ export class DataCenter {
     return;
   }
 
-  // /**
-  //  * get blob url by workspaces id
-  //  * @param id
-  //  * @returns {Promise<string | null>} blob url
-  //  */
-  // async getBlob(id: string): Promise<string | null> {
-  //   return await this._blobStorage.get(id);
-  // }
+  /**
+   * get blob url by workspaces id
+   * @param id
+   * @returns {Promise<string | null>} blob url
+   */
+  async getBlob(workspace: Workspace, id: string): Promise<string | null> {
+    const blob = await workspace.blobs;
+    return (await blob?.get(id)) || '';
+  }
 
-  // /**
-  //  * up load blob and get a blob url
-  //  * @param id
-  //  * @returns {Promise<string | null>} blob url
-  //  */
-  // async setBlob(blob: Blob): Promise<string> {
-  //   return await this._blobStorage.set(blob);
-  // }
+  /**
+   * up load blob and get a blob url
+   * @param id
+   * @returns {Promise<string | null>} blob url
+   */
+  async setBlob(workspace: Workspace, blob: Blob): Promise<string> {
+    const blobStorage = await workspace.blobs;
+    return (await blobStorage?.set(blob)) || '';
+  }
 }

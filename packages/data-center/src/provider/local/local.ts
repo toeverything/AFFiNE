@@ -22,21 +22,21 @@ export class LocalProvider extends BaseProvider {
     storage.setItem(WORKSPACE_KEY, JSON.stringify(workspaces));
   }
 
-  private async _initWorkspaceDb(workspace: Workspace) {
+  public override async linkLocal(workspace: Workspace) {
     assert(workspace.room);
     let idb = this._idbMap.get(workspace.room);
     idb?.destroy();
     idb = new IndexedDBProvider(workspace.room, workspace.doc);
     this._idbMap.set(workspace.room, idb);
     this._logger('Local data loaded');
-    return idb;
+    return workspace;
   }
 
   public override async warpWorkspace(
     workspace: Workspace
   ): Promise<Workspace> {
     assert(workspace.room);
-    await this._initWorkspaceDb(workspace);
+    await this.linkLocal(workspace);
     return workspace;
   }
 
@@ -93,7 +93,7 @@ export class LocalProvider extends BaseProvider {
     };
 
     const workspace = new Workspace({ room: workspaceInfo.id });
-    this._initWorkspaceDb(workspace);
+    this.linkLocal(workspace);
     workspace.meta.setName(meta.name);
     if (!meta.avatar) {
       // set default avatar
