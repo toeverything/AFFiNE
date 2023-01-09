@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@affine/datacenter": "workspace:*",
+    "@affine/i18n": "workspace:*",
     "@blocksuite/blocks": "0.3.1-20230109032243-37ad3ba",
     "@blocksuite/editor": "0.3.1-20230109032243-37ad3ba",
     "@blocksuite/icons": "^2.0.2",
@@ -27,7 +28,6 @@
     "cmdk": "^0.1.20",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
-    "i18next": "^21.9.1",
     "lit": "^2.3.1",
     "next": "13.1.0",
     "next-debug-local": "^0.1.5",
@@ -36,7 +36,6 @@
     "quill-cursors": "^4.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-i18next": "^11.18.4",
     "yjs": "^13.5.44"
   },
   "devDependencies": {
