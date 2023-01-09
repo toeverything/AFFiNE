@@ -23,6 +23,7 @@ import { getAuthorizer } from './apis/token';
 import { WebsocketProvider } from './sync';
 import { IndexedDBProvider } from '../indexeddb';
 import { getDefaultHeadImgBlob } from '../../utils';
+import { getUserByEmail } from './apis/user';
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
@@ -248,7 +249,8 @@ export class AffineProvider extends BaseProvider {
     if (!meta.avatar) {
       // set default avatar
       const blob = await getDefaultHeadImgBlob(meta.name);
-      meta.avatar = (await this.setBlob(blob)) || '';
+      const blobId = await this.setBlob(blob);
+      meta.avatar = (await this.getBlob(blobId)) || '';
     }
     const { id } = await createWorkspace(meta as Required<WorkspaceMeta>);
     this._logger('Creating affine workspace');
@@ -276,5 +278,20 @@ export class AffineProvider extends BaseProvider {
 
   public override async publish(id: string, isPublish: boolean): Promise<void> {
     await updateWorkspace({ id, public: isPublish });
+  }
+
+  public override async getUserByEmail(
+    workspace_id: string,
+    email: string
+  ): Promise<User | null> {
+    const user = await getUserByEmail({ workspace_id, email });
+    return user
+      ? {
+          id: user.id,
+          name: user.name,
+          avatar: user.avatar_url,
+          email: user.email,
+        }
+      : null;
   }
 }
