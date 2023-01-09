@@ -1,11 +1,11 @@
-import { BaseProvider } from '../base';
+import { BaseProvider } from '../base.js';
 import type { ProviderConstructorParams } from '../base';
 import { varStorage as storage } from 'lib0/storage';
 import { Workspace as WS, WorkspaceMeta } from '../../types';
 import { Workspace, uuidv4 } from '@blocksuite/store';
-import { IndexedDBProvider } from '../indexeddb';
+import { IndexedDBProvider } from './indexeddb.js';
 import assert from 'assert';
-import { getDefaultHeadImgBlob } from '../../utils';
+import { getDefaultHeadImgBlob } from '../../utils/index.js';
 
 const WORKSPACE_KEY = 'workspaces';
 
@@ -22,21 +22,21 @@ export class LocalProvider extends BaseProvider {
     storage.setItem(WORKSPACE_KEY, JSON.stringify(workspaces));
   }
 
-  private async _initWorkspaceDb(workspace: Workspace) {
+  public override async linkLocal(workspace: Workspace) {
     assert(workspace.room);
     let idb = this._idbMap.get(workspace.room);
     idb?.destroy();
     idb = new IndexedDBProvider(workspace.room, workspace.doc);
     this._idbMap.set(workspace.room, idb);
     this._logger('Local data loaded');
-    return idb;
+    return workspace;
   }
 
   public override async warpWorkspace(
     workspace: Workspace
   ): Promise<Workspace> {
     assert(workspace.room);
-    await this._initWorkspaceDb(workspace);
+    await this.linkLocal(workspace);
     return workspace;
   }
 
@@ -79,12 +79,6 @@ export class LocalProvider extends BaseProvider {
     meta: WorkspaceMeta
   ): Promise<Workspace | undefined> {
     assert(meta.name, 'Workspace name is required');
-    if (!meta.avatar) {
-      // set default avatar
-      const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobId = await this.setBlob(blob);
-      meta.avatar = (await this.getBlob(blobId)) || '';
-    }
     this._logger('Creating affine workspace');
 
     const workspaceInfo: WS = {
@@ -99,9 +93,20 @@ export class LocalProvider extends BaseProvider {
     };
 
     const workspace = new Workspace({ room: workspaceInfo.id });
-    this._initWorkspaceDb(workspace);
+    this.linkLocal(workspace);
     workspace.meta.setName(meta.name);
-    workspace.meta.setAvatar(meta.avatar);
+    if (!meta.avatar) {
+      // set default avatar
+      const blob = await getDefaultHeadImgBlob(meta.name);
+      const blobStorage = await workspace.blobs;
+      assert(blobStorage, 'No blob storage');
+      const blobId = await blobStorage.set(blob);
+      const avatar = await blobStorage.get(blobId);
+      if (avatar) {
+        workspace.meta.setAvatar(avatar);
+        workspaceInfo.avatar = avatar;
+      }
+    }
 
     this._workspaces.add(workspaceInfo);
     this._storeWorkspaces(this._workspaces.list());
