@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Input from '@/ui/input';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 interface ICloseParams {
   workspaceId?: string;
 }
@@ -27,12 +28,13 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
       handleCreateWorkspace();
     }
   };
+  const { t } = useTranslation();
   return (
     <div>
       <Modal open={open} onClose={onClose}>
         <ModalWrapper width={620} height={334} style={{ padding: '10px' }}>
           <Header>
-            <ContentTitle>New Workspace</ContentTitle>
+            <ContentTitle>{t('New Workspace')}</ContentTitle>
             <ModalCloseButton
               top={6}
               right={6}
@@ -42,10 +44,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
             />
           </Header>
           <Content>
-            <p>
-              Workspace is your virtual space to capture, create and plan as
-              just one person or together as a team.
-            </p>
+            <p>{t('Workspace description')}</p>
             <Input
               onKeyDown={handleKeyDown}
               onChange={value => {
@@ -57,7 +56,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
                 handleCreateWorkspace();
               }}
             >
-              Create
+              {t('Create')}
             </Button>
           </Content>
         </ModalWrapper>

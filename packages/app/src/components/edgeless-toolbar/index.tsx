@@ -19,73 +19,77 @@ import Slide from '@mui/material/Slide';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { useAppState } from '@/providers/app-state-provider';
 import useHistoryUpdated from '@/hooks/use-history-update';
+import { useTranslation } from 'react-i18next';
 
-const toolbarList1 = [
-  {
-    flavor: 'select',
-    icon: <SelectIcon />,
-    toolTip: 'Select',
-    disable: false,
-    callback: () => {
-      window.dispatchEvent(
-        new CustomEvent('affine.switch-mouse-mode', {
-          detail: {
-            type: 'default',
-          },
-        })
-      );
+const useToolbarList1 = () => {
+  const { t } = useTranslation();
+  return [
+    {
+      flavor: 'select',
+      icon: <SelectIcon />,
+      toolTip: t('Select'),
+      disable: false,
+      callback: () => {
+        window.dispatchEvent(
+          new CustomEvent('affine.switch-mouse-mode', {
+            detail: {
+              type: 'default',
+            },
+          })
+        );
+      },
     },
-  },
-  {
-    flavor: 'text',
-    icon: <TextIcon />,
-    toolTip: 'Text (coming soon)',
-    disable: true,
-  },
-  {
-    flavor: 'shape',
-    icon: <ShapeIcon />,
-    toolTip: 'Shape',
-    disable: false,
-    callback: () => {
-      window.dispatchEvent(
-        new CustomEvent('affine.switch-mouse-mode', {
-          detail: {
-            type: 'shape',
-            color: 'black',
-            shape: 'rectangle',
-          },
-        })
-      );
+    {
+      flavor: 'text',
+      icon: <TextIcon />,
+      toolTip: t('Text'),
+      disable: true,
     },
-  },
-  {
-    flavor: 'sticky',
-    icon: <StickerIcon />,
-    toolTip: 'Sticky (coming soon)',
-    disable: true,
-  },
-  {
-    flavor: 'pen',
-    icon: <PenIcon />,
-    toolTip: 'Pen (coming soon)',
-    disable: true,
-  },
+    {
+      flavor: 'shape',
+      icon: <ShapeIcon />,
+      toolTip: t('Shape'),
+      disable: false,
+      callback: () => {
+        window.dispatchEvent(
+          new CustomEvent('affine.switch-mouse-mode', {
+            detail: {
+              type: 'shape',
+              color: 'black',
+              shape: 'rectangle',
+            },
+          })
+        );
+      },
+    },
+    {
+      flavor: 'sticky',
+      icon: <StickerIcon />,
+      toolTip: t('Sticky'),
+      disable: true,
+    },
+    {
+      flavor: 'pen',
+      icon: <PenIcon />,
+      toolTip: t('Pen'),
+      disable: true,
+    },
 
-  {
-    flavor: 'connector',
-    icon: <ConnectorIcon />,
-    toolTip: 'Connector (coming soon)',
-    disable: true,
-  },
-];
+    {
+      flavor: 'connector',
+      icon: <ConnectorIcon />,
+      toolTip: t('Connector'),
+      disable: true,
+    },
+  ];
+};
 
 const UndoRedo = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const { currentPage } = useAppState();
   const onHistoryUpdated = useHistoryUpdated();
-
+  const { t } = useTranslation();
   useEffect(() => {
     onHistoryUpdated(page => {
       setCanUndo(page.canUndo);
@@ -95,7 +99,7 @@ const UndoRedo = () => {
 
   return (
     <StyledToolbarWrapper>
-      <Tooltip content="Undo" placement="right-start">
+      <Tooltip content={t('Undo')} placement="right-start">
         <StyledToolbarItem
           disable={!canUndo}
           onClick={() => {
@@ -105,7 +109,7 @@ const UndoRedo = () => {
           <UndoIcon />
         </StyledToolbarItem>
       </Tooltip>
-      <Tooltip content="Redo" placement="right-start">
+      <Tooltip content={t('Redo')} placement="right-start">
         <StyledToolbarItem
           disable={!canRedo}
           onClick={() => {
@@ -131,7 +135,7 @@ export const EdgelessToolbar = () => {
     >
       <StyledEdgelessToolbar aria-label="edgeless-toolbar">
         <StyledToolbarWrapper>
-          {toolbarList1.map(
+          {useToolbarList1().map(
             ({ icon, toolTip, flavor, disable, callback }, index) => {
               return (
                 <Tooltip key={index} content={toolTip} placement="right-start">
