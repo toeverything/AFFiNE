@@ -54,7 +54,7 @@
   "Strikethrough": "Strikethrough",
   "Inline code": "Inline code",
   "Code block": "Code block",
-  "Link": "Link",
+  "Link": "Hyperlink(with selected text)",
   "Body text": "Body text",
   "Heading": "Heading {{number}}",
   "Increase indent": "Increase indent",
