@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useTheme } from '@/providers/themeProvider';
-import { MoonIcon, SunIcon } from './icons';
+import { useTheme } from '@/providers/ThemeProvider';
+import { MoonIcon, SunIcon } from './Icons';
 import { StyledThemeModeSwitch, StyledSwitchItem } from './style';
 
 export const ThemeModeSwitch = () => {

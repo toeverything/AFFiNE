@@ -13,7 +13,7 @@ import {
   ConnectorIcon,
   UndoIcon,
   RedoIcon,
-} from './icons';
+} from './Icons';
 import { Tooltip } from '@/ui/tooltip';
 import Slide from '@mui/material/Slide';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';

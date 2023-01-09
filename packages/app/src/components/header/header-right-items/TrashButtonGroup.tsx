@@ -1,7 +1,7 @@
 import { Button } from '@/ui/button';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider';
-import { useConfirm } from '@/providers/confirm-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import { useRouter } from 'next/router';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 

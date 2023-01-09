@@ -10,7 +10,7 @@ import type {
 } from './context';
 import { Page, Workspace as StoreWorkspace } from '@blocksuite/store';
 import { EditorContainer } from '@blocksuite/editor';
-const DynamicBlocksuite = dynamic(() => import('./dynamic-blocksuite'), {
+const DynamicBlocksuite = dynamic(() => import('./DynamicBlocksuite'), {
   ssr: false,
 });
 

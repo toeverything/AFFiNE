@@ -13,7 +13,7 @@ Let us know what you think of this latest version.
 5. You can self-host locally with Docker.
 
 ```basic
-docker run -d -v [YOUR_PATH]:/app/data -p 3000:3000 ghcr.io/toeverything/affine-self-hosted:alpha-abbey-wood
+docker run -it --name affine -d -v [YOUR_PATH]:/app/data -p 3000:3000 ghcr.io/toeverything/affine-self-hosted:alpha-abbey-wood
 ```
 
 **Looking for Markdown syntax or keyboard shortcuts?**
@@ -24,6 +24,9 @@ docker run -d -v [YOUR_PATH]:/app/data -p 3000:3000 ghcr.io/toeverything/affine-
 
 - Manage your pages from the collapsible **sidebar**, which allows you to add **favourites** and restore deleted files from the **trash**
 - Search through all your content with the quick search - activate with `Ctrl/⌘ + K`
+  - A friendly Reminder:
+    - In the case of unselected text, `Ctrl/⌘ + K` activates quick search;
+    - In the case of selected text, `Ctrl/⌘ + K` will firstly ask to add a hyperlink, and then using `Ctrl/⌘ + K` again activates the quick search
 - Quickly format text with the **pop-up toolbar** (highlight any text to give it a try)
 - Copy and paste **images** into your pages, resize them and add captions
 - Add horizontal line dividers to your text with `---` and `***`

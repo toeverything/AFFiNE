@@ -1,7 +1,10 @@
+/**
+ * For unit tests.
+ */
 import type { PlaywrightTestConfig } from '@playwright/test';
 
 const config: PlaywrightTestConfig = {
-  testDir: './tests',
+  testDir: './packages/',
   timeout: 30 * 1000,
   expect: {
     /**

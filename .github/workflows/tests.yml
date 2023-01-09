@@ -23,7 +23,7 @@ jobs:
           scope: '@toeverything'
           cache: 'pnpm'
 
-      - run: node scripts/module-resolve/ci.js
+      - run: node scripts/module-resolve/ci.cjs
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
