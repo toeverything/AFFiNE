@@ -10,8 +10,8 @@
     ".": "./dist/src/index.js"
   },
   "scripts": {
-    "build": "tsc --project ./tsconfig.json",
-    "test": "playwright test"
+    "dev": "tsc --project ./tsconfig.json -w",
+    "build": "tsc --project ./tsconfig.json"
   },
   "keywords": [],
   "author": "",
