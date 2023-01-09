@@ -1,4 +1,4 @@
-use jwst_storage::{BlobFsStorage, DBContext, DocFsStorage};
+use jwst_storage::{BlobFsStorage, SqliteDBContext, DocFsStorage};
 use std::path::Path;
 use tauri::api::path::document_dir;
 use tokio::sync::Mutex;
@@ -6,7 +6,7 @@ use tokio::sync::Mutex;
 pub struct AppStateRaw {
   pub blob_storage: BlobFsStorage,
   pub doc_storage: DocFsStorage,
-  pub metadata_db: DBContext,
+  pub metadata_db: SqliteDBContext,
 }
 
 impl AppStateRaw {
@@ -27,7 +27,7 @@ impl AppStateRaw {
     Some(Self {
       doc_storage: DocFsStorage::new(Some(16), 500, Path::new(&doc_env).into()).await,
       blob_storage: BlobFsStorage::new(Some(16), Path::new(&blob_env).into()).await,
-      metadata_db: DBContext::new(db_env).await,
+      metadata_db: SqliteDBContext::new(db_env).await,
     })
   }
 }

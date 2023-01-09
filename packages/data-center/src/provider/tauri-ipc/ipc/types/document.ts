@@ -17,12 +17,12 @@ export type IDocumentParameters =
     };
 
 export interface YDocumentUpdate {
-  id: number;
+  id: string;
   update: number[];
   [k: string]: unknown;
 }
 export interface GetDocumentParameter {
-  id: number;
+  id: string;
   [k: string]: unknown;
 }
 export interface GetDocumentResponse {

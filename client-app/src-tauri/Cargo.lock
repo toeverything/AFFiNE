@@ -1746,9 +1746,11 @@ dependencies = [
  "base64 0.20.0",
  "bytes",
  "chrono",
+ "dotenvy",
  "futures",
  "jwst",
  "jwst-logger",
+ "path-ext",
  "serde",
  "serde_json",
  "serde_repr",
@@ -1756,6 +1758,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tokio-util",
+ "uuid 1.2.2",
  "yrs",
 ]
 
@@ -2406,6 +2409,15 @@ name = "paste"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1de2e551fb905ac83f73f7aedf2f0cb4a0da7e35efa24a202a936269f1f18e1"
+
+[[package]]
+name = "path-ext"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8285c3c3c3085f8819bdcebc9c7e783851527f34974d7d283ced36c977ae812"
+dependencies = [
+ "walkdir",
+]
 
 [[package]]
 name = "pathdiff"
@@ -4363,6 +4375,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "422ee0de9031b5b948b97a8fc04e3aa35230001a722ddd27943e0be31564ce4c"
 dependencies = [
  "getrandom 0.2.8",
+ "rand 0.8.5",
  "serde",
 ]
 

@@ -39,8 +39,7 @@
       "required": ["id"],
       "properties": {
         "id": {
-          "type": "integer",
-          "format": "int64"
+          "type": "string"
         }
       }
     },
@@ -63,8 +62,7 @@
       "required": ["id", "update"],
       "properties": {
         "id": {
-          "type": "integer",
-          "format": "int64"
+          "type": "string"
         },
         "update": {
           "type": "array",

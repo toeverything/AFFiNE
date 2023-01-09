@@ -19,7 +19,7 @@ pub async fn create_workspace<'s>(
     .await
   {
     Ok(new_workspace) => {
-      let workspace_doc = OctoBaseWorkspace::new(new_workspace.id.to_string());
+      let workspace_doc = OctoBaseWorkspace::new(new_workspace.id.clone());
 
       workspace_doc.with_trx(|mut workspace_doc_transaction| {
         workspace_doc_transaction.set_metadata(
@@ -32,13 +32,13 @@ pub async fn create_workspace<'s>(
         .lock()
         .await
         .doc_storage
-        .write_doc(new_workspace.id, workspace_doc.doc())
+        .write_doc(new_workspace.id.clone(), workspace_doc.doc())
         .await
       {
         Err(error_message.to_string())
       } else {
         Ok(CreateWorkspaceResult {
-          id: new_workspace.id.to_string(),
+          id: new_workspace.id.clone(),
           name: parameters.name,
         })
       }

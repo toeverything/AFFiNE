@@ -17,7 +17,7 @@ pub async fn get_doc<'s>(
     .lock()
     .await
     .doc_storage
-    .get(parameters.id)
+    .get(parameters.id.clone())
     .await
     .ok()
   {
@@ -27,7 +27,7 @@ pub async fn get_doc<'s>(
   } else {
     Err(format!(
       "Failed to get yDoc from {}",
-      parameters.id.to_string()
+      parameters.id
     ))
   }
 }
@@ -42,7 +42,7 @@ pub async fn update_y_document<'s>(
     .lock()
     .await
     .doc_storage
-    .write_update(parameters.id, &parameters.update)
+    .write_update(parameters.id.clone(), &parameters.update)
     .await
     .ok()
   {
@@ -50,7 +50,7 @@ pub async fn update_y_document<'s>(
   } else {
     Err(format!(
       "Failed to update yDoc to {}",
-      parameters.id.to_string()
+      parameters.id
     ))
   }
 }

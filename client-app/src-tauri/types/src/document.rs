@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct YDocumentUpdate {
   pub update: Vec<u8>,
-  pub id: i64,
+  pub id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct GetDocumentParameter {
-  pub id: i64,
+  pub id: String,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct GetDocumentResponse {

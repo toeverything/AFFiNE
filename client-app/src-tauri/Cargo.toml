@@ -19,7 +19,7 @@ ipc_types = { path = "./types" }
 futures = "^0.3.25"
 js-sys = "0.3.60"
 jwst = { path = "../src-OctoBase/libs/jwst" }
-jwst-storage = { path = "../src-OctoBase/libs/jwst-storage", features = ["sqlite"] }
+jwst-storage = { path = "../src-OctoBase/libs/jwst-storage", features = ["sqlite", "server"] }
 lib0 = "0.12.0"
 project-root = "0.2.2"
 schemars = "0.8.3"
