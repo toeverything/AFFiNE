@@ -48,10 +48,13 @@ test.describe.serial('local provider', () => {
     expect(workspaces.workspaces.length).toEqual(1);
     /**
      * FIXME
-     * Running following code will crash the worker, and get error like next line:
+     * If we don't wrap setTimeout,
+     * Running deleteWorkspace will crash the worker, and get error like next line:
      * InvalidStateError: An operation was called on an object on which it is not allowed or at a time when it is not allowed. Also occurs if a request is made on a source object that has been deleted or removed. Use TransactionInactiveError or ReadOnlyError when possible, as they are more specific variations of InvalidStateError.
      * */
-    // await provider.deleteWorkspace(workspaces.workspaces[0].id);
-    // expect(workspaces.workspaces.length).toEqual(0);
+    setTimeout(async () => {
+      await provider.deleteWorkspace(workspaces.workspaces[0].id);
+      expect(workspaces.workspaces.length).toEqual(0);
+    }, 10);
   });
 });
