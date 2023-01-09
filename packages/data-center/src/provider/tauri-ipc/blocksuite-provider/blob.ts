@@ -6,22 +6,15 @@ import {
 import * as ipcMethods from '../ipc/methods.js';
 import { Signal } from '@blocksuite/store';
 
+// @staticImplements<BlobProviderStatic>()
 export class IPCBlobProvider implements BlobProvider {
   #ipc = ipcMethods;
 
-  blobs: Set<BlobId>;
-  signals: {
-    blobAdded: Signal<BlobId>;
+  readonly blobs: Set<string> = new Set();
+  readonly signals = {
+    blobAdded: new Signal<BlobId>(),
+    blobDeleted: new Signal<BlobId>(),
   };
-
-  static async init(
-    workspace: string,
-    cloudApi?: string
-  ): Promise<IPCBlobProvider> {
-    const provider = new IPCBlobProvider(workspace, cloudApi);
-    await provider._initBlobs();
-    return provider;
-  }
 
   async get(id: BlobId): Promise<BlobURL | null> {
     const blobArray = await this.#ipc.getBlob({
@@ -29,15 +22,41 @@ export class IPCBlobProvider implements BlobProvider {
     });
     // Make a Blob from the bytes
     const blob = new Blob([new Uint8Array(blobArray)], { type: 'image/bmp' });
+    if (blob) {
+      this.signals.blobAdded.emit(id);
+      this.blobs.add(id);
+    }
     return window.URL.createObjectURL(blob);
   }
 
   async set(blob: Blob): Promise<BlobId> {
-    return this.#ipc.putBlob({
+    // TODO: skip if already has
+    const blobID = await this.#ipc.putBlob({
       blob: Array.from(new Uint8Array(await blob.arrayBuffer())),
     });
+    this.signals.blobAdded.emit(blobID);
+    return blobID;
   }
 
-  delete(id: BlobId): Promise<void>;
-  clear(): Promise<void>;
+  // TODO: implement getAllKeys in Octobase
+  // private async _initBlobs() {
+  //   const entries = await this._database.keys();
+  //   for (const key of entries) {
+  //     const blobId = key as BlobId;
+  //     this.signals.blobAdded.emit(blobId);
+  //     this.blobs.add(blobId);
+  //   }
+  // }
+
+  async delete(id: BlobId): Promise<void> {
+    // TODO: implement blob delete in Octobase
+    this.signals.blobDeleted.emit(id);
+    this.blobs.delete(id);
+  }
+
+  async clear(): Promise<void> {
+    // TODO: implement blob clear in Octobase, need workspace id
+    // await this._database.clear();
+    this.blobs.clear();
+  }
 }

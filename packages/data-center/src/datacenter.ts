@@ -9,7 +9,6 @@ import assert from 'assert';
 import { getLogger } from './logger';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
-import { SelfHostedProvider } from './provider/selfhosted';
 import { TauriIPCProvider } from './provider/tauri-ipc';
 
 /**
@@ -47,12 +46,12 @@ export class DataCenter {
         blobs: dc._blobStorage,
       })
     );
-    dc.registerProvider(new SelfHostedProvider());
     if (typeof window !== 'undefined' && window.CLIENT_APP) {
       dc.registerProvider(
         new TauriIPCProvider({
           logger: dc._logger,
           workspaces: dc._workspaces.createScope(),
+          blobs: dc._blobStorage,
         })
       );
     }

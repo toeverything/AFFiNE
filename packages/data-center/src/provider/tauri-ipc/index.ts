@@ -18,7 +18,7 @@ export class TauriIPCProvider extends LocalProvider {
   constructor(params: ProviderConstructorParams) {
     super(params);
     // TODO: let blocksuite's blob provider get blob receive workspace id. Currently, all blobs are placed together
-    this._blobs = new IPCBlobProvider();
+    this._blobs.addProvider(new IPCBlobProvider());
   }
 
   async initData() {
