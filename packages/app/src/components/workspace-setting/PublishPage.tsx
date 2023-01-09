@@ -11,7 +11,7 @@ import Input from '@/ui/input';
 import { toast } from '@/ui/toast';
 import { Workspace } from '@/hooks/mock-data/mock';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
-import { useConfirm } from '@/providers/confirm-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
   console.log('workspace: ', workspace);

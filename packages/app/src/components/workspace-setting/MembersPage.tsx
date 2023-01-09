@@ -25,7 +25,7 @@ import {
 } from '@/hooks/mock-data/mock';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { StyledMemberWarp } from './general/style';
-import { useConfirm } from '@/providers/confirm-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 // import { useAppState } from '@/providers/app-state-provider';
 export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
