@@ -13,7 +13,7 @@ import {
   PublishIcon,
   CloudInsyncIcon,
 } from '@blocksuite/icons';
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, ReactNode, useState } from 'react';
 import {
   GeneralPage,
   MembersPage,
@@ -23,132 +23,82 @@ import {
 } from '@/components/workspace-setting';
 import { useAppState } from '@/providers/app-state-provider';
 import WorkspaceLayout from '@/components/workspace-layout';
+import { WorkspaceInfo } from '@affine/datacenter';
 
-enum ActiveTab {
-  'general' = 'general',
-  'members' = 'members',
-  'publish' = 'publish',
-  'sync' = 'sync',
-  'export' = 'export',
-}
+type TabNames = 'general' | 'members' | 'publish' | 'sync' | 'export';
 
-type SettingTabProps = {
-  activeTab: ActiveTab;
-  onTabChange?: (tab: ActiveTab) => void;
-};
+const tabMap: {
+  name: TabNames;
+  icon: ReactNode;
+  panelRender: (workspace: WorkspaceInfo) => ReactNode;
+}[] = [
+  {
+    name: 'general',
+    icon: <EditIcon />,
+    panelRender: workspace => <GeneralPage workspace={workspace} />,
+  },
+  {
+    name: 'members',
+    icon: <CloudInsyncIcon />,
+    panelRender: workspace => <MembersPage workspace={workspace} />,
+  },
+  {
+    name: 'publish',
+    icon: <UsersIcon />,
+    panelRender: workspace => <PublishPage workspace={workspace} />,
+  },
+  {
+    name: 'sync',
+    icon: <PublishIcon />,
+    panelRender: workspace => <SyncPage workspace={workspace} />,
+  },
+  {
+    name: 'export',
+    icon: <PublishIcon />,
+    panelRender: workspace => <ExportPage workspace={workspace} />,
+  },
+];
 
-type WorkspaceSettingProps = {
-  isShow: boolean;
-  onClose?: () => void;
-};
+const WorkspaceSetting = () => {
+  const { currentMetaWorkSpace } = useAppState();
 
-const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
-  return (
-    <StyledSettingTabContainer>
-      <WorkspaceSettingTagItem
-        isActive={activeTab === ActiveTab.general}
-        onClick={() => {
-          onTabChange && onTabChange(ActiveTab.general);
-        }}
-      >
-        <StyledSettingTagIconContainer>
-          <EditIcon />
-        </StyledSettingTagIconContainer>
-        General
-      </WorkspaceSettingTagItem>
-
-      <WorkspaceSettingTagItem
-        isActive={activeTab === ActiveTab.sync}
-        onClick={() => {
-          onTabChange && onTabChange(ActiveTab.sync);
-        }}
-      >
-        <StyledSettingTagIconContainer>
-          <CloudInsyncIcon />
-        </StyledSettingTagIconContainer>
-        Sync
-      </WorkspaceSettingTagItem>
-
-      <WorkspaceSettingTagItem
-        isActive={activeTab === ActiveTab.members}
-        onClick={() => {
-          onTabChange && onTabChange(ActiveTab.members);
-        }}
-      >
-        <StyledSettingTagIconContainer>
-          <UsersIcon />
-        </StyledSettingTagIconContainer>
-        Collaboration
-      </WorkspaceSettingTagItem>
-      <WorkspaceSettingTagItem
-        isActive={activeTab === ActiveTab.publish}
-        onClick={() => {
-          onTabChange && onTabChange(ActiveTab.publish);
-        }}
-      >
-        <StyledSettingTagIconContainer>
-          <PublishIcon />
-        </StyledSettingTagIconContainer>
-        Publish
-      </WorkspaceSettingTagItem>
-
-      <WorkspaceSettingTagItem
-        isActive={activeTab === ActiveTab.export}
-        onClick={() => {
-          onTabChange && onTabChange(ActiveTab.export);
-        }}
-      >
-        <StyledSettingTagIconContainer>
-          <PublishIcon />
-        </StyledSettingTagIconContainer>
-        Export
-      </WorkspaceSettingTagItem>
-    </StyledSettingTabContainer>
-  );
-};
-
-const WorkspaceSetting = ({ isShow, onClose }: WorkspaceSettingProps) => {
-  // const { workspaces } = useAppState();
-  const [activeTab, setActiveTab] = useState<ActiveTab>(ActiveTab.general);
-  const handleTabChange = (tab: ActiveTab) => {
+  const [activeTab, setActiveTab] = useState<TabNames>(tabMap[0].name);
+  const handleTabChange = (tab: TabNames) => {
     setActiveTab(tab);
   };
 
-  const { currentMetaWorkSpace } = useAppState();
-  useEffect(() => {
-    // reset tab when modal is closed
-    if (!isShow) {
-      setActiveTab(ActiveTab.general);
-    }
-  }, [isShow]);
+  const activeTabPanelRender = tabMap.find(
+    tab => tab.name === activeTab
+  )?.panelRender;
+
   return (
     <StyledSettingContainer>
       <StyledSettingSidebar>
         <StyledSettingSidebarHeader>
           Workspace Settings
         </StyledSettingSidebarHeader>
-        <WorkspaceSettingTab
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-        />
+        <StyledSettingTabContainer>
+          {tabMap.map(({ icon, name }) => {
+            return (
+              <WorkspaceSettingTagItem
+                key={name}
+                isActive={activeTab === name}
+                onClick={() => {
+                  handleTabChange(name);
+                }}
+              >
+                <StyledSettingTagIconContainer>
+                  {icon}
+                </StyledSettingTagIconContainer>
+                {name}
+              </WorkspaceSettingTagItem>
+            );
+          })}
+        </StyledSettingTabContainer>
       </StyledSettingSidebar>
 
       <StyledSettingContent>
-        {activeTab === ActiveTab.general && currentMetaWorkSpace && (
-          <GeneralPage workspace={currentMetaWorkSpace} />
-        )}
-        {activeTab === ActiveTab.sync && currentMetaWorkSpace && (
-          <SyncPage workspace={currentMetaWorkSpace} />
-        )}
-        {activeTab === ActiveTab.members && currentMetaWorkSpace && (
-          <MembersPage workspace={currentMetaWorkSpace} />
-        )}
-        {activeTab === ActiveTab.publish && currentMetaWorkSpace && (
-          <PublishPage workspace={currentMetaWorkSpace} />
-        )}
-        {activeTab === ActiveTab.export && currentMetaWorkSpace && (
-          <ExportPage workspace={currentMetaWorkSpace} />
-        )}
+        {currentMetaWorkSpace && activeTabPanelRender?.(currentMetaWorkSpace)}
       </StyledSettingContent>
     </StyledSettingContainer>
   );
