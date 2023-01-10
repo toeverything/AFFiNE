@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { AffineProvider } from '../affine.js';
-import { Workspaces } from '../../../workspaces/index.js';
+// import { Workspaces } from '../../../workspaces/index.js';
 import { apis } from './mock-apis.js';
 import 'fake-indexeddb/auto';
 
