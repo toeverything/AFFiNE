@@ -79,12 +79,14 @@ export class LocalProvider extends BaseProvider {
     blocksuiteWorkspace: BlocksuiteWorkspace,
     meta: WorkspaceMeta
   ): Promise<BlocksuiteWorkspace | undefined> {
+    const workspaceId = blocksuiteWorkspace.room;
+    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
     assert(meta.name, 'Workspace name is required');
     this._logger('Creating affine workspace');
 
     const workspaceInfo: WorkspaceInfo = {
       name: meta.name,
-      id: uuidv4(),
+      id: workspaceId,
       isPublish: false,
       avatar: '',
       owner: undefined,

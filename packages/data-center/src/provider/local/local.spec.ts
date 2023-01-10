@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { Workspaces } from '../../workspaces/index.js';
 import { LocalProvider } from './local.js';
+import { createBlocksuiteWorkspace } from '../../utils/index.js';
 import 'fake-indexeddb/auto';
 
 test.describe.serial('local provider', () => {
@@ -13,11 +14,15 @@ test.describe.serial('local provider', () => {
   let workspaceId: string | undefined;
 
   test('create workspace', async () => {
-    const w = await provider.createWorkspace({
+    workspaceId = await provider.createWorkspaceId({
       name: workspaceName,
       avatar: 'avatar-url-test',
     });
-    workspaceId = w?.room;
+    const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceId);
+    await provider.createWorkspace(blocksuiteWorkspace, {
+      name: workspaceName,
+      avatar: 'avatar-url-test',
+    });
 
     expect(workspaces.workspaces.length).toEqual(1);
     expect(workspaces.workspaces[0].name).toEqual(workspaceName);
