@@ -1,5 +1,5 @@
-use jwst_storage::{BlobFsStorage, SqliteDBContext, DocFsStorage};
-use std::path::Path;
+use jwst_storage::{BlobFsStorage, DocFsStorage, SqliteDBContext};
+use std::{fs, path::Path};
 use tauri::api::path::document_dir;
 use tokio::sync::Mutex;
 
@@ -12,20 +12,21 @@ pub struct AppStateRaw {
 impl AppStateRaw {
   pub async fn new() -> Option<AppStateRaw> {
     let affine_document_path = Path::new(&document_dir()?.into_os_string()).join("affine");
-    let doc_env = affine_document_path.join("doc");
+    let doc_path = affine_document_path.join("doc");
     let blob_env = affine_document_path.join("blob");
     let db_env = format!(
       "sqlite://{}?mode=rwc",
       affine_document_path
-        .join("db")
         .join("metadata.db")
         .into_os_string()
         .into_string()
         .unwrap()
     );
+    fs::create_dir_all(doc_path.clone()).unwrap();
+    fs::create_dir_all(blob_env.clone()).unwrap();
 
     Some(Self {
-      doc_storage: DocFsStorage::new(Some(16), 500, Path::new(&doc_env).into()).await,
+      doc_storage: DocFsStorage::new(Some(16), 500, Path::new(&doc_path).into()).await,
       blob_storage: BlobFsStorage::new(Some(16), Path::new(&blob_env).into()).await,
       metadata_db: SqliteDBContext::new(db_env).await,
     })
