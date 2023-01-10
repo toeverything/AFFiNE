@@ -186,7 +186,7 @@ export class DataCenter {
    */
   public async onWorkspacesChange(
     callback: (workspaces: WorkspaceUnitCollectionChangeEvent) => void,
-    { immediate = true }: { immediate?: boolean }
+    { immediate = true }: { immediate?: boolean } = {}
   ) {
     if (immediate) {
       callback({
