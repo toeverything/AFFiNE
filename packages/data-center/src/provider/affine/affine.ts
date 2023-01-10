@@ -1,6 +1,11 @@
 import { BaseProvider } from '../base.js';
-import type { ProviderConstructorParams } from '../base';
-import type { User, WorkspaceInfo, WorkspaceMeta } from '../../types';
+import type {
+  ProviderConstructorParams,
+  CreateWorkspaceInfoParams,
+  UpdateWorkspaceMetaParams,
+  WorkspaceMeta0,
+} from '../base';
+import type { User } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate } from 'yjs';
@@ -115,12 +120,13 @@ export class AffineProvider extends BaseProvider {
       return [];
     }
     const workspacesList = await this._apis.getWorkspaces();
-    const workspaces: WorkspaceInfo[] = workspacesList.map(w => {
+    const workspaces: WorkspaceMeta0[] = workspacesList.map(w => {
       return {
         ...w,
         memberCount: 0,
         name: '',
         provider: 'affine',
+        syncMode: 'core',
       };
     });
     const workspaceInstances = workspaces.map(({ id }) => {
@@ -268,19 +274,17 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async createWorkspaceInfo(
-    meta: WorkspaceMeta
-  ): Promise<WorkspaceInfo> {
-    const { id } = await this._apis.createWorkspace(
-      meta as Required<WorkspaceMeta>
-    );
+    meta: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceMeta0> {
+    const { id } = await this._apis.createWorkspace(meta);
 
-    const workspaceInfo: WorkspaceInfo = {
+    const workspaceInfo: WorkspaceMeta0 = {
       name: meta.name,
       id: id,
-      isPublish: false,
+      published: false,
       avatar: '',
       owner: await this.getUserInfo(),
-      isLocal: true,
+      syncMode: 'core',
       memberCount: 1,
       provider: 'affine',
     };
@@ -289,7 +293,7 @@ export class AffineProvider extends BaseProvider {
 
   public override async createWorkspace(
     blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta
+    meta: WorkspaceMeta0
   ): Promise<BlocksuiteWorkspace | undefined> {
     const workspaceId = blocksuiteWorkspace.room;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
@@ -298,13 +302,13 @@ export class AffineProvider extends BaseProvider {
     this._applyCloudUpdates(blocksuiteWorkspace);
     this.linkLocal(blocksuiteWorkspace);
 
-    const workspaceInfo: WorkspaceInfo = {
+    const workspaceInfo: WorkspaceMeta0 = {
       name: meta.name,
       id: workspaceId,
-      isPublish: false,
+      published: false,
       avatar: '',
       owner: undefined,
-      isLocal: true,
+      syncMode: 'core',
       memberCount: 1,
       provider: 'affine',
     };

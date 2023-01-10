@@ -26,6 +26,6 @@ const _initializeDataCenter = () => {
 export const getDataCenter = _initializeDataCenter();
 
 export type { AccessTokenMessage } from './provider/affine/apis';
-export type { WorkspaceInfo } from './types';
+export { WorkspaceUnit } from './workspace-unit';
 export { getLogger } from './logger';
 export * from './message';

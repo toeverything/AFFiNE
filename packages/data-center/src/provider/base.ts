@@ -1,7 +1,8 @@
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
 import { MessageCenter } from '../message';
-import { Logger, User, WorkspaceInfo, WorkspaceMeta } from '../types';
-import type { WorkspaceMetaCollectionScope } from '../workspace-meta-collection';
+import { Logger, User } from '../types';
+import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
+import type { WorkspaceUnitCtorParams } from '../workspace-unit';
 
 const defaultLogger = () => {
   return;
@@ -9,13 +10,19 @@ const defaultLogger = () => {
 
 export interface ProviderConstructorParams {
   logger?: Logger;
-  workspaces: WorkspaceMetaCollectionScope;
+  workspaces: WorkspaceUnitCollectionScope;
   messageCenter: MessageCenter;
 }
 
+export type WorkspaceMeta0 = WorkspaceUnitCtorParams;
+export type CreateWorkspaceInfoParams = Pick<WorkspaceUnitCtorParams, 'name'>;
+export type UpdateWorkspaceMetaParams = Partial<
+  Pick<WorkspaceUnitCtorParams, 'name' | 'avatar'>
+>;
+
 export class BaseProvider {
   public readonly id: string = 'base';
-  protected _workspaces!: WorkspaceMetaCollectionScope;
+  protected _workspaces!: WorkspaceUnitCollectionScope;
   protected _logger!: Logger;
   protected _messageCenter!: MessageCenter;
 
@@ -37,8 +44,8 @@ export class BaseProvider {
   }
 
   public async createWorkspaceInfo(
-    meta: WorkspaceMeta
-  ): Promise<WorkspaceInfo> {
+    params: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceMeta0> {
     throw new Error(`provider: ${this.id} createWorkspaceInfo Not implemented`);
   }
 
@@ -70,7 +77,7 @@ export class BaseProvider {
   /**
    * load workspaces
    **/
-  public async loadWorkspaces(): Promise<WorkspaceInfo[]> {
+  public async loadWorkspaces(): Promise<WorkspaceMeta0[]> {
     throw new Error(`provider: ${this.id} loadWorkSpace Not implemented`);
   }
 
@@ -157,10 +164,10 @@ export class BaseProvider {
    */
   public async updateWorkspaceMeta(
     id: string,
-    meta: Partial<WorkspaceMeta>
+    params: UpdateWorkspaceMetaParams
   ): Promise<void> {
     id;
-    meta;
+    params;
     return;
   }
 
@@ -170,7 +177,7 @@ export class BaseProvider {
    */
   public async createWorkspace(
     blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta
+    meta: WorkspaceMeta0
   ): Promise<BlocksuiteWorkspace | undefined> {
     return blocksuiteWorkspace;
   }
