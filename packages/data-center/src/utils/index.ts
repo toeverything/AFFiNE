@@ -1,3 +1,12 @@
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import { BlockSchema } from '@blocksuite/blocks/models';
+
+export const createBlocksuiteWorkspace = (workspaceId: string) => {
+  return new BlocksuiteWorkspace({
+    room: workspaceId,
+  }).register(BlockSchema);
+};
+
 const DefaultHeadImgColors = [
   ['#C6F2F3', '#0C6066'],
   ['#FFF5AB', '#896406'],
