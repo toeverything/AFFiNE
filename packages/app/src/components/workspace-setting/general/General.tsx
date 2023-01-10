@@ -9,26 +9,18 @@ import { StyledSettingH2 } from '../style';
 import { useState } from 'react';
 import { Button, TextButton } from '@/ui/button';
 import Input from '@/ui/input';
-// import { useAppState } from '@/providers/app-state-provider';
+import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
-// import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
-import { Workspace } from '@affine/datacenter';
-export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
-  // const { refreshWorkspacesMeta } = useAppState();
-  const { updateWorkspaceMeta } = useTemporaryHelper();
+import { WorkspaceInfo } from '@affine/datacenter';
+export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
-  const [workspaceName, setWorkspaceName] = useState<string>('');
-  // const debouncedRefreshWorkspacesMeta = debounce(() => {
-  //   refreshWorkspacesMeta();
-  // }, 100);
+  const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
   const isOwner = true;
-
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
   };
@@ -46,7 +38,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
     setShowLeave(false);
   };
   const handleUpdateWorkspaceName = () => {
-    workspace && updateWorkspaceMeta(workspace.id, { name: workspaceName });
+    // workspace && currentWorkspace(workspace.id, { name: workspaceName });
   };
 
   const fileChange = async (file: File) => {
@@ -73,8 +65,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
         <div
           style={{
             float: 'left',
-
-            marginRight: '5px',
+            marginRight: '20px',
           }}
         >
           <WorkspaceAvatar size={60} name={workspace.name} />
@@ -101,7 +92,7 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
           onClick={() => {
             handleUpdateWorkspaceName();
           }}
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: '0px' }}
         >
           ✔️
         </TextButton>

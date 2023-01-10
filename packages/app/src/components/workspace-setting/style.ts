@@ -42,7 +42,7 @@ export const StyledSettingSidebarHeader = styled('div')(() => {
       fontWeight: '500',
       fontSize: '18px',
       lineHeight: '26px',
-      textAlign: 'center',
+      textAlign: 'left',
       marginTop: '37px',
     };
   }

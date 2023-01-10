@@ -12,9 +12,9 @@ import { toast } from '@/ui/toast';
 import { useConfirm } from '@/providers/ConfirmProvider';
 // import { useAppState } from '@/providers/app-state-provider3';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-import { Workspace } from '@affine/datacenter';
+import { WorkspaceInfo } from '@affine/datacenter';
 
-export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
+export const PublishPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   const shareUrl =
     window.location.host + '/workspace/' + workspace.id + '?share=true';
   const { publishWorkspace } = useWorkspaceHelper();

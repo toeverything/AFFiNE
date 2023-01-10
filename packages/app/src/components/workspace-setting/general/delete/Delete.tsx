@@ -17,12 +17,12 @@ import {
   getWorkspaces,
   // Workspace,
 } from '@/hooks/mock-data/mock';
-import { Workspace } from '@affine/datacenter';
+import { WorkspaceInfo } from '@affine/datacenter';
 
 interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
-  workspace: Workspace;
+  workspace: WorkspaceInfo;
 }
 
 export const WorkspaceDelete = ({

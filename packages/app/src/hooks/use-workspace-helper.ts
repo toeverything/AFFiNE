@@ -1,4 +1,5 @@
 import { useAppState } from '@/providers/app-state-provider';
+import { WorkspaceInfo } from '@affine/datacenter';
 
 export const useWorkspaceHelper = () => {
   const { dataCenter } = useAppState();
@@ -20,8 +21,12 @@ export const useWorkspaceHelper = () => {
     dataCenter.setWorkspacePublish(workspaceId, publish);
   };
 
+  const updateWorkspace = async (workspace: WorkspaceInfo) => {
+    console.log('workspace: ', workspace);
+  };
   return {
     createWorkspace,
     publishWorkspace,
+    updateWorkspace,
   };
 };
