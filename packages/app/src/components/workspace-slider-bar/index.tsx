@@ -153,16 +153,11 @@ export const WorkSpaceSliderBar = () => {
             </IconButton>
           </StyledListItem>
           <FavoriteList showList={showSubFavorite} />
-          <StyledListItem
-            onClick={() => {
-              // setShowWorkspaceSetting(true);
-            }}
-          >
+          <StyledListItem active={router.asPath === paths.setting}>
             <StyledLink href={{ pathname: paths.setting }}>
-              <FavouritesIcon />
+              <SettingsIcon />
               {t('Setting')}
             </StyledLink>
-            <SettingsIcon />
           </StyledListItem>
 
           {/* <WorkspaceSetting
