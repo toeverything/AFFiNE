@@ -10,12 +10,10 @@ import {
   UsersIcon,
   AddIcon,
 } from '@blocksuite/icons';
-// import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-import { useUserHelper } from '@/hooks/use-user-helper';
 
 interface WorkspaceModalProps {
   open: boolean;
@@ -25,8 +23,7 @@ interface WorkspaceModalProps {
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   // const { confirm } = useConfirm();
-  const { workspaceList, currentWorkspace } = useAppState();
-  const { login, user } = useUserHelper();
+  const { workspaceList, currentWorkspace, login, user } = useAppState();
   const router = useRouter();
   return (
     <div>

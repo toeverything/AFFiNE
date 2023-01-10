@@ -11,14 +11,12 @@ import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useAppState } from '@/providers/app-state-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
-import { useUserHelper } from '@/hooks/use-user-helper';
 import { useRouter } from 'next/router';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   // console.log('workspace: ', workspace);
   const { enableWorkspace } = useWorkspaceHelper();
-  const { currentWorkspace } = useAppState();
+  const { currentWorkspace, user } = useAppState();
   const { confirm } = useConfirm();
-  const { user, login } = useUserHelper();
   const router = useRouter();
   return (
     <div>
