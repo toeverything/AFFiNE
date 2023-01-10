@@ -30,8 +30,7 @@ export const StyledSettingAvatar = styled(MuiAvatar)(() => {
 export const StyledMemberWarp = styled('div')(() => {
   return {
     display: 'flex',
-    height: '500px',
     flexDirection: 'column',
-    padding: '60px 0',
+    padding: '40px 0',
   };
 });

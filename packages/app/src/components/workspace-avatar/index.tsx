@@ -13,7 +13,6 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
   const sizeStr = size + 'px';
   const { dataCenter, currentWorkspace } = useAppState();
   dataCenter.getBlob(currentWorkspace, props.avatar).then(res => {
-    console.log(res);
     setAvatar(res ?? '');
   });
   const [avatar, setAvatar] = useState<string>(props.avatar);
