@@ -8,7 +8,7 @@ import {
   PageMeta,
 } from './interface';
 import { createDefaultWorkspace } from './utils';
-import { WorkspaceInfo } from '@affine/datacenter/dist/src/types';
+import { WorkspaceInfo } from '@affine/datacenter';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 

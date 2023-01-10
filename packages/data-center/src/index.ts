@@ -27,5 +27,5 @@ export const getDataCenter = _initializeDataCenter();
 
 export type { DataCenter };
 export type { AccessTokenMessage } from './provider/affine/apis';
-export type { WorkspaceInfo as Workspace, User } from './types';
+export * from './types';
 export { getLogger } from './logger';
