@@ -8,8 +8,7 @@ export const setDefaultAvatar = async (
   const blob = await getDefaultHeadImgBlob(blocksuiteWorkspace.meta.name);
   const blobStorage = await blocksuiteWorkspace.blobs;
   assert(blobStorage, 'No blob storage');
-  const blobId = await blobStorage.set(blob);
-  const avatar = await blobStorage.get(blobId);
+  const avatar = await blobStorage.set(blob);
   if (avatar) {
     blocksuiteWorkspace.meta.setAvatar(avatar);
   }

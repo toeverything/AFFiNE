@@ -41,6 +41,7 @@ importers:
   packages/app:
     specifiers:
       '@affine/datacenter': workspace:*
+      '@affine/i18n': workspace:*
       '@blocksuite/blocks': 0.3.1-20230109032243-37ad3ba
       '@blocksuite/editor': 0.3.1-20230109032243-37ad3ba
       '@blocksuite/icons': ^2.0.2
@@ -67,7 +68,6 @@ importers:
       eslint-config-next: 12.3.1
       eslint-config-prettier: ^8.5.0
       eslint-plugin-prettier: ^4.2.1
-      i18next: ^21.9.1
       lit: ^2.3.1
       next: 13.1.0
       next-debug-local: ^0.1.5
@@ -78,11 +78,11 @@ importers:
       raw-loader: ^4.0.2
       react: 18.2.0
       react-dom: 18.2.0
-      react-i18next: ^11.18.4
       typescript: 4.8.3
       yjs: ^13.5.44
     dependencies:
       '@affine/datacenter': link:../data-center
+      '@affine/i18n': link:../i18n
       '@blocksuite/blocks': 0.3.1-20230109032243-37ad3ba_yjs@13.5.44
       '@blocksuite/editor': 0.3.1-20230109032243-37ad3ba_yjs@13.5.44
       '@blocksuite/icons': 2.0.4_w5j4k42lgipnm43s3brx6h3c34
@@ -100,7 +100,6 @@ importers:
       cmdk: 0.1.21_7ey2zzynotv32rpkwno45fsx4e
       css-spring: 4.1.0
       dayjs: 1.11.7
-      i18next: 21.10.0
       lit: 2.4.0
       next: 13.1.0_biqbaboplfbrettd7655fr4n2y
       next-debug-local: 0.1.5
@@ -109,7 +108,6 @@ importers:
       quill-cursors: 4.0.0
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
-      react-i18next: 11.18.6_vfm63zmruocgezzfl2v26zlzpy
       yjs: 13.5.44
     devDependencies:
       '@types/node': 18.7.18
@@ -160,6 +158,21 @@ importers:
       '@playwright/test': 1.29.1
       '@types/debug': 4.1.7
       fake-indexeddb: 4.0.1
+      typescript: 4.9.3
+
+  packages/i18n:
+    specifiers:
+      '@types/prettier': ^2.7.2
+      i18next: ^21.9.1
+      prettier: ^2.7.1
+      react-i18next: ^11.18.4
+      typescript: ^4.8.4
+    dependencies:
+      i18next: 21.10.0
+      prettier: 2.7.1
+      react-i18next: 11.18.6_i18next@21.10.0
+    devDependencies:
+      '@types/prettier': 2.7.2
       typescript: 4.9.3
 
   packages/logger:
@@ -1363,6 +1376,7 @@ packages:
     engines: {node: '>=6.9.0'}
     dependencies:
       regenerator-runtime: 0.13.9
+    dev: false
 
   /@babel/runtime/7.20.7:
     resolution: {integrity: sha512-UF0tvkUtxwAgZ5W/KrkHf0Rn0fdnLDU9ScxBrEVNUprE/MzirjK4MJUX1/BVDv00Sv8cljtukVK1aky++X1SjQ==}
@@ -1706,7 +1720,7 @@ packages:
     dependencies:
       '@babel/helper-module-imports': 7.18.6
       '@babel/plugin-syntax-jsx': 7.18.6
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       '@emotion/hash': 0.9.0
       '@emotion/memoize': 0.8.0
       '@emotion/serialize': 1.1.0
@@ -2588,7 +2602,7 @@ packages:
       '@types/react':
         optional: true
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       '@mui/utils': 5.10.9_react@18.2.0
       '@types/react': 18.0.20
       prop-types: 15.8.1
@@ -2608,7 +2622,7 @@ packages:
       '@emotion/styled':
         optional: true
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       '@emotion/cache': 11.10.3
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/styled': 11.10.4_yiaqs725o7pcd7rteavrnhgj4y
@@ -2633,7 +2647,7 @@ packages:
       '@types/react':
         optional: true
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       '@emotion/react': 11.10.4_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/styled': 11.10.4_yiaqs725o7pcd7rteavrnhgj4y
       '@mui/private-theming': 5.10.9_w5j4k42lgipnm43s3brx6h3c34
@@ -2664,7 +2678,7 @@ packages:
     peerDependencies:
       react: ^17.0.0 || ^18.0.0
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       '@types/prop-types': 15.7.5
       '@types/react-is': 17.0.3
       prop-types: 15.8.1
@@ -3349,6 +3363,10 @@ packages:
     resolution: {integrity: sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==}
     dev: false
 
+  /@types/prettier/2.7.2:
+    resolution: {integrity: sha512-KufADq8uQqo1pYKVIYzfKbJfBAc0sOeXqGbFaSpv8MRmC/zXgowNZmFcbngndGk922QDmOASEXUZCaY48gs4cg==}
+    dev: true
+
   /@types/prop-types/15.7.5:
     resolution: {integrity: sha512-JCB8C6SnDoQf0cNycqd/35A7MjcnK+ZTqE7judS6o7utxUCg6imJg3QK2qzHKszlTjcj2cn+NwMB2i96ubpj7w==}
 
@@ -3706,7 +3724,7 @@ packages:
     resolution: {integrity: sha512-o/HelwhuKpTj/frsOsbNLNgnNGVIFsVP/SW2BSF14gVl7kAfMOJ6/8wUAUvG1R1NHKrfG+2sHZTu0yauT1qBrA==}
     engines: {node: '>=6.0'}
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       '@babel/runtime-corejs3': 7.19.1
     dev: true
 
@@ -3811,7 +3829,7 @@ packages:
     resolution: {integrity: sha512-Cg7TFGpIr01vOQNODXOOaGz2NpCU5gl8x1qJFbb6hbZxR7XrcE2vtbAsTAbJ7/xwJtUuJEw8K8Zr/AE0LHlesg==}
     engines: {node: '>=10', npm: '>=6'}
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       cosmiconfig: 7.0.1
       resolve: 1.22.1
     dev: false
@@ -4376,7 +4394,7 @@ packages:
   /dom-helpers/5.2.1:
     resolution: {integrity: sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==}
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       csstype: 3.1.1
     dev: false
 
@@ -4743,7 +4761,7 @@ packages:
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       aria-query: 4.2.2
       array-includes: 3.1.5
       ast-types-flow: 0.0.7
@@ -4765,7 +4783,7 @@ packages:
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       aria-query: 4.2.2
       array-includes: 3.1.5
       ast-types-flow: 0.0.7
@@ -5597,7 +5615,7 @@ packages:
   /i18next/21.10.0:
     resolution: {integrity: sha512-YeuIBmFsGjUfO3qBmMOc0rQaun4mIpGKET5WDwvu8lU7gvwpcariZLNtL0Fzj+zazcHUrlXHiptcFhBMFaxzfg==}
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
     dev: false
 
   /iconv-lite/0.4.24:
@@ -6887,6 +6905,7 @@ packages:
   /prettier/2.7.1:
     resolution: {integrity: sha512-ujppO+MkdPqoVINuDFDRLClm7D78qbDt0/NR+wp5FqEZOoTNAjPHWj17QRhu7geIHJfcNhRk1XVQmF8Bp3ye+g==}
     engines: {node: '>=10.13.0'}
+    hasBin: true
 
   /pretty-bytes/5.6.0:
     resolution: {integrity: sha512-FFw039TmrBqFK8ma/7OL3sDz/VytdtJr044/QUJtH0wK9lb9jLq9tJyIxUwtQJHwar2BqtiA4iCWSwo9JLkzFg==}
@@ -7013,7 +7032,7 @@ packages:
       react: 18.2.0
       scheduler: 0.23.0
 
-  /react-i18next/11.18.6_vfm63zmruocgezzfl2v26zlzpy:
+  /react-i18next/11.18.6_i18next@21.10.0:
     resolution: {integrity: sha512-yHb2F9BiT0lqoQDt8loZ5gWP331GwctHz9tYQ8A2EIEUu+CcEdjBLQWli1USG3RdWQt3W+jqQLg/d4rrQR96LA==}
     peerDependencies:
       i18next: '>= 19.0.0'
@@ -7026,11 +7045,9 @@ packages:
       react-native:
         optional: true
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       html-parse-stringify: 3.0.1
       i18next: 21.10.0
-      react: 18.2.0
-      react-dom: 18.2.0_react@18.2.0
     dev: false
 
   /react-is/16.13.1:
@@ -7098,7 +7115,7 @@ packages:
       react: '>=16.6.0'
       react-dom: '>=16.6.0'
     dependencies:
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       dom-helpers: 5.2.1
       loose-envify: 1.4.0
       prop-types: 15.8.1
@@ -8282,7 +8299,7 @@ packages:
       '@apideck/better-ajv-errors': 0.3.6_ajv@8.11.2
       '@babel/core': 7.20.5
       '@babel/preset-env': 7.20.2_@babel+core@7.20.5
-      '@babel/runtime': 7.19.0
+      '@babel/runtime': 7.20.7
       '@rollup/plugin-babel': 5.3.1_opjstonlpkhafnz76jsxdwq25a
       '@rollup/plugin-node-resolve': 11.2.1_rollup@2.79.1
       '@rollup/plugin-replace': 2.4.2_rollup@2.79.1
