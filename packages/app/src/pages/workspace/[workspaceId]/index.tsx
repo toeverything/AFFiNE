@@ -9,23 +9,23 @@ const WorkspaceIndex = () => {
   const router = useRouter();
   const { currentWorkspaceId, currentWorkspace } = useAppState();
   const { createPage } = usePageHelper();
-  const { workspaceLoaded } = useEnsureWorkspace();
-  console.log('workspaceLoaded: ', workspaceLoaded);
+  const { workspaceLoaded, activeWorkspaceId } = useEnsureWorkspace();
 
   useEffect(() => {
     const initPage = async () => {
       if (!workspaceLoaded) {
         return;
       }
+
       const savedPageId = currentWorkspace?.meta.pageMetas[0]?.id;
-      console.log('savedPageId: ', savedPageId);
+
       if (savedPageId) {
-        router.replace(`/workspace/${currentWorkspaceId}/${savedPageId}`);
+        router.replace(`/workspace/${activeWorkspaceId}/${savedPageId}`);
         return;
       }
 
       const pageId = await createPage();
-      router.replace(`/workspace/${currentWorkspaceId}/${pageId}`);
+      router.replace(`/workspace/${activeWorkspaceId}/${pageId}`);
     };
     initPage();
   }, [

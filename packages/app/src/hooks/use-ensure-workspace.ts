@@ -7,6 +7,9 @@ export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const { workspaceList, loadWorkspace, user } = useAppState();
   const router = useRouter();
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(
+    router.query.workspaceId as string
+  );
 
   // const defaultOutLineWorkspaceId = '99ce7eb7';
   // console.log(defaultOutLineWorkspaceId);
@@ -35,15 +38,15 @@ export const useEnsureWorkspace = () => {
 
     const workspaceId =
       (router.query.workspaceId as string) || workspaceList[0]?.id;
-
     loadWorkspace(workspaceId).finally(() => {
-      console.log('workspaceId: ', workspaceId);
       setWorkspaceLoaded(true);
+      setActiveWorkspaceId(activeWorkspaceId);
     });
   }, [loadWorkspace, router, user, workspaceList]);
 
   return {
     workspaceLoaded,
+    activeWorkspaceId,
   };
 };
 
