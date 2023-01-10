@@ -27,6 +27,7 @@ import { Workspace } from '@affine/datacenter';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { StyledMemberWarp } from './general/style';
 import { useConfirm } from '@/providers/ConfirmProvider';
+import { useTranslation } from 'react-i18next';
 
 // import { useAppState } from '@/providers/app-state-provider';
 export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
@@ -36,6 +37,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   ]);
   const { user, login, updateWorkspaceMeta } = useTemporaryHelper();
   const { confirm } = useConfirm();
+  const { t } = useTranslation();
   // const refreshMembers = useCallback(() => {
   //   getDataCenter()
   //     .then(dc =>
@@ -66,9 +68,11 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
         <>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>
-              Users({members.length})
+              {t('Users')} ({members.length})
             </StyledMemberNameContainer>
-            <StyledMemberRoleContainer>Access level</StyledMemberRoleContainer>
+            <StyledMemberRoleContainer>
+              {t('Access level')}
+            </StyledMemberRoleContainer>
           </StyledMemberTitleContainer>
           <StyledMemberListContainer>
             {members.length ? (
@@ -92,7 +96,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                           ? 'Member'
                           : 'Workspace Owner'
                         : 'Pending'} */}
-                      Pending
+                      {t('Pending')}
                     </StyledMemberRoleContainer>
                     <StyledMoreVerticalButton>
                       <Menu
@@ -123,7 +127,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                               }}
                               icon={<TrashIcon />}
                             >
-                              Delete
+                              {t('Delete')}
                             </MenuItem>
                           </>
                         }
@@ -154,7 +158,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
               type="primary"
               shape="circle"
             >
-              Invite Members
+              {t('Invite Members')}
             </Button>
             <InviteMembers
               onClose={() => {
@@ -172,19 +176,17 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
         </>
       ) : (
         <StyledMemberWarp>
-          <div style={{ flex: 1 }}>
-            Collaborating with other members requires AFFiNE Cloud service.
-          </div>
+          <div style={{ flex: 1 }}>{t('Collaboration Description')}</div>
           <div style={{ height: '40px' }}>
             <Button
               type="primary"
               shape="circle"
               onClick={() => {
                 confirm({
-                  title: 'Enable AFFiNE Cloud?',
-                  content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-                  confirmText: user ? 'Enable' : 'Sign in and Enable',
-                  cancelText: 'Skip',
+                  title: `${t('Enable AFFiNE Cloud')}?`,
+                  content: t('Enable AFFiNE Cloud Description'),
+                  confirmText: user ? t('Enable') : t('Sign in and Enable'),
+                  cancelText: t('Skip'),
                 }).then(confirm => {
                   if (confirm) {
                     if (user) {
@@ -197,7 +199,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                 });
               }}
             >
-              Enable AFFiNE Cloud
+              {t('Enable AFFiNE Cloud')}
             </Button>
           </div>
         </StyledMemberWarp>

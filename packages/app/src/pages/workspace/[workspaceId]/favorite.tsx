@@ -13,7 +13,10 @@ export const Favorite = () => {
       <PageListHeader icon={<FavouritesIcon />}>
         {t('Favourites')}
       </PageListHeader>
-      <PageList pageList={pageMetaList.filter(p => p.favorite && !p.trash)} />
+      <PageList
+        pageList={pageMetaList.filter(p => p.favorite && !p.trash)}
+        listType="favorite"
+      />
     </>
   );
 };

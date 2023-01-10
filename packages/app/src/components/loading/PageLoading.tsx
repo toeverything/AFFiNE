@@ -1,5 +1,6 @@
 import { styled } from '@/styles';
 import Loading from './Loading';
+import { useTranslation } from 'react-i18next';
 
 // Used for the full page loading
 const StyledLoadingContainer = styled('div')(() => {
@@ -17,12 +18,13 @@ const StyledLoadingContainer = styled('div')(() => {
   };
 });
 
-export const PageLoading = ({ text = 'Loading...' }: { text?: string }) => {
+export const PageLoading = ({ text }: { text?: string }) => {
+  const { t } = useTranslation();
   return (
     <StyledLoadingContainer>
       <div className="wrapper">
         <Loading />
-        <h1>{text}</h1>
+        <h1>{text ? text : t('Loading')}</h1>
       </div>
     </StyledLoadingContainer>
   );

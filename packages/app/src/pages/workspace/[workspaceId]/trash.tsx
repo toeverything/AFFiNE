@@ -11,7 +11,11 @@ export const Trash = () => {
   return (
     <>
       <PageListHeader icon={<TrashIcon />}>{t('Trash')}</PageListHeader>
-      <PageList pageList={pageMetaList.filter(p => p.trash)} isTrash={true} />
+      <PageList
+        pageList={pageMetaList.filter(p => p.trash)}
+        isTrash={true}
+        listType="trash"
+      />
     </>
   );
 };

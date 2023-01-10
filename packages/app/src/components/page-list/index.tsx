@@ -67,16 +67,18 @@ export const PageList = ({
   pageList,
   showFavoriteTag = false,
   isTrash = false,
+  listType,
 }: {
   pageList: PageMeta[];
   showFavoriteTag?: boolean;
   isTrash?: boolean;
+  listType?: 'all' | 'trash' | 'favorite';
 }) => {
   const router = useRouter();
   const { currentWorkspaceId } = useAppState();
   const { t } = useTranslation();
   if (pageList.length === 0) {
-    return <Empty />;
+    return <Empty listType={listType} />;
   }
 
   return (

@@ -9,6 +9,7 @@ import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
 import { useAppState } from '@/providers/app-state-provider';
+import { useTranslation } from 'react-i18next';
 export const Input = (props: {
   query: string;
   setQuery: Dispatch<SetStateAction<string>>;
@@ -17,6 +18,7 @@ export const Input = (props: {
   const [isComposition, setIsComposition] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
   const { currentWorkspaceId, workspaceList, currentWorkspace } = useAppState();
   const isPublish = workspaceList.find(
     meta => String(meta.id) === String(currentWorkspaceId)
@@ -80,8 +82,10 @@ export const Input = (props: {
         }}
         placeholder={
           isPublish
-            ? `Search in ${currentWorkspace?.meta.name}`
-            : 'Quick Search...'
+            ? t('Quick search placeholder2', {
+                workspace = currentWorkspace?.meta.name,
+              })
+            : t('Quick search placeholder')
         }
       />
     </StyledInputContent>

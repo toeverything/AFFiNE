@@ -8,9 +8,11 @@ import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { Workspace } from '@affine/datacenter';
+import { Trans, useTranslation } from 'react-i18next';
 export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
   console.log('workspace: ', workspace);
   const { currentWorkspace, updateWorkspaceMeta } = useTemporaryHelper();
+  const { t } = useTranslation();
 
   return (
     <div>

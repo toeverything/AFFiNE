@@ -1,4 +1,5 @@
 import getIsMobile from '@/utils/get-is-mobile';
+import { Trans, useTranslation } from 'react-i18next';
 // Inspire by https://stackoverflow.com/a/4900484/8415727
 const getChromeVersion = () => {
   const raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
@@ -19,20 +20,20 @@ export const shouldShowWarning = () => {
   );
 };
 
-export const getWarningMessage = () => {
+export const useWarningMessage = () => {
+  const { t } = useTranslation();
   if (!getIsChrome()) {
     return (
       <span>
-        We recommend the <strong>Chrome</strong> browser for optimal experience.
+        <Trans i18nKey="recommendBrowser">
+          We recommend the <strong>Chrome</strong> browser for optimal
+          experience.
+        </Trans>
       </span>
     );
   }
   if (getChromeVersion() < minimumChromeVersion) {
-    return (
-      <span>
-        Please upgrade to the latest version of Chrome for the best experience.
-      </span>
-    );
+    return <span>{t('upgradeBrowser')}</span>;
   }
   return '';
 };

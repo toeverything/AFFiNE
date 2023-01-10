@@ -7,6 +7,7 @@ import { useState } from 'react';
 // import { getDataCenter } from '@affine/datacenter';
 import { Avatar } from '@mui/material';
 import { setMember } from '@/hooks/mock-data/mock';
+import { useTranslation } from 'react-i18next';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -54,6 +55,7 @@ export const InviteMembers = ({
   const [showTip, setShowTip] = useState<boolean>(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [userData, setUserData] = useState<any>({});
+  const { t } = useTranslation();
   const inputChange = (value: string) => {
     setShowMember(true);
     if (gmailReg.test(value)) {
@@ -101,7 +103,7 @@ export const InviteMembers = ({
             />
           </Header>
           <Content>
-            <ContentTitle>Invite members</ContentTitle>
+            <ContentTitle>{t('Invite Members')}</ContentTitle>
             <InviteBox>
               <Input
                 width={360}
@@ -110,12 +112,12 @@ export const InviteMembers = ({
                 onBlur={() => {
                   setShowMember(false);
                 }}
-                placeholder="Search mail (Gmail support only)"
+                placeholder={t('Invite placeholder')}
               ></Input>
               {showMember ? (
                 <Members>
                   {showTip ? (
-                    <NoFind>Non-Gmail is not supported</NoFind>
+                    <NoFind>{t('Non-Gmail is not supported')}</NoFind>
                   ) : (
                     <Member>
                       {userData?.avatar_url ? (
@@ -154,7 +156,7 @@ export const InviteMembers = ({
                 //   });
               }}
             >
-              Invite
+              {t('Invite')}
             </Button>
           </Footer>
         </ModalWrapper>

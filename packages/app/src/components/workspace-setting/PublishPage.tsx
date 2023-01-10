@@ -13,12 +13,13 @@ import { useConfirm } from '@/providers/ConfirmProvider';
 // import { useAppState } from '@/providers/app-state-provider3';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { Workspace } from '@affine/datacenter';
+import { useTranslation } from 'react-i18next';
 
 export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
   const shareUrl =
     window.location.host + '/workspace/' + workspace.id + '?share=true';
   const { publishWorkspace } = useWorkspaceHelper();
-
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
 
   const togglePublic = (flag: boolean) => {
@@ -32,11 +33,11 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
 
   const enableAffineCloud = () => {
     confirm({
-      title: 'Enable AFFiNE Cloud?',
-      content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+      title: `${t('Enable AFFiNE Cloud')}?`,
+      content: t('Enable AFFiNE Cloud Description'),
       confirmText:
-        workspace.provider === 'local' ? 'Enable' : 'Sign in and Enable',
-      cancelText: 'Skip',
+        workspace.provider === 'local' ? t('Enable') : t('Sign in and Enable'),
+      cancelText: t('Skip'),
     }).then(confirm => {
       if (confirm) {
         // if (user) {
@@ -56,22 +57,21 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
             {workspace?.isPublish ? (
               <>
                 <StyledPublishExplanation>
-                  Publishing to web requires AFFiNE Cloud service .
+                  {t('Publishing')}
                 </StyledPublishExplanation>
-                <StyledSettingH2>Share with link</StyledSettingH2>
+                <StyledSettingH2>{t('Share with link')}</StyledSettingH2>
                 <StyledPublishCopyContainer>
                   <Input width={500} value={shareUrl} disabled={true}></Input>
                   <StyledCopyButtonContainer>
                     <Button onClick={copyUrl} type="primary" shape="circle">
-                      Copy Link
+                      {t('Copy Link')}
                     </Button>
                   </StyledCopyButtonContainer>
                 </StyledPublishCopyContainer>
               </>
             ) : (
               <StyledPublishExplanation>
-                After publishing to the web, everyone can view the content of
-                this workspace through the link.
+                {'Publishing Description'}
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
@@ -83,7 +83,7 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
               type="primary"
               shape="circle"
             >
-              Stop publishing
+              {t('Stop publishing')}
             </Button>
           ) : (
             <Button
@@ -93,7 +93,7 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
               type="primary"
               shape="circle"
             >
-              Publish to web
+              {t('Publish to web')}
             </Button>
           )}
         </div>
@@ -101,7 +101,7 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
         <StyledPublishContent>
           <>
             <StyledPublishExplanation>
-              Publishing to web requires AFFiNE Cloud service.
+              {t('Publishing')}
             </StyledPublishExplanation>
 
             <StyledPublishCopyContainer>
@@ -112,7 +112,7 @@ export const PublishPage = ({ workspace }: { workspace: Workspace }) => {
                 type="primary"
                 shape="circle"
               >
-                Enable AFFiNE Cloud
+                {t('Enable AFFiNE Cloud')}
               </Button>
             </StyledPublishCopyContainer>
           </>

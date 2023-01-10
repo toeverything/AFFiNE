@@ -157,7 +157,7 @@ export const WorkSpaceSliderBar = () => {
               setShowWorkspaceSetting(true);
             }}
           >
-            <SettingsIcon /> Setting
+            <SettingsIcon /> {t('Settings')}
           </StyledListItem>
 
           <WorkspaceSetting
