@@ -16,7 +16,7 @@ import {
 import Slide from '@mui/material/Slide';
 import { ModalCloseButton } from '@/ui/modal';
 import { getUaHelper } from '@/utils';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 type ModalProps = {
   open: boolean;
   onClose: () => void;

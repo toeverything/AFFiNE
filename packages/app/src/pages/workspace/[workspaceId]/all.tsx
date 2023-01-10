@@ -4,7 +4,7 @@ import usePageMetaList from '@/hooks/use-page-meta-list';
 import { PageListHeader } from '@/components/header';
 import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 const All = () => {
   const pageMetaList = usePageMetaList();
   const { t } = useTranslation();

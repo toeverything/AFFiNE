@@ -16,7 +16,7 @@ import { usePageHelper } from '@/hooks/use-page-helper';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { toast } from '@/ui/toast';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 const PopoverContent = () => {
   const { editor } = useAppState();
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();

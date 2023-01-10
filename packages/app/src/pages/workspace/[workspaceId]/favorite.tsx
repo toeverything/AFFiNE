@@ -4,7 +4,7 @@ import { FavouritesIcon } from '@blocksuite/icons';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 export const Favorite = () => {
   const pageMetaList = usePageMetaList();
   const { t } = useTranslation();

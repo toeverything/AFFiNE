@@ -20,7 +20,7 @@ import { useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { PageLoading } from '@/components/loading';
 import Head from 'next/head';
-import '@/libs/i18n';
+import '@affine/i18n';
 import TemporaryHelperProvider from '@/providers/temporary-helper-provider';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {

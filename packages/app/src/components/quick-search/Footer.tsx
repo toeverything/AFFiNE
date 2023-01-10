@@ -4,7 +4,7 @@ import { StyledModalFooterContent } from './style';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { Command } from 'cmdk';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 export const Footer = (props: { query: string }) => {
   const { triggerQuickSearchModal } = useModal();
   const { openPage, createPage } = usePageHelper();

@@ -7,7 +7,7 @@ import {
   StyledModalWrapper,
 } from '@/ui/confirm/styles';
 import { Button } from '@/ui/button';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 export type ConfirmProps = {
   title?: string;
   content?: string;
