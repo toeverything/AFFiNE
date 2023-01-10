@@ -12,12 +12,14 @@ import { useAppState } from '@/providers/app-state-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { useUserHelper } from '@/hooks/use-user-helper';
+import { useRouter } from 'next/router';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   // console.log('workspace: ', workspace);
   const { enableWorkspace } = useWorkspaceHelper();
   const { currentWorkspace } = useAppState();
   const { confirm } = useConfirm();
   const { user, login } = useUserHelper();
+  const router = useRouter();
   return (
     <div>
       <StyledPublishContent>
@@ -42,7 +44,8 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
                       // if (user) {
                       //   await login();
                       // }
-                      await enableWorkspace(currentWorkspace);
+                      const id = await enableWorkspace(currentWorkspace);
+                      router.push(`/workspace/${id}`);
                       toast('Enabled success');
                     }
                   });

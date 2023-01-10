@@ -33,8 +33,9 @@ export const useWorkspaceHelper = () => {
   };
 
   const enableWorkspace = async (workspace: Workspace) => {
-    const newWorkspace = await dataCenter.enableWorkspaceCloud(workspace);
-    console.log('newWorkspace: ', newWorkspace);
+    const newWorkspaceId = await dataCenter.enableWorkspaceCloud(workspace);
+    // console.log('newWorkspace: ', newWorkspace);
+    return newWorkspaceId;
   };
   return {
     createWorkspace,
