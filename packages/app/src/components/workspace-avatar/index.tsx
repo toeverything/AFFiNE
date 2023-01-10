@@ -11,21 +11,10 @@ interface IWorkspaceAvatar {
 export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
   const size = props.size || 20;
   const sizeStr = size + 'px';
-  const { dataCenter, currentWorkspace } = useAppState();
-  dataCenter.getBlob(currentWorkspace, props.avatar).then(res => {
-    setAvatar(res ?? '');
-  });
-  const [avatar, setAvatar] = useState<string>(props.avatar);
-
-  useEffect(() => {
-    dataCenter.getBlob(currentWorkspace, props.avatar).then(res => {
-      setAvatar(res ?? '');
-    });
-  }, [props.avatar]);
 
   return (
     <>
-      {avatar ? (
+      {props.avatar ? (
         <div
           style={{
             width: sizeStr,
@@ -36,7 +25,7 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
             overflow: 'hidden',
           }}
         >
-          <img src={avatar} alt="" />
+          <img src={props.avatar} alt="" />
         </div>
       ) : (
         <div

@@ -24,16 +24,21 @@ export const useWorkspaceHelper = () => {
     workspace: Workspace
   ) => {
     if (name) {
-      dataCenter.updateWorkspaceMeta({ name }, workspace);
+      await dataCenter.updateWorkspaceMeta({ name }, workspace);
     }
     if (avatarBlob) {
       const blobId = await dataCenter.setBlob(workspace, avatarBlob);
-      dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
+      await dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
     }
+  };
+
+  const enableWorkspace = async (workspace: Workspace) => {
+    dataCenter.enableWorkspaceCloud(workspace);
   };
   return {
     createWorkspace,
     publishWorkspace,
     updateWorkspace,
+    enableWorkspace,
   };
 };

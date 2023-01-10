@@ -47,8 +47,9 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
 
   const fileChange = async (file: File) => {
     // console.log('file: ', file);
-    setUploading(true);
+    // setUploading(true);
     const blob = new Blob([file], { type: file.type });
+    updateWorkspace({ avatarBlob: blob }, currentWorkspace);
   };
 
   return workspace ? (

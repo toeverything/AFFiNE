@@ -7,9 +7,17 @@ import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
 import { WorkspaceInfo } from '@affine/datacenter';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { useAppState } from '@/providers/app-state-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
+import { toast } from '@/ui/toast';
+import { useUserHelper } from '@/hooks/use-user-helper';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
-  console.log('workspace: ', workspace);
-
+  // console.log('workspace: ', workspace);
+  const { enableWorkspace } = useWorkspaceHelper();
+  const { currentWorkspace } = useAppState();
+  const { confirm } = useConfirm();
+  const { user, login } = useUserHelper();
   return (
     <div>
       <StyledPublishContent>
@@ -24,9 +32,20 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
             <StyledPublishCopyContainer>
               <Button
                 onClick={() => {
-                  // updateWorkspaceMeta(currentWorkspace.id, {
-                  //   type: 'cloud',
-                  // });
+                  confirm({
+                    title: 'Enable AFFiNE Cloud?',
+                    content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+                    confirmText: user ? 'Enable' : 'Sign in and Enable',
+                    cancelText: 'Skip',
+                  }).then(async confirm => {
+                    if (confirm) {
+                      // if (user) {
+                      //   await login();
+                      // }
+                      await enableWorkspace(currentWorkspace);
+                      toast('Enabled success');
+                    }
+                  });
                 }}
                 type="primary"
                 shape="circle"
