@@ -1,4 +1,3 @@
-import Modal, { ModalCloseButton } from '@/ui/modal';
 import {
   StyledSettingContainer,
   StyledSettingContent,
@@ -7,7 +6,7 @@ import {
   StyledSettingTabContainer,
   StyledSettingTagIconContainer,
   WorkspaceSettingTagItem,
-} from '../../../components/workspace-setting/style';
+} from '@/components/workspace-setting/style';
 import {
   EditIcon,
   UsersIcon,
@@ -15,11 +14,13 @@ import {
   CloudInsyncIcon,
 } from '@blocksuite/icons';
 import { ReactElement, useEffect, useState } from 'react';
-import { GeneralPage } from '../../../components/workspace-setting/general';
-import { MembersPage } from '../../../components/workspace-setting/MembersPage';
-import { PublishPage } from '../../../components/workspace-setting/PublishPage';
-import { ExportPage } from '../../../components/workspace-setting/ExportPage';
-import { SyncPage } from '../../../components/workspace-setting/SyncPage';
+import {
+  GeneralPage,
+  MembersPage,
+  PublishPage,
+  ExportPage,
+  SyncPage,
+} from '@/components/workspace-setting';
 import { useAppState } from '@/providers/app-state-provider';
 import WorkspaceLayout from '@/components/workspace-layout';
 

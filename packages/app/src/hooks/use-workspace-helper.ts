@@ -1,13 +1,10 @@
 import { useAppState } from '@/providers/app-state-provider';
-import { stringToColour } from '@/utils';
-import { WorkspaceInfo } from '@affine/datacenter';
 import { Workspace } from '@blocksuite/store';
 export const useWorkspaceHelper = () => {
   const { dataCenter } = useAppState();
   const createWorkspace = async (name: string) => {
     const workspaceInfo = await dataCenter.createWorkspace({
       name: name,
-      avatar: 'cccc',
     });
     if (workspaceInfo && workspaceInfo.room) {
       const workspace = await dataCenter.loadWorkspace(workspaceInfo.room);
@@ -23,15 +20,16 @@ export const useWorkspaceHelper = () => {
   };
 
   const updateWorkspace = async (
-    { name, avatar }: { name?: string; avatar?: string },
+    { name, avatarBlob }: { name?: string; avatarBlob?: Blob },
     workspace: Workspace
   ) => {
     if (name) {
       dataCenter.updateWorkspaceMeta({ name }, workspace);
     }
-    // if (avatar) {
-    //   dataCenter.resetWorkspaceMeta({ avatar }, workspace);
-    // }
+    if (avatarBlob) {
+      const blobId = await dataCenter.setBlob(workspace, avatarBlob);
+      dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
+    }
   };
   return {
     createWorkspace,

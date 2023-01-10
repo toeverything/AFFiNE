@@ -6,14 +6,12 @@ import { useAppState } from '@/providers/app-state-provider';
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);
   const { currentMetaWorkSpace, workspaceList } = useAppState();
-  console.log('currentMetaWorkSpace: ', currentMetaWorkSpace);
 
   useEffect(() => {
     if (workspaceList.length === 0) {
       setWorkspaceListShow(true);
     }
   }, [workspaceList]);
-
   return (
     <>
       <SelectorWrapper
@@ -35,6 +33,7 @@ export const WorkspaceSelector = () => {
             <WorkspaceAvatar
               size={28}
               name={currentMetaWorkSpace?.name ?? 'AFFiNE'}
+              avatar={currentMetaWorkSpace?.avatar ?? ''}
             />
           </div>
         </Avatar>

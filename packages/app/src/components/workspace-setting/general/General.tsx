@@ -43,24 +43,12 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   const handleUpdateWorkspaceName = () => {
     console.log('currentWorkspace: ', currentWorkspace);
     updateWorkspace({ name: workspaceName }, currentWorkspace);
-    // workspace && currentWorkspace(workspace.id, { name: workspaceName });
   };
 
   const fileChange = async (file: File) => {
-    console.log('file: ', file);
+    // console.log('file: ', file);
     setUploading(true);
-    // const blob = new Blob([file], { type: file.type });
-    // const blobId = await getDataCenter()
-    //   .then(dc => dc.apis.uploadBlob({ blob }))
-    //   .finally(() => {
-    //     setUploading(false);
-    //   });
-    // if (blobId) {
-    //   currentWorkspace?.meta.setAvatar(blobId);
-    //   // workspaces[workspace.id]?.meta.setAvatar(blobId);
-    //   setUploading(false);
-    //   debouncedRefreshWorkspacesMeta();
-    // }
+    const blob = new Blob([file], { type: file.type });
   };
 
   return workspace ? (
@@ -73,7 +61,11 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
             marginRight: '20px',
           }}
         >
-          <WorkspaceAvatar size={60} name={workspace.name} />
+          <WorkspaceAvatar
+            size={60}
+            name={workspace.name}
+            avatar={workspace.avatar ?? ''}
+          />
         </div>
         <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"

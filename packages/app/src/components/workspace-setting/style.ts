@@ -22,7 +22,6 @@ export const StyledSettingSidebar = styled('div')(({ theme }) => {
 export const StyledSettingContent = styled('div')(() => {
   return {
     paddingLeft: '48px',
-    height: '620px',
   };
 });
 
@@ -30,7 +29,6 @@ export const StyledSetting = styled('div')(({ theme }) => {
   {
     return {
       width: '236px',
-      height: '620px',
       background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
     };
   }
@@ -136,7 +134,6 @@ export const StyledMemberRoleContainer = styled('div')(() => {
 export const StyledMemberListContainer = styled('ul')(() => {
   return {
     marginTop: '15px',
-    height: '432px',
     overflowY: 'scroll',
   };
 });
@@ -220,7 +217,6 @@ export const StyledCopyButtonContainer = styled('div')(() => {
 
 export const StyledPublishContent = styled('div')(() => {
   return {
-    height: '494px',
     display: 'flex',
     flexDirection: 'column',
   };

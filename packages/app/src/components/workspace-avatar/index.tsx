@@ -3,6 +3,7 @@ import { stringToColour } from '@/utils';
 interface IWorkspaceAvatar {
   size: number;
   name: string;
+  avatar: string;
 }
 
 export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
