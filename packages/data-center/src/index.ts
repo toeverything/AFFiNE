@@ -28,3 +28,4 @@ export const getDataCenter = _initializeDataCenter();
 export type { AccessTokenMessage } from './provider/affine/apis';
 export type { WorkspaceInfo } from './types';
 export { getLogger } from './logger';
+export * from './message';

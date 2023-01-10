@@ -4,11 +4,12 @@ import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BaseProvider } from './provider/base';
 import { LocalProvider } from './provider/local/local';
 import { AffineProvider } from './provider';
-import type { WorkspaceMeta } from './types';
+import type { Message, WorkspaceMeta } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { createBlocksuiteWorkspace } from './utils/index.js';
+import { MessageCenter } from './message/message';
 
 /**
  * @class DataCenter
@@ -18,6 +19,7 @@ export class DataCenter {
   private readonly _workspaceMetaCollection = new WorkspaceMetaCollection();
   private readonly _logger = getLogger('dc');
   private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
+  private _messageCenter = new MessageCenter();
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -30,19 +32,16 @@ export class DataCenter {
 
   static async init(debug: boolean): Promise<DataCenter> {
     const dc = new DataCenter(debug);
+    const getInitParams = () => {
+      return {
+        logger: dc._logger,
+        workspaces: dc._workspaceMetaCollection.createScope(),
+        messageCenter: dc._messageCenter,
+      };
+    };
     // TODO: switch different provider
-    dc.registerProvider(
-      new LocalProvider({
-        logger: dc._logger,
-        workspaces: dc._workspaceMetaCollection.createScope(),
-      })
-    );
-    dc.registerProvider(
-      new AffineProvider({
-        logger: dc._logger,
-        workspaces: dc._workspaceMetaCollection.createScope(),
-      })
-    );
+    dc.registerProvider(new LocalProvider(getInitParams()));
+    dc.registerProvider(new AffineProvider(getInitParams()));
 
     return dc;
   }
@@ -370,5 +369,9 @@ export class DataCenter {
   async setBlob(workspace: BlocksuiteWorkspace, blob: Blob): Promise<string> {
     const blobStorage = await workspace.blobs;
     return (await blobStorage?.set(blob)) || '';
+  }
+
+  onMessage(cb: (message: Message) => void) {
+    return this._messageCenter.onMessage(cb);
   }
 }
