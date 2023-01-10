@@ -51,7 +51,7 @@ const FavoriteTag = ({
         style={{
           color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
         }}
-        className="favorite-button"
+        className={favorite ? '' : 'favorite-button'}
       >
         {favorite ? (
           <FavouritedIcon data-testid="favourited-icon" />
