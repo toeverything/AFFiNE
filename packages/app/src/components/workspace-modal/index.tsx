@@ -67,7 +67,11 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                           marginRight: '10px',
                         }}
                       >
-                        <WorkspaceAvatar size={50} name={item.name} />
+                        <WorkspaceAvatar
+                          size={50}
+                          name={item.name}
+                          avatar={item.avatar ?? ''}
+                        />
                       </div>
 
                       <span
