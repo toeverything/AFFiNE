@@ -4,7 +4,7 @@ import { useAppState } from '@/providers/app-state-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { useRouter } from 'next/router';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 
 export const TrashButtonGroup = () => {
   const { permanentlyDeletePage } = usePageHelper();

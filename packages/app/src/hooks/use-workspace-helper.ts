@@ -27,7 +27,7 @@ export const useWorkspaceHelper = () => {
     workspace: Workspace
   ) => {
     if (name) {
-      dataCenter.resetWorkspaceMeta({ name }, workspace);
+      dataCenter.updateWorkspaceMeta({ name }, workspace);
     }
     // if (avatar) {
     //   dataCenter.resetWorkspaceMeta({ avatar }, workspace);

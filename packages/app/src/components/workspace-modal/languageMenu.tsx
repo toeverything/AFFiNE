@@ -1,10 +1,10 @@
-import { LOCALES } from '@/libs/i18n/resources/index';
+import { LOCALES } from '@affine/i18n';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import type { TooltipProps } from '@mui/material';
 import { styled } from '@/styles';
 import { Button, Tooltip } from '@mui/material';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 
 export const LanguageMenu = () => {
   const { i18n } = useTranslation();

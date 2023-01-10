@@ -1,7 +1,7 @@
 import { Button } from '@/ui/button';
 import { FC, useRef, ChangeEvent, ReactElement } from 'react';
 import { styled } from '@/styles';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 interface Props {
   uploadType?: string;
   children?: ReactElement;
