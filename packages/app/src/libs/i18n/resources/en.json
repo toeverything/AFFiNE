@@ -132,5 +132,12 @@
   "Publishing Description": "After publishing to the web, everyone can view the content of this workspace through the link.",
   "Stop publishing": "Stop publishing",
   "Publish to web": "Publish to web",
-  "Sync Description": "{{workspaceName}} is Local Workspace. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud."
+  "Sync Description": "{{workspaceName}} is Local Workspace. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud.",
+  "Sync Description2": "<1>{{workspaceName}}</1> is Cloud Workspace. All data will be synchronized and saved to the AFFiNE",
+  "Download data to device": "Download {{CoreOrAll}} data to device",
+  "General": "General",
+  "Sync": "Sync",
+  "Collaboration": "Collaboration",
+  "Publish": "Publish",
+  "Workspace Settings": "Workspace Settings"
 }

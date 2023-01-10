@@ -21,6 +21,7 @@ import { PublishPage } from './PublishPage';
 import { ExportPage } from './ExportPage';
 import { SyncPage } from './SyncPage';
 import { useAppState } from '@/providers/app-state-provider';
+import { useTranslation } from 'react-i18next';
 
 enum ActiveTab {
   'general' = 'general',
@@ -41,6 +42,7 @@ type WorkspaceSettingProps = {
 };
 
 const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
+  const { t } = useTranslation();
   return (
     <StyledSettingTabContainer>
       <WorkspaceSettingTagItem
@@ -52,7 +54,7 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         <StyledSettingTagIconContainer>
           <EditIcon />
         </StyledSettingTagIconContainer>
-        General
+        {t('General')}
       </WorkspaceSettingTagItem>
 
       <WorkspaceSettingTagItem
@@ -64,7 +66,7 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         <StyledSettingTagIconContainer>
           <CloudInsyncIcon />
         </StyledSettingTagIconContainer>
-        Sync
+        {t('Sync')}
       </WorkspaceSettingTagItem>
 
       <WorkspaceSettingTagItem
@@ -76,7 +78,7 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         <StyledSettingTagIconContainer>
           <UsersIcon />
         </StyledSettingTagIconContainer>
-        Collaboration
+        {t('Collaboration')}
       </WorkspaceSettingTagItem>
       <WorkspaceSettingTagItem
         isActive={activeTab === ActiveTab.publish}
@@ -87,7 +89,7 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         <StyledSettingTagIconContainer>
           <PublishIcon />
         </StyledSettingTagIconContainer>
-        Publish
+        {t('Publish')}
       </WorkspaceSettingTagItem>
 
       <WorkspaceSettingTagItem
@@ -99,7 +101,7 @@ const WorkspaceSettingTab = ({ activeTab, onTabChange }: SettingTabProps) => {
         <StyledSettingTagIconContainer>
           <PublishIcon />
         </StyledSettingTagIconContainer>
-        Export
+        {t('Export')}
       </WorkspaceSettingTagItem>
     </StyledSettingTabContainer>
   );
@@ -114,7 +116,7 @@ export const WorkspaceSetting = ({
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
   };
-
+  const { t } = useTranslation();
   const { currentMetaWorkSpace } = useAppState();
   const handleClickClose = () => {
     onClose && onClose();
@@ -133,7 +135,7 @@ export const WorkspaceSetting = ({
         {isOwner ? (
           <StyledSettingSidebar>
             <StyledSettingSidebarHeader>
-              Workspace Settings
+              {t('Workspace Settings')}
             </StyledSettingSidebarHeader>
             <WorkspaceSettingTab
               activeTab={activeTab}

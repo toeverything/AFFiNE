@@ -20,9 +20,7 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
         {currentWorkspace?.type === 'local' ? (
           <>
             <StyledPublishExplanation>
-              {currentWorkspace.name} is Local Workspace. All data is stored on
-              the current device. You can enable AFFiNE Cloud for this workspace
-              to keep data in sync with the cloud.
+              {t('Sync Description', { workspaceName: currentWorkspace.name })}
             </StyledPublishExplanation>
 
             <StyledPublishCopyContainer>
@@ -35,15 +33,20 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                 type="primary"
                 shape="circle"
               >
-                Enable AFFiNE Cloud
+                {t('Enable AFFiNE Cloud')}
               </Button>
             </StyledPublishCopyContainer>
           </>
         ) : (
           <>
             <StyledPublishExplanation>
-              <code>{currentWorkspace && currentWorkspace.name}</code> is Cloud
-              Workspace. All data will be synchronized and saved to the AFFiNE
+              <Trans i18nKey="Sync Description2">
+                <code>
+                  {{ workspaceName: currentWorkspace && currentWorkspace.name }}
+                </code>
+                is Cloud Workspace. All data will be synchronized and saved to
+                the AFFiNE
+              </Trans>
             </StyledPublishExplanation>
             <StyledPublishCopyContainer>
               <Menu
@@ -55,7 +58,7 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                       }}
                       icon={<DownloadIcon />}
                     >
-                      Download core data to device
+                      {t('Download data to device', { CoreOrAll: 'core' })}
                     </MenuItem>
                     <MenuItem
                       onClick={() => {
@@ -63,14 +66,16 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                       }}
                       icon={<DownloadIcon />}
                     >
-                      Download all data to device
+                      {t('Download data to device', { CoreOrAll: 'all' })}
                     </MenuItem>
                   </>
                 }
                 placement="bottom-end"
                 disablePortal={true}
               >
-                <Button>Download all data to device</Button>
+                <Button>
+                  {t('Download data to device', { CoreOrAll: 'all' })}
+                </Button>
               </Menu>
             </StyledPublishCopyContainer>
           </>
