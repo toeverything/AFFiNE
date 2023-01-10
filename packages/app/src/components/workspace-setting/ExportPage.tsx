@@ -1,5 +1,5 @@
 import { styled } from '@/styles';
-import { Workspace } from '@affine/datacenter';
+import { WorkspaceInfo } from '@affine/datacenter';
 
 export const ExportPageTitleContainer = styled('div')(() => {
   return {
@@ -9,7 +9,7 @@ export const ExportPageTitleContainer = styled('div')(() => {
     flex: 1,
   };
 });
-export const ExportPage = ({ workspace }: { workspace: Workspace }) => {
+export const ExportPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   return (
     <ExportPageTitleContainer>
       Export Workspace{' '}

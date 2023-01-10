@@ -12,7 +12,7 @@
 // } from './WorkspaceItem';
 // import { WorkspaceSetting } from '@/components/workspace-setting';
 // import { useCallback, useEffect, useState } from 'react';
-// import { Workspace } from '@affine/datacenter';
+// import { WorkspaceInfo } from '@affine/datacenter';
 // import { useModal } from '@/providers/GlobalModalProvider';
 
 // export type WorkspaceDetails = Record<

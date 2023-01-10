@@ -1,4 +1,4 @@
-import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
 import { Logger, User, WorkspaceInfo, WorkspaceMeta } from '../types';
 import type { WorkspacesScope } from '../workspaces';
 
@@ -26,6 +26,12 @@ export class BaseProvider {
    */
   public async init() {
     return;
+  }
+
+  public async createWorkspaceInfo(
+    meta: WorkspaceMeta
+  ): Promise<WorkspaceInfo> {
+    throw new Error(`provider: ${this.id} createWorkspaceInfo Not implemented`);
   }
 
   /**
@@ -155,10 +161,10 @@ export class BaseProvider {
    * @param {WorkspaceMeta} meta
    */
   public async createWorkspace(
+    blocksuiteWorkspace: BlocksuiteWorkspace,
     meta: WorkspaceMeta
   ): Promise<BlocksuiteWorkspace | undefined> {
-    meta;
-    return;
+    return blocksuiteWorkspace;
   }
 
   /**

@@ -7,8 +7,8 @@ import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
-import { Workspace } from '@affine/datacenter';
-export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
+import { WorkspaceInfo } from '@affine/datacenter';
+export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   console.log('workspace: ', workspace);
   const { currentWorkspace, updateWorkspaceMeta } = useTemporaryHelper();
 

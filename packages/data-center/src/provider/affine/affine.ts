@@ -8,9 +8,9 @@ import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
-import { getDefaultHeadImgBlob } from '../../utils/index.js';
 import { getApis } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
+import { setDefaultAvatar } from '../utils.js';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
@@ -28,6 +28,11 @@ export class AffineProvider extends BaseProvider {
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
     this._apis = apis || getApis();
+    this.init().then(() => {
+      if (this._apis.token.isLogin) {
+        this.loadWorkspaces();
+      }
+    });
   }
 
   override async init() {
@@ -58,20 +63,32 @@ export class AffineProvider extends BaseProvider {
     }
   }
 
-  override async warpWorkspace(workspace: BlocksuiteWorkspace) {
-    const { doc, room } = workspace;
-    assert(room);
-    this.linkLocal(workspace);
-    const updates = await this._apis.downloadWorkspace(room);
+  private async _applyCloudUpdates(blocksuiteWorkspace: BlocksuiteWorkspace) {
+    const { doc, room: workspaceId } = blocksuiteWorkspace;
+    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
+    const updates = await this._apis.downloadWorkspace(workspaceId);
     if (updates && updates.byteLength) {
       await new Promise(resolve => {
         doc.once('update', resolve);
-        applyUpdate(doc, new Uint8Array(updates));
+        BlocksuiteWorkspace.Y.applyUpdate(doc, new Uint8Array(updates));
       });
     }
+  }
+
+  override async warpWorkspace(workspace: BlocksuiteWorkspace) {
+    await this._applyCloudUpdates(workspace);
+    const { doc, room } = workspace;
+    assert(room);
+    this.linkLocal(workspace);
+
     let ws = this._wsMap.get(room);
     if (!ws) {
-      ws = new WebsocketProvider('/', room, doc);
+      const wsUrl = `${
+        window.location.protocol === 'https:' ? 'wss' : 'ws'
+      }://${window.location.host}/api/sync/`;
+      ws = new WebsocketProvider(wsUrl, room, doc, {
+        params: { token: this._apis.token.refresh },
+      });
       this._wsMap.set(room, ws);
     }
     // close all websocket links
@@ -246,23 +263,40 @@ export class AffineProvider extends BaseProvider {
     // return workspace;
   }
 
-  public override async createWorkspace(
+  public override async createWorkspaceInfo(
     meta: WorkspaceMeta
-  ): Promise<BlocksuiteWorkspace | undefined> {
-    assert(meta.name, 'Workspace name is required');
+  ): Promise<WorkspaceInfo> {
     const { id } = await this._apis.createWorkspace(
       meta as Required<WorkspaceMeta>
     );
-    this._logger('Creating affine workspace');
-    const nw = new BlocksuiteWorkspace({
-      room: id,
-    }).register(BlockSchema);
-    nw.meta.setName(meta.name);
-    this.linkLocal(nw);
 
     const workspaceInfo: WorkspaceInfo = {
       name: meta.name,
-      id,
+      id: id,
+      isPublish: false,
+      avatar: '',
+      owner: await this.getUserInfo(),
+      isLocal: true,
+      memberCount: 1,
+      provider: 'affine',
+    };
+    return workspaceInfo;
+  }
+
+  public override async createWorkspace(
+    blocksuiteWorkspace: BlocksuiteWorkspace,
+    meta: WorkspaceMeta
+  ): Promise<BlocksuiteWorkspace | undefined> {
+    const workspaceId = blocksuiteWorkspace.room;
+    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
+    this._logger('Creating affine workspace');
+
+    this._applyCloudUpdates(blocksuiteWorkspace);
+    this.linkLocal(blocksuiteWorkspace);
+
+    const workspaceInfo: WorkspaceInfo = {
+      name: meta.name,
+      id: workspaceId,
       isPublish: false,
       avatar: '',
       owner: undefined,
@@ -271,20 +305,12 @@ export class AffineProvider extends BaseProvider {
       provider: 'affine',
     };
 
-    if (!meta.avatar) {
-      // set default avatar
-      const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobStorage = await nw.blobs;
-      assert(blobStorage, 'No blob storage');
-      const blobId = await blobStorage.set(blob);
-      const avatar = await blobStorage.get(blobId);
-      if (avatar) {
-        nw.meta.setAvatar(avatar);
-        workspaceInfo.avatar = avatar;
-      }
+    if (!blocksuiteWorkspace.meta.avatar) {
+      await setDefaultAvatar(blocksuiteWorkspace);
+      workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
     }
     this._workspaces.add(workspaceInfo);
-    return nw;
+    return blocksuiteWorkspace;
   }
 
   public override async publish(id: string, isPublish: boolean): Promise<void> {
