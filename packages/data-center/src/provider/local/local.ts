@@ -75,6 +75,22 @@ export class LocalProvider extends BaseProvider {
     this._storeWorkspaces(this._workspaces.list());
   }
 
+  public override async createWorkspaceInfo(
+    meta: WorkspaceMeta
+  ): Promise<WorkspaceInfo> {
+    const workspaceInfo: WorkspaceInfo = {
+      name: meta.name,
+      id: uuidv4(),
+      isPublish: false,
+      avatar: '',
+      owner: undefined,
+      isLocal: true,
+      memberCount: 1,
+      provider: 'local',
+    };
+    return Promise.resolve(workspaceInfo);
+  }
+
   public override async createWorkspace(
     blocksuiteWorkspace: BlocksuiteWorkspace,
     meta: WorkspaceMeta

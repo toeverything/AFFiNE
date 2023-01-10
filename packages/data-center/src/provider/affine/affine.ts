@@ -263,13 +263,24 @@ export class AffineProvider extends BaseProvider {
     // return workspace;
   }
 
-  public override async createWorkspaceId(
+  public override async createWorkspaceInfo(
     meta: WorkspaceMeta
-  ): Promise<string> {
+  ): Promise<WorkspaceInfo> {
     const { id } = await this._apis.createWorkspace(
       meta as Required<WorkspaceMeta>
     );
-    return id;
+
+    const workspaceInfo: WorkspaceInfo = {
+      name: meta.name,
+      id: id,
+      isPublish: false,
+      avatar: '',
+      owner: await this.getUserInfo(),
+      isLocal: true,
+      memberCount: 1,
+      provider: 'affine',
+    };
+    return workspaceInfo;
   }
 
   public override async createWorkspace(

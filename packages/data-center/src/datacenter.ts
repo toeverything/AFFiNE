@@ -89,11 +89,11 @@ export class DataCenter {
       'There is no provider. You should add provider first.'
     );
 
-    const workspaceId = await this._mainProvider.createWorkspaceId(
+    const workspaceInfo = await this._mainProvider.createWorkspaceInfo(
       workspaceMeta
     );
 
-    const workspace = createBlocksuiteWorkspace(workspaceId);
+    const workspace = createBlocksuiteWorkspace(workspaceInfo.id);
 
     await this._mainProvider.createWorkspace(workspace, workspaceMeta);
     return workspace;
@@ -292,11 +292,11 @@ export class DataCenter {
     const newProvider = this.providerMap.get(providerId);
     assert(newProvider, `provide '${providerId}' is not registered`);
     this._logger(`create ${providerId} workspace: `, workspaceInfo.name);
-    const newWorkspaceId = await newProvider.createWorkspaceId({
+    const newWorkspaceInfo = await newProvider.createWorkspaceInfo({
       name: workspaceInfo.name,
       avatar: workspaceInfo.avatar,
     });
-    const newWorkspace = createBlocksuiteWorkspace(newWorkspaceId);
+    const newWorkspace = createBlocksuiteWorkspace(newWorkspaceInfo.id);
     // TODO optimize this function
     await newProvider.createWorkspace(newWorkspace, {
       name: workspaceInfo.name,

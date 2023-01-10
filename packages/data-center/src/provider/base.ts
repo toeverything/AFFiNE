@@ -28,8 +28,10 @@ export class BaseProvider {
     return;
   }
 
-  public async createWorkspaceId(meta: WorkspaceMeta): Promise<string> {
-    return uuidv4();
+  public async createWorkspaceInfo(
+    meta: WorkspaceMeta
+  ): Promise<WorkspaceInfo> {
+    throw new Error(`provider: ${this.id} createWorkspaceInfo Not implemented`);
   }
 
   /**

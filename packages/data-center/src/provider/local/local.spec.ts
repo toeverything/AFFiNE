@@ -14,10 +14,11 @@ test.describe.serial('local provider', () => {
   let workspaceId: string | undefined;
 
   test('create workspace', async () => {
-    workspaceId = await provider.createWorkspaceId({
+    const workspaceInfo = await provider.createWorkspaceInfo({
       name: workspaceName,
       avatar: 'avatar-url-test',
     });
+    workspaceId = workspaceInfo.id;
     const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceId);
     await provider.createWorkspace(blocksuiteWorkspace, {
       name: workspaceName,
