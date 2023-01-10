@@ -1,5 +1,5 @@
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
-import { MessageCenter } from 'src/message';
+import { MessageCenter } from '../message';
 import { Logger, User, WorkspaceInfo, WorkspaceMeta } from '../types';
 import type { WorkspaceMetaCollectionScope } from '../workspace-meta-collection';
 
