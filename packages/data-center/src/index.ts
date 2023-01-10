@@ -29,3 +29,4 @@ export type { DataCenter };
 export type { AccessTokenMessage } from './provider/affine/apis';
 export * from './types';
 export { getLogger } from './logger';
+export * from './message';

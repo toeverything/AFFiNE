@@ -21,3 +21,8 @@ export type User = {
 export type WorkspaceMeta = Pick<WorkspaceInfo, 'name' | 'avatar'>;
 
 export type Logger = ReturnType<typeof getLogger>;
+
+export type Message = {
+  code: number;
+  message: string;
+};

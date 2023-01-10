@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { Workspaces } from '../../workspaces/index.js';
+import { WorkspaceMetaCollection } from '../../workspace-meta-collection.js';
 import { LocalProvider } from './local.js';
 import { createBlocksuiteWorkspace } from '../../utils/index.js';
 import 'fake-indexeddb/auto';
 
 test.describe.serial('local provider', () => {
-  const workspaces = new Workspaces();
+  const workspaceMetaCollection = new WorkspaceMetaCollection();
   const provider = new LocalProvider({
-    workspaces: workspaces.createScope(),
+    workspaces: workspaceMetaCollection.createScope(),
   });
 
   const workspaceName = 'workspace-test';
@@ -25,30 +25,30 @@ test.describe.serial('local provider', () => {
       avatar: 'avatar-url-test',
     });
 
-    expect(workspaces.workspaces.length).toEqual(1);
-    expect(workspaces.workspaces[0].name).toEqual(workspaceName);
+    expect(workspaceMetaCollection.workspaces.length).toEqual(1);
+    expect(workspaceMetaCollection.workspaces[0].name).toEqual(workspaceName);
   });
 
   test('workspace list cache', async () => {
-    const workspaces1 = new Workspaces();
+    const workspacesMetaCollection1 = new WorkspaceMetaCollection();
     const provider1 = new LocalProvider({
-      workspaces: workspaces1.createScope(),
+      workspaces: workspacesMetaCollection1.createScope(),
     });
     await provider1.loadWorkspaces();
-    expect(workspaces1.workspaces.length).toEqual(1);
-    expect(workspaces1.workspaces[0].name).toEqual(workspaceName);
-    expect(workspaces1.workspaces[0].id).toEqual(workspaceId);
+    expect(workspacesMetaCollection1.workspaces.length).toEqual(1);
+    expect(workspacesMetaCollection1.workspaces[0].name).toEqual(workspaceName);
+    expect(workspacesMetaCollection1.workspaces[0].id).toEqual(workspaceId);
   });
 
   test('update workspace', async () => {
     await provider.updateWorkspaceMeta(workspaceId!, {
       name: '1111',
     });
-    expect(workspaces.workspaces[0].name).toEqual('1111');
+    expect(workspaceMetaCollection.workspaces[0].name).toEqual('1111');
   });
 
   test('delete workspace', async () => {
-    expect(workspaces.workspaces.length).toEqual(1);
+    expect(workspaceMetaCollection.workspaces.length).toEqual(1);
     /**
      * FIXME
      * If we don't wrap setTimeout,
@@ -56,8 +56,8 @@ test.describe.serial('local provider', () => {
      * InvalidStateError: An operation was called on an object on which it is not allowed or at a time when it is not allowed. Also occurs if a request is made on a source object that has been deleted or removed. Use TransactionInactiveError or ReadOnlyError when possible, as they are more specific variations of InvalidStateError.
      * */
     setTimeout(async () => {
-      await provider.deleteWorkspace(workspaces.workspaces[0].id);
-      expect(workspaces.workspaces.length).toEqual(0);
+      await provider.deleteWorkspace(workspaceMetaCollection.workspaces[0].id);
+      expect(workspaceMetaCollection.workspaces.length).toEqual(0);
     }, 10);
   });
 });
