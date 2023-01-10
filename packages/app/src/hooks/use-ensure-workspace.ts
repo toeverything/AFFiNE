@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-const defaultOutLineWorkspaceId = 'affine';
-// 'local-first-' + '85b4ca0b9081421d903bbc2501ea280f';
 // It is a fully effective hook
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const { workspaceList, loadWorkspace, user } = useAppState();
-  console.log('workspaceList: ', workspaceList);
   const router = useRouter();
 
   // const defaultOutLineWorkspaceId = '99ce7eb7';
@@ -36,9 +33,8 @@ export const useEnsureWorkspace = () => {
     //   return;
     // }
 
-    const workspaceId = user
-      ? (router.query.workspaceId as string) || workspaceList[0]?.id
-      : (router.query.workspaceId as string) || defaultOutLineWorkspaceId;
+    const workspaceId =
+      (router.query.workspaceId as string) || workspaceList[0]?.id;
 
     loadWorkspace(workspaceId).finally(() => {
       setWorkspaceLoaded(true);

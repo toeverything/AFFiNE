@@ -55,7 +55,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                       router.replace(`/workspace/${item.id}`);
                       onClose();
                     }}
-                    active={item.id === currentWorkspace.room}
+                    active={item.id === currentWorkspace?.room}
                     key={index}
                   >
                     <span style={{ width: '100px' }}>

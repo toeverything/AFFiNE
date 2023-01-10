@@ -19,7 +19,7 @@ export type AppStateValue = {
   dataCenter: DataCenter;
   user: User | null;
   workspaceList: WorkspaceInfo[];
-  currentWorkspace: StoreWorkspace;
+  currentWorkspace: StoreWorkspace | null;
   currentMetaWorkSpace: WorkspaceInfo | null;
   currentWorkspaceId: string;
   pageList: PageMeta[];

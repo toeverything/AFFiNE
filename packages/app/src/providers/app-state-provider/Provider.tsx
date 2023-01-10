@@ -22,34 +22,29 @@ export const AppStateProvider = ({
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
 
   useEffect(() => {
-    const init = async () => {
+    const initState = async () => {
       const dataCenter = await getDataCenter();
 
+      // Ensure datacenter has at least one workspace
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
       }
-      const currentWorkspace = await dataCenter.loadWorkspace(
-        dataCenter.workspaces[0].id
-      );
-      const currentMetaWorkSpace = dataCenter.workspaces.find(item => {
-        return item.id === currentWorkspace.room;
-      });
 
       setAppState({
         dataCenter,
         user: (await dataCenter.getUserInfo()) || null,
         workspaceList: dataCenter.workspaces,
-        currentWorkspaceId: dataCenter.workspaces[0].id,
-        currentWorkspace,
-        pageList: currentWorkspace.meta.pageMetas as PageMeta[],
+        currentWorkspaceId: '',
+        currentWorkspace: null,
+        pageList: [],
         currentPage: null,
         editor: null,
         synced: true,
-        currentMetaWorkSpace: currentMetaWorkSpace ?? null,
+        currentMetaWorkSpace: null,
       });
     };
 
-    init();
+    initState();
   }, []);
 
   useEffect(() => {
@@ -94,6 +89,8 @@ export const AppStateProvider = ({
 
   const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
   loadWorkspace.current = async (workspaceId: string) => {
+    console.log('loadWorkspace');
+
     const { dataCenter, workspaceList, currentWorkspaceId, currentWorkspace } =
       appState;
     if (!workspaceList.find(v => v.id === workspaceId)) {
@@ -113,7 +110,7 @@ export const AppStateProvider = ({
       currentWorkspace: workspace,
       currentWorkspaceId: workspaceId,
       currentMetaWorkSpace: currentMetaWorkSpace ?? null,
-      pageList: currentWorkspace.meta.pageMetas as PageMeta[],
+      pageList: currentWorkspace?.meta.pageMetas as PageMeta[],
       currentPage: null,
       editor: null,
     });
