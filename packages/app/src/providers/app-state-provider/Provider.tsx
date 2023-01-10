@@ -28,6 +28,7 @@ export const AppStateProvider = ({
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
       }
+
       const currentWorkspace = await dataCenter.loadWorkspace(
         dataCenter.workspaces[0].id
       );

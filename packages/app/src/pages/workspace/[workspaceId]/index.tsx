@@ -10,6 +10,7 @@ const WorkspaceIndex = () => {
   const { currentWorkspaceId, currentWorkspace } = useAppState();
   const { createPage } = usePageHelper();
   const { workspaceLoaded } = useEnsureWorkspace();
+  console.log('workspaceLoaded: ', workspaceLoaded);
 
   useEffect(() => {
     const initPage = async () => {
@@ -17,6 +18,7 @@ const WorkspaceIndex = () => {
         return;
       }
       const savedPageId = currentWorkspace?.meta.pageMetas[0]?.id;
+      console.log('savedPageId: ', savedPageId);
       if (savedPageId) {
         router.replace(`/workspace/${currentWorkspaceId}/${savedPageId}`);
         return;

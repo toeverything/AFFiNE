@@ -11,6 +11,7 @@ export const WorkspaceIndex = () => {
 
   useEffect(() => {
     if (workspaceLoaded) {
+      console.log('workspaceLoaded: ', workspaceLoaded);
       router.push(`/workspace/${currentWorkspaceId}`);
     }
   }, [currentWorkspaceId, router, workspaceLoaded]);
