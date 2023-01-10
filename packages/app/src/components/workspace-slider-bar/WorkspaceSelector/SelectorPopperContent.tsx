@@ -12,7 +12,7 @@ import {
 } from './WorkspaceItem';
 import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useCallback, useEffect, useState } from 'react';
-import { getDataCenter, WorkspaceType } from '@affine/datacenter';
+import { WorkspaceType } from '@affine/datacenter';
 import { useModal } from '@/providers/GlobalModalProvider';
 
 export type WorkspaceDetails = Record<

@@ -10,7 +10,7 @@ import {
   UsersIcon,
   AddIcon,
 } from '@blocksuite/icons';
-import { useConfirm } from '@/providers/confirm-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';

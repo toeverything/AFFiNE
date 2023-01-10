@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Input from '@/ui/input';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { KeyboardEvent } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 interface ICloseParams {
   workspaceId?: string;
 }
