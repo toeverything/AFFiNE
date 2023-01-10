@@ -3,7 +3,7 @@ import type { ProviderConstructorParams } from '../base';
 import type { User, WorkspaceInfo, WorkspaceMeta } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
-import { applyUpdate } from 'yjs';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
@@ -64,6 +64,23 @@ export class AffineProvider extends BaseProvider {
     }
   }
 
+  private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
+    const { doc, room } = workspace;
+    assert(room);
+    assert(doc);
+    let ws = this._wsMap.get(room);
+    if (!ws) {
+      const wsUrl = `${
+        window.location.protocol === 'https:' ? 'wss' : 'ws'
+      }://${window.location.host}/api/sync/`;
+      ws = new WebsocketProvider(wsUrl, room, doc, {
+        params: { token: this._apis.token.refresh },
+      });
+      this._wsMap.set(room, ws);
+    }
+    return ws;
+  }
+
   private async _applyCloudUpdates(blocksuiteWorkspace: BlocksuiteWorkspace) {
     const { doc, room: workspaceId } = blocksuiteWorkspace;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
@@ -78,20 +95,10 @@ export class AffineProvider extends BaseProvider {
 
   override async warpWorkspace(workspace: BlocksuiteWorkspace) {
     await this._applyCloudUpdates(workspace);
-    const { doc, room } = workspace;
+    const { room } = workspace;
     assert(room);
     this.linkLocal(workspace);
-
-    let ws = this._wsMap.get(room);
-    if (!ws) {
-      const wsUrl = `${
-        window.location.protocol === 'https:' ? 'wss' : 'ws'
-      }://${window.location.host}/api/sync/`;
-      ws = new WebsocketProvider(wsUrl, room, doc, {
-        params: { token: this._apis.token.refresh },
-      });
-      this._wsMap.set(room, ws);
-    }
+    const ws = this._getWebsocketProvider(workspace);
     // close all websocket links
     Array.from(this._wsMap.entries()).forEach(([id, ws]) => {
       if (id !== room) {
@@ -334,5 +341,22 @@ export class AffineProvider extends BaseProvider {
           email: user.email,
         }
       : null;
+  }
+
+  public override async assign(
+    to: BlocksuiteWorkspace,
+    from: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
+    assert(to.room, 'Blocksuite Workspace without room(workspaceId).');
+    const ws = this._getWebsocketProvider(to);
+    applyUpdate(to.doc, encodeStateAsUpdate(from.doc));
+    await new Promise<void>((resolve, reject) => {
+      ws.once('synced', () => {
+        resolve();
+      });
+      ws.once('lost-connection', () => reject());
+      ws.once('connection-error', () => reject());
+    });
+    return to;
   }
 }
