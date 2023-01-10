@@ -40,7 +40,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
                     confirmText: user ? 'Enable' : 'Sign in and Enable',
                     cancelText: 'Skip',
                   }).then(async confirm => {
-                    if (confirm) {
+                    if (confirm && currentWorkspace) {
                       // if (user) {
                       //   await login();
                       // }

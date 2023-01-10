@@ -89,22 +89,22 @@ export const AppStateProvider = ({
 
   const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
   loadWorkspace.current = async (workspaceId: string) => {
-    console.log('loadWorkspace');
-
     const { dataCenter, workspaceList, currentWorkspaceId, currentWorkspace } =
       appState;
-    if (!workspaceList.find(v => v.id === workspaceId)) {
+    if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
     }
     if (workspaceId === currentWorkspaceId) {
       return currentWorkspace;
     }
+
     const workspace = await dataCenter.loadWorkspace(workspaceId);
     const currentMetaWorkSpace = dataCenter.workspaces.find(
       (item: WorkspaceInfo) => {
         return item.id === workspace.room;
       }
     );
+
     setAppState({
       ...appState,
       currentWorkspace: workspace,

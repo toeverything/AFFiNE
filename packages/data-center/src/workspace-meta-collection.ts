@@ -41,7 +41,7 @@ export class WorkspaceMetaCollection extends Observable<'change'> {
       if (this._workspacesMap.has(workspace.id)) {
         throw new Error(`Duplicate workspace id.`);
       }
-      this._workspacesMap.set(workspace.id, workspace);
+      this._workspacesMap.set(workspace.id.toString(), workspace);
       scopedWorkspaceIds.add(workspace.id);
 
       this.emit('change', [
