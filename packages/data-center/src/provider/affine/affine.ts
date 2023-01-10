@@ -16,6 +16,7 @@ import { getApis } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
 import { MessageCode } from '../../message';
+import { blob } from 'stream/consumers';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
@@ -348,9 +349,10 @@ export class AffineProvider extends BaseProvider {
     assert(to.room, 'Blocksuite Workspace without room(workspaceId).');
     const ws = this._getWebsocketProvider(to);
     applyUpdate(to.doc, encodeStateAsUpdate(from.doc));
+    // TODO: upload blobs and make sure doc is synced
     await new Promise<void>((resolve, reject) => {
       ws.once('synced', () => {
-        resolve();
+        setTimeout(() => resolve(), 1000);
       });
       ws.once('lost-connection', () => reject());
       ws.once('connection-error', () => reject());
