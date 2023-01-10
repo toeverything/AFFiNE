@@ -1,13 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { WorkspaceMetaCollection } from '../../workspace-meta-collection.js';
+import { WorkspaceUnitCollection } from '../../workspace-unit-collection.js';
 import { LocalProvider } from './local.js';
 import { createBlocksuiteWorkspace } from '../../utils/index.js';
+import { MessageCenter } from '../../message/index.js';
 import 'fake-indexeddb/auto';
 
 test.describe.serial('local provider', () => {
-  const workspaceMetaCollection = new WorkspaceMetaCollection();
+  const workspaceMetaCollection = new WorkspaceUnitCollection();
   const provider = new LocalProvider({
     workspaces: workspaceMetaCollection.createScope(),
+    messageCenter: new MessageCenter(),
   });
 
   const workspaceName = 'workspace-test';
@@ -16,23 +18,20 @@ test.describe.serial('local provider', () => {
   test('create workspace', async () => {
     const workspaceInfo = await provider.createWorkspaceInfo({
       name: workspaceName,
-      avatar: 'avatar-url-test',
     });
     workspaceId = workspaceInfo.id;
     const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceId);
-    await provider.createWorkspace(blocksuiteWorkspace, {
-      name: workspaceName,
-      avatar: 'avatar-url-test',
-    });
+    await provider.createWorkspace(blocksuiteWorkspace, workspaceInfo);
 
     expect(workspaceMetaCollection.workspaces.length).toEqual(1);
     expect(workspaceMetaCollection.workspaces[0].name).toEqual(workspaceName);
   });
 
   test('workspace list cache', async () => {
-    const workspacesMetaCollection1 = new WorkspaceMetaCollection();
+    const workspacesMetaCollection1 = new WorkspaceUnitCollection();
     const provider1 = new LocalProvider({
       workspaces: workspacesMetaCollection1.createScope(),
+      messageCenter: new MessageCenter(),
     });
     await provider1.loadWorkspaces();
     expect(workspacesMetaCollection1.workspaces.length).toEqual(1);

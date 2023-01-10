@@ -79,7 +79,6 @@ export async function getWorkspaceMembers(
 
 export interface CreateWorkspaceParams {
   name: string;
-  avatar: string;
 }
 
 export async function createWorkspace(
