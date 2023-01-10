@@ -7,7 +7,7 @@
 const repoDirectory = path.join(__dirname, '..');
 const publicDistributionDirectory = path.join(repoDirectory, 'public');
 
-const octoBaseBranchName = 'feat/schemars';
+const octoBaseBranchName = 'master';
 /**
  * 1. Until OctoBase become public, we link it using submodule too.
  */
