@@ -34,6 +34,16 @@
     },
     {
       "type": "object",
+      "required": ["GetWorkspaceResult"],
+      "properties": {
+        "GetWorkspaceResult": {
+          "$ref": "#/definitions/GetWorkspaceResult"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
       "required": ["GetWorkspacesResult"],
       "properties": {
         "GetWorkspacesResult": {
@@ -99,6 +109,15 @@
         }
       }
     },
+    "GetWorkspaceResult": {
+      "type": "object",
+      "required": ["workspace"],
+      "properties": {
+        "workspace": {
+          "$ref": "#/definitions/WorkspaceDetail"
+        }
+      }
+    },
     "GetWorkspaces": {
       "type": "object",
       "required": ["user_id"],
@@ -122,20 +141,8 @@
       }
     },
     "PermissionType": {
-      "anyOf": [
-        {
-          "type": "null"
-        },
-        {
-          "type": "null"
-        },
-        {
-          "type": "null"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": "integer",
+      "enum": [0, 1, 10, 99]
     },
     "UpdateWorkspace": {
       "type": "object",
@@ -150,15 +157,65 @@
         }
       }
     },
-    "WorkspaceType": {
-      "anyOf": [
-        {
-          "type": "null"
+    "User": {
+      "type": "object",
+      "required": ["created_at", "email", "id", "name"],
+      "properties": {
+        "avatar_url": {
+          "type": ["string", "null"]
         },
-        {
-          "type": "null"
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "email": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "name": {
+          "type": "string"
         }
-      ]
+      }
+    },
+    "WorkspaceDetail": {
+      "type": "object",
+      "required": ["created_at", "id", "member_count", "public", "type"],
+      "properties": {
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "member_count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/User"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "public": {
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/WorkspaceType"
+        }
+      }
+    },
+    "WorkspaceType": {
+      "type": "integer",
+      "enum": [0, 1]
     },
     "WorkspaceWithPermission": {
       "type": "object",

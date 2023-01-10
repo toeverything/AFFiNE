@@ -13,7 +13,7 @@ export enum WorkspaceType {
 export enum PermissionType {
   Read = 0,
   Write = 1,
-  Admin = 2,
+  Admin = 10,
   Owner = 99,
 }
 

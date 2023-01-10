@@ -16,6 +16,9 @@ export type IWorkspaceParameters =
       GetWorkspaces: GetWorkspaces;
     }
   | {
+      GetWorkspaceResult: GetWorkspaceResult;
+    }
+  | {
       GetWorkspacesResult: GetWorkspacesResult;
     }
   | {
@@ -24,8 +27,8 @@ export type IWorkspaceParameters =
   | {
       CreateWorkspaceResult: CreateWorkspaceResult;
     };
-export type PermissionType = null | null | null | null;
-export type WorkspaceType = null | null;
+export type WorkspaceType = 0 | 1;
+export type PermissionType = 0 | 1 | 10 | 99;
 
 export interface CreateWorkspace {
   /**
@@ -41,6 +44,27 @@ export interface GetWorkspace {
 }
 export interface GetWorkspaces {
   user_id: number;
+  [k: string]: unknown;
+}
+export interface GetWorkspaceResult {
+  workspace: WorkspaceDetail;
+  [k: string]: unknown;
+}
+export interface WorkspaceDetail {
+  created_at: number;
+  id: string;
+  member_count: number;
+  owner?: User | null;
+  public: boolean;
+  type: WorkspaceType;
+  [k: string]: unknown;
+}
+export interface User {
+  avatar_url?: string | null;
+  created_at: number;
+  email: string;
+  id: number;
+  name: string;
   [k: string]: unknown;
 }
 export interface GetWorkspacesResult {

@@ -7,6 +7,8 @@ import {
 import {
   CreateWorkspace,
   CreateWorkspaceResult,
+  GetWorkspace,
+  GetWorkspaceResult,
   GetWorkspaces,
   GetWorkspacesResult,
 } from './types/workspace';
@@ -26,8 +28,14 @@ export const createWorkspace = async (parameters: CreateWorkspace) =>
   await invoke<CreateWorkspaceResult>('create_workspace', {
     parameters,
   });
+
 export const getWorkspaces = async (parameters: GetWorkspaces) =>
-  await invoke<GetWorkspacesResult>('create_workspace', {
+  await invoke<GetWorkspacesResult>('get_workspaces', {
+    parameters,
+  });
+
+export const getWorkspace = async (parameters: GetWorkspace) =>
+  await invoke<GetWorkspaceResult>('get_workspace', {
     parameters,
   });
 

@@ -10,10 +10,12 @@ import { ConfigStore } from 'src/store.js';
 import { User, Workspace as WS, WorkspaceMeta, Logger } from '../../types';
 import { getDefaultHeadImgBlob } from 'src/utils/index.js';
 import { IPCBlobProvider } from './blocksuite-provider/blob.js';
+import { PermissionType, WorkspaceDetail } from '../affine/apis/workspace.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
   #ipc = ipcMethods;
+  private _workspacesCache: Map<string, Workspace> = new Map();
 
   constructor(params: ProviderConstructorParams) {
     super(params);
@@ -134,8 +136,10 @@ export class TauriIPCProvider extends LocalProvider {
 
   override async loadWorkspaces() {
     // TODO: get user id here
-    const workspacesList = await this.#ipc.getWorkspaces({ user_id: 0 });
-    const workspaces: WS[] = workspacesList.workspaces.map(w => {
+    const { workspaces: workspacesList } = await this.#ipc.getWorkspaces({
+      user_id: 0,
+    });
+    const workspaces: WS[] = workspacesList.map(w => {
       return {
         ...w,
         memberCount: 0,
@@ -152,8 +156,8 @@ export class TauriIPCProvider extends LocalProvider {
       this._workspacesCache.set(id, workspace);
       if (workspace) {
         return new Promise<Workspace>(resolve => {
-          downloadWorkspace(id).then(data => {
-            applyUpdate(workspace.doc, new Uint8Array(data));
+          this.#ipc.getYDocument({ id }).then(({ update }) => {
+            Y.applyUpdate(workspace.doc, new Uint8Array(update));
             resolve(workspace);
           });
         });
@@ -171,16 +175,37 @@ export class TauriIPCProvider extends LocalProvider {
         };
       }
     });
-    const getDetailList = workspacesList.map(w => {
-      const { id } = w;
-      return new Promise<{ id: string; detail: WorkspaceDetail | null }>(
-        resolve => {
-          getWorkspaceDetail({ id }).then(data => {
-            resolve({ id, detail: data || null });
-          });
-        }
-      );
-    });
+    const getDetailList = workspacesList.map(
+      async (
+        workspaceWithPermission
+      ): Promise<{
+        id: string;
+        detail:
+          | (Omit<WorkspaceDetail, 'owner'> & {
+              owner?: Partial<WorkspaceDetail['owner']>;
+            })
+          | null;
+      }> => {
+        const { id, permission, created_at } = workspaceWithPermission;
+        const { workspace } = await this.#ipc.getWorkspace({ id });
+        return {
+          id,
+          detail: {
+            ...workspace,
+            owner: workspace.owner
+              ? {
+                  ...workspace.owner,
+                  create_at: String(created_at),
+                  avatar_url: workspace.owner.avatar_url ?? undefined,
+                  id: String(workspace.owner.id),
+                }
+              : undefined,
+            permission_type: permission,
+            create_at: created_at,
+          },
+        };
+      }
+    );
     const ownerList = await Promise.all(getDetailList);
     (await Promise.all(ownerList)).forEach(detail => {
       if (detail) {
@@ -188,12 +213,12 @@ export class TauriIPCProvider extends LocalProvider {
         if (workspaceDetail) {
           const { owner, member_count } = workspaceDetail;
           const currentWorkspace = workspaces.find(w => w.id === id);
-          if (currentWorkspace) {
+          if (currentWorkspace && owner) {
             currentWorkspace.owner = {
-              id: owner.id,
-              name: owner.name,
-              avatar: owner.avatar_url,
-              email: owner.email,
+              id: owner.id!,
+              name: owner.name!,
+              avatar: owner.avatar_url!,
+              email: owner.email!,
             };
             currentWorkspace.memberCount = member_count;
           }

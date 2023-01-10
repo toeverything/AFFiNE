@@ -50,6 +50,7 @@ pub enum IWorkspaceParameters {
   CreateWorkspace(CreateWorkspace),
   GetWorkspace(GetWorkspace),
   GetWorkspaces(GetWorkspaces),
+  GetWorkspaceResult(GetWorkspaceResult),
   GetWorkspacesResult(GetWorkspacesResult),
   UpdateWorkspace(UpdateWorkspace),
   CreateWorkspaceResult(CreateWorkspaceResult),
