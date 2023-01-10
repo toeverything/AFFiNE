@@ -7,7 +7,8 @@ import type {
 } from '../base';
 import { varStorage as storage } from 'lib0/storage';
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
-import { IndexedDBProvider } from './indexeddb.js';
+import { IndexedDBProvider } from './indexeddb/indexeddb.js';
+import { initStore } from './indexeddb/utils.js';
 import assert from 'assert';
 import { setDefaultAvatar } from '../utils.js';
 
@@ -101,27 +102,20 @@ export class LocalProvider extends BaseProvider {
   ): Promise<BlocksuiteWorkspace | undefined> {
     const workspaceId = blocksuiteWorkspace.room;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
-    assert(meta.name, 'Workspace name is required');
     this._logger('Creating affine workspace');
 
     const workspaceInfo: WorkspaceMeta0 = {
-      name: meta.name,
-      id: workspaceId,
-      published: false,
-      avatar: '',
-      owner: undefined,
-      syncMode: 'core',
-      memberCount: 1,
-      provider: 'local',
+      ...meta,
     };
 
-    this.linkLocal(blocksuiteWorkspace);
     blocksuiteWorkspace.meta.setName(meta.name);
 
     if (!meta.avatar) {
       await setDefaultAvatar(blocksuiteWorkspace);
       workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
     }
+
+    await initStore(blocksuiteWorkspace);
 
     this._workspaces.add(workspaceInfo);
     this._storeWorkspaces(this._workspaces.list());
