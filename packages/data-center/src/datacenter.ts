@@ -7,7 +7,6 @@ import { AffineProvider } from './provider';
 import type { Message, WorkspaceMeta } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
 
