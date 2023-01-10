@@ -8,7 +8,7 @@ import {
   PageMeta,
 } from './interface';
 import { createDefaultWorkspace } from './utils';
-import { WorkspaceInfo } from '@affine/datacenter';
+import { WorkspaceInfo, User } from '@affine/datacenter';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
@@ -127,6 +127,26 @@ export const AppStateProvider = ({
     });
   };
 
+  const login = async () => {
+    const { dataCenter } = appState;
+    await dataCenter.login();
+    const user = (await dataCenter.getUserInfo()) as User;
+    setAppState({
+      ...appState,
+      user,
+    });
+    return user;
+  };
+
+  const logout = async () => {
+    const { dataCenter } = appState;
+    await dataCenter.logout();
+    setAppState({
+      ...appState,
+      user: null,
+    });
+  };
+
   return (
     <AppState.Provider
       value={{
@@ -134,6 +154,8 @@ export const AppStateProvider = ({
         setEditor,
         loadPage: loadPage.current,
         loadWorkspace: loadWorkspace.current,
+        login,
+        logout,
       }}
     >
       {children}

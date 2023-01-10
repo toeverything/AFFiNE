@@ -33,6 +33,9 @@ export type AppStateFunction = {
 
   loadWorkspace: (workspaceId: string) => Promise<StoreWorkspace | null>;
   loadPage: (pageId: string) => void;
+
+  login: () => Promise<User>;
+  logout: () => Promise<void>;
 };
 
 export type AppStateContext = AppStateValue & AppStateFunction;
