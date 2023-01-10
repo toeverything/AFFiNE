@@ -146,8 +146,8 @@ export class AffineProvider extends BaseProvider {
       if (workspace) {
         workspaces[i] = {
           ...workspaces[i],
-          name: workspace.doc.meta.name,
-          avatar: workspace.doc.meta.avatar,
+          name: workspace.meta.name,
+          avatar: workspace.meta.avatar,
         };
       }
     });
