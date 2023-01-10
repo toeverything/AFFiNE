@@ -11,7 +11,6 @@ import { AffineProvider } from './provider';
 import type { Message } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
 
@@ -309,7 +308,7 @@ export class DataCenter {
     this._logger(
       `update workspace data from ${workspaceInfo.provider} to ${providerId}`
     );
-    applyUpdate(newWorkspace.doc, encodeStateAsUpdate(workspace.doc));
+    await newProvider.assign(newWorkspace, workspace);
     assert(newWorkspace, 'Create workspace failed');
     await currentProvider.deleteWorkspace(workspace.room);
     return newWorkspace.room;

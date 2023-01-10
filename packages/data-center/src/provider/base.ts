@@ -203,4 +203,14 @@ export class BaseProvider {
   ): Promise<BlocksuiteWorkspace> {
     return workspace;
   }
+
+  /**
+   * merge one workspaces to another
+   * @param workspace
+   * @returns
+   */
+  public async assign(to: BlocksuiteWorkspace, from: BlocksuiteWorkspace) {
+    from;
+    return to;
+  }
 }
