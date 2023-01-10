@@ -9,7 +9,7 @@ export const StyledTable = styled.table<{ tableLayout: 'auto' | 'fixed' }>(
       tableLayout,
       width: '100%',
       borderCollapse: 'separate',
-      borderSpacing: '0 25px',
+      borderSpacing: '0',
     };
   }
 );
@@ -52,7 +52,6 @@ export const StyledTableHead = styled.thead(() => {
 
 export const StyledTableRow = styled.tr(({ theme }) => {
   return {
-    marginBottom: '25px',
     td: {
       transition: 'background .15s',
     },
