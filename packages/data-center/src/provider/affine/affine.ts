@@ -2,7 +2,6 @@ import { BaseProvider } from '../base.js';
 import type {
   ProviderConstructorParams,
   CreateWorkspaceInfoParams,
-  UpdateWorkspaceMetaParams,
   WorkspaceMeta0,
 } from '../base';
 import type { User } from '../../types';
@@ -34,11 +33,6 @@ export class AffineProvider extends BaseProvider {
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
     this._apis = apis || getApis();
-    this.init().then(() => {
-      if (this._apis.token.isLogin) {
-        this.loadWorkspaces();
-      }
-    });
   }
 
   override async init() {

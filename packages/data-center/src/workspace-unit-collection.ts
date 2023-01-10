@@ -18,7 +18,7 @@ export interface WorkspaceUnitCollectionScope {
 }
 
 export interface WorkspaceUnitCollectionChangeEvent {
-  added?: WorkspaceUnit;
+  added?: WorkspaceUnit[];
   deleted?: WorkspaceUnit;
   updated?: WorkspaceUnit;
 }
@@ -71,7 +71,7 @@ export class WorkspaceUnitCollection {
 
       this._events.emit('change', [
         {
-          added: workspaceUnit,
+          added: [workspaceUnit],
         } as WorkspaceUnitCollectionChangeEvent,
       ]);
     };

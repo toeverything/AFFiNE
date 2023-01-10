@@ -46,6 +46,10 @@ export class DataCenter {
     dc.registerProvider(new LocalProvider(getInitParams()));
     dc.registerProvider(new AffineProvider(getInitParams()));
 
+    for (const provider of dc.providerMap.values()) {
+      await provider.loadWorkspaces();
+    }
+
     return dc;
   }
 
@@ -181,8 +185,14 @@ export class DataCenter {
    * @param {Function} callback callback function
    */
   public async onWorkspacesChange(
-    callback: (workspaces: WorkspaceUnitCollectionChangeEvent) => void
+    callback: (workspaces: WorkspaceUnitCollectionChangeEvent) => void,
+    { immediate = true }: { immediate?: boolean }
   ) {
+    if (immediate) {
+      callback({
+        added: this._workspaceUnitCollection.workspaces,
+      });
+    }
     this._workspaceUnitCollection.on('change', callback);
   }
 
