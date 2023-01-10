@@ -19,7 +19,6 @@ export class LocalProvider extends BaseProvider {
 
   constructor(params: ProviderConstructorParams) {
     super(params);
-    this.loadWorkspaces();
   }
 
   private _storeWorkspaces(workspaces: WorkspaceMeta0[]) {
