@@ -191,8 +191,8 @@ export class DataCenter {
    * @param {WorkspaceMeta} workspaceMeta workspace meta
    * @param {BlocksuiteWorkspace} workspace workspace instance
    */
-  public async resetWorkspaceMeta(
-    { name, avatar }: WorkspaceMeta,
+  public async updateWorkspaceMeta(
+    { name, avatar }: Partial<WorkspaceMeta>,
     workspace: BlocksuiteWorkspace
   ) {
     assert(workspace?.room, 'No workspace to set meta');
