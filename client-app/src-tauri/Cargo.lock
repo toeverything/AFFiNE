@@ -1747,7 +1747,6 @@ dependencies = [
  "base64 0.20.0",
  "bytes",
  "chrono",
- "dotenvy",
  "futures",
  "jwst",
  "jwst-logger",
