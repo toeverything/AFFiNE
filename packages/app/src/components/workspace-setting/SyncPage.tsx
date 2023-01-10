@@ -6,29 +6,27 @@ import {
 import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { WorkspaceInfo } from '@affine/datacenter';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   console.log('workspace: ', workspace);
-  const { currentWorkspace, updateWorkspaceMeta } = useTemporaryHelper();
 
   return (
     <div>
       <StyledPublishContent>
-        {currentWorkspace?.type === 'local' ? (
+        {workspace?.provider === 'local' ? (
           <>
             <StyledPublishExplanation>
-              {currentWorkspace.name} is Local Workspace. All data is stored on
-              the current device. You can enable AFFiNE Cloud for this workspace
-              to keep data in sync with the cloud.
+              {workspace.name ?? 'Affine'} is Local Workspace. All data is
+              stored on the current device. You can enable AFFiNE Cloud for this
+              workspace to keep data in sync with the cloud.
             </StyledPublishExplanation>
 
             <StyledPublishCopyContainer>
               <Button
                 onClick={() => {
-                  updateWorkspaceMeta(currentWorkspace.id, {
-                    type: 'cloud',
-                  });
+                  // updateWorkspaceMeta(currentWorkspace.id, {
+                  //   type: 'cloud',
+                  // });
                 }}
                 type="primary"
                 shape="circle"
@@ -40,8 +38,8 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
         ) : (
           <>
             <StyledPublishExplanation>
-              <code>{currentWorkspace && currentWorkspace.name}</code> is Cloud
-              Workspace. All data will be synchronized and saved to the AFFiNE
+              <code>{workspace.name ?? 'Affine'}</code> is Cloud Workspace. All
+              data will be synchronized and saved to the AFFiNE
             </StyledPublishExplanation>
             <StyledPublishCopyContainer>
               <Menu

@@ -7,6 +7,8 @@ export const StyledSettingContainer = styled('div')(({ theme }) => {
     display: 'flex',
     padding: '50px',
     flexDirection: 'column',
+    height: '100vh',
+    overflow: 'auto',
   };
 });
 

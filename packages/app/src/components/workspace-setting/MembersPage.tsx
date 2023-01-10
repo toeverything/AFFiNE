@@ -10,6 +10,7 @@ import {
   StyledMemberRoleContainer,
   StyledMemberTitleContainer,
   StyledMoreVerticalButton,
+  StyledPublishExplanation,
 } from './style';
 import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useEffect, useState } from 'react';
@@ -173,10 +174,8 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
         </>
       ) : (
         <StyledMemberWarp>
-          <div style={{ flex: 1 }}>
-            Collaborating with other members requires AFFiNE Cloud service.
-          </div>
-          <div style={{ height: '40px' }}>
+          <>Collaborating with other members requires AFFiNE Cloud service.</>
+          <StyledPublishExplanation>
             <Button
               type="primary"
               shape="circle"
@@ -200,7 +199,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
             >
               Enable AFFiNE Cloud
             </Button>
-          </div>
+          </StyledPublishExplanation>
         </StyledMemberWarp>
       )}
     </div>
