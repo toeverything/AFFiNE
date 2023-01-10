@@ -1,7 +1,7 @@
 import { Observable } from 'lib0/observable';
-import type { WorkspaceInfo, WorkspaceMeta } from '../types';
+import type { WorkspaceInfo, WorkspaceMeta } from './types';
 
-export interface WorkspacesScope {
+export interface WorkspaceMetaCollectionScope {
   get: (workspaceId: string) => WorkspaceInfo | undefined;
   list: () => WorkspaceInfo[];
   add: (workspace: WorkspaceInfo) => void;
@@ -10,13 +10,13 @@ export interface WorkspacesScope {
   update: (workspaceId: string, workspaceMeta: Partial<WorkspaceMeta>) => void;
 }
 
-export interface WorkspacesChangeEvent {
+export interface WorkspaceMetaCollectionChangeEvent {
   added?: WorkspaceInfo;
   deleted?: WorkspaceInfo;
   updated?: WorkspaceInfo;
 }
 
-export class Workspaces extends Observable<'change'> {
+export class WorkspaceMetaCollection extends Observable<'change'> {
   private _workspacesMap = new Map<string, WorkspaceInfo>();
 
   get workspaces(): WorkspaceInfo[] {
@@ -27,7 +27,7 @@ export class Workspaces extends Observable<'change'> {
     return this._workspacesMap.get(workspaceId);
   }
 
-  createScope(): WorkspacesScope {
+  createScope(): WorkspaceMetaCollectionScope {
     const scopedWorkspaceIds = new Set<string>();
 
     const get = (workspaceId: string) => {
@@ -47,7 +47,7 @@ export class Workspaces extends Observable<'change'> {
       this.emit('change', [
         {
           added: workspace,
-        } as WorkspacesChangeEvent,
+        } as WorkspaceMetaCollectionChangeEvent,
       ]);
     };
 
@@ -69,7 +69,7 @@ export class Workspaces extends Observable<'change'> {
         this.emit('change', [
           {
             deleted: workspace,
-          } as WorkspacesChangeEvent,
+          } as WorkspaceMetaCollectionChangeEvent,
         ]);
       }
       return true;
@@ -99,7 +99,7 @@ export class Workspaces extends Observable<'change'> {
       this.emit('change', [
         {
           updated: this._workspacesMap.get(workspaceId),
-        } as WorkspacesChangeEvent,
+        } as WorkspaceMetaCollectionChangeEvent,
       ]);
     };
 

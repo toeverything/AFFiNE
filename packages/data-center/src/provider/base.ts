@@ -1,6 +1,6 @@
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
 import { Logger, User, WorkspaceInfo, WorkspaceMeta } from '../types';
-import type { WorkspacesScope } from '../workspaces';
+import type { WorkspaceMetaCollectionScope } from '../workspace-meta-collection';
 
 const defaultLogger = () => {
   return;
@@ -8,12 +8,12 @@ const defaultLogger = () => {
 
 export interface ProviderConstructorParams {
   logger?: Logger;
-  workspaces: WorkspacesScope;
+  workspaces: WorkspaceMetaCollectionScope;
 }
 
 export class BaseProvider {
   public readonly id: string = 'base';
-  protected _workspaces!: WorkspacesScope;
+  protected _workspaces!: WorkspaceMetaCollectionScope;
   protected _logger!: Logger;
 
   public constructor({ logger, workspaces }: ProviderConstructorParams) {

@@ -1,5 +1,5 @@
-import { Workspaces } from './workspaces';
-import type { WorkspacesChangeEvent } from './workspaces';
+import { WorkspaceMetaCollection } from './workspace-meta-collection.js';
+import type { WorkspaceMetaCollectionChangeEvent } from './workspace-meta-collection';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BaseProvider } from './provider/base';
 import { LocalProvider } from './provider/local/local';
@@ -15,7 +15,7 @@ import { createBlocksuiteWorkspace } from './utils/index.js';
  * @classdesc Data center is made for managing different providers for business
  */
 export class DataCenter {
-  private readonly _workspaces = new Workspaces();
+  private readonly _workspaceMetaCollection = new WorkspaceMetaCollection();
   private readonly _logger = getLogger('dc');
   private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
   /**
@@ -34,13 +34,13 @@ export class DataCenter {
     dc.registerProvider(
       new LocalProvider({
         logger: dc._logger,
-        workspaces: dc._workspaces.createScope(),
+        workspaces: dc._workspaceMetaCollection.createScope(),
       })
     );
     dc.registerProvider(
       new AffineProvider({
         logger: dc._logger,
-        workspaces: dc._workspaces.createScope(),
+        workspaces: dc._workspaceMetaCollection.createScope(),
       })
     );
 
@@ -69,7 +69,7 @@ export class DataCenter {
   }
 
   public get workspaces() {
-    return this._workspaces.workspaces;
+    return this._workspaceMetaCollection.workspaces;
   }
 
   public async refreshWorkspaces() {
@@ -104,7 +104,7 @@ export class DataCenter {
    * @param {string} workspaceId workspace id
    */
   public async deleteWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     assert(provider, `Workspace exists, but we couldn't find its provider.`);
@@ -116,7 +116,7 @@ export class DataCenter {
    * @param {string} workspaceId workspace id
    */
   private _getBlocksuiteWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     return (
       this._workspaceInstances.get(workspaceId) ||
@@ -150,7 +150,7 @@ export class DataCenter {
    * @returns {Promise<BlocksuiteWorkspace>}
    */
   public async loadWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const currentProvider = this.providerMap.get(workspaceInfo.provider);
     if (currentProvider) {
@@ -181,9 +181,9 @@ export class DataCenter {
    * @param {Function} callback callback function
    */
   public async onWorkspacesChange(
-    callback: (workspaces: WorkspacesChangeEvent) => void
+    callback: (workspaces: WorkspaceMetaCollectionChangeEvent) => void
   ) {
-    this._workspaces.on('change', callback);
+    this._workspaceMetaCollection.on('change', callback);
   }
 
   /**
@@ -206,7 +206,7 @@ export class DataCenter {
       update.avatar = avatar;
     }
     // may run for change workspace meta
-    const workspaceInfo = this._workspaces.find(workspace.room);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspace.room);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     provider?.updateWorkspaceMeta(workspace.room, update);
@@ -218,7 +218,7 @@ export class DataCenter {
    * @param id workspace id
    */
   public async leaveWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
@@ -228,7 +228,7 @@ export class DataCenter {
   }
 
   public async setWorkspacePublish(workspaceId: string, isPublish: boolean) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
@@ -237,7 +237,7 @@ export class DataCenter {
   }
 
   public async inviteMember(id: string, email: string) {
-    const workspaceInfo = this._workspaces.find(id);
+    const workspaceInfo = this._workspaceMetaCollection.find(id);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
@@ -250,7 +250,7 @@ export class DataCenter {
    * @param {number} permissionId permission id
    */
   public async removeMember(workspaceId: string, permissionId: number) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
@@ -281,7 +281,7 @@ export class DataCenter {
     providerId: string
   ) {
     assert(workspace.room, 'No workspace id');
-    const workspaceInfo = this._workspaces.find(workspace.room);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspace.room);
     assert(workspaceInfo, 'Workspace not found');
     if (workspaceInfo.provider === providerId) {
       this._logger('Workspace provider is same');
