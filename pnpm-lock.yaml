@@ -162,11 +162,13 @@ importers:
     specifiers:
       '@types/prettier': ^2.7.2
       i18next: ^21.9.1
+      i18next-browser-languagedetector: ^7.0.1
       prettier: ^2.7.1
       react-i18next: ^11.18.4
       typescript: ^4.8.4
     dependencies:
       i18next: 21.10.0
+      i18next-browser-languagedetector: 7.0.1
       prettier: 2.7.1
       react-i18next: 11.18.6_i18next@21.10.0
     devDependencies:
@@ -5609,6 +5611,12 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
     dev: true
+
+  /i18next-browser-languagedetector/7.0.1:
+    resolution: {integrity: sha512-Pa5kFwaczXJAeHE56CHG2aWzFBMJNUNghf0Pm4SwSrEMps/PTKqW90EYWlIvhuYStf3Sn1K0vw+gH3+TLdkH1g==}
+    dependencies:
+      '@babel/runtime': 7.20.7
+    dev: false
 
   /i18next/21.10.0:
     resolution: {integrity: sha512-YeuIBmFsGjUfO3qBmMOc0rQaun4mIpGKET5WDwvu8lU7gvwpcariZLNtL0Fzj+zazcHUrlXHiptcFhBMFaxzfg==}

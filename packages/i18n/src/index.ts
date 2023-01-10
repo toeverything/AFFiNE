@@ -1,5 +1,6 @@
 import i18next, { Resource } from 'i18next';
 import { Trans, initReactI18next, useTranslation } from 'react-i18next';
+import detector from 'i18next-browser-languagedetector';
 import { LOCALES } from './resources/index.js';
 import type en_US from './resources/en.json';
 
@@ -45,15 +46,18 @@ const language = standardizeLocale(
 );
 
 const i18n = i18next.createInstance();
-i18n.use(initReactI18next).init({
-  lng: language,
-  fallbackLng,
-  debug: false,
-  resources,
-  interpolation: {
-    escapeValue: false, // not needed for react as it escapes by default
-  },
-});
+i18n
+  .use(detector)
+  .use(initReactI18next)
+  .init({
+    lng: language,
+    fallbackLng,
+    debug: false,
+    resources,
+    interpolation: {
+      escapeValue: false, // not needed for react as it escapes by default
+    },
+  });
 
 i18n.on('languageChanged', () => {
   //   localStorage.setItem(STORAGE_KEY, lng);
