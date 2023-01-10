@@ -16,7 +16,7 @@ import { getApis } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
 import { MessageCode } from '../../message';
-import { blob } from 'stream/consumers';
+import { token } from './apis/token.js';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
@@ -213,6 +213,7 @@ export class AffineProvider extends BaseProvider {
 
   public override async getUserInfo(): Promise<User | undefined> {
     const user = this._apis.token.user;
+    await this.init;
     return user
       ? {
           id: user.id,
@@ -358,5 +359,10 @@ export class AffineProvider extends BaseProvider {
       ws.once('connection-error', () => reject());
     });
     return to;
+  }
+
+  public override async logout(): Promise<void> {
+    token.clear();
+    storage.removeItem('token');
   }
 }
