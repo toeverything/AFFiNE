@@ -28,6 +28,11 @@ export class AffineProvider extends BaseProvider {
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
     this._apis = apis || getApis();
+    this.init().then(() => {
+      if (this._apis.token.isLogin) {
+        this.loadWorkspaces();
+      }
+    });
   }
 
   override async init() {
