@@ -123,7 +123,7 @@ export class DataCenter {
     const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     return (
-      this._workspaceInstances.get(workspaceId) ||
+      // this._workspaceInstances.get(workspaceId) ||
       createBlocksuiteWorkspace(workspaceId)
     );
   }
