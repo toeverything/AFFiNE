@@ -11,7 +11,7 @@ import { WebsocketProvider } from './sync.js';
 import { getApis } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
-import { MessageCode } from 'src/message/code.js';
+import { MessageCode } from 'src/message';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
