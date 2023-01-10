@@ -31,7 +31,7 @@ const Page: NextPageWithLayout = () => {
       <EditorHeader />
       <MobileModal />
 
-      {currentPage && (
+      {currentPage && currentWorkspace && (
         <DynamicBlocksuite
           page={currentPage}
           workspace={currentWorkspace}
