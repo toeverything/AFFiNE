@@ -24,7 +24,7 @@ import { useAppState } from '@/providers/app-state-provider/context';
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTheme } from '@/providers/ThemeProvider';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 const FavoriteTag = ({
   pageMeta: { favorite, id },
 }: {

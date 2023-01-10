@@ -6,7 +6,7 @@ import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider/context';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 // import { Tooltip } from '@/ui/tooltip';
 type ImportModalProps = {
   open: boolean;
