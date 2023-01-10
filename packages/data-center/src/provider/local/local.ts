@@ -5,7 +5,7 @@ import { WorkspaceInfo, WorkspaceMeta } from '../../types';
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
 import { IndexedDBProvider } from './indexeddb.js';
 import assert from 'assert';
-import { getDefaultHeadImgBlob } from '../../utils/index.js';
+import { setDefaultAvatar } from '../utils.js';
 
 const WORKSPACE_KEY = 'workspaces';
 
@@ -97,16 +97,8 @@ export class LocalProvider extends BaseProvider {
     blocksuiteWorkspace.meta.setName(meta.name);
 
     if (!meta.avatar) {
-      // set default avatar
-      const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobStorage = await blocksuiteWorkspace.blobs;
-      assert(blobStorage, 'No blob storage');
-      const blobId = await blobStorage.set(blob);
-      const avatar = await blobStorage.get(blobId);
-      if (avatar) {
-        blocksuiteWorkspace.meta.setAvatar(avatar);
-        workspaceInfo.avatar = avatar;
-      }
+      await setDefaultAvatar(blocksuiteWorkspace);
+      workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
     }
 
     this._workspaces.add(workspaceInfo);

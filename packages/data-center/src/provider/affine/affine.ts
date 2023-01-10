@@ -8,9 +8,9 @@ import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
-import { getDefaultHeadImgBlob } from '../../utils/index.js';
 import { getApis } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
+import { setDefaultAvatar } from '../utils.js';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
@@ -295,16 +295,8 @@ export class AffineProvider extends BaseProvider {
     };
 
     if (!blocksuiteWorkspace.meta.avatar) {
-      // set default avatar
-      const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobStorage = await blocksuiteWorkspace.blobs;
-      assert(blobStorage, 'No blob storage');
-      const blobId = await blobStorage.set(blob);
-      const avatar = await blobStorage.get(blobId);
-      if (avatar) {
-        blocksuiteWorkspace.meta.setAvatar(avatar);
-        workspaceInfo.avatar = avatar;
-      }
+      await setDefaultAvatar(blocksuiteWorkspace);
+      workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
     }
     this._workspaces.add(workspaceInfo);
     return blocksuiteWorkspace;
