@@ -4,7 +4,7 @@ import assert from 'assert';
 import { LocalProvider } from '../local/index.js';
 import * as ipcMethods from './ipc/methods.js';
 import { ProviderConstructorParams } from '../base.js';
-import { BlockSchema } from '@blocksuite/blocks/models.js';
+import { BlockSchema } from '@blocksuite/blocks/models';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { WorkspaceMeta, WorkspaceInfo } from '../../types';
 import { IPCBlobProvider } from './blocksuite-provider/blob.js';

@@ -8,7 +8,6 @@ import type { Message, WorkspaceMeta } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
-import { TauriIPCProvider } from './provider/tauri-ipc';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
 
@@ -42,6 +41,7 @@ export class DataCenter {
     };
     // TODO: switch different provider
     if (typeof window !== 'undefined' && window.CLIENT_APP) {
+      const { TauriIPCProvider } = await import('./provider/tauri-ipc');
       dc.registerProvider(new TauriIPCProvider(getInitParams()));
     }
     dc.registerProvider(new LocalProvider(getInitParams()));
