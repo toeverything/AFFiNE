@@ -76,7 +76,12 @@ export class AffineProvider extends BaseProvider {
     }
     let ws = this._wsMap.get(room);
     if (!ws) {
-      ws = new WebsocketProvider('/', room, doc);
+      const wsUrl = `${
+        window.location.protocol === 'https:' ? 'wss' : 'ws'
+      }://${window.location.host}/api/sync/`;
+      ws = new WebsocketProvider(wsUrl, room, doc, {
+        params: { token: this._apis.token.refresh },
+      });
       this._wsMap.set(room, ws);
     }
     // close all websocket links
@@ -262,7 +267,15 @@ export class AffineProvider extends BaseProvider {
     const nw = new BlocksuiteWorkspace({
       room: id,
     }).register(BlockSchema);
-    nw.meta.setName(meta.name);
+    const { doc } = nw;
+    const updates = await this._apis.downloadWorkspace(id);
+    if (updates && updates.byteLength) {
+      await new Promise(resolve => {
+        doc.once('update', resolve);
+        applyUpdate(doc, new Uint8Array(updates));
+      });
+    }
+    // nw.meta.setName(meta.name);
     this.linkLocal(nw);
 
     const workspaceInfo: WorkspaceInfo = {

@@ -128,6 +128,7 @@ export class DataCenter {
     const provider = this.providerMap.get(providerId);
     assert(provider, `provide '${providerId}' is not registered`);
     await provider.auth();
+    provider.loadWorkspaces();
   }
 
   /**
