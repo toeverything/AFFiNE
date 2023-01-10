@@ -41,11 +41,11 @@ export class DataCenter {
       };
     };
     // TODO: switch different provider
-    dc.registerProvider(new LocalProvider(getInitParams()));
-    dc.registerProvider(new AffineProvider(getInitParams()));
     if (typeof window !== 'undefined' && window.CLIENT_APP) {
       dc.registerProvider(new TauriIPCProvider(getInitParams()));
     }
+    dc.registerProvider(new LocalProvider(getInitParams()));
+    dc.registerProvider(new AffineProvider(getInitParams()));
 
     return dc;
   }
