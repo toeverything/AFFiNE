@@ -43,7 +43,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                       //   await login();
                       // }
                       const id = await enableWorkspace(currentWorkspace);
-                      router.push(`/workspace/${id}`);
+                      router.push(`/workspace/${id}/setting`);
                       toast('Enabled success');
                     }
                   });

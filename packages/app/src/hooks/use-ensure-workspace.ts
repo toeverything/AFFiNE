@@ -18,7 +18,8 @@ export const useEnsureWorkspace = () => {
     // If workspaceList is empty, we need to create a default workspace but not jump to 404
     if (
       workspaceList.length &&
-      router.query.workspaceId &&
+      // FIXME: router is not ready when this hook is called
+      location.pathname.startsWith(`/workspace/${router.query.workspaceId}`) &&
       workspaceList.findIndex(
         meta => meta.id.toString() === router.query.workspaceId
       ) === -1
@@ -35,14 +36,13 @@ export const useEnsureWorkspace = () => {
     //   router.push('/404');
     //   return;
     // }
-
     const workspaceId =
       (router.query.workspaceId as string) || workspaceList[0]?.id;
     loadWorkspace(workspaceId).finally(() => {
       setWorkspaceLoaded(true);
       setActiveWorkspaceId(activeWorkspaceId);
     });
-  }, [loadWorkspace, router, user, workspaceList]);
+  }, [loadWorkspace, router, user, workspaceList, activeWorkspaceId]);
 
   return {
     workspaceLoaded,

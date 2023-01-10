@@ -100,7 +100,6 @@ export const AppStateProvider = ({
     if (workspaceId === currentWorkspaceId) {
       return currentWorkspace;
     }
-
     const workspace = await dataCenter.loadWorkspace(workspaceId);
     const currentMetaWorkSpace = dataCenter.workspaces.find(
       (item: WorkspaceUnit) => {

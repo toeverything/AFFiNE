@@ -2,7 +2,7 @@ import { styled } from '@/styles';
 import { Button } from '@/ui/button';
 import MuiAvatar from '@mui/material/Avatar';
 
-export const StyledSettingContainer = styled('div')(({ theme }) => {
+export const StyledSettingContainer = styled('div')(() => {
   return {
     display: 'flex',
     padding: '50px',
@@ -12,7 +12,7 @@ export const StyledSettingContainer = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledSettingSidebar = styled('div')(({ theme }) => {
+export const StyledSettingSidebar = styled('div')(() => {
   {
     return {
       flexShrink: 0,

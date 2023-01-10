@@ -43,8 +43,8 @@ export class DataCenter {
       };
     };
     // TODO: switch different provider
-    dc.registerProvider(new LocalProvider(getInitParams()));
-    dc.registerProvider(new AffineProvider(getInitParams()));
+    await dc.registerProvider(new LocalProvider(getInitParams()));
+    await dc.registerProvider(new AffineProvider(getInitParams()));
 
     for (const provider of dc.providerMap.values()) {
       await provider.loadWorkspaces();
@@ -57,12 +57,12 @@ export class DataCenter {
    * Register provider.
    * We will automatically set the first provider to default provider.
    */
-  registerProvider(provider: BaseProvider) {
+  async registerProvider(provider: BaseProvider) {
     if (!this._mainProvider) {
       this._mainProvider = provider;
     }
 
-    provider.init();
+    await provider.init();
     this.providerMap.set(provider.id, provider);
   }
 
@@ -123,7 +123,7 @@ export class DataCenter {
     const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     return (
-      this._workspaceInstances.get(workspaceId) ||
+      // this._workspaceInstances.get(workspaceId) ||
       createBlocksuiteWorkspace(workspaceId)
     );
   }

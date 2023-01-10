@@ -16,9 +16,7 @@ const WorkspaceIndex = () => {
       if (!workspaceLoaded) {
         return;
       }
-
       const savedPageId = currentWorkspace?.meta.pageMetas[0]?.id;
-
       if (savedPageId) {
         router.replace(`/workspace/${activeWorkspaceId}/${savedPageId}`);
         return;
@@ -34,6 +32,7 @@ const WorkspaceIndex = () => {
     createPage,
     router,
     workspaceLoaded,
+    activeWorkspaceId,
   ]);
 
   return <PageLoading />;

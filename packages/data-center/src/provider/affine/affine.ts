@@ -212,6 +212,7 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async getUserInfo(): Promise<User | undefined> {
+    await this.init();
     const user = this._apis.token.user;
     return user
       ? {

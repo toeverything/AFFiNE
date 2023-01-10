@@ -84,7 +84,10 @@ export interface CreateWorkspaceParams {
 export async function createWorkspace(
   params: CreateWorkspaceParams
 ): Promise<{ id: string }> {
-  return client.post('api/workspace', { json: params }).json();
+  // FIXME: avatar should be optional
+  return client
+    .post('api/workspace', { json: { ...params, avatar: '123' } })
+    .json();
 }
 
 export interface UpdateWorkspaceParams {
