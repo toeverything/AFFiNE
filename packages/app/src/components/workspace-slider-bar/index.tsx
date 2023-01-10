@@ -32,7 +32,7 @@ import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { WorkspaceSetting } from '@/components/workspace-setting';
+// import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useTranslation } from 'react-i18next';
 import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
 
@@ -78,14 +78,15 @@ export const WorkSpaceSliderBar = () => {
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
 
-  const [showWorkspaceSetting, setShowWorkspaceSetting] = useState(false);
-
   const paths = {
     all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
     favorite: currentWorkspaceId
       ? `/workspace/${currentWorkspaceId}/favorite`
       : '',
     trash: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/trash` : '',
+    setting: currentWorkspaceId
+      ? `/workspace/${currentWorkspaceId}/setting`
+      : '',
   };
 
   return (
@@ -154,18 +155,22 @@ export const WorkSpaceSliderBar = () => {
           <FavoriteList showList={showSubFavorite} />
           <StyledListItem
             onClick={() => {
-              setShowWorkspaceSetting(true);
+              // setShowWorkspaceSetting(true);
             }}
           >
-            <SettingsIcon /> Setting
+            <StyledLink href={{ pathname: paths.setting }}>
+              <FavouritesIcon />
+              {t('Setting')}
+            </StyledLink>
+            <SettingsIcon />
           </StyledListItem>
 
-          <WorkspaceSetting
+          {/* <WorkspaceSetting
             isShow={showWorkspaceSetting}
             onClose={() => {
               setShowWorkspaceSetting(false);
             }}
-          />
+          /> */}
 
           <StyledListItem
             onClick={() => {

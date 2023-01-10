@@ -4,22 +4,15 @@ import MuiAvatar from '@mui/material/Avatar';
 
 export const StyledSettingContainer = styled('div')(({ theme }) => {
   return {
-    position: 'relative',
     display: 'flex',
-    padding: '0px',
-    width: '961px',
-    background: theme.colors.popoverBackground,
-    borderRadius: '12px',
-    overflow: 'hidden',
+    padding: '50px',
+    flexDirection: 'column',
   };
 });
 
 export const StyledSettingSidebar = styled('div')(({ theme }) => {
   {
     return {
-      width: '212px',
-      height: '620px',
-      background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
       flexShrink: 0,
       flexGrow: 0,
     };
@@ -59,7 +52,6 @@ export const StyledSettingTabContainer = styled('ul')(() => {
   {
     return {
       display: 'flex',
-      flexDirection: 'column',
       marginTop: '25px',
     };
   }

@@ -1,1 +1,1 @@
-export * from './Delete';
+export { WorkspaceDelete } from './Delete';
