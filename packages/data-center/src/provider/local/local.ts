@@ -95,6 +95,7 @@ export class LocalProvider extends BaseProvider {
 
     this.linkLocal(blocksuiteWorkspace);
     blocksuiteWorkspace.meta.setName(meta.name);
+
     if (!meta.avatar) {
       // set default avatar
       const blob = await getDefaultHeadImgBlob(meta.name);

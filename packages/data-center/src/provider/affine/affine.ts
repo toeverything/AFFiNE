@@ -28,6 +28,11 @@ export class AffineProvider extends BaseProvider {
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
     this._apis = apis || getApis();
+    this.init().then(() => {
+      if (this._apis.token.isLogin) {
+        this.loadWorkspaces();
+      }
+    });
   }
 
   override async init() {
@@ -78,7 +83,12 @@ export class AffineProvider extends BaseProvider {
 
     let ws = this._wsMap.get(room);
     if (!ws) {
-      ws = new WebsocketProvider('/', room, doc);
+      const wsUrl = `${
+        window.location.protocol === 'https:' ? 'wss' : 'ws'
+      }://${window.location.host}/api/sync/`;
+      ws = new WebsocketProvider(wsUrl, room, doc, {
+        params: { token: this._apis.token.refresh },
+      });
       this._wsMap.set(room, ws);
     }
     // close all websocket links
@@ -186,8 +196,7 @@ export class AffineProvider extends BaseProvider {
         return;
       }
     }
-    const user = await this._apis.signInWithGoogle?.();
-    assert(user);
+    await this._apis.signInWithGoogle?.();
   }
 
   public override async getUserInfo(): Promise<User | undefined> {
