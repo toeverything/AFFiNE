@@ -9,7 +9,7 @@ import {
 import type { PropsWithChildren } from 'react';
 import ShortcutsModal from '@/components/shortcuts-modal';
 import ContactModal from '@/components/contact-modal';
-// import QuickSearch from '@/components/quick-search';
+import QuickSearch from '@/components/quick-search';
 import { ImportModal } from '@/components/import';
 import { LoginModal } from '@/components/login-modal';
 
@@ -97,12 +97,12 @@ export const ModalProvider = ({
           triggerHandler('shortcuts', false);
         }}
       ></ShortcutsModal>
-      {/*<QuickSearch*/}
-      {/*  open={modalMap.quickSearch}*/}
-      {/*  onClose={() => {*/}
-      {/*    triggerHandler('quickSearch', false);*/}
-      {/*  }}*/}
-      {/*></QuickSearch>*/}
+      <QuickSearch
+        open={modalMap.quickSearch}
+        onClose={() => {
+          triggerHandler('quickSearch', false);
+        }}
+      ></QuickSearch>
       <ImportModal
         open={modalMap.import}
         onClose={() => {
