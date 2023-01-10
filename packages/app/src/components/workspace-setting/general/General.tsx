@@ -15,11 +15,14 @@ import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { WorkspaceInfo } from '@affine/datacenter';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
+  const { currentWorkspace } = useAppState();
+  const { updateWorkspace } = useWorkspaceHelper();
   const isOwner = true;
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
@@ -38,6 +41,8 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
     setShowLeave(false);
   };
   const handleUpdateWorkspaceName = () => {
+    console.log('currentWorkspace: ', currentWorkspace);
+    updateWorkspace({ name: workspaceName }, currentWorkspace);
     // workspace && currentWorkspace(workspace.id, { name: workspaceName });
   };
 
@@ -97,22 +102,6 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
           ✔️
         </TextButton>
       </StyledSettingInputContainer>
-      {/* {userInfo ? (
-        <div>
-          <StyledSettingH2 marginTop={20}>Workspace Owner</StyledSettingH2>
-          <StyledSettingInputContainer>
-            <Input
-              width={327}
-              disabled
-              value={userInfo?.name}
-              placeholder="Workspace Owner"
-            ></Input>
-          </StyledSettingInputContainer>
-        </div>
-      ) : (
-        ''
-      )} */}
-
       <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
         <code>{workspace.provider} </code>
