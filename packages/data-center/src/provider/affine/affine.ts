@@ -58,17 +58,24 @@ export class AffineProvider extends BaseProvider {
     }
   }
 
-  override async warpWorkspace(workspace: BlocksuiteWorkspace) {
-    const { doc, room } = workspace;
-    assert(room);
-    this.linkLocal(workspace);
-    const updates = await this._apis.downloadWorkspace(room);
+  private async _applyCloudUpdates(blocksuiteWorkspace: BlocksuiteWorkspace) {
+    const { doc, room: workspaceId } = blocksuiteWorkspace;
+    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
+    const updates = await this._apis.downloadWorkspace(workspaceId);
     if (updates && updates.byteLength) {
       await new Promise(resolve => {
         doc.once('update', resolve);
-        applyUpdate(doc, new Uint8Array(updates));
+        BlocksuiteWorkspace.Y.applyUpdate(doc, new Uint8Array(updates));
       });
     }
+  }
+
+  override async warpWorkspace(workspace: BlocksuiteWorkspace) {
+    await this._applyCloudUpdates(workspace);
+    const { doc, room } = workspace;
+    assert(room);
+    this.linkLocal(workspace);
+
     let ws = this._wsMap.get(room);
     if (!ws) {
       ws = new WebsocketProvider('/', room, doc);
@@ -247,23 +254,29 @@ export class AffineProvider extends BaseProvider {
     // return workspace;
   }
 
-  public override async createWorkspace(
+  public override async createWorkspaceId(
     meta: WorkspaceMeta
-  ): Promise<BlocksuiteWorkspace | undefined> {
-    assert(meta.name, 'Workspace name is required');
+  ): Promise<string> {
     const { id } = await this._apis.createWorkspace(
       meta as Required<WorkspaceMeta>
     );
+    return id;
+  }
+
+  public override async createWorkspace(
+    blocksuiteWorkspace: BlocksuiteWorkspace,
+    meta: WorkspaceMeta
+  ): Promise<BlocksuiteWorkspace | undefined> {
+    const workspaceId = blocksuiteWorkspace.room;
+    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
     this._logger('Creating affine workspace');
-    const nw = new BlocksuiteWorkspace({
-      room: id,
-    }).register(BlockSchema);
-    nw.meta.setName(meta.name);
-    this.linkLocal(nw);
+
+    this._applyCloudUpdates(blocksuiteWorkspace);
+    this.linkLocal(blocksuiteWorkspace);
 
     const workspaceInfo: WorkspaceInfo = {
       name: meta.name,
-      id,
+      id: workspaceId,
       isPublish: false,
       avatar: '',
       owner: undefined,
@@ -272,20 +285,20 @@ export class AffineProvider extends BaseProvider {
       provider: 'affine',
     };
 
-    if (!meta.avatar) {
+    if (!blocksuiteWorkspace.meta.avatar) {
       // set default avatar
       const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobStorage = await nw.blobs;
+      const blobStorage = await blocksuiteWorkspace.blobs;
       assert(blobStorage, 'No blob storage');
       const blobId = await blobStorage.set(blob);
       const avatar = await blobStorage.get(blobId);
       if (avatar) {
-        nw.meta.setAvatar(avatar);
+        blocksuiteWorkspace.meta.setAvatar(avatar);
         workspaceInfo.avatar = avatar;
       }
     }
     this._workspaces.add(workspaceInfo);
-    return nw;
+    return blocksuiteWorkspace;
   }
 
   public override async publish(id: string, isPublish: boolean): Promise<void> {

@@ -7,8 +7,8 @@ import { AffineProvider } from './provider';
 import type { WorkspaceMeta } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
-import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+import { createBlocksuiteWorkspace } from './utils/index.js';
 
 /**
  * @class DataCenter
@@ -89,7 +89,13 @@ export class DataCenter {
       'There is no provider. You should add provider first.'
     );
 
-    const workspace = await this._mainProvider.createWorkspace(workspaceMeta);
+    const workspaceId = await this._mainProvider.createWorkspaceId(
+      workspaceMeta
+    );
+
+    const workspace = createBlocksuiteWorkspace(workspaceId);
+
+    await this._mainProvider.createWorkspace(workspace, workspaceMeta);
     return workspace;
   }
 
@@ -109,14 +115,12 @@ export class DataCenter {
    * get a new workspace only has room id
    * @param {string} workspaceId workspace id
    */
-  private _getWorkspace(workspaceId: string) {
+  private _getBlocksuiteWorkspace(workspaceId: string) {
     const workspaceInfo = this._workspaces.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     return (
       this._workspaceInstances.get(workspaceId) ||
-      new BlocksuiteWorkspace({
-        room: workspaceId,
-      }).register(BlockSchema)
+      createBlocksuiteWorkspace(workspaceId)
     );
   }
 
@@ -155,7 +159,7 @@ export class DataCenter {
     const provider = this.providerMap.get(workspaceInfo.provider);
     assert(provider, `provide '${workspaceInfo.provider}' is not registered`);
     this._logger(`Loading ${workspaceInfo.provider} workspace: `, workspaceId);
-    const workspace = this._getWorkspace(workspaceId);
+    const workspace = this._getBlocksuiteWorkspace(workspaceId);
     this._workspaceInstances.set(workspaceId, workspace);
     return await provider.warpWorkspace(workspace);
   }
@@ -288,11 +292,17 @@ export class DataCenter {
     const newProvider = this.providerMap.get(providerId);
     assert(newProvider, `provide '${providerId}' is not registered`);
     this._logger(`create ${providerId} workspace: `, workspaceInfo.name);
-    // TODO optimize this function
-    const newWorkspace = await newProvider.createWorkspace({
+    const newWorkspaceId = await newProvider.createWorkspaceId({
       name: workspaceInfo.name,
       avatar: workspaceInfo.avatar,
     });
+    const newWorkspace = createBlocksuiteWorkspace(newWorkspaceId);
+    // TODO optimize this function
+    await newProvider.createWorkspace(newWorkspace, {
+      name: workspaceInfo.name,
+      avatar: workspaceInfo.avatar,
+    });
+
     assert(newWorkspace, 'Create workspace failed');
     this._logger(
       `update workspace data from ${workspaceInfo.provider} to ${providerId}`

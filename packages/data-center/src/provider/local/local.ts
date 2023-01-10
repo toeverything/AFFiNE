@@ -76,6 +76,7 @@ export class LocalProvider extends BaseProvider {
   }
 
   public override async createWorkspace(
+    blocksuiteWorkspace: BlocksuiteWorkspace,
     meta: WorkspaceMeta
   ): Promise<BlocksuiteWorkspace | undefined> {
     assert(meta.name, 'Workspace name is required');
@@ -92,18 +93,17 @@ export class LocalProvider extends BaseProvider {
       provider: 'local',
     };
 
-    const workspace = new BlocksuiteWorkspace({ room: workspaceInfo.id });
-    this.linkLocal(workspace);
-    workspace.meta.setName(meta.name);
+    this.linkLocal(blocksuiteWorkspace);
+    blocksuiteWorkspace.meta.setName(meta.name);
     if (!meta.avatar) {
       // set default avatar
       const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobStorage = await workspace.blobs;
+      const blobStorage = await blocksuiteWorkspace.blobs;
       assert(blobStorage, 'No blob storage');
       const blobId = await blobStorage.set(blob);
       const avatar = await blobStorage.get(blobId);
       if (avatar) {
-        workspace.meta.setAvatar(avatar);
+        blocksuiteWorkspace.meta.setAvatar(avatar);
         workspaceInfo.avatar = avatar;
       }
     }
@@ -111,7 +111,7 @@ export class LocalProvider extends BaseProvider {
     this._workspaces.add(workspaceInfo);
     this._storeWorkspaces(this._workspaces.list());
 
-    return workspace;
+    return blocksuiteWorkspace;
   }
 
   public override async clear(): Promise<void> {
