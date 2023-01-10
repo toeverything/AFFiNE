@@ -1,25 +1,25 @@
 import { Observable } from 'lib0/observable';
-import type { Workspace, WorkspaceMeta } from '../types';
+import type { WorkspaceInfo, WorkspaceMeta } from './types';
 
-export interface WorkspacesScope {
-  get: (workspaceId: string) => Workspace | undefined;
-  list: () => Workspace[];
-  add: (workspace: Workspace) => void;
+export interface WorkspaceMetaCollectionScope {
+  get: (workspaceId: string) => WorkspaceInfo | undefined;
+  list: () => WorkspaceInfo[];
+  add: (workspace: WorkspaceInfo) => void;
   remove: (workspaceId: string) => boolean;
   clear: () => void;
   update: (workspaceId: string, workspaceMeta: Partial<WorkspaceMeta>) => void;
 }
 
-export interface WorkspacesChangeEvent {
-  added?: Workspace;
-  deleted?: Workspace;
-  updated?: Workspace;
+export interface WorkspaceMetaCollectionChangeEvent {
+  added?: WorkspaceInfo;
+  deleted?: WorkspaceInfo;
+  updated?: WorkspaceInfo;
 }
 
-export class Workspaces extends Observable<'change'> {
-  private _workspacesMap = new Map<string, Workspace>();
+export class WorkspaceMetaCollection extends Observable<'change'> {
+  private _workspacesMap = new Map<string, WorkspaceInfo>();
 
-  get workspaces(): Workspace[] {
+  get workspaces(): WorkspaceInfo[] {
     return Array.from(this._workspacesMap.values());
   }
 
@@ -27,7 +27,7 @@ export class Workspaces extends Observable<'change'> {
     return this._workspacesMap.get(workspaceId);
   }
 
-  createScope(): WorkspacesScope {
+  createScope(): WorkspaceMetaCollectionScope {
     const scopedWorkspaceIds = new Set<string>();
 
     const get = (workspaceId: string) => {
@@ -37,7 +37,7 @@ export class Workspaces extends Observable<'change'> {
       return this._workspacesMap.get(workspaceId);
     };
 
-    const add = (workspace: Workspace) => {
+    const add = (workspace: WorkspaceInfo) => {
       if (this._workspacesMap.has(workspace.id)) {
         throw new Error(`Duplicate workspace id.`);
       }
@@ -47,7 +47,7 @@ export class Workspaces extends Observable<'change'> {
       this.emit('change', [
         {
           added: workspace,
-        } as WorkspacesChangeEvent,
+        } as WorkspaceMetaCollectionChangeEvent,
       ]);
     };
 
@@ -69,7 +69,7 @@ export class Workspaces extends Observable<'change'> {
         this.emit('change', [
           {
             deleted: workspace,
-          } as WorkspacesChangeEvent,
+          } as WorkspaceMetaCollectionChangeEvent,
         ]);
       }
       return true;
@@ -99,13 +99,13 @@ export class Workspaces extends Observable<'change'> {
       this.emit('change', [
         {
           updated: this._workspacesMap.get(workspaceId),
-        } as WorkspacesChangeEvent,
+        } as WorkspaceMetaCollectionChangeEvent,
       ]);
     };
 
     // TODO: need to optimize
     const list = () => {
-      const workspaces: Workspace[] = [];
+      const workspaces: WorkspaceInfo[] = [];
       scopedWorkspaceIds.forEach(id => {
         const workspace = this._workspacesMap.get(id);
         if (workspace) {

@@ -1,11 +1,11 @@
-import { BaseProvider } from '../base';
+import { BaseProvider } from '../base.js';
 import type { ProviderConstructorParams } from '../base';
 import { varStorage as storage } from 'lib0/storage';
-import { Workspace as WS, WorkspaceMeta } from '../../types';
-import { Workspace, uuidv4 } from '@blocksuite/store';
-import { IndexedDBProvider } from '../indexeddb';
+import { WorkspaceInfo, WorkspaceMeta } from '../../types';
+import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
+import { IndexedDBProvider } from './indexeddb.js';
 import assert from 'assert';
-import { getDefaultHeadImgBlob } from '../../utils';
+import { setDefaultAvatar } from '../utils.js';
 
 const WORKSPACE_KEY = 'workspaces';
 
@@ -18,34 +18,34 @@ export class LocalProvider extends BaseProvider {
     this.loadWorkspaces();
   }
 
-  private _storeWorkspaces(workspaces: WS[]) {
+  private _storeWorkspaces(workspaces: WorkspaceInfo[]) {
     storage.setItem(WORKSPACE_KEY, JSON.stringify(workspaces));
   }
 
-  private async _initWorkspaceDb(workspace: Workspace) {
+  public override async linkLocal(workspace: BlocksuiteWorkspace) {
     assert(workspace.room);
     let idb = this._idbMap.get(workspace.room);
     idb?.destroy();
     idb = new IndexedDBProvider(workspace.room, workspace.doc);
     this._idbMap.set(workspace.room, idb);
     this._logger('Local data loaded');
-    return idb;
-  }
-
-  public override async warpWorkspace(
-    workspace: Workspace
-  ): Promise<Workspace> {
-    assert(workspace.room);
-    await this._initWorkspaceDb(workspace);
     return workspace;
   }
 
-  override loadWorkspaces(): Promise<WS[]> {
+  public override async warpWorkspace(
+    workspace: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
+    assert(workspace.room);
+    await this.linkLocal(workspace);
+    return workspace;
+  }
+
+  override loadWorkspaces(): Promise<WorkspaceInfo[]> {
     const workspaceStr = storage.getItem(WORKSPACE_KEY);
-    let workspaces: WS[] = [];
+    let workspaces: WorkspaceInfo[] = [];
     if (workspaceStr) {
       try {
-        workspaces = JSON.parse(workspaceStr) as WS[];
+        workspaces = JSON.parse(workspaceStr) as WorkspaceInfo[];
         workspaces.forEach(workspace => {
           this._workspaces.add(workspace);
         });
@@ -75,13 +75,10 @@ export class LocalProvider extends BaseProvider {
     this._storeWorkspaces(this._workspaces.list());
   }
 
-  public override async createWorkspace(
+  public override async createWorkspaceInfo(
     meta: WorkspaceMeta
-  ): Promise<Workspace | undefined> {
-    assert(meta.name, 'Workspace name is required');
-    this._logger('Creating affine workspace');
-
-    const workspaceInfo: WS = {
+  ): Promise<WorkspaceInfo> {
+    const workspaceInfo: WorkspaceInfo = {
       name: meta.name,
       id: uuidv4(),
       isPublish: false,
@@ -91,27 +88,41 @@ export class LocalProvider extends BaseProvider {
       memberCount: 1,
       provider: 'local',
     };
+    return Promise.resolve(workspaceInfo);
+  }
 
-    const workspace = new Workspace({ room: workspaceInfo.id });
-    this._initWorkspaceDb(workspace);
-    workspace.meta.setName(meta.name);
+  public override async createWorkspace(
+    blocksuiteWorkspace: BlocksuiteWorkspace,
+    meta: WorkspaceMeta
+  ): Promise<BlocksuiteWorkspace | undefined> {
+    const workspaceId = blocksuiteWorkspace.room;
+    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
+    assert(meta.name, 'Workspace name is required');
+    this._logger('Creating affine workspace');
+
+    const workspaceInfo: WorkspaceInfo = {
+      name: meta.name,
+      id: workspaceId,
+      isPublish: false,
+      avatar: '',
+      owner: undefined,
+      isLocal: true,
+      memberCount: 1,
+      provider: 'local',
+    };
+
+    this.linkLocal(blocksuiteWorkspace);
+    blocksuiteWorkspace.meta.setName(meta.name);
+
     if (!meta.avatar) {
-      // set default avatar
-      const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobStorage = await workspace.blobs;
-      assert(blobStorage, 'No blob storage');
-      const blobId = await blobStorage.set(blob);
-      const avatar = await blobStorage.get(blobId);
-      if (avatar) {
-        workspace.meta.setAvatar(avatar);
-        workspaceInfo.avatar = avatar;
-      }
+      await setDefaultAvatar(blocksuiteWorkspace);
+      workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
     }
 
     this._workspaces.add(workspaceInfo);
     this._storeWorkspaces(this._workspaces.list());
 
-    return workspace;
+    return blocksuiteWorkspace;
   }
 
   public override async clear(): Promise<void> {

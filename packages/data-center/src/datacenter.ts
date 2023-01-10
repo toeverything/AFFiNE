@@ -1,23 +1,26 @@
-import { Workspaces } from './workspaces';
-import type { WorkspacesChangeEvent } from './workspaces';
-import { BlobStorage, Workspace } from '@blocksuite/store';
+import { WorkspaceMetaCollection } from './workspace-meta-collection.js';
+import type { WorkspaceMetaCollectionChangeEvent } from './workspace-meta-collection';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BaseProvider } from './provider/base';
 import { LocalProvider } from './provider/local/local';
 import { AffineProvider } from './provider';
-import type { WorkspaceMeta } from './types';
+import type { Message, WorkspaceMeta } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
-import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { TauriIPCProvider } from './provider/tauri-ipc';
+import { createBlocksuiteWorkspace } from './utils/index.js';
+import { MessageCenter } from './message/message';
 
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business
  */
 export class DataCenter {
-  private readonly _workspaces = new Workspaces();
+  private readonly _workspaceMetaCollection = new WorkspaceMetaCollection();
   private readonly _logger = getLogger('dc');
+  private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
+  private _messageCenter = new MessageCenter();
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -30,26 +33,18 @@ export class DataCenter {
 
   static async init(debug: boolean): Promise<DataCenter> {
     const dc = new DataCenter(debug);
+    const getInitParams = () => {
+      return {
+        logger: dc._logger,
+        workspaces: dc._workspaceMetaCollection.createScope(),
+        messageCenter: dc._messageCenter,
+      };
+    };
     // TODO: switch different provider
-    dc.registerProvider(
-      new LocalProvider({
-        logger: dc._logger,
-        workspaces: dc._workspaces.createScope(),
-      })
-    );
-    dc.registerProvider(
-      new AffineProvider({
-        logger: dc._logger,
-        workspaces: dc._workspaces.createScope(),
-      })
-    );
+    dc.registerProvider(new LocalProvider(getInitParams()));
+    dc.registerProvider(new AffineProvider(getInitParams()));
     if (typeof window !== 'undefined' && window.CLIENT_APP) {
-      dc.registerProvider(
-        new TauriIPCProvider({
-          logger: dc._logger,
-          workspaces: dc._workspaces.createScope(),
-        })
-      );
+      dc.registerProvider(new TauriIPCProvider(getInitParams()));
     }
 
     return dc;
@@ -77,7 +72,7 @@ export class DataCenter {
   }
 
   public get workspaces() {
-    return this._workspaces.workspaces;
+    return this._workspaceMetaCollection.workspaces;
   }
 
   public async refreshWorkspaces() {
@@ -89,7 +84,7 @@ export class DataCenter {
   /**
    * create new workspace , new workspace is a local workspace
    * @param {string} name workspace name
-   * @returns {Promise<WS>}
+   * @returns {Promise<Workspace>}
    */
   public async createWorkspace(workspaceMeta: WorkspaceMeta) {
     assert(
@@ -97,7 +92,13 @@ export class DataCenter {
       'There is no provider. You should add provider first.'
     );
 
-    const workspace = await this._mainProvider.createWorkspace(workspaceMeta);
+    const workspaceInfo = await this._mainProvider.createWorkspaceInfo(
+      workspaceMeta
+    );
+
+    const workspace = createBlocksuiteWorkspace(workspaceInfo.id);
+
+    await this._mainProvider.createWorkspace(workspace, workspaceMeta);
     return workspace;
   }
 
@@ -106,7 +107,7 @@ export class DataCenter {
    * @param {string} workspaceId workspace id
    */
   public async deleteWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     assert(provider, `Workspace exists, but we couldn't find its provider.`);
@@ -117,39 +118,42 @@ export class DataCenter {
    * get a new workspace only has room id
    * @param {string} workspaceId workspace id
    */
-  private _getWorkspace(workspaceId: string) {
-    return new Workspace({
-      room: workspaceId,
-    }).register(BlockSchema);
+  private _getBlocksuiteWorkspace(workspaceId: string) {
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
+    assert(workspaceInfo, 'Workspace not found');
+    return (
+      this._workspaceInstances.get(workspaceId) ||
+      createBlocksuiteWorkspace(workspaceId)
+    );
   }
 
   /**
    * login to all providers, it will default run all auth ,
    *  maybe need a params to control which provider to auth
    */
-  public async login() {
-    this.providers.forEach(p => {
-      // TODO: may be add params of auth
-      p.auth();
-    });
+  public async login(providerId = 'affine') {
+    const provider = this.providerMap.get(providerId);
+    assert(provider, `provide '${providerId}' is not registered`);
+    await provider.auth();
+    provider.loadWorkspaces();
   }
 
   /**
    * logout from all providers
    */
-  public async logout() {
-    this.providers.forEach(p => {
-      p.logout();
-    });
+  public async logout(providerId = 'affine') {
+    const provider = this.providerMap.get(providerId);
+    assert(provider, `provide '${providerId}' is not registered`);
+    await provider.logout();
   }
 
   /**
    * load workspace instance by id
    * @param {string} workspaceId workspace id
-   * @returns {Promise<Workspace>}
+   * @returns {Promise<BlocksuiteWorkspace>}
    */
   public async loadWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const currentProvider = this.providerMap.get(workspaceInfo.provider);
     if (currentProvider) {
@@ -158,8 +162,9 @@ export class DataCenter {
     const provider = this.providerMap.get(workspaceInfo.provider);
     assert(provider, `provide '${workspaceInfo.provider}' is not registered`);
     this._logger(`Loading ${workspaceInfo.provider} workspace: `, workspaceId);
-
-    return await provider.warpWorkspace(this._getWorkspace(workspaceId));
+    const workspace = this._getBlocksuiteWorkspace(workspaceId);
+    this._workspaceInstances.set(workspaceId, workspace);
+    return await provider.warpWorkspace(workspace);
   }
 
   /**
@@ -179,32 +184,32 @@ export class DataCenter {
    * @param {Function} callback callback function
    */
   public async onWorkspacesChange(
-    callback: (workspaces: WorkspacesChangeEvent) => void
+    callback: (workspaces: WorkspaceMetaCollectionChangeEvent) => void
   ) {
-    this._workspaces.on('change', callback);
+    this._workspaceMetaCollection.on('change', callback);
   }
 
   /**
    * change workspaces meta
    * @param {WorkspaceMeta} workspaceMeta workspace meta
-   * @param {Workspace} workspace workspace instance
+   * @param {BlocksuiteWorkspace} workspace workspace instance
    */
-  public async resetWorkspaceMeta(
-    { name, avatar }: WorkspaceMeta,
-    workspace: Workspace
+  public async updateWorkspaceMeta(
+    { name, avatar }: Partial<WorkspaceMeta>,
+    workspace: BlocksuiteWorkspace
   ) {
     assert(workspace?.room, 'No workspace to set meta');
     const update: Partial<WorkspaceMeta> = {};
     if (name) {
-      workspace.doc.meta.setName(name);
+      workspace.meta.setName(name);
       update.name = name;
     }
     if (avatar) {
-      workspace.doc.meta.setAvatar(avatar);
+      workspace.meta.setAvatar(avatar);
       update.avatar = avatar;
     }
     // may run for change workspace meta
-    const workspaceInfo = this._workspaces.find(workspace.room);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspace.room);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     provider?.updateWorkspaceMeta(workspace.room, update);
@@ -216,7 +221,7 @@ export class DataCenter {
    * @param id workspace id
    */
   public async leaveWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
@@ -226,7 +231,7 @@ export class DataCenter {
   }
 
   public async setWorkspacePublish(workspaceId: string, isPublish: boolean) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
@@ -235,7 +240,7 @@ export class DataCenter {
   }
 
   public async inviteMember(id: string, email: string) {
-    const workspaceInfo = this._workspaces.find(id);
+    const workspaceInfo = this._workspaceMetaCollection.find(id);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
@@ -248,7 +253,7 @@ export class DataCenter {
    * @param {number} permissionId permission id
    */
   public async removeMember(workspaceId: string, permissionId: number) {
-    const workspaceInfo = this._workspaces.find(workspaceId);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
@@ -275,11 +280,11 @@ export class DataCenter {
   }
 
   private async _transWorkspaceProvider(
-    workspace: Workspace,
+    workspace: BlocksuiteWorkspace,
     providerId: string
   ) {
     assert(workspace.room, 'No workspace id');
-    const workspaceInfo = this._workspaces.find(workspace.room);
+    const workspaceInfo = this._workspaceMetaCollection.find(workspace.room);
     assert(workspaceInfo, 'Workspace not found');
     if (workspaceInfo.provider === providerId) {
       this._logger('Workspace provider is same');
@@ -290,11 +295,17 @@ export class DataCenter {
     const newProvider = this.providerMap.get(providerId);
     assert(newProvider, `provide '${providerId}' is not registered`);
     this._logger(`create ${providerId} workspace: `, workspaceInfo.name);
-    // TODO optimize this function
-    const newWorkspace = await newProvider.createWorkspace({
+    const newWorkspaceInfo = await newProvider.createWorkspaceInfo({
       name: workspaceInfo.name,
       avatar: workspaceInfo.avatar,
     });
+    const newWorkspace = createBlocksuiteWorkspace(newWorkspaceInfo.id);
+    // TODO optimize this function
+    await newProvider.createWorkspace(newWorkspace, {
+      name: workspaceInfo.name,
+      avatar: workspaceInfo.avatar,
+    });
+
     assert(newWorkspace, 'Create workspace failed');
     this._logger(
       `update workspace data from ${workspaceInfo.provider} to ${providerId}`
@@ -308,7 +319,7 @@ export class DataCenter {
    * Enable workspace cloud
    * @param {string} id ID of workspace.
    */
-  public async enableWorkspaceCloud(workspace: Workspace) {
+  public async enableWorkspaceCloud(workspace: BlocksuiteWorkspace) {
     assert(workspace?.room, 'No workspace to enable cloud');
     return await this._transWorkspaceProvider(workspace, 'affine');
   }
@@ -341,21 +352,30 @@ export class DataCenter {
     return;
   }
 
-  // /**
-  //  * get blob url by workspaces id
-  //  * @param id
-  //  * @returns {Promise<string | null>} blob url
-  //  */
-  // async getBlob(id: string): Promise<string | null> {
-  //   return await this._blobStorage.get(id);
-  // }
+  /**
+   * get blob url by workspaces id
+   * @param id
+   * @returns {Promise<string | null>} blob url
+   */
+  async getBlob(
+    workspace: BlocksuiteWorkspace,
+    id: string
+  ): Promise<string | null> {
+    const blob = await workspace.blobs;
+    return (await blob?.get(id)) || '';
+  }
 
-  // /**
-  //  * up load blob and get a blob url
-  //  * @param id
-  //  * @returns {Promise<string | null>} blob url
-  //  */
-  // async setBlob(blob: Blob): Promise<string> {
-  //   return await this._blobStorage.set(blob);
-  // }
+  /**
+   * up load blob and get a blob url
+   * @param id
+   * @returns {Promise<string | null>} blob url
+   */
+  async setBlob(workspace: BlocksuiteWorkspace, blob: Blob): Promise<string> {
+    const blobStorage = await workspace.blobs;
+    return (await blobStorage?.set(blob)) || '';
+  }
+
+  onMessage(cb: (message: Message) => void) {
+    return this._messageCenter.onMessage(cb);
+  }
 }

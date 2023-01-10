@@ -1,6 +1,7 @@
-import { BlobStorage, Workspace } from '@blocksuite/store';
-import { Logger, User, Workspace as WS, WorkspaceMeta } from '../types';
-import type { WorkspacesScope } from '../workspaces';
+import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
+import { MessageCenter } from 'src/message';
+import { Logger, User, WorkspaceInfo, WorkspaceMeta } from '../types';
+import type { WorkspaceMetaCollectionScope } from '../workspace-meta-collection';
 
 const defaultLogger = () => {
   return;
@@ -8,17 +9,24 @@ const defaultLogger = () => {
 
 export interface ProviderConstructorParams {
   logger?: Logger;
-  workspaces: WorkspacesScope;
+  workspaces: WorkspaceMetaCollectionScope;
+  messageCenter: MessageCenter;
 }
 
 export class BaseProvider {
   public readonly id: string = 'base';
-  protected _workspaces!: WorkspacesScope;
+  protected _workspaces!: WorkspaceMetaCollectionScope;
   protected _logger!: Logger;
+  protected _messageCenter!: MessageCenter;
 
-  public constructor({ logger, workspaces }: ProviderConstructorParams) {
+  public constructor({
+    logger,
+    workspaces,
+    messageCenter,
+  }: ProviderConstructorParams) {
     this._logger = (logger || defaultLogger) as Logger;
     this._workspaces = workspaces;
+    this._messageCenter = messageCenter;
   }
 
   /**
@@ -26,6 +34,12 @@ export class BaseProvider {
    */
   public async init() {
     return;
+  }
+
+  public async createWorkspaceInfo(
+    meta: WorkspaceMeta
+  ): Promise<WorkspaceInfo> {
+    throw new Error(`provider: ${this.id} createWorkspaceInfo Not implemented`);
   }
 
   /**
@@ -47,14 +61,16 @@ export class BaseProvider {
    * @param workspace
    * @returns
    */
-  public async warpWorkspace(workspace: Workspace): Promise<Workspace> {
+  public async warpWorkspace(
+    workspace: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
     return workspace;
   }
 
   /**
    * load workspaces
    **/
-  public async loadWorkspaces(): Promise<WS[]> {
+  public async loadWorkspaces(): Promise<WorkspaceInfo[]> {
     throw new Error(`provider: ${this.id} loadWorkSpace Not implemented`);
   }
 
@@ -153,10 +169,10 @@ export class BaseProvider {
    * @param {WorkspaceMeta} meta
    */
   public async createWorkspace(
+    blocksuiteWorkspace: BlocksuiteWorkspace,
     meta: WorkspaceMeta
-  ): Promise<Workspace | undefined> {
-    meta;
-    return;
+  ): Promise<BlocksuiteWorkspace | undefined> {
+    return blocksuiteWorkspace;
   }
 
   /**
@@ -168,5 +184,16 @@ export class BaseProvider {
   public async getUserByEmail(id: string, email: string): Promise<User | null> {
     email;
     return null;
+  }
+
+  /**
+   * link workspace to local caches
+   * @param workspace
+   * @returns
+   */
+  public async linkLocal(
+    workspace: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
+    return workspace;
   }
 }

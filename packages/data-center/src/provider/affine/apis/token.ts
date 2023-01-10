@@ -2,8 +2,8 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 
-import { getLogger } from '../../../logger';
-import { bareClient } from './request';
+import { getLogger } from '../../../logger.js';
+import { bareClient } from './request.js';
 
 export interface AccessTokenMessage {
   create_at: number;
@@ -44,6 +44,10 @@ class Token {
     this._logger.enabled = true;
 
     this._setToken(); // fill with default value
+  }
+
+  get user() {
+    return this._user;
   }
 
   private _setToken(login?: LoginResponse) {
@@ -185,6 +189,7 @@ export const getAuthorizer = () => {
 
     return [signInWithGoogle, onAuthStateChanged] as const;
   } catch (e) {
+    getLogger('getAuthorizer')(e);
     return [] as const;
   }
 };

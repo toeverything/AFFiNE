@@ -1,14 +1,14 @@
-import { describe, test, expect } from 'vitest';
-import { Workspaces } from './workspaces';
-import type { WorkspacesChangeEvent } from './workspaces';
+import { test, expect } from '@playwright/test';
+import { WorkspaceMetaCollection } from './workspace-meta-collection.js';
+import type { WorkspaceMetaCollectionChangeEvent } from './workspace-meta-collection';
 
-describe('workspaces observable', () => {
-  const workspaces = new Workspaces();
+test.describe.serial('workspace meta collection observable', () => {
+  const workspaces = new WorkspaceMetaCollection();
 
   const scope = workspaces.createScope();
 
   test('add workspace', () => {
-    workspaces.once('change', (event: WorkspacesChangeEvent) => {
+    workspaces.once('change', (event: WorkspaceMetaCollectionChangeEvent) => {
       expect(event.added?.id).toEqual('123');
     });
     scope.add({
@@ -30,7 +30,7 @@ describe('workspaces observable', () => {
   });
 
   test('update workspace', () => {
-    workspaces.once('change', (event: WorkspacesChangeEvent) => {
+    workspaces.once('change', (event: WorkspaceMetaCollectionChangeEvent) => {
       expect(event.updated?.name).toEqual('demo');
     });
     scope.update('123', { name: 'demo' });
@@ -42,7 +42,7 @@ describe('workspaces observable', () => {
   });
 
   test('delete workspace', () => {
-    workspaces.once('change', (event: WorkspacesChangeEvent) => {
+    workspaces.once('change', (event: WorkspaceMetaCollectionChangeEvent) => {
       expect(event.deleted?.id).toEqual('123');
     });
     scope.remove('123');

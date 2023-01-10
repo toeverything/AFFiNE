@@ -32,7 +32,7 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { WorkspaceSetting } from '@/components/workspace-setting';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@affine/i18n';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();

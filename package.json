@@ -17,8 +17,7 @@
     "test": "playwright test",
     "test:dc": "pnpm --filter @affine/datacenter test",
     "test:e2e:codegen": "npx playwright codegen http://localhost:8080",
-    "test:unit": "vitest run",
-    "test:unit:watch": "vitest",
+    "test:unit": "playwright test --config=playwright.config.unit.ts",
     "postinstall": "husky install",
     "notify": "node --experimental-modules scripts/notify.mjs",
     "check:ci": "pnpm lint & pnpm test"

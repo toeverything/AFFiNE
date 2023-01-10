@@ -1,84 +1,104 @@
-import {
-  getWorkspaces,
-  getWorkspaceDetail,
-  WorkspaceDetail,
-  downloadWorkspace,
-  deleteWorkspace,
-  leaveWorkspace,
-  inviteMember,
-  removeMember,
-  createWorkspace,
-  updateWorkspace,
-} from './apis/workspace';
-import { BaseProvider } from '../base';
+import { BaseProvider } from '../base.js';
 import type { ProviderConstructorParams } from '../base';
-import { User, Workspace as WS, WorkspaceMeta } from '../../types';
-import { Workspace } from '@blocksuite/store';
+import type { User, WorkspaceInfo, WorkspaceMeta } from '../../types';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { applyUpdate } from 'yjs';
-import { token, Callback } from './apis';
-import { varStorage as storage } from 'lib0/storage';
+import { storage } from './storage.js';
 import assert from 'assert';
-import { getAuthorizer } from './apis/token';
-import { WebsocketProvider } from './sync';
-import { IndexedDBProvider } from '../indexeddb';
-import { getDefaultHeadImgBlob } from '../../utils';
-import { getUserByEmail } from './apis/user';
+import { WebsocketProvider } from './sync.js';
+// import { IndexedDBProvider } from '../local/indexeddb';
+import { getApis } from './apis/index.js';
+import type { Apis, WorkspaceDetail, Callback } from './apis';
+import { setDefaultAvatar } from '../utils.js';
+import { MessageCode } from 'src/message/code.js';
+
+export interface AffineProviderConstructorParams
+  extends ProviderConstructorParams {
+  apis?: Apis;
+}
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
-  private _workspacesCache: Map<string, Workspace> = new Map();
+  private _workspacesCache: Map<string, BlocksuiteWorkspace> = new Map();
   private _onTokenRefresh?: Callback = undefined;
-  private readonly _authorizer = getAuthorizer();
-  private _user: User | undefined = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
-  private _idbMap: Map<string, IndexedDBProvider> = new Map();
+  private _apis: Apis;
+  // private _idbMap: Map<string, IndexedDBProvider> = new Map();
 
-  constructor(params: ProviderConstructorParams) {
+  constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
+    this._apis = apis || getApis();
+    this.init().then(() => {
+      if (this._apis.token.isLogin) {
+        this.loadWorkspaces();
+      }
+    });
   }
 
   override async init() {
     this._onTokenRefresh = () => {
-      if (token.refresh) {
-        storage.setItem('token', token.refresh);
+      if (this._apis.token.refresh) {
+        storage.setItem('token', this._apis.token.refresh);
       }
     };
 
-    token.onChange(this._onTokenRefresh);
+    this._apis.token.onChange(this._onTokenRefresh);
 
     // initial login token
-    if (token.isExpired) {
+    if (this._apis.token.isExpired) {
       try {
         const refreshToken = storage.getItem('token');
-        await token.refreshToken(refreshToken);
+        await this._apis.token.refreshToken(refreshToken);
 
-        if (token.refresh) {
-          storage.set('token', token.refresh);
+        if (this._apis.token.refresh) {
+          storage.set('token', this._apis.token.refresh);
         }
 
-        assert(token.isLogin);
+        assert(this._apis.token.isLogin);
       } catch (_) {
         // this._logger('Authorization failed, fallback to local mode');
       }
     } else {
-      storage.setItem('token', token.refresh);
+      storage.setItem('token', this._apis.token.refresh);
     }
   }
 
-  override async warpWorkspace(workspace: Workspace) {
-    const { doc, room } = workspace;
-    assert(room);
-    this._initWorkspaceDb(workspace);
-    const updates = await downloadWorkspace(room);
-    if (updates) {
+  private async _applyCloudUpdates(blocksuiteWorkspace: BlocksuiteWorkspace) {
+    const { doc, room: workspaceId } = blocksuiteWorkspace;
+    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
+    const updates = await this._apis.downloadWorkspace(workspaceId);
+    if (updates && updates.byteLength) {
       await new Promise(resolve => {
         doc.once('update', resolve);
-        applyUpdate(doc, new Uint8Array(updates));
+        BlocksuiteWorkspace.Y.applyUpdate(doc, new Uint8Array(updates));
       });
     }
-    const ws = new WebsocketProvider('/', room, doc);
-    this._wsMap.set(room, ws);
+  }
+
+  override async warpWorkspace(workspace: BlocksuiteWorkspace) {
+    await this._applyCloudUpdates(workspace);
+    const { doc, room } = workspace;
+    assert(room);
+    this.linkLocal(workspace);
+
+    let ws = this._wsMap.get(room);
+    if (!ws) {
+      const wsUrl = `${
+        window.location.protocol === 'https:' ? 'wss' : 'ws'
+      }://${window.location.host}/api/sync/`;
+      ws = new WebsocketProvider(wsUrl, room, doc, {
+        params: { token: this._apis.token.refresh },
+      });
+      this._wsMap.set(room, ws);
+    }
+    // close all websocket links
+    Array.from(this._wsMap.entries()).forEach(([id, ws]) => {
+      if (id !== room) {
+        ws.disconnect();
+      }
+    });
+    ws.connect();
     await new Promise<void>((resolve, reject) => {
       // TODO: synced will also be triggered on reconnection after losing sync
       // There needs to be an event mechanism to emit the synchronization state to the upper layer
@@ -91,11 +111,11 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async loadWorkspaces() {
-    if (!token.isLogin) {
+    if (!this._apis.token.isLogin) {
       return [];
     }
-    const workspacesList = await getWorkspaces();
-    const workspaces: WS[] = workspacesList.map(w => {
+    const workspacesList = await this._apis.getWorkspaces();
+    const workspaces: WorkspaceInfo[] = workspacesList.map(w => {
       return {
         ...w,
         memberCount: 0,
@@ -106,13 +126,13 @@ export class AffineProvider extends BaseProvider {
     const workspaceInstances = workspaces.map(({ id }) => {
       const workspace =
         this._workspacesCache.get(id) ||
-        new Workspace({
+        new BlocksuiteWorkspace({
           room: id,
         }).register(BlockSchema);
       this._workspacesCache.set(id, workspace);
       if (workspace) {
-        return new Promise<Workspace>(resolve => {
-          downloadWorkspace(id).then(data => {
+        return new Promise<BlocksuiteWorkspace>(resolve => {
+          this._apis.downloadWorkspace(id).then(data => {
             applyUpdate(workspace.doc, new Uint8Array(data));
             resolve(workspace);
           });
@@ -135,7 +155,7 @@ export class AffineProvider extends BaseProvider {
       const { id } = w;
       return new Promise<{ id: string; detail: WorkspaceDetail | null }>(
         resolve => {
-          getWorkspaceDetail({ id }).then(data => {
+          this._apis.getWorkspaceDetail({ id }).then(data => {
             resolve({ id, detail: data || null });
           });
         }
@@ -171,30 +191,34 @@ export class AffineProvider extends BaseProvider {
   override async auth() {
     const refreshToken = await storage.getItem('token');
     if (refreshToken) {
-      await token.refreshToken(refreshToken);
-      if (token.isLogin && !token.isExpired) {
+      await this._apis.token.refreshToken(refreshToken);
+      if (this._apis.token.isLogin && !this._apis.token.isExpired) {
         // login success
         return;
       }
     }
-    const user = await this._authorizer[0]?.();
-    assert(user);
-    this._user = {
-      id: user.id,
-      name: user.name,
-      avatar: user.avatar_url,
-      email: user.email,
-    };
+    const user = await this._apis.signInWithGoogle?.();
+    if (!user) {
+      this._messageCenter.send(MessageCode.loginError);
+    }
   }
 
   public override async getUserInfo(): Promise<User | undefined> {
-    return this._user;
+    const user = this._apis.token.user;
+    return user
+      ? {
+          id: user.id,
+          name: user.name,
+          avatar: user.avatar_url,
+          email: user.email,
+        }
+      : undefined;
   }
 
   public override async deleteWorkspace(id: string): Promise<void> {
     await this.closeWorkspace(id);
-    IndexedDBProvider.delete(id);
-    await deleteWorkspace({ id });
+    // IndexedDBProvider.delete(id);
+    await this._apis.deleteWorkspace({ id });
     this._workspaces.remove(id);
   }
 
@@ -213,83 +237,95 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async closeWorkspace(id: string) {
-    const idb = this._idbMap.get(id);
-    idb?.destroy();
+    // const idb = this._idbMap.get(id);
+    // idb?.destroy();
     const ws = this._wsMap.get(id);
     ws?.disconnect();
   }
 
   public override async leaveWorkspace(id: string): Promise<void> {
-    await leaveWorkspace({ id });
+    await this._apis.leaveWorkspace({ id });
   }
 
   public override async invite(id: string, email: string): Promise<void> {
-    return await inviteMember({ id, email });
+    return await this._apis.inviteMember({ id, email });
   }
 
   public override async removeMember(permissionId: number): Promise<void> {
-    return await removeMember({ permissionId });
+    return await this._apis.removeMember({ permissionId });
   }
 
-  private async _initWorkspaceDb(workspace: Workspace) {
-    assert(workspace.room);
-    let idb = this._idbMap.get(workspace.room);
-    idb?.destroy();
-    idb = new IndexedDBProvider(workspace.room, workspace.doc);
-    this._idbMap.set(workspace.room, idb);
-    await idb.whenSynced;
-    this._logger('Local data loaded');
-    return idb;
+  public override async linkLocal(workspace: BlocksuiteWorkspace) {
+    return workspace;
+    // assert(workspace.room);
+    // let idb = this._idbMap.get(workspace.room);
+    // idb?.destroy();
+    // idb = new IndexedDBProvider(workspace.room, workspace.doc);
+    // this._idbMap.set(workspace.room, idb);
+    // await idb.whenSynced;
+    // this._logger('Local data loaded');
+    // return workspace;
+  }
+
+  public override async createWorkspaceInfo(
+    meta: WorkspaceMeta
+  ): Promise<WorkspaceInfo> {
+    const { id } = await this._apis.createWorkspace(
+      meta as Required<WorkspaceMeta>
+    );
+
+    const workspaceInfo: WorkspaceInfo = {
+      name: meta.name,
+      id: id,
+      isPublish: false,
+      avatar: '',
+      owner: await this.getUserInfo(),
+      isLocal: true,
+      memberCount: 1,
+      provider: 'affine',
+    };
+    return workspaceInfo;
   }
 
   public override async createWorkspace(
+    blocksuiteWorkspace: BlocksuiteWorkspace,
     meta: WorkspaceMeta
-  ): Promise<Workspace | undefined> {
-    assert(meta.name, 'Workspace name is required');
-    const { id } = await createWorkspace(meta as Required<WorkspaceMeta>);
+  ): Promise<BlocksuiteWorkspace | undefined> {
+    const workspaceId = blocksuiteWorkspace.room;
+    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
     this._logger('Creating affine workspace');
-    const nw = new Workspace({
-      room: id,
-    }).register(BlockSchema);
-    nw.meta.setName(meta.name);
-    this._initWorkspaceDb(nw);
 
-    const workspaceInfo: WS = {
+    this._applyCloudUpdates(blocksuiteWorkspace);
+    this.linkLocal(blocksuiteWorkspace);
+
+    const workspaceInfo: WorkspaceInfo = {
       name: meta.name,
-      id,
+      id: workspaceId,
       isPublish: false,
       avatar: '',
       owner: undefined,
       isLocal: true,
       memberCount: 1,
-      provider: 'local',
+      provider: 'affine',
     };
 
-    if (!meta.avatar) {
-      // set default avatar
-      const blob = await getDefaultHeadImgBlob(meta.name);
-      const blobStorage = await nw.blobs;
-      assert(blobStorage, 'No blob storage');
-      const blobId = await blobStorage.set(blob);
-      const avatar = await blobStorage.get(blobId);
-      if (avatar) {
-        nw.meta.setAvatar(avatar);
-        workspaceInfo.avatar = avatar;
-      }
+    if (!blocksuiteWorkspace.meta.avatar) {
+      await setDefaultAvatar(blocksuiteWorkspace);
+      workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
     }
     this._workspaces.add(workspaceInfo);
-    return nw;
+    return blocksuiteWorkspace;
   }
 
   public override async publish(id: string, isPublish: boolean): Promise<void> {
-    await updateWorkspace({ id, public: isPublish });
+    await this._apis.updateWorkspace({ id, public: isPublish });
   }
 
   public override async getUserByEmail(
     workspace_id: string,
     email: string
   ): Promise<User | null> {
-    const user = await getUserByEmail({ workspace_id, email });
+    const user = await this._apis.getUserByEmail({ workspace_id, email });
     return user
       ? {
           id: user.id,
