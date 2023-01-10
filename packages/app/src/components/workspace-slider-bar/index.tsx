@@ -4,6 +4,7 @@ import {
   StyledArrowButton,
   StyledLink,
   StyledListItem,
+  StyledListItemForWorkspace,
   // StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
@@ -26,13 +27,14 @@ import {
 import Link from 'next/link';
 import { Tooltip } from '@/ui/tooltip';
 import { useModal } from '@/providers/GlobalModalProvider';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
 import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { WorkspaceSetting } from '@/components/workspace-setting';
+// import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
@@ -76,14 +78,15 @@ export const WorkSpaceSliderBar = () => {
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
 
-  const [showWorkspaceSetting, setShowWorkspaceSetting] = useState(false);
-
   const paths = {
     all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
     favorite: currentWorkspaceId
       ? `/workspace/${currentWorkspaceId}/favorite`
       : '',
     trash: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/trash` : '',
+    setting: currentWorkspaceId
+      ? `/workspace/${currentWorkspaceId}/setting`
+      : '',
   };
 
   return (
@@ -113,9 +116,9 @@ export const WorkSpaceSliderBar = () => {
         </Tooltip>
 
         <StyledSliderBarWrapper data-testid="sliderBar">
-          {/* <StyledListItemForWorkspace>
+          <StyledListItemForWorkspace>
             <WorkspaceSelector />
-          </StyledListItemForWorkspace> */}
+          </StyledListItemForWorkspace>
           <StyledListItem
             data-testid="sliderBar-quickSearchButton"
             style={{ cursor: 'pointer' }}
@@ -150,20 +153,19 @@ export const WorkSpaceSliderBar = () => {
             </IconButton>
           </StyledListItem>
           <FavoriteList showList={showSubFavorite} />
-          <StyledListItem
-            onClick={() => {
-              setShowWorkspaceSetting(true);
-            }}
-          >
-            <SettingsIcon /> Setting
+          <StyledListItem active={router.asPath === paths.setting}>
+            <StyledLink href={{ pathname: paths.setting }}>
+              <SettingsIcon />
+              Settings
+            </StyledLink>
           </StyledListItem>
 
-          <WorkspaceSetting
+          {/* <WorkspaceSetting
             isShow={showWorkspaceSetting}
             onClose={() => {
               setShowWorkspaceSetting(false);
             }}
-          />
+          /> */}
 
           <StyledListItem
             onClick={() => {

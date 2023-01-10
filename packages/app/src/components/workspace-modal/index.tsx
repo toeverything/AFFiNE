@@ -10,27 +10,24 @@ import {
   UsersIcon,
   AddIcon,
 } from '@blocksuite/icons';
-import { useConfirm } from '@/providers/ConfirmProvider';
+// import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+import { useAppState } from '@/providers/app-state-provider';
+import { useRouter } from 'next/router';
+import { useUserHelper } from '@/hooks/use-user-helper';
 
-interface LoginModalProps {
+interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
+export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-  const { confirm } = useConfirm();
-  const {
-    user,
-    login,
-    workspaceMetaList,
-    setActiveWorkspace,
-    updateWorkspaceMeta,
-  } = useTemporaryHelper();
-
+  // const { confirm } = useConfirm();
+  const { workspaceList, currentWorkspace } = useAppState();
+  const { login, user } = useUserHelper();
+  const router = useRouter();
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -51,13 +48,14 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
           </Header>
           <Content>
             <WorkspaceList>
-              {workspaceMetaList.map((item, index) => {
+              {workspaceList.map((item, index) => {
                 return (
                   <WorkspaceItem
                     onClick={() => {
-                      setActiveWorkspace(item);
+                      router.replace(`/workspace/${item.id}`);
                       onClose();
                     }}
+                    active={item.id === currentWorkspace.room}
                     key={index}
                   >
                     <span style={{ width: '100px' }}>
@@ -69,7 +67,11 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                           marginRight: '10px',
                         }}
                       >
-                        <WorkspaceAvatar size={50} name={item.name} />
+                        <WorkspaceAvatar
+                          size={50}
+                          name={item.name}
+                          avatar={item.avatar ?? ''}
+                        />
                       </div>
 
                       <span
@@ -93,10 +95,10 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
                         top: '20px',
                       }}
                     >
-                      {(item.type === 'local' || !item.type) && (
+                      {(item.provider === 'local' || !item.provider) && (
                         <CloudUnsyncedIcon fontSize={24} />
                       )}
-                      {item.type === 'cloud' && (
+                      {item.provider === 'affine' && (
                         <CloudInsyncIcon fontSize={24} />
                       )}
                       {item.isPublish && <UsersIcon fontSize={24} />}
@@ -154,26 +156,26 @@ export const WorkspaceModal = ({ open, onClose }: LoginModalProps) => {
           </Footer>
           <CreateWorkspaceModal
             open={createWorkspaceOpen}
-            onClose={({ workspaceId }) => {
+            onClose={() => {
               setCreateWorkspaceOpen(false);
               onClose();
-              confirm({
-                title: 'Enable AFFiNE Cloud?',
-                content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-                confirmText: user ? 'Enable' : 'Sign in and Enable',
-                cancelText: 'Skip',
-              }).then(confirm => {
-                if (confirm) {
-                  if (user) {
-                    workspaceId &&
-                      updateWorkspaceMeta(workspaceId, { isPublish: true });
-                  } else {
-                    login();
-                    workspaceId &&
-                      updateWorkspaceMeta(workspaceId, { isPublish: true });
-                  }
-                }
-              });
+              // confirm({
+              //   title: 'Enable AFFiNE Cloud?',
+              //   content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+              //   confirmText: user ? 'Enable' : 'Sign in and Enable',
+              //   cancelText: 'Skip',
+              // }).then(confirm => {
+              //   if (confirm) {
+              //     if (user) {
+              //       // workspaceId &&
+              //       //   updateWorkspaceMeta(workspaceId, { isPublish: true });
+              //     } else {
+              //       // login();
+              //       // workspaceId &&
+              //       //   updateWorkspaceMeta(workspaceId, { isPublish: true });
+              //     }
+              //   }
+              // });
             }}
           ></CreateWorkspaceModal>
         </ModalWrapper>
@@ -218,11 +220,17 @@ const WorkspaceList = styled('div')({
   gridTemplateColumns: 'repeat(2, 1fr)',
 });
 
-const WorkspaceItem = styled('div')({
-  cursor: 'pointer',
-  padding: '8px',
-  border: '1px solid #eee',
-  ':hover': {
-    background: '#eee',
-  },
+export const WorkspaceItem = styled.div<{
+  active: boolean;
+}>(({ theme, active }) => {
+  const backgroundColor = active ? theme.colors.hoverBackground : 'transparent';
+  return {
+    cursor: 'pointer',
+    padding: '8px',
+    border: '1px solid #eee',
+    backgroundColor: backgroundColor,
+    ':hover': {
+      background: theme.colors.hoverBackground,
+    },
+  };
 });

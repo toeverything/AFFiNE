@@ -8,7 +8,7 @@ import {
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 // import { getDataCenter } from '@affine/datacenter';
-import { useAppState } from '@/providers/app-state-provider';
+// import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceDeleteProps {
   open: boolean;
@@ -22,8 +22,9 @@ export const WorkspaceLeave = ({
   onClose,
   workspaceId,
 }: WorkspaceDeleteProps) => {
+  console.log('workspaceId: ', workspaceId);
   // const router = useRouter();
-  const { refreshWorkspacesMeta } = useAppState();
+  // const { refreshWorkspacesMeta } = useAppState();
   const handleLeave = async () => {
     // const dc = await getDataCenter();
     // await dc.apis.leaveWorkspace({ id: workspaceId });

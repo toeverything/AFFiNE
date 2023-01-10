@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { useEffect, useRef, useState } from 'react';
 
 export const useInitWorkspace = (disabled?: boolean) => {
@@ -8,15 +8,11 @@ export const useInitWorkspace = (disabled?: boolean) => {
   const defaultOutLineWorkspaceId = useRef(new Date().getTime().toString());
 
   const router = useRouter();
-  const {
-    workspacesMeta,
-    loadWorkspace,
-    currentWorkspace,
-    currentWorkspaceId,
-  } = useAppState();
+  const { workspaceList, loadWorkspace, currentWorkspace, currentWorkspaceId } =
+    useAppState();
   const workspaceId =
     (router.query.workspaceId as string) ||
-    workspacesMeta?.[0]?.id ||
+    workspaceList?.[0]?.id ||
     defaultOutLineWorkspaceId.current;
 
   useEffect(() => {

@@ -9,26 +9,21 @@ import { StyledSettingH2 } from '../style';
 import { useState } from 'react';
 import { Button, TextButton } from '@/ui/button';
 import Input from '@/ui/input';
-// import { useAppState } from '@/providers/app-state-provider';
+import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
-// import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
-import { Workspace } from '@/hooks/mock-data/mock';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
-export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
-  // const { refreshWorkspacesMeta } = useAppState();
-  const { updateWorkspaceMeta } = useTemporaryHelper();
+import { WorkspaceInfo } from '@affine/datacenter';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
-  const [workspaceName, setWorkspaceName] = useState<string>('');
-  // const debouncedRefreshWorkspacesMeta = debounce(() => {
-  //   refreshWorkspacesMeta();
-  // }, 100);
+  const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
+  const { currentWorkspace } = useAppState();
+  const { updateWorkspace } = useWorkspaceHelper();
   const isOwner = true;
-
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
   };
@@ -46,24 +41,15 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
     setShowLeave(false);
   };
   const handleUpdateWorkspaceName = () => {
-    workspace && updateWorkspaceMeta(workspace.id, { name: workspaceName });
+    console.log('currentWorkspace: ', currentWorkspace);
+    updateWorkspace({ name: workspaceName }, currentWorkspace);
   };
 
   const fileChange = async (file: File) => {
-    console.log('file: ', file);
-    setUploading(true);
-    // const blob = new Blob([file], { type: file.type });
-    // const blobId = await getDataCenter()
-    //   .then(dc => dc.apis.uploadBlob({ blob }))
-    //   .finally(() => {
-    //     setUploading(false);
-    //   });
-    // if (blobId) {
-    //   currentWorkspace?.meta.setAvatar(blobId);
-    //   // workspaces[workspace.id]?.meta.setAvatar(blobId);
-    //   setUploading(false);
-    //   debouncedRefreshWorkspacesMeta();
-    // }
+    // console.log('file: ', file);
+    // setUploading(true);
+    const blob = new Blob([file], { type: file.type });
+    updateWorkspace({ avatarBlob: blob }, currentWorkspace);
   };
 
   return workspace ? (
@@ -73,11 +59,14 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
         <div
           style={{
             float: 'left',
-
-            marginRight: '5px',
+            marginRight: '20px',
           }}
         >
-          <WorkspaceAvatar size={60} name={workspace.name} />
+          <WorkspaceAvatar
+            size={60}
+            name={workspace.name}
+            avatar={workspace.avatar ?? ''}
+          />
         </div>
         <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
@@ -101,30 +90,14 @@ export const GeneralPage = ({ workspace }: { workspace: Workspace }) => {
           onClick={() => {
             handleUpdateWorkspaceName();
           }}
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: '0px' }}
         >
           ✔️
         </TextButton>
       </StyledSettingInputContainer>
-      {/* {userInfo ? (
-        <div>
-          <StyledSettingH2 marginTop={20}>Workspace Owner</StyledSettingH2>
-          <StyledSettingInputContainer>
-            <Input
-              width={327}
-              disabled
-              value={userInfo?.name}
-              placeholder="Workspace Owner"
-            ></Input>
-          </StyledSettingInputContainer>
-        </div>
-      ) : (
-        ''
-      )} */}
-
       <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
-        <code>{workspace.type} </code>
+        <code>{workspace.provider} </code>
       </StyledSettingInputContainer>
       <StyledDeleteButtonContainer>
         {isOwner ? (

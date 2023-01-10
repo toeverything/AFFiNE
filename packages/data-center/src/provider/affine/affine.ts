@@ -11,7 +11,7 @@ import { WebsocketProvider } from './sync.js';
 import { getApis } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
-import { MessageCode } from 'src/message/code.js';
+import { MessageCode } from '../../message';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
@@ -146,8 +146,8 @@ export class AffineProvider extends BaseProvider {
       if (workspace) {
         workspaces[i] = {
           ...workspaces[i],
-          name: workspace.doc.meta.name,
-          avatar: workspace.doc.meta.avatar,
+          name: workspace.meta.name,
+          avatar: workspace.meta.avatar,
         };
       }
     });

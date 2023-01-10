@@ -1,26 +1,29 @@
 import { styled } from '@/styles';
+import { useRouter } from 'next/router';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useState } from 'react';
 import Input from '@/ui/input';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { KeyboardEvent } from 'react';
 import { useTranslation } from '@affine/i18n';
-interface ICloseParams {
-  workspaceId?: string;
-}
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 interface ModalProps {
   open: boolean;
-  onClose: (opts: ICloseParams) => void;
+  onClose: () => void;
 }
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
-  const { createWorkspace, setActiveWorkspace } = useTemporaryHelper();
-  const handleCreateWorkspace = () => {
-    const workspace = createWorkspace(workspaceName);
-    onClose({ workspaceId: workspace.id });
-    setActiveWorkspace(workspace);
+  const { createWorkspace } = useWorkspaceHelper();
+  const router = useRouter();
+  const handleCreateWorkspace = async () => {
+    const workspace = await createWorkspace(workspaceName);
+    if (workspace && workspace.room) {
+      router.replace(`/workspace/${workspace.room}`);
+      onClose();
+    } else {
+      console.log('create error');
+    }
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
@@ -39,7 +42,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
               top={6}
               right={6}
               onClick={() => {
-                onClose({});
+                onClose();
               }}
             />
           </Header>

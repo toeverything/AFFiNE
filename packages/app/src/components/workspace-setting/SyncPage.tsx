@@ -6,28 +6,48 @@ import {
 import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
-import { deleteMember, Workspace } from '@/hooks/mock-data/mock';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
-
-export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
-  const { currentWorkspace, updateWorkspaceMeta } = useTemporaryHelper();
-
+import { WorkspaceInfo } from '@affine/datacenter';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { useAppState } from '@/providers/app-state-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
+import { toast } from '@/ui/toast';
+import { useUserHelper } from '@/hooks/use-user-helper';
+import { useRouter } from 'next/router';
+export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
+  // console.log('workspace: ', workspace);
+  const { enableWorkspace } = useWorkspaceHelper();
+  const { currentWorkspace } = useAppState();
+  const { confirm } = useConfirm();
+  const { user, login } = useUserHelper();
+  const router = useRouter();
   return (
     <div>
       <StyledPublishContent>
-        {currentWorkspace?.type === 'local' ? (
+        {workspace?.provider === 'local' ? (
           <>
             <StyledPublishExplanation>
-              {currentWorkspace.name} is Local Workspace. All data is stored on
-              the current device. You can enable AFFiNE Cloud for this workspace
-              to keep data in sync with the cloud.
+              {workspace.name ?? 'Affine'} is Local Workspace. All data is
+              stored on the current device. You can enable AFFiNE Cloud for this
+              workspace to keep data in sync with the cloud.
             </StyledPublishExplanation>
 
             <StyledPublishCopyContainer>
               <Button
                 onClick={() => {
-                  updateWorkspaceMeta(currentWorkspace.id, {
-                    type: 'cloud',
+                  confirm({
+                    title: 'Enable AFFiNE Cloud?',
+                    content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+                    confirmText: user ? 'Enable' : 'Sign in and Enable',
+                    cancelText: 'Skip',
+                  }).then(async confirm => {
+                    if (confirm) {
+                      // if (user) {
+                      //   await login();
+                      // }
+                      const id = await enableWorkspace(currentWorkspace);
+                      router.push(`/workspace/${id}`);
+                      toast('Enabled success');
+                    }
                   });
                 }}
                 type="primary"
@@ -40,8 +60,8 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
         ) : (
           <>
             <StyledPublishExplanation>
-              <code>{currentWorkspace && currentWorkspace.name}</code> is Cloud
-              Workspace. All data will be synchronized and saved to the AFFiNE
+              <code>{workspace.name ?? 'Affine'}</code> is Cloud Workspace. All
+              data will be synchronized and saved to the AFFiNE
             </StyledPublishExplanation>
             <StyledPublishCopyContainer>
               <Menu
@@ -49,7 +69,7 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                   <>
                     <MenuItem
                       onClick={() => {
-                        deleteMember(workspace.id, 0);
+                        // deleteMember(workspace.id, 0);
                       }}
                       icon={<DownloadIcon />}
                     >
@@ -57,7 +77,7 @@ export const SyncPage = ({ workspace }: { workspace: Workspace }) => {
                     </MenuItem>
                     <MenuItem
                       onClick={() => {
-                        deleteMember(workspace.id, 0);
+                        // deleteMember(workspace.id, 0);
                       }}
                       icon={<DownloadIcon />}
                     >

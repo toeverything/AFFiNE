@@ -4,7 +4,7 @@ import exampleMarkdown1 from '@/templates/Welcome-to-the-AFFiNE-Alpha.md';
 import exampleMarkdown2 from '@/templates/AFFiNE-Docs.md';
 
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { Button } from '@/ui/button';
 interface Template {
   name: string;

@@ -2,88 +2,42 @@
 import {
   PropsWithChildren,
   ReactElement,
+  useCallback,
   useEffect,
-  useRef,
   useState,
 } from 'react';
-import { styled } from '@/styles';
 import { EditorHeader } from '@/components/header';
 import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
-import { useAppState } from '@/providers/app-state-provider/context';
-import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-v2.0.md';
+import { useAppState } from '@/providers/app-state-provider';
 import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
-
-const StyledEditorContainer = styled('div')(() => {
-  return {
-    height: 'calc(100vh - 60px)',
-    padding: '0 32px',
-  };
+import dynamic from 'next/dynamic';
+import { EditorContainer } from '@blocksuite/editor';
+const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
+  ssr: false,
 });
-
 const Page: NextPageWithLayout = () => {
-  const editorContainer = useRef<HTMLDivElement>(null);
-  const { createEditor, setEditor, currentPage, currentWorkspace } =
-    useAppState();
+  const { currentPage, currentWorkspace, setEditor } = useAppState();
 
-  useEffect(() => {
-    const ret = () => {
-      const node = editorContainer.current;
-      while (node?.firstChild) {
-        node.removeChild(node.firstChild);
-      }
-    };
-
-    const editor = createEditor?.current?.(currentPage!);
-    if (editor) {
-      editorContainer.current?.appendChild(editor);
-      setEditor?.current?.(editor);
-      if (currentPage!.isEmpty) {
-        const isFirstPage = currentWorkspace?.meta.pageMetas.length === 1;
-        // Can not use useCurrentPageMeta to get new title, cause meta title will trigger rerender, but the second time can not remove title
-        const { title: metaTitle } = currentPage!.meta;
-        const title = metaTitle
-          ? metaTitle
-          : isFirstPage
-          ? 'Welcome to AFFiNE Alpha "Abbey Wood"'
-          : '';
-        currentWorkspace?.setPageMeta(currentPage!.id, { title });
-
-        const pageId = currentPage!.addBlock({
-          flavour: 'affine:page',
-          title,
-        });
-        currentPage!.addBlock({ flavour: 'affine:surface' }, null);
-        const frameId = currentPage!.addBlock(
-          { flavour: 'affine:frame' },
-          pageId
-        );
-        currentPage!.addBlock({ flavour: 'affine:frame' }, pageId);
-        // If this is a first page in workspace, init an introduction markdown
-        if (isFirstPage) {
-          editor.clipboard
-            .importMarkdown(exampleMarkdown, `${frameId}`)
-            .then(() => {
-              currentWorkspace!.setPageMeta(currentPage!.id, { title });
-              currentPage!.resetHistory();
-            });
-        }
-        currentPage!.resetHistory();
-      }
-    }
-
-    document.title = currentPage?.meta.title || 'Untitled';
-    return ret;
-  }, [currentWorkspace, currentPage, createEditor, setEditor]);
-
+  const setEditorHandler = useCallback(
+    (editor: EditorContainer) => setEditor.current(editor),
+    [setEditor]
+  );
   return (
     <>
       <EditorHeader />
       <MobileModal />
-      <StyledEditorContainer ref={editorContainer} />
+
+      {currentPage && (
+        <DynamicBlocksuite
+          page={currentPage}
+          workspace={currentWorkspace}
+          setEditor={setEditorHandler}
+        />
+      )}
       <EdgelessToolbar />
     </>
   );

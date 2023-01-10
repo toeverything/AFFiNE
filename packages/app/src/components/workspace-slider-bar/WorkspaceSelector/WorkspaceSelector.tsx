@@ -2,17 +2,16 @@ import { Avatar, WorkspaceName, SelectorWrapper } from './styles';
 import { useEffect, useState } from 'react';
 import { WorkspaceModal } from '@/components/workspace-modal';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
+import { useAppState } from '@/providers/app-state-provider';
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);
-  const { currentWorkspace, workspaceMetaList } = useTemporaryHelper();
+  const { currentMetaWorkSpace, workspaceList } = useAppState();
 
   useEffect(() => {
-    if (workspaceMetaList.length === 0) {
+    if (workspaceList.length === 0) {
       setWorkspaceListShow(true);
     }
-  }, [workspaceMetaList]);
-
+  }, [workspaceList]);
   return (
     <>
       <SelectorWrapper
@@ -24,7 +23,7 @@ export const WorkspaceSelector = () => {
         <Avatar
           alt="Affine"
           data-testid="workspace-avatar"
-          src={currentWorkspace?.avatar}
+          src={currentMetaWorkSpace?.avatar}
         >
           <div
             style={{
@@ -33,12 +32,13 @@ export const WorkspaceSelector = () => {
           >
             <WorkspaceAvatar
               size={28}
-              name={currentWorkspace?.name ?? 'AFFiNE'}
+              name={currentMetaWorkSpace?.name ?? 'AFFiNE'}
+              avatar={currentMetaWorkSpace?.avatar ?? ''}
             />
           </div>
         </Avatar>
         <WorkspaceName data-testid="workspace-name">
-          {currentWorkspace?.name ?? 'AFFiNE'}
+          {currentMetaWorkSpace?.name ?? 'AFFiNE'}
         </WorkspaceName>
       </SelectorWrapper>
       <WorkspaceModal

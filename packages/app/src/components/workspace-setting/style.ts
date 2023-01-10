@@ -4,22 +4,17 @@ import MuiAvatar from '@mui/material/Avatar';
 
 export const StyledSettingContainer = styled('div')(({ theme }) => {
   return {
-    position: 'relative',
     display: 'flex',
-    padding: '0px',
-    width: '961px',
-    background: theme.colors.popoverBackground,
-    borderRadius: '12px',
-    overflow: 'hidden',
+    padding: '50px',
+    flexDirection: 'column',
+    height: '100vh',
+    overflow: 'auto',
   };
 });
 
 export const StyledSettingSidebar = styled('div')(({ theme }) => {
   {
     return {
-      width: '212px',
-      height: '620px',
-      background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
       flexShrink: 0,
       flexGrow: 0,
     };
@@ -29,7 +24,6 @@ export const StyledSettingSidebar = styled('div')(({ theme }) => {
 export const StyledSettingContent = styled('div')(() => {
   return {
     paddingLeft: '48px',
-    height: '620px',
   };
 });
 
@@ -37,7 +31,6 @@ export const StyledSetting = styled('div')(({ theme }) => {
   {
     return {
       width: '236px',
-      height: '620px',
       background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
     };
   }
@@ -49,7 +42,7 @@ export const StyledSettingSidebarHeader = styled('div')(() => {
       fontWeight: '500',
       fontSize: '18px',
       lineHeight: '26px',
-      textAlign: 'center',
+      textAlign: 'left',
       marginTop: '37px',
     };
   }
@@ -59,7 +52,6 @@ export const StyledSettingTabContainer = styled('ul')(() => {
   {
     return {
       display: 'flex',
-      flexDirection: 'column',
       marginTop: '25px',
     };
   }
@@ -144,7 +136,6 @@ export const StyledMemberRoleContainer = styled('div')(() => {
 export const StyledMemberListContainer = styled('ul')(() => {
   return {
     marginTop: '15px',
-    height: '432px',
     overflowY: 'scroll',
   };
 });
@@ -228,7 +219,6 @@ export const StyledCopyButtonContainer = styled('div')(() => {
 
 export const StyledPublishContent = styled('div')(() => {
   return {
-    height: '494px',
     display: 'flex',
     flexDirection: 'column',
   };

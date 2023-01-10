@@ -10,6 +10,7 @@ import {
   StyledMemberRoleContainer,
   StyledMemberTitleContainer,
   StyledMoreVerticalButton,
+  StyledPublishExplanation,
 } from './style';
 import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useEffect, useState } from 'react';
@@ -17,20 +18,24 @@ import { Button, IconButton } from '@/ui/button';
 import { InviteMembers } from '../invite-members/index';
 import { Menu, MenuItem } from '@/ui/menu';
 import { Empty } from '@/ui/empty';
-import {
-  deleteMember,
-  getMembers,
-  User,
-  Workspace,
-} from '@/hooks/mock-data/mock';
+// import {
+//   deleteMember,
+//   getMembers,
+//   User,
+//   Workspace,
+// } from '@/hooks/mock-data/mock';
+import { WorkspaceInfo } from '@affine/datacenter';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { StyledMemberWarp } from './general/style';
 import { useConfirm } from '@/providers/ConfirmProvider';
 
 // import { useAppState } from '@/providers/app-state-provider';
-export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
+export const MembersPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
-  const [members, setMembers] = useState<User[]>([]);
+  const [members, setMembers] = useState<[{ name: string; email: string }]>([
+    { name: 'affine', email: 'tttt' },
+  ]);
+  console.log('setMembers: ', setMembers);
   const { user, login, updateWorkspaceMeta } = useTemporaryHelper();
   const { confirm } = useConfirm();
   // const refreshMembers = useCallback(() => {
@@ -48,8 +53,9 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
   //     });
   // }, [workspace.id]);
   const setMembersList = () => {
-    const members = getMembers(workspace.id);
-    members && setMembers(members);
+    // setMembers([]);
+    // const members = getMembers(workspace.id);
+    // members && setMembers(members);
   };
   useEffect(() => {
     setMembersList();
@@ -58,7 +64,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
 
   return (
     <div>
-      {workspace.type === 'cloud' ? (
+      {workspace.provider === 'cloud' ? (
         <>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>
@@ -67,13 +73,6 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
             <StyledMemberRoleContainer>Access level</StyledMemberRoleContainer>
           </StyledMemberTitleContainer>
           <StyledMemberListContainer>
-            {members.length === 0 && (
-              <Empty
-                width={648}
-                sx={{ marginTop: '60px' }}
-                height={300}
-              ></Empty>
-            )}
             {members.length ? (
               members.map((member, index) => {
                 return (
@@ -103,7 +102,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                           <>
                             <MenuItem
                               onClick={() => {
-                                deleteMember(workspace.id, 0);
+                                // deleteMember(workspace.id, 0);
                                 setMembersList();
                                 // confirm({
                                 //   title: 'Delete Member?',
@@ -142,7 +141,11 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
                 );
               })
             ) : (
-              <></>
+              <Empty
+                width={648}
+                sx={{ marginTop: '60px' }}
+                height={300}
+              ></Empty>
             )}
           </StyledMemberListContainer>
           <StyledMemberButtonContainer>
@@ -171,10 +174,8 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
         </>
       ) : (
         <StyledMemberWarp>
-          <div style={{ flex: 1 }}>
-            Collaborating with other members requires AFFiNE Cloud service.
-          </div>
-          <div style={{ height: '40px' }}>
+          <>Collaborating with other members requires AFFiNE Cloud service.</>
+          <StyledPublishExplanation>
             <Button
               type="primary"
               shape="circle"
@@ -198,7 +199,7 @@ export const MembersPage = ({ workspace }: { workspace: Workspace }) => {
             >
               Enable AFFiNE Cloud
             </Button>
-          </div>
+          </StyledPublishExplanation>
         </StyledMemberWarp>
       )}
     </div>

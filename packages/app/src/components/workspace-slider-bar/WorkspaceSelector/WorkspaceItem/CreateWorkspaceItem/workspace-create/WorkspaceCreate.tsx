@@ -1,4 +1,4 @@
-import { getDataCenter } from '@affine/datacenter';
+// import { getDataCenter } from '@affine/datacenter';
 import Modal from '@/ui/modal';
 import Input from '@/ui/input';
 import {
@@ -11,8 +11,8 @@ import {
 } from './style';
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
-import router from 'next/router';
-import { useAppState } from '@/providers/app-state-provider';
+// import router from 'next/router';
+// import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceCreateProps {
   open: boolean;
@@ -30,7 +30,7 @@ const DefaultHeadImgColors = [
 export const WorkspaceCreate = ({ open, onClose }: WorkspaceCreateProps) => {
   const [workspaceName, setWorkspaceId] = useState<string>('');
   const [creating, setCreating] = useState<boolean>(false);
-  const { refreshWorkspacesMeta } = useAppState();
+  // const { refreshWorkspacesMeta } = useAppState();
   const handlerInputChange = (workspaceName: string) => {
     setWorkspaceId(workspaceName);
   };

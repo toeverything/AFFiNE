@@ -4,7 +4,7 @@ import { Button } from '@/ui/button';
 import { Wrapper, Content } from '@/ui/layout';
 import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@affine/i18n';
 // import { Tooltip } from '@/ui/tooltip';

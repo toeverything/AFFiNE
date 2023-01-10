@@ -37,8 +37,11 @@
     "ky-universal": "^0.11.0",
     "lib0": "^0.2.58",
     "swr": "^2.0.0",
-    "vitest": "^0.26.3",
-    "y-protocols": "^1.0.5",
-    "yjs": "^13.5.44"
+    "yjs": "^13.5.44",
+    "y-protocols": "^1.0.5"
+  },
+  "peerDependencies": {
+    "@blocksuite/blocks": "0.3.1-*",
+    "@blocksuite/store": "0.3.1-*"
   }
 }

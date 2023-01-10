@@ -7,22 +7,19 @@ const defaultOutLineWorkspaceId = 'affine';
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
-  const { workspacesMeta, loadWorkspace, synced, user } = useAppState();
+  const { workspaceList, loadWorkspace, user } = useAppState();
+  console.log('workspaceList: ', workspaceList);
   const router = useRouter();
 
   // const defaultOutLineWorkspaceId = '99ce7eb7';
   // console.log(defaultOutLineWorkspaceId);
   useEffect(() => {
-    if (!synced) {
-      setWorkspaceLoaded(false);
-      return;
-    }
     // If router.query.workspaceId is not in workspace list, jump to 404 page
-    // If workspacesMeta is empty, we need to create a default workspace but not jump to 404
+    // If workspaceList is empty, we need to create a default workspace but not jump to 404
     if (
-      workspacesMeta.length &&
+      workspaceList.length &&
       router.query.workspaceId &&
-      workspacesMeta.findIndex(
+      workspaceList.findIndex(
         meta => meta.id.toString() === router.query.workspaceId
       ) === -1
     ) {
@@ -40,13 +37,13 @@ export const useEnsureWorkspace = () => {
     // }
 
     const workspaceId = user
-      ? (router.query.workspaceId as string) || workspacesMeta[0]?.id
+      ? (router.query.workspaceId as string) || workspaceList[0]?.id
       : (router.query.workspaceId as string) || defaultOutLineWorkspaceId;
 
     loadWorkspace(workspaceId).finally(() => {
       setWorkspaceLoaded(true);
     });
-  }, [loadWorkspace, router, synced, user, workspacesMeta]);
+  }, [loadWorkspace, router, user, workspaceList]);
 
   return {
     workspaceLoaded,

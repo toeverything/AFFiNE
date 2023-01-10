@@ -15,13 +15,14 @@ import { useRouter } from 'next/router';
 import {
   deleteWorkspace,
   getWorkspaces,
-  Workspace,
+  // Workspace,
 } from '@/hooks/mock-data/mock';
+import { WorkspaceInfo } from '@affine/datacenter';
 
 interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
-  workspace: Workspace;
+  workspace: WorkspaceInfo;
 }
 
 export const WorkspaceDelete = ({
@@ -55,7 +56,7 @@ export const WorkspaceDelete = ({
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
         <StyledModalHeader>Delete Workspace</StyledModalHeader>
-        {workspace.type === 'local' ? (
+        {workspace.provider === 'local' ? (
           <StyledTextContent>
             Deleting (
             <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>) cannot

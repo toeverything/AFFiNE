@@ -20,7 +20,7 @@ import DateCell from '@/components/page-list/DateCell';
 import { IconButton } from '@/ui/button';
 import { Tooltip } from '@/ui/tooltip';
 import { useRouter } from 'next/router';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTheme } from '@/providers/ThemeProvider';

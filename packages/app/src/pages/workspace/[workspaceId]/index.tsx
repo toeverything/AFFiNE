@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
 import { PageLoading } from '@/components/loading';
 import usePageHelper from '@/hooks/use-page-helper';

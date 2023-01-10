@@ -10,7 +10,7 @@ import { getLogger } from './logger';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { TauriIPCProvider } from './provider/tauri-ipc';
 import { createBlocksuiteWorkspace } from './utils/index.js';
-import { MessageCenter } from './message/message';
+import { MessageCenter } from './message';
 
 /**
  * @class DataCenter
@@ -313,6 +313,7 @@ export class DataCenter {
     applyUpdate(newWorkspace.doc, encodeStateAsUpdate(workspace.doc));
     assert(newWorkspace, 'Create workspace failed');
     await currentProvider.deleteWorkspace(workspace.room);
+    return newWorkspace.room;
   }
 
   /**
