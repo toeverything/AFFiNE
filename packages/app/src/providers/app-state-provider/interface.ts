@@ -1,4 +1,4 @@
-import { DataCenter, User, Workspace } from '@affine/datacenter';
+import { DataCenter, User, WorkspaceInfo } from '@affine/datacenter';
 import type { EditorContainer } from '@blocksuite/editor';
 
 import type {
@@ -18,9 +18,9 @@ export interface PageMeta extends StorePageMeta {
 export type AppStateValue = {
   dataCenter: DataCenter;
   user: User | null;
-  workspaceList: Workspace[];
+  workspaceList: WorkspaceInfo[];
   currentWorkspace: StoreWorkspace;
-  currentMetaWorkSpace: Workspace | null;
+  currentMetaWorkSpace: WorkspaceInfo | null;
   currentWorkspaceId: string;
   pageList: PageMeta[];
   currentPage: StorePage | null;

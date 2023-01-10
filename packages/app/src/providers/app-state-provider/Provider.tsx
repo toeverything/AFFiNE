@@ -28,12 +28,9 @@ export const AppStateProvider = ({
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
       }
-      let currentWorkspace = appState.currentWorkspace;
-      if (!currentWorkspace) {
-        currentWorkspace = await dataCenter.loadWorkspace(
-          dataCenter.workspaces[0].id
-        );
-      }
+      const currentWorkspace = await dataCenter.loadWorkspace(
+        dataCenter.workspaces[0].id
+      );
       const currentMetaWorkSpace = dataCenter.workspaces.find(item => {
         return item.id === currentWorkspace.room;
       });
@@ -53,7 +50,7 @@ export const AppStateProvider = ({
     };
 
     init();
-  }, [appState.currentWorkspace]);
+  }, []);
 
   useEffect(() => {
     if (!appState?.currentWorkspace) {
@@ -116,6 +113,9 @@ export const AppStateProvider = ({
       currentWorkspace: workspace,
       currentWorkspaceId: workspaceId,
       currentMetaWorkSpace: currentMetaWorkSpace ?? null,
+      pageList: currentWorkspace.meta.pageMetas as PageMeta[],
+      currentPage: null,
+      editor: null,
     });
 
     return workspace;
