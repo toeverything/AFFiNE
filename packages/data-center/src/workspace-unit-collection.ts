@@ -65,7 +65,7 @@ export class WorkspaceUnitCollection {
       }
 
       const workspaceUnit = new WorkspaceUnit(workspace);
-      this._workspaceUnitMap.set(workspace.id, workspaceUnit);
+      this._workspaceUnitMap.set(workspace.id.toString(), workspaceUnit);
 
       scopedWorkspaceIds.add(workspace.id);
 

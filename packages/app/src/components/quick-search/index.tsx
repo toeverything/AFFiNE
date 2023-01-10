@@ -29,7 +29,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
 
-  const isPublish = currentMetaWorkSpace?.isPublish;
+  const isPublish = currentMetaWorkSpace?.published;
 
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {

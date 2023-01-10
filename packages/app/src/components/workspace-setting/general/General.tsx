@@ -14,9 +14,9 @@ import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import { WorkspaceInfo } from '@affine/datacenter';
+import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
+export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);

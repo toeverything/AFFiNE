@@ -6,13 +6,13 @@ import {
 import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
-import { WorkspaceInfo } from '@affine/datacenter';
+import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useAppState } from '@/providers/app-state-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { useRouter } from 'next/router';
-export const SyncPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
+export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   // console.log('workspace: ', workspace);
   const { enableWorkspace } = useWorkspaceHelper();
   const { currentWorkspace, user } = useAppState();

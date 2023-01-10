@@ -30,3 +30,4 @@ export type { AccessTokenMessage } from './provider/affine/apis';
 export { WorkspaceUnit } from './workspace-unit';
 export { getLogger } from './logger';
 export * from './message';
+export * from './types';

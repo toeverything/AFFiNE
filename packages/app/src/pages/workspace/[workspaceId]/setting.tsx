@@ -23,14 +23,14 @@ import {
 } from '@/components/workspace-setting';
 import { useAppState } from '@/providers/app-state-provider';
 import WorkspaceLayout from '@/components/workspace-layout';
-import { WorkspaceInfo } from '@affine/datacenter';
+import { WorkspaceUnit } from '@affine/datacenter';
 
 type TabNames = 'general' | 'members' | 'publish' | 'sync' | 'export';
 
 const tabMap: {
   name: TabNames;
   icon: ReactNode;
-  panelRender: (workspace: WorkspaceInfo) => ReactNode;
+  panelRender: (workspace: WorkspaceUnit) => ReactNode;
 }[] = [
   {
     name: 'general',

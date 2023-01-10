@@ -98,7 +98,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                       {item.provider === 'affine' && (
                         <CloudInsyncIcon fontSize={24} />
                       )}
-                      {item.isPublish && <UsersIcon fontSize={24} />}
+                      {item.published && <UsersIcon fontSize={24} />}
                     </span>
                     {/* {item.isLocal ? 'isLocal' : ''}/ */}
                   </WorkspaceItem>

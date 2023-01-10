@@ -12,9 +12,9 @@ import { toast } from '@/ui/toast';
 import { useConfirm } from '@/providers/ConfirmProvider';
 // import { useAppState } from '@/providers/app-state-provider3';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-import { WorkspaceInfo } from '@affine/datacenter';
+import { WorkspaceUnit } from '@affine/datacenter';
 
-export const PublishPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
+export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const shareUrl =
     window.location.host + '/workspace/' + workspace.id + '?share=true';
   const { publishWorkspace } = useWorkspaceHelper();
@@ -53,7 +53,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
       {workspace.provider === 'cloud' ? (
         <div>
           <StyledPublishContent>
-            {workspace?.isPublish ? (
+            {workspace?.published ? (
               <>
                 <StyledPublishExplanation>
                   Publishing to web requires AFFiNE Cloud service .
@@ -75,7 +75,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
-          {workspace.isPublish ? (
+          {workspace.published ? (
             <Button
               onClick={() => {
                 togglePublic(false);

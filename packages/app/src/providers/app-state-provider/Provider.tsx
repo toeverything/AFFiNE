@@ -8,7 +8,7 @@ import {
   PageMeta,
 } from './interface';
 import { createDefaultWorkspace } from './utils';
-import { WorkspaceInfo, User } from '@affine/datacenter';
+import { WorkspaceUnit, User } from '@affine/datacenter';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
@@ -66,12 +66,15 @@ export const AppStateProvider = ({
   useEffect(() => {
     const { dataCenter } = appState;
     // FIXME: onWorkspacesChange should have dispose function
-    dataCenter?.onWorkspacesChange(() => {
-      setAppState({
-        ...appState,
-        workspaceList: dataCenter.workspaces,
-      });
-    });
+    dataCenter?.onWorkspacesChange(
+      () => {
+        setAppState({
+          ...appState,
+          workspaceList: dataCenter.workspaces,
+        });
+      },
+      { immediate: false }
+    );
   }, [appState]);
 
   const loadPage = useRef<AppStateFunction['loadPage']>();
@@ -100,7 +103,7 @@ export const AppStateProvider = ({
 
     const workspace = await dataCenter.loadWorkspace(workspaceId);
     const currentMetaWorkSpace = dataCenter.workspaces.find(
-      (item: WorkspaceInfo) => {
+      (item: WorkspaceUnit) => {
         return item.id === workspace.room;
       }
     );

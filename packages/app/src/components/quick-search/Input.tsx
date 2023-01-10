@@ -20,7 +20,7 @@ export const Input = (props: {
   const { currentWorkspaceId, workspaceList, currentWorkspace } = useAppState();
   const isPublish = workspaceList.find(
     meta => String(meta.id) === String(currentWorkspaceId)
-  )?.isPublish;
+  )?.published;
   useEffect(() => {
     inputRef.current?.addEventListener(
       'blur',
