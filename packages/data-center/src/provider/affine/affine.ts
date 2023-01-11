@@ -7,21 +7,25 @@ import type {
 import type { User } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
-import { getApis, Member } from './apis/index.js';
+import { getApis } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
 import { MessageCode } from '../../message';
 import { token } from './apis/token.js';
+import { WebsocketClient } from './channel';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
   apis?: Apis;
 }
+
+const {
+  Y: { applyUpdate, encodeStateAsUpdate },
+} = BlocksuiteWorkspace;
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
@@ -29,11 +33,21 @@ export class AffineProvider extends BaseProvider {
   private _onTokenRefresh?: Callback = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
   private _apis: Apis;
+  private _channel: WebsocketClient;
   // private _idbMap: Map<string, IndexedDBProvider> = new Map();
 
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
     this._apis = apis || getApis();
+    this._channel = new WebsocketClient(
+      `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${
+        window.location.host
+      }/global/sync/`,
+      this._logger
+    );
+    if (token.isLogin) {
+      this._connectChannel();
+    }
   }
 
   override async init() {
@@ -64,6 +78,15 @@ export class AffineProvider extends BaseProvider {
     }
   }
 
+  private _connectChannel() {
+    this._channel.connect();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this._channel.on('message', (message: any) => {
+      console.log('message', message);
+    });
+  }
+
   private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
     const { doc, room } = workspace;
     assert(room);
@@ -91,6 +114,11 @@ export class AffineProvider extends BaseProvider {
         BlocksuiteWorkspace.Y.applyUpdate(doc, new Uint8Array(updates));
       });
     }
+  }
+
+  override async loadPublicWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
+    await this._applyCloudUpdates(blocksuiteWorkspace);
+    return blocksuiteWorkspace;
   }
 
   override async warpWorkspace(workspace: BlocksuiteWorkspace) {
@@ -207,6 +235,9 @@ export class AffineProvider extends BaseProvider {
       }
     }
     const user = await this._apis.signInWithGoogle?.();
+    if (!this._channel.connected) {
+      this._connectChannel();
+    }
     if (!user) {
       this._messageCenter.send(MessageCode.loginError);
     }
@@ -365,6 +396,8 @@ export class AffineProvider extends BaseProvider {
 
   public override async logout(): Promise<void> {
     token.clear();
+    this._channel.disconnect();
+    this._wsMap.forEach(ws => ws.disconnect());
     storage.removeItem('token');
   }
 
