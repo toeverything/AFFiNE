@@ -403,13 +403,13 @@ export class AffineProvider extends BaseProvider {
     workspace_id: string,
     email: string
   ): Promise<User | null> {
-    const user = await this._apis.getUserByEmail({ workspace_id, email });
-    return user
+    const users = await this._apis.getUserByEmail({ workspace_id, email });
+    return users?.length
       ? {
-          id: user.id,
-          name: user.name,
-          avatar: user.avatar_url,
-          email: user.email,
+          id: users[0].id,
+          name: users[0].name,
+          avatar: users[0].avatar_url,
+          email: users[0].email,
         }
       : null;
   }
