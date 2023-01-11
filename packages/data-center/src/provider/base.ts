@@ -76,6 +76,15 @@ export class BaseProvider {
   }
 
   /**
+   * @deprecated Temporary for public workspace
+   * @param blocksuiteWorkspace
+   * @returns
+   */
+  public async loadPublicWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
+    return blocksuiteWorkspace;
+  }
+
+  /**
    * load workspaces
    **/
   public async loadWorkspaces(): Promise<WorkspaceMeta0[]> {

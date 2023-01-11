@@ -13,7 +13,7 @@ import assert from 'assert';
 import { getLogger } from './logger';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
-import type { WorkspaceUnit } from './workspace-unit';
+import { WorkspaceUnit } from './workspace-unit';
 
 /**
  * @class DataCenter
@@ -153,7 +153,7 @@ export class DataCenter {
   /**
    * load workspace instance by id
    * @param {string} workspaceId workspace id
-   * @returns {Promise<BlocksuiteWorkspace>}
+   * @returns {Promise<WorkspaceUnit>}
    */
   public async loadWorkspace(workspaceId: string) {
     const workspaceUnit = this._workspaceUnitCollection.find(workspaceId);
@@ -173,6 +173,29 @@ export class DataCenter {
     });
     workspaceUnit.setBlocksuiteWorkspace(workspace);
     return workspaceUnit;
+  }
+
+  public async loadPublicWorkspace(workspaceId: string) {
+    const workspaceUnit = this._workspaceUnitCollection.find(workspaceId);
+    assert(workspaceUnit, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceUnit.provider);
+    assert(provider);
+    const blocksuiteWorkspace = this._getBlocksuiteWorkspace(workspaceId);
+    await provider.loadPublicWorkspace(blocksuiteWorkspace);
+
+    const workspaceUnitForPublic = new WorkspaceUnit({
+      id: workspaceUnit.id,
+      name: workspaceUnit.name,
+      avatar: workspaceUnit.avatar,
+      owner: workspaceUnit.owner,
+      published: workspaceUnit.published,
+      provider: workspaceUnit.provider,
+      memberCount: workspaceUnit.memberCount,
+      syncMode: workspaceUnit.syncMode,
+    });
+
+    workspaceUnitForPublic.setBlocksuiteWorkspace(blocksuiteWorkspace);
+    return workspaceUnitForPublic;
   }
 
   /**
@@ -206,7 +229,7 @@ export class DataCenter {
   /**
    * change workspaces meta
    * @param {WorkspaceMeta} workspaceMeta workspace meta
-   * @param {BlocksuiteWorkspace} workspace workspace instance
+   * @param {WorkspaceUnit} workspace workspace instance
    */
   public async updateWorkspaceMeta(
     { name, avatar }: UpdateWorkspaceMetaParams,
@@ -255,12 +278,17 @@ export class DataCenter {
     }
   }
 
-  public async inviteMember(id: string, email: string) {
-    const workspaceInfo = this._workspaceUnitCollection.find(id);
+  /**
+   * invite the new member to the workspace
+   * @param {string} workspaceId workspace id
+   * @param {string} email
+   */
+  public async inviteMember(workspaceId: string, email: string) {
+    const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      await provider.invite(id, email);
+      await provider.invite(workspaceId, email);
     }
   }
 
@@ -380,10 +408,10 @@ export class DataCenter {
    * @returns {Promise<string | null>} blob url
    */
   async getBlob(
-    workspace: BlocksuiteWorkspace,
+    workspaceUnit: WorkspaceUnit,
     id: string
   ): Promise<string | null> {
-    const blob = await workspace.blobs;
+    const blob = await workspaceUnit.blocksuiteWorkspace?.blobs;
     return (await blob?.get(id)) || '';
   }
 
@@ -392,8 +420,8 @@ export class DataCenter {
    * @param id
    * @returns {Promise<string | null>} blob url
    */
-  async setBlob(workspace: BlocksuiteWorkspace, blob: Blob): Promise<string> {
-    const blobStorage = await workspace.blobs;
+  async setBlob(workspace: WorkspaceUnit, blob: Blob): Promise<string> {
+    const blobStorage = await workspace.blocksuiteWorkspace?.blobs;
     return (await blobStorage?.set(blob)) || '';
   }
 
