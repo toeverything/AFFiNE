@@ -39,7 +39,7 @@ docker run -it --name affine -d -v [YOUR_PATH]:/app/data -p 3000:3000 ghcr.io/to
 
 [] What about a code block? `````
 
-```javascript
+```JavaScript
 console.log('Hello world');
 ```
 

@@ -20,6 +20,7 @@ export const getLightTheme = (
       popoverBackground: '#fff',
       tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
+      codeBlockBackground: '#fafbfd',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
 
@@ -40,6 +41,7 @@ export const getLightTheme = (
       disableColor: '#C0C0C0',
       warningColor: '#906616',
       errorColor: '#EB4335',
+      lineNumberColor: '#888A9E',
     },
     font: {
       xs: '12px',
@@ -96,6 +98,7 @@ export const getDarkTheme = (
         editorMode === 'edgeless'
           ? lightTheme.colors.codeBackground
           : '#505662',
+      codeBlockBackground: '#36383D',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
 
@@ -117,6 +120,7 @@ export const getDarkTheme = (
       disableColor: '#4b4b4b',
       warningColor: '#906616',
       errorColor: '#EB4335',
+      lineNumberColor: '#888A9E',
     },
     shadow: {
       popover:
@@ -154,12 +158,14 @@ export const globalThemeVariables: (
     '--affine-popover-color': theme.colors.popoverColor,
     '--affine-input-color': theme.colors.inputColor,
     '--affine-code-color': theme.colors.codeColor,
+    '--affine-code-block-background': theme.colors.codeBlockBackground,
     '--affine-quote-color': theme.colors.quoteColor,
     '--affine-selected-color': theme.colors.selectedColor,
     '--affine-placeholder-color': theme.colors.placeHolderColor,
     '--affine-border-color': theme.colors.borderColor,
     '--affine-disable-color': theme.colors.disableColor,
     '--affine-tooltip-color': theme.colors.tooltipColor,
+    '--affine-line-number-color': theme.colors.lineNumberColor,
 
     '--affine-modal-shadow': theme.shadow.modal,
     '--affine-popover-shadow': theme.shadow.popover,
