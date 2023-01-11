@@ -4,9 +4,9 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { useState } from 'react';
-// import { getDataCenter } from '@affine/datacenter';
 import { Avatar } from '@mui/material';
-import { setMember } from '@/hooks/mock-data/mock';
+import useMembers from '@/hooks/use-members';
+import { User } from '@affine/datacenter';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -43,46 +43,27 @@ export const debounce = <T extends (...args: any) => any>(
 };
 
 const gmailReg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/;
-export const InviteMembers = ({
+export const InviteMemberModal = ({
   open,
   onClose,
-  workspaceId,
   onInviteSuccess,
 }: LoginModalProps) => {
   const [email, setEmail] = useState<string>('');
   const [showMember, setShowMember] = useState<boolean>(false);
   const [showTip, setShowTip] = useState<boolean>(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [userData, setUserData] = useState<any>({});
+  const [userData, setUserData] = useState<User | null>(null);
+  const { inviteMember, getUserByEmail } = useMembers();
   const inputChange = (value: string) => {
     setShowMember(true);
     if (gmailReg.test(value)) {
       setEmail(value);
       setShowTip(false);
-      setUserData({
-        name: 'wxl',
-        avatar: 'https://avatars.githubusercontent.com/u/20501502?v=4',
-        email: value,
+      getUserByEmail(value).then(data => {
+        if (data?.name) {
+          setUserData(data);
+          setShowTip(false);
+        }
       });
-      // debounce(
-      //   () => {
-      //     getDataCenter()
-      //       .then(dc =>
-      //         dc.apis.getUserByEmail({
-      //           email: value,
-      //           workspace_id: workspaceId,
-      //         })
-      //       )
-      //       .then(data => {
-      //         if (data?.name) {
-      //           setUserData(data);
-      //           setShowTip(false);
-      //         }
-      //       });
-      //   },
-      //   300,
-      //   true
-      // )();
     } else {
       setShowTip(true);
     }
@@ -118,8 +99,8 @@ export const InviteMembers = ({
                     <NoFind>Non-Gmail is not supported</NoFind>
                   ) : (
                     <Member>
-                      {userData?.avatar_url ? (
-                        <Avatar src={userData?.avatar_url}></Avatar>
+                      {userData?.avatar ? (
+                        <Avatar src={userData?.avatar}></Avatar>
                       ) : (
                         <MemberIcon>
                           <EmailIcon></EmailIcon>
@@ -139,19 +120,9 @@ export const InviteMembers = ({
             <Button
               shape="circle"
               type="primary"
-              onClick={() => {
-                setMember(workspaceId, userData);
+              onClick={async () => {
+                await inviteMember(email);
                 onInviteSuccess();
-                // getDataCenter()
-                //   .then(dc => dc.apis.inviteMember({ id: workspaceId, email }))
-                //   .then(() => {
-                //     onClose();
-                //     onInviteSuccess && onInviteSuccess();
-                //   })
-                //   .catch(err => {
-                //     // toast('Invite failed');
-                //     console.log(err);
-                //   });
               }}
             >
               Invite

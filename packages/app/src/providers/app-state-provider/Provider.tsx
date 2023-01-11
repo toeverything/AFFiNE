@@ -20,11 +20,9 @@ export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
-
   useEffect(() => {
     const initState = async () => {
       const dataCenter = await getDataCenter();
-
       // Ensure datacenter has at least one workspace
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
