@@ -36,7 +36,9 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
   const { currentMetaWorkSpace, currentWorkspace, dataCenter } = useAppState();
 
-  const [members, setMembers] = useState<[{ name: string; email: string }]>();
+  const [members, setMembers] = useState<[{ name: string; email: string }?]>(
+    []
+  );
 
   // const getMembers = async () =>{
   //   const members = await dataCenter.
@@ -90,9 +92,9 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                       </StyledMemberAvatar>
 
                       <StyledMemberInfo>
-                        <StyledMemberName>{member.name}</StyledMemberName>
+                        <StyledMemberName>{member?.name}</StyledMemberName>
 
-                        <StyledMemberEmail>{member.email}</StyledMemberEmail>
+                        <StyledMemberEmail>{member?.email}</StyledMemberEmail>
                       </StyledMemberInfo>
                     </StyledMemberNameContainer>
                     <StyledMemberRoleContainer>
