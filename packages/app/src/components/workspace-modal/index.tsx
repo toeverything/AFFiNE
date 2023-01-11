@@ -2,7 +2,6 @@ import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useState } from 'react';
-import { SignOut } from '@/hooks/mock-data/mock';
 import { CreateWorkspaceModal } from '../create-workspace';
 import {
   CloudUnsyncedIcon,
@@ -14,6 +13,7 @@ import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 interface WorkspaceModalProps {
   open: boolean;
@@ -22,8 +22,9 @@ interface WorkspaceModalProps {
 
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-  // const { confirm } = useConfirm();
-  const { workspaceList, currentWorkspace, login, user } = useAppState();
+  const { confirm } = useConfirm();
+  const { workspaceList, currentWorkspace, login, user, logout } =
+    useAppState();
   const router = useRouter();
   return (
     <div>
@@ -134,9 +135,9 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
           <Footer>
             {!user ? (
               <Button
-                onClick={() => {
-                  login();
-                  toast('login success');
+                onClick={async () => {
+                  await login();
+                  toast('Login success');
                 }}
               >
                 Sign in AFFiNE Cloud
@@ -144,7 +145,20 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
             ) : (
               <Button
                 onClick={() => {
-                  SignOut();
+                  confirm({
+                    title: 'Sign out?',
+                    content: `All data has been stored in the cloud. `,
+                    confirmText: 'Sign out',
+                    cancelText: 'Cancel',
+                  }).then(async confirm => {
+                    if (confirm) {
+                      if (user) {
+                        await logout();
+                        router.replace(`/workspace`);
+                        toast('Enabled success');
+                      }
+                    }
+                  });
                 }}
               >
                 Sign out of AFFiNE Cloud

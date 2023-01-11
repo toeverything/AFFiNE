@@ -7,6 +7,7 @@ import { KeyboardEvent } from 'react';
 import { useTranslation } from '@affine/i18n';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useRouter } from 'next/router';
+import { toast } from '@/ui/toast';
 
 interface ModalProps {
   open: boolean;
@@ -23,7 +24,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
       router.replace(`/workspace/${workspace.id}`);
       onClose();
     } else {
-      console.log('create error');
+      toast('create error');
     }
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
