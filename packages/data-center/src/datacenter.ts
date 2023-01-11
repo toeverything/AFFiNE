@@ -100,7 +100,8 @@ export class DataCenter {
     const workspace = createBlocksuiteWorkspace(workspaceMeta.id);
 
     await this._mainProvider.createWorkspace(workspace, workspaceMeta);
-    return workspace;
+    const workspaceUnit = this._workspaceUnitCollection.find(workspaceMeta.id);
+    return workspaceUnit;
   }
 
   /**
@@ -154,18 +155,23 @@ export class DataCenter {
    * @returns {Promise<BlocksuiteWorkspace>}
    */
   public async loadWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
-    assert(workspaceInfo, 'Workspace not found');
-    const currentProvider = this.providerMap.get(workspaceInfo.provider);
+    const workspaceUnit = this._workspaceUnitCollection.find(workspaceId);
+    assert(workspaceUnit, 'Workspace not found');
+    const currentProvider = this.providerMap.get(workspaceUnit.provider);
     if (currentProvider) {
       currentProvider.closeWorkspace(workspaceId);
     }
-    const provider = this.providerMap.get(workspaceInfo.provider);
-    assert(provider, `provide '${workspaceInfo.provider}' is not registered`);
-    this._logger(`Loading ${workspaceInfo.provider} workspace: `, workspaceId);
+    const provider = this.providerMap.get(workspaceUnit.provider);
+    assert(provider, `provide '${workspaceUnit.provider}' is not registered`);
+    this._logger(`Loading ${workspaceUnit.provider} workspace: `, workspaceId);
     const workspace = this._getBlocksuiteWorkspace(workspaceId);
     this._workspaceInstances.set(workspaceId, workspace);
-    return await provider.warpWorkspace(workspace);
+    await provider.warpWorkspace(workspace);
+    this._workspaceUnitCollection.workspaces.forEach(workspaceUnit => {
+      workspaceUnit.setBlocksuiteWorkspace(null);
+    });
+    workspaceUnit.setBlocksuiteWorkspace(workspace);
+    return workspaceUnit;
   }
 
   /**
