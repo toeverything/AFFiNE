@@ -8,7 +8,7 @@ import {
   PageMeta,
 } from './interface';
 import { createDefaultWorkspace } from './utils';
-import { WorkspaceUnit, User } from '@affine/datacenter';
+import { User } from '@affine/datacenter';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
@@ -34,13 +34,11 @@ export const AppStateProvider = ({
         dataCenter,
         user: (await dataCenter.getUserInfo()) || null,
         workspaceList: dataCenter.workspaces,
-        currentWorkspaceId: '',
         currentWorkspace: null,
         pageList: [],
         currentPage: null,
         editor: null,
         synced: true,
-        currentMetaWorkSpace: null,
       });
     };
 
@@ -95,27 +93,19 @@ export const AppStateProvider = ({
 
   const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
   loadWorkspace.current = async (workspaceId: string) => {
-    const { dataCenter, workspaceList, currentWorkspaceId, currentWorkspace } =
-      appState;
+    const { dataCenter, workspaceList, currentWorkspace } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
     }
-    if (workspaceId === currentWorkspaceId) {
+    if (workspaceId === currentWorkspace?.id) {
       return currentWorkspace;
     }
-    const workspace = await dataCenter.loadWorkspace(workspaceId);
-    const currentMetaWorkSpace = dataCenter.workspaces.find(
-      (item: WorkspaceUnit) => {
-        return item.id.toString() === workspace.id;
-      }
-    );
+    const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
       ...appState,
       currentWorkspace: workspace,
-      currentWorkspaceId: workspaceId,
-      currentMetaWorkSpace: currentMetaWorkSpace ?? null,
       pageList: pageList,
       currentPage: null,
       editor: null,

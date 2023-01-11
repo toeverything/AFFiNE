@@ -5,7 +5,7 @@ import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);
-  const { currentMetaWorkSpace, workspaceList } = useAppState();
+  const { currentWorkspace, workspaceList } = useAppState();
 
   useEffect(() => {
     if (workspaceList.length === 0) {
@@ -23,7 +23,7 @@ export const WorkspaceSelector = () => {
         <Avatar
           alt="Affine"
           data-testid="workspace-avatar"
-          src={currentMetaWorkSpace?.avatar}
+          src={currentWorkspace?.avatar}
         >
           <div
             style={{
@@ -32,13 +32,13 @@ export const WorkspaceSelector = () => {
           >
             <WorkspaceAvatar
               size={28}
-              name={currentMetaWorkSpace?.name ?? 'AFFiNE'}
-              avatar={currentMetaWorkSpace?.avatar ?? ''}
+              name={currentWorkspace?.name ?? 'AFFiNE'}
+              avatar={currentWorkspace?.avatar ?? ''}
             />
           </div>
         </Avatar>
         <WorkspaceName data-testid="workspace-name">
-          {currentMetaWorkSpace?.name ?? 'AFFiNE'}
+          {currentWorkspace?.name ?? 'AFFiNE'}
         </WorkspaceName>
       </SelectorWrapper>
       <WorkspaceModal

@@ -8,7 +8,7 @@ import { useTranslation } from '@affine/i18n';
 
 export const TrashButtonGroup = () => {
   const { permanentlyDeletePage } = usePageHelper();
-  const { currentWorkspaceId } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { toggleDeletePage } = usePageHelper();
   const { confirm } = useConfirm();
   const router = useRouter();
@@ -38,7 +38,7 @@ export const TrashButtonGroup = () => {
             confirmType: 'danger',
           }).then(confirm => {
             if (confirm) {
-              router.push(`/workspace/${currentWorkspaceId}/all`);
+              router.push(`/workspace/${currentWorkspace?.id}/all`);
               permanentlyDeletePage(id);
             }
           });
