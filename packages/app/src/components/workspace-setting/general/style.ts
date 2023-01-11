@@ -26,11 +26,3 @@ export const StyledSettingAvatarContent = styled('div')(() => {
 export const StyledSettingAvatar = styled(MuiAvatar)(() => {
   return { height: '72px', width: '72px', marginRight: '24px' };
 });
-
-export const StyledMemberWarp = styled('div')(() => {
-  return {
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '40px 0',
-  };
-});

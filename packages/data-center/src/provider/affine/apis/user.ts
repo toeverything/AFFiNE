@@ -15,7 +15,7 @@ export interface User {
 
 export async function getUserByEmail(
   params: GetUserByEmailParams
-): Promise<User | null> {
+): Promise<User[] | null> {
   const searchParams = new URLSearchParams({ ...params });
-  return client.get('api/user', { searchParams }).json<User | null>();
+  return client.get('api/user', { searchParams }).json<User[] | null>();
 }

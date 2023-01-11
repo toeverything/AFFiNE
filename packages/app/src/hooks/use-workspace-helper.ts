@@ -56,16 +56,10 @@ export const useWorkspaceHelper = () => {
     });
   };
 
-  const inviteMember = async (email: string) => {
-    currentWorkspace &&
-      (await dataCenter.inviteMember(currentWorkspace?.id, email));
-  };
-
   return {
     createWorkspace,
     publishWorkspace,
     updateWorkspace,
     enableWorkspace,
-    inviteMember,
   };
 };
