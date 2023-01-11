@@ -3,14 +3,16 @@ import assert from 'assert';
 
 import { LocalProvider } from '../local/index.js';
 import * as ipcMethods from './ipc/methods.js';
-import { ProviderConstructorParams } from '../base.js';
+import {
+  CreateWorkspaceInfoParams,
+  ProviderConstructorParams,
+  WorkspaceMeta0,
+} from '../base.js';
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
-import { WorkspaceMeta, WorkspaceInfo } from '../../types';
 import { IPCBlobProvider } from './blocksuite-provider/blob.js';
 import { WorkspaceDetail } from '../affine/apis/workspace.js';
 import { setDefaultAvatar } from '../utils.js';
-import { User } from './ipc/types/user.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
@@ -63,23 +65,22 @@ export class TauriIPCProvider extends LocalProvider {
   }
 
   public override async createWorkspaceInfo(
-    meta: WorkspaceMeta
-  ): Promise<WorkspaceInfo> {
+    meta: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceMeta0> {
     const { id } = await ipcMethods.createWorkspace({
       name: meta.name,
       // TODO: get userID here
       user_id: 0,
     });
 
-    const workspaceInfo: WorkspaceInfo = {
+    const workspaceInfo: WorkspaceMeta0 = {
       name: meta.name,
       id: id,
-      isPublish: false,
       avatar: '',
       owner: await this.getUserInfo(),
-      isLocal: true,
       memberCount: 1,
       provider: this.id,
+      syncMode: 'all',
     };
     return workspaceInfo;
   }
@@ -97,7 +98,7 @@ export class TauriIPCProvider extends LocalProvider {
 
   public override async createWorkspace(
     blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta
+    meta: WorkspaceMeta0
   ): Promise<BlocksuiteWorkspace | undefined> {
     const workspaceId = blocksuiteWorkspace.room;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
@@ -105,15 +106,14 @@ export class TauriIPCProvider extends LocalProvider {
 
     this.linkLocal(blocksuiteWorkspace);
 
-    const workspaceInfo: WorkspaceInfo = {
+    const workspaceInfo: WorkspaceMeta0 = {
       name: meta.name,
       id: workspaceId,
-      isPublish: false,
       avatar: '',
       owner: undefined,
-      isLocal: true,
       memberCount: 1,
       provider: this.id,
+      syncMode: 'all',
     };
 
     if (!blocksuiteWorkspace.meta.avatar) {
@@ -143,12 +143,13 @@ export class TauriIPCProvider extends LocalProvider {
     const { workspaces: workspacesList } = await ipcMethods.getWorkspaces({
       user_id: createdUserID,
     });
-    const workspaces: WorkspaceInfo[] = workspacesList.map(w => {
+    const workspaces: WorkspaceMeta0[] = workspacesList.map(w => {
       return {
         ...w,
         memberCount: 0,
         name: '',
         provider: this.id,
+        syncMode: 'all',
       };
     });
     const workspaceInstances = workspaces.map(({ id }) => {
