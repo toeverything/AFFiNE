@@ -28,13 +28,13 @@ import { WorkspaceUnit } from '@affine/datacenter';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { StyledMemberWarp } from './general/style';
 import { useConfirm } from '@/providers/ConfirmProvider';
-import { useAppState } from '@/providers/app-state-provider';
+// import { useAppState } from '@/providers/app-state-provider';
 
 // import { useAppState } from '@/providers/app-state-provider';
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
 
-  const { currentMetaWorkSpace, currentWorkspace, dataCenter } = useAppState();
+  // const { currentMetaWorkSpace, currentWorkspace, dataCenter } = useAppState();
 
   const [members, setMembers] = useState<[{ name: string; email: string }?]>(
     []

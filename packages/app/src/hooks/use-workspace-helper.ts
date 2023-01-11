@@ -67,5 +67,6 @@ export const useWorkspaceHelper = () => {
     publishWorkspace,
     updateWorkspace,
     enableWorkspace,
+    inviteMember,
   };
 };
