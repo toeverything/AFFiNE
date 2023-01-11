@@ -13,6 +13,7 @@ import assert from 'assert';
 import { getLogger } from './logger';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
+import type { WorkspaceUnit } from './workspace-unit';
 
 /**
  * @class DataCenter
@@ -209,9 +210,11 @@ export class DataCenter {
    */
   public async updateWorkspaceMeta(
     { name, avatar }: UpdateWorkspaceMetaParams,
-    workspace: BlocksuiteWorkspace
+    workspaceUnit: WorkspaceUnit
   ) {
-    assert(workspace?.room, 'No workspace to set meta');
+    assert(workspaceUnit?.id, 'No workspace to set meta');
+    const workspace = workspaceUnit.blocksuiteWorkspace;
+    assert(workspace);
     const update: Partial<UpdateWorkspaceMetaParams> = {};
     if (name) {
       workspace.meta.setName(name);
@@ -222,10 +225,10 @@ export class DataCenter {
       update.avatar = avatar;
     }
     // may run for change workspace meta
-    const workspaceInfo = this._workspaceUnitCollection.find(workspace.room);
+    const workspaceInfo = this._workspaceUnitCollection.find(workspaceUnit.id);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
-    provider?.updateWorkspaceMeta(workspace.room, update);
+    provider?.updateWorkspaceMeta(workspaceUnit.id, update);
   }
 
   /**
@@ -334,9 +337,13 @@ export class DataCenter {
    * Enable workspace cloud
    * @param {string} id ID of workspace.
    */
-  public async enableWorkspaceCloud(workspace: BlocksuiteWorkspace) {
-    assert(workspace?.room, 'No workspace to enable cloud');
-    return await this._transWorkspaceProvider(workspace, 'affine');
+  public async enableWorkspaceCloud(workspace: WorkspaceUnit) {
+    assert(workspace?.id, 'No workspace to enable cloud');
+    assert(workspace.blocksuiteWorkspace);
+    return await this._transWorkspaceProvider(
+      workspace.blocksuiteWorkspace,
+      'affine'
+    );
   }
 
   /**
