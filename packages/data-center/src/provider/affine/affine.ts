@@ -19,6 +19,12 @@ import { token } from './apis/token.js';
 import { WebsocketClient } from './channel';
 import { SyncMode } from '../../workspace-unit';
 
+type ChannelMessage = {
+  ws_list: Workspace[];
+  ws_details: Record<string, WorkspaceDetail>;
+  metadata: Record<string, { avatar: string; name: string }>;
+};
+
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
   apis?: Apis;
@@ -88,17 +94,12 @@ export class AffineProvider extends BaseProvider {
         }
       );
     }
-    this._channel.on('message', this.handlerAffineListMessage);
+    this._channel.on('message', (msg: ChannelMessage) => {
+      this.handlerAffineListMessage(msg);
+    });
   }
 
-  private handlerAffineListMessage({
-    ws_details,
-    metadata,
-  }: {
-    ws_list: Workspace[];
-    ws_details: Record<string, WorkspaceDetail>;
-    metadata: Record<string, { avatar: string; name: string }>;
-  }) {
+  private handlerAffineListMessage({ ws_details, metadata }: ChannelMessage) {
     this._logger('receive server message');
     Object.entries(ws_details).forEach(([id, detail]) => {
       const { name, avatar } = metadata[id];
