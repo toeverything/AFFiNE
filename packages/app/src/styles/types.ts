@@ -25,6 +25,7 @@ export interface AffineTheme {
     hoverBackground: string;
     innerHoverBackground: string;
     codeBackground: string;
+    codeBlockBackground: string;
     warningBackground: string;
     errorBackground: string;
     // Use for the page`s text
@@ -47,6 +48,7 @@ export interface AffineTheme {
     disableColor: string;
     warningColor: string;
     errorColor: string;
+    lineNumberColor: string;
   };
   font: {
     xs: string; // tiny
@@ -90,6 +92,8 @@ export interface AffineThemeCSSVariables {
   '--affine-popover-background': AffineTheme['colors']['popoverBackground'];
   '--affine-hover-background': AffineTheme['colors']['hoverBackground'];
   '--affine-code-background': AffineTheme['colors']['codeBackground'];
+
+  '--affine-code-block-background': AffineTheme['colors']['codeBlockBackground'];
   '--affine-tooltip-background': AffineTheme['colors']['tooltipBackground'];
 
   '--affine-text-color': AffineTheme['colors']['textColor'];
@@ -107,6 +111,7 @@ export interface AffineThemeCSSVariables {
   '--affine-border-color': AffineTheme['colors']['borderColor'];
   '--affine-disable-color': AffineTheme['colors']['disableColor'];
   '--affine-tooltip-color': AffineTheme['colors']['tooltipColor'];
+  '--affine-line-number-color': AffineTheme['colors']['lineNumberColor'];
 
   '--affine-modal-shadow': AffineTheme['shadow']['modal'];
   '--affine-popover-shadow': AffineTheme['shadow']['popover'];
