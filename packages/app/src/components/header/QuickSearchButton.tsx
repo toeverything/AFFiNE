@@ -11,7 +11,7 @@ export const QuickSearchButton = ({
   const { triggerQuickSearchModal } = useModal();
   const { t } = useTranslation();
   return (
-    <Tooltip content={t('Switch to')} placement="bottom">
+    <Tooltip content={t('Jump to')} placement="bottom">
       <IconButton
         data-testid="header-quickSearchButton"
         {...props}
