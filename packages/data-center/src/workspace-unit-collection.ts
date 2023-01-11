@@ -61,7 +61,8 @@ export class WorkspaceUnitCollection {
 
     const add = (workspace: WorkspaceUnitCtorParams) => {
       if (this._workspaceUnitMap.has(workspace.id)) {
-        throw new Error(`Duplicate workspace id.`);
+        // FIXME: multiple add same workspace
+        return;
       }
 
       const workspaceUnit = new WorkspaceUnit(workspace);
