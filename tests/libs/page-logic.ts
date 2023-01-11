@@ -10,7 +10,7 @@ export async function clickPageMoreActions(page: Page) {
       .getByTestId('editor-header-items')
       .getByRole('button')
       //FIXME: temporary change due to cloud sync icon being hidden
-      .nth(1)
+      .nth(0)
       .click()
   );
 }
