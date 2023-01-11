@@ -99,6 +99,7 @@ export class AffineProvider extends BaseProvider {
     ws_details: Record<string, WorkspaceDetail>;
     metadata: Record<string, { avatar: string; name: string }>;
   }) {
+    this._logger('receive server message');
     Object.entries(ws_details).forEach(([id, detail]) => {
       const { name, avatar } = metadata[id];
       assert(name);
@@ -441,5 +442,9 @@ export class AffineProvider extends BaseProvider {
 
   public override async getWorkspaceMembers(id: string) {
     return this._apis.getWorkspaceMembers({ id });
+  }
+
+  public override async acceptInvitation(invitingCode: string): Promise<void> {
+    await this._apis.acceptInviting({ invitingCode });
   }
 }

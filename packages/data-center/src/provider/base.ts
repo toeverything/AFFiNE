@@ -233,4 +233,14 @@ export class BaseProvider {
     workspaceId;
     return Promise.resolve([]);
   }
+
+  /**
+   * accept invitation
+   * @param {string} inviteCode
+   * @returns
+   */
+  public async acceptInvitation(inviteCode: string): Promise<void> {
+    inviteCode;
+    return;
+  }
 }
