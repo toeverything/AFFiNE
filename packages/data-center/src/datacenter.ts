@@ -176,22 +176,21 @@ export class DataCenter {
   }
 
   public async loadPublicWorkspace(workspaceId: string) {
-    const workspaceUnit = this._workspaceUnitCollection.find(workspaceId);
-    assert(workspaceUnit, 'Workspace not found');
-    const provider = this.providerMap.get(workspaceUnit.provider);
+    // FIXME: hard code for public workspace
+    const provider = this.providerMap.get('affine');
     assert(provider);
     const blocksuiteWorkspace = this._getBlocksuiteWorkspace(workspaceId);
     await provider.loadPublicWorkspace(blocksuiteWorkspace);
 
     const workspaceUnitForPublic = new WorkspaceUnit({
-      id: workspaceUnit.id,
-      name: workspaceUnit.name,
-      avatar: workspaceUnit.avatar,
-      owner: workspaceUnit.owner,
-      published: workspaceUnit.published,
-      provider: workspaceUnit.provider,
-      memberCount: workspaceUnit.memberCount,
-      syncMode: workspaceUnit.syncMode,
+      id: workspaceId,
+      name: blocksuiteWorkspace.meta.name,
+      avatar: blocksuiteWorkspace.meta.avatar,
+      owner: undefined,
+      published: true,
+      provider: 'affine',
+      memberCount: 1,
+      syncMode: 'core',
     });
 
     workspaceUnitForPublic.setBlocksuiteWorkspace(blocksuiteWorkspace);
