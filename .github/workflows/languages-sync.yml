@@ -1,16 +1,16 @@
 name: Languages Sync
 
 on:
-  # push:
-  #     branches: [ "feat/sync-languages" ]
-  #     paths:
-  #         - 'packages/i18n/**'
-  #         - '.github/workflows/languages-sync.yml'
-  # pull_request:
-  #     branches: [ "feat/sync-languages" ]
-  #     paths:
-  #         - 'packages/i18n/**'
-  #         - '.github/workflows/languages-sync.yml'
+  push:
+    branches: ['master']
+    paths:
+      - 'packages/i18n/**'
+      - '.github/workflows/languages-sync.yml'
+  pull_request:
+    branches: ['master']
+    paths:
+      - 'packages/i18n/**'
+      - '.github/workflows/languages-sync.yml'
   workflow_dispatch:
 
 # Cancels all previous workflow runs for pull requests that have not completed.
@@ -49,14 +49,14 @@ jobs:
         run: pnpm install
 
       - name: Check Language Key
-        if: github.ref != 'feat/sync-languages'
+        if: github.ref != 'refs/heads/master'
         working-directory: ./packages/i18n
         run: pnpm run sync-languages:check
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}
 
       - name: Sync Languages
-        if: github.ref == 'feat/sync-languages'
+        if: github.ref == 'refs/heads/master'
         working-directory: ./packages/i18n
         run: pnpm run sync-languages
         env:
