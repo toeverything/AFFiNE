@@ -40,7 +40,11 @@ export class DataCenter {
       };
     };
     // TODO: switch different provider
-    if (typeof window !== 'undefined' && window.CLIENT_APP) {
+    if (
+      typeof window !== 'undefined' &&
+      window.CLIENT_APP &&
+      typeof window.__TAURI_IPC__ === 'function'
+    ) {
       const { TauriIPCProvider } = await import('./provider/tauri-ipc');
       dc.registerProvider(new TauriIPCProvider(getInitParams()));
     }

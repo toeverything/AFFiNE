@@ -13,7 +13,6 @@ import { setDefaultAvatar } from '../utils.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
-  #ipc = ipcMethods;
   private _workspacesCache: Map<string, BlocksuiteWorkspace> = new Map();
 
   constructor(params: ProviderConstructorParams) {
@@ -27,7 +26,7 @@ export class TauriIPCProvider extends LocalProvider {
 
   async #initDocFromIPC(workspaceID: string, doc: Y.Doc) {
     this._logger(`Loading ${workspaceID}...`);
-    const updates = await this.#ipc.getYDocument({ id: workspaceID });
+    const updates = await ipcMethods.getYDocument({ id: workspaceID });
     if (updates) {
       await new Promise(resolve => {
         doc.once('update', resolve);
@@ -43,7 +42,7 @@ export class TauriIPCProvider extends LocalProvider {
       try {
         // TODO: need handle potential data race when update is frequent?
         // TODO: update seems too frequent upon each keydown, why no batching?
-        const success = await this.#ipc.updateYDocument({
+        const success = await ipcMethods.updateYDocument({
           update: Array.from(update),
           id: workspaceID,
         });
@@ -64,7 +63,7 @@ export class TauriIPCProvider extends LocalProvider {
   public override async createWorkspaceInfo(
     meta: WorkspaceMeta
   ): Promise<WorkspaceInfo> {
-    const { id } = await this.#ipc.createWorkspace({
+    const { id } = await ipcMethods.createWorkspace({
       name: meta.name,
       // TODO: get userID here
       user_id: 0,
@@ -125,7 +124,7 @@ export class TauriIPCProvider extends LocalProvider {
 
   override async loadWorkspaces() {
     // TODO: get user id here
-    const { workspaces: workspacesList } = await this.#ipc.getWorkspaces({
+    const { workspaces: workspacesList } = await ipcMethods.getWorkspaces({
       user_id: 0,
     });
     const workspaces: WorkspaceInfo[] = workspacesList.map(w => {
@@ -145,7 +144,7 @@ export class TauriIPCProvider extends LocalProvider {
       this._workspacesCache.set(id, workspace);
       if (workspace) {
         return new Promise<BlocksuiteWorkspace>(resolve => {
-          this.#ipc.getYDocument({ id }).then(({ update }) => {
+          ipcMethods.getYDocument({ id }).then(({ update }) => {
             Y.applyUpdate(workspace.doc, new Uint8Array(update));
             resolve(workspace);
           });
@@ -176,7 +175,7 @@ export class TauriIPCProvider extends LocalProvider {
           | null;
       }> => {
         const { id, permission, created_at } = workspaceWithPermission;
-        const { workspace } = await this.#ipc.getWorkspace({ id });
+        const { workspace } = await ipcMethods.getWorkspace({ id });
         return {
           id,
           detail: {
