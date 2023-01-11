@@ -28,13 +28,22 @@ import { WorkspaceUnit } from '@affine/datacenter';
 import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { StyledMemberWarp } from './general/style';
 import { useConfirm } from '@/providers/ConfirmProvider';
+import { useAppState } from '@/providers/app-state-provider';
 
 // import { useAppState } from '@/providers/app-state-provider';
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
-  const [members, setMembers] = useState<[{ name: string; email: string }]>([
-    { name: 'affine', email: 'tttt' },
-  ]);
+
+  const { currentMetaWorkSpace, currentWorkspace, dataCenter } = useAppState();
+
+  const [members, setMembers] = useState<[{ name: string; email: string }?]>(
+    []
+  );
+
+  // const getMembers = async () =>{
+  //   const members = await dataCenter.
+  // }
+
   console.log('setMembers: ', setMembers);
   const { user, login, updateWorkspaceMeta } = useTemporaryHelper();
   const { confirm } = useConfirm();
@@ -83,9 +92,9 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                       </StyledMemberAvatar>
 
                       <StyledMemberInfo>
-                        <StyledMemberName>{member.name}</StyledMemberName>
+                        <StyledMemberName>{member?.name}</StyledMemberName>
 
-                        <StyledMemberEmail>{member.email}</StyledMemberEmail>
+                        <StyledMemberEmail>{member?.email}</StyledMemberEmail>
                       </StyledMemberInfo>
                     </StyledMemberNameContainer>
                     <StyledMemberRoleContainer>

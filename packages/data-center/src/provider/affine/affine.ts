@@ -12,11 +12,11 @@ import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
-import { getApis } from './apis/index.js';
+import { getApis, Member } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
 import { MessageCode } from '../../message';
-import { blob } from 'stream/consumers';
+import { token } from './apis/token.js';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
@@ -215,6 +215,7 @@ export class AffineProvider extends BaseProvider {
   public override async getUserInfo(): Promise<User | undefined> {
     await this.init();
     const user = this._apis.token.user;
+    await this.init;
     return user
       ? {
           id: user.id,
@@ -360,5 +361,14 @@ export class AffineProvider extends BaseProvider {
       ws.once('connection-error', () => reject());
     });
     return to;
+  }
+
+  public override async logout(): Promise<void> {
+    token.clear();
+    storage.removeItem('token');
+  }
+
+  public override async getWorkspaceMembers(id: string) {
+    return this._apis.getWorkspaceMembers({ id });
   }
 }

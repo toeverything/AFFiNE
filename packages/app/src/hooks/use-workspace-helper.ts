@@ -6,7 +6,8 @@ import router from 'next/router';
 
 export const useWorkspaceHelper = () => {
   const { confirm } = useConfirm();
-  const { dataCenter, currentWorkspace, user, login } = useAppState();
+  const { dataCenter, currentWorkspace, user, login, currentMetaWorkSpace } =
+    useAppState();
   const createWorkspace = async (name: string) => {
     const workspaceInfo = await dataCenter.createWorkspace({
       name: name,
@@ -54,6 +55,11 @@ export const useWorkspaceHelper = () => {
         toast('Enabled success');
       }
     });
+  };
+
+  const inviteMember = async (email: string) => {
+    currentMetaWorkSpace &&
+      (await dataCenter.inviteMember(currentMetaWorkSpace?.id, email));
   };
 
   return {
