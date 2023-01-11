@@ -60,7 +60,7 @@ const tabMap: {
 ];
 
 const WorkspaceSetting = () => {
-  const { currentMetaWorkSpace } = useAppState();
+  const { currentWorkspace } = useAppState();
 
   const [activeTab, setActiveTab] = useState<TabNames>(tabMap[0].name);
   const handleTabChange = (tab: TabNames) => {
@@ -98,7 +98,7 @@ const WorkspaceSetting = () => {
       </StyledSettingSidebar>
 
       <StyledSettingContent>
-        {currentMetaWorkSpace && activeTabPanelRender?.(currentMetaWorkSpace)}
+        {currentWorkspace && activeTabPanelRender?.(currentWorkspace)}
       </StyledSettingContent>
     </StyledSettingContainer>
   );

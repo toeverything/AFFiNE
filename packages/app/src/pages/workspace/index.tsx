@@ -6,14 +6,14 @@ import { PageLoading } from '@/components/loading';
 
 export const WorkspaceIndex = () => {
   const router = useRouter();
-  const { currentWorkspaceId } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { workspaceLoaded } = useEnsureWorkspace();
 
   useEffect(() => {
     if (workspaceLoaded) {
-      router.push(`/workspace/${currentWorkspaceId}`);
+      router.push(`/workspace/${currentWorkspace?.id}`);
     }
-  }, [currentWorkspaceId, router, workspaceLoaded]);
+  }, [currentWorkspace, router, workspaceLoaded]);
 
   return <PageLoading />;
 };

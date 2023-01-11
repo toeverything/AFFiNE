@@ -36,7 +36,7 @@ const getPageMeta = (workspace: WorkspaceUnit | null, pageId: string) => {
 export const usePageHelper = (): EditorHandlers => {
   const router = useRouter();
   const changePageMeta = useChangePageMeta();
-  const { currentWorkspace, editor, currentWorkspaceId } = useAppState();
+  const { currentWorkspace, editor } = useAppState();
 
   return {
     createPage: ({
@@ -109,11 +109,11 @@ export const usePageHelper = (): EditorHandlers => {
       pageId = pageId.replace('space:', '');
 
       if (newTab) {
-        window.open(`/workspace/${currentWorkspaceId}/${pageId}`, '_blank');
+        window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
         return Promise.resolve(true);
       }
       return router.push({
-        pathname: `/workspace/${currentWorkspaceId}/${pageId}`,
+        pathname: `/workspace/${currentWorkspace?.id}/${pageId}`,
         query,
       });
     },

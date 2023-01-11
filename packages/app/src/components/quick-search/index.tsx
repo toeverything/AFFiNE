@@ -22,14 +22,12 @@ const isMac = () => {
   return getUaHelper().isMacOs;
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
-  const { currentMetaWorkSpace } = useAppState();
+  const { currentWorkspace } = useAppState();
 
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
-
-  const isPublish = currentMetaWorkSpace?.published;
 
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
@@ -96,7 +94,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                 setShowCreatePage={setShowCreatePage}
               />
             </StyledContent>
-            {isPublish ? (
+            {currentWorkspace?.isPublish ? (
               <></>
             ) : showCreatePage ? (
               <>

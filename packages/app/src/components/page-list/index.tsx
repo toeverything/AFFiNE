@@ -73,7 +73,7 @@ export const PageList = ({
   isTrash?: boolean;
 }) => {
   const router = useRouter();
-  const { currentWorkspaceId } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
   if (pageList.length === 0) {
     return <Empty />;
@@ -99,7 +99,7 @@ export const PageList = ({
                 key={`${pageMeta.id}-${index}`}
                 onClick={() => {
                   router.push(
-                    `/workspace/${currentWorkspaceId}/${pageMeta.id}`
+                    `/workspace/${currentWorkspace?.id}/${pageMeta.id}`
                   );
                 }}
               >

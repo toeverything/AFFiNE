@@ -41,7 +41,6 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     setShowLeave(false);
   };
   const handleUpdateWorkspaceName = () => {
-    console.log('currentWorkspace: ', currentWorkspace);
     currentWorkspace &&
       updateWorkspace({ name: workspaceName }, currentWorkspace);
   };

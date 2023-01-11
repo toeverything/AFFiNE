@@ -7,7 +7,7 @@ import usePageHelper from '@/hooks/use-page-helper';
 
 const WorkspaceIndex = () => {
   const router = useRouter();
-  const { currentWorkspaceId, currentWorkspace } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { createPage } = usePageHelper();
   const { workspaceLoaded, activeWorkspaceId } = useEnsureWorkspace();
 
@@ -29,7 +29,6 @@ const WorkspaceIndex = () => {
     initPage();
   }, [
     currentWorkspace,
-    currentWorkspaceId,
     createPage,
     router,
     workspaceLoaded,

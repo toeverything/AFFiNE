@@ -67,13 +67,13 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal, triggerImportModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
-  const { currentWorkspaceId } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { openPage, createPage } = usePageHelper();
   const router = useRouter();
   const { t } = useTranslation();
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
-
+  const currentWorkspaceId = currentWorkspace?.id;
   const paths = {
     all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
     favorite: currentWorkspaceId

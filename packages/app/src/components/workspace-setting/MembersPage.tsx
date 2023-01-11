@@ -34,8 +34,6 @@ import { useConfirm } from '@/providers/ConfirmProvider';
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
 
-  // const { currentMetaWorkSpace, currentWorkspace, dataCenter } = useAppState();
-
   const [members, setMembers] = useState<[{ name: string; email: string }?]>(
     []
   );

@@ -1,15 +1,16 @@
+import { FC, SVGProps } from 'react';
 import { AllPagesIcon, FavouritesIcon, TrashIcon } from '@blocksuite/icons';
 import { useTranslation } from '@affine/i18n';
 
 export const useSwitchToConfig = (
-  currentWorkspaceId: string
+  currentWorkspaceId?: string
 ): {
   title: string;
   href: string;
-  icon: React.FC<React.SVGProps<SVGSVGElement>>;
+  icon: FC<SVGProps<SVGSVGElement>>;
 }[] => {
   const { t } = useTranslation();
-  const List = [
+  return [
     {
       title: t('All pages'),
       href: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
@@ -28,5 +29,4 @@ export const useSwitchToConfig = (
       icon: TrashIcon,
     },
   ];
-  return List;
 };
