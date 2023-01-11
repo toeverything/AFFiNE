@@ -384,6 +384,20 @@ export class DataCenter {
     return (await blobStorage?.set(blob)) || '';
   }
 
+  /**
+   * get members of a workspace
+   * @param workspaceId
+   */
+  async getMembers(workspaceId: string) {
+    const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
+    assert(workspaceInfo, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceInfo.provider);
+    if (provider) {
+      return await provider.getWorkspaceMembers(workspaceId);
+    }
+    return [];
+  }
+
   onMessage(cb: (message: Message) => void) {
     return this._messageCenter.onMessage(cb);
   }

@@ -11,7 +11,7 @@ test.describe.serial('workspace meta collection observable', () => {
     workspaceUnitCollection.once(
       'change',
       (event: WorkspaceUnitCollectionChangeEvent) => {
-        expect(event.added?.id).toEqual('123');
+        expect(event.added?.[0]?.id).toEqual('123');
       }
     );
     scope.add({

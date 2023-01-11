@@ -140,6 +140,10 @@ class Token {
       this.callbacks.splice(index, 1);
     }
   }
+
+  clear() {
+    this._setToken();
+  }
 }
 
 export const token = new Token();
