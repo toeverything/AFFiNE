@@ -255,12 +255,17 @@ export class DataCenter {
     }
   }
 
-  public async inviteMember(id: string, email: string) {
-    const workspaceInfo = this._workspaceUnitCollection.find(id);
+  /**
+   * invite the new member to the workspace
+   * @param {string} workspaceId workspace id
+   * @param {string} email
+   */
+  public async inviteMember(workspaceId: string, email: string) {
+    const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      await provider.invite(id, email);
+      await provider.invite(workspaceId, email);
     }
   }
 
