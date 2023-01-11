@@ -153,7 +153,7 @@ export class DataCenter {
   /**
    * load workspace instance by id
    * @param {string} workspaceId workspace id
-   * @returns {Promise<BlocksuiteWorkspace>}
+   * @returns {Promise<WorkspaceUnit>}
    */
   public async loadWorkspace(workspaceId: string) {
     const workspaceUnit = this._workspaceUnitCollection.find(workspaceId);
@@ -206,7 +206,7 @@ export class DataCenter {
   /**
    * change workspaces meta
    * @param {WorkspaceMeta} workspaceMeta workspace meta
-   * @param {BlocksuiteWorkspace} workspace workspace instance
+   * @param {WorkspaceUnit} workspace workspace instance
    */
   public async updateWorkspaceMeta(
     { name, avatar }: UpdateWorkspaceMetaParams,
@@ -380,10 +380,10 @@ export class DataCenter {
    * @returns {Promise<string | null>} blob url
    */
   async getBlob(
-    workspace: BlocksuiteWorkspace,
+    workspaceUnit: WorkspaceUnit,
     id: string
   ): Promise<string | null> {
-    const blob = await workspace.blobs;
+    const blob = await workspaceUnit.blocksuiteWorkspace?.blobs;
     return (await blob?.get(id)) || '';
   }
 
@@ -392,8 +392,8 @@ export class DataCenter {
    * @param id
    * @returns {Promise<string | null>} blob url
    */
-  async setBlob(workspace: BlocksuiteWorkspace, blob: Blob): Promise<string> {
-    const blobStorage = await workspace.blobs;
+  async setBlob(workspace: WorkspaceUnit, blob: Blob): Promise<string> {
+    const blobStorage = await workspace.blocksuiteWorkspace?.blobs;
     return (await blobStorage?.set(blob)) || '';
   }
 
