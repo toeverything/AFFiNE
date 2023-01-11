@@ -10,7 +10,10 @@
     ".": "./dist/src/index.js"
   },
   "scripts": {
-    "build": "tsc --project ./tsconfig.json"
+    "build": "tsc --project ./tsconfig.json",
+    "sync-languages": "NODE_OPTIONS=--experimental-fetch ts-node src/scripts/sync.ts",
+    "sync-languages:check": "pnpm run sync-languages --check",
+    "download-resources": "NODE_OPTIONS=--experimental-fetch ts-node src/scripts/download.ts"
   },
   "keywords": [],
   "repository": {
