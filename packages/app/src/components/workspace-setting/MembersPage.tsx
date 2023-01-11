@@ -64,7 +64,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
   return (
     <div>
-      {workspace.provider === 'cloud' ? (
+      {workspace.provider === 'affine' ? (
         <>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>

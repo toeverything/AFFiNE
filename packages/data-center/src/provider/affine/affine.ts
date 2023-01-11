@@ -125,6 +125,7 @@ export class AffineProvider extends BaseProvider {
     const workspaces: WorkspaceMeta0[] = workspacesList.map(w => {
       return {
         ...w,
+        published: w.public,
         memberCount: 0,
         name: '',
         provider: 'affine',

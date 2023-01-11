@@ -1,7 +1,12 @@
 import { useAppState } from '@/providers/app-state-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
+import { toast } from '@/ui/toast';
 import { Workspace } from '@blocksuite/store';
+import router from 'next/router';
+
 export const useWorkspaceHelper = () => {
-  const { dataCenter } = useAppState();
+  const { confirm } = useConfirm();
+  const { dataCenter, currentWorkspace, user, login } = useAppState();
   const createWorkspace = async (name: string) => {
     const workspaceInfo = await dataCenter.createWorkspace({
       name: name,
@@ -16,7 +21,7 @@ export const useWorkspaceHelper = () => {
   // const updateWorkspace = async (workspace: Workspace) => {};
 
   const publishWorkspace = async (workspaceId: string, publish: boolean) => {
-    dataCenter.setWorkspacePublish(workspaceId, publish);
+    await dataCenter.setWorkspacePublish(workspaceId, publish);
   };
 
   const updateWorkspace = async (
@@ -32,11 +37,26 @@ export const useWorkspaceHelper = () => {
     }
   };
 
-  const enableWorkspace = async (workspace: Workspace) => {
-    const newWorkspaceId = await dataCenter.enableWorkspaceCloud(workspace);
-    // console.log('newWorkspace: ', newWorkspace);
-    return newWorkspaceId;
+  const enableWorkspace = async () => {
+    confirm({
+      title: 'Enable AFFiNE Cloud?',
+      content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+      confirmText: user ? 'Enable' : 'Sign in and Enable',
+      cancelText: 'Skip',
+    }).then(async confirm => {
+      if (confirm && currentWorkspace) {
+        if (user) {
+          await login();
+        }
+        const newWorkspaceId = await dataCenter.enableWorkspaceCloud(
+          currentWorkspace
+        );
+        router.push(`/workspace/${newWorkspaceId}/setting`);
+        toast('Enabled success');
+      }
+    });
   };
+
   return {
     createWorkspace,
     publishWorkspace,
