@@ -172,7 +172,11 @@ export async function leaveWorkspace({ id }: LeaveWorkspaceParams) {
 }
 
 export async function downloadWorkspace(
-  workspaceId: string
+  workspaceId: string,
+  published = false
 ): Promise<ArrayBuffer> {
+  if (published) {
+    return bareClient.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
+  }
   return client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
 }

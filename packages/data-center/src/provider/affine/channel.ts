@@ -1,6 +1,7 @@
 import * as websocket from 'lib0/websocket';
 import { Logger } from 'src/types';
 import { token } from './apis/token';
+import * as url from 'lib0/url';
 
 const RECONNECT_INTERVAL_TIME = 5000;
 const MAX_RECONNECT_TIMES = 50;
@@ -10,11 +11,21 @@ export class WebsocketClient extends websocket.WebsocketClient {
   private _reconnectInterval: number | null = null;
   private _logger: Logger;
   constructor(
-    url: string,
+    serverUrl: string,
     logger: Logger,
-    options?: { binaryType: 'arraybuffer' | 'blob' | null }
+    options?: ConstructorParameters<typeof websocket.WebsocketClient>[1] & {
+      params: Record<string, string>;
+    }
   ) {
-    super(url, options);
+    const params = options?.params || {};
+    // ensure that url is always ends with /
+    while (serverUrl[serverUrl.length - 1] === '/') {
+      serverUrl = serverUrl.slice(0, serverUrl.length - 1);
+    }
+    const encodedParams = url.encodeQueryParams(params);
+    const newUrl =
+      serverUrl + '/' + (encodedParams.length === 0 ? '' : '?' + encodedParams);
+    super(newUrl, options);
     this._logger = logger;
     this._setupChannel();
   }
