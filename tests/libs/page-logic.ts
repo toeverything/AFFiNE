@@ -5,9 +5,12 @@ export async function newPage(page: Page) {
 }
 
 export async function clickPageMoreActions(page: Page) {
-  return page
-    .getByTestId('editor-header-items')
-    .getByRole('button')
-    .nth(2)
-    .click();
+  return (
+    page
+      .getByTestId('editor-header-items')
+      .getByRole('button')
+      //FIXME: temporary change due to cloud sync icon being hidden
+      .nth(1)
+      .click()
+  );
 }
