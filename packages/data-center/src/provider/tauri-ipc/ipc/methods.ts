@@ -11,8 +11,10 @@ import {
   GetWorkspaceResult,
   GetWorkspaces,
   GetWorkspacesResult,
+  User,
 } from './types/workspace';
 import { GetBlob, PutBlob } from './types/blob';
+import { CreateUser } from './types/user';
 
 export const updateYDocument = async (parameters: YDocumentUpdate) =>
   await invoke<boolean>('update_y_document', {
@@ -46,5 +48,10 @@ export const putBlob = async (parameters: PutBlob) =>
 
 export const getBlob = async (parameters: GetBlob) =>
   await invoke<number[]>('get_blob', {
+    parameters,
+  });
+
+export const createUser = async (parameters: CreateUser) =>
+  await invoke<User>('create_user', {
     parameters,
   });

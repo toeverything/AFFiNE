@@ -1,4 +1,7 @@
-use ipc_types::{blob::IBlobParameters, document::IDocumentParameters, workspace::IWorkspaceParameters};
+use ipc_types::{
+  blob::IBlobParameters, document::IDocumentParameters, user::IUserParameters,
+  workspace::IWorkspaceParameters,
+};
 /**
  * convert serde to jsonschema: https://imfeld.dev/writing/generating_typescript_types_from_rust
  *  with way to optimize
@@ -30,4 +33,5 @@ fn main() {
   generate::<IDocumentParameters>(Path::join(&data_center_ipc_type_folder, "document.json"));
   generate::<IWorkspaceParameters>(Path::join(&data_center_ipc_type_folder, "workspace.json"));
   generate::<IBlobParameters>(Path::join(&data_center_ipc_type_folder, "blob.json"));
+  generate::<IUserParameters>(Path::join(&data_center_ipc_type_folder, "user.json"));
 }

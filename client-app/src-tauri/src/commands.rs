@@ -1,10 +1,12 @@
 pub mod blob;
 pub mod workspace;
 pub mod document;
+pub mod user;
 
 use blob::*;
 use workspace::*;
 use document::*;
+use user::*;
 
 pub fn invoke_handler() -> impl Fn(tauri::Invoke) + Send + Sync + 'static {
   tauri::generate_handler![
@@ -13,6 +15,7 @@ pub fn invoke_handler() -> impl Fn(tauri::Invoke) + Send + Sync + 'static {
     update_workspace,
     get_workspaces,
     get_workspace,
+    create_user,
     get_doc,
     put_blob,
     get_blob

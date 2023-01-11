@@ -10,6 +10,7 @@ import { WorkspaceMeta, WorkspaceInfo } from '../../types';
 import { IPCBlobProvider } from './blocksuite-provider/blob.js';
 import { WorkspaceDetail } from '../affine/apis/workspace.js';
 import { setDefaultAvatar } from '../utils.js';
+import { User } from './ipc/types/user.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
@@ -18,6 +19,7 @@ export class TauriIPCProvider extends LocalProvider {
   constructor(params: ProviderConstructorParams) {
     super(params);
     // TODO: let blocksuite's blob provider get blob receive workspace id. Currently, all blobs are placed together
+    this.loadWorkspaces();
   }
 
   async init() {
@@ -111,7 +113,7 @@ export class TauriIPCProvider extends LocalProvider {
       owner: undefined,
       isLocal: true,
       memberCount: 1,
-      provider: 'affine',
+      provider: this.id,
     };
 
     if (!blocksuiteWorkspace.meta.avatar) {
@@ -124,15 +126,29 @@ export class TauriIPCProvider extends LocalProvider {
 
   override async loadWorkspaces() {
     // TODO: get user id here
+    // try create a default user, otherwise getWorkspaces will failed due to user not exists
+    let createdUserID = 0;
+    try {
+      const user = await ipcMethods.createUser({
+        email: 'xxx@xx.xx',
+        name: 'xxx',
+        password: 'xxx',
+        avatar_url: '',
+      });
+      createdUserID = user.id;
+    } catch (error) {
+      // maybe user existed, which can be omited
+      console.error(error);
+    }
     const { workspaces: workspacesList } = await ipcMethods.getWorkspaces({
-      user_id: 0,
+      user_id: createdUserID,
     });
     const workspaces: WorkspaceInfo[] = workspacesList.map(w => {
       return {
         ...w,
         memberCount: 0,
         name: '',
-        provider: 'affine',
+        provider: this.id,
       };
     });
     const workspaceInstances = workspaces.map(({ id }) => {

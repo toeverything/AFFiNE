@@ -47,8 +47,9 @@ export class DataCenter {
     ) {
       const { TauriIPCProvider } = await import('./provider/tauri-ipc');
       dc.registerProvider(new TauriIPCProvider(getInitParams()));
+    } else {
+      dc.registerProvider(new LocalProvider(getInitParams()));
     }
-    dc.registerProvider(new LocalProvider(getInitParams()));
     dc.registerProvider(new AffineProvider(getInitParams()));
 
     return dc;
