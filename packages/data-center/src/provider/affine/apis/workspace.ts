@@ -176,7 +176,7 @@ export async function downloadWorkspace(
   published = false
 ): Promise<ArrayBuffer> {
   if (published) {
-    return bareClient.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
+    return bareClient.get(`api/public/doc/${workspaceId}`).arrayBuffer();
   }
   return client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
 }
