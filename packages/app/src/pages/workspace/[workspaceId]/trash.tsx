@@ -1,17 +1,17 @@
 import { PageListHeader } from '@/components/header';
 import { PageList } from '@/components/page-list';
 import { TrashIcon } from '@blocksuite/icons';
-import usePageMetaList from '@/hooks/use-page-meta-list';
 import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useTranslation } from '@affine/i18n';
+import { useAppState } from '@/providers/app-state-provider';
 export const Trash = () => {
-  const pageMetaList = usePageMetaList();
+  const { pageList } = useAppState();
   const { t } = useTranslation();
   return (
     <>
       <PageListHeader icon={<TrashIcon />}>{t('Trash')}</PageListHeader>
-      <PageList pageList={pageMetaList.filter(p => p.trash)} isTrash={true} />
+      <PageList pageList={pageList.filter(p => p.trash)} isTrash={true} />
     </>
   );
 };

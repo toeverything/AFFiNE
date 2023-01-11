@@ -12,8 +12,7 @@ export const useWorkspaceHelper = () => {
       name: name,
     });
     if (workspaceInfo && workspaceInfo.room) {
-      const workspace = await dataCenter.loadWorkspace(workspaceInfo.room);
-      return workspace;
+      return await dataCenter.loadWorkspace(workspaceInfo.room);
     }
     return null;
   };

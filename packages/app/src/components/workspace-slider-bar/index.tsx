@@ -5,14 +5,12 @@ import {
   StyledLink,
   StyledListItem,
   StyledListItemForWorkspace,
-  // StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
   StyledSliderBarWrapper,
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
-// import { WorkspaceSelector } from './WorkspaceSelector';
 import Collapse from '@mui/material/Collapse';
 import {
   ArrowDownIcon,
@@ -30,15 +28,13 @@ import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider';
 import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
-import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
-// import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
-  const pageList = usePageMetaList();
+  const { pageList } = useAppState();
   const router = useRouter();
   const { t } = useTranslation();
   const favoriteList = pageList.filter(p => p.favorite && !p.trash);
