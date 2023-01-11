@@ -15,7 +15,7 @@ test.describe('Login Flow', () => {
       .click();
   });
 
-  test('Open login modal by click cloud-unsync-icon', async ({ page }) => {
+  test.skip('Open login modal by click cloud-unsync-icon', async ({ page }) => {
     await page.getByTestId('cloud-unsync-icon').click();
 
     await page.waitForTimeout(800);

@@ -76,6 +76,8 @@ export const ContactModal = ({
       link: 'https://community.affine.pro',
     },
   ];
+  const date = new Date();
+  const year = date.getFullYear();
   return (
     <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
       <ModalWrapper
@@ -135,7 +137,7 @@ export const ContactModal = ({
               {t('How is AFFiNE Alpha different?')}
             </a>
           </p>
-          <p>Copyright &copy; 2022 Toeverything</p>
+          <p>Copyright &copy; {year} Toeverything</p>
         </StyledModalFooter>
       </ModalWrapper>
     </Modal>
