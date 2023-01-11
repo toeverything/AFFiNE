@@ -140,10 +140,9 @@ importers:
       swr: ^2.0.0
       typescript: ^4.8.4
       y-protocols: ^1.0.5
-      yjs: ^13.5.44
     dependencies:
-      '@blocksuite/blocks': 0.4.0-20230110112105-ef07332_yjs@13.5.44
-      '@blocksuite/store': 0.4.0-20230110112105-ef07332_yjs@13.5.44
+      '@blocksuite/blocks': 0.4.0-20230110112105-ef07332
+      '@blocksuite/store': 0.4.0-20230110112105-ef07332
       debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
@@ -153,7 +152,6 @@ importers:
       lib0: 0.2.58
       swr: 2.0.0
       y-protocols: 1.0.5
-      yjs: 13.5.44
     devDependencies:
       '@playwright/test': 1.29.1
       '@types/debug': 4.1.7
@@ -1455,6 +1453,26 @@ packages:
       to-fast-properties: 2.0.0
     dev: true
 
+  /@blocksuite/blocks/0.4.0-20230110112105-ef07332:
+    resolution: {integrity: sha512-dtwZRCWtirmheRQaITPOC/D9LZ3yFuYztqL/y2mz/BRSfHj8I71OVcX0HjFXx2TUdzhkea1GNYbp4226zZIiRA==}
+    dependencies:
+      '@blocksuite/phasor': 0.4.0-20230110112105-ef07332
+      '@blocksuite/store': 0.4.0-20230110112105-ef07332
+      '@tldraw/intersect': 1.8.0
+      autosize: 5.0.2
+      highlight.js: 11.7.0
+      hotkeys-js: 3.10.1
+      lit: 2.5.0
+      perfect-freehand: 1.2.0
+      quill: 1.3.7
+      quill-cursors: 4.0.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+      - yjs
+    dev: false
+
   /@blocksuite/blocks/0.4.0-20230110112105-ef07332_yjs@13.5.44:
     resolution: {integrity: sha512-dtwZRCWtirmheRQaITPOC/D9LZ3yFuYztqL/y2mz/BRSfHj8I71OVcX0HjFXx2TUdzhkea1GNYbp4226zZIiRA==}
     dependencies:
@@ -1500,12 +1518,38 @@ packages:
       react: 18.2.0
     dev: false
 
+  /@blocksuite/phasor/0.4.0-20230110112105-ef07332:
+    resolution: {integrity: sha512-R5j/iK7WBFSk7vSk8HEAsxDwr+xDeY7JuzdGzzwnkcOaxuM6Eea6g0vMw7DPuWDAkvlcP7JsgXLnzWgFZh7qmA==}
+    peerDependencies:
+      yjs: ^13
+    dev: false
+
   /@blocksuite/phasor/0.4.0-20230110112105-ef07332_yjs@13.5.44:
     resolution: {integrity: sha512-R5j/iK7WBFSk7vSk8HEAsxDwr+xDeY7JuzdGzzwnkcOaxuM6Eea6g0vMw7DPuWDAkvlcP7JsgXLnzWgFZh7qmA==}
     peerDependencies:
       yjs: ^13
     dependencies:
       yjs: 13.5.44
+    dev: false
+
+  /@blocksuite/store/0.4.0-20230110112105-ef07332:
+    resolution: {integrity: sha512-NisHLf0uSyFu5DUZD13QSsp33C9vnd7Jf7jdLOAPztQ2U05NcGFopjM2InhwBmtmQSHrd/qi25PjgnAJ7/HSNQ==}
+    peerDependencies:
+      yjs: ^13
+    dependencies:
+      '@types/flexsearch': 0.7.3
+      '@types/quill': 1.3.10
+      buffer: 6.0.3
+      flexsearch: 0.7.21
+      idb-keyval: 6.2.0
+      ky: 0.33.1
+      lib0: 0.2.58
+      y-protocols: 1.0.5
+      y-webrtc: 10.2.3
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
     dev: false
 
   /@blocksuite/store/0.4.0-20230110112105-ef07332_yjs@13.5.44:

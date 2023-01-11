@@ -1,13 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as idb from 'lib0/indexeddb.js';
 import { Observable } from 'lib0/observable.js';
-import type { Doc } from 'yjs';
-import { applyUpdate, encodeStateAsUpdate, transact } from 'yjs';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 
 const customStoreName = 'custom';
 const updatesStoreName = 'updates';
 
 const PREFERRED_TRIM_SIZE = 500;
+
+const {
+  Y: { applyUpdate, transact, encodeStateAsUpdate },
+} = BlocksuiteWorkspace;
+
+type Doc = Parameters<typeof transact>[0];
 
 const fetchUpdates = async (provider: IndexedDBProvider) => {
   const [updatesStore] = idb.transact(provider.db as IDBDatabase, [
