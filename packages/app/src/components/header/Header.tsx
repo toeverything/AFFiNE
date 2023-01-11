@@ -40,7 +40,7 @@ const HeaderRightItems: Record<HeaderRightItemNames, ReactNode> = {
   editorOptionMenu: <EditorOptionMenu key="editorOptionMenu" />,
   trashButtonGroup: <TrashButtonGroup key="trashButtonGroup" />,
   themeModeSwitch: <ThemeModeSwitch key="themeModeSwitch" />,
-  syncUser: <SyncUser key="syncUser" />,
+  syncUser: null, //<SyncUser key="syncUser" />,
 };
 
 export const Header = ({
