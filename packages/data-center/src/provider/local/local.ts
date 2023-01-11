@@ -1,9 +1,14 @@
 import { BaseProvider } from '../base.js';
-import type { ProviderConstructorParams } from '../base';
+import type {
+  ProviderConstructorParams,
+  WorkspaceMeta0,
+  UpdateWorkspaceMetaParams,
+  CreateWorkspaceInfoParams,
+} from '../base';
 import { varStorage as storage } from 'lib0/storage';
-import { WorkspaceInfo, WorkspaceMeta } from '../../types';
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
-import { IndexedDBProvider } from './indexeddb.js';
+import { IndexedDBProvider } from './indexeddb/indexeddb.js';
+import { initStore } from './indexeddb/utils.js';
 import assert from 'assert';
 import { setDefaultAvatar } from '../utils.js';
 
@@ -15,11 +20,26 @@ export class LocalProvider extends BaseProvider {
 
   constructor(params: ProviderConstructorParams) {
     super(params);
-    this.loadWorkspaces();
   }
 
-  private _storeWorkspaces(workspaces: WorkspaceInfo[]) {
-    storage.setItem(WORKSPACE_KEY, JSON.stringify(workspaces));
+  private _storeWorkspaces(workspaces: WorkspaceMeta0[]) {
+    storage.setItem(
+      WORKSPACE_KEY,
+      JSON.stringify(
+        workspaces.map(w => {
+          return {
+            id: w.id,
+            name: w.name,
+            avatar: w.avatar,
+            owner: w.owner,
+            published: w.published,
+            memberCount: w.memberCount,
+            provider: w.provider,
+            syncMode: w.syncMode,
+          };
+        })
+      )
+    );
   }
 
   public override async linkLocal(workspace: BlocksuiteWorkspace) {
@@ -41,12 +61,12 @@ export class LocalProvider extends BaseProvider {
     return workspace;
   }
 
-  override loadWorkspaces(): Promise<WorkspaceInfo[]> {
+  override loadWorkspaces(): Promise<WorkspaceMeta0[]> {
     const workspaceStr = storage.getItem(WORKSPACE_KEY);
-    let workspaces: WorkspaceInfo[] = [];
+    let workspaces: WorkspaceMeta0[] = [];
     if (workspaceStr) {
       try {
-        workspaces = JSON.parse(workspaceStr) as WorkspaceInfo[];
+        workspaces = JSON.parse(workspaceStr) as WorkspaceMeta0[];
         workspaces.forEach(workspace => {
           this._workspaces.add(workspace);
         });
@@ -70,22 +90,22 @@ export class LocalProvider extends BaseProvider {
 
   public override async updateWorkspaceMeta(
     id: string,
-    meta: Partial<WorkspaceMeta>
+    meta: UpdateWorkspaceMetaParams
   ) {
     this._workspaces.update(id, meta);
     this._storeWorkspaces(this._workspaces.list());
   }
 
   public override async createWorkspaceInfo(
-    meta: WorkspaceMeta
-  ): Promise<WorkspaceInfo> {
-    const workspaceInfo: WorkspaceInfo = {
+    meta: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceMeta0> {
+    const workspaceInfo: WorkspaceMeta0 = {
       name: meta.name,
       id: uuidv4(),
-      isPublish: false,
+      published: false,
       avatar: '',
       owner: undefined,
-      isLocal: true,
+      syncMode: 'core',
       memberCount: 1,
       provider: 'local',
     };
@@ -94,31 +114,24 @@ export class LocalProvider extends BaseProvider {
 
   public override async createWorkspace(
     blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta
+    meta: WorkspaceMeta0
   ): Promise<BlocksuiteWorkspace | undefined> {
     const workspaceId = blocksuiteWorkspace.room;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
-    assert(meta.name, 'Workspace name is required');
     this._logger('Creating affine workspace');
 
-    const workspaceInfo: WorkspaceInfo = {
-      name: meta.name,
-      id: workspaceId,
-      isPublish: false,
-      avatar: '',
-      owner: undefined,
-      isLocal: true,
-      memberCount: 1,
-      provider: 'local',
+    const workspaceInfo: WorkspaceMeta0 = {
+      ...meta,
     };
 
-    this.linkLocal(blocksuiteWorkspace);
     blocksuiteWorkspace.meta.setName(meta.name);
 
     if (!meta.avatar) {
       await setDefaultAvatar(blocksuiteWorkspace);
       workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
     }
+
+    await initStore(blocksuiteWorkspace);
 
     this._workspaces.add(workspaceInfo);
     this._storeWorkspaces(this._workspaces.list());

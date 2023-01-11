@@ -27,8 +27,8 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^1.2.0",
-    "@blocksuite/blocks": "^0.3.1-20230109032243-37ad3ba",
-    "@blocksuite/store": "^0.3.1-20230109032243-37ad3ba",
+    "@blocksuite/blocks": "0.4.0-20230110112105-ef07332",
+    "@blocksuite/store": "0.4.0-20230110112105-ef07332",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
     "firebase": "^9.15.0",
@@ -37,7 +37,6 @@
     "ky-universal": "^0.11.0",
     "lib0": "^0.2.58",
     "swr": "^2.0.0",
-    "yjs": "^13.5.44",
     "y-protocols": "^1.0.5"
   },
   "peerDependencies": {

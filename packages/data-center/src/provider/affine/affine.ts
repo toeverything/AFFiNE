@@ -1,9 +1,12 @@
 import { BaseProvider } from '../base.js';
-import type { ProviderConstructorParams } from '../base';
-import type { User, WorkspaceInfo, WorkspaceMeta } from '../../types';
+import type {
+  ProviderConstructorParams,
+  CreateWorkspaceInfoParams,
+  WorkspaceMeta0,
+} from '../base';
+import type { User } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { BlockSchema } from '@blocksuite/blocks/models';
-import { applyUpdate } from 'yjs';
 import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
@@ -12,11 +15,17 @@ import { getApis } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
 import { MessageCode } from '../../message';
+import { token } from './apis/token.js';
+import { WebsocketClient } from './channel';
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
   apis?: Apis;
 }
+
+const {
+  Y: { applyUpdate, encodeStateAsUpdate },
+} = BlocksuiteWorkspace;
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
@@ -24,16 +33,21 @@ export class AffineProvider extends BaseProvider {
   private _onTokenRefresh?: Callback = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
   private _apis: Apis;
+  private _channel: WebsocketClient;
   // private _idbMap: Map<string, IndexedDBProvider> = new Map();
 
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
     this._apis = apis || getApis();
-    this.init().then(() => {
-      if (this._apis.token.isLogin) {
-        this.loadWorkspaces();
-      }
-    });
+    this._channel = new WebsocketClient(
+      `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${
+        window.location.host
+      }/global/sync/`,
+      this._logger
+    );
+    if (token.isLogin) {
+      this._connectChannel();
+    }
   }
 
   override async init() {
@@ -64,6 +78,32 @@ export class AffineProvider extends BaseProvider {
     }
   }
 
+  private _connectChannel() {
+    this._channel.connect();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this._channel.on('message', (message: any) => {
+      console.log('message', message);
+    });
+  }
+
+  private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
+    const { doc, room } = workspace;
+    assert(room);
+    assert(doc);
+    let ws = this._wsMap.get(room);
+    if (!ws) {
+      const wsUrl = `${
+        window.location.protocol === 'https:' ? 'wss' : 'ws'
+      }://${window.location.host}/api/sync/`;
+      ws = new WebsocketProvider(wsUrl, room, doc, {
+        params: { token: this._apis.token.refresh },
+      });
+      this._wsMap.set(room, ws);
+    }
+    return ws;
+  }
+
   private async _applyCloudUpdates(blocksuiteWorkspace: BlocksuiteWorkspace) {
     const { doc, room: workspaceId } = blocksuiteWorkspace;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
@@ -78,20 +118,10 @@ export class AffineProvider extends BaseProvider {
 
   override async warpWorkspace(workspace: BlocksuiteWorkspace) {
     await this._applyCloudUpdates(workspace);
-    const { doc, room } = workspace;
+    const { room } = workspace;
     assert(room);
     this.linkLocal(workspace);
-
-    let ws = this._wsMap.get(room);
-    if (!ws) {
-      const wsUrl = `${
-        window.location.protocol === 'https:' ? 'wss' : 'ws'
-      }://${window.location.host}/api/sync/`;
-      ws = new WebsocketProvider(wsUrl, room, doc, {
-        params: { token: this._apis.token.refresh },
-      });
-      this._wsMap.set(room, ws);
-    }
+    const ws = this._getWebsocketProvider(workspace);
     // close all websocket links
     Array.from(this._wsMap.entries()).forEach(([id, ws]) => {
       if (id !== room) {
@@ -115,12 +145,13 @@ export class AffineProvider extends BaseProvider {
       return [];
     }
     const workspacesList = await this._apis.getWorkspaces();
-    const workspaces: WorkspaceInfo[] = workspacesList.map(w => {
+    const workspaces: WorkspaceMeta0[] = workspacesList.map(w => {
       return {
         ...w,
         memberCount: 0,
         name: '',
         provider: 'affine',
+        syncMode: 'core',
       };
     });
     const workspaceInstances = workspaces.map(({ id }) => {
@@ -198,6 +229,9 @@ export class AffineProvider extends BaseProvider {
       }
     }
     const user = await this._apis.signInWithGoogle?.();
+    if (!this._channel.connected) {
+      this._connectChannel();
+    }
     if (!user) {
       this._messageCenter.send(MessageCode.loginError);
     }
@@ -205,6 +239,7 @@ export class AffineProvider extends BaseProvider {
 
   public override async getUserInfo(): Promise<User | undefined> {
     const user = this._apis.token.user;
+    await this.init;
     return user
       ? {
           id: user.id,
@@ -268,19 +303,17 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async createWorkspaceInfo(
-    meta: WorkspaceMeta
-  ): Promise<WorkspaceInfo> {
-    const { id } = await this._apis.createWorkspace(
-      meta as Required<WorkspaceMeta>
-    );
+    meta: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceMeta0> {
+    const { id } = await this._apis.createWorkspace(meta);
 
-    const workspaceInfo: WorkspaceInfo = {
+    const workspaceInfo: WorkspaceMeta0 = {
       name: meta.name,
       id: id,
-      isPublish: false,
+      published: false,
       avatar: '',
       owner: await this.getUserInfo(),
-      isLocal: true,
+      syncMode: 'core',
       memberCount: 1,
       provider: 'affine',
     };
@@ -289,7 +322,7 @@ export class AffineProvider extends BaseProvider {
 
   public override async createWorkspace(
     blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta
+    meta: WorkspaceMeta0
   ): Promise<BlocksuiteWorkspace | undefined> {
     const workspaceId = blocksuiteWorkspace.room;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
@@ -298,13 +331,13 @@ export class AffineProvider extends BaseProvider {
     this._applyCloudUpdates(blocksuiteWorkspace);
     this.linkLocal(blocksuiteWorkspace);
 
-    const workspaceInfo: WorkspaceInfo = {
+    const workspaceInfo: WorkspaceMeta0 = {
       name: meta.name,
       id: workspaceId,
-      isPublish: false,
+      published: false,
       avatar: '',
       owner: undefined,
-      isLocal: true,
+      syncMode: 'core',
       memberCount: 1,
       provider: 'affine',
     };
@@ -334,5 +367,34 @@ export class AffineProvider extends BaseProvider {
           email: user.email,
         }
       : null;
+  }
+
+  public override async assign(
+    to: BlocksuiteWorkspace,
+    from: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
+    assert(to.room, 'Blocksuite Workspace without room(workspaceId).');
+    const ws = this._getWebsocketProvider(to);
+    applyUpdate(to.doc, encodeStateAsUpdate(from.doc));
+    // TODO: upload blobs and make sure doc is synced
+    await new Promise<void>((resolve, reject) => {
+      ws.once('synced', () => {
+        setTimeout(() => resolve(), 1000);
+      });
+      ws.once('lost-connection', () => reject());
+      ws.once('connection-error', () => reject());
+    });
+    return to;
+  }
+
+  public override async logout(): Promise<void> {
+    token.clear();
+    this._channel.disconnect();
+    this._wsMap.forEach(ws => ws.disconnect());
+    storage.removeItem('token');
+  }
+
+  public override async getWorkspaceMembers(id: string) {
+    return this._apis.getWorkspaceMembers({ id });
   }
 }

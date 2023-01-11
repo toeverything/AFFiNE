@@ -1,6 +1,6 @@
 import { Observable } from 'lib0/observable';
 import { Message } from '../types';
-import { MessageCode } from './code';
+import { MessageCode } from './code.js';
 
 export class MessageCenter extends Observable<string> {
   constructor() {
