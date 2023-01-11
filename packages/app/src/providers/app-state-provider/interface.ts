@@ -3,7 +3,6 @@ import type { EditorContainer } from '@blocksuite/editor';
 
 import type {
   Page as StorePage,
-  Workspace as StoreWorkspace,
   PageMeta as StorePageMeta,
 } from '@blocksuite/store';
 import { MutableRefObject } from 'react';
@@ -19,7 +18,7 @@ export type AppStateValue = {
   dataCenter: DataCenter;
   user: User | null;
   workspaceList: WorkspaceUnit[];
-  currentWorkspace: StoreWorkspace | null;
+  currentWorkspace: WorkspaceUnit | null;
   currentMetaWorkSpace: WorkspaceUnit | null;
   currentWorkspaceId: string;
   pageList: PageMeta[];
@@ -31,7 +30,7 @@ export type AppStateValue = {
 export type AppStateFunction = {
   setEditor: MutableRefObject<(page: EditorContainer) => void>;
 
-  loadWorkspace: (workspaceId: string) => Promise<StoreWorkspace | null>;
+  loadWorkspace: (workspaceId: string) => Promise<WorkspaceUnit | null>;
   loadPage: (pageId: string) => void;
 
   login: () => Promise<User>;

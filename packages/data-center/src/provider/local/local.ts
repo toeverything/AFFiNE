@@ -23,7 +23,23 @@ export class LocalProvider extends BaseProvider {
   }
 
   private _storeWorkspaces(workspaces: WorkspaceMeta0[]) {
-    storage.setItem(WORKSPACE_KEY, JSON.stringify(workspaces));
+    storage.setItem(
+      WORKSPACE_KEY,
+      JSON.stringify(
+        workspaces.map(w => {
+          return {
+            id: w.id,
+            name: w.name,
+            avatar: w.avatar,
+            owner: w.owner,
+            published: w.published,
+            memberCount: w.memberCount,
+            provider: w.provider,
+            syncMode: w.syncMode,
+          };
+        })
+      )
+    );
   }
 
   public override async linkLocal(workspace: BlocksuiteWorkspace) {

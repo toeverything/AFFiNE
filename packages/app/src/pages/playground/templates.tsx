@@ -37,11 +37,11 @@ const All = () => {
   const { openPage, createPage } = usePageHelper();
   const { currentWorkspace } = useAppState();
   const _applyTemplate = function (pageId: string, template: Template) {
-    const page = currentWorkspace?.getPage(pageId);
+    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId);
 
     const title = template.name;
     if (page) {
-      currentWorkspace?.setPageMeta(page.id, { title });
+      currentWorkspace?.blocksuiteWorkspace?.setPageMeta(page.id, { title });
       if (page && page.root === null) {
         setTimeout(async () => {
           const editor = document.querySelector('editor-container');

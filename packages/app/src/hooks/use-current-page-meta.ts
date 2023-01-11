@@ -9,7 +9,7 @@ export const useCurrentPageMeta = (): PageMeta | null => {
       return null;
     }
     return (
-      (currentWorkspace.meta.pageMetas.find(
+      (currentWorkspace.blocksuiteWorkspace?.meta.pageMetas.find(
         p => p.id === currentPage.id
       ) as PageMeta) ?? null
     );
@@ -22,9 +22,11 @@ export const useCurrentPageMeta = (): PageMeta | null => {
   useEffect(() => {
     setCurrentPageMeta(pageMetaHandler);
 
-    const dispose = currentWorkspace?.meta.pagesUpdated.on(() => {
-      setCurrentPageMeta(pageMetaHandler);
-    }).dispose;
+    const dispose = currentWorkspace?.blocksuiteWorkspace?.meta.pagesUpdated.on(
+      () => {
+        setCurrentPageMeta(pageMetaHandler);
+      }
+    ).dispose;
 
     return () => {
       dispose?.();

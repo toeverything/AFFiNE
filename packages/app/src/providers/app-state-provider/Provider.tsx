@@ -48,18 +48,21 @@ export const AppStateProvider = ({
   }, []);
 
   useEffect(() => {
-    if (!appState?.currentWorkspace) {
+    if (!appState?.currentWorkspace?.blocksuiteWorkspace) {
       return;
     }
     const currentWorkspace = appState.currentWorkspace;
-    const dispose = currentWorkspace.meta.pagesUpdated.on(() => {
-      setAppState({
-        ...appState,
-        pageList: currentWorkspace.meta.pageMetas as PageMeta[],
-      });
-    }).dispose;
+    const dispose = currentWorkspace?.blocksuiteWorkspace?.meta.pagesUpdated.on(
+      () => {
+        setAppState({
+          ...appState,
+          pageList: currentWorkspace.blocksuiteWorkspace?.meta
+            .pageMetas as PageMeta[],
+        });
+      }
+    ).dispose;
     return () => {
-      dispose();
+      dispose && dispose();
     };
   }, [appState]);
 
@@ -83,7 +86,7 @@ export const AppStateProvider = ({
     if (pageId === currentPage?.id) {
       return;
     }
-    const page = currentWorkspace?.getPage(pageId) || null;
+    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId) || null;
     setAppState({
       ...appState,
       currentPage: page,
@@ -103,16 +106,17 @@ export const AppStateProvider = ({
     const workspace = await dataCenter.loadWorkspace(workspaceId);
     const currentMetaWorkSpace = dataCenter.workspaces.find(
       (item: WorkspaceUnit) => {
-        return item.id.toString() === workspace.room;
+        return item.id.toString() === workspace.id;
       }
     );
-
+    const pageList =
+      (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
       ...appState,
       currentWorkspace: workspace,
       currentWorkspaceId: workspaceId,
       currentMetaWorkSpace: currentMetaWorkSpace ?? null,
-      pageList: currentWorkspace?.meta.pageMetas as PageMeta[],
+      pageList: pageList,
       currentPage: null,
       editor: null,
     });

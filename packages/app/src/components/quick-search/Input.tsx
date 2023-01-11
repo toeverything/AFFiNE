@@ -80,7 +80,7 @@ export const Input = (props: {
         }}
         placeholder={
           isPublish
-            ? `Search in ${currentWorkspace?.meta.name}`
+            ? `Search in ${currentWorkspace?.blocksuiteWorkspace?.meta.name}`
             : 'Quick Search...'
         }
       />

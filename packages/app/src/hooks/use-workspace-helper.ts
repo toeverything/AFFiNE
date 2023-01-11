@@ -1,7 +1,7 @@
 import { useAppState } from '@/providers/app-state-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
-import { Workspace } from '@blocksuite/store';
+import { WorkspaceUnit } from '@affine/datacenter';
 import router from 'next/router';
 
 export const useWorkspaceHelper = () => {
@@ -12,8 +12,8 @@ export const useWorkspaceHelper = () => {
     const workspaceInfo = await dataCenter.createWorkspace({
       name: name,
     });
-    if (workspaceInfo && workspaceInfo.room) {
-      return await dataCenter.loadWorkspace(workspaceInfo.room);
+    if (workspaceInfo && workspaceInfo.id) {
+      return await dataCenter.loadWorkspace(workspaceInfo.id);
     }
     return null;
   };
@@ -26,14 +26,14 @@ export const useWorkspaceHelper = () => {
 
   const updateWorkspace = async (
     { name, avatarBlob }: { name?: string; avatarBlob?: Blob },
-    workspace: Workspace
+    workspace: WorkspaceUnit
   ) => {
     if (name) {
       await dataCenter.updateWorkspaceMeta({ name }, workspace);
     }
     if (avatarBlob) {
-      const blobId = await dataCenter.setBlob(workspace, avatarBlob);
-      await dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
+      // const blobId = await dataCenter.setBlob(workspace, avatarBlob);
+      // await dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
     }
   };
 

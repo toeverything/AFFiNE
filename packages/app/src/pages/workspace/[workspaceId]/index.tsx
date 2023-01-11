@@ -16,7 +16,8 @@ const WorkspaceIndex = () => {
       if (!workspaceLoaded) {
         return;
       }
-      const savedPageId = currentWorkspace?.meta.pageMetas[0]?.id;
+      const savedPageId =
+        currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas[0]?.id;
       if (savedPageId) {
         router.replace(`/workspace/${activeWorkspaceId}/${savedPageId}`);
         return;

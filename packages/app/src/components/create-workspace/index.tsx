@@ -19,8 +19,8 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const router = useRouter();
   const handleCreateWorkspace = async () => {
     const workspace = await createWorkspace(workspaceName);
-    if (workspace && workspace.room) {
-      router.replace(`/workspace/${workspace.room}`);
+    if (workspace && workspace.id) {
+      router.replace(`/workspace/${workspace.id}`);
       onClose();
     } else {
       console.log('create error');
