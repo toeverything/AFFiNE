@@ -13,7 +13,7 @@ export interface WorkspaceUnitCtorParams {
   provider: string;
   syncMode: SyncMode;
 
-  blocksuiteWorkspace?: BlocksuiteWorkspace;
+  blocksuiteWorkspace?: BlocksuiteWorkspace | null;
 }
 
 export type UpdateWorkspaceUnitParams = Partial<
