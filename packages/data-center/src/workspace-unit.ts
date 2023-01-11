@@ -30,7 +30,7 @@ export class WorkspaceUnit {
   public provider!: string;
   public syncMode: 'all' | 'core' = 'core';
 
-  private _blocksuiteWorkspace?: BlocksuiteWorkspace;
+  private _blocksuiteWorkspace?: BlocksuiteWorkspace | null;
 
   constructor(params: WorkspaceUnitCtorParams) {
     this.id = params.id;
@@ -41,7 +41,7 @@ export class WorkspaceUnit {
     return this._blocksuiteWorkspace;
   }
 
-  setBlocksuiteWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
+  setBlocksuiteWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace | null) {
     if (blocksuiteWorkspace?.room !== this.id) {
       throw new Error('Workspace id inconsistent.');
     }
