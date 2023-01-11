@@ -10,7 +10,7 @@ import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
-import { getApis } from './apis/index.js';
+import { getApis, Workspace } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
 import { MessageCode } from '../../message/index.js';
@@ -23,6 +23,13 @@ import {
 } from './utils.js';
 import { WorkspaceUnit } from '../../workspace-unit.js';
 import { createBlocksuiteWorkspace } from '../../utils/index.js';
+import type { SyncMode } from '../../workspace-unit';
+
+type ChannelMessage = {
+  ws_list: Workspace[];
+  ws_details: Record<string, WorkspaceDetail>;
+  metadata: Record<string, { avatar: string; name: string }>;
+};
 
 export interface AffineProviderConstructorParams
   extends ProviderConstructorParams {
@@ -39,21 +46,12 @@ export class AffineProvider extends BaseProvider {
   private _onTokenRefresh?: Callback = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
   private _apis: Apis;
-  private _channel: WebsocketClient;
+  private _channel?: WebsocketClient;
   // private _idbMap: Map<string, IndexedDBProvider> = new Map();
 
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
     this._apis = apis || getApis();
-    this._channel = new WebsocketClient(
-      `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${
-        window.location.host
-      }/global/sync/`,
-      this._logger
-    );
-    if (token.isLogin) {
-      this._connectChannel();
-    }
   }
 
   override async init() {
@@ -82,14 +80,59 @@ export class AffineProvider extends BaseProvider {
     } else {
       storage.setItem('token', this._apis.token.refresh);
     }
+
+    if (token.isLogin) {
+      this._connectChannel();
+    }
   }
 
   private _connectChannel() {
-    this._channel.connect();
+    if (!this._channel) {
+      this._channel = new WebsocketClient(
+        `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${
+          window.location.host
+        }/api/global/sync/`,
+        this._logger,
+        {
+          params: {
+            token: this._apis.token.refresh,
+          },
+        }
+      );
+    }
+    this._channel.on('message', (msg: ChannelMessage) => {
+      this._handlerAffineListMessage(msg);
+    });
+  }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this._channel.on('message', (message: any) => {
-      console.log('message', message);
+  private _handlerAffineListMessage({ ws_details, metadata }: ChannelMessage) {
+    this._logger('receive server message');
+    Object.entries(ws_details).forEach(async ([id, detail]) => {
+      const { name, avatar } = metadata[id];
+      assert(name);
+      const workspace = {
+        name: name,
+        avatar,
+        owner: {
+          name: detail.owner.name,
+          id: detail.owner.id,
+          email: detail.owner.email,
+          avatar: detail.owner.avatar_url,
+        },
+        published: detail.public,
+        memberCount: detail.member_count,
+        provider: 'affine',
+        syncMode: 'core' as SyncMode,
+      };
+      if (this._workspaces.get(id)) {
+        this._workspaces.update(id, workspace);
+      } else {
+        const workspaceUnit = await loadWorkspaceUnit(
+          { id, ...workspace },
+          this._apis
+        );
+        this._workspaces.add(workspaceUnit);
+      }
     });
   }
 
@@ -190,7 +233,7 @@ export class AffineProvider extends BaseProvider {
       }
     }
     const user = await this._apis.signInWithGoogle?.();
-    if (!this._channel.connected) {
+    if (!this._channel?.connected) {
       this._connectChannel();
     }
     if (!user) {
@@ -296,13 +339,13 @@ export class AffineProvider extends BaseProvider {
     workspace_id: string,
     email: string
   ): Promise<User | null> {
-    const user = await this._apis.getUserByEmail({ workspace_id, email });
-    return user
+    const users = await this._apis.getUserByEmail({ workspace_id, email });
+    return users?.length
       ? {
-          id: user.id,
-          name: user.name,
-          avatar: user.avatar_url,
-          email: user.email,
+          id: users[0].id,
+          name: users[0].name,
+          avatar: users[0].avatar_url,
+          email: users[0].email,
         }
       : null;
   }
@@ -346,12 +389,16 @@ export class AffineProvider extends BaseProvider {
 
   public override async logout(): Promise<void> {
     token.clear();
-    this._channel.disconnect();
+    this._channel?.disconnect();
     this._wsMap.forEach(ws => ws.disconnect());
     storage.removeItem('token');
   }
 
   public override async getWorkspaceMembers(id: string) {
     return this._apis.getWorkspaceMembers({ id });
+  }
+
+  public override async acceptInvitation(invitingCode: string): Promise<void> {
+    await this._apis.acceptInviting({ invitingCode });
   }
 }

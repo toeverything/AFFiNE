@@ -411,6 +411,18 @@ export class DataCenter {
     return [];
   }
 
+  /**
+   * accept invitation
+   * @param {string} inviteCode
+   */
+  async acceptInvitation(inviteCode: string, providerStr = 'affine') {
+    const provider = this.providerMap.get(providerStr);
+    if (provider) {
+      return await provider.acceptInvitation(inviteCode);
+    }
+    return [];
+  }
+
   onMessage(cb: (message: Message) => void) {
     return this._messageCenter.onMessage(cb);
   }
