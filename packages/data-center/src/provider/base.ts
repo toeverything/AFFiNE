@@ -3,6 +3,7 @@ import { MessageCenter } from '../message';
 import { Logger, User } from '../types';
 import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
 import type { WorkspaceUnitCtorParams } from '../workspace-unit';
+import { Member } from './affine/apis';
 
 const defaultLogger = () => {
   return;
@@ -212,5 +213,15 @@ export class BaseProvider {
   public async assign(to: BlocksuiteWorkspace, from: BlocksuiteWorkspace) {
     from;
     return to;
+  }
+
+  /**
+   * get workspace members
+   * @param {string} workspaceId
+   * @returns
+   */
+  public getWorkspaceMembers(workspaceId: string): Promise<Member[]> {
+    workspaceId;
+    return Promise.resolve([]);
   }
 }

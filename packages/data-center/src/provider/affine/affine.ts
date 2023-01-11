@@ -12,7 +12,7 @@ import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
-import { getApis } from './apis/index.js';
+import { getApis, Member } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { setDefaultAvatar } from '../utils.js';
 import { MessageCode } from '../../message';
@@ -364,5 +364,9 @@ export class AffineProvider extends BaseProvider {
   public override async logout(): Promise<void> {
     token.clear();
     storage.removeItem('token');
+  }
+
+  public override async getWorkspaceMembers(id: string) {
+    return this._apis.getWorkspaceMembers({ id });
   }
 }
