@@ -104,10 +104,13 @@ export class AffineProvider extends BaseProvider {
     return ws;
   }
 
-  private async _applyCloudUpdates(blocksuiteWorkspace: BlocksuiteWorkspace) {
+  private async _applyCloudUpdates(
+    blocksuiteWorkspace: BlocksuiteWorkspace,
+    published = false
+  ) {
     const { doc, room: workspaceId } = blocksuiteWorkspace;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
-    const updates = await this._apis.downloadWorkspace(workspaceId);
+    const updates = await this._apis.downloadWorkspace(workspaceId, published);
     if (updates && updates.byteLength) {
       await new Promise(resolve => {
         doc.once('update', resolve);
@@ -117,7 +120,7 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async loadPublicWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
-    await this._applyCloudUpdates(blocksuiteWorkspace);
+    await this._applyCloudUpdates(blocksuiteWorkspace, true);
     return blocksuiteWorkspace;
   }
 
