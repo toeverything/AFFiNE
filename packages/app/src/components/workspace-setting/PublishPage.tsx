@@ -14,8 +14,7 @@ import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 
 export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
-  const shareUrl =
-    window.location.host + '/workspace/' + workspace.id + '?share=true';
+  const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
   const { publishWorkspace, enableWorkspace } = useWorkspaceHelper();
 
   const togglePublic = async (flag: boolean) => {

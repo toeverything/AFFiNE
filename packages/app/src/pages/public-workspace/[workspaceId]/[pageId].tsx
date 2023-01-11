@@ -1,37 +1,55 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import type { NextPageWithLayout } from '../..//_app';
-
+import { styled } from '@/styles';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
+import { Page as PageStore, Workspace } from '@blocksuite/store';
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
 const Page: NextPageWithLayout = () => {
-  const [workspace, setWorkspace] = useState(null);
-  const [page, setPage] = useState(null);
+  const [workspace, setWorkspace] = useState<Workspace>();
+  const [page, setPage] = useState<PageStore>();
   const { dataCenter } = useAppState();
-  console.log('dataCenter: ', dataCenter);
   const router = useRouter();
-
-  console.log(router.query.workspaceId);
-  dataCenter
-    .loadPublicWorkspace(router.query.workspaceId as string)
-    .then(data => {
-      console.log(data);
-    });
+  useEffect(() => {
+    dataCenter
+      .loadPublicWorkspace(router.query.workspaceId as string)
+      .then(data => {
+        if (data && data.blocksuiteWorkspace) {
+          setWorkspace(data.blocksuiteWorkspace);
+          if (
+            router.query.pageId &&
+            data.blocksuiteWorkspace.meta.pageMetas.find(
+              p => p.id === router.query.pageId
+            )
+          ) {
+            const page = data.blocksuiteWorkspace?.getPage(
+              router.query.pageId as string
+            );
+            page && setPage(page);
+          } else {
+            router.push('/404');
+          }
+        }
+      })
+      .catch(() => {
+        router.push('/404');
+      });
+  }, [router, dataCenter]);
   return (
-    <>
+    <PageContainer>
       {workspace && page && (
         <DynamicBlocksuite
           page={page}
           workspace={workspace}
-          setEditor={() => {
-            console.log('test');
+          setEditor={editor => {
+            editor.readonly = true;
           }}
         />
       )}
-    </>
+    </PageContainer>
   );
 };
 
@@ -40,3 +58,12 @@ Page.getLayout = function getLayout(page: ReactElement) {
 };
 
 export default Page;
+
+export const PageContainer = styled.div(({ theme }) => {
+  return {
+    height: 'calc(100vh)',
+    padding: '78px 72px',
+    overflowY: 'auto',
+    backgroundColor: theme.colors.pageBackground,
+  };
+});

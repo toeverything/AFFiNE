@@ -152,7 +152,9 @@ export class AffineProvider extends BaseProvider {
     const updates = await this._apis.downloadWorkspace(workspaceId, published);
     if (updates && updates.byteLength) {
       await new Promise(resolve => {
-        doc.once('update', resolve);
+        doc.once('update', () => {
+          setTimeout(resolve, 100);
+        });
         BlocksuiteWorkspace.Y.applyUpdate(doc, new Uint8Array(updates));
       });
     }

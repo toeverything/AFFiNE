@@ -1,6 +1,4 @@
 import { styled } from '@/styles';
-import { Button } from '@/ui/button';
-import MuiAvatar from '@mui/material/Avatar';
 
 export const StyledSettingContainer = styled('div')(() => {
   return {

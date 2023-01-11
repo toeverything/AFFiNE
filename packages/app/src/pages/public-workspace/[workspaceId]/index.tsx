@@ -1,29 +1,31 @@
 import { PageList } from '@/components/page-list';
-import { AllPagesIcon } from '@blocksuite/icons';
-import { PageListHeader } from '@/components/header';
-import { ReactElement } from 'react';
-import { useTranslation } from '@affine/i18n';
-import { useAppState } from '@/providers/app-state-provider';
+import { ReactElement, useEffect, useState } from 'react';
+import { PageMeta, useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
+import { PageContainer } from './[pageId]';
 const All = () => {
-  const { pageList } = useAppState();
-  const { t } = useTranslation();
   const { dataCenter } = useAppState();
   const router = useRouter();
+  const [pageList, setPageList] = useState<PageMeta[]>([]);
+  useEffect(() => {
+    dataCenter
+      .loadPublicWorkspace(router.query.workspaceId as string)
+      .then(data => {
+        setPageList(data.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]);
+      })
+      .catch(() => {
+        router.push('/404');
+      });
+  }, [router, dataCenter]);
 
-  console.log(router.query.workspaceId);
-  dataCenter
-    .loadPublicWorkspace(router.query.workspaceId as string)
-    .then(data => {
-      console.log(data);
-    });
   return (
-    <>
+    <PageContainer>
       <PageList
         pageList={pageList.filter(p => !p.trash)}
-        showFavoriteTag={true}
+        showFavoriteTag={false}
+        isPublic={true}
       />
-    </>
+    </PageContainer>
   );
 };
 
