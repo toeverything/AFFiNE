@@ -122,8 +122,8 @@ export class DataCenter {
    * @param {string} workspaceId workspace id
    */
   private _getBlocksuiteWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
-    assert(workspaceInfo, 'Workspace not found');
+    // const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
+    // assert(workspaceInfo, 'Workspace not found');
     return (
       // this._workspaceInstances.get(workspaceId) ||
       createBlocksuiteWorkspace(workspaceId)
