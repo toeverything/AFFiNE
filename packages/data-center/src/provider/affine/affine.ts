@@ -116,6 +116,11 @@ export class AffineProvider extends BaseProvider {
     }
   }
 
+  override async loadPublicWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
+    await this._applyCloudUpdates(blocksuiteWorkspace);
+    return blocksuiteWorkspace;
+  }
+
   override async warpWorkspace(workspace: BlocksuiteWorkspace) {
     await this._applyCloudUpdates(workspace);
     const { room } = workspace;

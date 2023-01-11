@@ -13,7 +13,7 @@ import assert from 'assert';
 import { getLogger } from './logger';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
-import type { WorkspaceUnit } from './workspace-unit';
+import { WorkspaceUnit } from './workspace-unit';
 
 /**
  * @class DataCenter
@@ -173,6 +173,29 @@ export class DataCenter {
     });
     workspaceUnit.setBlocksuiteWorkspace(workspace);
     return workspaceUnit;
+  }
+
+  public async loadPublicWorkspace(workspaceId: string) {
+    const workspaceUnit = this._workspaceUnitCollection.find(workspaceId);
+    assert(workspaceUnit, 'Workspace not found');
+    const provider = this.providerMap.get(workspaceUnit.provider);
+    assert(provider);
+    const blocksuiteWorkspace = this._getBlocksuiteWorkspace(workspaceId);
+    await provider.loadPublicWorkspace(blocksuiteWorkspace);
+
+    const workspaceUnitForPublic = new WorkspaceUnit({
+      id: workspaceUnit.id,
+      name: workspaceUnit.name,
+      avatar: workspaceUnit.avatar,
+      owner: workspaceUnit.owner,
+      published: workspaceUnit.published,
+      provider: workspaceUnit.provider,
+      memberCount: workspaceUnit.memberCount,
+      syncMode: workspaceUnit.syncMode,
+    });
+
+    workspaceUnitForPublic.setBlocksuiteWorkspace(blocksuiteWorkspace);
+    return workspaceUnitForPublic;
   }
 
   /**
