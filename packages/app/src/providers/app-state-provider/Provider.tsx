@@ -100,7 +100,7 @@ export const AppStateProvider = ({
     if (workspaceId === currentWorkspace?.id) {
       return currentWorkspace;
     }
-    const workspace = await dataCenter.loadWorkspace(workspaceId);
+    const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
