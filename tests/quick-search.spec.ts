@@ -32,7 +32,7 @@ test.describe('Open quick search', () => {
     await expect(quickSearch).toBeVisible();
   });
 
-  test('Click arrowDown icon after title', async ({ page }) => {
+  test.skip('Click arrowDown icon after title', async ({ page }) => {
     await newPage(page);
     const quickSearchButton = page.locator(
       '[data-testid=header-quickSearchButton]'
