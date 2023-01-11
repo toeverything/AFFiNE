@@ -1,14 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import {
-  StyledSearchArrowWrapper,
-  StyledSwitchWrapper,
-  StyledTitle,
-  StyledTitleWrapper,
-} from './styles';
+import { StyledSwitchWrapper, StyledTitle, StyledTitleWrapper } from './styles';
 import { Content } from '@/ui/layout';
 import { useAppState } from '@/providers/app-state-provider/context';
 import EditorModeSwitch from '@/components/editor-mode-switch';
-import QuickSearchButton from './QuickSearchButton';
 import Header from './Header';
 import usePropsUpdated from '@/hooks/use-props-updated';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
@@ -64,9 +58,9 @@ export const EditorHeader = () => {
               />
             </StyledSwitchWrapper>
             <Content ellipsis={true}>{title}</Content>
-            <StyledSearchArrowWrapper>
+            {/* <StyledSearchArrowWrapper>
               <QuickSearchButton />
-            </StyledSearchArrowWrapper>
+            </StyledSearchArrowWrapper> */}
           </StyledTitleWrapper>
         </StyledTitle>
       )}
