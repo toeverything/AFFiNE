@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { WorkspaceUnitCollection } from './workspace-unit-collection.js';
 import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
+import { WorkspaceUnit } from './workspace-unit.js';
 
 test.describe.serial('workspace meta collection observable', () => {
   const workspaceUnitCollection = new WorkspaceUnitCollection();
@@ -14,13 +15,15 @@ test.describe.serial('workspace meta collection observable', () => {
         expect(event.added?.[0]?.id).toEqual('123');
       }
     );
-    scope.add({
+    const workspaceUnit = new WorkspaceUnit({
       id: '123',
       name: 'test',
+      avatar: undefined,
       memberCount: 1,
       provider: '',
       syncMode: 'core',
     });
+    scope.add(workspaceUnit);
   });
 
   test('list workspace', () => {

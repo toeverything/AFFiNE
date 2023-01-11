@@ -1,19 +1,18 @@
 import { Observable } from 'lib0/observable';
-import { WorkspaceUnit } from './workspace-unit.js';
 import type {
-  WorkspaceUnitCtorParams,
+  WorkspaceUnit,
   UpdateWorkspaceUnitParams,
 } from './workspace-unit';
 
 export interface WorkspaceUnitCollectionScope {
   get: (workspaceId: string) => WorkspaceUnit | undefined;
   list: () => WorkspaceUnit[];
-  add: (workspace: WorkspaceUnitCtorParams) => void;
+  add: (workspace: WorkspaceUnit | WorkspaceUnit[]) => void;
   remove: (workspaceId: string) => boolean;
   clear: () => void;
   update: (
     workspaceId: string,
-    workspaceMeta: UpdateWorkspaceUnitParams
+    workspaceUnit: UpdateWorkspaceUnitParams
   ) => void;
 }
 
@@ -59,20 +58,23 @@ export class WorkspaceUnitCollection {
       return this._workspaceUnitMap.get(workspaceId);
     };
 
-    const add = (workspace: WorkspaceUnitCtorParams) => {
-      if (this._workspaceUnitMap.has(workspace.id)) {
-        // FIXME: multiple add same workspace
-        return;
-      }
+    const add = (workspaceUnit: WorkspaceUnit | WorkspaceUnit[]) => {
+      const workspaceUnits = Array.isArray(workspaceUnit)
+        ? workspaceUnit
+        : [workspaceUnit];
 
-      const workspaceUnit = new WorkspaceUnit(workspace);
-      this._workspaceUnitMap.set(workspace.id, workspaceUnit);
-
-      scopedWorkspaceIds.add(workspace.id);
+      workspaceUnits.forEach(workspaceUnit => {
+        if (this._workspaceUnitMap.has(workspaceUnit.id)) {
+          // FIXME: multiple add same workspace
+          return;
+        }
+        this._workspaceUnitMap.set(workspaceUnit.id, workspaceUnit);
+        scopedWorkspaceIds.add(workspaceUnit.id);
+      });
 
       this._events.emit('change', [
         {
-          added: [workspaceUnit],
+          added: workspaceUnits,
         } as WorkspaceUnitCollectionChangeEvent,
       ]);
     };
@@ -107,10 +109,7 @@ export class WorkspaceUnitCollection {
       });
     };
 
-    const update = (
-      workspaceId: string,
-      workspaceMeta: UpdateWorkspaceUnitParams
-    ) => {
+    const update = (workspaceId: string, meta: UpdateWorkspaceUnitParams) => {
       if (!scopedWorkspaceIds.has(workspaceId)) {
         return true;
       }
@@ -120,7 +119,7 @@ export class WorkspaceUnitCollection {
         return true;
       }
 
-      workspaceUnit.update(workspaceMeta);
+      workspaceUnit.update(meta);
 
       this._events.emit('change', [
         {
