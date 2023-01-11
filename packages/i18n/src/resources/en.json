@@ -141,6 +141,5 @@
   "Sign in": "Sign in to AFFiNE Cloud",
   "Sync Description": "{{workspaceName}} is a Local Workspace. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud.",
   "Sync Description2": "<1>{{workspaceName}}</1> is a Cloud Workspace. All data will be synchronised and saved to AFFiNE Cloud.",
-  "Delete Workspace Description": "Deleting (<1>{{workspace}}</1>) cannot be undone, please proceed with caution. All contents will be lost.",
-  "test auto update": "test"
+  "Delete Workspace Description": "Deleting (<1>{{workspace}}</1>) cannot be undone, please proceed with caution. All contents will be lost."
 }

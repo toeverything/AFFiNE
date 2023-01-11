@@ -1,8 +1,8 @@
 name: Download Languages Resources
 
 on:
-  # schedule:
-  #   - cron: "0 0 * * 5" # At 00:00(UTC) on Friday.
+  schedule:
+    - cron: '0 0 * * 5' # At 00:00(UTC) on Friday.
   workflow_dispatch:
 
 # Cancels all previous workflow runs for pull requests that have not completed.
