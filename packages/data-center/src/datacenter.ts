@@ -102,7 +102,12 @@ export class DataCenter {
     const providerId = await this._getProvider(id, params.providerId);
 
     // init workspace & register block schema
-    const workspace = new Workspace({ room: id }).register(BlockSchema);
+    const workspace = new Workspace({
+      room: id,
+      defaultFlags: {
+        enable_drag_handle: false,
+      },
+    }).register(BlockSchema);
 
     const Provider = this._providers.get(providerId);
     assert(Provider);
