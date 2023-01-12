@@ -23,7 +23,11 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
           }}
         >
           <picture>
-            <img src={props.avatar} alt="" />
+            <img
+              style={{ width: sizeStr, height: sizeStr }}
+              src={props.avatar}
+              alt=""
+            />
           </picture>
         </div>
       ) : (

@@ -20,6 +20,7 @@ export const writeUpdatesToLocal = async (
   if (updatesStore) {
     await idb.addAutoKey(updatesStore, currState);
   }
+  db.close();
 };
 
 export const applyLocalUpdates = async (
