@@ -26,11 +26,12 @@ import { toast } from '@/ui/toast';
 import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
 import { Wrapper } from '@/ui/layout';
+import { useTranslation } from '@affine/i18n';
 
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const { members, removeMember, loaded } = useMembers();
-
+  const { t } = useTranslation();
   // FIXME: DELETE THIS
   const { user, login, updateWorkspaceMeta } = useTemporaryHelper();
   const { confirm } = useConfirm();
@@ -51,10 +52,10 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             <>
               <StyledMemberTitleContainer>
                 <StyledMemberNameContainer>
-                  Users({members.length})
+                  {t('Users')} ({members.length})
                 </StyledMemberNameContainer>
                 <StyledMemberRoleContainer>
-                  Access level
+                  {t('Access level')}
                 </StyledMemberRoleContainer>
               </StyledMemberTitleContainer>
               {members.map((member, index) => {
@@ -138,7 +139,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             type="primary"
             shape="circle"
           >
-            Invite Members
+            {t('Invite Members')}
           </Button>
           <InviteMemberModal
             onClose={() => {
@@ -158,17 +159,17 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
   return (
     <StyledMemberWarp>
-      <>Collaborating with other members requires AFFiNE Cloud service.</>
+      <>{t('Collaboration Description')}</>
       <StyledPublishExplanation>
         <Button
           type="primary"
           shape="circle"
           onClick={() => {
             confirm({
-              title: 'Enable AFFiNE Cloud?',
-              content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-              confirmText: user ? 'Enable' : 'Sign in and Enable',
-              cancelText: 'Skip',
+              title: `${t('Enable AFFiNE Cloud')}?`,
+              content: t('Enable AFFiNE Cloud Description'),
+              confirmText: user ? t('Enable') : t('Sign in and Enable'),
+              cancelText: t('Skip'),
             }).then(confirm => {
               if (confirm) {
                 if (user) {
@@ -181,7 +182,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             });
           }}
         >
-          Enable AFFiNE Cloud
+          {t('Enable AFFiNE Cloud')}
         </Button>
       </StyledPublishExplanation>
     </StyledMemberWarp>

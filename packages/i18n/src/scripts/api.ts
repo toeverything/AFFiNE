@@ -1,5 +1,5 @@
 // cSpell:ignore Tolgee
-import { fetchTolgee } from './request';
+import { fetchTolgee } from './request.js';
 
 /**
  * Returns all project languages

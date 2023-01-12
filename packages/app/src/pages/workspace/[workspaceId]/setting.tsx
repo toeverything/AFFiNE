@@ -24,6 +24,7 @@ import {
 import { useAppState } from '@/providers/app-state-provider';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { WorkspaceUnit } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
 
 type TabNames = 'general' | 'members' | 'publish' | 'sync' | 'export';
 
@@ -61,7 +62,7 @@ const tabMap: {
 
 const WorkspaceSetting = () => {
   const { currentWorkspace } = useAppState();
-
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabNames>(tabMap[0].name);
   const handleTabChange = (tab: TabNames) => {
     setActiveTab(tab);
@@ -75,7 +76,7 @@ const WorkspaceSetting = () => {
     <StyledSettingContainer>
       <StyledSettingSidebar>
         <StyledSettingSidebarHeader>
-          Workspace Settings
+          {t('Workspace Settings')}
         </StyledSettingSidebarHeader>
         <StyledSettingTabContainer>
           {tabMap.map(({ icon, name }) => {
