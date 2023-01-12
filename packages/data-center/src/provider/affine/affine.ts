@@ -399,7 +399,7 @@ export class AffineProvider extends BaseProvider {
     return this._apis.getWorkspaceMembers({ id });
   }
 
-  public override async acceptInvitation(invitingCode: string): Promise<void> {
-    await this._apis.acceptInviting({ invitingCode });
+  public override async acceptInvitation(invitingCode: string) {
+    return await this._apis.acceptInviting({ invitingCode });
   }
 }

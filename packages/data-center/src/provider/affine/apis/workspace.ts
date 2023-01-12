@@ -197,13 +197,13 @@ export interface AcceptInvitingParams {
 
 export async function acceptInviting(
   params: AcceptInvitingParams
-): Promise<void> {
-  await bareClient
-    .post(`api/invitation/${params.invitingCode}`)
-    .catch(error => {
-      sendMessage(messageCode.acceptInvitingFailed);
-      throw new RequestError('accept inviting failed', error);
-    });
+): Promise<Permission> {
+  try {
+    return bareClient.post(`api/invitation/${params.invitingCode}`).json();
+  } catch (error) {
+    sendMessage(messageCode.acceptInvitingFailed);
+    throw new RequestError('accept inviting failed', error);
+  }
 }
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {
