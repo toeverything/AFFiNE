@@ -1,44 +1,37 @@
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { useAppState } from '@/providers/app-state-provider';
 import { styled } from '@/styles';
 import { Empty } from '@/ui/empty';
-import { Avatar } from '@mui/material';
-// import { getDataCenter } from '@affine/datacenter';
+// import { Avatar } from '@mui/material';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
-const User = ({ name, avatar }: { name: string; avatar?: string }) => {
-  return (
-    <UserContent>
-      {avatar ? (
-        <Avatar src={avatar}></Avatar>
-      ) : (
-        <UserIcon>{name.slice(0, 1)}</UserIcon>
-      )}
-      <span>{name}</span>
-    </UserContent>
-  );
-};
+// const User = ({ name, avatar }: { name: string; avatar?: string }) => {
+//   return (
+//     <UserContent>
+//       {avatar ? (
+//         <Avatar src={avatar}></Avatar>
+//       ) : (
+//         <UserIcon>{name.slice(0, 1)}</UserIcon>
+//       )}
+//       <span>{name}</span>
+//     </UserContent>
+//   );
+// };
 
 export default function DevPage() {
   const router = useRouter();
   const [successInvited, setSuccessInvited] = useState<boolean>(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [inviteData, setInviteData] = useState<any>(null);
+  const { acceptInvite } = useWorkspaceHelper();
+  const { user } = useAppState();
   useEffect(() => {
-    // getDataCenter()
-    //   .then(dc =>
-    //     dc.apis.acceptInviting({
-    //       invitingCode: router.query.invite_code as string,
-    //     })
-    //   )
-    //   .then(data => {
-    //     setSuccessInvited(true);
-    //     setInviteData(data);
-    //   })
-    //   .catch(err => {
-    //     console.log('err: ', err);
-    //   });
-    setSuccessInvited(true);
-    setInviteData(null);
+    router.query.invite_code &&
+      acceptInvite(router.query.invite_code as string).then(data => {
+        if (data && data.accepted) {
+          setSuccessInvited(true);
+          user && router.push(`/workspace/${data.workspace_id}`);
+        }
+      });
   }, [router.query.invite_code]);
 
   return (
@@ -47,11 +40,12 @@ export default function DevPage() {
         <Empty width={310} height={310}></Empty>
 
         <Content>
-          <User name={inviteData?.name ? inviteData.name : '-'}></User> invited
-          you to join
-          <User
+          {/* TODO add inviteInfo*/}
+          {/* <User name={inviteData?.name ? inviteData.name : '-'}></User> invited */}
+          {/* you to join */}
+          {/* <User
             name={inviteData?.workspaceName ? inviteData.workspaceName : '-'}
-          ></User>
+          ></User> */}
           {successInvited ? (
             <Status>
               <svg

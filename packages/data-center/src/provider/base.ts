@@ -4,6 +4,7 @@ import { Logger, User } from '../types';
 import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
 import type { WorkspaceUnitCtorParams, WorkspaceUnit } from '../workspace-unit';
 import { Member } from './affine/apis';
+import { Permission } from './affine/apis/workspace.js';
 
 const defaultLogger = () => {
   return;
@@ -233,8 +234,10 @@ export class BaseProvider {
    * @param {string} inviteCode
    * @returns
    */
-  public async acceptInvitation(inviteCode: string): Promise<void> {
+  public async acceptInvitation(
+    inviteCode: string
+  ): Promise<Permission | null> {
     inviteCode;
-    return;
+    return null;
   }
 }
