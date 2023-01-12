@@ -21,7 +21,7 @@ import {
 import { WorkspaceUnit } from '../../workspace-unit.js';
 import { createBlocksuiteWorkspace, applyUpdate } from '../../utils/index.js';
 import type { SyncMode } from '../../workspace-unit';
-import { MessageCenter } from 'src/message/message.js';
+import { MessageCenter } from '../../message/index.js';
 
 type ChannelMessage = {
   ws_list: Workspace[];
