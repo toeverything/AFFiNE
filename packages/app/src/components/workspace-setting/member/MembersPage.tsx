@@ -26,13 +26,12 @@ import { toast } from '@/ui/toast';
 import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
 import { Wrapper } from '@/ui/layout';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const { members, removeMember, loaded } = useMembers();
-
-  // FIXME: DELETE THIS
-  const { user, login, updateWorkspaceMeta } = useTemporaryHelper();
+  const { enableWorkspace } = useWorkspaceHelper();
   const { confirm } = useConfirm();
 
   if (workspace.provider === 'affine') {
@@ -163,22 +162,8 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         <Button
           type="primary"
           shape="circle"
-          onClick={() => {
-            confirm({
-              title: 'Enable AFFiNE Cloud?',
-              content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-              confirmText: user ? 'Enable' : 'Sign in and Enable',
-              cancelText: 'Skip',
-            }).then(confirm => {
-              if (confirm) {
-                if (user) {
-                  updateWorkspaceMeta(workspace.id, { isPublish: true });
-                } else {
-                  login();
-                  updateWorkspaceMeta(workspace.id, { isPublish: true });
-                }
-              }
-            });
+          onClick={async () => {
+            await enableWorkspace();
           }}
         >
           Enable AFFiNE Cloud

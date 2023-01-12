@@ -44,7 +44,7 @@ export const useWorkspaceHelper = () => {
       cancelText: 'Skip',
     }).then(async confirm => {
       if (confirm && currentWorkspace) {
-        if (user) {
+        if (!user) {
           await login();
         }
         const newWorkspaceId = await dataCenter.enableWorkspaceCloud(
