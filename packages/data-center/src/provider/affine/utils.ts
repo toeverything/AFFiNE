@@ -6,6 +6,7 @@ import { createBlocksuiteWorkspace } from '../../utils/index.js';
 import type { Apis } from './apis';
 import { WebsocketProvider } from './sync.js';
 import { setDefaultAvatar } from '../utils.js';
+import { applyUpdate } from '../../utils/index.js';
 
 export const loadWorkspaceUnit = async (
   params: WorkspaceUnitCtorParams,
@@ -18,13 +19,7 @@ export const loadWorkspaceUnit = async (
     workspaceUnit.id,
     params.published
   );
-  if (updates && updates.byteLength) {
-    await new Promise(resolve => {
-      const doc = blocksuiteWorkspace.doc;
-      doc.once('update', resolve);
-      BlocksuiteWorkspace.Y.applyUpdate(doc, new Uint8Array(updates));
-    });
-  }
+  applyUpdate(blocksuiteWorkspace, new Uint8Array(updates));
 
   const details = await apis.getWorkspaceDetail({ id: workspaceUnit.id });
   const owner = details?.owner;

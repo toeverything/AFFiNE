@@ -22,7 +22,7 @@ import {
   syncToCloud,
 } from './utils.js';
 import { WorkspaceUnit } from '../../workspace-unit.js';
-import { createBlocksuiteWorkspace } from '../../utils/index.js';
+import { createBlocksuiteWorkspace, applyUpdate } from '../../utils/index.js';
 import type { SyncMode } from '../../workspace-unit';
 
 type ChannelMessage = {
@@ -37,7 +37,7 @@ export interface AffineProviderConstructorParams
 }
 
 const {
-  Y: { applyUpdate, encodeStateAsUpdate },
+  Y: { encodeStateAsUpdate },
 } = BlocksuiteWorkspace;
 
 export class AffineProvider extends BaseProvider {
@@ -160,12 +160,7 @@ export class AffineProvider extends BaseProvider {
     const { doc, room: workspaceId } = blocksuiteWorkspace;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
     const updates = await this._apis.downloadWorkspace(workspaceId, published);
-    if (updates && updates.byteLength) {
-      await new Promise(resolve => {
-        doc.once('update', resolve);
-        BlocksuiteWorkspace.Y.applyUpdate(doc, new Uint8Array(updates));
-      });
-    }
+    await applyUpdate(blocksuiteWorkspace, new Uint8Array(updates));
   }
 
   override async loadPublicWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
@@ -368,16 +363,11 @@ export class AffineProvider extends BaseProvider {
     });
 
     const blocksuiteWorkspace = createBlocksuiteWorkspace(id);
-
-    await new Promise(resolve => {
-      assert(workspaceUnit.blocksuiteWorkspace);
-      const doc = blocksuiteWorkspace.doc;
-      doc.once('update', resolve);
-      applyUpdate(
-        doc,
-        encodeStateAsUpdate(workspaceUnit.blocksuiteWorkspace.doc)
-      );
-    });
+    assert(workspaceUnit.blocksuiteWorkspace);
+    await applyUpdate(
+      blocksuiteWorkspace,
+      encodeStateAsUpdate(workspaceUnit.blocksuiteWorkspace.doc)
+    );
 
     await syncToCloud(blocksuiteWorkspace, this._apis.token.refresh);
 

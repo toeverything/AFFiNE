@@ -45,3 +45,25 @@ export async function getDefaultHeadImgBlob(
     }
   });
 }
+
+export const applyUpdate = async (
+  blocksuiteWorkspace: BlocksuiteWorkspace,
+  updates: Uint8Array
+) => {
+  if (updates && updates.byteLength) {
+    await new Promise(resolve => {
+      // FIXME: if we merge two empty doc, there will no update event.
+      // So we set a timer to cancel update listener.
+      const doc = blocksuiteWorkspace.doc;
+      const timer = setTimeout(() => {
+        doc.off('update', resolve);
+        resolve(undefined);
+      }, 1000);
+      doc.once('update', () => {
+        clearTimeout(timer);
+        setTimeout(resolve, 100);
+      });
+      BlocksuiteWorkspace.Y.applyUpdate(doc, new Uint8Array(updates));
+    });
+  }
+};

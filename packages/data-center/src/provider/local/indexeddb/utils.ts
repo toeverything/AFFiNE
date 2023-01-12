@@ -1,9 +1,9 @@
 import assert from 'assert';
 import * as idb from 'lib0/indexeddb.js';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import { applyUpdate } from '../../../utils/index.js';
 
-const { applyUpdate, encodeStateAsUpdate, mergeUpdates } =
-  BlocksuiteWorkspace.Y;
+const { encodeStateAsUpdate, mergeUpdates } = BlocksuiteWorkspace.Y;
 
 export const writeUpdatesToLocal = async (
   blocksuiteWorkspace: BlocksuiteWorkspace
@@ -34,12 +34,8 @@ export const applyLocalUpdates = async (
   const [updatesStore] = idb.transact(db, ['updates']); // , 'readonly')
   if (updatesStore) {
     const updates = await idb.getAll(updatesStore);
-    const doc = blocksuiteWorkspace.doc;
-    await new Promise(resolve => {
-      const mergedUpdates = mergeUpdates(updates);
-      doc.once('update', resolve);
-      applyUpdate(doc, mergedUpdates);
-    });
+    const mergedUpdates = mergeUpdates(updates);
+    await applyUpdate(blocksuiteWorkspace, mergedUpdates);
   }
   return blocksuiteWorkspace;
 };
