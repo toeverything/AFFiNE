@@ -15,7 +15,6 @@
   "Add to favourites": "Add to favourites",
   "Paper": "Paper",
   "Edgeless": "Edgeless",
-  "Jump to": "Jump to",
   "Convert to ": "Convert to ",
   "Page": "Page",
   "Export": "Export",
@@ -57,12 +56,13 @@
   "Reduce indent": "Reduce indent",
   "Markdown Syntax": "Markdown Syntax",
   "Divider": "Divider",
-  "404 - Page Not Found": "404 - Page Not Found",
   "Once deleted, you can't undo this action": {
     "": "Once deleted, you can't undo this action."
   },
   "Remove from favourites": "Remove from favourites",
   "Removed from Favourites": "Removed from Favourites",
+  "Jump to": "Jump to",
+  "404 - Page Not Found": "404 - Page Not Found",
   "New Workspace": "New Workspace",
   "Workspace description": "Workspace is your virtual space to capture, create and plan as just one person or together as a team.",
   "Create": "Create",
@@ -141,5 +141,7 @@
   "Sign in": "Sign in to AFFiNE Cloud",
   "Sync Description": "{{workspaceName}} is a Local Workspace. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud.",
   "Sync Description2": "<1>{{workspaceName}}</1> is a Cloud Workspace. All data will be synchronised and saved to AFFiNE Cloud.",
-  "Delete Workspace Description": "Deleting (<1>{{workspace}}</1>) cannot be undone, please proceed with caution. All contents will be lost."
+  "Delete Workspace Description": "Deleting (<1>{{workspace}}</1>) cannot be undone, please proceed with caution. All contents will be lost.",
+  "core": "core",
+  "all": "all"
 }
