@@ -416,13 +416,14 @@ export class DataCenter {
   /**
    * accept invitation
    * @param {string} inviteCode
+   * @returns {Promise<Permission | null>} permission
    */
   async acceptInvitation(inviteCode: string, providerStr = 'affine') {
     const provider = this.providerMap.get(providerStr);
     if (provider) {
       return await provider.acceptInvitation(inviteCode);
     }
-    return [];
+    return null;
   }
 
   onMessage(cb: (message: Message) => void) {
