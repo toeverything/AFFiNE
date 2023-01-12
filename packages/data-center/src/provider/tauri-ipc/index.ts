@@ -149,7 +149,7 @@ export class TauriIPCProvider extends LocalProvider {
         syncMode: 'all',
       };
     });
-    const workspaceInstances = workspaces.map(({ id }) => {
+    const workspaceInstances = workspaces.map(({ id, name, avatar }) => {
       const workspace =
         this._workspacesCache.get(id) ||
         new BlocksuiteWorkspace({
@@ -157,6 +157,10 @@ export class TauriIPCProvider extends LocalProvider {
         }).register(BlockSchema);
       this._workspacesCache.set(id, workspace);
       if (workspace) {
+        workspace.meta.setName(name);
+        if (avatar) {
+          workspace.meta.setAvatar(avatar);
+        }
         return new Promise<BlocksuiteWorkspace>(resolve => {
           ipcMethods.getYDocument({ id }).then(({ update }) => {
             Y.applyUpdate(workspace.doc, new Uint8Array(update));
@@ -172,8 +176,8 @@ export class TauriIPCProvider extends LocalProvider {
       if (workspace) {
         workspaces[i] = {
           ...workspaces[i],
-          name: workspace.doc.meta.name,
-          avatar: workspace.doc.meta.avatar,
+          name: workspace.meta.name,
+          avatar: workspace.meta.avatar,
         };
       }
     });
