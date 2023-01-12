@@ -51,6 +51,10 @@ export const getBlob = async (parameters: GetBlob) =>
     parameters,
   });
 
+/**
+ * This will create a private workspace too.
+ * @returns
+ */
 export const createUser = async (parameters: CreateUser) =>
   await invoke<User>('create_user', {
     parameters,

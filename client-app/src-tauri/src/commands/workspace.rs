@@ -1,11 +1,14 @@
-use ipc_types::workspace::{
-  CreateWorkspace, CreateWorkspaceResult, GetWorkspace, GetWorkspaceResult, GetWorkspaces,
-  GetWorkspacesResult, UpdateWorkspace,
+use ipc_types::{
+  document::CreateDocumentParameter,
+  workspace::{
+    CreateWorkspace, CreateWorkspaceResult, GetWorkspace, GetWorkspaceResult, GetWorkspaces,
+    GetWorkspacesResult, UpdateWorkspace,
+  },
 };
-use jwst::{DocStorage, Workspace as OctoBaseWorkspace};
-use lib0::any::Any;
 
 use crate::state::AppState;
+
+use super::document::create_doc;
 
 #[tauri::command]
 /// create yDoc for a workspace
@@ -46,7 +49,7 @@ pub async fn get_workspace<'s>(
       Some(user_workspace) => Ok(GetWorkspaceResult {
         workspace: user_workspace.clone(),
       }),
-      None => Err("Get workspace has no result".to_string())
+      None => Err("Get workspace has no result".to_string()),
     },
     Err(error_message) => Err(error_message.to_string()),
   }
@@ -58,40 +61,33 @@ pub async fn create_workspace<'s>(
   state: tauri::State<'s, AppState>,
   parameters: CreateWorkspace,
 ) -> Result<CreateWorkspaceResult, String> {
-  match &state
+  let new_workspace_result = &state
     .0
     .lock()
     .await
     .metadata_db
     .create_normal_workspace(parameters.user_id)
-    .await
-  {
+    .await;
+  match new_workspace_result {
     Ok(new_workspace) => {
-      let workspace_doc = OctoBaseWorkspace::new(new_workspace.id.clone());
-
-      workspace_doc.with_trx(|mut workspace_doc_transaction| {
-        workspace_doc_transaction.set_metadata(
-          "name",
-          Any::String(parameters.name.clone().into_boxed_str()),
-        );
-      });
-      if let Err(error_message) = &state
-        .0
-        .lock()
-        .await
-        .doc_storage
-        .write_doc(new_workspace.id.clone(), workspace_doc.doc())
-        .await
-      {
-        Err(error_message.to_string())
-      } else {
-        Ok(CreateWorkspaceResult {
-          id: new_workspace.id.clone(),
-          name: parameters.name,
-        })
-      }
+      create_doc(
+        state,
+        CreateDocumentParameter {
+          workspace_id: new_workspace.id.clone(),
+          workspace_name: parameters.name.clone(),
+        },
+      )
+      .await
+      .ok();
+      Ok(CreateWorkspaceResult {
+        id: new_workspace.id.clone(),
+        name: parameters.name,
+      })
     }
-    Err(error_message) => Err(error_message.to_string()),
+    Err(error_message) => Err(format!(
+      "Failed to create_workspace with error {}",
+      error_message.to_string()
+    )),
   }
 }
 

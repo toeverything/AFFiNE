@@ -11,21 +11,35 @@ import {
 import { BlockSchema } from '@blocksuite/blocks/models';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { IPCBlobProvider } from './blocksuite-provider/blob.js';
-import { WorkspaceDetail } from '../affine/apis/workspace.js';
+import type { WorkspaceDetail } from '../affine/apis/workspace.js';
 import { setDefaultAvatar } from '../utils.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
   private _workspacesCache: Map<string, BlocksuiteWorkspace> = new Map();
+  /**
+   * // TODO: We only have one user in this version of app client. But may support switch user later.
+   */
+  #defaultUserID = 1;
 
   constructor(params: ProviderConstructorParams) {
     super(params);
-    // TODO: let blocksuite's blob provider get blob receive workspace id. Currently, all blobs are placed together
-    this.loadWorkspaces();
   }
 
   async init() {
-    // nothing to init until load workspace
+    // we create a default user if we don't have one.
+    try {
+      const user = await ipcMethods.createUser({
+        email: 'xxx@xx.xx',
+        name: 'xxx',
+        password: 'xxx',
+        avatar_url: '',
+      });
+      this.#defaultUserID = user.id;
+    } catch (error) {
+      // maybe user existed, which can be omited
+      console.error(error);
+    }
   }
 
   async #initDocFromIPC(workspaceID: string, doc: Y.Doc) {
@@ -70,7 +84,7 @@ export class TauriIPCProvider extends LocalProvider {
     const { id } = await ipcMethods.createWorkspace({
       name: meta.name,
       // TODO: get userID here
-      user_id: 0,
+      user_id: this.#defaultUserID,
     });
 
     const workspaceInfo: WorkspaceMeta0 = {
@@ -104,8 +118,6 @@ export class TauriIPCProvider extends LocalProvider {
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
     this._logger('Creating affine workspace');
 
-    this.linkLocal(blocksuiteWorkspace);
-
     const workspaceInfo: WorkspaceMeta0 = {
       name: meta.name,
       id: workspaceId,
@@ -125,23 +137,8 @@ export class TauriIPCProvider extends LocalProvider {
   }
 
   override async loadWorkspaces() {
-    // TODO: get user id here
-    // try create a default user, otherwise getWorkspaces will failed due to user not exists
-    let createdUserID = 0;
-    try {
-      const user = await ipcMethods.createUser({
-        email: 'xxx@xx.xx',
-        name: 'xxx',
-        password: 'xxx',
-        avatar_url: '',
-      });
-      createdUserID = user.id;
-    } catch (error) {
-      // maybe user existed, which can be omited
-      console.error(error);
-    }
     const { workspaces: workspacesList } = await ipcMethods.getWorkspaces({
-      user_id: createdUserID,
+      user_id: this.#defaultUserID,
     });
     const workspaces: WorkspaceMeta0[] = workspacesList.map(w => {
       return {
