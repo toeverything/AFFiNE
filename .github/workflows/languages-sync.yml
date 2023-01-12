@@ -1,16 +1,16 @@
 name: Languages Sync
 
 on:
-  # push:
-  #     branches: [ "develop", "master" ]
-  #     paths:
-  #         - 'libs/datasource/i18n/**'
-  #         - '.github/workflows/languages-sync.yml'
-  # pull_request:
-  #     branches: [ "develop", "master" ]
-  #     paths:
-  #         - 'libs/datasource/i18n/**'
-  #         - '.github/workflows/languages-sync.yml'
+  push:
+    branches: ['master']
+    paths:
+      - 'packages/i18n/**'
+      - '.github/workflows/languages-sync.yml'
+  pull_request:
+    branches: ['master']
+    paths:
+      - 'packages/i18n/**'
+      - '.github/workflows/languages-sync.yml'
   workflow_dispatch:
 
 # Cancels all previous workflow runs for pull requests that have not completed.
