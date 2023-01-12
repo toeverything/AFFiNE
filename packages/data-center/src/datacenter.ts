@@ -164,7 +164,9 @@ export class DataCenter {
     this._workspaceInstances.set(workspaceId, workspace);
     await provider.warpWorkspace(workspace);
     this._workspaceUnitCollection.workspaces.forEach(workspaceUnit => {
-      workspaceUnit.setBlocksuiteWorkspace(null);
+      const provider = this.providerMap.get(workspaceUnit.provider);
+      assert(provider);
+      provider.closeWorkspace(workspaceUnit.id);
     });
     workspaceUnit.setBlocksuiteWorkspace(workspace);
     return workspaceUnit;
