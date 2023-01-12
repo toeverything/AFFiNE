@@ -43,6 +43,7 @@ export const EditorHeader = () => {
     >
       {title && (
         <StyledTitle
+          data-tauri-drag-region
           onMouseEnter={() => {
             if (isTrash) return;
 
