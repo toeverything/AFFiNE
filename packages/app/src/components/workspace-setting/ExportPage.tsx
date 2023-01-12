@@ -1,6 +1,6 @@
 import { styled } from '@/styles';
 import { WorkspaceUnit } from '@affine/datacenter';
-
+import { Trans } from '@affine/i18n';
 export const ExportPageTitleContainer = styled('div')(() => {
   return {
     display: 'flex',
@@ -12,8 +12,13 @@ export const ExportPageTitleContainer = styled('div')(() => {
 export const ExportPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   return (
     <ExportPageTitleContainer>
-      Export Workspace{' '}
-      <code style={{ margin: '0 10px' }}>{workspace.name}</code> Is Comming
+      <Trans i18nKey="Export Workspace">
+        Export Workspace
+        <code style={{ margin: '0 10px' }}>
+          {{ workspace: workspace.name }}
+        </code>
+        Is Comming
+      </Trans>
     </ExportPageTitleContainer>
   );
 };

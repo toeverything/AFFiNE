@@ -3,9 +3,10 @@ import { styled } from '@/styles';
 import { Button } from '@/ui/button';
 // import { useModal } from '@/providers/GlobalModalProvider';
 import { GoogleIcon, StayLogOutIcon } from './Icons';
-
+import { useTranslation } from '@affine/i18n';
 export const GoogleLoginButton = () => {
   // const { triggerLoginModal } = useModal();
+  const { t } = useTranslation();
   return (
     <StyledGoogleButton
       onClick={() => {
@@ -24,8 +25,10 @@ export const GoogleLoginButton = () => {
           <GoogleIcon />
         </IconWrapper>
         <TextWrapper>
-          <Title>Continue with Google</Title>
-          <Description>Set up an AFFiNE account to sync data</Description>
+          <Title>{t('Continue with Google')}</Title>
+          <Description>
+            {t('Set up an AFFiNE account to sync data')}
+          </Description>
         </TextWrapper>
       </ButtonWrapper>
     </StyledGoogleButton>
@@ -33,6 +36,7 @@ export const GoogleLoginButton = () => {
 };
 
 export const StayLogOutButton = () => {
+  const { t } = useTranslation();
   return (
     <StyledStayLogOutButton>
       <ButtonWrapper>
@@ -40,8 +44,8 @@ export const StayLogOutButton = () => {
           <StayLogOutIcon />
         </IconWrapper>
         <TextWrapper>
-          <Title>Stay logged out</Title>
-          <Description>All changes are saved locally</Description>
+          <Title>{t('Stay logged out')}</Title>
+          <Description>{t('All changes are saved locally')}</Description>
         </TextWrapper>
       </ButtonWrapper>
     </StyledStayLogOutButton>

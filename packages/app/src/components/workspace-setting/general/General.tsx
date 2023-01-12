@@ -16,6 +16,7 @@ import { Upload } from '@/components/file-upload';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { useTranslation } from '@affine/i18n';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
@@ -23,6 +24,8 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
   const { currentWorkspace } = useAppState();
   const { updateWorkspace } = useWorkspaceHelper();
+  const { t } = useTranslation();
+
   const isOwner = true;
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
@@ -56,7 +59,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
   return workspace ? (
     <div>
-      <StyledSettingH2 marginTop={56}>Workspace Icon</StyledSettingH2>
+      <StyledSettingH2 marginTop={56}>{t('Workspace Icon')}</StyledSettingH2>
       <StyledSettingAvatarContent>
         <div
           style={{
@@ -74,16 +77,16 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
           fileChange={fileChange}
         >
-          <Button loading={uploading}>Upload</Button>
+          <Button loading={uploading}>{t('Upload')}</Button>
         </Upload>
         {/* TODO: add upload logic */}
       </StyledSettingAvatarContent>
-      <StyledSettingH2 marginTop={20}>Workspace Name</StyledSettingH2>
+      <StyledSettingH2 marginTop={20}>{t('Workspace Name')}</StyledSettingH2>
       <StyledSettingInputContainer>
         <Input
           width={327}
           value={workspaceName}
-          placeholder="Workspace Name"
+          placeholder={t('Workspace Name')}
           maxLength={14}
           minLength={1}
           onChange={handleChangeWorkSpaceName}
@@ -97,7 +100,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           ✔️
         </TextButton>
       </StyledSettingInputContainer>
-      <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
+      <StyledSettingH2 marginTop={20}>{t('Workspace Type')}</StyledSettingH2>
       <StyledSettingInputContainer>
         <code>{workspace.provider} </code>
       </StyledSettingInputContainer>
@@ -105,7 +108,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         {isOwner ? (
           <>
             <Button type="danger" shape="circle" onClick={handleClickDelete}>
-              Delete Workspace
+              {t('Delete Workspace')}
             </Button>
             <WorkspaceDelete
               open={showDelete}
@@ -116,7 +119,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         ) : (
           <>
             <Button type="danger" shape="circle" onClick={handleClickLeave}>
-              Leave Workspace
+              {t('Leave Workspace')}
             </Button>
             <WorkspaceLeave
               open={showLeave}

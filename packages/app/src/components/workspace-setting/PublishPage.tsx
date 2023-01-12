@@ -12,11 +12,11 @@ import { toast } from '@/ui/toast';
 // import { useAppState } from '@/providers/app-state-provider3';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-
+import { useTranslation } from '@affine/i18n';
 export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
   const { publishWorkspace, enableWorkspace } = useWorkspaceHelper();
-
+  const { t } = useTranslation();
   const togglePublic = async (flag: boolean) => {
     await publishWorkspace(workspace.id.toString(), flag);
   };
@@ -37,22 +37,21 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             {workspace?.published ? (
               <>
                 <StyledPublishExplanation>
-                  Publishing to web requires AFFiNE Cloud service .
+                  {t('Publishing')}
                 </StyledPublishExplanation>
-                <StyledSettingH2>Share with link</StyledSettingH2>
+                <StyledSettingH2>{t('Share with link')}</StyledSettingH2>
                 <StyledPublishCopyContainer>
                   <Input width={500} value={shareUrl} disabled={true}></Input>
                   <StyledCopyButtonContainer>
                     <Button onClick={copyUrl} type="primary" shape="circle">
-                      Copy Link
+                      {t('Copy Link')}
                     </Button>
                   </StyledCopyButtonContainer>
                 </StyledPublishCopyContainer>
               </>
             ) : (
               <StyledPublishExplanation>
-                After publishing to the web, everyone can view the content of
-                this workspace through the link.
+                {'Publishing Description'}
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
@@ -64,7 +63,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               type="primary"
               shape="circle"
             >
-              Stop publishing
+              {t('Stop publishing')}
             </Button>
           ) : (
             <Button
@@ -74,7 +73,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               type="primary"
               shape="circle"
             >
-              Publish to web
+              {t('Publish to web')}
             </Button>
           )}
         </div>
@@ -82,7 +81,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         <StyledPublishContent>
           <>
             <StyledPublishExplanation>
-              Publishing to web requires AFFiNE Cloud service.
+              {t('Publishing')}
             </StyledPublishExplanation>
 
             <StyledPublishCopyContainer>
@@ -93,7 +92,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 type="primary"
                 shape="circle"
               >
-                Enable AFFiNE Cloud
+                {t('Enable AFFiNE Cloud')}
               </Button>
             </StyledPublishCopyContainer>
           </>

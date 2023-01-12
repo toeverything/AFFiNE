@@ -14,6 +14,7 @@ import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/ConfirmProvider';
+import { useTranslation } from '@affine/i18n';
 
 interface WorkspaceModalProps {
   open: boolean;
@@ -26,6 +27,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const { workspaceList, currentWorkspace, login, user, logout } =
     useAppState();
   const router = useRouter();
+  const { t } = useTranslation();
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -34,7 +36,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
           style={{ padding: '10px', display: 'flex', flexDirection: 'column' }}
         >
           <Header>
-            <ContentTitle>My Workspaces</ContentTitle>
+            <ContentTitle>{t('My Workspaces')}</ContentTitle>
             {/* <LanguageMenu /> */}
             <ModalCloseButton
               top={6}
@@ -123,13 +125,13 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                       marginRight: '10px',
                     }}
                   />
-                  Create Or Import
+                  {t('Create Or Import')}
                 </Button>
               </li>
             </WorkspaceList>
             <p style={{ fontSize: '14px', color: '#ccc', margin: '12px 0' }}>
-              Tips:Workspace is your virtual space to capture, create and plan
-              as just one person or together as a team.
+              {t('Tips')}
+              {t('Workspace description')}
             </p>
           </Content>
           <Footer>
@@ -137,10 +139,10 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               <Button
                 onClick={async () => {
                   await login();
-                  toast('Login success');
+                  toast(t('login success'));
                 }}
               >
-                Sign in AFFiNE Cloud
+                {t('Sign in')}
               </Button>
             ) : (
               <Button
@@ -161,7 +163,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                   });
                 }}
               >
-                Sign out of AFFiNE Cloud
+                {t('Sign out')}
               </Button>
             )}
           </Footer>

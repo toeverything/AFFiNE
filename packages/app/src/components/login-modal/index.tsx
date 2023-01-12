@@ -3,13 +3,14 @@ import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { TextButton } from '@/ui/button';
 import { GoogleLoginButton, StayLogOutButton } from './LoginOptionButton';
-
+import { useTranslation } from '@affine/i18n';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
 }
 
 export const LoginModal = ({ open, onClose }: LoginModalProps) => {
+  const { t } = useTranslation();
   return (
     <Modal open={open} onClose={onClose} data-testid="login-modal">
       <ModalWrapper width={620} height={334}>
@@ -23,12 +24,12 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
           />
         </Header>
         <Content>
-          <ContentTitle>Currently not logged in</ContentTitle>
+          <ContentTitle>{t('NotLoggedIn')}</ContentTitle>
           <GoogleLoginButton />
           <StayLogOutButton />
         </Content>
         <Footer>
-          <TextButton icon={<StyledResetIcon />}>Clear local data</TextButton>
+          <TextButton icon={<StyledResetIcon />}>{t('ClearData')}</TextButton>
         </Footer>
       </ModalWrapper>
     </Modal>

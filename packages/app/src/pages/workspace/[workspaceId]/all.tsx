@@ -14,6 +14,7 @@ const All = () => {
       <PageList
         pageList={pageList.filter(p => !p.trash)}
         showFavoriteTag={true}
+        listType="all"
       />
     </>
   );

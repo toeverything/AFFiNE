@@ -9,6 +9,7 @@ import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
 import { useAppState } from '@/providers/app-state-provider';
+import { useTranslation } from '@affine/i18n';
 export const Input = (props: {
   query: string;
   setQuery: Dispatch<SetStateAction<string>>;
@@ -18,7 +19,7 @@ export const Input = (props: {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const { currentWorkspace } = useAppState();
-
+  const { t } = useTranslation();
   useEffect(() => {
     inputRef.current?.addEventListener(
       'blur',
@@ -78,8 +79,10 @@ export const Input = (props: {
         }}
         placeholder={
           currentWorkspace?.isPublish
-            ? `Search in ${currentWorkspace?.blocksuiteWorkspace?.meta.name}`
-            : 'Quick Search...'
+            ? t('Quick search placeholder2', {
+                workspace: currentWorkspace?.blocksuiteWorkspace?.meta.name,
+              })
+            : t('Quick search placeholder')
         }
       />
     </StyledInputContent>
