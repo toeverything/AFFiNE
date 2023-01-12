@@ -25,12 +25,13 @@ export default function DevPage() {
   const { acceptInvite } = useWorkspaceHelper();
   const { user } = useAppState();
   useEffect(() => {
-    acceptInvite(router.query.invite_code as string).then(data => {
-      if (data && data.accepted) {
-        setSuccessInvited(true);
-        user && router.push(`/workspace/${data.workspace_id}`);
-      }
-    });
+    router.query.invite_code &&
+      acceptInvite(router.query.invite_code as string).then(data => {
+        if (data && data.accepted) {
+          setSuccessInvited(true);
+          user && router.push(`/workspace/${data.workspace_id}`);
+        }
+      });
   }, [router.query.invite_code]);
 
   return (
