@@ -1,4 +1,4 @@
-import websocket from 'lib0/websocket';
+import * as websocket from 'lib0/websocket';
 import { Logger } from 'src/types';
 import { token } from './apis/token';
 
