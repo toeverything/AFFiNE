@@ -64,6 +64,14 @@ export const useWorkspaceHelper = () => {
     currentWorkspace && (await dataCenter.leaveWorkspace(currentWorkspace?.id));
   };
 
+  const acceptInvite = async (inviteCode: string) => {
+    let inviteInfo;
+    if (inviteCode) {
+      inviteInfo = await dataCenter.acceptInvitation(inviteCode);
+    }
+    return inviteInfo;
+  };
+
   return {
     createWorkspace,
     publishWorkspace,
@@ -71,5 +79,6 @@ export const useWorkspaceHelper = () => {
     enableWorkspace,
     deleteWorkSpace,
     leaveWorkSpace,
+    acceptInvite,
   };
 };
