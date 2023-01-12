@@ -27,26 +27,12 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
   };
-  const handleClickDelete = () => {
-    setShowDelete(true);
-  };
-  const handleCloseDelete = () => {
-    setShowDelete(false);
-  };
-
-  const handleClickLeave = () => {
-    setShowLeave(true);
-  };
-  const handleCloseLeave = () => {
-    setShowLeave(false);
-  };
   const handleUpdateWorkspaceName = () => {
     currentWorkspace &&
       updateWorkspace({ name: workspaceName }, currentWorkspace);
   };
 
   const fileChange = async (file: File) => {
-    // console.log('file: ', file);
     setUploading(true);
     const blob = new Blob([file], { type: file.type });
     currentWorkspace &&
@@ -104,25 +90,39 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       <StyledDeleteButtonContainer>
         {isOwner ? (
           <>
-            <Button type="danger" shape="circle" onClick={handleClickDelete}>
+            <Button
+              type="danger"
+              shape="circle"
+              onClick={() => {
+                setShowDelete(true);
+              }}
+            >
               Delete Workspace
             </Button>
             <WorkspaceDelete
               open={showDelete}
-              onClose={handleCloseDelete}
+              onClose={() => {
+                setShowDelete(false);
+              }}
               workspace={workspace}
             />
           </>
         ) : (
           <>
-            <Button type="danger" shape="circle" onClick={handleClickLeave}>
+            <Button
+              type="danger"
+              shape="circle"
+              onClick={() => {
+                setShowLeave(true);
+              }}
+            >
               Leave Workspace
             </Button>
             <WorkspaceLeave
               open={showLeave}
-              onClose={handleCloseLeave}
-              workspaceName={workspaceName}
-              workspaceId={workspace.id}
+              onClose={() => {
+                setShowLeave(false);
+              }}
             />
           </>
         )}

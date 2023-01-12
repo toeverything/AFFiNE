@@ -47,10 +47,10 @@ export const useWorkspaceHelper = () => {
         if (!user) {
           await login();
         }
-        const newWorkspaceId = await dataCenter.enableWorkspaceCloud(
+        const workspace = await dataCenter.enableWorkspaceCloud(
           currentWorkspace
         );
-        router.push(`/workspace/${newWorkspaceId}/setting`);
+        workspace && router.push(`/workspace/${workspace.id}/setting`);
         toast('Enabled success');
       }
     });
@@ -60,6 +60,9 @@ export const useWorkspaceHelper = () => {
     currentWorkspace &&
       (await dataCenter.deleteWorkspace(currentWorkspace?.id));
   };
+  const leaveWorkSpace = async () => {
+    currentWorkspace && (await dataCenter.leaveWorkspace(currentWorkspace?.id));
+  };
 
   return {
     createWorkspace,
@@ -67,5 +70,6 @@ export const useWorkspaceHelper = () => {
     updateWorkspace,
     enableWorkspace,
     deleteWorkSpace,
+    leaveWorkSpace,
   };
 };
