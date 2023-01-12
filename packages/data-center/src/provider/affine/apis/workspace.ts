@@ -9,9 +9,10 @@ const sendMessage = messageCenter.getMessageSender('affine');
 const { messageCode } = MessageCenter;
 
 class RequestError extends Error {
-  constructor(message: string) {
+  constructor(message: string, cause: unknown | null = null) {
     super(message);
     this.name = 'RequestError';
+    this.cause = cause;
   }
 }
 export interface GetWorkspaceDetailParams {
@@ -49,7 +50,7 @@ export async function getWorkspaces(): Promise<Workspace[]> {
       .json();
   } catch (error) {
     sendMessage(messageCode.loadListFailed);
-    throw new RequestError('load list failed');
+    throw new RequestError('load list failed', error);
   }
 }
 
@@ -66,7 +67,7 @@ export async function getWorkspaceDetail(
     return response.json();
   } catch (error) {
     sendMessage(messageCode.getDetailFailed);
-    throw new RequestError('get detail failed');
+    throw new RequestError('get detail failed', error);
   }
 }
 
@@ -102,7 +103,7 @@ export async function getWorkspaceMembers(
     return client.get(`api/workspace/${params.id}/permission`).json();
   } catch (error) {
     sendMessage(messageCode.getMembersFailed);
-    throw new RequestError('get members failed');
+    throw new RequestError('get members failed', error);
   }
 }
 
@@ -117,7 +118,7 @@ export async function createWorkspace(
     return client.post('api/workspace', { json: params }).json();
   } catch (error) {
     sendMessage(messageCode.createWorkspaceFailed);
-    throw new RequestError('create workspace failed');
+    throw new RequestError('create workspace failed', error);
   }
 }
 
@@ -139,7 +140,7 @@ export async function updateWorkspace(
       .json();
   } catch (error) {
     sendMessage(messageCode.updateWorkspaceFailed);
-    throw new RequestError('update workspace failed');
+    throw new RequestError('update workspace failed', error);
   }
 }
 
@@ -150,9 +151,9 @@ export interface DeleteWorkspaceParams {
 export async function deleteWorkspace(
   params: DeleteWorkspaceParams
 ): Promise<void> {
-  await client.delete(`api/workspace/${params.id}`).catch(() => {
+  await client.delete(`api/workspace/${params.id}`).catch(error => {
     sendMessage(messageCode.deleteWorkspaceFailed);
-    throw new RequestError('delete workspace failed');
+    throw new RequestError('delete workspace failed', error);
   });
 }
 
@@ -175,7 +176,7 @@ export async function inviteMember(params: InviteMemberParams): Promise<void> {
       .json();
   } catch (error) {
     sendMessage(messageCode.inviteMemberFailed);
-    throw new RequestError('invite member failed');
+    throw new RequestError('invite member failed', error);
   }
 }
 
@@ -184,9 +185,9 @@ export interface RemoveMemberParams {
 }
 
 export async function removeMember(params: RemoveMemberParams): Promise<void> {
-  await client.delete(`api/permission/${params.permissionId}`).catch(() => {
+  await client.delete(`api/permission/${params.permissionId}`).catch(error => {
     sendMessage(messageCode.removeMemberFailed);
-    throw new RequestError('remove member failed');
+    throw new RequestError('remove member failed', error);
   });
 }
 
@@ -197,10 +198,12 @@ export interface AcceptInvitingParams {
 export async function acceptInviting(
   params: AcceptInvitingParams
 ): Promise<void> {
-  await bareClient.post(`api/invitation/${params.invitingCode}`).catch(() => {
-    sendMessage(messageCode.acceptInvitingFailed);
-    throw new RequestError('accept inviting failed');
-  });
+  await bareClient
+    .post(`api/invitation/${params.invitingCode}`)
+    .catch(error => {
+      sendMessage(messageCode.acceptInvitingFailed);
+      throw new RequestError('accept inviting failed', error);
+    });
 }
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {
@@ -214,7 +217,7 @@ export async function getBlob(params: {
     return client.get(`api/blob/${params.blobId}`).arrayBuffer();
   } catch (error) {
     sendMessage(messageCode.getBlobFailed);
-    throw new RequestError('get blob failed');
+    throw new RequestError('get blob failed', error);
   }
 }
 
@@ -226,9 +229,9 @@ export async function leaveWorkspace({ id }: LeaveWorkspaceParams) {
   await client
     .delete(`api/workspace/${id}/permission`)
     .json()
-    .catch(() => {
+    .catch(error => {
       sendMessage(messageCode.leaveWorkspaceFailed);
-      throw new RequestError('leave workspace failed');
+      throw new RequestError('leave workspace failed', error);
     });
 }
 
@@ -243,6 +246,6 @@ export async function downloadWorkspace(
     return client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
   } catch (error) {
     sendMessage(messageCode.downloadWorkspaceFailed);
-    throw new RequestError('download workspace failed');
+    throw new RequestError('download workspace failed', error);
   }
 }
