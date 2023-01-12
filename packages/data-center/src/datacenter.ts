@@ -23,7 +23,7 @@ export class DataCenter {
   private readonly _workspaceUnitCollection = new WorkspaceUnitCollection();
   private readonly _logger = getLogger('dc');
   private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
-  private _messageCenter = new MessageCenter();
+  private _messageCenter = MessageCenter.getInstance();
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */

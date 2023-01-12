@@ -2,7 +2,6 @@ import { BaseProvider } from '../base.js';
 import type {
   ProviderConstructorParams,
   CreateWorkspaceInfoParams,
-  WorkspaceMeta0,
 } from '../base';
 import type { User } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
@@ -12,8 +11,6 @@ import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
 import { getApis, Workspace } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
-import { setDefaultAvatar } from '../utils.js';
-import { MessageCode } from '../../message/index.js';
 import { token } from './apis/token.js';
 import { WebsocketClient } from './channel';
 import {
@@ -24,6 +21,7 @@ import {
 import { WorkspaceUnit } from '../../workspace-unit.js';
 import { createBlocksuiteWorkspace, applyUpdate } from '../../utils/index.js';
 import type { SyncMode } from '../../workspace-unit';
+import { MessageCenter } from 'src/message/message.js';
 
 type ChannelMessage = {
   ws_list: Workspace[];
@@ -42,7 +40,6 @@ const {
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
-  private _workspacesCache: Map<string, BlocksuiteWorkspace> = new Map();
   private _onTokenRefresh?: Callback = undefined;
   private _wsMap: Map<string, WebsocketProvider> = new Map();
   private _apis: Apis;
@@ -121,7 +118,7 @@ export class AffineProvider extends BaseProvider {
         },
         published: detail.public,
         memberCount: detail.member_count,
-        provider: 'affine',
+        provider: this.id,
         syncMode: 'core' as SyncMode,
       };
       if (this._workspaces.get(id)) {
@@ -207,7 +204,7 @@ export class AffineProvider extends BaseProvider {
             owner: undefined,
             published: w.public,
             memberCount: 1,
-            provider: 'affine',
+            provider: this.id,
             syncMode: 'core',
           },
           this._apis
@@ -232,7 +229,7 @@ export class AffineProvider extends BaseProvider {
       this._connectChannel();
     }
     if (!user) {
-      this._messageCenter.send(MessageCode.loginError);
+      this._sendMessage(MessageCenter.messageCode.loginError);
     }
   }
 
@@ -258,17 +255,17 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async clear(): Promise<void> {
-    for (const w of this._workspacesCache.values()) {
-      if (w.room) {
+    for (const w of this._workspaces.list()) {
+      if (w.id) {
         try {
-          await this.deleteWorkspace(w.room);
-          this._workspaces.remove(w.room);
+          await this.deleteWorkspace(w.id);
+          this._workspaces.remove(w.id);
         } catch (e) {
           this._logger('has a problem of delete workspace ', e);
         }
       }
     }
-    this._workspacesCache.clear();
+    this._workspaces.clear();
   }
 
   public override async closeWorkspace(id: string) {
@@ -314,7 +311,7 @@ export class AffineProvider extends BaseProvider {
       owner: await this.getUserInfo(),
       published: false,
       memberCount: 1,
-      provider: 'affine',
+      provider: this.id,
       syncMode: 'core',
     });
 
@@ -359,7 +356,7 @@ export class AffineProvider extends BaseProvider {
       owner: await this.getUserInfo(),
       published: false,
       memberCount: 1,
-      provider: 'affine',
+      provider: this.id,
       syncMode: 'core',
     });
 

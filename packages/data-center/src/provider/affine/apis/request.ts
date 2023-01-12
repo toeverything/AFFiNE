@@ -1,6 +1,10 @@
-import kyOrigin from 'ky';
 import ky from 'ky-universal';
+import { MessageCenter } from '../../../message/index.js';
 import { token } from './token.js';
+
+const messageCenter = MessageCenter.getInstance();
+
+const _sendMessage = messageCenter.getMessageSender('affine');
 
 export const bareClient = ky.extend({
   prefixUrl: 'http://localhost:8080',
@@ -39,6 +43,16 @@ export const client = bareClient.extend({
       async ({ request }) => {
         await token.refreshToken();
         request.headers.set('Authorization', token.token);
+      },
+    ],
+
+    beforeError: [
+      error => {
+        const { response } = error;
+        if (response.status === 401) {
+          _sendMessage(MessageCenter.messageCode.noPermission);
+        }
+        return error;
       },
     ],
   },
