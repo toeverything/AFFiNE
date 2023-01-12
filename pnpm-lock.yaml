@@ -124,7 +124,6 @@ importers:
   packages/data-center:
     specifiers:
       '@blocksuite/blocks': 0.4.0-20230111171650-bc63456
-      '@blocksuite/editor': 0.4.0-20230111171650-bc63456
       '@blocksuite/store': 0.4.0-20230111171650-bc63456
       '@playwright/test': ^1.29.1
       '@types/debug': ^4.1.7
@@ -142,7 +141,6 @@ importers:
       yjs: ^13.5.44
     dependencies:
       '@blocksuite/blocks': 0.4.0-20230111171650-bc63456_yjs@13.5.44
-      '@blocksuite/editor': 0.4.0-20230111171650-bc63456_yjs@13.5.44
       '@blocksuite/store': 0.4.0-20230111171650-bc63456_yjs@13.5.44
       debug: 4.3.4
       encoding: 0.1.13

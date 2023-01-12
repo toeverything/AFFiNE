@@ -27,7 +27,6 @@
   },
   "dependencies": {
     "@blocksuite/blocks": "0.4.0-20230111171650-bc63456",
-    "@blocksuite/editor": "0.4.0-20230111171650-bc63456",
     "@blocksuite/store": "0.4.0-20230111171650-bc63456",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
