@@ -70,7 +70,7 @@ export const WorkSpaceSliderBar = () => {
   const { currentWorkspace } = useAppState();
   const { openPage, createPage } = usePageHelper();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
   const currentWorkspaceId = currentWorkspace?.id;
@@ -84,7 +84,9 @@ export const WorkSpaceSliderBar = () => {
       ? `/workspace/${currentWorkspaceId}/setting`
       : '',
   };
-
+  const changeLanguage = (event: string) => {
+    i18n.changeLanguage(event);
+  };
   return (
     <>
       <StyledSliderBar show={show}>
@@ -176,6 +178,20 @@ export const WorkSpaceSliderBar = () => {
               <TrashIcon /> {t('Trash')}
             </StyledListItem>
           </Link>
+          <StyledListItem
+            onClick={() => {
+              changeLanguage('en');
+            }}
+          >
+            <SettingsIcon /> change to English
+          </StyledListItem>
+          <StyledListItem
+            onClick={() => {
+              changeLanguage('zh-Hans');
+            }}
+          >
+            <SettingsIcon /> 切换到中文
+          </StyledListItem>
           <StyledNewPageButton
             onClick={async () => {
               const pageId = await createPage();
