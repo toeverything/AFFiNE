@@ -56,10 +56,16 @@ export const useWorkspaceHelper = () => {
     });
   };
 
+  const deleteWorkSpace = async () => {
+    currentWorkspace &&
+      (await dataCenter.deleteWorkspace(currentWorkspace?.id));
+  };
+
   return {
     createWorkspace,
     publishWorkspace,
     updateWorkspace,
     enableWorkspace,
+    deleteWorkSpace,
   };
 };
