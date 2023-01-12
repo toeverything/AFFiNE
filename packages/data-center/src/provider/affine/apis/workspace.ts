@@ -1,4 +1,4 @@
-import { MessageCenter } from 'src/message/message.js';
+import { MessageCenter } from '../../../message/index.js';
 import { bareClient, client } from './request.js';
 import type { User } from './user';
 

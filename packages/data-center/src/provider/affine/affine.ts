@@ -21,7 +21,7 @@ import {
 import { WorkspaceUnit } from '../../workspace-unit.js';
 import { createBlocksuiteWorkspace, applyUpdate } from '../../utils/index.js';
 import type { SyncMode } from '../../workspace-unit';
-import { MessageCenter } from 'src/message/message.js';
+import { MessageCenter } from '../../message/index.js';
 
 type ChannelMessage = {
   ws_list: Workspace[];
@@ -102,10 +102,19 @@ export class AffineProvider extends BaseProvider {
     });
   }
 
-  private _handlerAffineListMessage({ ws_details, metadata }: ChannelMessage) {
+  private async _handlerAffineListMessage({
+    ws_details,
+    metadata,
+  }: ChannelMessage) {
     this._logger('receive server message');
-    Object.entries(ws_details).forEach(async ([id, detail]) => {
+    const addedWorkspaces: WorkspaceUnit[] = [];
+    const removeWorkspaceList = this._workspaces.list().map(w => w.id);
+    for (const [id, detail] of Object.entries(ws_details)) {
       const { name, avatar } = metadata[id];
+      const index = removeWorkspaceList.indexOf(id);
+      if (index !== -1) {
+        removeWorkspaceList.splice(index, 1);
+      }
       assert(name);
       const workspace = {
         name: name,
@@ -122,15 +131,26 @@ export class AffineProvider extends BaseProvider {
         syncMode: 'core' as SyncMode,
       };
       if (this._workspaces.get(id)) {
+        // update workspaces
         this._workspaces.update(id, workspace);
       } else {
         const workspaceUnit = await loadWorkspaceUnit(
           { id, ...workspace },
           this._apis
         );
-        this._workspaces.add(workspaceUnit);
+        addedWorkspaces.push(workspaceUnit);
       }
-    });
+    }
+    if (addedWorkspaces.length) {
+      // add workspaces
+      this._workspaces.add(addedWorkspaces);
+    }
+    if (removeWorkspaceList.length) {
+      // remove workspaces
+      removeWorkspaceList.forEach(id => {
+        this._workspaces.remove(id);
+      });
+    }
   }
 
   private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
