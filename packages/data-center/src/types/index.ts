@@ -25,4 +25,5 @@ export type Logger = ReturnType<typeof getLogger>;
 export type Message = {
   code: number;
   message: string;
+  provider: string;
 };

@@ -100,7 +100,7 @@ export class LocalProvider extends BaseProvider {
       owner: undefined,
       syncMode: 'core',
       memberCount: 1,
-      provider: 'local',
+      provider: this.id,
     });
     this._workspaces.add(workspaceUnit);
     this._storeWorkspaces(this._workspaces.list());

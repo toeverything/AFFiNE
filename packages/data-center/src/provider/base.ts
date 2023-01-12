@@ -22,10 +22,15 @@ export type UpdateWorkspaceMetaParams = Partial<
 >;
 
 export class BaseProvider {
+  /** provider id */
   public readonly id: string = 'base';
+  /** workspace unit collection */
   protected _workspaces!: WorkspaceUnitCollectionScope;
   protected _logger!: Logger;
-  protected _messageCenter!: MessageCenter;
+  /** send message with message center */
+  protected _sendMessage!: ReturnType<
+    InstanceType<typeof MessageCenter>['getMessageSender']
+  >;
 
   public constructor({
     logger,
@@ -34,7 +39,7 @@ export class BaseProvider {
   }: ProviderConstructorParams) {
     this._logger = (logger || defaultLogger) as Logger;
     this._workspaces = workspaces;
-    this._messageCenter = messageCenter;
+    this._sendMessage = messageCenter.getMessageSender(this.id);
   }
 
   /**

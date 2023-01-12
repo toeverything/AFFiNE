@@ -1,6 +1,19 @@
+import { MessageCenter } from 'src/message/message.js';
 import { bareClient, client } from './request.js';
 import type { User } from './user';
 
+const messageCenter = MessageCenter.getInstance();
+
+const sendMessage = messageCenter.getMessageSender('affine');
+
+const { messageCode } = MessageCenter;
+
+class RequestError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RequestError';
+  }
+}
 export interface GetWorkspaceDetailParams {
   id: string;
 }
@@ -26,13 +39,18 @@ export interface Workspace {
 }
 
 export async function getWorkspaces(): Promise<Workspace[]> {
-  return client
-    .get('api/workspace', {
-      headers: {
-        'Cache-Control': 'no-cache',
-      },
-    })
-    .json();
+  try {
+    return client
+      .get('api/workspace', {
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      })
+      .json();
+  } catch (error) {
+    sendMessage(messageCode.loadListFailed);
+    throw new RequestError('load list failed');
+  }
 }
 
 export interface WorkspaceDetail extends Workspace {
@@ -43,7 +61,13 @@ export interface WorkspaceDetail extends Workspace {
 export async function getWorkspaceDetail(
   params: GetWorkspaceDetailParams
 ): Promise<WorkspaceDetail | null> {
-  return client.get(`api/workspace/${params.id}`).json();
+  try {
+    const response = client.get(`api/workspace/${params.id}`);
+    return response.json();
+  } catch (error) {
+    sendMessage(messageCode.getDetailFailed);
+    throw new RequestError('get detail failed');
+  }
 }
 
 export interface Permission {
@@ -74,7 +98,12 @@ export interface GetWorkspaceMembersParams {
 export async function getWorkspaceMembers(
   params: GetWorkspaceDetailParams
 ): Promise<Member[]> {
-  return client.get(`api/workspace/${params.id}/permission`).json();
+  try {
+    return client.get(`api/workspace/${params.id}/permission`).json();
+  } catch (error) {
+    sendMessage(messageCode.getMembersFailed);
+    throw new RequestError('get members failed');
+  }
 }
 
 export interface CreateWorkspaceParams {
@@ -84,7 +113,12 @@ export interface CreateWorkspaceParams {
 export async function createWorkspace(
   params: CreateWorkspaceParams
 ): Promise<{ id: string }> {
-  return client.post('api/workspace', { json: params }).json();
+  try {
+    return client.post('api/workspace', { json: params }).json();
+  } catch (error) {
+    sendMessage(messageCode.createWorkspaceFailed);
+    throw new RequestError('create workspace failed');
+  }
 }
 
 export interface UpdateWorkspaceParams {
@@ -95,13 +129,18 @@ export interface UpdateWorkspaceParams {
 export async function updateWorkspace(
   params: UpdateWorkspaceParams
 ): Promise<{ public: boolean | null }> {
-  return client
-    .post(`api/workspace/${params.id}`, {
-      json: {
-        public: params.public,
-      },
-    })
-    .json();
+  try {
+    return client
+      .post(`api/workspace/${params.id}`, {
+        json: {
+          public: params.public,
+        },
+      })
+      .json();
+  } catch (error) {
+    sendMessage(messageCode.updateWorkspaceFailed);
+    throw new RequestError('update workspace failed');
+  }
 }
 
 export interface DeleteWorkspaceParams {
@@ -111,7 +150,10 @@ export interface DeleteWorkspaceParams {
 export async function deleteWorkspace(
   params: DeleteWorkspaceParams
 ): Promise<void> {
-  await client.delete(`api/workspace/${params.id}`);
+  await client.delete(`api/workspace/${params.id}`).catch(() => {
+    sendMessage(messageCode.deleteWorkspaceFailed);
+    throw new RequestError('delete workspace failed');
+  });
 }
 
 export interface InviteMemberParams {
@@ -123,13 +165,18 @@ export interface InviteMemberParams {
  * Notice: Only support normal(contrast to private) workspace.
  */
 export async function inviteMember(params: InviteMemberParams): Promise<void> {
-  return client
-    .post(`api/workspace/${params.id}/permission`, {
-      json: {
-        email: params.email,
-      },
-    })
-    .json();
+  try {
+    return client
+      .post(`api/workspace/${params.id}/permission`, {
+        json: {
+          email: params.email,
+        },
+      })
+      .json();
+  } catch (error) {
+    sendMessage(messageCode.inviteMemberFailed);
+    throw new RequestError('invite member failed');
+  }
 }
 
 export interface RemoveMemberParams {
@@ -137,7 +184,10 @@ export interface RemoveMemberParams {
 }
 
 export async function removeMember(params: RemoveMemberParams): Promise<void> {
-  await client.delete(`api/permission/${params.permissionId}`);
+  await client.delete(`api/permission/${params.permissionId}`).catch(() => {
+    sendMessage(messageCode.removeMemberFailed);
+    throw new RequestError('remove member failed');
+  });
 }
 
 export interface AcceptInvitingParams {
@@ -147,7 +197,10 @@ export interface AcceptInvitingParams {
 export async function acceptInviting(
   params: AcceptInvitingParams
 ): Promise<void> {
-  await bareClient.post(`api/invitation/${params.invitingCode}`);
+  await bareClient.post(`api/invitation/${params.invitingCode}`).catch(() => {
+    sendMessage(messageCode.acceptInvitingFailed);
+    throw new RequestError('accept inviting failed');
+  });
 }
 
 export async function uploadBlob(params: { blob: Blob }): Promise<string> {
@@ -157,7 +210,12 @@ export async function uploadBlob(params: { blob: Blob }): Promise<string> {
 export async function getBlob(params: {
   blobId: string;
 }): Promise<ArrayBuffer> {
-  return client.get(`api/blob/${params.blobId}`).arrayBuffer();
+  try {
+    return client.get(`api/blob/${params.blobId}`).arrayBuffer();
+  } catch (error) {
+    sendMessage(messageCode.getBlobFailed);
+    throw new RequestError('get blob failed');
+  }
 }
 
 export interface LeaveWorkspaceParams {
@@ -165,15 +223,26 @@ export interface LeaveWorkspaceParams {
 }
 
 export async function leaveWorkspace({ id }: LeaveWorkspaceParams) {
-  await client.delete(`api/workspace/${id}/permission`).json();
+  await client
+    .delete(`api/workspace/${id}/permission`)
+    .json()
+    .catch(() => {
+      sendMessage(messageCode.leaveWorkspaceFailed);
+      throw new RequestError('leave workspace failed');
+    });
 }
 
 export async function downloadWorkspace(
   workspaceId: string,
   published = false
 ): Promise<ArrayBuffer> {
-  if (published) {
-    return bareClient.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
+  try {
+    if (published) {
+      return bareClient.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
+    }
+    return client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
+  } catch (error) {
+    sendMessage(messageCode.downloadWorkspaceFailed);
+    throw new RequestError('download workspace failed');
   }
-  return client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
 }
