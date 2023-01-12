@@ -84,7 +84,10 @@ export interface CreateWorkspaceParams {
 export async function createWorkspace(
   params: CreateWorkspaceParams
 ): Promise<{ id: string }> {
-  return client.post('api/workspace', { json: params }).json();
+  // FIXME: avatar should be optional
+  return client
+    .post('api/workspace', { json: { ...params, avatar: '123' } })
+    .json();
 }
 
 export interface UpdateWorkspaceParams {
@@ -169,7 +172,11 @@ export async function leaveWorkspace({ id }: LeaveWorkspaceParams) {
 }
 
 export async function downloadWorkspace(
-  workspaceId: string
+  workspaceId: string,
+  published = false
 ): Promise<ArrayBuffer> {
+  if (published) {
+    return bareClient.get(`api/public/doc/${workspaceId}`).arrayBuffer();
+  }
   return client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
 }

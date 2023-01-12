@@ -15,6 +15,8 @@ const profileTarget = {
   local: '127.0.0.1:3000',
 };
 
+// 100.77.180.48:11001
+
 const getRedirectConfig = profile => {
   const target = profileTarget[profile || 'dev'] || profileTarget['dev'];
 

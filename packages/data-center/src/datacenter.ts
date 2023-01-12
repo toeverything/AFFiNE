@@ -13,7 +13,7 @@ import assert from 'assert';
 import { getLogger } from './logger';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
-import type { WorkspaceUnit } from './workspace-unit';
+import { WorkspaceUnit } from './workspace-unit';
 
 /**
  * @class DataCenter
@@ -105,12 +105,7 @@ export class DataCenter {
       'There is no provider. You should add provider first.'
     );
 
-    const workspaceMeta = await this._mainProvider.createWorkspaceInfo(params);
-
-    const workspace = createBlocksuiteWorkspace(workspaceMeta.id);
-
-    await this._mainProvider.createWorkspace(workspace, workspaceMeta);
-    const workspaceUnit = this._workspaceUnitCollection.find(workspaceMeta.id);
+    const workspaceUnit = await this._mainProvider.createWorkspace(params);
     return workspaceUnit;
   }
 
@@ -131,8 +126,8 @@ export class DataCenter {
    * @param {string} workspaceId workspace id
    */
   private _getBlocksuiteWorkspace(workspaceId: string) {
-    const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
-    assert(workspaceInfo, 'Workspace not found');
+    // const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
+    // assert(workspaceInfo, 'Workspace not found');
     return (
       // this._workspaceInstances.get(workspaceId) ||
       createBlocksuiteWorkspace(workspaceId)
@@ -178,10 +173,34 @@ export class DataCenter {
     this._workspaceInstances.set(workspaceId, workspace);
     await provider.warpWorkspace(workspace);
     this._workspaceUnitCollection.workspaces.forEach(workspaceUnit => {
-      workspaceUnit.setBlocksuiteWorkspace(null);
+      const provider = this.providerMap.get(workspaceUnit.provider);
+      assert(provider);
+      provider.closeWorkspace(workspaceUnit.id);
     });
     workspaceUnit.setBlocksuiteWorkspace(workspace);
     return workspaceUnit;
+  }
+
+  public async loadPublicWorkspace(workspaceId: string) {
+    // FIXME: hard code for public workspace
+    const provider = this.providerMap.get('affine');
+    assert(provider);
+    const blocksuiteWorkspace = this._getBlocksuiteWorkspace(workspaceId);
+    await provider.loadPublicWorkspace(blocksuiteWorkspace);
+
+    const workspaceUnitForPublic = new WorkspaceUnit({
+      id: workspaceId,
+      name: blocksuiteWorkspace.meta.name,
+      avatar: blocksuiteWorkspace.meta.avatar,
+      owner: undefined,
+      published: true,
+      provider: 'affine',
+      memberCount: 1,
+      syncMode: 'core',
+    });
+
+    workspaceUnitForPublic.setBlocksuiteWorkspace(blocksuiteWorkspace);
+    return workspaceUnitForPublic;
   }
 
   /**
@@ -309,55 +328,33 @@ export class DataCenter {
     }
   }
 
-  private async _transWorkspaceProvider(
-    workspace: BlocksuiteWorkspace,
-    providerId: string
+  public async enableProvider(
+    workspaceUnit: WorkspaceUnit,
+    providerId = 'affine'
   ) {
-    assert(workspace.room, 'No workspace id');
-    const workspaceInfo = this._workspaceUnitCollection.find(workspace.room);
-    assert(workspaceInfo, 'Workspace not found');
-    if (workspaceInfo.provider === providerId) {
+    if (workspaceUnit.provider === providerId) {
       this._logger('Workspace provider is same');
       return;
     }
-    const currentProvider = this.providerMap.get(workspaceInfo.provider);
-    assert(currentProvider, 'Provider not found');
-    const newProvider = this.providerMap.get(providerId);
-    assert(newProvider, `provide '${providerId}' is not registered`);
-    this._logger(`create ${providerId} workspace: `, workspaceInfo.name);
-    const newWorkspaceInfo = await newProvider.createWorkspaceInfo({
-      name: workspaceInfo.name,
-      // avatar: workspaceInfo.avatar,
-    });
-    const newWorkspace = createBlocksuiteWorkspace(newWorkspaceInfo.id);
-    // TODO optimize this function
-    await newProvider.createWorkspace(newWorkspace, {
-      ...newWorkspaceInfo,
-      name: workspaceInfo.name,
-      avatar: workspaceInfo.avatar,
-    });
+    const provider = this.providerMap.get(providerId);
+    assert(provider);
+    const newWorkspaceUnit = await provider.extendWorkspace(workspaceUnit);
 
-    assert(newWorkspace, 'Create workspace failed');
-    this._logger(
-      `update workspace data from ${workspaceInfo.provider} to ${providerId}`
-    );
-    await newProvider.assign(newWorkspace, workspace);
-    assert(newWorkspace, 'Create workspace failed');
-    await currentProvider.deleteWorkspace(workspace.room);
-    return newWorkspace.room;
+    // Currently we only allow enable one provider, so after enable new provider,
+    // delete the old workspace from its provider.
+    const oldProvider = this.providerMap.get(workspaceUnit.provider);
+    assert(oldProvider);
+    await oldProvider.deleteWorkspace(workspaceUnit.id);
+
+    return newWorkspaceUnit;
   }
 
   /**
    * Enable workspace cloud
    * @param {string} id ID of workspace.
    */
-  public async enableWorkspaceCloud(workspace: WorkspaceUnit) {
-    assert(workspace?.id, 'No workspace to enable cloud');
-    assert(workspace.blocksuiteWorkspace);
-    return await this._transWorkspaceProvider(
-      workspace.blocksuiteWorkspace,
-      'affine'
-    );
+  public async enableWorkspaceCloud(workspaceUnit: WorkspaceUnit) {
+    return this.enableProvider(workspaceUnit);
   }
 
   /**
@@ -421,6 +418,18 @@ export class DataCenter {
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
       return await provider.getWorkspaceMembers(workspaceId);
+    }
+    return [];
+  }
+
+  /**
+   * accept invitation
+   * @param {string} inviteCode
+   */
+  async acceptInvitation(inviteCode: string, providerStr = 'affine') {
+    const provider = this.providerMap.get(providerStr);
+    if (provider) {
+      return await provider.acceptInvitation(inviteCode);
     }
     return [];
   }

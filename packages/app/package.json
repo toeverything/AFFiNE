@@ -11,10 +11,10 @@
   "dependencies": {
     "@affine/datacenter": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@blocksuite/blocks": "0.4.0-20230110112105-ef07332",
-    "@blocksuite/editor": "0.4.0-20230110112105-ef07332",
+    "@blocksuite/blocks": "0.3.1-20230109032243-37ad3ba",
+    "@blocksuite/editor": "0.3.1-20230109032243-37ad3ba",
     "@blocksuite/icons": "^2.0.2",
-    "@blocksuite/store": "0.4.0-20230110112105-ef07332",
+    "@blocksuite/store": "0.3.1-20230109032243-37ad3ba",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",

@@ -1,7 +1,4 @@
-import { useAppState } from '@/providers/app-state-provider';
 import { stringToColour } from '@/utils';
-import { useEffect, useState } from 'react';
-
 interface IWorkspaceAvatar {
   size: number;
   name: string;
@@ -25,7 +22,9 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
             overflow: 'hidden',
           }}
         >
-          <img src={props.avatar} alt="" />
+          <picture>
+            <img src={props.avatar} alt="" />
+          </picture>
         </div>
       ) : (
         <div

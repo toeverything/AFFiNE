@@ -9,7 +9,6 @@ import { useSwitchToConfig } from './config';
 import { NoResultSVG } from './NoResultSVG';
 import { useTranslation } from '@affine/i18n';
 import usePageHelper from '@/hooks/use-page-helper';
-import usePageMetaList from '@/hooks/use-page-meta-list';
 export const Results = (props: {
   query: string;
   loading: boolean;
@@ -21,12 +20,11 @@ export const Results = (props: {
   const setLoading = props.setLoading;
   const setShowCreatePage = props.setShowCreatePage;
   const { triggerQuickSearchModal } = useModal();
-  const pageMetaList = usePageMetaList();
   const { openPage } = usePageHelper();
   const router = useRouter();
-  const { currentWorkspaceId } = useAppState();
+  const { currentWorkspace, pageList } = useAppState();
   const { search } = usePageHelper();
-  const List = useSwitchToConfig(currentWorkspaceId);
+  const List = useSwitchToConfig(currentWorkspace?.id);
   const [results, setResults] = useState(new Map<string, string | undefined>());
   const { t } = useTranslation();
   useEffect(() => {
@@ -37,12 +35,12 @@ export const Results = (props: {
   }, [query, setResults, setLoading]);
   const pageIds = [...results.values()];
 
-  const resultsPageMeta = pageMetaList.filter(
+  const resultsPageMeta = pageList.filter(
     page => pageIds.indexOf(page.id) > -1 && !page.trash
   );
 
   useEffect(() => {
-    setShowCreatePage(resultsPageMeta.length ? false : true);
+    setShowCreatePage(!resultsPageMeta.length);
     //Determine whether to display the  ‘+ New page’
   }, [resultsPageMeta, setShowCreatePage]);
   return loading ? null : (

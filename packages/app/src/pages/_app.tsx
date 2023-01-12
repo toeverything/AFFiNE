@@ -21,7 +21,6 @@ import { useAppState } from '@/providers/app-state-provider';
 import { PageLoading } from '@/components/loading';
 import Head from 'next/head';
 import '@affine/i18n';
-import TemporaryHelperProvider from '@/providers/temporary-helper-provider';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -55,10 +54,8 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
       <Logger />
       <ProviderComposer
         contexts={[
-          <TemporaryHelperProvider key="TemporaryHelperProvider" />,
           <ThemeProvider key="ThemeProvider" />,
           <AppStateProvider key="appStateProvider" />,
-          // <AppStateProvider2 key="appStateProvider2" />,
           <ModalProvider key="ModalProvider" />,
           <ConfirmProvider key="ConfirmProvider" />,
         ]}

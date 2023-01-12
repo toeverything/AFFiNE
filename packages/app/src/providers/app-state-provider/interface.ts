@@ -1,9 +1,8 @@
-import { DataCenter, User, WorkspaceInfo } from '@affine/datacenter';
+import { DataCenter, User, WorkspaceUnit } from '@affine/datacenter';
 import type { EditorContainer } from '@blocksuite/editor';
 
 import type {
   Page as StorePage,
-  Workspace as StoreWorkspace,
   PageMeta as StorePageMeta,
 } from '@blocksuite/store';
 import { MutableRefObject } from 'react';
@@ -18,21 +17,23 @@ export interface PageMeta extends StorePageMeta {
 export type AppStateValue = {
   dataCenter: DataCenter;
   user: User | null;
-  workspaceList: WorkspaceInfo[];
-  currentWorkspace: StoreWorkspace;
-  currentMetaWorkSpace: WorkspaceInfo | null;
-  currentWorkspaceId: string;
+  workspaceList: WorkspaceUnit[];
+  currentWorkspace: WorkspaceUnit | null;
   pageList: PageMeta[];
   currentPage: StorePage | null;
   editor?: EditorContainer | null;
   synced: boolean;
+  isOwner?: boolean;
 };
 
 export type AppStateFunction = {
   setEditor: MutableRefObject<(page: EditorContainer) => void>;
 
-  loadWorkspace: (workspaceId: string) => Promise<StoreWorkspace | null>;
+  loadWorkspace: (workspaceId: string) => Promise<WorkspaceUnit | null>;
   loadPage: (pageId: string) => void;
+
+  login: () => Promise<User>;
+  logout: () => Promise<void>;
 };
 
 export type AppStateContext = AppStateValue & AppStateFunction;

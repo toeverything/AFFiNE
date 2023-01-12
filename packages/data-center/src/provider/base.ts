@@ -1,8 +1,8 @@
-import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { MessageCenter } from '../message';
 import { Logger, User } from '../types';
 import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
-import type { WorkspaceUnitCtorParams } from '../workspace-unit';
+import type { WorkspaceUnitCtorParams, WorkspaceUnit } from '../workspace-unit';
 import { Member } from './affine/apis';
 
 const defaultLogger = () => {
@@ -44,12 +44,6 @@ export class BaseProvider {
     return;
   }
 
-  public async createWorkspaceInfo(
-    params: CreateWorkspaceInfoParams
-  ): Promise<WorkspaceMeta0> {
-    throw new Error(`provider: ${this.id} createWorkspaceInfo Not implemented`);
-  }
-
   /**
    * auth provider
    */
@@ -76,9 +70,18 @@ export class BaseProvider {
   }
 
   /**
+   * @deprecated Temporary for public workspace
+   * @param blocksuiteWorkspace
+   * @returns
+   */
+  public async loadPublicWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
+    return blocksuiteWorkspace;
+  }
+
+  /**
    * load workspaces
    **/
-  public async loadWorkspaces(): Promise<WorkspaceMeta0[]> {
+  public async loadWorkspaces(): Promise<WorkspaceUnit[]> {
     throw new Error(`provider: ${this.id} loadWorkSpace Not implemented`);
   }
 
@@ -174,13 +177,18 @@ export class BaseProvider {
 
   /**
    * create workspace by workspace meta
-   * @param {WorkspaceMeta} meta
+   * @param {CreateWorkspaceInfoParams} meta
    */
   public async createWorkspace(
-    blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta0
-  ): Promise<BlocksuiteWorkspace | undefined> {
-    return blocksuiteWorkspace;
+    meta: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceUnit | undefined> {
+    throw new Error(`provider: ${this.id} createWorkspace not implemented`);
+  }
+
+  public async extendWorkspace(
+    workspaceUnit: WorkspaceUnit
+  ): Promise<WorkspaceUnit | undefined> {
+    throw new Error(`provider: ${this.id} extendWorkspace not implemented`);
   }
 
   /**
@@ -206,16 +214,6 @@ export class BaseProvider {
   }
 
   /**
-   * merge one workspaces to another
-   * @param workspace
-   * @returns
-   */
-  public async assign(to: BlocksuiteWorkspace, from: BlocksuiteWorkspace) {
-    from;
-    return to;
-  }
-
-  /**
    * get workspace members
    * @param {string} workspaceId
    * @returns
@@ -223,5 +221,15 @@ export class BaseProvider {
   public getWorkspaceMembers(workspaceId: string): Promise<Member[]> {
     workspaceId;
     return Promise.resolve([]);
+  }
+
+  /**
+   * accept invitation
+   * @param {string} inviteCode
+   * @returns
+   */
+  public async acceptInvitation(inviteCode: string): Promise<void> {
+    inviteCode;
+    return;
   }
 }

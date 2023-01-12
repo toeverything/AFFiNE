@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
   PropsWithChildren,
   ReactElement,
@@ -31,10 +30,10 @@ const Page: NextPageWithLayout = () => {
       <EditorHeader />
       <MobileModal />
 
-      {currentPage && (
+      {currentPage && currentWorkspace?.blocksuiteWorkspace && (
         <DynamicBlocksuite
           page={currentPage}
-          workspace={currentWorkspace}
+          workspace={currentWorkspace.blocksuiteWorkspace}
           setEditor={setEditorHandler}
         />
       )}
@@ -52,9 +51,10 @@ const PageDefender = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     const initPage = async () => {
       const pageId = router.query.pageId as string;
-      const isPageExist = !!currentWorkspace!.meta.pageMetas.find(
-        p => p.id === pageId
-      );
+      const isPageExist =
+        currentWorkspace?.blocksuiteWorkspace?.meta?.pageMetas.find(
+          p => p.id === pageId
+        );
       if (!isPageExist) {
         await createPage({ pageId });
       }

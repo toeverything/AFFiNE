@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-const defaultOutLineWorkspaceId = 'affine';
-// 'local-first-' + '85b4ca0b9081421d903bbc2501ea280f';
 // It is a fully effective hook
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const { workspaceList, loadWorkspace, user } = useAppState();
-  console.log('workspaceList: ', workspaceList);
   const router = useRouter();
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(
+    router.query.workspaceId as string
+  );
 
   // const defaultOutLineWorkspaceId = '99ce7eb7';
   // console.log(defaultOutLineWorkspaceId);
@@ -18,7 +18,8 @@ export const useEnsureWorkspace = () => {
     // If workspaceList is empty, we need to create a default workspace but not jump to 404
     if (
       workspaceList.length &&
-      router.query.workspaceId &&
+      // FIXME: router is not ready when this hook is called
+      location.pathname.startsWith(`/workspace/${router.query.workspaceId}`) &&
       workspaceList.findIndex(
         meta => meta.id.toString() === router.query.workspaceId
       ) === -1
@@ -35,18 +36,17 @@ export const useEnsureWorkspace = () => {
     //   router.push('/404');
     //   return;
     // }
-
-    const workspaceId = user
-      ? (router.query.workspaceId as string) || workspaceList[0]?.id
-      : (router.query.workspaceId as string) || defaultOutLineWorkspaceId;
-
+    const workspaceId =
+      (router.query.workspaceId as string) || workspaceList[0]?.id;
     loadWorkspace(workspaceId).finally(() => {
       setWorkspaceLoaded(true);
+      setActiveWorkspaceId(activeWorkspaceId);
     });
-  }, [loadWorkspace, router, user, workspaceList]);
+  }, [loadWorkspace, router, user, workspaceList, activeWorkspaceId]);
 
   return {
     workspaceLoaded,
+    activeWorkspaceId,
   };
 };
 

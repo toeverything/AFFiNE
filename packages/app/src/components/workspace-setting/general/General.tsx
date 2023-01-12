@@ -14,42 +14,29 @@ import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
-import { WorkspaceInfo } from '@affine/datacenter';
+import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
+export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
-  const { currentWorkspace } = useAppState();
+  const { currentWorkspace, isOwner } = useAppState();
   const { updateWorkspace } = useWorkspaceHelper();
-  const isOwner = true;
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
   };
-  const handleClickDelete = () => {
-    setShowDelete(true);
-  };
-  const handleCloseDelete = () => {
-    setShowDelete(false);
-  };
-
-  const handleClickLeave = () => {
-    setShowLeave(true);
-  };
-  const handleCloseLeave = () => {
-    setShowLeave(false);
-  };
   const handleUpdateWorkspaceName = () => {
-    console.log('currentWorkspace: ', currentWorkspace);
-    updateWorkspace({ name: workspaceName }, currentWorkspace);
+    currentWorkspace &&
+      updateWorkspace({ name: workspaceName }, currentWorkspace);
   };
 
   const fileChange = async (file: File) => {
-    // console.log('file: ', file);
-    // setUploading(true);
+    setUploading(true);
     const blob = new Blob([file], { type: file.type });
-    updateWorkspace({ avatarBlob: blob }, currentWorkspace);
+    currentWorkspace &&
+      (await updateWorkspace({ avatarBlob: blob }, currentWorkspace));
+    setUploading(false);
   };
 
   return workspace ? (
@@ -84,16 +71,19 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
           placeholder="Workspace Name"
           maxLength={14}
           minLength={1}
+          disabled={!isOwner}
           onChange={handleChangeWorkSpaceName}
         ></Input>
-        <TextButton
-          onClick={() => {
-            handleUpdateWorkspaceName();
-          }}
-          style={{ marginLeft: '0px' }}
-        >
-          ✔️
-        </TextButton>
+        {isOwner ? (
+          <TextButton
+            onClick={() => {
+              handleUpdateWorkspaceName();
+            }}
+            style={{ marginLeft: '0px' }}
+          >
+            ✔️
+          </TextButton>
+        ) : null}
       </StyledSettingInputContainer>
       <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
@@ -102,25 +92,39 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
       <StyledDeleteButtonContainer>
         {isOwner ? (
           <>
-            <Button type="danger" shape="circle" onClick={handleClickDelete}>
+            <Button
+              type="danger"
+              shape="circle"
+              onClick={() => {
+                setShowDelete(true);
+              }}
+            >
               Delete Workspace
             </Button>
             <WorkspaceDelete
               open={showDelete}
-              onClose={handleCloseDelete}
+              onClose={() => {
+                setShowDelete(false);
+              }}
               workspace={workspace}
             />
           </>
         ) : (
           <>
-            <Button type="danger" shape="circle" onClick={handleClickLeave}>
+            <Button
+              type="danger"
+              shape="circle"
+              onClick={() => {
+                setShowLeave(true);
+              }}
+            >
               Leave Workspace
             </Button>
             <WorkspaceLeave
               open={showLeave}
-              onClose={handleCloseLeave}
-              workspaceName={workspaceName}
-              workspaceId={workspace.id}
+              onClose={() => {
+                setShowLeave(false);
+              }}
             />
           </>
         )}

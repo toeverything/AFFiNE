@@ -22,11 +22,11 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
   const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
   const _applyTemplate = function (pageId: string, template: Template) {
-    const page = currentWorkspace?.getPage(pageId);
+    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId);
 
     const title = template.name;
     if (page) {
-      currentWorkspace?.setPageMeta(page.id, { title });
+      currentWorkspace?.blocksuiteWorkspace?.setPageMeta(page.id, { title });
       if (page && page.root === null) {
         setTimeout(() => {
           const editor = document.querySelector('editor-container');

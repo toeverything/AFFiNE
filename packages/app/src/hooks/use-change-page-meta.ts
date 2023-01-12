@@ -11,7 +11,7 @@ export const useChangePageMeta = () => {
 
   return useCallback<ChangePageMeta>(
     (pageId, pageMeta) => {
-      currentWorkspace?.setPageMeta(pageId, {
+      currentWorkspace?.blocksuiteWorkspace?.setPageMeta(pageId, {
         ...pageMeta,
       });
     },

@@ -5,14 +5,12 @@ import {
   StyledLink,
   StyledListItem,
   StyledListItemForWorkspace,
-  // StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
   StyledSliderBarWrapper,
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
-// import { WorkspaceSelector } from './WorkspaceSelector';
 import Collapse from '@mui/material/Collapse';
 import {
   ArrowDownIcon,
@@ -30,15 +28,13 @@ import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider';
 import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
-import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
-// import { WorkspaceSetting } from '@/components/workspace-setting';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
-  const pageList = usePageMetaList();
+  const { pageList } = useAppState();
   const router = useRouter();
   const { t } = useTranslation();
   const favoriteList = pageList.filter(p => p.favorite && !p.trash);
@@ -71,13 +67,13 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal, triggerImportModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
-  const { currentWorkspaceId } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { openPage, createPage } = usePageHelper();
   const router = useRouter();
   const { t } = useTranslation();
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
-
+  const currentWorkspaceId = currentWorkspace?.id;
   const paths = {
     all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
     favorite: currentWorkspaceId

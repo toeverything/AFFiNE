@@ -16,12 +16,10 @@ test.describe.serial('local provider', () => {
   let workspaceId: string | undefined;
 
   test('create workspace', async () => {
-    const workspaceInfo = await provider.createWorkspaceInfo({
+    const workspaceUnit = await provider.createWorkspace({
       name: workspaceName,
     });
-    workspaceId = workspaceInfo.id;
-    const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceId);
-    await provider.createWorkspace(blocksuiteWorkspace, workspaceInfo);
+    workspaceId = workspaceUnit?.id;
 
     expect(workspaceMetaCollection.workspaces.length).toEqual(1);
     expect(workspaceMetaCollection.workspaces[0].name).toEqual(workspaceName);

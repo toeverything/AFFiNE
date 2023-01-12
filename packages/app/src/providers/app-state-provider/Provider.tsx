@@ -8,7 +8,7 @@ import {
   PageMeta,
 } from './interface';
 import { createDefaultWorkspace } from './utils';
-import { WorkspaceInfo } from '@affine/datacenter';
+import { User } from '@affine/datacenter';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
@@ -20,63 +20,61 @@ export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
-
   useEffect(() => {
-    const init = async () => {
+    const initState = async () => {
       const dataCenter = await getDataCenter();
-
+      // Ensure datacenter has at least one workspace
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
       }
-      const currentWorkspace = await dataCenter.loadWorkspace(
-        dataCenter.workspaces[0].id
-      );
-      const currentMetaWorkSpace = dataCenter.workspaces.find(item => {
-        return item.id === currentWorkspace.room;
-      });
 
       setAppState({
         dataCenter,
         user: (await dataCenter.getUserInfo()) || null,
         workspaceList: dataCenter.workspaces,
-        currentWorkspaceId: dataCenter.workspaces[0].id,
-        currentWorkspace,
-        pageList: currentWorkspace.meta.pageMetas as PageMeta[],
+        currentWorkspace: null,
+        pageList: [],
         currentPage: null,
         editor: null,
         synced: true,
-        currentMetaWorkSpace: currentMetaWorkSpace ?? null,
+        isOwner: false,
       });
     };
 
-    init();
+    initState();
   }, []);
 
   useEffect(() => {
-    if (!appState?.currentWorkspace) {
+    if (!appState?.currentWorkspace?.blocksuiteWorkspace) {
       return;
     }
     const currentWorkspace = appState.currentWorkspace;
-    const dispose = currentWorkspace.meta.pagesUpdated.on(() => {
-      setAppState({
-        ...appState,
-        pageList: currentWorkspace.meta.pageMetas as PageMeta[],
-      });
-    }).dispose;
+    const dispose = currentWorkspace?.blocksuiteWorkspace?.meta.pagesUpdated.on(
+      () => {
+        setAppState({
+          ...appState,
+          pageList: currentWorkspace.blocksuiteWorkspace?.meta
+            .pageMetas as PageMeta[],
+        });
+      }
+    ).dispose;
     return () => {
-      dispose();
+      dispose && dispose();
     };
   }, [appState]);
 
   useEffect(() => {
     const { dataCenter } = appState;
     // FIXME: onWorkspacesChange should have dispose function
-    dataCenter?.onWorkspacesChange(() => {
-      setAppState({
-        ...appState,
-        workspaceList: dataCenter.workspaces,
-      });
-    });
+    dataCenter?.onWorkspacesChange(
+      () => {
+        setAppState({
+          ...appState,
+          workspaceList: dataCenter.workspaces,
+        });
+      },
+      { immediate: false }
+    );
   }, [appState]);
 
   const loadPage = useRef<AppStateFunction['loadPage']>();
@@ -85,7 +83,7 @@ export const AppStateProvider = ({
     if (pageId === currentPage?.id) {
       return;
     }
-    const page = currentWorkspace?.getPage(pageId) || null;
+    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId) || null;
     setAppState({
       ...appState,
       currentPage: page,
@@ -94,28 +92,30 @@ export const AppStateProvider = ({
 
   const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
   loadWorkspace.current = async (workspaceId: string) => {
-    const { dataCenter, workspaceList, currentWorkspaceId, currentWorkspace } =
-      appState;
-    if (!workspaceList.find(v => v.id === workspaceId)) {
+    const { dataCenter, workspaceList, currentWorkspace, user } = appState;
+    if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
     }
-    if (workspaceId === currentWorkspaceId) {
+    if (workspaceId === currentWorkspace?.id) {
       return currentWorkspace;
     }
-    const workspace = await dataCenter.loadWorkspace(workspaceId);
-    const currentMetaWorkSpace = dataCenter.workspaces.find(
-      (item: WorkspaceInfo) => {
-        return item.id === workspace.room;
-      }
-    );
+    const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
+    let isOwner;
+    if (workspace.provider === 'local') {
+      // isOwner is useful only in the cloud
+      isOwner = true;
+    } else {
+      isOwner = workspace?.owner && user?.id === workspace?.owner?.id;
+    }
+    const pageList =
+      (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
       ...appState,
       currentWorkspace: workspace,
-      currentWorkspaceId: workspaceId,
-      currentMetaWorkSpace: currentMetaWorkSpace ?? null,
-      pageList: currentWorkspace.meta.pageMetas as PageMeta[],
+      pageList: pageList,
       currentPage: null,
       editor: null,
+      isOwner,
     });
 
     return workspace;
@@ -130,6 +130,26 @@ export const AppStateProvider = ({
     });
   };
 
+  const login = async () => {
+    const { dataCenter } = appState;
+    await dataCenter.login();
+    const user = (await dataCenter.getUserInfo()) as User;
+    setAppState({
+      ...appState,
+      user,
+    });
+    return user;
+  };
+
+  const logout = async () => {
+    const { dataCenter } = appState;
+    await dataCenter.logout();
+    setAppState({
+      ...appState,
+      user: null,
+    });
+  };
+
   return (
     <AppState.Provider
       value={{
@@ -137,6 +157,8 @@ export const AppStateProvider = ({
         setEditor,
         loadPage: loadPage.current,
         loadWorkspace: loadWorkspace.current,
+        login,
+        logout,
       }}
     >
       {children}

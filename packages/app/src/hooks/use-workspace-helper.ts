@@ -1,14 +1,18 @@
 import { useAppState } from '@/providers/app-state-provider';
-import { Workspace } from '@blocksuite/store';
+import { useConfirm } from '@/providers/ConfirmProvider';
+import { toast } from '@/ui/toast';
+import { WorkspaceUnit } from '@affine/datacenter';
+import router from 'next/router';
+
 export const useWorkspaceHelper = () => {
-  const { dataCenter } = useAppState();
+  const { confirm } = useConfirm();
+  const { dataCenter, currentWorkspace, user, login } = useAppState();
   const createWorkspace = async (name: string) => {
     const workspaceInfo = await dataCenter.createWorkspace({
       name: name,
     });
-    if (workspaceInfo && workspaceInfo.room) {
-      const workspace = await dataCenter.loadWorkspace(workspaceInfo.room);
-      return workspace;
+    if (workspaceInfo && workspaceInfo.id) {
+      return await dataCenter.loadWorkspace(workspaceInfo.id);
     }
     return null;
   };
@@ -16,31 +20,56 @@ export const useWorkspaceHelper = () => {
   // const updateWorkspace = async (workspace: Workspace) => {};
 
   const publishWorkspace = async (workspaceId: string, publish: boolean) => {
-    dataCenter.setWorkspacePublish(workspaceId, publish);
+    await dataCenter.setWorkspacePublish(workspaceId, publish);
   };
 
   const updateWorkspace = async (
     { name, avatarBlob }: { name?: string; avatarBlob?: Blob },
-    workspace: Workspace
+    workspace: WorkspaceUnit
   ) => {
     if (name) {
       await dataCenter.updateWorkspaceMeta({ name }, workspace);
     }
     if (avatarBlob) {
-      const blobId = await dataCenter.setBlob(workspace, avatarBlob);
-      await dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
+      // const blobId = await dataCenter.setBlob(workspace, avatarBlob);
+      // await dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
     }
   };
 
-  const enableWorkspace = async (workspace: Workspace) => {
-    const newWorkspaceId = await dataCenter.enableWorkspaceCloud(workspace);
-    // console.log('newWorkspace: ', newWorkspace);
-    return newWorkspaceId;
+  const enableWorkspace = async () => {
+    confirm({
+      title: 'Enable AFFiNE Cloud?',
+      content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
+      confirmText: user ? 'Enable' : 'Sign in and Enable',
+      cancelText: 'Skip',
+    }).then(async confirm => {
+      if (confirm && currentWorkspace) {
+        if (!user) {
+          await login();
+        }
+        const workspace = await dataCenter.enableWorkspaceCloud(
+          currentWorkspace
+        );
+        workspace && router.push(`/workspace/${workspace.id}/setting`);
+        toast('Enabled success');
+      }
+    });
   };
+
+  const deleteWorkSpace = async () => {
+    currentWorkspace &&
+      (await dataCenter.deleteWorkspace(currentWorkspace?.id));
+  };
+  const leaveWorkSpace = async () => {
+    currentWorkspace && (await dataCenter.leaveWorkspace(currentWorkspace?.id));
+  };
+
   return {
     createWorkspace,
     publishWorkspace,
     updateWorkspace,
     enableWorkspace,
+    deleteWorkSpace,
+    leaveWorkSpace,
   };
 };

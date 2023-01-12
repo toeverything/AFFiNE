@@ -9,20 +9,16 @@ import {
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { toast } from '@/ui/toast';
-import { useConfirm } from '@/providers/ConfirmProvider';
 // import { useAppState } from '@/providers/app-state-provider3';
+import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-import { WorkspaceInfo } from '@affine/datacenter';
 
-export const PublishPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
-  const shareUrl =
-    window.location.host + '/workspace/' + workspace.id + '?share=true';
-  const { publishWorkspace } = useWorkspaceHelper();
+export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
+  const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
+  const { publishWorkspace, enableWorkspace } = useWorkspaceHelper();
 
-  const { confirm } = useConfirm();
-
-  const togglePublic = (flag: boolean) => {
-    workspace.id && publishWorkspace(workspace?.id, flag);
+  const togglePublic = async (flag: boolean) => {
+    await publishWorkspace(workspace.id.toString(), flag);
   };
 
   const copyUrl = () => {
@@ -30,30 +26,15 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
     toast('Copied url to clipboard');
   };
 
-  const enableAffineCloud = () => {
-    confirm({
-      title: 'Enable AFFiNE Cloud?',
-      content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-      confirmText:
-        workspace.provider === 'local' ? 'Enable' : 'Sign in and Enable',
-      cancelText: 'Skip',
-    }).then(confirm => {
-      if (confirm) {
-        // if (user) {
-        //   updateWorkspaceMeta(workspace.id, { type: 'cloud' });
-        // } else {
-        //   login();
-        //   updateWorkspaceMeta(workspace.id, { type: 'cloud' });
-        // }
-      }
-    });
+  const enableAffineCloud = async () => {
+    await enableWorkspace();
   };
   return (
     <>
-      {workspace.provider === 'cloud' ? (
+      {workspace.provider === 'affine' ? (
         <div>
           <StyledPublishContent>
-            {workspace?.isPublish ? (
+            {workspace?.published ? (
               <>
                 <StyledPublishExplanation>
                   Publishing to web requires AFFiNE Cloud service .
@@ -75,7 +56,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceInfo }) => {
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
-          {workspace.isPublish ? (
+          {workspace.published ? (
             <Button
               onClick={() => {
                 togglePublic(false);

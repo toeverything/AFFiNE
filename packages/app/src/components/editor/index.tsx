@@ -31,7 +31,6 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
 
     const editor = new EditorContainer();
     editor.page = page;
-
     editorContainer.current?.appendChild(editor);
     if (page.isEmpty) {
       const isFirstPage = workspace?.meta.pageMetas.length === 1;

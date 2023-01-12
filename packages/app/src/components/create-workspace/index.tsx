@@ -1,5 +1,4 @@
 import { styled } from '@/styles';
-import { useRouter } from 'next/router';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useState } from 'react';
@@ -7,6 +6,9 @@ import Input from '@/ui/input';
 import { KeyboardEvent } from 'react';
 import { useTranslation } from '@affine/i18n';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { useRouter } from 'next/router';
+import { toast } from '@/ui/toast';
+
 interface ModalProps {
   open: boolean;
   onClose: () => void;
@@ -18,11 +20,11 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const router = useRouter();
   const handleCreateWorkspace = async () => {
     const workspace = await createWorkspace(workspaceName);
-    if (workspace && workspace.room) {
-      router.replace(`/workspace/${workspace.room}`);
+    if (workspace && workspace.id) {
+      router.replace(`/workspace/${workspace.id}`);
       onClose();
     } else {
-      console.log('create error');
+      toast('create error');
     }
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {

@@ -2,7 +2,6 @@ import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useState } from 'react';
-import { SignOut } from '@/hooks/mock-data/mock';
 import { CreateWorkspaceModal } from '../create-workspace';
 import {
   CloudUnsyncedIcon,
@@ -10,12 +9,11 @@ import {
   UsersIcon,
   AddIcon,
 } from '@blocksuite/icons';
-// import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-import { useUserHelper } from '@/hooks/use-user-helper';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 interface WorkspaceModalProps {
   open: boolean;
@@ -24,9 +22,9 @@ interface WorkspaceModalProps {
 
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-  // const { confirm } = useConfirm();
-  const { workspaceList, currentWorkspace } = useAppState();
-  const { login, user } = useUserHelper();
+  const { confirm } = useConfirm();
+  const { workspaceList, currentWorkspace, login, user, logout } =
+    useAppState();
   const router = useRouter();
   return (
     <div>
@@ -55,7 +53,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                       router.replace(`/workspace/${item.id}`);
                       onClose();
                     }}
-                    active={item.id === currentWorkspace.room}
+                    active={item.id === currentWorkspace?.id}
                     key={index}
                   >
                     <span style={{ width: '100px' }}>
@@ -101,7 +99,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                       {item.provider === 'affine' && (
                         <CloudInsyncIcon fontSize={24} />
                       )}
-                      {item.isPublish && <UsersIcon fontSize={24} />}
+                      {item.published && <UsersIcon fontSize={24} />}
                     </span>
                     {/* {item.isLocal ? 'isLocal' : ''}/ */}
                   </WorkspaceItem>
@@ -137,9 +135,9 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
           <Footer>
             {!user ? (
               <Button
-                onClick={() => {
-                  login();
-                  toast('login success');
+                onClick={async () => {
+                  await login();
+                  toast('Login success');
                 }}
               >
                 Sign in AFFiNE Cloud
@@ -147,7 +145,20 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
             ) : (
               <Button
                 onClick={() => {
-                  SignOut();
+                  confirm({
+                    title: 'Sign out?',
+                    content: `All data has been stored in the cloud. `,
+                    confirmText: 'Sign out',
+                    cancelText: 'Cancel',
+                  }).then(async confirm => {
+                    if (confirm) {
+                      if (user) {
+                        await logout();
+                        router.replace(`/workspace`);
+                        toast('Enabled success');
+                      }
+                    }
+                  });
                 }}
               >
                 Sign out of AFFiNE Cloud

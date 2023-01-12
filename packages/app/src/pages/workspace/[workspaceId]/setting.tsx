@@ -23,14 +23,14 @@ import {
 } from '@/components/workspace-setting';
 import { useAppState } from '@/providers/app-state-provider';
 import WorkspaceLayout from '@/components/workspace-layout';
-import { WorkspaceInfo } from '@affine/datacenter';
+import { WorkspaceUnit } from '@affine/datacenter';
 
 type TabNames = 'general' | 'members' | 'publish' | 'sync' | 'export';
 
 const tabMap: {
   name: TabNames;
   icon: ReactNode;
-  panelRender: (workspace: WorkspaceInfo) => ReactNode;
+  panelRender: (workspace: WorkspaceUnit) => ReactNode;
 }[] = [
   {
     name: 'general',
@@ -60,7 +60,7 @@ const tabMap: {
 ];
 
 const WorkspaceSetting = () => {
-  const { currentMetaWorkSpace } = useAppState();
+  const { currentWorkspace, isOwner } = useAppState();
 
   const [activeTab, setActiveTab] = useState<TabNames>(tabMap[0].name);
   const handleTabChange = (tab: TabNames) => {
@@ -70,7 +70,20 @@ const WorkspaceSetting = () => {
   const activeTabPanelRender = tabMap.find(
     tab => tab.name === activeTab
   )?.panelRender;
-
+  let tableArr: {
+    name: TabNames;
+    icon: ReactNode;
+    panelRender: (workspace: WorkspaceUnit) => ReactNode;
+  }[] = tabMap;
+  if (!isOwner) {
+    tableArr = [
+      {
+        name: 'general',
+        icon: <EditIcon />,
+        panelRender: workspace => <GeneralPage workspace={workspace} />,
+      },
+    ];
+  }
   return (
     <StyledSettingContainer>
       <StyledSettingSidebar>
@@ -78,7 +91,7 @@ const WorkspaceSetting = () => {
           Workspace Settings
         </StyledSettingSidebarHeader>
         <StyledSettingTabContainer>
-          {tabMap.map(({ icon, name }) => {
+          {tableArr.map(({ icon, name }) => {
             return (
               <WorkspaceSettingTagItem
                 key={name}
@@ -98,7 +111,7 @@ const WorkspaceSetting = () => {
       </StyledSettingSidebar>
 
       <StyledSettingContent>
-        {currentMetaWorkSpace && activeTabPanelRender?.(currentMetaWorkSpace)}
+        {currentWorkspace && activeTabPanelRender?.(currentWorkspace)}
       </StyledSettingContent>
     </StyledSettingContainer>
   );

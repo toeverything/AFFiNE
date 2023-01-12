@@ -1,19 +1,22 @@
 import { styled } from '@/styles';
 
 // Inspired by https://codepen.io/graphilla/pen/rNvBMYY
-export const StyledLoadingWrapper = styled.div<{ size?: number }>(
-  ({ size = 40 }) => {
-    return {
-      width: size * 4,
-      height: size * 4,
-      position: 'relative',
-    };
-  }
-);
+export const StyledLoadingWrapper = styled('div', {
+  shouldForwardProp: prop => {
+    return !['size'].includes(prop);
+  },
+})<{ size?: number }>(({ size = 40 }) => {
+  return {
+    width: size * 4,
+    height: size * 4,
+    position: 'relative',
+  };
+});
 export const StyledLoading = styled.div`
   position: absolute;
   left: 25%;
-  top: 25%;
+  top: 50%;
+  transform: rotateX(55deg) rotateZ(-45deg);
   @keyframes slide {
     0% {
       transform: translate(var(--sx), var(--sy));
