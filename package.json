@@ -19,7 +19,8 @@
     "test:unit": "playwright test --config=playwright.config.unit.ts",
     "postinstall": "husky install",
     "notify": "node --experimental-modules scripts/notify.mjs",
-    "check:ci": "pnpm lint & pnpm test"
+    "check:ci": "pnpm lint & pnpm test",
+    "update:blocksuite": "chmod 755 update-dep.sh &&  sh update-dep.sh"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
