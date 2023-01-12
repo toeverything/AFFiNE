@@ -141,16 +141,10 @@ export class AffineProvider extends BaseProvider {
         addedWorkspaces.push(workspaceUnit);
       }
     }
-    if (addedWorkspaces.length) {
-      // add workspaces
-      this._workspaces.add(addedWorkspaces);
-    }
-    if (removeWorkspaceList.length) {
-      // remove workspaces
-      removeWorkspaceList.forEach(id => {
-        this._workspaces.remove(id);
-      });
-    }
+    // add workspaces
+    this._workspaces.add(addedWorkspaces);
+    // remove workspaces
+    this._workspaces.remove(removeWorkspaceList);
   }
 
   private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
@@ -174,7 +168,7 @@ export class AffineProvider extends BaseProvider {
     blocksuiteWorkspace: BlocksuiteWorkspace,
     published = false
   ) {
-    const { doc, room: workspaceId } = blocksuiteWorkspace;
+    const { room: workspaceId } = blocksuiteWorkspace;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
     const updates = await this._apis.downloadWorkspace(workspaceId, published);
     await applyUpdate(blocksuiteWorkspace, new Uint8Array(updates));
