@@ -20,7 +20,6 @@ import { InviteMemberModal } from './InviteMemberModal';
 import { Menu, MenuItem } from '@/ui/menu';
 import { Empty } from '@/ui/empty';
 import { WorkspaceUnit } from '@affine/datacenter';
-import { useTemporaryHelper } from '@/providers/temporary-helper-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import useMembers from '@/hooks/use-members';
