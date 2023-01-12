@@ -21,9 +21,8 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
-  const { currentWorkspace } = useAppState();
+  const { currentWorkspace, isOwner } = useAppState();
   const { updateWorkspace } = useWorkspaceHelper();
-  const isOwner = true;
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
   };
@@ -72,16 +71,19 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           placeholder="Workspace Name"
           maxLength={14}
           minLength={1}
+          disabled={!isOwner}
           onChange={handleChangeWorkSpaceName}
         ></Input>
-        <TextButton
-          onClick={() => {
-            handleUpdateWorkspaceName();
-          }}
-          style={{ marginLeft: '0px' }}
-        >
-          ✔️
-        </TextButton>
+        {isOwner ? (
+          <TextButton
+            onClick={() => {
+              handleUpdateWorkspaceName();
+            }}
+            style={{ marginLeft: '0px' }}
+          >
+            ✔️
+          </TextButton>
+        ) : null}
       </StyledSettingInputContainer>
       <StyledSettingH2 marginTop={20}>Workspace Type</StyledSettingH2>
       <StyledSettingInputContainer>
