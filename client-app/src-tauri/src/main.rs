@@ -36,6 +36,8 @@ async fn main() {
           .hidden_title(true)
           .initialization_script(&preload)
           .build()?;
+      #[cfg(debug_assertions)]
+      _window.open_devtools();
       Ok(())
     })
     .invoke_handler(commands::invoke_handler())
