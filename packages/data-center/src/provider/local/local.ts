@@ -8,9 +8,9 @@ import type {
 import { varStorage as storage } from 'lib0/storage';
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
 import { IndexedDBProvider } from './indexeddb/indexeddb.js';
-import { initStore } from './indexeddb/utils.js';
 import assert from 'assert';
-import { setDefaultAvatar } from '../utils.js';
+import { loadWorkspaceUnit, createWorkspaceUnit } from './utils.js';
+import type { WorkspaceUnit } from '../../workspace-unit';
 
 const WORKSPACE_KEY = 'workspaces';
 
@@ -22,21 +22,12 @@ export class LocalProvider extends BaseProvider {
     super(params);
   }
 
-  private _storeWorkspaces(workspaces: WorkspaceMeta0[]) {
+  private _storeWorkspaces(workspaceUnits: WorkspaceUnit[]) {
     storage.setItem(
       WORKSPACE_KEY,
       JSON.stringify(
-        workspaces.map(w => {
-          return {
-            id: w.id,
-            name: w.name,
-            avatar: w.avatar,
-            owner: w.owner,
-            published: w.published,
-            memberCount: w.memberCount,
-            provider: w.provider,
-            syncMode: w.syncMode,
-          };
+        workspaceUnits.map(w => {
+          return w.toJSON();
         })
       )
     );
@@ -61,20 +52,23 @@ export class LocalProvider extends BaseProvider {
     return workspace;
   }
 
-  override loadWorkspaces(): Promise<WorkspaceMeta0[]> {
+  override async loadWorkspaces(): Promise<WorkspaceUnit[]> {
     const workspaceStr = storage.getItem(WORKSPACE_KEY);
-    let workspaces: WorkspaceMeta0[] = [];
     if (workspaceStr) {
       try {
-        workspaces = JSON.parse(workspaceStr) as WorkspaceMeta0[];
-        workspaces.forEach(workspace => {
-          this._workspaces.add(workspace);
-        });
+        const workspaceMetas = JSON.parse(workspaceStr) as WorkspaceMeta0[];
+        const workspaceUnits = await Promise.all(
+          workspaceMetas.map(meta => {
+            return loadWorkspaceUnit(meta);
+          })
+        );
+        this._workspaces.add(workspaceUnits);
+        return workspaceUnits;
       } catch (error) {
         this._logger(`Failed to parse workspaces from storage`);
       }
     }
-    return Promise.resolve(workspaces);
+    return [];
   }
 
   public override async deleteWorkspace(id: string): Promise<void> {
@@ -96,10 +90,10 @@ export class LocalProvider extends BaseProvider {
     this._storeWorkspaces(this._workspaces.list());
   }
 
-  public override async createWorkspaceInfo(
+  public override async createWorkspace(
     meta: CreateWorkspaceInfoParams
-  ): Promise<WorkspaceMeta0> {
-    const workspaceInfo: WorkspaceMeta0 = {
+  ): Promise<WorkspaceUnit | undefined> {
+    const workspaceUnit = await createWorkspaceUnit({
       name: meta.name,
       id: uuidv4(),
       published: false,
@@ -108,35 +102,10 @@ export class LocalProvider extends BaseProvider {
       syncMode: 'core',
       memberCount: 1,
       provider: 'local',
-    };
-    return Promise.resolve(workspaceInfo);
-  }
-
-  public override async createWorkspace(
-    blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta0
-  ): Promise<BlocksuiteWorkspace | undefined> {
-    const workspaceId = blocksuiteWorkspace.room;
-    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
-    this._logger('Creating affine workspace');
-
-    const workspaceInfo: WorkspaceMeta0 = {
-      ...meta,
-    };
-
-    blocksuiteWorkspace.meta.setName(meta.name);
-
-    if (!meta.avatar) {
-      await setDefaultAvatar(blocksuiteWorkspace);
-      workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
-    }
-
-    await initStore(blocksuiteWorkspace);
-
-    this._workspaces.add(workspaceInfo);
+    });
+    this._workspaces.add(workspaceUnit);
     this._storeWorkspaces(this._workspaces.list());
-
-    return blocksuiteWorkspace;
+    return workspaceUnit;
   }
 
   public override async clear(): Promise<void> {
