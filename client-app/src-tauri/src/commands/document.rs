@@ -85,7 +85,7 @@ pub async fn update_y_document<'s>(
   state: tauri::State<'s, AppState>,
   parameters: YDocumentUpdate,
 ) -> Result<bool, String> {
-  if let Some(doc) = &state
+  if let Some(success) = &state
     .0
     .lock()
     .await
@@ -94,7 +94,7 @@ pub async fn update_y_document<'s>(
     .await
     .ok()
   {
-    Ok(true)
+    Ok(*success)
   } else {
     Err(format!("Failed to update yDoc to {}", parameters.id))
   }
