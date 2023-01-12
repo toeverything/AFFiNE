@@ -10,6 +10,9 @@ export type IDocumentParameters =
       YDocumentUpdate: YDocumentUpdate;
     }
   | {
+      CreateDocumentParameter: CreateDocumentParameter;
+    }
+  | {
       GetDocumentParameter: GetDocumentParameter;
     }
   | {
@@ -21,11 +24,16 @@ export interface YDocumentUpdate {
   update: number[];
   [k: string]: unknown;
 }
+export interface CreateDocumentParameter {
+  workspace_id: string;
+  workspace_name: string;
+  [k: string]: unknown;
+}
 export interface GetDocumentParameter {
   id: string;
   [k: string]: unknown;
 }
 export interface GetDocumentResponse {
-  update: number[];
+  updates: number[][];
   [k: string]: unknown;
 }

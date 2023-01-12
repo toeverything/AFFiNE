@@ -14,6 +14,16 @@
     },
     {
       "type": "object",
+      "required": ["CreateDocumentParameter"],
+      "properties": {
+        "CreateDocumentParameter": {
+          "$ref": "#/definitions/CreateDocumentParameter"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
       "required": ["GetDocumentParameter"],
       "properties": {
         "GetDocumentParameter": {
@@ -34,6 +44,18 @@
     }
   ],
   "definitions": {
+    "CreateDocumentParameter": {
+      "type": "object",
+      "required": ["workspace_id", "workspace_name"],
+      "properties": {
+        "workspace_id": {
+          "type": "string"
+        },
+        "workspace_name": {
+          "type": "string"
+        }
+      }
+    },
     "GetDocumentParameter": {
       "type": "object",
       "required": ["id"],
@@ -45,14 +67,17 @@
     },
     "GetDocumentResponse": {
       "type": "object",
-      "required": ["update"],
+      "required": ["updates"],
       "properties": {
-        "update": {
+        "updates": {
           "type": "array",
           "items": {
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
           }
         }
       }

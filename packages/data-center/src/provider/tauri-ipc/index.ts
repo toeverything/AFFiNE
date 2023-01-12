@@ -42,11 +42,17 @@ export class TauriIPCProvider extends LocalProvider {
 
   async #initDocFromIPC(workspaceID: string, doc: Y.Doc) {
     this._logger(`Loading ${workspaceID}...`);
-    const updates = await ipcMethods.getYDocument({ id: workspaceID });
-    if (updates) {
+    const result = await ipcMethods.getYDocument({ id: workspaceID });
+    if (result) {
       await new Promise(resolve => {
         doc.once('update', resolve);
-        Y.applyUpdate(doc, new Uint8Array(updates.update));
+        const updates = result.updates.map(
+          binaryUpdate => new Uint8Array(binaryUpdate)
+        );
+        const mergedUpdate = Y.mergeUpdates(updates);
+        // DEBUG: console mergedUpdate
+        console.log(`mergedUpdate`, mergedUpdate);
+        Y.applyUpdate(doc, new Uint8Array(mergedUpdate));
       });
       this._logger(`Loaded: ${workspaceID}`);
     }

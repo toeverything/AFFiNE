@@ -1,10 +1,14 @@
+use std::io::ErrorKind;
+
 use ipc_types::document::{
   CreateDocumentParameter, GetDocumentParameter, GetDocumentResponse, YDocumentUpdate,
 };
 use jwst::DocStorage;
 use jwst::Workspace as OctoBaseWorkspace;
 use lib0::any::Any;
-use yrs::StateVector;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
+use yrs::{updates::decoder::Decode, Doc, StateVector, Update};
 
 use crate::state::AppState;
 
@@ -47,21 +51,33 @@ pub async fn get_doc<'s>(
 ) -> Result<GetDocumentResponse, String> {
   // TODO: check user permission
 
-  if let Some(doc) = &state
+  let doc_file_path = &state
     .0
     .lock()
     .await
     .doc_storage
-    .get(parameters.id.clone())
-    .await
-    .ok()
-  {
-    Ok(GetDocumentResponse {
-      update: doc.encode_state_as_update_v1(&StateVector::default()),
-    })
-  } else {
-    Err(format!("Failed to get yDoc from {}", parameters.id))
+    .get_path(parameters.id.clone());
+  let mut file = File::open(doc_file_path).await.unwrap();
+  let mut updates_vector: Vec<Vec<u8>> = Vec::new();
+  loop {
+    let len = file.read_u64_le().await;
+
+    let len = match len {
+      Ok(len) => len,
+      Err(e) if e.kind() == ErrorKind::UnexpectedEof => break,
+      Err(e) => return Err(format!("Failed to get yDoc from {}", parameters.id)),
+    };
+
+    let mut update = vec![0; len as usize];
+    file.read_exact(&mut update).await.unwrap();
+
+    updates_vector.push(update);
+
+    file.read_u64_le().await.unwrap();
   }
+  Ok(GetDocumentResponse {
+    updates: updates_vector,
+  })
 }
 
 #[tauri::command]

@@ -18,7 +18,7 @@ pub struct CreateDocumentParameter {
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct GetDocumentResponse {
-  pub update: Vec<u8>,
+  pub updates: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
