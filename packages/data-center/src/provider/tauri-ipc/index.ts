@@ -6,17 +6,15 @@ import * as ipcMethods from './ipc/methods.js';
 import {
   CreateWorkspaceInfoParams,
   ProviderConstructorParams,
-  WorkspaceMeta0,
 } from '../base.js';
-import { BlockSchema } from '@blocksuite/blocks/models';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { IPCBlobProvider } from './blocksuite-provider/blob.js';
-import type { WorkspaceDetail } from '../affine/apis/workspace.js';
-import { setDefaultAvatar } from '../utils.js';
+import { WorkspaceUnit } from 'src/workspace-unit.js';
+import { createWorkspaceUnit, loadWorkspaceUnit } from '../local/utils.js';
+import { WorkspaceWithPermission } from './ipc/types/workspace.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
-  private _workspacesCache: Map<string, BlocksuiteWorkspace> = new Map();
   /**
    * // TODO: We only have one user in this version of app client. But may support switch user later.
    */
@@ -78,27 +76,6 @@ export class TauriIPCProvider extends LocalProvider {
     await super.clear();
   }
 
-  public override async createWorkspaceInfo(
-    meta: CreateWorkspaceInfoParams
-  ): Promise<WorkspaceMeta0> {
-    const { id } = await ipcMethods.createWorkspace({
-      name: meta.name,
-      // TODO: get userID here
-      user_id: this.#defaultUserID,
-    });
-
-    const workspaceInfo: WorkspaceMeta0 = {
-      name: meta.name,
-      id: id,
-      avatar: '',
-      owner: await this.getUserInfo(),
-      memberCount: 1,
-      provider: this.id,
-      syncMode: 'all',
-    };
-    return workspaceInfo;
-  }
-
   override async warpWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
     const { doc, room } = blocksuiteWorkspace;
     assert(room);
@@ -111,131 +88,47 @@ export class TauriIPCProvider extends LocalProvider {
   }
 
   public override async createWorkspace(
-    blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta0
-  ): Promise<BlocksuiteWorkspace | undefined> {
-    const workspaceId = blocksuiteWorkspace.room;
-    assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
-    this._logger('Creating affine workspace');
+    meta: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceUnit | undefined> {
+    this._logger('Creating client app workspace');
 
-    const workspaceInfo: WorkspaceMeta0 = {
+    const { id } = await ipcMethods.createWorkspace({
       name: meta.name,
-      id: workspaceId,
-      avatar: '',
-      owner: undefined,
-      memberCount: 1,
-      provider: this.id,
-      syncMode: 'all',
-    };
-
-    if (!blocksuiteWorkspace.meta.avatar) {
-      await setDefaultAvatar(blocksuiteWorkspace);
-      workspaceInfo.avatar = blocksuiteWorkspace.meta.avatar;
-    }
-    this._workspaces.add(workspaceInfo);
-    return blocksuiteWorkspace;
-  }
-
-  override async loadWorkspaces() {
-    const { workspaces: workspacesList } = await ipcMethods.getWorkspaces({
+      // TODO: get userID here
       user_id: this.#defaultUserID,
     });
-    const workspaces: WorkspaceMeta0[] = workspacesList.map(w => {
-      return {
-        ...w,
-        memberCount: 0,
-        name: '',
-        provider: this.id,
-        syncMode: 'all',
-      };
+
+    const workspaceUnit = await createWorkspaceUnit({
+      name: meta.name,
+      id,
+      published: false,
+      avatar: '',
+      owner: undefined,
+      syncMode: 'core',
+      memberCount: 1,
+      provider: this.id,
     });
-    const workspaceInstances = workspaces.map(({ id, name, avatar }) => {
-      const workspace =
-        this._workspacesCache.get(id) ||
-        new BlocksuiteWorkspace({
-          room: id,
-        }).register(BlockSchema);
-      this._workspacesCache.set(id, workspace);
-      if (workspace) {
-        workspace.meta.setName(name);
-        if (avatar) {
-          workspace.meta.setAvatar(avatar);
-        }
-        return new Promise<BlocksuiteWorkspace>(resolve => {
-          ipcMethods.getYDocument({ id }).then(({ update }) => {
-            Y.applyUpdate(workspace.doc, new Uint8Array(update));
-            resolve(workspace);
-          });
+    this._workspaces.add(workspaceUnit);
+    return workspaceUnit;
+  }
+
+  override async loadWorkspaces(): Promise<WorkspaceUnit[]> {
+    const { workspaces } = await ipcMethods.getWorkspaces({
+      user_id: this.#defaultUserID,
+    });
+    const workspaceUnits = await Promise.all(
+      workspaces.map((meta: WorkspaceWithPermission) => {
+        return loadWorkspaceUnit({
+          ...meta,
+          memberCount: 1,
+          // TODO: load name here
+          name: '',
+          provider: this.id,
+          syncMode: 'all',
         });
-      } else {
-        return Promise.resolve(null);
-      }
-    });
-
-    (await Promise.all(workspaceInstances)).forEach((workspace, i) => {
-      if (workspace) {
-        workspaces[i] = {
-          ...workspaces[i],
-          name: workspace.meta.name,
-          avatar: workspace.meta.avatar,
-        };
-      }
-    });
-    const getDetailList = workspacesList.map(
-      async (
-        workspaceWithPermission
-      ): Promise<{
-        id: string;
-        detail:
-          | (Omit<WorkspaceDetail, 'owner'> & {
-              owner?: Partial<WorkspaceDetail['owner']>;
-            })
-          | null;
-      }> => {
-        const { id, permission, created_at } = workspaceWithPermission;
-        const { workspace } = await ipcMethods.getWorkspace({ id });
-        return {
-          id,
-          detail: {
-            ...workspace,
-            owner: workspace.owner
-              ? {
-                  ...workspace.owner,
-                  create_at: String(created_at),
-                  avatar_url: workspace.owner.avatar_url ?? undefined,
-                  id: String(workspace.owner.id),
-                }
-              : undefined,
-            permission_type: permission,
-            create_at: created_at,
-          },
-        };
-      }
+      })
     );
-    const ownerList = await Promise.all(getDetailList);
-    (await Promise.all(ownerList)).forEach(detail => {
-      if (detail) {
-        const { id, detail: workspaceDetail } = detail;
-        if (workspaceDetail) {
-          const { owner, member_count } = workspaceDetail;
-          const currentWorkspace = workspaces.find(w => w.id === id);
-          if (currentWorkspace && owner) {
-            currentWorkspace.owner = {
-              id: owner.id!,
-              name: owner.name!,
-              avatar: owner.avatar_url!,
-              email: owner.email!,
-            };
-            currentWorkspace.memberCount = member_count;
-          }
-        }
-      }
-    });
-
-    workspaces.forEach(workspace => {
-      this._workspaces.add(workspace);
-    });
-
-    return workspaces;
+    this._workspaces.add(workspaceUnits);
+    return workspaceUnits;
   }
 }
