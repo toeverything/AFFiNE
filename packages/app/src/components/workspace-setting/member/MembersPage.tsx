@@ -48,7 +48,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           {loaded && members.length === 0 && (
             <Empty width={648} sx={{ marginTop: '60px' }} height={300} />
           )}
-          {loaded && members.length && (
+          {loaded && members.length > 0 && (
             <>
               <StyledMemberTitleContainer>
                 <StyledMemberNameContainer>

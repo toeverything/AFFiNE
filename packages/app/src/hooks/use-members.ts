@@ -22,7 +22,7 @@ export const useMembers = () => {
   const inviteMember = async (email: string) => {
     currentWorkspace &&
       dataCenter &&
-      (await dataCenter.inviteMember(currentWorkspace?.id, email));
+      (await dataCenter.inviteMember(currentWorkspace.id, email));
   };
 
   const removeMember = async (permissionId: number) => {
