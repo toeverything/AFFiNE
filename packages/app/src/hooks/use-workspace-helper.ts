@@ -44,16 +44,32 @@ export const useWorkspaceHelper = () => {
       cancelText: 'Skip',
     }).then(async confirm => {
       if (confirm && currentWorkspace) {
-        if (user) {
+        if (!user) {
           await login();
         }
-        const newWorkspaceId = await dataCenter.enableWorkspaceCloud(
+        const workspace = await dataCenter.enableWorkspaceCloud(
           currentWorkspace
         );
-        router.push(`/workspace/${newWorkspaceId}/setting`);
+        workspace && router.push(`/workspace/${workspace.id}/setting`);
         toast('Enabled success');
       }
     });
+  };
+
+  const deleteWorkSpace = async () => {
+    currentWorkspace &&
+      (await dataCenter.deleteWorkspace(currentWorkspace?.id));
+  };
+  const leaveWorkSpace = async () => {
+    currentWorkspace && (await dataCenter.leaveWorkspace(currentWorkspace?.id));
+  };
+
+  const acceptInvite = async (inviteCode: string) => {
+    let inviteInfo;
+    if (inviteCode) {
+      inviteInfo = await dataCenter.acceptInvitation(inviteCode);
+    }
+    return inviteInfo;
   };
 
   return {
@@ -61,5 +77,8 @@ export const useWorkspaceHelper = () => {
     publishWorkspace,
     updateWorkspace,
     enableWorkspace,
+    deleteWorkSpace,
+    leaveWorkSpace,
+    acceptInvite,
   };
 };

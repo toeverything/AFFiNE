@@ -1,25 +1,24 @@
 import { Observable } from 'lib0/observable';
-import { WorkspaceUnit } from './workspace-unit.js';
 import type {
-  WorkspaceUnitCtorParams,
+  WorkspaceUnit,
   UpdateWorkspaceUnitParams,
 } from './workspace-unit';
 
 export interface WorkspaceUnitCollectionScope {
   get: (workspaceId: string) => WorkspaceUnit | undefined;
   list: () => WorkspaceUnit[];
-  add: (workspace: WorkspaceUnitCtorParams) => void;
-  remove: (workspaceId: string) => boolean;
+  add: (workspace: WorkspaceUnit | WorkspaceUnit[]) => void;
+  remove: (workspaceId: string | string[]) => boolean;
   clear: () => void;
   update: (
     workspaceId: string,
-    workspaceMeta: UpdateWorkspaceUnitParams
+    workspaceUnit: UpdateWorkspaceUnitParams
   ) => void;
 }
 
 export interface WorkspaceUnitCollectionChangeEvent {
   added?: WorkspaceUnit[];
-  deleted?: WorkspaceUnit;
+  deleted?: WorkspaceUnit[];
   updated?: WorkspaceUnit;
 }
 
@@ -59,45 +58,66 @@ export class WorkspaceUnitCollection {
       return this._workspaceUnitMap.get(workspaceId);
     };
 
-    const add = (workspace: WorkspaceUnitCtorParams) => {
-      if (this._workspaceUnitMap.has(workspace.id)) {
-        // FIXME: multiple add same workspace
+    const add = (workspaceUnit: WorkspaceUnit | WorkspaceUnit[]) => {
+      const workspaceUnits = Array.isArray(workspaceUnit)
+        ? workspaceUnit
+        : [workspaceUnit];
+      let added = false;
+
+      workspaceUnits.forEach(workspaceUnit => {
+        if (this._workspaceUnitMap.has(workspaceUnit.id)) {
+          // FIXME: multiple add same workspace
+          return;
+        }
+        added = true;
+        this._workspaceUnitMap.set(workspaceUnit.id, workspaceUnit);
+        scopedWorkspaceIds.add(workspaceUnit.id);
+      });
+
+      if (!added) {
         return;
       }
 
-      const workspaceUnit = new WorkspaceUnit(workspace);
-      this._workspaceUnitMap.set(workspace.id.toString(), workspaceUnit);
-
-      scopedWorkspaceIds.add(workspace.id);
-
       this._events.emit('change', [
         {
-          added: [workspaceUnit],
+          added: workspaceUnits,
         } as WorkspaceUnitCollectionChangeEvent,
       ]);
     };
 
-    const remove = (workspaceId: string) => {
-      if (!scopedWorkspaceIds.has(workspaceId)) {
-        return true;
-      }
+    const remove = (workspaceId: string | string[]) => {
+      const workspaceIds = Array.isArray(workspaceId)
+        ? workspaceId
+        : [workspaceId];
+      const workspaceUnits: WorkspaceUnit[] = [];
 
-      const workspaceUnit = this._workspaceUnitMap.get(workspaceId);
-      if (workspaceUnit) {
-        const ret = this._workspaceUnitMap.delete(workspaceId);
-        // If deletion failed, return.
-        if (!ret) {
-          return ret;
+      workspaceIds.forEach(workspaceId => {
+        if (!scopedWorkspaceIds.has(workspaceId)) {
+          return;
         }
+        const workspaceUnit = this._workspaceUnitMap.get(workspaceId);
+        if (workspaceUnit) {
+          const ret = this._workspaceUnitMap.delete(workspaceId);
+          // If deletion failed, return.
+          if (!ret) {
+            return;
+          }
 
-        scopedWorkspaceIds.delete(workspaceId);
+          workspaceUnits.push(workspaceUnit);
+          scopedWorkspaceIds.delete(workspaceId);
+        }
+      });
 
-        this._events.emit('change', [
-          {
-            deleted: workspaceUnit,
-          } as WorkspaceUnitCollectionChangeEvent,
-        ]);
+      if (!workspaceUnits.length) {
+        return false;
       }
+
+      this._events.emit('change', [
+        {
+          deleted: workspaceUnits,
+        } as WorkspaceUnitCollectionChangeEvent,
+      ]);
+
       return true;
     };
 
@@ -107,10 +127,7 @@ export class WorkspaceUnitCollection {
       });
     };
 
-    const update = (
-      workspaceId: string,
-      workspaceMeta: UpdateWorkspaceUnitParams
-    ) => {
+    const update = (workspaceId: string, meta: UpdateWorkspaceUnitParams) => {
       if (!scopedWorkspaceIds.has(workspaceId)) {
         return true;
       }
@@ -120,7 +137,7 @@ export class WorkspaceUnitCollection {
         return true;
       }
 
-      workspaceUnit.update(workspaceMeta);
+      workspaceUnit.update(meta);
 
       this._events.emit('change', [
         {

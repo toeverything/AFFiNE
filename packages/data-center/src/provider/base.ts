@@ -1,9 +1,10 @@
-import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { MessageCenter } from '../message';
 import { Logger, User } from '../types';
 import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
-import type { WorkspaceUnitCtorParams } from '../workspace-unit';
+import type { WorkspaceUnitCtorParams, WorkspaceUnit } from '../workspace-unit';
 import { Member } from './affine/apis';
+import { Permission } from './affine/apis/workspace.js';
 
 const defaultLogger = () => {
   return;
@@ -22,10 +23,15 @@ export type UpdateWorkspaceMetaParams = Partial<
 >;
 
 export class BaseProvider {
+  /** provider id */
   public readonly id: string = 'base';
+  /** workspace unit collection */
   protected _workspaces!: WorkspaceUnitCollectionScope;
   protected _logger!: Logger;
-  protected _messageCenter!: MessageCenter;
+  /** send message with message center */
+  protected _sendMessage!: ReturnType<
+    InstanceType<typeof MessageCenter>['getMessageSender']
+  >;
 
   public constructor({
     logger,
@@ -34,7 +40,7 @@ export class BaseProvider {
   }: ProviderConstructorParams) {
     this._logger = (logger || defaultLogger) as Logger;
     this._workspaces = workspaces;
-    this._messageCenter = messageCenter;
+    this._sendMessage = messageCenter.getMessageSender(this.id);
   }
 
   /**
@@ -42,12 +48,6 @@ export class BaseProvider {
    */
   public async init() {
     return;
-  }
-
-  public async createWorkspaceInfo(
-    params: CreateWorkspaceInfoParams
-  ): Promise<WorkspaceMeta0> {
-    throw new Error(`provider: ${this.id} createWorkspaceInfo Not implemented`);
   }
 
   /**
@@ -87,7 +87,7 @@ export class BaseProvider {
   /**
    * load workspaces
    **/
-  public async loadWorkspaces(): Promise<WorkspaceMeta0[]> {
+  public async loadWorkspaces(): Promise<WorkspaceUnit[]> {
     throw new Error(`provider: ${this.id} loadWorkSpace Not implemented`);
   }
 
@@ -183,13 +183,18 @@ export class BaseProvider {
 
   /**
    * create workspace by workspace meta
-   * @param {WorkspaceMeta} meta
+   * @param {CreateWorkspaceInfoParams} meta
    */
   public async createWorkspace(
-    blocksuiteWorkspace: BlocksuiteWorkspace,
-    meta: WorkspaceMeta0
-  ): Promise<BlocksuiteWorkspace | undefined> {
-    return blocksuiteWorkspace;
+    meta: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceUnit | undefined> {
+    throw new Error(`provider: ${this.id} createWorkspace not implemented`);
+  }
+
+  public async extendWorkspace(
+    workspaceUnit: WorkspaceUnit
+  ): Promise<WorkspaceUnit | undefined> {
+    throw new Error(`provider: ${this.id} extendWorkspace not implemented`);
   }
 
   /**
@@ -215,16 +220,6 @@ export class BaseProvider {
   }
 
   /**
-   * merge one workspaces to another
-   * @param workspace
-   * @returns
-   */
-  public async assign(to: BlocksuiteWorkspace, from: BlocksuiteWorkspace) {
-    from;
-    return to;
-  }
-
-  /**
    * get workspace members
    * @param {string} workspaceId
    * @returns
@@ -239,8 +234,10 @@ export class BaseProvider {
    * @param {string} inviteCode
    * @returns
    */
-  public async acceptInvitation(inviteCode: string): Promise<void> {
+  public async acceptInvitation(
+    inviteCode: string
+  ): Promise<Permission | null> {
     inviteCode;
-    return;
+    return null;
   }
 }

@@ -12,13 +12,11 @@ import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useRouter } from 'next/router';
-import {
-  deleteWorkspace,
-  getWorkspaces,
-  // Workspace,
-} from '@/hooks/mock-data/mock';
+
 import { WorkspaceUnit } from '@affine/datacenter';
 import { Trans, useTranslation } from '@affine/i18n';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+
 interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
@@ -33,23 +31,15 @@ export const WorkspaceDelete = ({
   const [deleteStr, setDeleteStr] = useState<string>('');
   const { t } = useTranslation();
   const router = useRouter();
-
+  const { deleteWorkSpace } = useWorkspaceHelper();
   const handlerInputChange = (workspaceName: string) => {
     setDeleteStr(workspaceName);
   };
 
   const handleDelete = async () => {
-    // const dc = await getDataCenter();
-    // await dc.apis.deleteWorkspace({ id: workspaceId });
-    // router.push(`/workspace/${nextWorkSpaceId}`);
-    deleteWorkspace(workspace.id);
-    const workspaceList = getWorkspaces();
-    if (workspaceList.length) {
-      router.push(`/workspace/${workspaceList[0].id}`);
-    } else {
-      router.push(`/workspace`);
-    }
+    await deleteWorkSpace();
     onClose();
+    router.push(`/workspace`);
   };
 
   return (

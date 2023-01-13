@@ -23,6 +23,7 @@ export type AppStateValue = {
   currentPage: StorePage | null;
   editor?: EditorContainer | null;
   synced: boolean;
+  isOwner?: boolean;
 };
 
 export type AppStateFunction = {

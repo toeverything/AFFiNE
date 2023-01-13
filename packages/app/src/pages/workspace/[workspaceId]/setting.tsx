@@ -61,8 +61,9 @@ const tabMap: {
 ];
 
 const WorkspaceSetting = () => {
-  const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
+  const { currentWorkspace, isOwner } = useAppState();
+
   const [activeTab, setActiveTab] = useState<TabNames>(tabMap[0].name);
   const handleTabChange = (tab: TabNames) => {
     setActiveTab(tab);
@@ -71,7 +72,20 @@ const WorkspaceSetting = () => {
   const activeTabPanelRender = tabMap.find(
     tab => tab.name === activeTab
   )?.panelRender;
-
+  let tableArr: {
+    name: TabNames;
+    icon: ReactNode;
+    panelRender: (workspace: WorkspaceUnit) => ReactNode;
+  }[] = tabMap;
+  if (!isOwner) {
+    tableArr = [
+      {
+        name: 'general',
+        icon: <EditIcon />,
+        panelRender: workspace => <GeneralPage workspace={workspace} />,
+      },
+    ];
+  }
   return (
     <StyledSettingContainer>
       <StyledSettingSidebar>
@@ -79,7 +93,7 @@ const WorkspaceSetting = () => {
           {t('Workspace Settings')}
         </StyledSettingSidebarHeader>
         <StyledSettingTabContainer>
-          {tabMap.map(({ icon, name }) => {
+          {tableArr.map(({ icon, name }) => {
             return (
               <WorkspaceSettingTagItem
                 key={name}

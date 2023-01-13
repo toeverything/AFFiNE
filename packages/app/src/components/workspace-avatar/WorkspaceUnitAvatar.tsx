@@ -1,0 +1,39 @@
+import { useState, useEffect } from 'react';
+import type { WorkspaceUnit } from '@affine/datacenter';
+import { WorkspaceAvatar as Avatar } from './Avatar';
+
+const useAvatar = (workspaceUnit?: WorkspaceUnit) => {
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const avatarId =
+    workspaceUnit?.avatar || workspaceUnit?.blocksuiteWorkspace?.meta.avatar;
+  useEffect(() => {
+    if (avatarId && workspaceUnit?.blocksuiteWorkspace?.blobs) {
+      workspaceUnit.blocksuiteWorkspace.blobs.then(blobs => {
+        blobs?.get(avatarId).then(url => setAvatarUrl(url || ''));
+      });
+    } else {
+      setAvatarUrl('');
+    }
+  }, [avatarId]);
+
+  return avatarUrl;
+};
+
+export const WorkspaceUnitAvatar = ({
+  size = 20,
+  name,
+  workspaceUnit,
+}: {
+  size?: number;
+  name?: string;
+  workspaceUnit?: WorkspaceUnit | null;
+}) => {
+  const avatarUrl = useAvatar(workspaceUnit || undefined);
+  return (
+    <Avatar
+      size={size}
+      name={name || workspaceUnit?.name || ''}
+      avatar={avatarUrl}
+    />
+  );
+};

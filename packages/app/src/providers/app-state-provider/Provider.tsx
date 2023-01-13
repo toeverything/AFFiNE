@@ -37,6 +37,7 @@ export const AppStateProvider = ({
         currentPage: null,
         editor: null,
         synced: true,
+        isOwner: false,
       });
     };
 
@@ -91,7 +92,7 @@ export const AppStateProvider = ({
 
   const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
   loadWorkspace.current = async (workspaceId: string) => {
-    const { dataCenter, workspaceList, currentWorkspace } = appState;
+    const { dataCenter, workspaceList, currentWorkspace, user } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
     }
@@ -99,6 +100,13 @@ export const AppStateProvider = ({
       return currentWorkspace;
     }
     const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
+    let isOwner;
+    if (workspace.provider === 'local') {
+      // isOwner is useful only in the cloud
+      isOwner = true;
+    } else {
+      isOwner = workspace?.owner && user?.id === workspace?.owner?.id;
+    }
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
@@ -107,6 +115,7 @@ export const AppStateProvider = ({
       pageList: pageList,
       currentPage: null,
       editor: null,
+      isOwner,
     });
 
     return workspace;

@@ -8,30 +8,20 @@ import {
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useTranslation } from '@affine/i18n';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 // import { getDataCenter } from '@affine/datacenter';
 // import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
-  workspaceName: string;
-  workspaceId: string;
 }
 
-export const WorkspaceLeave = ({
-  open,
-  onClose,
-  workspaceId,
-}: WorkspaceDeleteProps) => {
+export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
+  const { leaveWorkSpace } = useWorkspaceHelper();
   const { t } = useTranslation();
-  console.log('workspaceId: ', workspaceId);
-  // const router = useRouter();
-  // const { refreshWorkspacesMeta } = useAppState();
   const handleLeave = async () => {
-    // const dc = await getDataCenter();
-    // await dc.apis.leaveWorkspace({ id: workspaceId });
-    // // router.push(`/workspace/${nextWorkSpaceId}`);
-    // refreshWorkspacesMeta();
+    await leaveWorkSpace();
     onClose();
   };
 

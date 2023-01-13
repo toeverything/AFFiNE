@@ -10,7 +10,7 @@ import {
   AddIcon,
 } from '@blocksuite/icons';
 import { toast } from '@/ui/toast';
-import { WorkspaceAvatar } from '@/components/workspace-avatar';
+import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/ConfirmProvider';
@@ -67,11 +67,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                           marginRight: '10px',
                         }}
                       >
-                        <WorkspaceAvatar
-                          size={50}
-                          name={item.name}
-                          avatar={item.avatar ?? ''}
-                        />
+                        <WorkspaceUnitAvatar size={50} workspaceUnit={item} />
                       </div>
 
                       <span
