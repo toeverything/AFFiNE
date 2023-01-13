@@ -3,7 +3,7 @@ import { Logger } from 'src/types';
 import { token } from './apis/token';
 import * as url from 'lib0/url';
 
-const RECONNECT_INTERVAL_TIME = 5000;
+const RECONNECT_INTERVAL_TIME = 500;
 const MAX_RECONNECT_TIMES = 50;
 
 export class WebsocketClient extends websocket.WebsocketClient {
@@ -51,7 +51,7 @@ export class WebsocketClient extends websocket.WebsocketClient {
               } else {
                 this._logger('reconnect failed, max reconnect times reached');
               }
-            }, 500);
+            }, RECONNECT_INTERVAL_TIME);
           } catch (e) {
             this._logger('reconnect failed', e);
           }
