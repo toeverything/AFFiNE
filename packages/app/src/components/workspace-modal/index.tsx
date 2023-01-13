@@ -143,6 +143,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               </Button>
             ) : (
               <Button
+                type="danger"
                 onClick={() => {
                   confirm({
                     title: 'Sign out?',
