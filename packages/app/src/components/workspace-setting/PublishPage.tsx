@@ -5,7 +5,7 @@ import {
   StyledPublishExplanation,
   StyledSettingH2,
 } from './style';
-
+import { useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { toast } from '@/ui/toast';
@@ -13,10 +13,13 @@ import { toast } from '@/ui/toast';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useTranslation } from '@affine/i18n';
+import Loading from '@/components/loading';
+import { Wrapper } from '@/ui/layout';
 export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
   const { publishWorkspace, enableWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
+  const [loaded, setLoaded] = useState(true);
   const togglePublic = async (flag: boolean) => {
     await publishWorkspace(workspace.id.toString(), flag);
   };
@@ -58,8 +61,10 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           <StyledPublishCopyContainer>
             {workspace.published ? (
               <Button
-                onClick={() => {
-                  togglePublic(false);
+                onClick={async () => {
+                  setLoaded(false);
+                  await togglePublic(false);
+                  setLoaded(true);
                 }}
                 type="primary"
                 shape="circle"
@@ -68,8 +73,10 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               </Button>
             ) : (
               <Button
-                onClick={() => {
-                  togglePublic(true);
+                onClick={async () => {
+                  setLoaded(false);
+                  await togglePublic(true);
+                  setLoaded(true);
                 }}
                 type="primary"
                 shape="circle"
@@ -88,8 +95,10 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
             <StyledPublishCopyContainer>
               <Button
-                onClick={() => {
-                  enableAffineCloud();
+                onClick={async () => {
+                  setLoaded(false);
+                  await enableAffineCloud();
+                  setLoaded(true);
                 }}
                 type="primary"
                 shape="circle"
@@ -99,6 +108,11 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             </StyledPublishCopyContainer>
           </>
         </StyledPublishContent>
+      )}
+      {!loaded && (
+        <Wrapper>
+          <Loading size={25} />
+        </Wrapper>
       )}
     </>
   );
