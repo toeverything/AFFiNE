@@ -70,9 +70,6 @@ class Token {
   }
 
   async refreshToken(token?: string) {
-    if (!this._refreshToken && !token) {
-      throw new Error('No authorization token.');
-    }
     if (!this._padding) {
       this._padding = login({
         type: 'Refresh',
@@ -194,6 +191,7 @@ export const getAuthorizer = () => {
     return [signInWithGoogle, onAuthStateChanged] as const;
   } catch (e) {
     getLogger('getAuthorizer')(e);
+    console.error('getAuthorizer', e);
     return [] as const;
   }
 };
