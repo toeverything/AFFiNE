@@ -58,12 +58,13 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             workspaceUnit={workspace}
           />
         </div>
-        <Upload
+        {/* TODO: Wait for image sync to complete  */}
+        {/* <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
           fileChange={fileChange}
         >
           <Button loading={uploading}>{t('Upload')}</Button>
-        </Upload>
+        </Upload> */}
         {/* TODO: add upload logic */}
       </StyledSettingAvatarContent>
       <StyledSettingH2 marginTop={20}>{t('Workspace Name')}</StyledSettingH2>
