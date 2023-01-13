@@ -12,7 +12,7 @@ import Input from '@/ui/input';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
-import { Upload } from '@/components/file-upload';
+// import { Upload } from '@/components/file-upload';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
@@ -20,7 +20,7 @@ import { useTranslation } from '@affine/i18n';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
-  const [uploading, setUploading] = useState<boolean>(false);
+  // const [uploading, setUploading] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
   const { currentWorkspace, isOwner } = useAppState();
   const { updateWorkspace } = useWorkspaceHelper();
@@ -34,13 +34,13 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       updateWorkspace({ name: workspaceName }, currentWorkspace);
   };
 
-  const fileChange = async (file: File) => {
-    setUploading(true);
-    const blob = new Blob([file], { type: file.type });
-    currentWorkspace &&
-      (await updateWorkspace({ avatarBlob: blob }, currentWorkspace));
-    setUploading(false);
-  };
+  // const fileChange = async (file: File) => {
+  //   setUploading(true);
+  //   const blob = new Blob([file], { type: file.type });
+  //   currentWorkspace &&
+  //     (await updateWorkspace({ avatarBlob: blob }, currentWorkspace));
+  //   setUploading(false);
+  // };
 
   return workspace ? (
     <div>
@@ -58,12 +58,13 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             workspaceUnit={workspace}
           />
         </div>
-        <Upload
+        {/* TODO: Wait for image sync to complete  */}
+        {/* <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
           fileChange={fileChange}
         >
           <Button loading={uploading}>{t('Upload')}</Button>
-        </Upload>
+        </Upload> */}
         {/* TODO: add upload logic */}
       </StyledSettingAvatarContent>
       <StyledSettingH2 marginTop={20}>{t('Workspace Name')}</StyledSettingH2>
