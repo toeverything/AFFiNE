@@ -57,11 +57,10 @@ export const useWorkspaceHelper = () => {
   };
 
   const deleteWorkSpace = async () => {
-    currentWorkspace &&
-      (await dataCenter.deleteWorkspace(currentWorkspace?.id));
+    currentWorkspace && (await dataCenter.deleteWorkspace(currentWorkspace.id));
   };
   const leaveWorkSpace = async () => {
-    currentWorkspace && (await dataCenter.leaveWorkspace(currentWorkspace?.id));
+    currentWorkspace && (await dataCenter.leaveWorkspace(currentWorkspace.id));
   };
 
   const acceptInvite = async (inviteCode: string) => {

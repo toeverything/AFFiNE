@@ -15,7 +15,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   return (
     <div>
       <StyledPublishContent>
-        {workspace?.provider === 'local' ? (
+        {workspace.provider === 'local' ? (
           <>
             <StyledPublishExplanation>
               {t('Sync Description', {

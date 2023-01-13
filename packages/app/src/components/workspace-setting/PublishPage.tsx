@@ -34,7 +34,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       {workspace.provider === 'affine' ? (
         <div>
           <StyledPublishContent>
-            {workspace?.published ? (
+            {workspace.published ? (
               <>
                 <StyledPublishExplanation>
                   {t('Publishing')}

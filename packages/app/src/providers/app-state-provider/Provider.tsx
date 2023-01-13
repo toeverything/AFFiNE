@@ -105,10 +105,10 @@ export const AppStateProvider = ({
       // isOwner is useful only in the cloud
       isOwner = true;
     } else {
-      isOwner = workspace?.owner && user?.id === workspace?.owner?.id;
+      isOwner = workspace.owner && user?.id === workspace.owner.id;
     }
     const pageList =
-      (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
+      (workspace.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
       ...appState,
       currentWorkspace: workspace,
