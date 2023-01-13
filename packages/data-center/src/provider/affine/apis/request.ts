@@ -9,7 +9,7 @@ const messageCenter = MessageCenter.getInstance();
 const _sendMessage = messageCenter.getMessageSender('affine');
 
 export const bareClient: KyInstance = ky.extend({
-  prefixUrl: 'http://localhost:8080',
+  prefixUrl: '/',
   retry: 1,
   hooks: {
     // afterResponse: [
