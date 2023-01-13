@@ -18,7 +18,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-45-orange.svg?style=flat-square
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-48-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
@@ -184,6 +184,9 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
     <td align="center"><a href="https://github.com/MuhammedFaraz"><img src="https://avatars.githubusercontent.com/u/92734739?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Mohammed Faraz</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=MuhammedFaraz" title="Documentation">📖</a></td>
     <td align="center"><a href="https://pranavsriram.dev/"><img src="https://avatars.githubusercontent.com/u/28348429?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Pranav Sriram </b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Pranav4399" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/Reson-a"><img src="https://avatars.githubusercontent.com/u/20806266?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Reson-a</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=Reson-a" title="Code">💻</a></td>
+    <td align="center"><a href="https://t.me/littlepoint"><img src="https://avatars.githubusercontent.com/u/7611700?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Zhizhen He</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=hezhizhen" title="Code">💻</a></td>
+    <td align="center"><a href="https://akr.moe/"><img src="https://avatars.githubusercontent.com/u/85140972?v=4?s=50" width="50px;" alt=""/><br /><sub><b>AkaraChen</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=AkaraChen" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/suyanhanx"><img src="https://avatars.githubusercontent.com/u/24221472?v=4?s=50" width="50px;" alt=""/><br /><sub><b>Suyan</b></sub></a><br /><a href="https://github.com/toeverything/AFFiNE/commits?author=suyanhanx" title="Code">💻</a></td>
   </tr>
 </table>
 
