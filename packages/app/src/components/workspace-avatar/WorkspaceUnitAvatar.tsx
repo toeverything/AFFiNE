@@ -6,15 +6,16 @@ const useAvatar = (workspaceUnit?: WorkspaceUnit) => {
   const [avatarUrl, setAvatarUrl] = useState('');
   const avatarId =
     workspaceUnit?.avatar || workspaceUnit?.blocksuiteWorkspace?.meta.avatar;
+  const blobs = workspaceUnit?.blocksuiteWorkspace?.blobs;
   useEffect(() => {
-    if (avatarId && workspaceUnit?.blocksuiteWorkspace?.blobs) {
-      workspaceUnit.blocksuiteWorkspace.blobs.then(blobs => {
+    if (avatarId && blobs) {
+      blobs.then(blobs => {
         blobs?.get(avatarId).then(url => setAvatarUrl(url || ''));
       });
     } else {
       setAvatarUrl('');
     }
-  }, [avatarId]);
+  }, [avatarId, blobs]);
 
   return avatarUrl;
 };

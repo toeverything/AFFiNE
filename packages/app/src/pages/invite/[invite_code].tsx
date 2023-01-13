@@ -1,5 +1,4 @@
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-import { useAppState } from '@/providers/app-state-provider';
 import { styled } from '@/styles';
 import { Empty } from '@/ui/empty';
 // import { Avatar } from '@mui/material';
@@ -23,16 +22,14 @@ export default function DevPage() {
   const router = useRouter();
   const [successInvited, setSuccessInvited] = useState<boolean>(false);
   const { acceptInvite } = useWorkspaceHelper();
-  const { user } = useAppState();
   useEffect(() => {
     router.query.invite_code &&
       acceptInvite(router.query.invite_code as string).then(data => {
         if (data && data.accepted) {
           setSuccessInvited(true);
-          user && router.push(`/workspace/${data.workspace_id}`);
         }
       });
-  }, [router.query.invite_code]);
+  }, [router, acceptInvite]);
 
   return (
     <Invited>
@@ -98,16 +95,16 @@ export default function DevPage() {
     </Invited>
   );
 }
-const UserIcon = styled('div')({
-  display: 'inline-block',
-  width: '28px',
-  height: '28px',
-  borderRadius: '50%',
-  backgroundColor: '#FFF5AB',
-  textAlign: 'center',
-  color: '#896406',
-  lineHeight: '28px',
-});
+// const UserIcon = styled('div')({
+//   display: 'inline-block',
+//   width: '28px',
+//   height: '28px',
+//   borderRadius: '50%',
+//   backgroundColor: '#FFF5AB',
+//   textAlign: 'center',
+//   color: '#896406',
+//   lineHeight: '28px',
+// });
 
 const Invited = styled('div')(({ theme }) => {
   return {
@@ -124,14 +121,6 @@ const Invited = styled('div')(({ theme }) => {
 const Content = styled('div')({
   fontSize: '16px',
   marginTop: '35px',
-});
-
-const UserContent = styled('span')({
-  fontSize: '18px',
-  marginLeft: '12px',
-  span: {
-    padding: '0 12px',
-  },
 });
 
 const Status = styled('div')(() => {
