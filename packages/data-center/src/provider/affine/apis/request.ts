@@ -2,11 +2,13 @@ import ky from 'ky-universal';
 import { MessageCenter } from '../../../message/index.js';
 import { token } from './token.js';
 
+type KyInstance = typeof ky;
+
 const messageCenter = MessageCenter.getInstance();
 
 const _sendMessage = messageCenter.getMessageSender('affine');
 
-export const bareClient = ky.extend({
+export const bareClient: KyInstance = ky.extend({
   prefixUrl: 'http://localhost:8080',
   retry: 1,
   hooks: {
@@ -26,7 +28,7 @@ export const bareClient = ky.extend({
   },
 });
 
-export const client = bareClient.extend({
+export const client: KyInstance = bareClient.extend({
   hooks: {
     beforeRequest: [
       async request => {
