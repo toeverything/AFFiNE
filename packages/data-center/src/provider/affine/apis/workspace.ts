@@ -112,10 +112,10 @@ export interface CreateWorkspaceParams {
 }
 
 export async function createWorkspace(
-  params: CreateWorkspaceParams
+  encodedYDoc: Blob
 ): Promise<{ id: string }> {
   try {
-    return client.post('api/workspace', { json: params }).json();
+    return client.post('api/workspace', { body: encodedYDoc }).json();
   } catch (error) {
     sendMessage(messageCode.createWorkspaceFailed);
     throw new RequestError('create workspace failed', error);
