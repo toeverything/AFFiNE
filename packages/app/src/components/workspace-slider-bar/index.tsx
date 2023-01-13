@@ -178,20 +178,6 @@ export const WorkSpaceSliderBar = () => {
               <TrashIcon /> {t('Trash')}
             </StyledListItem>
           </Link>
-          <StyledListItem
-            onClick={() => {
-              changeLanguage('en');
-            }}
-          >
-            <SettingsIcon /> change to English
-          </StyledListItem>
-          <StyledListItem
-            onClick={() => {
-              changeLanguage('zh-Hans');
-            }}
-          >
-            <SettingsIcon /> 切换到中文
-          </StyledListItem>
           <StyledNewPageButton
             onClick={async () => {
               const pageId = await createPage();
