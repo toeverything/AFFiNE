@@ -101,11 +101,11 @@ export const AppStateProvider = ({
     }
     const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
     let isOwner;
-    if (workspace.provider === 'local') {
+    if (workspace?.provider === 'local') {
       // isOwner is useful only in the cloud
       isOwner = true;
     } else {
-      isOwner = workspace?.owner && user?.id === workspace?.owner?.id;
+      isOwner = workspace?.owner && user?.id === workspace.owner?.id;
     }
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];

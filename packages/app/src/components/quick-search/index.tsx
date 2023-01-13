@@ -94,7 +94,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                 setShowCreatePage={setShowCreatePage}
               />
             </StyledContent>
-            {currentWorkspace?.isPublish ? (
+            {currentWorkspace?.published ? (
               <></>
             ) : showCreatePage ? (
               <>
