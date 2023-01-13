@@ -134,7 +134,11 @@ export const AppStateProvider = ({
   const login = async () => {
     const { dataCenter } = appState;
     await dataCenter.login();
+
     const user = (await dataCenter.getUserInfo()) as User;
+    if (!user) {
+      throw new Error('User info not found');
+    }
     setAppState({
       ...appState,
       user,
