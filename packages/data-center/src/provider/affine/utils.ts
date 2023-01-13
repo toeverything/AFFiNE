@@ -1,10 +1,7 @@
-import assert from 'assert';
-import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { WorkspaceUnit } from '../../workspace-unit.js';
 import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
 import { createBlocksuiteWorkspace } from '../../utils/index.js';
 import type { Apis } from './apis';
-import { WebsocketProvider } from './sync.js';
 import { setDefaultAvatar } from '../utils.js';
 import { applyUpdate } from '../../utils/index.js';
 
