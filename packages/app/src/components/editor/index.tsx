@@ -60,7 +60,7 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
     }
 
     setEditor(editor);
-    document.title = page?.meta.title || 'Untitled';
+    document.title = page.meta.title || 'Untitled';
     return ret;
   }, [workspace, page, setEditor]);
 

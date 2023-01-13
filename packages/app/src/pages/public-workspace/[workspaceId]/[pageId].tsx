@@ -25,7 +25,7 @@ const Page: NextPageWithLayout = () => {
               p => p.id === router.query.pageId
             )
           ) {
-            const page = data.blocksuiteWorkspace?.getPage(
+            const page = data.blocksuiteWorkspace.getPage(
               router.query.pageId as string
             );
             page && setPage(page);

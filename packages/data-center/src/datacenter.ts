@@ -150,7 +150,9 @@ export class DataCenter {
    * @param {string} workspaceId workspace id
    * @returns {Promise<WorkspaceUnit>}
    */
-  public async loadWorkspace(workspaceId: string) {
+  public async loadWorkspace(
+    workspaceId: string
+  ): Promise<WorkspaceUnit | null> {
     const workspaceUnit = this._workspaceUnitCollection.find(workspaceId);
     assert(workspaceUnit, 'Workspace not found');
     const currentProvider = this.providerMap.get(workspaceUnit.provider);
