@@ -13,11 +13,7 @@ import { getApis, Workspace } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { token } from './apis/token.js';
 import { WebsocketClient } from './channel';
-import {
-  loadWorkspaceUnit,
-  createWorkspaceUnit,
-  syncToCloud,
-} from './utils.js';
+import { loadWorkspaceUnit, createWorkspaceUnit } from './utils.js';
 import { WorkspaceUnit } from '../../workspace-unit.js';
 import { createBlocksuiteWorkspace, applyUpdate } from '../../utils/index.js';
 import type { SyncMode } from '../../workspace-unit';
@@ -344,10 +340,6 @@ export class AffineProvider extends BaseProvider {
       syncMode: 'core',
     });
 
-    // await syncToCloud(
-    //   workspaceUnit.blocksuiteWorkspace!,
-    //   this._apis.token.refresh
-    // );
     this._workspaces.add(workspaceUnit);
 
     return workspaceUnit;
@@ -397,8 +389,6 @@ export class AffineProvider extends BaseProvider {
       blocksuiteWorkspace,
       encodeStateAsUpdate(workspaceUnit.blocksuiteWorkspace.doc)
     );
-
-    // await syncToCloud(blocksuiteWorkspace, this._apis.token.refresh);
 
     newWorkspaceUnit.setBlocksuiteWorkspace(blocksuiteWorkspace);
 
