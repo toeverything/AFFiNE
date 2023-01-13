@@ -70,7 +70,7 @@ export const WorkSpaceSliderBar = () => {
   const { currentWorkspace } = useAppState();
   const { openPage, createPage } = usePageHelper();
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
   const currentWorkspaceId = currentWorkspace?.id;
