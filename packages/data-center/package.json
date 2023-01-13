@@ -26,8 +26,8 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.4.0-20230111171650-bc63456",
-    "@blocksuite/store": "0.4.0-20230111171650-bc63456",
+    "@blocksuite/blocks": "0.4.0-20230113023110-28a7fdc",
+    "@blocksuite/store": "0.4.0-20230113023110-28a7fdc",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
     "firebase": "^9.15.0",
