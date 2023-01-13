@@ -69,7 +69,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 placement="bottom-end"
                 disablePortal={true}
               >
-                <Button>
+                <Button type="primary">
                   {t('Download data to device', { CoreOrAll: 'all' })}
                 </Button>
               </Menu>

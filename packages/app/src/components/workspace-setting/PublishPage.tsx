@@ -55,27 +55,29 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
-          {workspace.published ? (
-            <Button
-              onClick={() => {
-                togglePublic(false);
-              }}
-              type="primary"
-              shape="circle"
-            >
-              {t('Stop publishing')}
-            </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                togglePublic(true);
-              }}
-              type="primary"
-              shape="circle"
-            >
-              {t('Publish to web')}
-            </Button>
-          )}
+          <StyledPublishCopyContainer>
+            {workspace.published ? (
+              <Button
+                onClick={() => {
+                  togglePublic(false);
+                }}
+                type="primary"
+                shape="circle"
+              >
+                {t('Stop publishing')}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  togglePublic(true);
+                }}
+                type="primary"
+                shape="circle"
+              >
+                {t('Publish to web')}
+              </Button>
+            )}
+          </StyledPublishCopyContainer>
         </div>
       ) : (
         <StyledPublishContent>
