@@ -15,6 +15,7 @@ import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { useTranslation } from '@affine/i18n';
+import { LanguageMenu } from './languageMenu';
 
 interface WorkspaceModalProps {
   open: boolean;
@@ -37,7 +38,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
         >
           <Header>
             <ContentTitle>{t('My Workspaces')}</ContentTitle>
-            {/* <LanguageMenu /> */}
+            <LanguageMenu />
             <ModalCloseButton
               top={6}
               right={6}
