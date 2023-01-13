@@ -16,7 +16,8 @@ import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { useTranslation } from '@affine/i18n';
 import { LanguageMenu } from './languageMenu';
-
+import Loading from '@/components/loading';
+import { Wrapper } from '@/ui/layout';
 interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -29,6 +30,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
     useAppState();
   const router = useRouter();
   const { t } = useTranslation();
+  const [loaded, setLoaded] = useState(true);
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -135,8 +137,10 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
             {!user ? (
               <Button
                 onClick={async () => {
+                  setLoaded(false);
                   await login();
                   toast(t('login success'));
+                  setLoaded(true);
                 }}
               >
                 {t('Sign in')}
@@ -163,6 +167,11 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               >
                 {t('Sign out')}
               </Button>
+            )}
+            {!loaded && (
+              <Wrapper justifyContent="center">
+                <Loading size={25} />
+              </Wrapper>
             )}
           </Footer>
           <CreateWorkspaceModal
