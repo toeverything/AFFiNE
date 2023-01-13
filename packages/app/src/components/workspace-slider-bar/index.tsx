@@ -84,9 +84,6 @@ export const WorkSpaceSliderBar = () => {
       ? `/workspace/${currentWorkspaceId}/setting`
       : '',
   };
-  const changeLanguage = (event: string) => {
-    i18n.changeLanguage(event);
-  };
   return (
     <>
       <StyledSliderBar show={show}>
