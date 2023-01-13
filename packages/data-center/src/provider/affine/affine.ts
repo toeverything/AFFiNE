@@ -37,7 +37,7 @@ const {
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
   private _onTokenRefresh?: Callback = undefined;
-  private _wsMap: Map<string, WebsocketProvider> = new Map();
+  private _wsMap: Map<BlocksuiteWorkspace, WebsocketProvider> = new Map();
   private _apis: Apis;
   private _channel?: WebsocketClient;
   // private _idbMap: Map<string, IndexedDBProvider> = new Map();
@@ -147,7 +147,7 @@ export class AffineProvider extends BaseProvider {
     const { doc, room } = workspace;
     assert(room);
     assert(doc);
-    let ws = this._wsMap.get(room);
+    let ws = this._wsMap.get(workspace);
     if (!ws) {
       const wsUrl = `${
         window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -155,7 +155,7 @@ export class AffineProvider extends BaseProvider {
       ws = new WebsocketProvider(wsUrl, room, doc, {
         params: { token: this._apis.token.refresh },
       });
-      this._wsMap.set(room, ws);
+      this._wsMap.set(workspace, ws);
     }
     return ws;
   }
@@ -182,8 +182,8 @@ export class AffineProvider extends BaseProvider {
     this.linkLocal(workspace);
     const ws = this._getWebsocketProvider(workspace);
     // close all websocket links
-    Array.from(this._wsMap.entries()).forEach(([id, ws]) => {
-      if (id !== room) {
+    Array.from(this._wsMap.entries()).forEach(([blocksuiteWorkspace, ws]) => {
+      if (blocksuiteWorkspace !== workspace) {
         ws.disconnect();
       }
     });
@@ -279,7 +279,13 @@ export class AffineProvider extends BaseProvider {
   public override async closeWorkspace(id: string) {
     // const idb = this._idbMap.get(id);
     // idb?.destroy();
-    const ws = this._wsMap.get(id);
+    const workspaceUnit = this._workspaces.get(id);
+    const ws = workspaceUnit?.blocksuiteWorkspace
+      ? this._wsMap.get(workspaceUnit?.blocksuiteWorkspace)
+      : null;
+    if (!ws) {
+      console.error('close workspace websocket which not exist.');
+    }
     ws?.disconnect();
   }
 
