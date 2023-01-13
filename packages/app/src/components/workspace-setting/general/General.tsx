@@ -13,7 +13,10 @@ import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
 import { Upload } from '@/components/file-upload';
-import { WorkspaceAvatar } from '@/components/workspace-avatar';
+import {
+  WorkspaceAvatar,
+  WorkspaceUnitAvatar,
+} from '@/components/workspace-avatar';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
@@ -49,10 +52,10 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             marginRight: '20px',
           }}
         >
-          <WorkspaceAvatar
+          <WorkspaceUnitAvatar
             size={60}
             name={workspace.name}
-            avatar={workspace.avatar ?? ''}
+            workspaceUnit={workspace}
           />
         </div>
         <Upload
