@@ -316,7 +316,22 @@ export class AffineProvider extends BaseProvider {
   public override async createWorkspace(
     meta: CreateWorkspaceInfoParams
   ): Promise<WorkspaceUnit | undefined> {
-    const { id } = await this._apis.createWorkspace(meta);
+    const workspaceUnitForUpload = await createWorkspaceUnit({
+      id: '',
+      name: meta.name,
+      avatar: undefined,
+      owner: await this.getUserInfo(),
+      published: false,
+      memberCount: 1,
+      provider: this.id,
+      syncMode: 'core',
+    });
+    const { id } = await this._apis.createWorkspace(
+      new Blob([
+        encodeStateAsUpdate(workspaceUnitForUpload.blocksuiteWorkspace!.doc)
+          .buffer,
+      ])
+    );
 
     const workspaceUnit = await createWorkspaceUnit({
       id,
@@ -329,10 +344,10 @@ export class AffineProvider extends BaseProvider {
       syncMode: 'core',
     });
 
-    await syncToCloud(
-      workspaceUnit.blocksuiteWorkspace!,
-      this._apis.token.refresh
-    );
+    // await syncToCloud(
+    //   workspaceUnit.blocksuiteWorkspace!,
+    //   this._apis.token.refresh
+    // );
     this._workspaces.add(workspaceUnit);
 
     return workspaceUnit;
@@ -360,9 +375,11 @@ export class AffineProvider extends BaseProvider {
   public override async extendWorkspace(
     workspaceUnit: WorkspaceUnit
   ): Promise<WorkspaceUnit> {
-    const { id } = await this._apis.createWorkspace({
-      name: workspaceUnit.name,
-    });
+    const { id } = await this._apis.createWorkspace(
+      new Blob([
+        encodeStateAsUpdate(workspaceUnit.blocksuiteWorkspace!.doc).buffer,
+      ])
+    );
     const newWorkspaceUnit = new WorkspaceUnit({
       id,
       name: workspaceUnit.name,
@@ -381,7 +398,7 @@ export class AffineProvider extends BaseProvider {
       encodeStateAsUpdate(workspaceUnit.blocksuiteWorkspace.doc)
     );
 
-    await syncToCloud(blocksuiteWorkspace, this._apis.token.refresh);
+    // await syncToCloud(blocksuiteWorkspace, this._apis.token.refresh);
 
     newWorkspaceUnit.setBlocksuiteWorkspace(blocksuiteWorkspace);
 
