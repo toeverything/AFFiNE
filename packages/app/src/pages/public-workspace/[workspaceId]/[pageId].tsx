@@ -7,8 +7,6 @@ import { useRouter } from 'next/router';
 import { Page as PageStore, Workspace } from '@blocksuite/store';
 import { PageLoading } from '@/components/loading';
 
-import { useTranslation } from '@affine/i18n';
-
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
@@ -18,7 +16,7 @@ const Page: NextPageWithLayout = () => {
   const { dataCenter } = useAppState();
   const router = useRouter();
   const [loaded, setLoaded] = useState(false);
-  const { t } = useTranslation();
+
   useEffect(() => {
     dataCenter
       .loadPublicWorkspace(router.query.workspaceId as string)
