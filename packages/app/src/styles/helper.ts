@@ -106,7 +106,7 @@ export const textEllipsis = (lineNum = 1): CSSProperties => {
       display: '-webkit-box',
       wordBreak: 'break-all',
       WebkitBoxOrient: 'vertical',
-      WebkitLineClamp: `${lineNum}`, //需要显示的行数
+      WebkitLineClamp: `${lineNum}`, //the number of rows to display
       overflow: 'hidden',
       textOverflow: 'ellipsis',
     };

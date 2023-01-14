@@ -166,9 +166,9 @@ a:visited {
 input {
   border: none;
   -moz-appearance: none;
-  -webkit-appearance: none; /*解决ios上按钮的圆角问题*/
-  border-radius: 0; /*解决ios上输入框圆角问题*/
-  outline: medium; /*去掉鼠标点击的默认黄色边框*/
+  -webkit-appearance: none; /*Solve the rounded corners of buttons on ios*/
+  border-radius: 0; /*Solve the problem of rounded corners of the input box on ios*/
+  outline: medium; /*Remove the default yellow border on mouse click*/
   background-color: transparent;
 }
 
