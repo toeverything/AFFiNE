@@ -111,7 +111,10 @@ export class AffineProvider extends BaseProvider {
       if (index !== -1) {
         removeWorkspaceList.splice(index, 1);
       }
-      assert(name);
+      assert(
+        name,
+        'workspace name not found by id when receive server message'
+      );
       const workspace = {
         name: name,
         avatar,
