@@ -12,6 +12,9 @@ const EDITOR_VERSION = enableDebugLocal
 const profileTarget = {
   ac: '100.85.73.88:12001',
   dev: '100.77.180.48:11001',
+  test: '100.77.180.48:11001',
+  stage: '',
+  pro: 'http://pathfinder.affine.pro',
   local: '127.0.0.1:3000',
 };
 
