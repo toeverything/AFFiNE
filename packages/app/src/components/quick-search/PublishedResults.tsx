@@ -29,7 +29,7 @@ export const PublishedResults = (props: {
       .loadPublicWorkspace(router.query.workspaceId as string)
       .then(data => {
         setPageList(data.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]);
-        if (data && data.blocksuiteWorkspace) {
+        if (data.blocksuiteWorkspace) {
           setWorkspace(data.blocksuiteWorkspace);
           setPublishWorkspaceName(data.blocksuiteWorkspace.meta.name);
         }
