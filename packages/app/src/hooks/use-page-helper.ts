@@ -1,4 +1,4 @@
-import { uuidv4 } from '@blocksuite/store';
+import { uuidv4, Workspace } from '@blocksuite/store';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import { PageMeta, useAppState } from '@/providers/app-state-provider';
 import { EditorContainer } from '@blocksuite/editor';
@@ -20,7 +20,10 @@ export type EditorHandlers = {
   toggleDeletePage: (pageId: string) => Promise<boolean>;
   toggleFavoritePage: (pageId: string) => Promise<boolean>;
   permanentlyDeletePage: (pageId: string) => void;
-  search: (query: QueryContent) => Map<string, string | undefined>;
+  search: (
+    query: QueryContent,
+    workspace?: Workspace
+  ) => Map<string, string | undefined>;
   // changeEditorMode: (pageId: string) => void;
   changePageMode: (
     pageId: string,
@@ -83,9 +86,16 @@ export const usePageHelper = (): EditorHandlers => {
       });
       return trash;
     },
-    search: (query: QueryContent) => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return currentWorkspace!.blocksuiteWorkspace!.search(query);
+    search: (query: QueryContent, workspace?: Workspace) => {
+      if (workspace) {
+        return workspace.search(query);
+      }
+      if (currentWorkspace) {
+        if (currentWorkspace.blocksuiteWorkspace) {
+          return currentWorkspace.blocksuiteWorkspace.search(query);
+        }
+      }
+      return new Map();
     },
     changePageMode: async (pageId, mode) => {
       const pageMeta = getPageMeta(currentWorkspace, pageId);
