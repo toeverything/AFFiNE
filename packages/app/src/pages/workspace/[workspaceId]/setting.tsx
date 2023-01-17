@@ -4,15 +4,8 @@ import {
   StyledSettingSidebar,
   StyledSettingSidebarHeader,
   StyledSettingTabContainer,
-  StyledSettingTagIconContainer,
   WorkspaceSettingTagItem,
 } from '@/components/workspace-setting/style';
-import {
-  EditIcon,
-  UsersIcon,
-  PublishIcon,
-  CloudInsyncIcon,
-} from '@blocksuite/icons';
 import { ReactElement, ReactNode, useState } from 'react';
 import {
   GeneralPage,
@@ -30,32 +23,26 @@ type TabNames = 'general' | 'members' | 'publish' | 'sync' | 'export';
 
 const tabMap: {
   name: TabNames;
-  icon: ReactNode;
   panelRender: (workspace: WorkspaceUnit) => ReactNode;
 }[] = [
   {
     name: 'general',
-    icon: <EditIcon />,
     panelRender: workspace => <GeneralPage workspace={workspace} />,
   },
   {
     name: 'members',
-    icon: <CloudInsyncIcon />,
     panelRender: workspace => <MembersPage workspace={workspace} />,
   },
   {
     name: 'publish',
-    icon: <UsersIcon />,
     panelRender: workspace => <PublishPage workspace={workspace} />,
   },
   {
     name: 'sync',
-    icon: <PublishIcon />,
     panelRender: workspace => <SyncPage workspace={workspace} />,
   },
   {
     name: 'export',
-    icon: <PublishIcon />,
     panelRender: workspace => <ExportPage workspace={workspace} />,
   },
 ];
@@ -74,14 +61,12 @@ const WorkspaceSetting = () => {
   )?.panelRender;
   let tableArr: {
     name: TabNames;
-    icon: ReactNode;
     panelRender: (workspace: WorkspaceUnit) => ReactNode;
   }[] = tabMap;
   if (!isOwner) {
     tableArr = [
       {
         name: 'general',
-        icon: <EditIcon />,
         panelRender: workspace => <GeneralPage workspace={workspace} />,
       },
     ];
@@ -93,7 +78,7 @@ const WorkspaceSetting = () => {
           {t('Workspace Settings')}
         </StyledSettingSidebarHeader>
         <StyledSettingTabContainer>
-          {tableArr.map(({ icon, name }) => {
+          {tableArr.map(({ name }) => {
             return (
               <WorkspaceSettingTagItem
                 key={name}
@@ -102,9 +87,6 @@ const WorkspaceSetting = () => {
                   handleTabChange(name);
                 }}
               >
-                <StyledSettingTagIconContainer>
-                  {icon}
-                </StyledSettingTagIconContainer>
                 {name}
               </WorkspaceSettingTagItem>
             );
