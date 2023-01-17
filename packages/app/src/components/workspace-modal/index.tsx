@@ -3,12 +3,7 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
-import {
-  CloudUnsyncedIcon,
-  CloudInsyncIcon,
-  UsersIcon,
-  AddIcon,
-} from '@blocksuite/icons';
+import { CloudUnsyncedIcon, UsersIcon, AddIcon } from '@blocksuite/icons';
 import { toast } from '@/ui/toast';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
@@ -26,7 +21,7 @@ interface WorkspaceModalProps {
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const { confirm } = useConfirm();
-  const { workspaceList, currentWorkspace, login, user, logout } =
+  const { workspaceList, currentWorkspace, login, user, logout, isOwner } =
     useAppState();
   const router = useRouter();
   const { t } = useTranslation();
@@ -35,8 +30,12 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
     <div>
       <Modal open={open} onClose={onClose}>
         <ModalWrapper
-          width={820}
-          style={{ padding: '10px', display: 'flex', flexDirection: 'column' }}
+          width={720}
+          style={{
+            padding: '24px 40px',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
           <Header>
             <ContentTitle>{t('My Workspaces')}</ContentTitle>
@@ -61,77 +60,68 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                     active={item.id === currentWorkspace?.id}
                     key={index}
                   >
-                    <span style={{ width: '100px' }}>
-                      <div
-                        style={{
-                          float: 'left',
-                          marginTop: '6px',
-                          marginLeft: '10px',
-                          marginRight: '10px',
-                        }}
-                      >
-                        <WorkspaceUnitAvatar size={50} workspaceUnit={item} />
-                      </div>
+                    <div>
+                      <WorkspaceUnitAvatar size={58} workspaceUnit={item} />
+                    </div>
 
-                      <span
-                        style={{
-                          width: '235px',
-                          fontSize: '16px',
-                          display: 'inline-block',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          top: '20px',
-                        }}
-                      >
+                    <StyleWorkspaceInfo>
+                      <StyleWorkspaceTitle>
                         {item.name || 'AFFiNE'}
-                      </span>
-                    </span>
-                    <span
-                      style={{
-                        position: 'relative',
-                        top: '20px',
-                      }}
-                    >
-                      {(item.provider === 'local' || !item.provider) && (
-                        <CloudUnsyncedIcon fontSize={24} />
+                      </StyleWorkspaceTitle>
+                      {isOwner ? (
+                        item.provider === 'local' ? (
+                          <p>
+                            <CloudUnsyncedIcon fontSize={16} />
+                            Local Workspace
+                          </p>
+                        ) : (
+                          <p>
+                            <CloudUnsyncedIcon fontSize={16} />
+                            Cloud Workspace
+                          </p>
+                        )
+                      ) : (
+                        <p>
+                          <CloudUnsyncedIcon fontSize={16} />
+                          Joined Workspace
+                        </p>
                       )}
-                      {item.provider === 'affine' && (
-                        <CloudInsyncIcon fontSize={24} />
+                      {item.provider === 'local' && (
+                        <p>
+                          <UsersIcon fontSize={16} />
+                          All data can be accessed offline
+                        </p>
                       )}
-                      {item.published && <UsersIcon fontSize={24} />}
-                    </span>
-                    {/* {item.isLocal ? 'isLocal' : ''}/ */}
+                      {item.published && (
+                        <p>
+                          <UsersIcon fontSize={16} /> Published to Web
+                        </p>
+                      )}
+                    </StyleWorkspaceInfo>
                   </WorkspaceItem>
                 );
               })}
-              <li>
-                <Button
-                  style={{
-                    marginTop: '20px',
-                  }}
-                  type="primary"
-                  onClick={() => {
-                    setCreateWorkspaceOpen(true);
-                  }}
-                >
-                  <AddIcon
-                    style={{
-                      fontSize: '20px',
-                      top: '5px',
-                      position: 'relative',
-                      marginRight: '10px',
-                    }}
-                  />
-                  {t('Create Or Import')}
-                </Button>
-              </li>
+              <WorkspaceItem
+                onClick={() => {
+                  setCreateWorkspaceOpen(true);
+                }}
+              >
+                <div>
+                  <StyleWorkspaceAdd className="add-icon">
+                    <AddIcon fontSize={18} />
+                  </StyleWorkspaceAdd>
+                </div>
+
+                <StyleWorkspaceInfo>
+                  <StyleWorkspaceTitle>New workspace</StyleWorkspaceTitle>
+                  <p>Crete or import</p>
+                </StyleWorkspaceInfo>
+              </WorkspaceItem>
             </WorkspaceList>
-            <p style={{ fontSize: '14px', color: '#ccc', margin: '12px 0' }}>
+            {/* <p style={{ fontSize: '14px', color: '#ccc', margin: '12px 0' }}>
               {t('Tips')}
               {t('Workspace description')}
-            </p>
+            </p> */}
           </Content>
           <Footer>
             {!user ? (
@@ -178,24 +168,6 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
             open={createWorkspaceOpen}
             onClose={() => {
               setCreateWorkspaceOpen(false);
-              onClose();
-              // confirm({
-              //   title: 'Enable AFFiNE Cloud?',
-              //   content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-              //   confirmText: user ? 'Enable' : 'Sign in and Enable',
-              //   cancelText: 'Skip',
-              // }).then(confirm => {
-              //   if (confirm) {
-              //     if (user) {
-              //       // workspaceId &&
-              //       //   updateWorkspaceMeta(workspaceId, { isPublish: true });
-              //     } else {
-              //       // login();
-              //       // workspaceId &&
-              //       //   updateWorkspaceMeta(workspaceId, { isPublish: true });
-              //     }
-              //   }
-              // });
             }}
           ></CreateWorkspaceModal>
         </ModalWrapper>
@@ -210,7 +182,6 @@ const Header = styled('div')({
 });
 
 const Content = styled('div')({
-  padding: '0 20px',
   flexDirection: 'column',
   alignItems: 'center',
   gap: '16px',
@@ -233,24 +204,71 @@ const Footer = styled('div')({
 });
 
 const WorkspaceList = styled('div')({
+  maxHeight: '514px',
+  overflow: 'auto',
   display: 'grid',
-  gridRowGap: '10px',
-  gridColumnGap: '10px',
+  gridRowGap: '24px',
+  gridColumnGap: '24px',
   fontSize: '16px',
+  marginTop: '36px',
   gridTemplateColumns: 'repeat(2, 1fr)',
 });
 
 export const WorkspaceItem = styled.div<{
-  active: boolean;
+  active?: boolean;
 }>(({ theme, active }) => {
-  const backgroundColor = active ? theme.colors.hoverBackground : 'transparent';
+  const borderColor = active ? theme.colors.primaryColor : 'transparent';
   return {
     cursor: 'pointer',
-    padding: '8px',
-    border: '1px solid #eee',
-    backgroundColor: backgroundColor,
+    padding: '16px',
+    height: '124px',
+    boxShadow: theme.shadow.modal,
+    display: 'flex',
+    borderRadius: '12px',
+    border: `1px solid ${borderColor}`,
     ':hover': {
       background: theme.colors.hoverBackground,
+      '.add-icon': {
+        border: `1.5px dashed ${theme.colors.primaryColor}`,
+        svg: {
+          fill: theme.colors.primaryColor,
+        },
+      },
     },
+  };
+});
+
+const StyleWorkspaceInfo = styled.div(({ theme }) => {
+  return {
+    marginLeft: '16px',
+    p: {
+      fontSize: theme.font.xs,
+      lineHeight: '16px',
+    },
+    svg: {
+      verticalAlign: 'sub',
+      marginRight: '10px',
+    },
+  };
+});
+
+const StyleWorkspaceTitle = styled.div(({ theme }) => {
+  return {
+    fontSize: theme.font.base,
+    fontWeight: 600,
+    lineHeight: '24px',
+    marginBottom: '8px',
+  };
+});
+
+const StyleWorkspaceAdd = styled.div(() => {
+  return {
+    width: '58px',
+    height: '58px',
+    borderRadius: '100%',
+    textAlign: 'center',
+    background: '#f4f5fa',
+    border: '1.5px dashed #f4f5fa',
+    lineHeight: '58px',
   };
 });
