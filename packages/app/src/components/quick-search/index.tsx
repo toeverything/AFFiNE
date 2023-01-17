@@ -54,10 +54,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   }, [open, triggerQuickSearchModal]);
 
   useEffect(() => {
-    if (
-      router.pathname === '/public-workspace/[workspaceId]/[pageId]' ||
-      router.pathname === '/public-workspace/[workspaceId]'
-    ) {
+    if (router.pathname.startsWith('/public-workspace')) {
       return setIsPublic(true);
     } else {
       return setIsPublic(false);
