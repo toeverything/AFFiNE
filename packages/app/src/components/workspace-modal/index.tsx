@@ -1,11 +1,20 @@
 import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { Button } from '@/ui/button';
+import { IconButton } from '@/ui/button';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
-import { CloudUnsyncedIcon, UsersIcon, AddIcon } from '@blocksuite/icons';
+import {
+  CloudUnsyncedIcon,
+  UsersIcon,
+  AddIcon,
+  LogOutIcon,
+  CloudInsyncIcon,
+} from '@blocksuite/icons';
 import { toast } from '@/ui/toast';
-import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
+import {
+  WorkspaceAvatar,
+  WorkspaceUnitAvatar,
+} from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/ConfirmProvider';
@@ -82,7 +91,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                         )
                       ) : (
                         <p>
-                          <CloudUnsyncedIcon fontSize={16} />
+                          <UsersIcon fontSize={16} color={'#FF646B'} />
                           Joined Workspace
                         </p>
                       )}
@@ -125,7 +134,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
           </Content>
           <Footer>
             {!user ? (
-              <Button
+              <StyleSignIn
                 onClick={async () => {
                   setLoaded(false);
                   await login();
@@ -133,30 +142,48 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                   setLoaded(true);
                 }}
               >
-                {t('Sign in')}
-              </Button>
+                <span>
+                  <CloudInsyncIcon fontSize={16} />
+                </span>
+                Sign in to sync with AFFINE Cloud
+              </StyleSignIn>
             ) : (
-              <Button
-                type="danger"
-                onClick={() => {
-                  confirm({
-                    title: 'Sign out?',
-                    content: `All data has been stored in the cloud. `,
-                    confirmText: 'Sign out',
-                    cancelText: 'Cancel',
-                  }).then(async confirm => {
-                    if (confirm) {
-                      if (user) {
-                        await logout();
-                        router.replace(`/workspace`);
-                        toast('Enabled success');
-                      }
-                    }
-                  });
-                }}
-              >
-                {t('Sign out')}
-              </Button>
+              <div style={{ display: 'flex' }}>
+                <div>
+                  <WorkspaceAvatar
+                    size={40}
+                    name={user.name}
+                    avatar={user.avatar}
+                  ></WorkspaceAvatar>
+                </div>
+                <StyleUserInfo style={{}}>
+                  <p>{user.name}</p>
+                  <p>{user.email}</p>
+                </StyleUserInfo>
+                <div>
+                  <IconButton
+                    onClick={() => {
+                      confirm({
+                        title: 'Sign out?',
+
+                        content: `All data has been stored in the cloud. `,
+                        confirmText: 'Sign out',
+                        cancelText: 'Cancel',
+                      }).then(async confirm => {
+                        if (confirm) {
+                          if (user) {
+                            await logout();
+                            router.replace(`/workspace`);
+                            toast('Enabled success');
+                          }
+                        }
+                      });
+                    }}
+                  >
+                    <LogOutIcon></LogOutIcon>
+                  </IconButton>
+                </div>
+              </div>
             )}
             {!loaded && (
               <Wrapper justifyContent="center">
@@ -196,15 +223,8 @@ const ContentTitle = styled('span')({
   paddingBottom: '16px',
 });
 
-const Footer = styled('div')({
-  height: '70px',
-  paddingLeft: '24px',
-  marginTop: '32px',
-  textAlign: 'center',
-});
-
 const WorkspaceList = styled('div')({
-  maxHeight: '514px',
+  height: '500px',
   overflow: 'auto',
   display: 'grid',
   gridRowGap: '24px',
@@ -270,5 +290,48 @@ const StyleWorkspaceAdd = styled.div(() => {
     background: '#f4f5fa',
     border: '1.5px dashed #f4f5fa',
     lineHeight: '58px',
+    marginTop: '2px',
+  };
+});
+
+const Footer = styled('div')({
+  paddingTop: '16px',
+});
+
+const StyleUserInfo = styled.div(({ theme }) => {
+  return {
+    textAlign: 'left',
+    marginLeft: '16px',
+    marginTop: '16px',
+    flex: 1,
+    p: {
+      lineHeight: '24px',
+      color: theme.colors.iconColor,
+    },
+    'p:nth-child(1)': {
+      color: theme.colors.textColor,
+      fontWeight: 600,
+    },
+  };
+});
+
+const StyleSignIn = styled.div(({ theme }) => {
+  return {
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: 700,
+    span: {
+      display: 'inline-block',
+      width: '40px',
+      height: '40px',
+      borderRadius: '40px',
+      backgroundColor: theme.colors.innerHoverBackground,
+      textAlign: 'center',
+      lineHeight: '44px',
+      marginRight: '16px',
+      svg: {
+        fill: theme.colors.primaryColor,
+      },
+    },
   };
 });
