@@ -2,6 +2,8 @@ import {
   StyledPublishContent,
   StyledPublishCopyContainer,
   StyledPublishExplanation,
+  StyledWorkspaceName,
+  StyledWorkspaceType,
 } from './style';
 import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
@@ -9,6 +11,7 @@ import { Menu, MenuItem } from '@/ui/menu';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { Trans, useTranslation } from '@affine/i18n';
+import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const { enableWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
@@ -18,11 +21,20 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         {workspace.provider === 'local' ? (
           <>
             <StyledPublishExplanation>
-              {t('Sync Description', {
-                workspaceName: workspace.name ?? 'Affine',
-              })}
+              <WorkspaceUnitAvatar
+                size={32}
+                name={workspace.name}
+                workspaceUnit={workspace}
+              />
+              <StyledWorkspaceName>
+                &nbsp;{workspace.name}&nbsp;
+              </StyledWorkspaceName>
+              <StyledWorkspaceType>is a Local Workspace.</StyledWorkspaceType>
             </StyledPublishExplanation>
-
+            <StyledWorkspaceType>
+              All data is stored on the current device. You can enable AFFiNE
+              Cloud for this workspace to keep data in sync with the cloud.
+            </StyledWorkspaceType>
             <StyledPublishCopyContainer>
               <Button
                 onClick={async () => {
@@ -30,6 +42,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 }}
                 type="primary"
                 shape="circle"
+                style={{ fontWeight: '500' }}
               >
                 {t('Enable AFFiNE Cloud')}
               </Button>
