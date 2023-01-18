@@ -42,6 +42,8 @@ export const useWorkspaceHelper = () => {
       content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
       confirmText: user ? 'Enable' : 'Sign in and Enable',
       cancelText: 'Skip',
+      confirmType: 'primary',
+      buttonDirection: 'column',
     }).then(async confirm => {
       if (confirm && currentWorkspace) {
         if (!user) {

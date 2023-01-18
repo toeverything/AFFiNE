@@ -69,63 +69,65 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                   member.user
                 );
                 return (
-                  <StyledMemberListItem key={index}>
-                    <StyledMemberNameContainer>
-                      <StyledMemberAvatar
-                        alt="member avatar"
-                        src={user.avatar_url}
-                      >
-                        <EmailIcon />
-                      </StyledMemberAvatar>
+                  <>
+                    <StyledMemberListItem key={index}>
+                      <StyledMemberNameContainer>
+                        <StyledMemberAvatar
+                          alt="member avatar"
+                          src={user.avatar_url}
+                        >
+                          <EmailIcon />
+                        </StyledMemberAvatar>
 
-                      <StyledMemberInfo>
-                        <StyledMemberName>{user.name}</StyledMemberName>
-                        <StyledMemberEmail>
-                          {member.user.email}
-                        </StyledMemberEmail>
-                      </StyledMemberInfo>
-                    </StyledMemberNameContainer>
-                    <StyledMemberRoleContainer>
-                      {member.accepted
-                        ? member.type !== 99
-                          ? 'Member'
-                          : 'Workspace Owner'
-                        : 'Pending'}
-                    </StyledMemberRoleContainer>
-                    <StyledMoreVerticalButton>
-                      <Menu
-                        content={
-                          <>
-                            <MenuItem
-                              onClick={async () => {
-                                const confirmRemove = await confirm({
-                                  title: 'Delete Member?',
-                                  content: `will delete member`,
-                                  confirmText: 'Delete',
-                                  confirmType: 'danger',
-                                });
+                        <StyledMemberInfo>
+                          <StyledMemberName>{user.name}</StyledMemberName>
+                          <StyledMemberEmail>
+                            {member.user.email}
+                          </StyledMemberEmail>
+                        </StyledMemberInfo>
+                      </StyledMemberNameContainer>
+                      <StyledMemberRoleContainer>
+                        {member.accepted
+                          ? member.type !== 99
+                            ? 'Member'
+                            : 'Workspace Owner'
+                          : 'Pending'}
+                      </StyledMemberRoleContainer>
+                      <StyledMoreVerticalButton>
+                        <Menu
+                          content={
+                            <>
+                              <MenuItem
+                                onClick={async () => {
+                                  const confirmRemove = await confirm({
+                                    title: 'Delete Member?',
+                                    content: `will delete member`,
+                                    confirmText: 'Delete',
+                                    confirmType: 'danger',
+                                  });
 
-                                if (!confirmRemove) {
-                                  return;
-                                }
-                                await removeMember(member.id);
-                                toast(`${user.name} has been removed`);
-                              }}
-                              icon={<TrashIcon />}
-                            >
-                              Delete
-                            </MenuItem>
-                          </>
-                        }
-                        placement="bottom-end"
-                        disablePortal={true}
-                      >
-                        <IconButton>
-                          <MoreVerticalIcon />
-                        </IconButton>
-                      </Menu>
-                    </StyledMoreVerticalButton>
-                  </StyledMemberListItem>
+                                  if (!confirmRemove) {
+                                    return;
+                                  }
+                                  await removeMember(member.id);
+                                  toast(`${user.name} has been removed`);
+                                }}
+                                icon={<TrashIcon />}
+                              >
+                                Delete
+                              </MenuItem>
+                            </>
+                          }
+                          placement="bottom-end"
+                          disablePortal={true}
+                        >
+                          <IconButton>
+                            <MoreVerticalIcon />
+                          </IconButton>
+                        </Menu>
+                      </StyledMoreVerticalButton>
+                    </StyledMemberListItem>
+                  </>
                 );
               })}
             </>
