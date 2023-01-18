@@ -1,14 +1,15 @@
 import { styled } from '@/styles';
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { IconButton } from '@/ui/button';
+import { Modal, ModalWrapper } from '@/ui/modal';
+import { Button, IconButton } from '@/ui/button';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
 import {
-  CloudUnsyncedIcon,
   UsersIcon,
   AddIcon,
   LogOutIcon,
   CloudInsyncIcon,
+  PublishIcon,
+  CloseIcon,
 } from '@blocksuite/icons';
 import { toast } from '@/ui/toast';
 import {
@@ -20,8 +21,9 @@ import { useRouter } from 'next/router';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { useTranslation } from '@affine/i18n';
 import { LanguageMenu } from './languageMenu';
-import Loading from '@/components/loading';
-import { Wrapper } from '@/ui/layout';
+
+import { CloudIcon, LineIcon, LocalIcon, OfflineIcon } from './icons';
+import { LoginModal } from '../login-modal';
 interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -30,11 +32,11 @@ interface WorkspaceModalProps {
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const { confirm } = useConfirm();
-  const { workspaceList, currentWorkspace, login, user, logout, isOwner } =
+  const { workspaceList, currentWorkspace, user, logout, isOwner } =
     useAppState();
   const router = useRouter();
   const { t } = useTranslation();
-  const [loaded, setLoaded] = useState(true);
+  const [loginOpen, setLoginOpen] = useState(false);
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -48,14 +50,30 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
         >
           <Header>
             <ContentTitle>{t('My Workspaces')}</ContentTitle>
-            <LanguageMenu />
-            <ModalCloseButton
-              top={6}
-              right={6}
-              onClick={() => {
-                onClose();
-              }}
-            />
+            <HeaderOption>
+              <LanguageMenu />
+              <div
+                style={{
+                  display: 'inline-block',
+                  border: 'none',
+                  margin: '2px 16px',
+                  height: '24px',
+                  position: 'relative',
+                  top: '4px',
+                }}
+              >
+                <LineIcon></LineIcon>
+              </div>
+
+              <Button
+                style={{ border: 'none', padding: 0 }}
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                <CloseIcon></CloseIcon>
+              </Button>
+            </HeaderOption>
           </Header>
           <Content>
             <WorkspaceList>
@@ -80,30 +98,30 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                       {isOwner ? (
                         item.provider === 'local' ? (
                           <p>
-                            <CloudUnsyncedIcon fontSize={16} />
+                            <LocalIcon />
                             Local Workspace
                           </p>
                         ) : (
                           <p>
-                            <CloudUnsyncedIcon fontSize={16} />
+                            <CloudIcon />
                             Cloud Workspace
                           </p>
                         )
                       ) : (
                         <p>
-                          <UsersIcon fontSize={16} color={'#FF646B'} />
+                          <UsersIcon fontSize={20} color={'#FF646B'} />
                           Joined Workspace
                         </p>
                       )}
                       {item.provider === 'local' && (
                         <p>
-                          <UsersIcon fontSize={16} />
+                          <OfflineIcon />
                           All data can be accessed offline
                         </p>
                       )}
                       {item.published && (
                         <p>
-                          <UsersIcon fontSize={16} /> Published to Web
+                          <PublishIcon fontSize={16} /> Published to Web
                         </p>
                       )}
                     </StyleWorkspaceInfo>
@@ -132,14 +150,17 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               {t('Workspace description')}
             </p> */}
           </Content>
+          <LoginModal
+            open={loginOpen}
+            onClose={() => {
+              setLoginOpen(false);
+            }}
+          ></LoginModal>
           <Footer>
             {!user ? (
               <StyleSignIn
                 onClick={async () => {
-                  setLoaded(false);
-                  await login();
-                  toast(t('login success'));
-                  setLoaded(true);
+                  setLoginOpen(true);
                 }}
               >
                 <span>
@@ -149,7 +170,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               </StyleSignIn>
             ) : (
               <div style={{ display: 'flex' }}>
-                <div>
+                <div style={{ paddingTop: '20px' }}>
                   <WorkspaceAvatar
                     size={40}
                     name={user.name}
@@ -160,12 +181,11 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                   <p>{user.name}</p>
                   <p>{user.email}</p>
                 </StyleUserInfo>
-                <div>
+                <div style={{ paddingTop: '25px' }}>
                   <IconButton
                     onClick={() => {
                       confirm({
                         title: 'Sign out?',
-
                         content: `All data has been stored in the cloud. `,
                         confirmText: 'Sign out',
                         cancelText: 'Cancel',
@@ -185,11 +205,6 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                 </div>
               </div>
             )}
-            {!loaded && (
-              <Wrapper justifyContent="center">
-                <Loading size={25} />
-              </Wrapper>
-            )}
           </Footer>
           <CreateWorkspaceModal
             open={createWorkspaceOpen}
@@ -204,8 +219,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
 };
 
 const Header = styled('div')({
-  position: 'relative',
-  height: '44px',
+  display: 'flex',
 });
 
 const Content = styled('div')({
@@ -214,17 +228,21 @@ const Content = styled('div')({
   gap: '16px',
   flex: 1,
 });
-
-const ContentTitle = styled('span')({
+const HeaderOption = styled.div(() => {
+  return {
+    marginLeft: '16px',
+  };
+});
+const ContentTitle = styled('div')({
   fontSize: '20px',
-  lineHeight: '28px',
+  lineHeight: '24px',
   fontWeight: 600,
   textAlign: 'left',
-  paddingBottom: '16px',
+  flex: 1,
 });
 
 const WorkspaceList = styled('div')({
-  height: '500px',
+  maxHeight: '500px',
   overflow: 'auto',
   display: 'grid',
   gridRowGap: '24px',
@@ -266,8 +284,8 @@ const StyleWorkspaceInfo = styled.div(({ theme }) => {
       lineHeight: '16px',
     },
     svg: {
-      verticalAlign: 'sub',
-      marginRight: '10px',
+      verticalAlign: 'text-bottom',
+      marginRight: '8px',
     },
   };
 });
@@ -320,6 +338,7 @@ const StyleSignIn = styled.div(({ theme }) => {
     cursor: 'pointer',
     fontSize: '16px',
     fontWeight: 700,
+    color: theme.colors.iconColor,
     span: {
       display: 'inline-block',
       width: '40px',
