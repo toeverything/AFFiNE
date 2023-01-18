@@ -3,15 +3,17 @@ import {
   // StyledSettingAvatar,
   StyledSettingAvatarContent,
   StyledSettingInputContainer,
+  StyledDoneButtonContainer,
+  StyledInput,
 } from './style';
 import { StyledSettingH2 } from '../style';
 
 import { useState } from 'react';
-import { Button, TextButton } from '@/ui/button';
-import Input from '@/ui/input';
+import { Button } from '@/ui/button';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
+import { DoneIcon, CloudUnsyncedIcon } from '@blocksuite/icons';
 // import { Upload } from '@/components/file-upload';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { WorkspaceUnit } from '@affine/datacenter';
@@ -44,7 +46,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
   return workspace ? (
     <div>
-      <StyledSettingH2 marginTop={56}>{t('Workspace Icon')}</StyledSettingH2>
+      <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
       <StyledSettingAvatarContent>
         <div
           style={{
@@ -69,29 +71,30 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       </StyledSettingAvatarContent>
       <StyledSettingH2 marginTop={20}>{t('Workspace Name')}</StyledSettingH2>
       <StyledSettingInputContainer>
-        <Input
-          width={327}
+        <StyledInput
+          width={284}
+          height={32}
           value={workspaceName}
           placeholder={t('Workspace Name')}
           maxLength={14}
           minLength={1}
           disabled={!isOwner}
           onChange={handleChangeWorkSpaceName}
-        ></Input>
+        ></StyledInput>
         {isOwner ? (
-          <TextButton
+          <StyledDoneButtonContainer
             onClick={() => {
               handleUpdateWorkspaceName();
             }}
-            style={{ marginLeft: '0px' }}
           >
-            ✔️
-          </TextButton>
+            <DoneIcon />
+          </StyledDoneButtonContainer>
         ) : null}
       </StyledSettingInputContainer>
       <StyledSettingH2 marginTop={20}>{t('Workspace Type')}</StyledSettingH2>
       <StyledSettingInputContainer>
-        <code>{workspace.provider} </code>
+        <CloudUnsyncedIcon style={{ marginRight: '15px' }} />
+        Local workspace
       </StyledSettingInputContainer>
       <StyledDeleteButtonContainer>
         {isOwner ? (
@@ -99,6 +102,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             <Button
               type="danger"
               shape="circle"
+              style={{ borderRadius: '40px' }}
               onClick={() => {
                 setShowDelete(true);
               }}
