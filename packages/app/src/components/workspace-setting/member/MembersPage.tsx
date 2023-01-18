@@ -159,7 +159,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
   return (
     <StyledMemberWarp>
-      <>{t('Collaboration Description')}</>
+      {t('Collaboration Description')}
       <StyledPublishExplanation>
         <Button
           type="primary"
