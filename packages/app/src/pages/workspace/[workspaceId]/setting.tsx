@@ -2,7 +2,6 @@ import {
   StyledSettingContainer,
   StyledSettingContent,
   StyledSettingSidebar,
-  StyledSettingSidebarHeader,
   StyledSettingTabContainer,
   WorkspaceSettingTagItem,
 } from '@/components/workspace-setting/style';
@@ -14,35 +13,38 @@ import {
   ExportPage,
   SyncPage,
 } from '@/components/workspace-setting';
+import { SettingsIcon } from '@blocksuite/icons';
 import { useAppState } from '@/providers/app-state-provider';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import { PageListHeader } from '@/components/header';
 
-type TabNames = 'general' | 'members' | 'publish' | 'sync' | 'export';
+type TabNames = 'General' | 'Sync' | 'Collaboration' | 'Publish' | 'Export';
 
 const tabMap: {
   name: TabNames;
   panelRender: (workspace: WorkspaceUnit) => ReactNode;
 }[] = [
   {
-    name: 'general',
+    name: 'General',
     panelRender: workspace => <GeneralPage workspace={workspace} />,
   },
   {
-    name: 'members',
-    panelRender: workspace => <MembersPage workspace={workspace} />,
-  },
-  {
-    name: 'publish',
-    panelRender: workspace => <PublishPage workspace={workspace} />,
-  },
-  {
-    name: 'sync',
+    name: 'Sync',
     panelRender: workspace => <SyncPage workspace={workspace} />,
   },
   {
-    name: 'export',
+    name: 'Collaboration',
+    panelRender: workspace => <MembersPage workspace={workspace} />,
+  },
+  {
+    name: 'Publish',
+    panelRender: workspace => <PublishPage workspace={workspace} />,
+  },
+
+  {
+    name: 'Export',
     panelRender: workspace => <ExportPage workspace={workspace} />,
   },
 ];
@@ -66,38 +68,38 @@ const WorkspaceSetting = () => {
   if (!isOwner) {
     tableArr = [
       {
-        name: 'general',
+        name: 'General',
         panelRender: workspace => <GeneralPage workspace={workspace} />,
       },
     ];
   }
   return (
-    <StyledSettingContainer>
-      <StyledSettingSidebar>
-        <StyledSettingSidebarHeader>
-          {t('Workspace Settings')}
-        </StyledSettingSidebarHeader>
-        <StyledSettingTabContainer>
-          {tableArr.map(({ name }) => {
-            return (
-              <WorkspaceSettingTagItem
-                key={name}
-                isActive={activeTab === name}
-                onClick={() => {
-                  handleTabChange(name);
-                }}
-              >
-                {name}
-              </WorkspaceSettingTagItem>
-            );
-          })}
-        </StyledSettingTabContainer>
-      </StyledSettingSidebar>
+    <>
+      <StyledSettingContainer>
+        <PageListHeader icon={<SettingsIcon />}>{t('Settings')}</PageListHeader>
+        <StyledSettingSidebar>
+          <StyledSettingTabContainer>
+            {tableArr.map(({ name }) => {
+              return (
+                <WorkspaceSettingTagItem
+                  key={name}
+                  isActive={activeTab === name}
+                  onClick={() => {
+                    handleTabChange(name);
+                  }}
+                >
+                  {name}
+                </WorkspaceSettingTagItem>
+              );
+            })}
+          </StyledSettingTabContainer>
+        </StyledSettingSidebar>
 
-      <StyledSettingContent>
-        {currentWorkspace && activeTabPanelRender?.(currentWorkspace)}
-      </StyledSettingContent>
-    </StyledSettingContainer>
+        <StyledSettingContent>
+          {currentWorkspace && activeTabPanelRender?.(currentWorkspace)}
+        </StyledSettingContent>
+      </StyledSettingContainer>
+    </>
   );
 };
 WorkspaceSetting.getLayout = function getLayout(page: ReactElement) {
