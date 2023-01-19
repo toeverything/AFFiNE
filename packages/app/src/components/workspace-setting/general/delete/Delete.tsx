@@ -46,7 +46,7 @@ export const WorkspaceDelete = ({
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>{t('Delete Workspace')}</StyledModalHeader>
+        <StyledModalHeader>{t('Delete Workspace')}?</StyledModalHeader>
         {workspace.provider === 'local' ? (
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description">
@@ -75,6 +75,8 @@ export const WorkspaceDelete = ({
             onChange={handlerInputChange}
             placeholder={t('Delete Workspace placeholder')}
             value={deleteStr}
+            width={284}
+            height={42}
           ></Input>
         </StyledInputContent>
         <StyledButtonContent>

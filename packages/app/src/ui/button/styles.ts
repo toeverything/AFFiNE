@@ -182,7 +182,7 @@ export const StyledButton = styled('button', {
       paddingLeft: padding,
       paddingRight: padding,
       border: '1px solid',
-      ...displayInlineFlex('flex-start', 'center'),
+      ...displayInlineFlex('center', 'center'),
       position: 'relative',
       // TODO: disabled color is not decided
       ...(disabled

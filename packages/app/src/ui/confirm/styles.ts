@@ -3,8 +3,10 @@ import { ModalWrapper } from '@/ui/modal';
 
 export const StyledModalWrapper = styled(ModalWrapper)(() => {
   return {
-    width: '460px',
-    padding: '46px 60px 32px',
+    minWidth: '460px',
+    maxWidth: '560px',
+    maxHeight: '292px',
+    padding: '44px 84px 32px 84px',
   };
 });
 
@@ -14,6 +16,7 @@ export const StyledConfirmTitle = styled.div(({ theme }) => {
     fontWeight: 600,
     textAlign: 'center',
     color: theme.colors.popoverColor,
+    lineHeight: '28px',
   };
 });
 
@@ -23,12 +26,21 @@ export const StyledConfirmContent = styled.div(({ theme }) => {
     textAlign: 'center',
     marginTop: '12px',
     color: theme.colors.textColor,
+    lineHeight: '26px',
   };
 });
 
-export const StyledButtonWrapper = styled.div(() => {
+export const StyledColumnButtonWrapper = styled.div(() => {
   return {
     ...displayFlex('center', 'center'),
+    flexDirection: 'column',
+    marginTop: '32px',
+  };
+});
+export const StyledRowButtonWrapper = styled.div(() => {
+  return {
+    ...displayFlex('center', 'center'),
+    flexDirection: 'row',
     marginTop: '32px',
   };
 });

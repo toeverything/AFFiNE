@@ -12,6 +12,7 @@ type inputProps = {
   placeholder?: string;
   disabled?: boolean;
   width?: number;
+  height?: number;
   maxLength?: number;
   minLength?: number;
   onChange?: (value: string) => void;
@@ -26,6 +27,7 @@ export const Input = (props: inputProps) => {
     placeholder,
     maxLength,
     minLength,
+    height,
     width = 260,
     onChange,
     onBlur,
@@ -62,6 +64,7 @@ export const Input = (props: inputProps) => {
       onChange={handleChange}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
+      height={height}
     ></StyledInput>
   );
 };

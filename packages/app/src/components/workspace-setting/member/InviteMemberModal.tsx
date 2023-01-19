@@ -122,6 +122,7 @@ export const InviteMemberModal = ({
             <Button
               shape="circle"
               type="primary"
+              style={{ width: '364px', height: '38px', borderRadius: '40px' }}
               onClick={async () => {
                 await inviteMember(email);
                 onInviteSuccess();
@@ -143,10 +144,8 @@ const Header = styled('div')({
 
 const Content = styled('div')({
   display: 'flex',
-  padding: '0 48px',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '16px',
 });
 
 const ContentTitle = styled('h1')({
@@ -158,9 +157,8 @@ const ContentTitle = styled('h1')({
 });
 
 const Footer = styled('div')({
-  height: '70px',
-  paddingLeft: '24px',
-  marginTop: '32px',
+  height: '102px',
+  margin: '32px 0',
   textAlign: 'center',
 });
 
