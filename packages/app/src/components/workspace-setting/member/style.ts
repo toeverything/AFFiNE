@@ -19,6 +19,7 @@ export const StyledMemberNameContainer = styled('div')(() => {
     display: 'flex',
     alignItems: 'center',
     width: '402px',
+    flex: 2,
   };
 });
 
@@ -27,6 +28,7 @@ export const StyledMemberRoleContainer = styled('div')(() => {
     display: 'flex',
     alignItems: 'center',
     width: '222px',
+    flex: 1,
   };
 });
 
@@ -34,6 +36,8 @@ export const StyledMemberListContainer = styled('ul')(() => {
   return {
     marginTop: '15px',
     overflowY: 'scroll',
+    width: '100%',
+    maxHeight: 'calc(100vh - 300px)',
   };
 });
 
@@ -42,6 +46,7 @@ export const StyledMemberListItem = styled('li')(() => {
     display: 'flex',
     alignItems: 'center',
     height: '72px',
+    width: '100%',
   };
 });
 
@@ -71,7 +76,9 @@ export const StyledMemberEmail = styled('div')(({ theme }) => {
 
 export const StyledMemberButtonContainer = styled('div')(() => {
   return {
-    marginTop: '14px',
+    position: 'absolute',
+    bottom: '0',
+    marginBottom: '20px',
   };
 });
 
@@ -83,6 +90,7 @@ export const StyledMoreVerticalButton = styled('button')(() => {
     width: '24px',
     height: '24px',
     cursor: 'pointer',
+    paddingRight: '48px',
   };
 });
 
@@ -101,6 +109,8 @@ export const StyledMemberWarp = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
-    padding: '40px 0',
+    padding: '48px 0',
+    fontWeight: '500',
+    fontSize: '18px',
   };
 });

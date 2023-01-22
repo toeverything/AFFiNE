@@ -2,17 +2,9 @@ import {
   StyledSettingContainer,
   StyledSettingContent,
   StyledSettingSidebar,
-  StyledSettingSidebarHeader,
   StyledSettingTabContainer,
-  StyledSettingTagIconContainer,
   WorkspaceSettingTagItem,
 } from '@/components/workspace-setting/style';
-import {
-  EditIcon,
-  UsersIcon,
-  PublishIcon,
-  CloudInsyncIcon,
-} from '@blocksuite/icons';
 import { ReactElement, ReactNode, useState } from 'react';
 import {
   GeneralPage,
@@ -21,41 +13,38 @@ import {
   ExportPage,
   SyncPage,
 } from '@/components/workspace-setting';
+import { SettingsIcon } from '@blocksuite/icons';
 import { useAppState } from '@/providers/app-state-provider';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import { PageListHeader } from '@/components/header';
 
-type TabNames = 'general' | 'members' | 'publish' | 'sync' | 'export';
+type TabNames = 'General' | 'Sync' | 'Collaboration' | 'Publish' | 'Export';
 
 const tabMap: {
   name: TabNames;
-  icon: ReactNode;
   panelRender: (workspace: WorkspaceUnit) => ReactNode;
 }[] = [
   {
-    name: 'general',
-    icon: <EditIcon />,
+    name: 'General',
     panelRender: workspace => <GeneralPage workspace={workspace} />,
   },
   {
-    name: 'members',
-    icon: <CloudInsyncIcon />,
-    panelRender: workspace => <MembersPage workspace={workspace} />,
-  },
-  {
-    name: 'publish',
-    icon: <UsersIcon />,
-    panelRender: workspace => <PublishPage workspace={workspace} />,
-  },
-  {
-    name: 'sync',
-    icon: <PublishIcon />,
+    name: 'Sync',
     panelRender: workspace => <SyncPage workspace={workspace} />,
   },
   {
-    name: 'export',
-    icon: <PublishIcon />,
+    name: 'Collaboration',
+    panelRender: workspace => <MembersPage workspace={workspace} />,
+  },
+  {
+    name: 'Publish',
+    panelRender: workspace => <PublishPage workspace={workspace} />,
+  },
+
+  {
+    name: 'Export',
     panelRender: workspace => <ExportPage workspace={workspace} />,
   },
 ];
@@ -74,48 +63,43 @@ const WorkspaceSetting = () => {
   )?.panelRender;
   let tableArr: {
     name: TabNames;
-    icon: ReactNode;
     panelRender: (workspace: WorkspaceUnit) => ReactNode;
   }[] = tabMap;
   if (!isOwner) {
     tableArr = [
       {
-        name: 'general',
-        icon: <EditIcon />,
+        name: 'General',
         panelRender: workspace => <GeneralPage workspace={workspace} />,
       },
     ];
   }
   return (
-    <StyledSettingContainer>
-      <StyledSettingSidebar>
-        <StyledSettingSidebarHeader>
-          {t('Workspace Settings')}
-        </StyledSettingSidebarHeader>
-        <StyledSettingTabContainer>
-          {tableArr.map(({ icon, name }) => {
-            return (
-              <WorkspaceSettingTagItem
-                key={name}
-                isActive={activeTab === name}
-                onClick={() => {
-                  handleTabChange(name);
-                }}
-              >
-                <StyledSettingTagIconContainer>
-                  {icon}
-                </StyledSettingTagIconContainer>
-                {name}
-              </WorkspaceSettingTagItem>
-            );
-          })}
-        </StyledSettingTabContainer>
-      </StyledSettingSidebar>
+    <>
+      <StyledSettingContainer>
+        <PageListHeader icon={<SettingsIcon />}>{t('Settings')}</PageListHeader>
+        <StyledSettingSidebar>
+          <StyledSettingTabContainer>
+            {tableArr.map(({ name }) => {
+              return (
+                <WorkspaceSettingTagItem
+                  key={name}
+                  isActive={activeTab === name}
+                  onClick={() => {
+                    handleTabChange(name);
+                  }}
+                >
+                  {name}
+                </WorkspaceSettingTagItem>
+              );
+            })}
+          </StyledSettingTabContainer>
+        </StyledSettingSidebar>
 
-      <StyledSettingContent>
-        {currentWorkspace && activeTabPanelRender?.(currentWorkspace)}
-      </StyledSettingContent>
-    </StyledSettingContainer>
+        <StyledSettingContent>
+          {currentWorkspace && activeTabPanelRender?.(currentWorkspace)}
+        </StyledSettingContent>
+      </StyledSettingContainer>
+    </>
   );
 };
 WorkspaceSetting.getLayout = function getLayout(page: ReactElement) {

@@ -4,6 +4,7 @@ import {
   StyledPublishCopyContainer,
   StyledPublishExplanation,
   StyledSettingH2,
+  StyledStopPublishContainer,
 } from './style';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
@@ -42,7 +43,9 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 <StyledPublishExplanation>
                   {t('Publishing')}
                 </StyledPublishExplanation>
-                <StyledSettingH2>{t('Share with link')}</StyledSettingH2>
+                <StyledSettingH2 marginTop={48}>
+                  {t('Share with link')}
+                </StyledSettingH2>
                 <StyledPublishCopyContainer>
                   <Input width={500} value={shareUrl} disabled={true}></Input>
                   <StyledCopyButtonContainer>
@@ -54,24 +57,27 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               </>
             ) : (
               <StyledPublishExplanation>
-                {'Publishing Description'}
+                {t('Publishing Description')}
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
-          <StyledPublishCopyContainer>
-            {workspace.published ? (
+
+          {workspace.published ? (
+            <StyledStopPublishContainer>
               <Button
                 onClick={async () => {
                   setLoaded(false);
                   await togglePublic(false);
                   setLoaded(true);
                 }}
-                type="primary"
+                type="danger"
                 shape="circle"
               >
                 {t('Stop publishing')}
               </Button>
-            ) : (
+            </StyledStopPublishContainer>
+          ) : (
+            <StyledPublishCopyContainer>
               <Button
                 onClick={async () => {
                   setLoaded(false);
@@ -83,8 +89,8 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               >
                 {t('Publish to web')}
               </Button>
-            )}
-          </StyledPublishCopyContainer>
+            </StyledPublishCopyContainer>
+          )}
         </div>
       ) : (
         <StyledPublishContent>
