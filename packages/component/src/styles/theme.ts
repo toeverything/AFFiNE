@@ -95,7 +95,7 @@ export const getDarkTheme = (
       primaryColor: '#6880FF',
       pageBackground: '#2c2c2c',
       hoverBackground: '#3C3C42',
-      innerHoverBackground: '#E0E6FF',
+      innerHoverBackground: '#5A5A5A',
       popoverBackground: '#1F2021',
       tooltipBackground: '#1F2021',
       codeBackground:
