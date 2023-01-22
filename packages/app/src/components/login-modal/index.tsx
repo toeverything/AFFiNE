@@ -27,6 +27,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
           <span
             onClick={async () => {
               await login();
+              onClose();
             }}
           >
             <GoogleLoginButton />

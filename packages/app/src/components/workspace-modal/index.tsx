@@ -11,19 +11,18 @@ import {
   PublishIcon,
   CloseIcon,
 } from '@blocksuite/icons';
-import { toast } from '@/ui/toast';
 import {
   WorkspaceAvatar,
   WorkspaceUnitAvatar,
 } from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-import { useConfirm } from '@/providers/ConfirmProvider';
 import { useTranslation } from '@affine/i18n';
 import { LanguageMenu } from './languageMenu';
 
 import { CloudIcon, LineIcon, LocalIcon, OfflineIcon } from './icons';
 import { LoginModal } from '../login-modal';
+import { LogoutModal } from '../logout-modal';
 interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -31,12 +30,12 @@ interface WorkspaceModalProps {
 
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-  const { confirm } = useConfirm();
   const { workspaceList, currentWorkspace, user, logout, isOwner } =
     useAppState();
   const router = useRouter();
   const { t } = useTranslation();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -184,20 +183,21 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                 <div style={{ paddingTop: '25px' }}>
                   <IconButton
                     onClick={() => {
-                      confirm({
-                        title: 'Sign out?',
-                        content: `All data has been stored in the cloud. `,
-                        confirmText: 'Sign out',
-                        cancelText: 'Cancel',
-                      }).then(async confirm => {
-                        if (confirm) {
-                          if (user) {
-                            await logout();
-                            router.replace(`/workspace`);
-                            toast('Enabled success');
-                          }
-                        }
-                      });
+                      setLogoutOpen(true);
+                      // confirm({
+                      //   title: 'Sign out?',
+                      //   content: `All data has been stored in the cloud. `,
+                      //   confirmText: 'Sign out',
+                      //   cancelText: 'Cancel',
+                      // }).then(async confirm => {
+                      //   // if (confirm) {
+                      //   //   if (user) {
+                      //   //     await logout();
+                      //   //     router.replace(`/workspace`);
+                      //   //     toast('Enabled success');
+                      //   //   }
+                      //   // }
+                      // });
                     }}
                   >
                     <LogOutIcon></LogOutIcon>
@@ -212,6 +212,16 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               setCreateWorkspaceOpen(false);
             }}
           ></CreateWorkspaceModal>
+          <LogoutModal
+            open={logoutOpen}
+            onClose={async wait => {
+              if (!wait) {
+                await logout();
+                router.replace(`/workspace`);
+              }
+              setLogoutOpen(false);
+            }}
+          ></LogoutModal>
         </ModalWrapper>
       </Modal>
     </div>
