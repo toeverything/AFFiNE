@@ -16,7 +16,7 @@ import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { Disposable } from '@blocksuite/store/dist/utils/disposable';
+import type { Disposable } from '@blocksuite/store';
 
 const StyledEditorContainer = styled('div')(() => {
   return {
