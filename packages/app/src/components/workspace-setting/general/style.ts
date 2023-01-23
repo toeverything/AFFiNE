@@ -67,3 +67,28 @@ export const StyledProviderInfo = styled('p')(({ theme }) => {
     },
   };
 });
+
+export const StyledAvatar = styled('div')(() => {
+  return {
+    position: 'relative',
+    marginRight: '20px',
+    cursor: 'pointer',
+    ':hover': {
+      '.camera-icon': {
+        display: 'block',
+      },
+    },
+    '.camera-icon': {
+      position: 'absolute',
+      display: 'none',
+      width: '100%',
+      height: '100%',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(60, 61, 63, 0.5)',
+      top: 0,
+      left: 0,
+      textAlign: 'center',
+      lineHeight: '72px',
+    },
+  };
+});
