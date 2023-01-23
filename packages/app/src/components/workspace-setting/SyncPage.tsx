@@ -1,6 +1,6 @@
 import {
+  StyleAsync,
   StyledPublishContent,
-  StyledPublishCopyContainer,
   StyledPublishExplanation,
   StyledWorkspaceName,
   StyledWorkspaceType,
@@ -24,19 +24,18 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 size={32}
                 name={workspace.name}
                 workspaceUnit={workspace}
+                style={{ marginRight: '12px' }}
               />
-              <StyledWorkspaceName>
-                &nbsp;{workspace.name}&nbsp;
-              </StyledWorkspaceName>
+              <StyledWorkspaceName>{workspace.name};</StyledWorkspaceName>
               <StyledWorkspaceType>is a Local Workspace.</StyledWorkspaceType>
             </StyledPublishExplanation>
             <StyledWorkspaceType>
               All data is stored on the current device. You can enable AFFiNE
               Cloud for this workspace to keep data in sync with the cloud.
             </StyledWorkspaceType>
-            <StyledPublishCopyContainer>
+            <StyleAsync>
               <EnableWorkspaceButton></EnableWorkspaceButton>
-            </StyledPublishCopyContainer>
+            </StyleAsync>
           </>
         ) : (
           <>
@@ -47,7 +46,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 the AFFiNE
               </Trans>
             </StyledPublishExplanation>
-            <StyledPublishCopyContainer>
+            <StyleAsync>
               <Menu
                 content={
                   <>
@@ -76,7 +75,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                   {t('Download data to device', { CoreOrAll: 'all' })}
                 </Button>
               </Menu>
-            </StyledPublishCopyContainer>
+            </StyleAsync>
           </>
         )}
       </StyledPublishContent>

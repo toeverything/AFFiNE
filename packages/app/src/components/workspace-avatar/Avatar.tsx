@@ -3,6 +3,7 @@ interface IWorkspaceAvatar {
   size: number;
   name: string;
   avatar: string;
+  style?: React.CSSProperties;
 }
 
 export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
@@ -14,12 +15,15 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
       {props.avatar ? (
         <div
           style={{
+            ...props.style,
             width: sizeStr,
             height: sizeStr,
             border: '1px solid #fff',
             color: '#fff',
             borderRadius: '50%',
             overflow: 'hidden',
+            display: 'inline-block',
+            verticalAlign: 'middle',
           }}
         >
           <picture>
@@ -33,6 +37,7 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
       ) : (
         <div
           style={{
+            ...props.style,
             width: sizeStr,
             height: sizeStr,
             border: '1px solid #fff',
@@ -42,6 +47,8 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
             borderRadius: '50%',
             textAlign: 'center',
             lineHeight: size + 'px',
+            display: 'inline-block',
+            verticalAlign: 'middle',
           }}
         >
           {(props.name || 'AFFiNE').substring(0, 1)}

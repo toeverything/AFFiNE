@@ -107,14 +107,14 @@ export const StyledPublishExplanation = styled('div')(() => {
     marginBottom: '22px',
   };
 });
-export const StyledWorkspaceName = styled('div')(() => {
+export const StyledWorkspaceName = styled('span')(() => {
   return {
     fontWeight: '400',
     fontSize: '18px',
     lineHeight: '26px',
   };
 });
-export const StyledWorkspaceType = styled('div')(() => {
+export const StyledWorkspaceType = styled('span')(() => {
   return {
     fontWeight: '500',
     fontSize: '18px',
@@ -146,5 +146,11 @@ export const StyledPublishContent = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
+  };
+});
+
+export const StyleAsync = styled('div')(() => {
+  return {
+    marginTop: '64px',
   };
 });

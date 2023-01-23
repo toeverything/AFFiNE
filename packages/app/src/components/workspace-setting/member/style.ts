@@ -105,7 +105,7 @@ export const StyledPublishExplanation = styled('div')(() => {
     fontSize: '18px',
     lineHeight: '26px',
     flex: 1,
-    marginTop: '60px',
+    marginTop: '64px',
   };
 });
 
