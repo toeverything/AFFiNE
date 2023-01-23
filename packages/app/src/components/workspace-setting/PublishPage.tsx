@@ -16,9 +16,10 @@ import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useTranslation } from '@affine/i18n';
 import Loading from '@/components/loading';
 import { Wrapper } from '@/ui/layout';
+import { EnableWorkspaceButton } from '../enable-workspace';
 export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
-  const { publishWorkspace, enableWorkspace } = useWorkspaceHelper();
+  const { publishWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
   const [loaded, setLoaded] = useState(true);
   const togglePublic = async (flag: boolean) => {
@@ -30,9 +31,6 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     toast('Copied url to clipboard');
   };
 
-  const enableAffineCloud = async () => {
-    await enableWorkspace();
-  };
   return (
     <>
       {workspace.provider === 'affine' ? (
@@ -100,17 +98,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             </StyledPublishExplanation>
 
             <StyledPublishCopyContainer>
-              <Button
-                onClick={async () => {
-                  setLoaded(false);
-                  await enableAffineCloud();
-                  setLoaded(true);
-                }}
-                type="primary"
-                shape="circle"
-              >
-                {t('Enable AFFiNE Cloud')}
-              </Button>
+              <EnableWorkspaceButton></EnableWorkspaceButton>
             </StyledPublishCopyContainer>
           </>
         </StyledPublishContent>

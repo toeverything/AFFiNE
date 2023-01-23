@@ -9,11 +9,10 @@ import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
 import { WorkspaceUnit } from '@affine/datacenter';
-import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { Trans, useTranslation } from '@affine/i18n';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
+import { EnableWorkspaceButton } from '../enable-workspace';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
-  const { enableWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
   return (
     <div>
@@ -36,16 +35,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               Cloud for this workspace to keep data in sync with the cloud.
             </StyledWorkspaceType>
             <StyledPublishCopyContainer>
-              <Button
-                onClick={async () => {
-                  await enableWorkspace();
-                }}
-                type="primary"
-                shape="circle"
-                style={{ fontWeight: '500' }}
-              >
-                {t('Enable AFFiNE Cloud')}
-              </Button>
+              <EnableWorkspaceButton></EnableWorkspaceButton>
             </StyledPublishCopyContainer>
           </>
         ) : (
