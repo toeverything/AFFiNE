@@ -13,11 +13,14 @@ export const StyledSettingInputContainer = styled('div')(() => {
 
 export const StyledDeleteButtonContainer = styled('div')(() => {
   return {
-    position: 'absolute',
-    bottom: '0',
-    left: '50%',
-    marginBottom: '20px',
-    transform: 'translateX(-50%)',
+    textAlign: 'center',
+  };
+});
+export const StyleGeneral = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
   };
 });
 export const StyledDoneButtonContainer = styled(IconButton)(({ theme }) => {
@@ -52,4 +55,15 @@ export const StyledSettingAvatarContent = styled('div')(() => {
 
 export const StyledSettingAvatar = styled(MuiAvatar)(() => {
   return { height: '72px', width: '72px', marginRight: '24px' };
+});
+
+export const StyledProviderInfo = styled('p')(({ theme }) => {
+  return {
+    color: theme.colors.iconColor,
+    fontSize: theme.font.sm,
+    svg: {
+      verticalAlign: 'sub',
+      marginRight: '10px',
+    },
+  };
 });

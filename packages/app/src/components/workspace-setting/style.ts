@@ -4,23 +4,27 @@ export const StyledSettingContainer = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
-    marginTop: '24px',
-    marginLeft: '48px',
-    overflow: 'auto',
+
+    padding: '0 34px 20px 48px',
+    height: '100vh',
   };
 });
 
 export const StyledSettingSidebar = styled('div')(() => {
   {
     return {
-      flexShrink: 0,
-      flexGrow: 0,
+      // height: '48px',
+      marginTop: '50px',
     };
   }
 });
 
 export const StyledSettingContent = styled('div')(() => {
-  return {};
+  return {
+    overflow: 'hidden',
+    flex: 1,
+    paddingTop: '48px',
+  };
 });
 
 export const StyledSetting = styled('div')(({ theme }) => {
@@ -48,7 +52,6 @@ export const StyledSettingTabContainer = styled('ul')(() => {
   {
     return {
       display: 'flex',
-      marginTop: '25px',
     };
   }
 });
@@ -58,8 +61,7 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
     {
       return {
         display: 'flex',
-        position: 'relative',
-        margin: '0 48px 8px 0',
+        margin: '0 48px 0 0',
         height: '34px',
         color: isActive ? theme.colors.primaryColor : theme.colors.textColor,
         fontWeight: '500',
@@ -67,16 +69,9 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
         lineHeight: theme.font.lineHeightBase,
         cursor: 'pointer',
         transition: 'all 0.15s ease',
-        '::after': {
-          content: '""',
-          width: '100%',
-          height: '2px',
-          background: isActive ? theme.colors.primaryColor : 'transparent',
-          transition: 'all 0.15s ease',
-          position: 'absolute',
-          left: '0',
-          bottom: '0',
-        },
+        borderBottom: `2px solid ${
+          isActive ? theme.colors.primaryColor : 'none'
+        }`,
         ':hover': { color: theme.colors.primaryColor },
       };
     }
@@ -87,9 +82,6 @@ export const StyledSettingTagIconContainer = styled('div')(() => {
   return {
     display: 'flex',
     alignItems: 'center',
-    marginRight: '14.64px',
-    width: '14.47px',
-    fontSize: '14.47px',
   };
 });
 
@@ -112,7 +104,7 @@ export const StyledPublishExplanation = styled('div')(() => {
     fontSize: '18px',
     lineHeight: '26px',
     flex: 1,
-    marginTop: '60px',
+
     marginBottom: '22px',
   };
 });

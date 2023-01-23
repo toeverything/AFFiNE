@@ -109,7 +109,7 @@ export const StyledMemberWarp = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
-    padding: '48px 0',
+    padding: '0 0 48px 0',
     fontWeight: '500',
     fontSize: '18px',
   };

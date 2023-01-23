@@ -3,35 +3,25 @@ import { displayFlex, styled } from '@/styles';
 export const StyledHeaderContainer = styled.div<{ hasWarning: boolean }>(
   ({ hasWarning }) => {
     return {
-      position: 'relative',
       height: hasWarning ? '96px' : '60px',
     };
   }
 );
-export const StyledHeader = styled.div<{ hasWarning: boolean }>(
-  ({ hasWarning }) => {
-    return {
-      height: '60px',
-      width: '100%',
-      ...displayFlex('flex-end', 'center'),
-      background: 'var(--affine-page-background)',
-      transition: 'background-color 0.5s',
-      position: 'absolute',
-      left: '0',
-      top: hasWarning ? '36px' : '0',
-      padding: '0 22px',
-      zIndex: 99,
-    };
-  }
-);
+export const StyledHeader = styled.div<{ hasWarning: boolean }>(() => {
+  return {
+    height: '60px',
+    width: '100%',
+    ...displayFlex('flex-end', 'center'),
+    background: 'var(--affine-page-background)',
+    transition: 'background-color 0.5s',
+    zIndex: 99,
+  };
+});
 
 export const StyledTitle = styled('div')(({ theme }) => ({
   width: '720px',
   height: '100%',
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  top: 0,
+
   margin: 'auto',
 
   ...displayFlex('center', 'center'),

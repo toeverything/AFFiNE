@@ -4,7 +4,7 @@ import { Trans } from '@affine/i18n';
 export const ExportPageTitleContainer = styled('div')(() => {
   return {
     display: 'flex',
-    marginTop: '60px',
+
     fontWeight: '500',
     flex: 1,
   };
