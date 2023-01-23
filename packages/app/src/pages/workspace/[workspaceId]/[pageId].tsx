@@ -42,11 +42,11 @@ const Page: NextPageWithLayout = () => {
     let disposable: Disposable | undefined;
 
     const editor = createEditor?.current?.(currentPage!);
+    const isFirstPage = currentWorkspace?.meta.pageMetas.length === 1;
     if (editor) {
       editorContainer.current?.appendChild(editor);
       setEditor?.current?.(editor);
       if (currentPage!.isEmpty) {
-        const isFirstPage = currentWorkspace?.meta.pageMetas.length === 1;
         // Can not use useCurrentPageMeta to get new title, cause meta title will trigger rerender, but the second time can not remove title
         const { title: metaTitle } = currentPage!.meta;
         const title = metaTitle ? metaTitle : isFirstPage ? firstPageTitle : '';
@@ -72,12 +72,12 @@ const Page: NextPageWithLayout = () => {
             });
         }
         currentPage!.resetHistory();
-        disposable = editor.pageBlockModel?.propsUpdated.on(() => {
-          document.title = isFirstPage
-            ? firstPageTitle
-            : currentPage?.meta.title || 'Untitled';
-        });
       }
+      disposable = editor.pageBlockModel?.propsUpdated.on(() => {
+        document.title = isFirstPage
+          ? firstPageTitle
+          : currentPage?.meta.title || 'Untitled';
+      });
     }
     return () => {
       ret();
