@@ -1,4 +1,4 @@
-import { displayFlex, styled } from '@/styles';
+import { styled } from '@/styles';
 
 export const StyledSettingContainer = styled('div')(() => {
   return {
@@ -85,26 +85,25 @@ export const StyledSettingTagIconContainer = styled('div')(() => {
   };
 });
 
-export const StyledSettingH2 = styled('h2')<{ marginTop?: number }>(
-  ({ marginTop, theme }) => {
-    return {
-      fontWeight: '500',
-      fontSize: theme.font.base,
-      lineHeight: theme.font.lineHeightBase,
-      marginTop: marginTop ? `${marginTop}px` : '0px',
-    };
-  }
-);
+export const StyledSettingH2 = styled('h2')<{
+  marginTop?: number;
+  marginBottom?: number;
+}>(({ marginTop, marginBottom, theme }) => {
+  return {
+    fontWeight: '500',
+    fontSize: theme.font.base,
+    lineHeight: theme.font.lineHeightBase,
+    marginTop: marginTop ? `${marginTop}px` : '0px',
+    marginBottom: marginBottom ? `${marginBottom}px` : '0px',
+  };
+});
 
 export const StyledPublishExplanation = styled('div')(() => {
   return {
-    ...displayFlex('row', 'center', 'center'),
     paddingRight: '48px',
     fontWeight: '500',
     fontSize: '18px',
     lineHeight: '26px',
-    flex: 1,
-
     marginBottom: '22px',
   };
 });
@@ -126,21 +125,14 @@ export const StyledWorkspaceType = styled('div')(() => {
 export const StyledPublishCopyContainer = styled('div')(() => {
   return {
     marginTop: '12px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'start',
-    justifyContent: 'center',
     marginBottom: '20px',
     paddingTop: '20px',
+    flex: 1,
   };
 });
 export const StyledStopPublishContainer = styled('div')(() => {
   return {
-    position: 'absolute',
-    bottom: '0',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    marginBottom: '20px',
+    textAlign: 'center',
   };
 });
 
