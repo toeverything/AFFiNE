@@ -1,6 +1,6 @@
 import {
+  StyleAsync,
   StyledPublishContent,
-  StyledPublishCopyContainer,
   StyledPublishExplanation,
   StyledWorkspaceName,
   StyledWorkspaceType,
@@ -9,11 +9,10 @@ import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
 import { WorkspaceUnit } from '@affine/datacenter';
-import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { Trans, useTranslation } from '@affine/i18n';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
+import { EnableWorkspaceButton } from '../enable-workspace';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
-  const { enableWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
   return (
     <div>
@@ -25,28 +24,18 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 size={32}
                 name={workspace.name}
                 workspaceUnit={workspace}
+                style={{ marginRight: '12px' }}
               />
-              <StyledWorkspaceName>
-                &nbsp;{workspace.name}&nbsp;
-              </StyledWorkspaceName>
+              <StyledWorkspaceName>{workspace.name};</StyledWorkspaceName>
               <StyledWorkspaceType>is a Local Workspace.</StyledWorkspaceType>
             </StyledPublishExplanation>
             <StyledWorkspaceType>
               All data is stored on the current device. You can enable AFFiNE
               Cloud for this workspace to keep data in sync with the cloud.
             </StyledWorkspaceType>
-            <StyledPublishCopyContainer>
-              <Button
-                onClick={async () => {
-                  await enableWorkspace();
-                }}
-                type="primary"
-                shape="circle"
-                style={{ fontWeight: '500' }}
-              >
-                {t('Enable AFFiNE Cloud')}
-              </Button>
-            </StyledPublishCopyContainer>
+            <StyleAsync>
+              <EnableWorkspaceButton></EnableWorkspaceButton>
+            </StyleAsync>
           </>
         ) : (
           <>
@@ -57,7 +46,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 the AFFiNE
               </Trans>
             </StyledPublishExplanation>
-            <StyledPublishCopyContainer>
+            <StyleAsync>
               <Menu
                 content={
                   <>
@@ -86,7 +75,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                   {t('Download data to device', { CoreOrAll: 'all' })}
                 </Button>
               </Menu>
-            </StyledPublishCopyContainer>
+            </StyleAsync>
           </>
         )}
       </StyledPublishContent>

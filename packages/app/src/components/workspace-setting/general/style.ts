@@ -13,11 +13,14 @@ export const StyledSettingInputContainer = styled('div')(() => {
 
 export const StyledDeleteButtonContainer = styled('div')(() => {
   return {
-    position: 'absolute',
-    bottom: '0',
-    left: '50%',
-    marginBottom: '20px',
-    transform: 'translateX(-50%)',
+    textAlign: 'center',
+  };
+});
+export const StyleGeneral = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
   };
 });
 export const StyledDoneButtonContainer = styled(IconButton)(({ theme }) => {
@@ -52,4 +55,40 @@ export const StyledSettingAvatarContent = styled('div')(() => {
 
 export const StyledSettingAvatar = styled(MuiAvatar)(() => {
   return { height: '72px', width: '72px', marginRight: '24px' };
+});
+
+export const StyledProviderInfo = styled('p')(({ theme }) => {
+  return {
+    color: theme.colors.iconColor,
+    fontSize: theme.font.sm,
+    svg: {
+      verticalAlign: 'sub',
+      marginRight: '10px',
+    },
+  };
+});
+
+export const StyledAvatar = styled('div')(() => {
+  return {
+    position: 'relative',
+    marginRight: '20px',
+    cursor: 'pointer',
+    ':hover': {
+      '.camera-icon': {
+        display: 'block',
+      },
+    },
+    '.camera-icon': {
+      position: 'absolute',
+      display: 'none',
+      width: '100%',
+      height: '100%',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(60, 61, 63, 0.5)',
+      top: 0,
+      left: 0,
+      textAlign: 'center',
+      lineHeight: '72px',
+    },
+  };
 });

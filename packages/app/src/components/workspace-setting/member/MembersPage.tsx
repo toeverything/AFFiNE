@@ -12,6 +12,7 @@ import {
   StyledMoreVerticalButton,
   StyledPublishExplanation,
   StyledMemberWarp,
+  StyledMemberContainer,
 } from './style';
 import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useState } from 'react';
@@ -26,19 +27,18 @@ import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
 import { Wrapper } from '@/ui/layout';
 import { useTranslation } from '@affine/i18n';
-import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { EnableWorkspaceButton } from '@/components/enable-workspace';
 
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const { members, removeMember, loaded } = useMembers();
+
   const { t } = useTranslation();
-  // FIXME: DELETE THIS
-  const { enableWorkspace } = useWorkspaceHelper();
   const { confirm } = useConfirm();
 
   if (workspace.provider === 'affine') {
     return (
-      <>
+      <StyledMemberContainer>
         <StyledMemberListContainer>
           {!loaded && (
             <Wrapper justifyContent="center">
@@ -57,6 +57,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 <StyledMemberRoleContainer>
                   {t('Access level')}
                 </StyledMemberRoleContainer>
+                <div style={{ width: '24px', paddingRight: '48px' }}></div>
               </StyledMemberTitleContainer>
               {members.map((member, index) => {
                 const user = Object.assign(
@@ -153,7 +154,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             open={isInviteModalShow}
           ></InviteMemberModal>
         </StyledMemberButtonContainer>
-      </>
+      </StyledMemberContainer>
     );
   }
 
@@ -161,15 +162,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     <StyledMemberWarp>
       {t('Collaboration Description')}
       <StyledPublishExplanation>
-        <Button
-          type="primary"
-          shape="circle"
-          onClick={async () => {
-            await enableWorkspace();
-          }}
-        >
-          {t('Enable AFFiNE Cloud')}
-        </Button>
+        <EnableWorkspaceButton></EnableWorkspaceButton>
       </StyledPublishExplanation>
     </StyledMemberWarp>
   );

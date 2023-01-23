@@ -1,26 +1,30 @@
-import { displayFlex, styled } from '@/styles';
+import { styled } from '@/styles';
 
 export const StyledSettingContainer = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
-    marginTop: '24px',
-    marginLeft: '48px',
-    overflow: 'auto',
+
+    padding: '0 34px 20px 48px',
+    height: '100vh',
   };
 });
 
 export const StyledSettingSidebar = styled('div')(() => {
   {
     return {
-      flexShrink: 0,
-      flexGrow: 0,
+      // height: '48px',
+      marginTop: '50px',
     };
   }
 });
 
 export const StyledSettingContent = styled('div')(() => {
-  return {};
+  return {
+    overflow: 'hidden',
+    flex: 1,
+    paddingTop: '48px',
+  };
 });
 
 export const StyledSetting = styled('div')(({ theme }) => {
@@ -48,7 +52,6 @@ export const StyledSettingTabContainer = styled('ul')(() => {
   {
     return {
       display: 'flex',
-      marginTop: '25px',
     };
   }
 });
@@ -58,8 +61,7 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
     {
       return {
         display: 'flex',
-        position: 'relative',
-        margin: '0 48px 8px 0',
+        margin: '0 48px 0 0',
         height: '34px',
         color: isActive ? theme.colors.primaryColor : theme.colors.textColor,
         fontWeight: '500',
@@ -67,16 +69,9 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
         lineHeight: theme.font.lineHeightBase,
         cursor: 'pointer',
         transition: 'all 0.15s ease',
-        '::after': {
-          content: '""',
-          width: '100%',
-          height: '2px',
-          background: isActive ? theme.colors.primaryColor : 'transparent',
-          transition: 'all 0.15s ease',
-          position: 'absolute',
-          left: '0',
-          bottom: '0',
-        },
+        borderBottom: `2px solid ${
+          isActive ? theme.colors.primaryColor : 'none'
+        }`,
         ':hover': { color: theme.colors.primaryColor },
       };
     }
@@ -87,43 +82,39 @@ export const StyledSettingTagIconContainer = styled('div')(() => {
   return {
     display: 'flex',
     alignItems: 'center',
-    marginRight: '14.64px',
-    width: '14.47px',
-    fontSize: '14.47px',
   };
 });
 
-export const StyledSettingH2 = styled('h2')<{ marginTop?: number }>(
-  ({ marginTop, theme }) => {
-    return {
-      fontWeight: '500',
-      fontSize: theme.font.base,
-      lineHeight: theme.font.lineHeightBase,
-      marginTop: marginTop ? `${marginTop}px` : '0px',
-    };
-  }
-);
+export const StyledSettingH2 = styled('h2')<{
+  marginTop?: number;
+  marginBottom?: number;
+}>(({ marginTop, marginBottom, theme }) => {
+  return {
+    fontWeight: '500',
+    fontSize: theme.font.base,
+    lineHeight: theme.font.lineHeightBase,
+    marginTop: marginTop ? `${marginTop}px` : '0px',
+    marginBottom: marginBottom ? `${marginBottom}px` : '0px',
+  };
+});
 
 export const StyledPublishExplanation = styled('div')(() => {
   return {
-    ...displayFlex('row', 'center', 'center'),
     paddingRight: '48px',
     fontWeight: '500',
     fontSize: '18px',
     lineHeight: '26px',
-    flex: 1,
-    marginTop: '60px',
     marginBottom: '22px',
   };
 });
-export const StyledWorkspaceName = styled('div')(() => {
+export const StyledWorkspaceName = styled('span')(() => {
   return {
     fontWeight: '400',
     fontSize: '18px',
     lineHeight: '26px',
   };
 });
-export const StyledWorkspaceType = styled('div')(() => {
+export const StyledWorkspaceType = styled('span')(() => {
   return {
     fontWeight: '500',
     fontSize: '18px',
@@ -134,21 +125,14 @@ export const StyledWorkspaceType = styled('div')(() => {
 export const StyledPublishCopyContainer = styled('div')(() => {
   return {
     marginTop: '12px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'start',
-    justifyContent: 'center',
     marginBottom: '20px',
     paddingTop: '20px',
+    flex: 1,
   };
 });
 export const StyledStopPublishContainer = styled('div')(() => {
   return {
-    position: 'absolute',
-    bottom: '0',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    marginBottom: '20px',
+    textAlign: 'center',
   };
 });
 
@@ -162,5 +146,11 @@ export const StyledPublishContent = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
+  };
+});
+
+export const StyleAsync = styled('div')(() => {
+  return {
+    marginTop: '64px',
   };
 });
