@@ -12,6 +12,7 @@ import {
   StyledMoreVerticalButton,
   StyledPublishExplanation,
   StyledMemberWarp,
+  StyledMemberContainer,
 } from './style';
 import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useState } from 'react';
@@ -31,14 +32,14 @@ import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const { members, removeMember, loaded } = useMembers();
+
   const { t } = useTranslation();
-  // FIXME: DELETE THIS
   const { enableWorkspace } = useWorkspaceHelper();
   const { confirm } = useConfirm();
 
   if (workspace.provider === 'affine') {
     return (
-      <>
+      <StyledMemberContainer>
         <StyledMemberListContainer>
           {!loaded && (
             <Wrapper justifyContent="center">
@@ -57,6 +58,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 <StyledMemberRoleContainer>
                   {t('Access level')}
                 </StyledMemberRoleContainer>
+                <div style={{ width: '24px', paddingRight: '48px' }}></div>
               </StyledMemberTitleContainer>
               {members.map((member, index) => {
                 const user = Object.assign(
@@ -153,7 +155,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             open={isInviteModalShow}
           ></InviteMemberModal>
         </StyledMemberButtonContainer>
-      </>
+      </StyledMemberContainer>
     );
   }
 
