@@ -16,6 +16,7 @@ import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
+import type { Disposable } from '@blocksuite/store';
 
 const StyledEditorContainer = styled('div')(() => {
   return {
@@ -23,6 +24,8 @@ const StyledEditorContainer = styled('div')(() => {
     padding: '0 32px',
   };
 });
+
+const firstPageTitle = 'Welcome to AFFiNE Alpha "Abbey Wood"' as const;
 
 const Page: NextPageWithLayout = () => {
   const editorContainer = useRef<HTMLDivElement>(null);
@@ -36,20 +39,17 @@ const Page: NextPageWithLayout = () => {
         node.removeChild(node.firstChild);
       }
     };
+    let disposable: Disposable | undefined;
 
     const editor = createEditor?.current?.(currentPage!);
+    const isFirstPage = currentWorkspace?.meta.pageMetas.length === 1;
     if (editor) {
       editorContainer.current?.appendChild(editor);
       setEditor?.current?.(editor);
       if (currentPage!.isEmpty) {
-        const isFirstPage = currentWorkspace?.meta.pageMetas.length === 1;
         // Can not use useCurrentPageMeta to get new title, cause meta title will trigger rerender, but the second time can not remove title
         const { title: metaTitle } = currentPage!.meta;
-        const title = metaTitle
-          ? metaTitle
-          : isFirstPage
-          ? 'Welcome to AFFiNE Alpha "Abbey Wood"'
-          : '';
+        const title = metaTitle ? metaTitle : isFirstPage ? firstPageTitle : '';
         currentWorkspace?.setPageMeta(currentPage!.id, { title });
 
         const pageId = currentPage!.addBlock({
@@ -73,10 +73,16 @@ const Page: NextPageWithLayout = () => {
         }
         currentPage!.resetHistory();
       }
+      disposable = editor.pageBlockModel?.propsUpdated.on(() => {
+        document.title = isFirstPage
+          ? firstPageTitle
+          : currentPage?.meta.title || 'Untitled';
+      });
     }
-
-    document.title = currentPage?.meta.title || 'Untitled';
-    return ret;
+    return () => {
+      ret();
+      disposable?.dispose();
+    };
   }, [currentWorkspace, currentPage, createEditor, setEditor]);
 
   return (
