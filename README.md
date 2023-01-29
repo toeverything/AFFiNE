@@ -195,9 +195,24 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-## Jobs
+## Hiring
 
 Some amazing companies including AFFiNE are looking for developers! Are you interested in helping build with AFFiNE and/or its partners? Check out some of the latest [jobs available](./docs/jobs/summary.md).
+
+
+## Upgrading
+
+For upgrading information please see our [update page](https://affine.pro/blog?tag=Release%20Note).
+
+
+## Feature Request
+
+For feature request please see https://community.affine.pro/c/feature-requests/ 
+
+## Is it awesome?
+
+[These people](https://twitter.com/AffineOfficial/followers) seem to like it.
+
 
 ## License
 
