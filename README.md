@@ -195,6 +195,10 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
+## Free trial
+
+You can request a free trial of AFFiNE Ultimate [on our website](https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted).
+
 ## Hiring
 
 Some amazing companies including AFFiNE are looking for developers! Are you interested in helping build with AFFiNE and/or its partners? Check out some of the latest [jobs available](./docs/jobs/summary.md).
