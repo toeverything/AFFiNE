@@ -4,7 +4,7 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { useState } from 'react';
-import { Avatar } from '@mui/material';
+import { MuiAvatar } from '@/ui/mui';
 import useMembers from '@/hooks/use-members';
 import { User } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
@@ -76,8 +76,6 @@ export const InviteMemberModal = ({
         <ModalWrapper width={460} height={236}>
           <Header>
             <ModalCloseButton
-              top={6}
-              right={6}
               onClick={() => {
                 onClose();
               }}
@@ -102,7 +100,7 @@ export const InviteMemberModal = ({
                   ) : (
                     <Member>
                       {userData?.avatar ? (
-                        <Avatar src={userData?.avatar}></Avatar>
+                        <MuiAvatar src={userData?.avatar}></MuiAvatar>
                       ) : (
                         <MemberIcon>
                           <EmailIcon></EmailIcon>

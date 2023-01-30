@@ -91,8 +91,6 @@ export const ContactModal = ({
             <span>Alpha</span>
           </StyledModalHeaderLeft>
           <ModalCloseButton
-            top={6}
-            right={6}
             onClick={() => {
               onClose();
             }}

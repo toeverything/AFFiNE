@@ -14,8 +14,8 @@ import {
   UndoIcon,
   RedoIcon,
 } from './Icons';
+import { MuiSlide } from '@/ui/mui';
 import { Tooltip } from '@/ui/tooltip';
-import Slide from '@mui/material/Slide';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { useAppState } from '@/providers/app-state-provider';
 import useHistoryUpdated from '@/hooks/use-history-update';
@@ -127,7 +127,7 @@ export const EdgelessToolbar = () => {
   const { mode } = useCurrentPageMeta() || {};
 
   return (
-    <Slide
+    <MuiSlide
       direction="right"
       in={mode === 'edgeless'}
       mountOnEnter
@@ -155,7 +155,7 @@ export const EdgelessToolbar = () => {
         </StyledToolbarWrapper>
         <UndoRedo />
       </StyledEdgelessToolbar>
-    </Slide>
+    </MuiSlide>
   );
 };
 

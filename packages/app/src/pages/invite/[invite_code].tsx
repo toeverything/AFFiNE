@@ -1,7 +1,6 @@
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { styled } from '@/styles';
 import { Empty } from '@/ui/empty';
-// import { Avatar } from '@mui/material';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 

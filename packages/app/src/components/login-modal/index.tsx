@@ -14,8 +14,6 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
       <ModalWrapper width={560} height={292}>
         <Header>
           <ModalCloseButton
-            top={6}
-            right={6}
             onClick={() => {
               onClose();
             }}
