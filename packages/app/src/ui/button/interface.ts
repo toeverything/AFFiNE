@@ -17,8 +17,10 @@ export type ButtonProps = PropsWithChildren &
     hoverColor?: CSSProperties['color'];
     hoverStyle?: CSSProperties;
     icon?: ReactElement;
+    iconPosition?: 'start' | 'end';
     shape?: 'default' | 'round' | 'circle';
     type?: 'primary' | 'warning' | 'danger' | 'default';
     bold?: boolean;
     loading?: boolean;
+    noBorder?: boolean;
   };
