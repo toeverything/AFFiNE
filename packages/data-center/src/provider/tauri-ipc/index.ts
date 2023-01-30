@@ -2,16 +2,17 @@ import * as Y from 'yjs';
 import assert from 'assert';
 
 import { LocalProvider } from '../local/index.js';
-import * as ipcMethods from './ipc/methods.js';
+import type { IPCMethodsType } from './ipc/methods.js';
 import {
   CreateWorkspaceInfoParams,
   ProviderConstructorParams,
 } from '../base.js';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { IPCBlobProvider } from './blocksuite-provider/blob.js';
-import { WorkspaceUnit } from 'src/workspace-unit.js';
+import type { WorkspaceUnit } from 'src/workspace-unit.js';
 import { createWorkspaceUnit, loadWorkspaceUnit } from '../local/utils.js';
 import { WorkspaceWithPermission } from './ipc/types/workspace.js';
+import { applyUpdate } from '../../utils/index.js';
 
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
@@ -19,15 +20,21 @@ export class TauriIPCProvider extends LocalProvider {
    * // TODO: We only have one user in this version of app client. But may support switch user later.
    */
   #defaultUserID = 1;
+  #ipc: IPCMethodsType | undefined;
 
   constructor(params: ProviderConstructorParams) {
     super(params);
   }
 
-  async init() {
+  async init(ipc?: IPCMethodsType) {
+    if (ipc) {
+      this.#ipc = ipc;
+    } else {
+      this.#ipc = await import('./ipc/methods.js');
+    }
     // we create a default user if we don't have one.
     try {
-      const user = await ipcMethods.createUser({
+      const user = await this.#ipc!.createUser({
         email: 'xxx@xx.xx',
         name: 'xxx',
         password: 'xxx',
@@ -40,20 +47,19 @@ export class TauriIPCProvider extends LocalProvider {
     }
   }
 
-  async #initDocFromIPC(workspaceID: string, doc: Y.Doc) {
+  async #initDocFromIPC(
+    workspaceID: string,
+    blocksuiteWorkspace: BlocksuiteWorkspace
+  ) {
     this._logger(`Loading ${workspaceID}...`);
-    const result = await ipcMethods.getYDocument({ id: workspaceID });
+    const result = await this.#ipc!.getYDocument({ id: workspaceID });
     if (result) {
-      await new Promise(resolve => {
-        doc.once('update', resolve);
-        const updates = result.updates.map(
-          binaryUpdate => new Uint8Array(binaryUpdate)
-        );
-        const mergedUpdate = Y.mergeUpdates(updates);
-        // DEBUG: console mergedUpdate
-        console.log(`mergedUpdate`, mergedUpdate);
-        Y.applyUpdate(doc, new Uint8Array(mergedUpdate));
-      });
+      const updates = result.updates.map(
+        binaryUpdate => new Uint8Array(binaryUpdate)
+      );
+
+      const mergedUpdate = Y.mergeUpdates(updates);
+      await applyUpdate(blocksuiteWorkspace, mergedUpdate);
       this._logger(`Loaded: ${workspaceID}`);
     }
   }
@@ -64,7 +70,7 @@ export class TauriIPCProvider extends LocalProvider {
       try {
         // TODO: need handle potential data race when update is frequent?
         // TODO: update seems too frequent upon each keydown, why no batching?
-        const success = await ipcMethods.updateYDocument({
+        const success = await this.#ipc!.updateYDocument({
           update: Array.from(update),
           id: workspaceID,
         });
@@ -87,7 +93,7 @@ export class TauriIPCProvider extends LocalProvider {
     assert(room);
 
     (await blocksuiteWorkspace.blobs)?.addProvider(new IPCBlobProvider());
-    await this.#initDocFromIPC(room, doc);
+    await this.#initDocFromIPC(room, blocksuiteWorkspace);
     await this.#connectDocToIPC(room, doc);
 
     return blocksuiteWorkspace;
@@ -98,7 +104,7 @@ export class TauriIPCProvider extends LocalProvider {
   ): Promise<WorkspaceUnit | undefined> {
     this._logger('Creating client app workspace');
 
-    const { id } = await ipcMethods.createWorkspace({
+    const { id } = await this.#ipc!.createWorkspace({
       name: meta.name,
       // TODO: get userID here
       user_id: this.#defaultUserID,
@@ -119,7 +125,7 @@ export class TauriIPCProvider extends LocalProvider {
   }
 
   override async loadWorkspaces(): Promise<WorkspaceUnit[]> {
-    const { workspaces } = await ipcMethods.getWorkspaces({
+    const { workspaces } = await this.#ipc!.getWorkspaces({
       user_id: this.#defaultUserID,
     });
     const workspaceUnits = await Promise.all(
@@ -137,4 +143,13 @@ export class TauriIPCProvider extends LocalProvider {
     this._workspaces.add(workspaceUnits);
     return workspaceUnits;
   }
+}
+
+function stringifyUint8Array(uint8: Uint8Array): string {
+  return (
+    ' ' +
+    Array.from(uint8)
+      .map(a => a.toString(16).padStart(2, '0'))
+      .join(' ')
+  ).replace(/((?: \S+){8})/g, '$1\n');
 }

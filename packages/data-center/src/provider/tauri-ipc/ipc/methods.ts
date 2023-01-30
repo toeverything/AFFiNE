@@ -16,6 +16,17 @@ import {
 import { GetBlob, PutBlob } from './types/blob';
 import { CreateUser } from './types/user';
 
+export interface IPCMethodsType {
+  updateYDocument: typeof updateYDocument;
+  getYDocument: typeof getYDocument;
+  createWorkspace: typeof createWorkspace;
+  getWorkspaces: typeof getWorkspaces;
+  getWorkspace: typeof getWorkspace;
+  putBlob: typeof putBlob;
+  getBlob: typeof getBlob;
+  createUser: typeof createUser;
+}
+
 export const updateYDocument = async (parameters: YDocumentUpdate) =>
   await invoke<boolean>('update_y_document', {
     parameters,
