@@ -182,7 +182,7 @@ export const StyledButton = styled('button', {
       paddingLeft: padding,
       paddingRight: padding,
       border: '1px solid',
-      ...displayInlineFlex('flex-start', 'center'),
+      ...displayInlineFlex('center', 'center'),
       position: 'relative',
       // TODO: disabled color is not decided
       ...(disabled
@@ -202,6 +202,7 @@ export const StyledButton = styled('button', {
       },
       '>span': {
         marginLeft: '5px',
+        width: '100%',
       },
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore

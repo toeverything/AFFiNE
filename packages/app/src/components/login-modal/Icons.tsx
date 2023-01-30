@@ -13,8 +13,6 @@ export const GoogleIcon = () => {
 };
 
 const GoogleIconWrapper = styled('div')(({ theme }) => ({
-  width: '48px',
-  height: '48px',
   background: theme.colors.pageBackground,
   display: 'flex',
   alignItems: 'center',

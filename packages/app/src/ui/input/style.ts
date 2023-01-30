@@ -4,7 +4,8 @@ export const StyledInput = styled('input')<{
   disabled?: boolean;
   value?: string;
   width: number;
-}>(({ theme, width, disabled }) => {
+  height?: number;
+}>(({ theme, width, disabled, height }) => {
   const fontWeight = 400;
   const fontSize = '16px';
   return {
@@ -13,6 +14,7 @@ export const StyledInput = styled('input')<{
     padding: '8px 12px',
     fontWeight,
     fontSize,
+    height: height ? `${height}px` : 'auto',
     color: disabled ? theme.colors.disableColor : theme.colors.inputColor,
     border: `1px solid`,
     borderColor: theme.colors.borderColor, // TODO: check out disableColor,

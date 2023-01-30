@@ -4,20 +4,20 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {
     position: 'relative',
     padding: '0px',
-    width: '460px',
+    width: '560px',
     background: theme.colors.popoverBackground,
     borderRadius: '12px',
+    height: '312px',
   };
 });
 
 export const StyledModalHeader = styled('div')(({ theme }) => {
   return {
     margin: '44px 0px 12px 0px',
-    width: '460px',
+    width: '560px',
     fontWeight: '600',
     fontSize: '20px;',
-    textAlign: 'left',
-    paddingLeft: '20px',
+    textAlign: 'center',
     color: theme.colors.popoverColor,
   };
 });
@@ -37,21 +37,25 @@ export const StyledTextContent = styled('div')(() => {
   };
 });
 
-export const StyledInputContent = styled('div')(() => {
+export const StyledInputContent = styled('div')(({ theme }) => {
   return {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
-    margin: '20px 0 24px 0',
+    margin: '32px 0',
+    fontSize: theme.font.base,
   };
 });
 
 export const StyledButtonContent = styled('div')(() => {
   return {
+    position: 'absolute',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    bottom: '32px',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
-    margin: '0px 0 32px 0',
   };
 });
 

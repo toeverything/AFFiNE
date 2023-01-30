@@ -122,9 +122,7 @@ export class WorkspaceUnitCollection {
     };
 
     const clear = () => {
-      scopedWorkspaceIds.forEach(id => {
-        remove(id);
-      });
+      remove(Array.from(scopedWorkspaceIds));
     };
 
     const update = (workspaceId: string, meta: UpdateWorkspaceUnitParams) => {

@@ -1,10 +1,11 @@
 import { LOCALES } from '@affine/i18n';
-import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
-import type { TooltipProps } from '@mui/material';
+import { TooltipProps } from '@mui/material';
 import { styled } from '@/styles';
-import { Button, Tooltip } from '@mui/material';
+import { Tooltip } from '@mui/material';
 import { useState } from 'react';
 import { useTranslation } from '@affine/i18n';
+import { ArrowDownIcon } from '@blocksuite/icons';
+import { Button } from '@/ui/button';
 
 export const LanguageMenu = () => {
   const { i18n } = useTranslation();
@@ -23,6 +24,7 @@ export const LanguageMenu = () => {
           {LOCALES.map(option => {
             return (
               <ListItem
+                style={{ border: 'none' }}
                 key={option.name}
                 title={option.name}
                 onClick={() => {
@@ -40,14 +42,14 @@ export const LanguageMenu = () => {
       open={show}
     >
       <StyledTitleButton
-        variant="text"
+        style={{ border: 'none', padding: '0px' }}
         onClick={() => {
           setShow(!show);
         }}
       >
         <StyledContainer>
           <StyledText>{languageName}</StyledText>
-          <UnfoldMoreIcon />
+          <ArrowDownIcon fontSize={18} />
         </StyledContainer>
       </StyledTitleButton>
     </StyledTooltip>
@@ -56,8 +58,6 @@ export const LanguageMenu = () => {
 
 const StyledContainer = styled('div')(() => ({
   display: 'flex',
-  flexDirection: 'row',
-  justifyContent: 'center',
   alignItems: 'center',
 }));
 
@@ -88,8 +88,6 @@ const ListItem = styled(Button)(({ theme }) => ({
 }));
 
 const StyledTitleButton = styled(Button)(({ theme }) => ({
-  position: 'absolute',
-  right: '50px',
   color: theme.colors.popoverColor,
   fontSize: theme.font.sm,
 }));

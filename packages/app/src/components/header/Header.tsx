@@ -44,7 +44,7 @@ const HeaderRightItems: Record<HeaderRightItemNames, ReactNode> = {
 };
 
 export const Header = ({
-  rightItems = ['syncUser'],
+  rightItems = ['syncUser', 'themeModeSwitch'],
   children,
 }: PropsWithChildren<{ rightItems?: HeaderRightItemNames[] }>) => {
   const [showWarning, setShowWarning] = useState(shouldShowWarning());

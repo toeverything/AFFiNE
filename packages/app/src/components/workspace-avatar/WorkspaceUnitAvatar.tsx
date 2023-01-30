@@ -24,10 +24,12 @@ export const WorkspaceUnitAvatar = ({
   size = 20,
   name,
   workspaceUnit,
+  style,
 }: {
   size?: number;
   name?: string;
   workspaceUnit?: WorkspaceUnit | null;
+  style?: React.CSSProperties;
 }) => {
   const avatarUrl = useAvatar(workspaceUnit || undefined);
   return (
@@ -35,6 +37,7 @@ export const WorkspaceUnitAvatar = ({
       size={size}
       name={name || workspaceUnit?.name || ''}
       avatar={avatarUrl}
+      style={style}
     />
   );
 };

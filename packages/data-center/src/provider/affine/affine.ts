@@ -407,6 +407,7 @@ export class AffineProvider extends BaseProvider {
     token.clear();
     this._channel?.disconnect();
     this._wsMap.forEach(ws => ws.disconnect());
+    this._workspaces.clear();
     storage.removeItem('token');
   }
 
