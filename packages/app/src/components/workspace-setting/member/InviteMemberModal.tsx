@@ -76,8 +76,6 @@ export const InviteMemberModal = ({
         <ModalWrapper width={460} height={236}>
           <Header>
             <ModalCloseButton
-              top={6}
-              right={6}
               onClick={() => {
                 onClose();
               }}
