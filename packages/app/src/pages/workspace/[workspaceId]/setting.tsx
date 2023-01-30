@@ -10,7 +10,6 @@ import {
   GeneralPage,
   MembersPage,
   PublishPage,
-  ExportPage,
   SyncPage,
 } from '@/components/workspace-setting';
 import { SettingsIcon } from '@blocksuite/icons';

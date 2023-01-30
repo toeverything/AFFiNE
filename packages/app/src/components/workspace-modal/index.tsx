@@ -8,7 +8,6 @@ import {
   AddIcon,
   LogOutIcon,
   CloudInsyncIcon,
-  PublishIcon,
   CloseIcon,
 } from '@blocksuite/icons';
 import {
