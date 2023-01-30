@@ -117,3 +117,29 @@ export const textEllipsis = (lineNum = 1): CSSProperties => {
     whiteSpace: 'nowrap',
   };
 };
+
+export const positionAbsolute = ({
+  left,
+  top,
+  right,
+  bottom,
+}: {
+  left?: CSSProperties['left'];
+  top?: CSSProperties['top'];
+  right?: CSSProperties['right'];
+  bottom?: CSSProperties['bottom'];
+}): {
+  position: CSSProperties['position'];
+  left: CSSProperties['left'];
+  top: CSSProperties['top'];
+  right: CSSProperties['right'];
+  bottom: CSSProperties['bottom'];
+} => {
+  return {
+    position: 'absolute',
+    left,
+    top,
+    right,
+    bottom,
+  };
+};
