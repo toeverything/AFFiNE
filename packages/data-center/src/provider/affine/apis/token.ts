@@ -100,17 +100,13 @@ class Token {
   static parse(token: string): AccessTokenMessage | null {
     try {
       return JSON.parse(
-        String.fromCharCode.apply(
-          null,
-          Array.from(
-            Uint8Array.from(
-              window.atob(
-                // split jwt
-                token.split('.')[1]
-              ),
-              c => c.charCodeAt(0)
-            )
-          )
+        decodeURIComponent(
+          atob(token.split('.')[1])
+            .split('')
+            .map(function (c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join('')
         )
       );
     } catch (error) {
