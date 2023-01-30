@@ -17,7 +17,6 @@ import {
   SearchIcon,
   AllPagesIcon,
   FavouritesIcon,
-  ImportIcon,
   TrashIcon,
   AddIcon,
   SettingsIcon,
