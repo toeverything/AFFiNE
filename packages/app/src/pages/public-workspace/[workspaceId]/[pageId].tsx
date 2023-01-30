@@ -31,7 +31,7 @@ const Page: NextPageWithLayout = () => {
       .loadPublicWorkspace(router.query.workspaceId as string)
       .then(data => {
         setWorkspaceName(data.blocksuiteWorkspace?.meta.name as string);
-        if (data && data.blocksuiteWorkspace) {
+        if (data.blocksuiteWorkspace) {
           setWorkspace(data.blocksuiteWorkspace);
           if (
             router.query.pageId &&
