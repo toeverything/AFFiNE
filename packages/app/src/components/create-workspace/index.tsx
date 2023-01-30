@@ -16,11 +16,15 @@ interface ModalProps {
 
 export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
+  const [loading, setLoading] = useState(false);
   const { createWorkspace } = useWorkspaceHelper();
   const router = useRouter();
   const handleCreateWorkspace = async () => {
+    setLoading(true);
     const workspace = await createWorkspace(workspaceName);
+
     if (workspace && workspace.id) {
+      setLoading(false);
       router.replace(`/workspace/${workspace.id}`);
       onClose();
     } else {
@@ -37,9 +41,8 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   return (
     <div>
       <Modal open={open} onClose={onClose}>
-        <ModalWrapper width={620} height={334} style={{ padding: '10px' }}>
+        <ModalWrapper width={560} height={342} style={{ padding: '10px' }}>
           <Header>
-            <ContentTitle>{t('New Workspace')}</ContentTitle>
             <ModalCloseButton
               top={6}
               right={6}
@@ -49,14 +52,28 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
             />
           </Header>
           <Content>
-            <p>{t('Workspace description')}</p>
+            <ContentTitle>{t('New Workspace')}</ContentTitle>
+            <p>
+              Workspace is your virtual space to capture, create and plan as
+              just one person or together as a team.
+            </p>
             <Input
               onKeyDown={handleKeyDown}
+              placeholder={'Set a Workspace name'}
               onChange={value => {
                 setWorkspaceName(value);
               }}
             ></Input>
             <Button
+              disabled={!workspaceName}
+              style={{
+                width: '260px',
+                textAlign: 'center',
+                marginTop: '16px',
+                opacity: !workspaceName ? 0.5 : 1,
+              }}
+              loading={loading}
+              type="primary"
               onClick={() => {
                 handleCreateWorkspace();
               }}
@@ -75,20 +92,28 @@ const Header = styled('div')({
   height: '44px',
 });
 
-const Content = styled('div')({
-  display: 'flex',
-  padding: '0 48px',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '16px',
+const Content = styled('div')(({ theme }) => {
+  return {
+    padding: '0 84px',
+    textAlign: 'center',
+    fontSize: '18px',
+    lineHeight: '26px',
+    color: theme.colors.inputColor,
+    p: {
+      marginTop: '12px',
+      marginBottom: '16px',
+    },
+  };
 });
 
-const ContentTitle = styled('span')({
-  fontSize: '20px',
-  lineHeight: '28px',
-  fontWeight: 600,
-  textAlign: 'left',
-  paddingBottom: '16px',
+const ContentTitle = styled('div')(() => {
+  return {
+    fontSize: '20px',
+    lineHeight: '28px',
+    fontWeight: 600,
+    textAlign: 'center',
+    paddingBottom: '16px',
+  };
 });
 
 // const Footer = styled('div')({

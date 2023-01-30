@@ -1,20 +1,28 @@
 import { styled } from '@/styles';
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { Button } from '@/ui/button';
+import { Modal, ModalWrapper } from '@/ui/modal';
+import { Button, IconButton } from '@/ui/button';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
 import {
-  CloudUnsyncedIcon,
-  CloudInsyncIcon,
   UsersIcon,
   AddIcon,
+  LogOutIcon,
+  CloudInsyncIcon,
+  PublishIcon,
+  CloseIcon,
 } from '@blocksuite/icons';
-import { toast } from '@/ui/toast';
-import { WorkspaceAvatar } from '@/components/workspace-avatar';
+import {
+  WorkspaceAvatar,
+  WorkspaceUnitAvatar,
+} from '@/components/workspace-avatar';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-import { useConfirm } from '@/providers/ConfirmProvider';
+import { useTranslation } from '@affine/i18n';
+import { LanguageMenu } from './languageMenu';
 
+import { CloudIcon, LineIcon, LocalIcon, OfflineIcon } from './icons';
+import { LoginModal } from '../login-modal';
+import { LogoutModal } from '../logout-modal';
 interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -22,27 +30,49 @@ interface WorkspaceModalProps {
 
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-  const { confirm } = useConfirm();
-  const { workspaceList, currentWorkspace, login, user, logout } =
+  const { workspaceList, currentWorkspace, user, logout, isOwner } =
     useAppState();
   const router = useRouter();
+  const { t } = useTranslation();
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   return (
     <div>
       <Modal open={open} onClose={onClose}>
         <ModalWrapper
-          width={820}
-          style={{ padding: '10px', display: 'flex', flexDirection: 'column' }}
+          width={720}
+          style={{
+            padding: '24px 40px',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
           <Header>
-            <ContentTitle>My Workspaces</ContentTitle>
-            {/* <LanguageMenu /> */}
-            <ModalCloseButton
-              top={6}
-              right={6}
-              onClick={() => {
-                onClose();
-              }}
-            />
+            <ContentTitle>{t('My Workspaces')}</ContentTitle>
+            <HeaderOption>
+              <LanguageMenu />
+              <div
+                style={{
+                  display: 'inline-block',
+                  border: 'none',
+                  margin: '2px 16px',
+                  height: '24px',
+                  position: 'relative',
+                  top: '4px',
+                }}
+              >
+                <LineIcon></LineIcon>
+              </div>
+
+              <Button
+                style={{ border: 'none', padding: 0 }}
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                <CloseIcon></CloseIcon>
+              </Button>
+            </HeaderOption>
           </Header>
           <Content>
             <WorkspaceList>
@@ -56,139 +86,142 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                     active={item.id === currentWorkspace?.id}
                     key={index}
                   >
-                    <span style={{ width: '100px' }}>
-                      <div
-                        style={{
-                          float: 'left',
-                          marginTop: '6px',
-                          marginLeft: '10px',
-                          marginRight: '10px',
-                        }}
-                      >
-                        <WorkspaceAvatar
-                          size={50}
-                          name={item.name}
-                          avatar={item.avatar ?? ''}
-                        />
-                      </div>
+                    <div>
+                      <WorkspaceUnitAvatar size={58} workspaceUnit={item} />
+                    </div>
 
-                      <span
-                        style={{
-                          width: '235px',
-                          fontSize: '16px',
-                          display: 'inline-block',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          top: '20px',
-                        }}
-                      >
+                    <StyleWorkspaceInfo>
+                      <StyleWorkspaceTitle>
                         {item.name || 'AFFiNE'}
-                      </span>
-                    </span>
-                    <span
-                      style={{
-                        position: 'relative',
-                        top: '20px',
-                      }}
-                    >
-                      {(item.provider === 'local' || !item.provider) && (
-                        <CloudUnsyncedIcon fontSize={24} />
+                      </StyleWorkspaceTitle>
+                      {isOwner ? (
+                        item.provider === 'local' ? (
+                          <p>
+                            <LocalIcon />
+                            Local Workspace
+                          </p>
+                        ) : (
+                          <p>
+                            <CloudIcon />
+                            Cloud Workspace
+                          </p>
+                        )
+                      ) : (
+                        <p>
+                          <UsersIcon fontSize={20} color={'#FF646B'} />
+                          Joined Workspace
+                        </p>
                       )}
-                      {item.provider === 'affine' && (
-                        <CloudInsyncIcon fontSize={24} />
+                      {item.provider === 'local' && (
+                        <p>
+                          <OfflineIcon />
+                          All data can be accessed offline
+                        </p>
                       )}
-                      {item.published && <UsersIcon fontSize={24} />}
-                    </span>
-                    {/* {item.isLocal ? 'isLocal' : ''}/ */}
+                      {item.published && (
+                        <p>
+                          <PublishIcon fontSize={16} /> Published to Web
+                        </p>
+                      )}
+                    </StyleWorkspaceInfo>
                   </WorkspaceItem>
                 );
               })}
-              <li>
-                <Button
-                  style={{
-                    marginTop: '20px',
-                  }}
-                  type="primary"
-                  onClick={() => {
-                    setCreateWorkspaceOpen(true);
-                  }}
-                >
-                  <AddIcon
-                    style={{
-                      fontSize: '20px',
-                      top: '5px',
-                      position: 'relative',
-                      marginRight: '10px',
-                    }}
-                  />
-                  Create Or Import
-                </Button>
-              </li>
+              <WorkspaceItem
+                onClick={() => {
+                  setCreateWorkspaceOpen(true);
+                }}
+              >
+                <div>
+                  <StyleWorkspaceAdd className="add-icon">
+                    <AddIcon fontSize={18} />
+                  </StyleWorkspaceAdd>
+                </div>
+
+                <StyleWorkspaceInfo>
+                  <StyleWorkspaceTitle>New workspace</StyleWorkspaceTitle>
+                  <p>Crete or import</p>
+                </StyleWorkspaceInfo>
+              </WorkspaceItem>
             </WorkspaceList>
-            <p style={{ fontSize: '14px', color: '#ccc', margin: '12px 0' }}>
-              Tips:Workspace is your virtual space to capture, create and plan
-              as just one person or together as a team.
-            </p>
+            {/* <p style={{ fontSize: '14px', color: '#ccc', margin: '12px 0' }}>
+              {t('Tips')}
+              {t('Workspace description')}
+            </p> */}
           </Content>
+          <LoginModal
+            open={loginOpen}
+            onClose={() => {
+              setLoginOpen(false);
+            }}
+          ></LoginModal>
           <Footer>
             {!user ? (
-              <Button
+              <StyleSignIn
                 onClick={async () => {
-                  await login();
-                  toast('Login success');
+                  setLoginOpen(true);
                 }}
               >
-                Sign in AFFiNE Cloud
-              </Button>
+                <span>
+                  <CloudInsyncIcon fontSize={16} />
+                </span>
+                Sign in to sync with AFFINE Cloud
+              </StyleSignIn>
             ) : (
-              <Button
-                onClick={() => {
-                  confirm({
-                    title: 'Sign out?',
-                    content: `All data has been stored in the cloud. `,
-                    confirmText: 'Sign out',
-                    cancelText: 'Cancel',
-                  }).then(async confirm => {
-                    if (confirm) {
-                      if (user) {
-                        await logout();
-                        router.replace(`/workspace`);
-                        toast('Enabled success');
-                      }
-                    }
-                  });
-                }}
-              >
-                Sign out of AFFiNE Cloud
-              </Button>
+              <div style={{ display: 'flex' }}>
+                <div style={{ paddingTop: '20px' }}>
+                  <WorkspaceAvatar
+                    size={40}
+                    name={user.name}
+                    avatar={user.avatar}
+                  ></WorkspaceAvatar>
+                </div>
+                <StyleUserInfo style={{}}>
+                  <p>{user.name}</p>
+                  <p>{user.email}</p>
+                </StyleUserInfo>
+                <div style={{ paddingTop: '25px' }}>
+                  <IconButton
+                    onClick={() => {
+                      setLogoutOpen(true);
+                      // confirm({
+                      //   title: 'Sign out?',
+                      //   content: `All data has been stored in the cloud. `,
+                      //   confirmText: 'Sign out',
+                      //   cancelText: 'Cancel',
+                      // }).then(async confirm => {
+                      //   // if (confirm) {
+                      //   //   if (user) {
+                      //   //     await logout();
+                      //   //     router.replace(`/workspace`);
+                      //   //     toast('Enabled success');
+                      //   //   }
+                      //   // }
+                      // });
+                    }}
+                  >
+                    <LogOutIcon></LogOutIcon>
+                  </IconButton>
+                </div>
+              </div>
             )}
           </Footer>
           <CreateWorkspaceModal
             open={createWorkspaceOpen}
             onClose={() => {
               setCreateWorkspaceOpen(false);
-              onClose();
-              // confirm({
-              //   title: 'Enable AFFiNE Cloud?',
-              //   content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-              //   confirmText: user ? 'Enable' : 'Sign in and Enable',
-              //   cancelText: 'Skip',
-              // }).then(confirm => {
-              //   if (confirm) {
-              //     if (user) {
-              //       // workspaceId &&
-              //       //   updateWorkspaceMeta(workspaceId, { isPublish: true });
-              //     } else {
-              //       // login();
-              //       // workspaceId &&
-              //       //   updateWorkspaceMeta(workspaceId, { isPublish: true });
-              //     }
-              //   }
-              // });
             }}
           ></CreateWorkspaceModal>
+          <LogoutModal
+            open={logoutOpen}
+            onClose={async wait => {
+              if (!wait) {
+                await logout();
+                router.replace(`/workspace`);
+              }
+              setLogoutOpen(false);
+            }}
+          ></LogoutModal>
         </ModalWrapper>
       </Modal>
     </div>
@@ -196,52 +229,138 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
 };
 
 const Header = styled('div')({
-  position: 'relative',
-  height: '44px',
+  display: 'flex',
 });
 
 const Content = styled('div')({
-  padding: '0 20px',
   flexDirection: 'column',
   alignItems: 'center',
   gap: '16px',
   flex: 1,
 });
-
-const ContentTitle = styled('span')({
+const HeaderOption = styled.div(() => {
+  return {
+    marginLeft: '16px',
+  };
+});
+const ContentTitle = styled('div')({
   fontSize: '20px',
-  lineHeight: '28px',
+  lineHeight: '24px',
   fontWeight: 600,
   textAlign: 'left',
-  paddingBottom: '16px',
-});
-
-const Footer = styled('div')({
-  height: '70px',
-  paddingLeft: '24px',
-  marginTop: '32px',
-  textAlign: 'center',
+  flex: 1,
 });
 
 const WorkspaceList = styled('div')({
+  maxHeight: '500px',
+  overflow: 'auto',
   display: 'grid',
-  gridRowGap: '10px',
-  gridColumnGap: '10px',
+  gridRowGap: '24px',
+  gridColumnGap: '24px',
   fontSize: '16px',
+  marginTop: '36px',
   gridTemplateColumns: 'repeat(2, 1fr)',
 });
 
 export const WorkspaceItem = styled.div<{
-  active: boolean;
+  active?: boolean;
 }>(({ theme, active }) => {
-  const backgroundColor = active ? theme.colors.hoverBackground : 'transparent';
+  const borderColor = active ? theme.colors.primaryColor : 'transparent';
   return {
     cursor: 'pointer',
-    padding: '8px',
-    border: '1px solid #eee',
-    backgroundColor: backgroundColor,
+    padding: '16px',
+    height: '124px',
+    boxShadow: theme.shadow.modal,
+    display: 'flex',
+    borderRadius: '12px',
+    border: `1px solid ${borderColor}`,
     ':hover': {
       background: theme.colors.hoverBackground,
+      '.add-icon': {
+        border: `1.5px dashed ${theme.colors.primaryColor}`,
+        svg: {
+          fill: theme.colors.primaryColor,
+        },
+      },
+    },
+  };
+});
+
+const StyleWorkspaceInfo = styled.div(({ theme }) => {
+  return {
+    marginLeft: '16px',
+    p: {
+      fontSize: theme.font.xs,
+      lineHeight: '16px',
+    },
+    svg: {
+      verticalAlign: 'text-bottom',
+      marginRight: '8px',
+    },
+  };
+});
+
+const StyleWorkspaceTitle = styled.div(({ theme }) => {
+  return {
+    fontSize: theme.font.base,
+    fontWeight: 600,
+    lineHeight: '24px',
+    marginBottom: '8px',
+  };
+});
+
+const StyleWorkspaceAdd = styled.div(() => {
+  return {
+    width: '58px',
+    height: '58px',
+    borderRadius: '100%',
+    textAlign: 'center',
+    background: '#f4f5fa',
+    border: '1.5px dashed #f4f5fa',
+    lineHeight: '58px',
+    marginTop: '2px',
+  };
+});
+
+const Footer = styled('div')({
+  paddingTop: '16px',
+});
+
+const StyleUserInfo = styled.div(({ theme }) => {
+  return {
+    textAlign: 'left',
+    marginLeft: '16px',
+    marginTop: '16px',
+    flex: 1,
+    p: {
+      lineHeight: '24px',
+      color: theme.colors.iconColor,
+    },
+    'p:nth-child(1)': {
+      color: theme.colors.textColor,
+      fontWeight: 600,
+    },
+  };
+});
+
+const StyleSignIn = styled.div(({ theme }) => {
+  return {
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: 700,
+    color: theme.colors.iconColor,
+    span: {
+      display: 'inline-block',
+      width: '40px',
+      height: '40px',
+      borderRadius: '40px',
+      backgroundColor: theme.colors.innerHoverBackground,
+      textAlign: 'center',
+      lineHeight: '44px',
+      marginRight: '16px',
+      svg: {
+        fill: theme.colors.primaryColor,
+      },
     },
   };
 });

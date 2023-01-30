@@ -7,6 +7,7 @@ import {
 } from './style';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
+import { useTranslation } from '@affine/i18n';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 // import { getDataCenter } from '@affine/datacenter';
 // import { useAppState } from '@/providers/app-state-provider';
@@ -18,6 +19,7 @@ interface WorkspaceDeleteProps {
 
 export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
   const { leaveWorkSpace } = useWorkspaceHelper();
+  const { t } = useTranslation();
   const handleLeave = async () => {
     await leaveWorkSpace();
     onClose();
@@ -27,14 +29,13 @@ export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>Leave Workspace</StyledModalHeader>
+        <StyledModalHeader>{t('Leave Workspace')}</StyledModalHeader>
         <StyledTextContent>
-          After you leave, you will not be able to access all the contents of
-          this workspace.
+          {t('Leave Workspace Description')}
         </StyledTextContent>
         <StyledButtonContent>
           <Button shape="circle" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button
             onClick={handleLeave}
@@ -42,7 +43,7 @@ export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
             shape="circle"
             style={{ marginLeft: '24px' }}
           >
-            Leave
+            {t('Leave')}
           </Button>
         </StyledButtonContent>
       </StyledModalWrapper>

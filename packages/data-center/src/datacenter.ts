@@ -23,7 +23,7 @@ export class DataCenter {
   private readonly _workspaceUnitCollection = new WorkspaceUnitCollection();
   private readonly _logger = getLogger('dc');
   private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
-  private _messageCenter = new MessageCenter();
+  private _messageCenter = MessageCenter.getInstance();
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -159,7 +159,9 @@ export class DataCenter {
    * @param {string} workspaceId workspace id
    * @returns {Promise<WorkspaceUnit>}
    */
-  public async loadWorkspace(workspaceId: string) {
+  public async loadWorkspace(
+    workspaceId: string
+  ): Promise<WorkspaceUnit | null> {
     const workspaceUnit = this._workspaceUnitCollection.find(workspaceId);
     assert(workspaceUnit, 'Workspace not found');
     const currentProvider = this.providerMap.get(workspaceUnit.provider);
@@ -425,13 +427,14 @@ export class DataCenter {
   /**
    * accept invitation
    * @param {string} inviteCode
+   * @returns {Promise<Permission | null>} permission
    */
   async acceptInvitation(inviteCode: string, providerStr = 'affine') {
     const provider = this.providerMap.get(providerStr);
     if (provider) {
       return await provider.acceptInvitation(inviteCode);
     }
-    return [];
+    return null;
   }
 
   onMessage(cb: (message: Message) => void) {

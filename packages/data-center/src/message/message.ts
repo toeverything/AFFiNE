@@ -1,24 +1,36 @@
 import { Observable } from 'lib0/observable';
 import { Message } from '../types';
-import { MessageCode } from './code.js';
+import { MessageCode, messages } from './code.js';
 
 export class MessageCenter extends Observable<string> {
+  private _messages: Record<number, Omit<Message, 'provider' | 'code'>> =
+    messages;
   constructor() {
     super();
   }
 
-  public send(message: MessageCode) {
-    this.emit('message', [message]);
+  static instance: MessageCenter;
+
+  static getInstance() {
+    if (!MessageCenter.instance) {
+      MessageCenter.instance = new MessageCenter();
+    }
+    return MessageCenter.instance;
+  }
+
+  static messageCode = MessageCode;
+
+  public getMessageSender(provider: string) {
+    return this._send.bind(this, provider);
+  }
+
+  private _send(provider: string, messageCode: MessageCode) {
+    this.emit('message', [
+      { ...this._messages[messageCode], provider, code: messageCode },
+    ]);
   }
 
   public onMessage(callback: (message: Message) => void) {
     this.on('message', callback);
   }
-
-  private messages: Record<number, Message> = {
-    [MessageCode.loginError]: {
-      code: MessageCode.loginError,
-      message: 'Login failed',
-    },
-  };
 }

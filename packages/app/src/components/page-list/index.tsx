@@ -68,17 +68,19 @@ export const PageList = ({
   showFavoriteTag = false,
   isTrash = false,
   isPublic = false,
+  listType,
 }: {
   pageList: PageMeta[];
   showFavoriteTag?: boolean;
   isTrash?: boolean;
   isPublic?: boolean;
+  listType?: 'all' | 'trash' | 'favorite';
 }) => {
   const router = useRouter();
   const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
   if (pageList.length === 0) {
-    return <Empty />;
+    return <Empty listType={listType} />;
   }
 
   return (

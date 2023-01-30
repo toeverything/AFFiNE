@@ -5,6 +5,8 @@ import { styled } from '@/styles';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { Page as PageStore, Workspace } from '@blocksuite/store';
+import { PageLoading } from '@/components/loading';
+
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
@@ -13,6 +15,8 @@ const Page: NextPageWithLayout = () => {
   const [page, setPage] = useState<PageStore>();
   const { dataCenter } = useAppState();
   const router = useRouter();
+  const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
     dataCenter
       .loadPublicWorkspace(router.query.workspaceId as string)
@@ -25,7 +29,7 @@ const Page: NextPageWithLayout = () => {
               p => p.id === router.query.pageId
             )
           ) {
-            const page = data.blocksuiteWorkspace?.getPage(
+            const page = data.blocksuiteWorkspace.getPage(
               router.query.pageId as string
             );
             page && setPage(page);
@@ -39,17 +43,21 @@ const Page: NextPageWithLayout = () => {
       });
   }, [router, dataCenter]);
   return (
-    <PageContainer>
-      {workspace && page && (
-        <DynamicBlocksuite
-          page={page}
-          workspace={workspace}
-          setEditor={editor => {
-            editor.readonly = true;
-          }}
-        />
-      )}
-    </PageContainer>
+    <>
+      {!loaded && <PageLoading />}
+      <PageContainer>
+        {workspace && page && (
+          <DynamicBlocksuite
+            page={page}
+            workspace={workspace}
+            setEditor={editor => {
+              editor.readonly = true;
+              setLoaded(true);
+            }}
+          />
+        )}
+      </PageContainer>
+    </>
   );
 };
 

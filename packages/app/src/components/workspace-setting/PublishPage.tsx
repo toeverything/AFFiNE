@@ -4,21 +4,28 @@ import {
   StyledPublishCopyContainer,
   StyledPublishExplanation,
   StyledSettingH2,
+  StyledStopPublishContainer,
 } from './style';
-
+import { useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { toast } from '@/ui/toast';
 // import { useAppState } from '@/providers/app-state-provider3';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-
+import { useTranslation } from '@affine/i18n';
+import { EnableWorkspaceButton } from '../enable-workspace';
 export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
-  const { publishWorkspace, enableWorkspace } = useWorkspaceHelper();
-
+  const { publishWorkspace } = useWorkspaceHelper();
+  const { t } = useTranslation();
+  const [loaded, setLoaded] = useState(false);
   const togglePublic = async (flag: boolean) => {
-    await publishWorkspace(workspace.id.toString(), flag);
+    try {
+      await publishWorkspace(workspace.id.toString(), flag);
+    } catch (e) {
+      toast('Failed to publish workspace');
+    }
   };
 
   const copyUrl = () => {
@@ -26,56 +33,70 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     toast('Copied url to clipboard');
   };
 
-  const enableAffineCloud = async () => {
-    await enableWorkspace();
-  };
   return (
     <>
       {workspace.provider === 'affine' ? (
-        <div>
+        <div
+          style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+        >
           <StyledPublishContent>
-            {workspace?.published ? (
+            {workspace.published ? (
               <>
                 <StyledPublishExplanation>
-                  Publishing to web requires AFFiNE Cloud service .
+                  The current workspace has been published to the web, everyone
+                  can view the contents of this workspace through the link.
                 </StyledPublishExplanation>
-                <StyledSettingH2>Share with link</StyledSettingH2>
+
                 <StyledPublishCopyContainer>
+                  <StyledSettingH2 marginBottom={16}>
+                    {t('Share with link')}
+                  </StyledSettingH2>
                   <Input width={500} value={shareUrl} disabled={true}></Input>
                   <StyledCopyButtonContainer>
                     <Button onClick={copyUrl} type="primary" shape="circle">
-                      Copy Link
+                      {t('Copy Link')}
                     </Button>
                   </StyledCopyButtonContainer>
                 </StyledPublishCopyContainer>
               </>
             ) : (
               <StyledPublishExplanation>
-                After publishing to the web, everyone can view the content of
-                this workspace through the link.
+                {t('Publishing Description')}
+                <div style={{ marginTop: '64px' }}>
+                  <Button
+                    onClick={async () => {
+                      setLoaded(true);
+                      await togglePublic(true);
+                      setLoaded(false);
+                    }}
+                    loading={loaded}
+                    type="primary"
+                    shape="circle"
+                  >
+                    {t('Publish to web')}
+                  </Button>
+                </div>
               </StyledPublishExplanation>
             )}
           </StyledPublishContent>
+
           {workspace.published ? (
-            <Button
-              onClick={() => {
-                togglePublic(false);
-              }}
-              type="primary"
-              shape="circle"
-            >
-              Stop publishing
-            </Button>
+            <StyledStopPublishContainer>
+              <Button
+                onClick={async () => {
+                  setLoaded(true);
+                  await togglePublic(false);
+                  setLoaded(true);
+                }}
+                loading={false}
+                type="danger"
+                shape="circle"
+              >
+                {t('Stop publishing')}
+              </Button>
+            </StyledStopPublishContainer>
           ) : (
-            <Button
-              onClick={() => {
-                togglePublic(true);
-              }}
-              type="primary"
-              shape="circle"
-            >
-              Publish to web
-            </Button>
+            <></>
           )}
         </div>
       ) : (
@@ -85,17 +106,9 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               Publishing to web requires AFFiNE Cloud service.
             </StyledPublishExplanation>
 
-            <StyledPublishCopyContainer>
-              <Button
-                onClick={() => {
-                  enableAffineCloud();
-                }}
-                type="primary"
-                shape="circle"
-              >
-                Enable AFFiNE Cloud
-              </Button>
-            </StyledPublishCopyContainer>
+            <div style={{ marginTop: '72px' }}>
+              <EnableWorkspaceButton></EnableWorkspaceButton>
+            </div>
           </>
         </StyledPublishContent>
       )}

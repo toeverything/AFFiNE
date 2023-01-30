@@ -101,11 +101,12 @@ export const AppStateProvider = ({
     }
     const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
     let isOwner;
-    if (workspace.provider === 'local') {
+    if (workspace?.provider === 'local') {
       // isOwner is useful only in the cloud
       isOwner = true;
     } else {
-      isOwner = workspace?.owner && user?.id === workspace?.owner?.id;
+      // We must ensure workspace.owner exists, then ensure id same.
+      isOwner = workspace?.owner && user?.id === workspace.owner.id;
     }
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
@@ -133,7 +134,11 @@ export const AppStateProvider = ({
   const login = async () => {
     const { dataCenter } = appState;
     await dataCenter.login();
+
     const user = (await dataCenter.getUserInfo()) as User;
+    if (!user) {
+      throw new Error('User info not found');
+    }
     setAppState({
       ...appState,
       user,

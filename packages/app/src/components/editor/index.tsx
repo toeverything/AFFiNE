@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Page, Workspace } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
-import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-v2.0.md';
+import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhill.md';
 import { styled } from '@/styles';
 
 const StyledEditorContainer = styled('div')(() => {
@@ -39,7 +39,7 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
       const title = metaTitle
         ? metaTitle
         : isFirstPage
-        ? 'Welcome to AFFiNE Alpha "Abbey Wood"'
+        ? 'Welcome to AFFiNE Alpha "Downhill"'
         : '';
       workspace?.setPageMeta(page.id, { title });
 
@@ -60,7 +60,7 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
     }
 
     setEditor(editor);
-    document.title = page?.meta.title || 'Untitled';
+    document.title = page.meta.title || 'Untitled';
     return ret;
   }, [workspace, page, setEditor]);
 

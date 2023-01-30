@@ -8,7 +8,7 @@ export interface WorkspaceUnitCollectionScope {
   get: (workspaceId: string) => WorkspaceUnit | undefined;
   list: () => WorkspaceUnit[];
   add: (workspace: WorkspaceUnit | WorkspaceUnit[]) => void;
-  remove: (workspaceId: string) => boolean;
+  remove: (workspaceId: string | string[]) => boolean;
   clear: () => void;
   update: (
     workspaceId: string,
@@ -18,7 +18,7 @@ export interface WorkspaceUnitCollectionScope {
 
 export interface WorkspaceUnitCollectionChangeEvent {
   added?: WorkspaceUnit[];
-  deleted?: WorkspaceUnit;
+  deleted?: WorkspaceUnit[];
   updated?: WorkspaceUnit;
 }
 
@@ -62,15 +62,21 @@ export class WorkspaceUnitCollection {
       const workspaceUnits = Array.isArray(workspaceUnit)
         ? workspaceUnit
         : [workspaceUnit];
+      let added = false;
 
       workspaceUnits.forEach(workspaceUnit => {
         if (this._workspaceUnitMap.has(workspaceUnit.id)) {
           // FIXME: multiple add same workspace
           return;
         }
+        added = true;
         this._workspaceUnitMap.set(workspaceUnit.id, workspaceUnit);
         scopedWorkspaceIds.add(workspaceUnit.id);
       });
+
+      if (!added) {
+        return;
+      }
 
       this._events.emit('change', [
         {
@@ -79,34 +85,44 @@ export class WorkspaceUnitCollection {
       ]);
     };
 
-    const remove = (workspaceId: string) => {
-      if (!scopedWorkspaceIds.has(workspaceId)) {
-        return true;
-      }
+    const remove = (workspaceId: string | string[]) => {
+      const workspaceIds = Array.isArray(workspaceId)
+        ? workspaceId
+        : [workspaceId];
+      const workspaceUnits: WorkspaceUnit[] = [];
 
-      const workspaceUnit = this._workspaceUnitMap.get(workspaceId);
-      if (workspaceUnit) {
-        const ret = this._workspaceUnitMap.delete(workspaceId);
-        // If deletion failed, return.
-        if (!ret) {
-          return ret;
+      workspaceIds.forEach(workspaceId => {
+        if (!scopedWorkspaceIds.has(workspaceId)) {
+          return;
         }
+        const workspaceUnit = this._workspaceUnitMap.get(workspaceId);
+        if (workspaceUnit) {
+          const ret = this._workspaceUnitMap.delete(workspaceId);
+          // If deletion failed, return.
+          if (!ret) {
+            return;
+          }
 
-        scopedWorkspaceIds.delete(workspaceId);
+          workspaceUnits.push(workspaceUnit);
+          scopedWorkspaceIds.delete(workspaceId);
+        }
+      });
 
-        this._events.emit('change', [
-          {
-            deleted: workspaceUnit,
-          } as WorkspaceUnitCollectionChangeEvent,
-        ]);
+      if (!workspaceUnits.length) {
+        return false;
       }
+
+      this._events.emit('change', [
+        {
+          deleted: workspaceUnits,
+        } as WorkspaceUnitCollectionChangeEvent,
+      ]);
+
       return true;
     };
 
     const clear = () => {
-      scopedWorkspaceIds.forEach(id => {
-        remove(id);
-      });
+      remove(Array.from(scopedWorkspaceIds));
     };
 
     const update = (workspaceId: string, meta: UpdateWorkspaceUnitParams) => {

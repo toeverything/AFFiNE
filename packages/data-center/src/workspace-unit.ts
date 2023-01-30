@@ -52,7 +52,7 @@ export class WorkspaceUnit {
   }
 
   setBlocksuiteWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace | null) {
-    if (blocksuiteWorkspace && blocksuiteWorkspace?.room !== this.id) {
+    if (blocksuiteWorkspace && blocksuiteWorkspace.room !== this.id) {
       throw new Error('Workspace id inconsistent.');
     }
     this._blocksuiteWorkspace = blocksuiteWorkspace;

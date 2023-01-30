@@ -79,7 +79,7 @@ export const Results = (props: {
           </StyledNotFound>
         )
       ) : (
-        <Command.Group heading={t('Switch to')}>
+        <Command.Group heading={t('Jump to')}>
           {List.map(link => {
             return (
               <Command.Item

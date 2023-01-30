@@ -12,6 +12,7 @@ import {
   StyledMoreVerticalButton,
   StyledPublishExplanation,
   StyledMemberWarp,
+  StyledMemberContainer,
 } from './style';
 import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useState } from 'react';
@@ -25,17 +26,19 @@ import { toast } from '@/ui/toast';
 import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
 import { Wrapper } from '@/ui/layout';
-import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { useTranslation } from '@affine/i18n';
+import { EnableWorkspaceButton } from '@/components/enable-workspace';
 
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const { members, removeMember, loaded } = useMembers();
-  const { enableWorkspace } = useWorkspaceHelper();
+
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
 
   if (workspace.provider === 'affine') {
     return (
-      <>
+      <StyledMemberContainer>
         <StyledMemberListContainer>
           {!loaded && (
             <Wrapper justifyContent="center">
@@ -45,15 +48,16 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           {loaded && members.length === 0 && (
             <Empty width={648} sx={{ marginTop: '60px' }} height={300} />
           )}
-          {loaded && members.length && (
+          {loaded && members.length > 0 && (
             <>
               <StyledMemberTitleContainer>
                 <StyledMemberNameContainer>
-                  Users({members.length})
+                  {t('Users')} ({members.length})
                 </StyledMemberNameContainer>
                 <StyledMemberRoleContainer>
-                  Access level
+                  {t('Access level')}
                 </StyledMemberRoleContainer>
+                <div style={{ width: '24px', paddingRight: '48px' }}></div>
               </StyledMemberTitleContainer>
               {members.map((member, index) => {
                 const user = Object.assign(
@@ -136,7 +140,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             type="primary"
             shape="circle"
           >
-            Invite Members
+            {t('Invite Members')}
           </Button>
           <InviteMemberModal
             onClose={() => {
@@ -150,23 +154,15 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             open={isInviteModalShow}
           ></InviteMemberModal>
         </StyledMemberButtonContainer>
-      </>
+      </StyledMemberContainer>
     );
   }
 
   return (
     <StyledMemberWarp>
-      <>Collaborating with other members requires AFFiNE Cloud service.</>
+      {t('Collaboration Description')}
       <StyledPublishExplanation>
-        <Button
-          type="primary"
-          shape="circle"
-          onClick={async () => {
-            await enableWorkspace();
-          }}
-        >
-          Enable AFFiNE Cloud
-        </Button>
+        <EnableWorkspaceButton></EnableWorkspaceButton>
       </StyledPublishExplanation>
     </StyledMemberWarp>
   );

@@ -23,11 +23,12 @@
     "@playwright/test": "^1.29.1",
     "@types/debug": "^4.1.7",
     "fake-indexeddb": "4.0.1",
-    "typescript": "^4.8.4"
+    "typescript": "^4.8.4",
+    "yjs": "^13.5.44"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.3.1-20230109032243-37ad3ba",
-    "@blocksuite/store": "0.3.1-20230109032243-37ad3ba",
+    "@blocksuite/blocks": "0.4.0-20230111171650-bc63456",
+    "@blocksuite/store": "0.4.0-20230111171650-bc63456",
     "@tauri-apps/api": "^1.2.0",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
@@ -37,11 +38,6 @@
     "ky-universal": "^0.11.0",
     "lib0": "^0.2.58",
     "swr": "^2.0.0",
-    "y-protocols": "^1.0.5",
-    "yjs": "^13.5.44"
-  },
-  "peerDependencies": {
-    "@blocksuite/blocks": "0.3.1-*",
-    "@blocksuite/store": "0.3.1-*"
+    "y-protocols": "^1.0.5"
   }
 }

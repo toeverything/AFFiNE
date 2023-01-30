@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Avatar } from '@mui/material';
 import useMembers from '@/hooks/use-members';
 import { User } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -53,6 +54,7 @@ export const InviteMemberModal = ({
   const [showTip, setShowTip] = useState<boolean>(false);
   const [userData, setUserData] = useState<User | null>(null);
   const { inviteMember, getUserByEmail } = useMembers();
+  const { t } = useTranslation();
   const inputChange = (value: string) => {
     setShowMember(true);
     if (gmailReg.test(value)) {
@@ -82,7 +84,7 @@ export const InviteMemberModal = ({
             />
           </Header>
           <Content>
-            <ContentTitle>Invite members</ContentTitle>
+            <ContentTitle>{t('Invite Members')}</ContentTitle>
             <InviteBox>
               <Input
                 width={360}
@@ -91,12 +93,12 @@ export const InviteMemberModal = ({
                 onBlur={() => {
                   setShowMember(false);
                 }}
-                placeholder="Search mail (Gmail support only)"
+                placeholder={t('Invite placeholder')}
               ></Input>
               {showMember ? (
                 <Members>
                   {showTip ? (
-                    <NoFind>Non-Gmail is not supported</NoFind>
+                    <NoFind>{t('Non-Gmail')}</NoFind>
                   ) : (
                     <Member>
                       {userData?.avatar ? (
@@ -120,12 +122,13 @@ export const InviteMemberModal = ({
             <Button
               shape="circle"
               type="primary"
+              style={{ width: '364px', height: '38px', borderRadius: '40px' }}
               onClick={async () => {
                 await inviteMember(email);
                 onInviteSuccess();
               }}
             >
-              Invite
+              {t('Invite')}
             </Button>
           </Footer>
         </ModalWrapper>
@@ -141,10 +144,8 @@ const Header = styled('div')({
 
 const Content = styled('div')({
   display: 'flex',
-  padding: '0 48px',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '16px',
 });
 
 const ContentTitle = styled('h1')({
@@ -156,9 +157,8 @@ const ContentTitle = styled('h1')({
 });
 
 const Footer = styled('div')({
-  height: '70px',
-  paddingLeft: '24px',
-  marginTop: '32px',
+  height: '102px',
+  margin: '32px 0',
   textAlign: 'center',
 });
 

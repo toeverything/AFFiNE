@@ -29,14 +29,21 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
       currentWorkspace?.blocksuiteWorkspace?.setPageMeta(page.id, { title });
       if (page && page.root === null) {
         setTimeout(() => {
-          const editor = document.querySelector('editor-container');
-          if (editor) {
-            page.addBlock({ flavour: 'affine:surface' }, null);
-            const frameId = page.addBlock({ flavour: 'affine:frame' }, pageId);
-            // TODO blocksuite should offer a method to import markdown from store
-            editor.clipboard.importMarkdown(template.source, `${frameId}`);
-            page.resetHistory();
-            editor.requestUpdate();
+          try {
+            const editor = document.querySelector('editor-container');
+            if (editor) {
+              page.addBlock({ flavour: 'affine:surface' }, null);
+              const frameId = page.addBlock(
+                { flavour: 'affine:frame' },
+                pageId
+              );
+              // TODO blocksuite should offer a method to import markdown from store
+              editor.clipboard.importMarkdown(template.source, `${frameId}`);
+              page.resetHistory();
+              editor.requestUpdate();
+            }
+          } catch (e) {
+            console.error(e);
           }
         }, 300);
       }
@@ -98,13 +105,13 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
             >
               Markdown
             </Button>
-            {/* <Button
+            <Button
               onClick={() => {
                 _handleAppleTemplateFromFilePicker();
               }}
             >
               HTML
-            </Button> */}
+            </Button>
           </StyledButtonWrapper>
         )}
 

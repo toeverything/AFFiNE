@@ -15,6 +15,7 @@ declare module 'react-i18next' {
     // custom namespace type if you changed it
     // defaultNS: 'ns1';
     // custom resources type
+    allowObjectInHTMLChildren: true;
     resources: {
       en: typeof en_US;
     };

@@ -8,6 +8,7 @@ import type {
 import { varStorage as storage } from 'lib0/storage';
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
 import { IndexedDBProvider } from './indexeddb/indexeddb.js';
+import { applyLocalUpdates } from './indexeddb/utils.js';
 import assert from 'assert';
 import { loadWorkspaceUnit, createWorkspaceUnit } from './utils.js';
 import type { WorkspaceUnit } from '../../workspace-unit';
@@ -48,6 +49,7 @@ export class LocalProvider extends BaseProvider {
     workspace: BlocksuiteWorkspace
   ): Promise<BlocksuiteWorkspace> {
     assert(workspace.room);
+    await applyLocalUpdates(workspace);
     await this.linkLocal(workspace);
     return workspace;
   }
@@ -101,7 +103,7 @@ export class LocalProvider extends BaseProvider {
       owner: undefined,
       syncMode: 'core',
       memberCount: 1,
-      provider: 'local',
+      provider: this.id,
     });
     this._workspaces.add(workspaceUnit);
     this._storeWorkspaces(this._workspaces.list());

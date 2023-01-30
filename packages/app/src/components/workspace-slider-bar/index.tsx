@@ -84,7 +84,6 @@ export const WorkSpaceSliderBar = () => {
       ? `/workspace/${currentWorkspaceId}/setting`
       : '',
   };
-
   return (
     <>
       <StyledSliderBar show={show}>
@@ -152,7 +151,7 @@ export const WorkSpaceSliderBar = () => {
           <StyledListItem active={router.asPath === paths.setting}>
             <StyledLink href={{ pathname: paths.setting }}>
               <SettingsIcon />
-              Settings
+              {t('Settings')}
             </StyledLink>
           </StyledListItem>
 

@@ -42,6 +42,8 @@ export const useWorkspaceHelper = () => {
       content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
       confirmText: user ? 'Enable' : 'Sign in and Enable',
       cancelText: 'Skip',
+      confirmType: 'primary',
+      buttonDirection: 'column',
     }).then(async confirm => {
       if (confirm && currentWorkspace) {
         if (!user) {
@@ -57,11 +59,18 @@ export const useWorkspaceHelper = () => {
   };
 
   const deleteWorkSpace = async () => {
-    currentWorkspace &&
-      (await dataCenter.deleteWorkspace(currentWorkspace?.id));
+    currentWorkspace && (await dataCenter.deleteWorkspace(currentWorkspace.id));
   };
   const leaveWorkSpace = async () => {
-    currentWorkspace && (await dataCenter.leaveWorkspace(currentWorkspace?.id));
+    currentWorkspace && (await dataCenter.leaveWorkspace(currentWorkspace.id));
+  };
+
+  const acceptInvite = async (inviteCode: string) => {
+    let inviteInfo;
+    if (inviteCode) {
+      inviteInfo = await dataCenter.acceptInvitation(inviteCode);
+    }
+    return inviteInfo;
   };
 
   return {
@@ -71,5 +80,6 @@ export const useWorkspaceHelper = () => {
     enableWorkspace,
     deleteWorkSpace,
     leaveWorkSpace,
+    acceptInvite,
   };
 };

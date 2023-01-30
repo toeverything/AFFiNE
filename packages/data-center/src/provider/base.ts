@@ -4,6 +4,7 @@ import { Logger, User } from '../types';
 import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
 import type { WorkspaceUnitCtorParams, WorkspaceUnit } from '../workspace-unit';
 import { Member } from './affine/apis';
+import { Permission } from './affine/apis/workspace.js';
 
 const defaultLogger = () => {
   return;
@@ -22,10 +23,15 @@ export type UpdateWorkspaceMetaParams = Partial<
 >;
 
 export class BaseProvider {
+  /** provider id */
   public readonly id: string = 'base';
+  /** workspace unit collection */
   protected _workspaces!: WorkspaceUnitCollectionScope;
   protected _logger!: Logger;
-  protected _messageCenter!: MessageCenter;
+  /** send message with message center */
+  protected _sendMessage!: ReturnType<
+    InstanceType<typeof MessageCenter>['getMessageSender']
+  >;
 
   public constructor({
     logger,
@@ -34,7 +40,7 @@ export class BaseProvider {
   }: ProviderConstructorParams) {
     this._logger = (logger || defaultLogger) as Logger;
     this._workspaces = workspaces;
-    this._messageCenter = messageCenter;
+    this._sendMessage = messageCenter.getMessageSender(this.id);
   }
 
   /**
@@ -228,8 +234,10 @@ export class BaseProvider {
    * @param {string} inviteCode
    * @returns
    */
-  public async acceptInvitation(inviteCode: string): Promise<void> {
+  public async acceptInvitation(
+    inviteCode: string
+  ): Promise<Permission | null> {
     inviteCode;
-    return;
+    return null;
   }
 }
