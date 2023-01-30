@@ -20,7 +20,13 @@ import { useRouter } from 'next/router';
 import { useTranslation } from '@affine/i18n';
 import { LanguageMenu } from './languageMenu';
 
-import { CloudIcon, LineIcon, LocalIcon, OfflineIcon } from './icons';
+import {
+  CloudIcon,
+  LineIcon,
+  LocalIcon,
+  OfflineIcon,
+  PublishedIcon,
+} from './icons';
 import { LoginModal } from '../login-modal';
 import { LogoutModal } from '../logout-modal';
 interface WorkspaceModalProps {
@@ -120,7 +126,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                       )}
                       {item.published && (
                         <p>
-                          <PublishIcon fontSize={16} /> Published to Web
+                          <PublishedIcon /> Published to Web
                         </p>
                       )}
                     </StyleWorkspaceInfo>

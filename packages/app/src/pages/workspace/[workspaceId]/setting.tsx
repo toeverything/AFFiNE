@@ -42,11 +42,11 @@ const tabMap: {
     name: 'Publish',
     panelRender: workspace => <PublishPage workspace={workspace} />,
   },
-
-  {
-    name: 'Export',
-    panelRender: workspace => <ExportPage workspace={workspace} />,
-  },
+  // TODO: next version will finish this feature
+  // {
+  //   name: 'Export',
+  //   panelRender: workspace => <ExportPage workspace={workspace} />,
+  // },
 ];
 
 const WorkspaceSetting = () => {
