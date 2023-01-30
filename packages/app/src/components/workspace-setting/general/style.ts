@@ -1,5 +1,5 @@
 import { displayFlex, styled } from '@/styles';
-import MuiAvatar from '@mui/material/Avatar';
+import { MuiAvatar } from '@/ui/mui';
 import IconButton from '@/ui/button/IconButton';
 import Input from '@/ui/input';
 

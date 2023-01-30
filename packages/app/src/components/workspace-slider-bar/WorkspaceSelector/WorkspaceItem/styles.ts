@@ -1,4 +1,4 @@
-import MuiAvatar from '@mui/material/Avatar';
+import { MuiAvatar } from '@/ui/mui';
 import { styled } from '@/styles';
 
 export const WorkspaceItemWrapper = styled('div')(({ theme }) => ({

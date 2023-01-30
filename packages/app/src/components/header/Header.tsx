@@ -6,7 +6,7 @@ import {
   StyledBrowserWarning,
   StyledCloseButton,
 } from './styles';
-import CloseIcon from '@mui/icons-material/Close';
+import { CloseIcon } from '@blocksuite/icons';
 import { useWarningMessage, shouldShowWarning } from './utils';
 import EditorOptionMenu from './header-right-items/EditorOptionMenu';
 import TrashButtonGroup from './header-right-items/TrashButtonGroup';

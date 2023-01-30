@@ -11,7 +11,6 @@ import {
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
-import Collapse from '@mui/material/Collapse';
 import {
   ArrowDownIcon,
   SearchIcon,
@@ -23,6 +22,7 @@ import {
   SettingsIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
+import { MuiCollapse } from '@/ui/mui';
 import { Tooltip } from '@/ui/tooltip';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider';
@@ -39,7 +39,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { t } = useTranslation();
   const favoriteList = pageList.filter(p => p.favorite && !p.trash);
   return (
-    <Collapse in={showList}>
+    <MuiCollapse in={showList}>
       {favoriteList.map((pageMeta, index) => {
         const active = router.query.pageId === pageMeta.id;
         return (
@@ -61,7 +61,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
       {favoriteList.length === 0 && (
         <StyledSubListItem disable={true}>{t('No item')}</StyledSubListItem>
       )}
-    </Collapse>
+    </MuiCollapse>
   );
 };
 export const WorkSpaceSliderBar = () => {
