@@ -1,2 +1,8 @@
 import MuiBreadcrumbs from '@mui/material/Breadcrumbs';
-export { MuiBreadcrumbs };
+import { styled } from '@/styles';
+
+export const Breadcrumbs = styled(MuiBreadcrumbs)(({ theme }) => {
+  return {
+    color: theme.colors.popoverColor,
+  };
+});
