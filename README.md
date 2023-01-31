@@ -90,19 +90,18 @@ Calling all developers, testers, tech writers and more! Contributions of all typ
 
 For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropiate template for your feedback.
 
-For **translation** and **language support** you can visit our docs for the [internationalization guide](https://docs.affine.pro/affine/internationalization/welcome).
+For **translation** and **language support** you can visit our [i18n General Space](https://community.affine.pro/c/i18n-general).
 
-Looking for **others ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome), we work closely with passionate members of our community and provide them with a wide-range of support and resources.
+Looking for **others ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador), we work closely with passionate community members and provide them with a wide-range of support and resources.
 
-If you have questions, join us across various [**social platforms**](https://docs.affine.pro/affine/community-links/official-communities) where our friendly community can help provide the answers.
-
-We have done a major refactoring recently, if you want to see our previous version of the code, please go to the [Pre-Alpha](https://github.com/toeverything/AFFiNE/tree/Pre-Alpha) branch to view
+If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [AFFiNE Community](https://community.affine.pro) where you can engage with other like-minded individuals.
 
 ## Thanks
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
 
-- [BlockSuite](https://github.com/toeverything/BlockSuite) - AFFiNE is built with and powered by BlockSuite.
+- [BlockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
+- [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
 - [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
 - [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
 - [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, OctoBase.
