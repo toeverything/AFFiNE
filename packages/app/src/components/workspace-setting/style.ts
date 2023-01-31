@@ -146,6 +146,7 @@ export const StyledPublishContent = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
+    flex: 1,
   };
 });
 

@@ -10,7 +10,6 @@ import { useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
 import { toast } from '@/ui/toast';
-// import { useAppState } from '@/providers/app-state-provider3';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useTranslation } from '@affine/i18n';
@@ -23,6 +22,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const togglePublic = async (flag: boolean) => {
     try {
       await publishWorkspace(workspace.id.toString(), flag);
+      setLoaded(false);
     } catch (e) {
       toast('Failed to publish workspace');
     }
@@ -67,7 +67,6 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                     onClick={async () => {
                       setLoaded(true);
                       await togglePublic(true);
-                      setLoaded(false);
                     }}
                     loading={loaded}
                     type="primary"
@@ -86,7 +85,6 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 onClick={async () => {
                   setLoaded(true);
                   await togglePublic(false);
-                  setLoaded(true);
                 }}
                 loading={false}
                 type="danger"
