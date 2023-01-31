@@ -194,9 +194,9 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-## Free trial
+## Self-Host
 
-You can request a free trial of AFFiNE Ultimate [on our website](https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted).
+Get started with Docker and deploy your own feature-rich, restriction-free deployment of AFFiNE  - check the [latest packages](https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted).
 
 ## Hiring
 
