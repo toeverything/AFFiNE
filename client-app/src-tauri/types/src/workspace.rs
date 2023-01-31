@@ -1,4 +1,4 @@
-use jwst_storage::{model::WorkspaceWithPermission, WorkspaceDetail};
+use cloud_database::{WorkspaceWithPermission, WorkspaceDetail};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

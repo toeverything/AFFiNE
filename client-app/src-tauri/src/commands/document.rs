@@ -51,33 +51,16 @@ pub async fn get_doc<'s>(
 ) -> Result<GetDocumentResponse, String> {
   // TODO: check user permission
 
-  let doc_file_path = &state
-    .0
-    .lock()
-    .await
-    .doc_storage
-    .get_path(parameters.id.clone());
-  let mut file = File::open(doc_file_path).await.unwrap();
-  let mut updates_vector: Vec<Vec<u8>> = Vec::new();
-  loop {
-    let len = file.read_u64_le().await;
-
-    let len = match len {
-      Ok(len) => len,
-      Err(e) if e.kind() == ErrorKind::UnexpectedEof => break,
-      Err(e) => return Err(format!("Failed to get yDoc from {}", parameters.id)),
-    };
-
-    let mut update = vec![0; len as usize];
-    file.read_exact(&mut update).await.unwrap();
-
-    updates_vector.push(update);
-
-    file.read_u64_le().await.unwrap();
+  if let Ok(all_updates_of_workspace) = &state.0.lock().await.doc_storage.all(&parameters.id).await {
+    Ok(GetDocumentResponse {
+      updates: all_updates_of_workspace.iter().map(|model| model.blob.clone()).collect::<Vec<Vec<u8>>>(),
+    })
+  } else {
+    Err(format!(
+      "Failed to get yDoc from workspace {}",
+      parameters.id
+    ))
   }
-  Ok(GetDocumentResponse {
-    updates: updates_vector,
-  })
 }
 
 #[tauri::command]

@@ -1,4 +1,4 @@
-use jwst_storage::{CreateUser, User};
+use cloud_database::{CreateUser, User};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

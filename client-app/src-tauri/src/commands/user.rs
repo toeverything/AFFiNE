@@ -1,5 +1,5 @@
+use cloud_database::{CreateUser, User};
 use ipc_types::document::CreateDocumentParameter;
-use jwst_storage::{CreateUser, User};
 
 use crate::state::AppState;
 

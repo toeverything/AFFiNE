@@ -1,34 +1,45 @@
-use jwst_storage::{BlobFsStorage, DocFsStorage, SqliteDBContext};
+use cloud_database::SqliteDBContext;
+use jwst_storage::{BlobAutoStorage, DocAutoStorage};
 use std::{fs, path::Path};
 use tauri::api::path::document_dir;
 use tokio::sync::Mutex;
 
 pub struct AppStateRaw {
-  pub blob_storage: BlobFsStorage,
-  pub doc_storage: DocFsStorage,
+  pub doc_storage: DocAutoStorage,
+  pub blob_storage: BlobAutoStorage,
   pub metadata_db: SqliteDBContext,
 }
 
 impl AppStateRaw {
   pub async fn new() -> Option<AppStateRaw> {
     let affine_document_path = Path::new(&document_dir()?.into_os_string()).join("affine");
-    let doc_path = affine_document_path.join("doc");
-    let blob_env = affine_document_path.join("blob");
-    let db_env = format!(
+    let metadata_db_env = format!(
       "sqlite://{}?mode=rwc",
       affine_document_path
-        .join("metadata.db")
-        .into_os_string()
-        .into_string()
-        .unwrap()
+        .join("metadata")
+        .with_extension("db")
+        .display()
     );
-    fs::create_dir_all(doc_path.clone()).unwrap();
-    fs::create_dir_all(blob_env.clone()).unwrap();
+    let blob_db_env = format!(
+      "sqlite://{}?mode=rwc",
+      affine_document_path
+        .join("blob")
+        .with_extension("db")
+        .display()
+    );
+    let doc_db_env = format!(
+      "sqlite://{}?mode=rwc",
+      affine_document_path
+        .join("doc")
+        .with_extension("db")
+        .display()
+    );
+    fs::create_dir_all(affine_document_path.clone()).unwrap();
 
     Some(Self {
-      doc_storage: DocFsStorage::new(Some(16), 500, Path::new(&doc_path).into()).await,
-      blob_storage: BlobFsStorage::new(Some(16), Path::new(&blob_env).into()).await,
-      metadata_db: SqliteDBContext::new(db_env).await,
+      doc_storage: DocAutoStorage::init_pool(&doc_db_env).await.unwrap(),
+      blob_storage: BlobAutoStorage::init_pool(&blob_db_env).await.unwrap(),
+      metadata_db: SqliteDBContext::new(metadata_db_env).await,
     })
   }
 }

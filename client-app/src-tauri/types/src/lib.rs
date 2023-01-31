@@ -2,6 +2,7 @@
 extern crate serde;
 extern crate schemars;
 extern crate jwst_storage;
+extern crate cloud_database;
 
 pub mod blob;
 pub mod document;
