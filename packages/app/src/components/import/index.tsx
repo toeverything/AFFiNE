@@ -1,7 +1,7 @@
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { StyledButtonWrapper, StyledTitle } from './styles';
 import { Button } from '@/ui/button';
-import { Wrapper, Content } from '@/ui/layout';
+import { Wrapper, Content, FlexWrapper } from '@/ui/layout';
 import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider';
@@ -116,7 +116,7 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
         )}
 
         {status === 'importing' && (
-          <Wrapper
+          <FlexWrapper
             wrap={true}
             justifyContent="center"
             style={{ marginTop: 22, paddingBottom: '32px' }}
@@ -126,7 +126,7 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
               OOOOPS! Sorry forgot to remind you that we are working on the
               import function
             </Content>
-          </Wrapper>
+          </FlexWrapper>
         )}
       </ModalWrapper>
     </Modal>

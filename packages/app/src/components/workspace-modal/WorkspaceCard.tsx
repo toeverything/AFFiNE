@@ -8,7 +8,7 @@ import { PublishIcon, UsersIcon } from '@blocksuite/icons';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
 import { StyleWorkspaceInfo, StyleWorkspaceTitle, StyledCard } from './styles';
-import { Wrapper } from '@/ui/layout';
+import { FlexWrapper } from '@/ui/layout';
 
 export const WorkspaceCard = ({
   workspaceData,
@@ -26,9 +26,9 @@ export const WorkspaceCard = ({
       }}
       active={workspaceData.id === currentWorkspace?.id}
     >
-      <Wrapper>
+      <FlexWrapper>
         <WorkspaceUnitAvatar size={58} workspaceUnit={workspaceData} />
-      </Wrapper>
+      </FlexWrapper>
 
       <StyleWorkspaceInfo>
         <StyleWorkspaceTitle>

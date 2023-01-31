@@ -25,7 +25,7 @@ import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
-import { Wrapper } from '@/ui/layout';
+import { FlexWrapper } from '@/ui/layout';
 import { useTranslation } from '@affine/i18n';
 import { EnableWorkspaceButton } from '@/components/enable-workspace';
 
@@ -41,9 +41,9 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       <StyledMemberContainer>
         <StyledMemberListContainer>
           {!loaded && (
-            <Wrapper justifyContent="center">
+            <FlexWrapper justifyContent="center">
               <Loading size={25} />
-            </Wrapper>
+            </FlexWrapper>
           )}
           {loaded && members.length === 0 && (
             <Empty width={648} sx={{ marginTop: '60px' }} height={300} />
