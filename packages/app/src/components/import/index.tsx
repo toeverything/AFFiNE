@@ -1,7 +1,7 @@
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { StyledButtonWrapper, StyledTitle } from './styles';
 import { Button } from '@/ui/button';
-import { Wrapper, Content, FlexWrapper } from '@/ui/layout';
+import { Content, FlexWrapper } from '@/ui/layout';
 import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider';
