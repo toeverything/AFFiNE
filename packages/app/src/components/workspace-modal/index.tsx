@@ -59,9 +59,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
             <StyledModalHeaderLeft>
               <StyledModalTitle>{t('My Workspaces')}</StyledModalTitle>
               <Tooltip
-                content={t(
-                  'A workspace is your virtual space to capture, create and plan as just one person or together as a team.'
-                )}
+                content={t('Workspace description')}
                 placement="top-start"
                 disablePortal={true}
               >
@@ -108,8 +106,8 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               </Wrapper>
 
               <StyleWorkspaceInfo>
-                <StyleWorkspaceTitle>New workspace</StyleWorkspaceTitle>
-                <p>Crete or import</p>
+                <StyleWorkspaceTitle>{t('New Workspace')}</StyleWorkspaceTitle>
+                <p>{t('Create Or Import')}</p>
               </StyleWorkspaceInfo>
             </StyledCard>
           </StyledModalContent>

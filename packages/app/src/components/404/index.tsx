@@ -15,7 +15,7 @@ export const NotfoundPage = () => {
               router.push('/workspace');
             }}
           >
-            Back Home
+            {t('Back Home')}
           </Button>
         </p>
       </NotFoundTitle>
