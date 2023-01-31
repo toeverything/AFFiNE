@@ -1,5 +1,5 @@
 import { styled } from '@/styles';
-import MuiAvatar from '@mui/material/Avatar';
+import { MuiAvatar } from '@/ui/mui';
 
 export const StyledMemberTitleContainer = styled('li')(() => {
   return {

@@ -13,7 +13,7 @@ import {
   useWindowsKeyboardShortcuts,
   useWinMarkdownShortcuts,
 } from '@/components/shortcuts-modal/config';
-import Slide from '@mui/material/Slide';
+import { MuiSlide } from '@/ui/mui';
 import { ModalCloseButton } from '@/ui/modal';
 import { getUaHelper } from '@/utils';
 import { useTranslation } from '@affine/i18n';
@@ -40,7 +40,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
     : windowsKeyboardShortcuts;
 
   return createPortal(
-    <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+    <MuiSlide direction="left" in={open} mountOnEnter unmountOnExit>
       <StyledShortcutsModal data-testid="shortcuts-modal">
         <>
           <StyledModalHeader>
@@ -81,7 +81,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
           })}
         </>
       </StyledShortcutsModal>
-    </Slide>,
+    </MuiSlide>,
     document.body
   );
 };
