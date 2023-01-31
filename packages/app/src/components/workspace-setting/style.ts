@@ -90,7 +90,7 @@ export const StyledSettingH2 = styled('h2')<{
   marginBottom?: number;
 }>(({ marginTop, marginBottom, theme }) => {
   return {
-    fontWeight: '500',
+    // fontWeight: '500',
     fontSize: theme.font.base,
     lineHeight: theme.font.lineHeightBase,
     marginTop: marginTop ? `${marginTop}px` : '0px',
@@ -101,24 +101,18 @@ export const StyledSettingH2 = styled('h2')<{
 export const StyledPublishExplanation = styled('div')(() => {
   return {
     paddingRight: '48px',
-    fontWeight: '500',
-    fontSize: '18px',
-    lineHeight: '26px',
+    // fontWeight: '500',
     marginBottom: '22px',
   };
 });
 export const StyledWorkspaceName = styled('span')(() => {
   return {
     fontWeight: '400',
-    fontSize: '18px',
-    lineHeight: '26px',
   };
 });
 export const StyledWorkspaceType = styled('span')(() => {
   return {
-    fontWeight: '500',
-    fontSize: '18px',
-    lineHeight: '26px',
+    // fontWeight: '500',
   };
 });
 
@@ -136,21 +130,23 @@ export const StyledStopPublishContainer = styled('div')(() => {
   };
 });
 
-export const StyledCopyButtonContainer = styled('div')(() => {
+export const StyledButtonContainer = styled('div')(() => {
   return {
     marginTop: '64px',
   };
 });
+export const StyledEmail = styled('span')(() => {
+  return {
+    color: '#E8178A',
+  };
+});
 
-export const StyledPublishContent = styled('div')(() => {
+export const StyledPublishContent = styled('div')(({ theme }) => {
   return {
     display: 'flex',
+    fontWeight: '500',
     flexDirection: 'column',
-  };
-});
-
-export const StyleAsync = styled('div')(() => {
-  return {
-    marginTop: '64px',
+    fontSize: theme.font.base,
+    lineHeight: theme.font.lineHeightBase,
   };
 });

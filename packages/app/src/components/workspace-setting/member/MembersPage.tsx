@@ -89,9 +89,9 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                     <StyledMemberRoleContainer>
                       {member.accepted
                         ? member.type !== 99
-                          ? 'Member'
-                          : 'Workspace Owner'
-                        : 'Pending'}
+                          ? t('Member')
+                          : t('Owner')
+                        : t('Pending')}
                     </StyledMemberRoleContainer>
                     <StyledMoreVerticalButton>
                       <Menu
@@ -100,9 +100,9 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                             <MenuItem
                               onClick={async () => {
                                 const confirmRemove = await confirm({
-                                  title: 'Delete Member?',
-                                  content: `will delete member`,
-                                  confirmText: 'Delete',
+                                  title: t('Delete Member?'),
+                                  content: t('will delete member'),
+                                  confirmText: t('Delete'),
                                   confirmType: 'danger',
                                 });
 
@@ -110,11 +110,15 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                                   return;
                                 }
                                 await removeMember(member.id);
-                                toast(`${user.name} has been removed`);
+                                toast(
+                                  t('Member has been removed', {
+                                    name: user.name,
+                                  })
+                                );
                               }}
                               icon={<TrashIcon />}
                             >
-                              Delete
+                              {t('Delete')}
                             </MenuItem>
                           </>
                         }

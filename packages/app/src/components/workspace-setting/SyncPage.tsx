@@ -1,9 +1,9 @@
 import {
-  StyleAsync,
+  StyledButtonContainer,
   StyledPublishContent,
   StyledPublishExplanation,
   StyledWorkspaceName,
-  StyledWorkspaceType,
+  StyledEmail,
 } from './style';
 import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
@@ -26,27 +26,38 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 workspaceUnit={workspace}
                 style={{ marginRight: '12px' }}
               />
-              <StyledWorkspaceName>{workspace.name};</StyledWorkspaceName>
-              <StyledWorkspaceType>is a Local Workspace.</StyledWorkspaceType>
+              <StyledWorkspaceName>{workspace.name}&nbsp;</StyledWorkspaceName>
+              <span>{t('is a Local Workspace')}</span>
             </StyledPublishExplanation>
-            <StyledWorkspaceType>
-              All data is stored on the current device. You can enable AFFiNE
-              Cloud for this workspace to keep data in sync with the cloud.
-            </StyledWorkspaceType>
-            <StyleAsync>
+            <div>{t('Local Workspace Description')}</div>
+            <StyledButtonContainer>
               <EnableWorkspaceButton></EnableWorkspaceButton>
-            </StyleAsync>
+            </StyledButtonContainer>
           </>
         ) : (
           <>
             <StyledPublishExplanation>
-              <Trans i18nKey="Sync Description2">
-                <code>{{ workspaceName: workspace.name ?? 'Affine' }}</code>
-                is Cloud Workspace. All data will be synchronised and saved to
-                the AFFiNE
-              </Trans>
+              <WorkspaceUnitAvatar
+                size={32}
+                name={workspace.name}
+                workspaceUnit={workspace}
+                style={{ marginRight: '12px' }}
+              />
+              <StyledWorkspaceName>{workspace.name}&nbsp;</StyledWorkspaceName>
+              <span>{t('is a Cloud Workspace')}</span>
             </StyledPublishExplanation>
-            <StyleAsync>
+            <div>
+              <Trans i18nKey="Cloud Workspace Description">
+                All data will be synchronised and saved to the AFFiNE account
+                <StyledEmail>
+                  {{
+                    email: '{' + workspace.owner?.email + '}.',
+                  }}
+                </StyledEmail>
+              </Trans>
+            </div>
+
+            <StyledButtonContainer>
               <Menu
                 content={
                   <>
@@ -56,7 +67,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                       }}
                       icon={<DownloadIcon />}
                     >
-                      {t('Download data to device', { CoreOrAll: 'core' })}
+                      {t('Download data', { CoreOrAll: t('core') })}
                     </MenuItem>
                     <MenuItem
                       onClick={() => {
@@ -64,7 +75,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                       }}
                       icon={<DownloadIcon />}
                     >
-                      {t('Download data to device', { CoreOrAll: 'all' })}
+                      {t('Download data', { CoreOrAll: t('all') })}
                     </MenuItem>
                   </>
                 }
@@ -72,10 +83,10 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 disablePortal={true}
               >
                 <Button type="primary">
-                  {t('Download data to device', { CoreOrAll: 'all' })}
+                  {t('Download data', { CoreOrAll: '' })}
                 </Button>
               </Menu>
-            </StyleAsync>
+            </StyledButtonContainer>
           </>
         )}
       </StyledPublishContent>

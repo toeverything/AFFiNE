@@ -1,5 +1,5 @@
 import {
-  StyledCopyButtonContainer,
+  StyledButtonContainer,
   StyledPublishContent,
   StyledPublishCopyContainer,
   StyledPublishExplanation,
@@ -24,13 +24,13 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     try {
       await publishWorkspace(workspace.id.toString(), flag);
     } catch (e) {
-      toast('Failed to publish workspace');
+      toast(t('Failed to publish workspace'));
     }
   };
 
   const copyUrl = () => {
     navigator.clipboard.writeText(shareUrl);
-    toast('Copied url to clipboard');
+    toast(t('Copied link to clipboard'));
   };
 
   return (
@@ -43,8 +43,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             {workspace.published ? (
               <>
                 <StyledPublishExplanation>
-                  The current workspace has been published to the web, everyone
-                  can view the contents of this workspace through the link.
+                  {t('Published Description')}
                 </StyledPublishExplanation>
 
                 <StyledPublishCopyContainer>
@@ -52,11 +51,11 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                     {t('Share with link')}
                   </StyledSettingH2>
                   <Input width={500} value={shareUrl} disabled={true}></Input>
-                  <StyledCopyButtonContainer>
+                  <StyledButtonContainer>
                     <Button onClick={copyUrl} type="primary" shape="circle">
                       {t('Copy Link')}
                     </Button>
-                  </StyledCopyButtonContainer>
+                  </StyledButtonContainer>
                 </StyledPublishCopyContainer>
               </>
             ) : (
@@ -103,7 +102,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         <StyledPublishContent>
           <>
             <StyledPublishExplanation>
-              Publishing to web requires AFFiNE Cloud service.
+              {t('Publishing')}
             </StyledPublishExplanation>
 
             <div style={{ marginTop: '72px' }}>
