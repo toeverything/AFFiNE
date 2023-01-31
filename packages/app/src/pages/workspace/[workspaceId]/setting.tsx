@@ -10,7 +10,6 @@ import {
   GeneralPage,
   MembersPage,
   PublishPage,
-  ExportPage,
   SyncPage,
 } from '@/components/workspace-setting';
 import { SettingsIcon } from '@blocksuite/icons';
@@ -42,11 +41,11 @@ const tabMap: {
     name: 'Publish',
     panelRender: workspace => <PublishPage workspace={workspace} />,
   },
-
-  {
-    name: 'Export',
-    panelRender: workspace => <ExportPage workspace={workspace} />,
-  },
+  // TODO: next version will finish this feature
+  // {
+  //   name: 'Export',
+  //   panelRender: workspace => <ExportPage workspace={workspace} />,
+  // },
 ];
 
 const WorkspaceSetting = () => {

@@ -2,15 +2,15 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { FlexWrapper } from '@/ui/layout';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
+
 import { Tooltip } from '@/ui/tooltip';
-import { toast } from '@/ui/toast';
 
 import { AddIcon, HelpCenterIcon } from '@blocksuite/icons';
 
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useTranslation } from '@affine/i18n';
-import { LanguageMenu } from './LanguageMenu';
+import { LanguageMenu } from './SelectLanguageMenu';
 
 import { LoginModal } from '../login-modal';
 import { LogoutModal } from '../logout-modal';
@@ -29,7 +29,6 @@ import {
 } from './styles';
 import { WorkspaceCard } from './WorkspaceCard';
 import { Footer } from './Footer';
-import { useConfirm } from '@/providers/ConfirmProvider';
 interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -42,7 +41,6 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const { t } = useTranslation();
   const [loginOpen, setLoginOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const { confirm } = useConfirm();
 
   return (
     <>
@@ -119,19 +117,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               setLoginOpen(true);
             }}
             onLogout={() => {
-              setLoginOpen(true);
-              confirm({
-                title: 'Sign out?',
-                content: `All data has been stored in the cloud. `,
-                confirmText: 'Sign out',
-                cancelText: 'Cancel',
-              }).then(async confirm => {
-                if (confirm) {
-                  await logout();
-                  await router.replace(`/workspace`);
-                  toast('Enabled success');
-                }
-              });
+              setLogoutOpen(true);
             }}
           />
         </ModalWrapper>
