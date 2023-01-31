@@ -80,9 +80,9 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 
 [![affine.pro](https://img.shields.io/static/v1?label=Try%20it%20Online&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAhpJREFUWEdjZEACtnl3MxgY/0YzMjAaMzAwcCLLUYH9/T/D/7MM/5mXHp6kPANmHiOI4Zx9Xfg3C+tKBob/zlSwiAgjGPey/vkdvneq5luwA+zy7+yhn+Vwv+89NFHFhREU7IyM/6YT4WyqK/n/nymT0Tb/1mFGBkYbqptOhIH/Gf4fYbTLv/2NBgmOCOvBSr6DHPCfWNW0UEe2A2x1uRlakiXBbtpx6jND+7KXZLmPbAdURokzeJjxwi31rrzH8OX7P5IdQbYDtnUoMXBzMMEt7Fj2imH7qU/0cQBy8MNsPHL5K0P13Of0cQB68MNsJScaSI4CHk4mhq3tSnCf3n36k0FZmh3Mn7L+DcPqgx9ICgWSHeBpxsdQESUGtgRk+eqDH+H8O09/MiR3P6atA1qTJRlsdLnhPgYlPOQQCW96wPDi3R+iHUFSCKAHP8wydEeREg0kOQA9+JOgwR1qL8CQEygC9jWp0UCSA+aVysIT3JqDHxgmr38DtlRCiIVhZZ0CPNhB6QDkEGIA0Q4gZAkuxxFyBNEOQA7ml+/+MIQ1PUAxG1kelAhB6YMYQLQDCPmQUAjhcgxRDiDWcEKOxOYIohyQGyjCEGIvANaPLfhhBiNHA6hmBBXNhABRDgCV/aBQAAFQpYMrn4PUgNTCACiXEMoNRDmAkC8okR8UDhjYRumAN8sHvGMCSkAD2jUDOWDAO6ewbDQQ3XMAy/oxKownQR0AAAAASUVORK5CYII=&message=%E2%86%92&style=for-the-badge)](https://affine.pro) No installation or registration required! Head over to our website and try it out now.
 
-[AFFiNE Documentation](https://docs.affine.pro/affine/) - More detailed documentation on how to use and develop with AFFiNE
+[AFFiNE Community](https://community.affine.pro) - Our wonderful community, where you can meet and engage with the team, developers and other like-minded enthusiastic user of AFFiNE.
 
-[Our official communities](https://docs.affine.pro/affine/community-links/official-communities) - Join our friendly communities for more support and discussions
+[Our official communities](https://community.affine.pro/c/start-here/) - Join our friendly communities for more support and discussions.
 
 ## Contributing
 
@@ -194,9 +194,9 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-## Free trial
+## Self-Host
 
-You can request a free trial of AFFiNE Ultimate [on our website](https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted).
+Get started with Docker and deploy your own feature-rich, restriction-free deployment of AFFiNE  - check the [latest packages](https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted).
 
 ## Hiring
 
