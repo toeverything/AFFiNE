@@ -14,6 +14,11 @@ import { createWorkspaceUnit, loadWorkspaceUnit } from '../local/utils.js';
 import { WorkspaceWithPermission } from './ipc/types/workspace.js';
 import { applyUpdate } from '../../utils/index.js';
 
+/**
+ * init - createUser - create first workspace and ydoc - loadWorkspace - return the first workspace - wrapWorkspace - #initDocFromIPC - applyUpdate - on('update') - updateYDocument
+ *
+ * (init - createUser - error) loadWorkspace - return the first workspace - wrapWorkspace - #initDocFromIPC - applyUpdate - on('update') - updateYDocument
+ */
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
   /**
@@ -60,13 +65,31 @@ export class TauriIPCProvider extends LocalProvider {
 
       const mergedUpdate = Y.mergeUpdates(updates);
       await applyUpdate(blocksuiteWorkspace, mergedUpdate);
+      console.group('#initDocFromIPC');
+      // DEBUG: console blocksuiteWorkspace.room
+      console.log(`blocksuiteWorkspace.room`, blocksuiteWorkspace.room);
+      // DEBUG: console blocksuiteWorkspace.doc.guid
+      console.log(`blocksuiteWorkspace.doc.guid`, blocksuiteWorkspace.doc.guid);
+      // DEBUG: console blocksuiteWorkspace
+      console.log(`blocksuiteWorkspace`, blocksuiteWorkspace);
+      // DEBUG: console blocksuiteWorkspace.meta
+      console.log(`blocksuiteWorkspace.meta`, blocksuiteWorkspace.meta);
+      // DEBUG: console blocksuiteWorkspace.meta.pageMetas
+      console.log(
+        `blocksuiteWorkspace.meta.pageMetas`,
+        blocksuiteWorkspace.meta.pageMetas
+      );
+      console.groupEnd();
       this._logger(`Loaded: ${workspaceID}`);
     }
   }
 
-  async #connectDocToIPC(workspaceID: string, doc: Y.Doc) {
+  async #connectDocToIPC(
+    workspaceID: string,
+    blocksuiteWorkspace: BlocksuiteWorkspace
+  ) {
     this._logger(`Connecting yDoc for ${workspaceID}...`);
-    doc.on('update', async (update: Uint8Array) => {
+    blocksuiteWorkspace.doc.on('update', async (update: Uint8Array) => {
       try {
         // TODO: need handle potential data race when update is frequent?
         // TODO: update seems too frequent upon each keydown, why no batching?
@@ -77,6 +100,24 @@ export class TauriIPCProvider extends LocalProvider {
         if (!success) {
           throw new Error(`YDoc update failed, id: ${workspaceID}`);
         }
+        console.group('update');
+        // DEBUG: console blocksuiteWorkspa?ce.meta
+        console.log(`blocksuiteWorkspace?.meta`, blocksuiteWorkspace?.meta);
+        // DEBUG: console blocksuiteWorkspace?.meta?.pageMetas
+        console.log(
+          `blocksuiteWorkspace?.meta?.pageMetas`,
+          blocksuiteWorkspace?.meta?.pageMetas
+        );
+        // DEBUG: console doc
+        console.log(`doc1`, blocksuiteWorkspace.doc);
+        // DEBUG: console doc.meta
+        console.log(`doc1.meta`, blocksuiteWorkspace.doc.meta);
+        // DEBUG: console doc.meta.pageMetas
+        console.log(
+          `doc1.meta?.pageMetas`,
+          blocksuiteWorkspace.doc.meta?.pageMetas
+        );
+        console.groupEnd();
       } catch (error) {
         // TODO: write error log to disk, and add button to open them in settings panel
         console.error("#yDocument.on('update'", error);
@@ -94,7 +135,7 @@ export class TauriIPCProvider extends LocalProvider {
 
     (await blocksuiteWorkspace.blobs)?.addProvider(new IPCBlobProvider());
     await this.#initDocFromIPC(room, blocksuiteWorkspace);
-    await this.#connectDocToIPC(room, doc);
+    await this.#connectDocToIPC(room, blocksuiteWorkspace);
 
     return blocksuiteWorkspace;
   }
@@ -121,6 +162,14 @@ export class TauriIPCProvider extends LocalProvider {
       provider: this.id,
     });
     this._workspaces.add(workspaceUnit);
+    const doc = workspaceUnit?.blocksuiteWorkspace?.doc;
+    if (doc) {
+      const update = Y.encodeStateAsUpdate(doc);
+      const success = await this.#ipc!.updateYDocument({
+        update: Array.from(update),
+        id,
+      });
+    }
     return workspaceUnit;
   }
 
