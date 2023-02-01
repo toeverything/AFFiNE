@@ -7,6 +7,7 @@
   "module": "true",
   "scripts": {
     "dev:app": "cross-env NODE_ENV=development tauri dev",
+    "dev:prerequisite": "concurrently \"cd ../packages/data-center && pnpm dev\" \"cd ../packages/app && pnpm dev\"",
     "build:prerequisite": "pnpm build:submodules && pnpm build:rs-types && pnpm build:affine && pnpm build:preload",
     "dev:web": "vite",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
@@ -39,6 +40,7 @@
     "@types/react-dom": "^18.0.9",
     "@typescript-eslint/eslint-plugin": "5.47.0",
     "@typescript-eslint/parser": "5.47.0",
+    "concurrently": "^7.6.0",
     "cross-env": "^7.0.3",
     "esbuild": "^0.16.10",
     "eslint": "8.30.0",
