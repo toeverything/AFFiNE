@@ -4,7 +4,7 @@ If you are looking for **support**, would like to **suggest** your ideas, and ke
 
 Let us know what you think of this latest version.
 
-**AFFiNE Alpha Downhill brings:**
+**AFFiNE Alpha Downhills brings:**
 
 We are mainly working on features for pathfinder.
 
