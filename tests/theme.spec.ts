@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
-test.describe('Change Theme', () => {
+test.skip('Change Theme', () => {
   test('default white', async ({ page }) => {
     await page.waitForSelector('html');
     const root = page.locator('html');

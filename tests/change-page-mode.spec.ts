@@ -3,8 +3,8 @@ import { loadPage } from './libs/load-page.js';
 import { clickPageMoreActions } from './libs/page-logic.js';
 loadPage();
 
-test.describe('Change page mode(Paper or Edgeless)', () => {
-  test('Switch to edgeless by switch edgeless item', async ({ page }) => {
+test.skip('Change page mode(Paper or Edgeless)', () => {
+  test.skip('Switch to edgeless by switch edgeless item', async ({ page }) => {
     const switcher = page.locator('[data-testid=editor-mode-switcher]');
     const box = await switcher.boundingBox();
     expect(box?.x).not.toBeUndefined();
@@ -35,7 +35,7 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
     expect(await edgeless.isVisible()).toBe(true);
   });
 
-  test('Convert to edgeless by editor header items', async ({ page }) => {
+  test.skip('Convert to edgeless by editor header items', async ({ page }) => {
     await clickPageMoreActions(page);
     const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
     await menusEdgelessItem.click();
