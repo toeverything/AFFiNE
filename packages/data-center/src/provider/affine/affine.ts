@@ -13,7 +13,11 @@ import { getApis, Workspace } from './apis/index.js';
 import type { Apis, WorkspaceDetail, Callback } from './apis';
 import { token } from './apis/token.js';
 import { WebsocketClient } from './channel';
-import { loadWorkspaceUnit, createWorkspaceUnit } from './utils.js';
+import {
+  loadWorkspaceUnit,
+  createWorkspaceUnit,
+  migrateBlobDB,
+} from './utils.js';
 import { WorkspaceUnit } from '../../workspace-unit.js';
 import { createBlocksuiteWorkspace, applyUpdate } from '../../utils/index.js';
 import type { SyncMode } from '../../workspace-unit';
@@ -389,6 +393,8 @@ export class AffineProvider extends BaseProvider {
       provider: this.id,
       syncMode: 'core',
     });
+
+    await migrateBlobDB(workspaceUnit.id, id);
 
     const blocksuiteWorkspace = createBlocksuiteWorkspace(id);
     assert(workspaceUnit.blocksuiteWorkspace);

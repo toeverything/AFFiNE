@@ -2,6 +2,7 @@ import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { GoogleLoginButton } from './LoginOptionButton';
 import { useAppState } from '@/providers/app-state-provider';
+import { useTranslation } from '@affine/i18n';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -9,6 +10,7 @@ interface LoginModalProps {
 
 export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const { login } = useAppState();
+  const { t } = useTranslation();
   return (
     <Modal open={open} onClose={onClose} data-testid="login-modal">
       <ModalWrapper width={560} height={292}>
@@ -20,8 +22,8 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
           />
         </Header>
         <Content>
-          <ContentTitle>{'Sign in'}</ContentTitle>
-          <SignDes>Set up an AFFINE account to sync data</SignDes>
+          <ContentTitle>{t('Sign in')}</ContentTitle>
+          <SignDes>{t('Set up an AFFiNE account to sync data')}</SignDes>
           <span
             onClick={async () => {
               await login();
