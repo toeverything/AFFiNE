@@ -3,6 +3,14 @@ import { styled } from '@/styles';
 
 export type WrapperProps = {
   display?: CSSProperties['display'];
+  width?: CSSProperties['width'];
+  height?: CSSProperties['height'];
+  padding?: CSSProperties['padding'];
+  margin?: CSSProperties['margin'];
+};
+
+export type FlexWrapperProps = {
+  display?: CSSProperties['display'];
   flexDirection?: CSSProperties['flexDirection'];
   justifyContent?: CSSProperties['justifyContent'];
   alignItems?: CSSProperties['alignItems'];
@@ -14,8 +22,21 @@ export type WrapperProps = {
 // Sometimes we just want to wrap a component with a div to set flex or other styles, but we don't want to create a new component for it.
 export const Wrapper = styled('div', {
   shouldForwardProp: prop => {
+    return !['display', 'width', 'height', 'padding', 'margin'].includes(prop);
+  },
+})<WrapperProps>(({ display, width, height, padding, margin }) => {
+  return {
+    display,
+    width,
+    height,
+    padding,
+    margin,
+  };
+});
+
+export const FlexWrapper = styled(Wrapper, {
+  shouldForwardProp: prop => {
     return ![
-      'display',
       'justifyContent',
       'alignItems',
       'wrap',
@@ -24,18 +45,17 @@ export const Wrapper = styled('div', {
       'flexGrow',
     ].includes(prop);
   },
-})<WrapperProps>(
+})<FlexWrapperProps>(
   ({
-    display = 'flex',
-    justifyContent = 'flex-start',
-    alignItems = 'center',
+    justifyContent,
+    alignItems,
     wrap = false,
-    flexDirection = 'row',
-    flexShrink = '0',
-    flexGrow = '0',
+    flexDirection,
+    flexShrink,
+    flexGrow,
   }) => {
     return {
-      display,
+      display: 'flex',
       justifyContent,
       alignItems,
       flexWrap: wrap ? 'wrap' : 'nowrap',
@@ -45,5 +65,16 @@ export const Wrapper = styled('div', {
     };
   }
 );
+
+// TODO: Complete me
+export const GridWrapper = styled(Wrapper, {
+  shouldForwardProp: prop => {
+    return ![''].includes(prop);
+  },
+})<WrapperProps>(() => {
+  return {
+    display: 'grid',
+  };
+});
 
 export default Wrapper;

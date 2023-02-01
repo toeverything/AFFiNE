@@ -1,5 +1,5 @@
 import { CloudInsyncIcon, LogOutIcon } from '@blocksuite/icons';
-import { Wrapper } from '@/ui/layout';
+import { FlexWrapper } from '@/ui/layout';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { IconButton } from '@/ui/button';
 import { useAppState } from '@/providers/app-state-provider';
@@ -18,7 +18,7 @@ export const Footer = ({
     <StyledFooter>
       {user && (
         <>
-          <Wrapper>
+          <FlexWrapper>
             <WorkspaceAvatar
               size={40}
               name={user.name}
@@ -28,7 +28,7 @@ export const Footer = ({
               <p>{user.name}</p>
               <p>{user.email}</p>
             </StyleUserInfo>
-          </Wrapper>
+          </FlexWrapper>
           <IconButton
             onClick={() => {
               onLogout();

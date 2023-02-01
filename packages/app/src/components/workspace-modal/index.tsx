@@ -1,5 +1,5 @@
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { Wrapper } from '@/ui/layout';
+import { FlexWrapper } from '@/ui/layout';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
 
@@ -99,11 +99,11 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                 setCreateWorkspaceOpen(true);
               }}
             >
-              <Wrapper>
+              <FlexWrapper>
                 <StyleWorkspaceAdd className="add-icon">
                   <AddIcon fontSize={18} />
                 </StyleWorkspaceAdd>
-              </Wrapper>
+              </FlexWrapper>
 
               <StyleWorkspaceInfo>
                 <StyleWorkspaceTitle>New workspace</StyleWorkspaceTitle>

@@ -2,12 +2,12 @@ import type { CSSProperties } from 'react';
 
 export const displayFlex = (
   justifyContent: CSSProperties['justifyContent'] = 'unset',
-  alignItems: CSSProperties['alignContent'] = 'unset',
+  alignItems: CSSProperties['alignItems'] = 'unset',
   alignContent: CSSProperties['alignContent'] = 'unset'
 ): {
   display: CSSProperties['display'];
   justifyContent: CSSProperties['justifyContent'];
-  alignItems: CSSProperties['alignContent'];
+  alignItems: CSSProperties['alignItems'];
   alignContent: CSSProperties['alignContent'];
 } => {
   return {
