@@ -4,6 +4,7 @@
 - https://allcontributors.org/docs/en/emoji-key
 
 ```shell
+all-contributors check
 all-contributors add tzhangchi code,doc
 all-contributors generate
 ```
