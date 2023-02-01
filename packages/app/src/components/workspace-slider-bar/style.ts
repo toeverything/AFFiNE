@@ -4,7 +4,7 @@ import Link from 'next/link';
 export const StyledSliderBar = styled.div<{ show: boolean }>(
   ({ theme, show }) => {
     return {
-      width: show ? '320px' : '0',
+      width: show ? '256px' : '0',
       height: '100vh',
       background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
       boxShadow: theme.shadow.modal,
