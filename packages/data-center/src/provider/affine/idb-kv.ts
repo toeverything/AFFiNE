@@ -1,4 +1,4 @@
-import { createStore, keys, clear, setMany, getMany } from 'idb-keyval';
+import { createStore, keys, setMany, getMany } from 'idb-keyval';
 import * as idb from 'lib0/indexeddb.js';
 
 type IDBInstance<T = ArrayBufferLike> = {
