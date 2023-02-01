@@ -28,7 +28,7 @@ export const ModalCloseButton = ({
       <CloseIcon />
     </StyledIconButton>
   ) : (
-    <IconButton>
+    <IconButton {...props}>
       <CloseIcon />
     </IconButton>
   );
