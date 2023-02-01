@@ -1,79 +1,243 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import type { Workspace } from '@blocksuite/store';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import { MessageCenter } from '../message';
+import { Logger, User } from '../types';
+import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
+import type { WorkspaceUnitCtorParams, WorkspaceUnit } from '../workspace-unit';
+import { Member } from './affine/apis';
+import { Permission } from './affine/apis/workspace.js';
 
-import type {
-  Apis,
-  DataCenterSignals,
-  Logger,
-  InitialParams,
-  ConfigStore,
-} from './index';
+const defaultLogger = () => {
+  return;
+};
+
+export interface ProviderConstructorParams {
+  logger?: Logger;
+  workspaces: WorkspaceUnitCollectionScope;
+  messageCenter: MessageCenter;
+}
+
+export type WorkspaceMeta0 = WorkspaceUnitCtorParams;
+export type CreateWorkspaceInfoParams = Pick<WorkspaceUnitCtorParams, 'name'>;
+export type UpdateWorkspaceMetaParams = Partial<
+  Pick<WorkspaceUnitCtorParams, 'name' | 'avatar'>
+>;
 
 export class BaseProvider {
-  static id = 'base';
-  protected _apis!: Readonly<Apis>;
-  protected _config!: Readonly<ConfigStore>;
+  /** provider id */
+  public readonly id: string = 'base';
+  /** workspace unit collection */
+  protected _workspaces!: WorkspaceUnitCollectionScope;
   protected _logger!: Logger;
-  protected _signals!: DataCenterSignals;
-  protected _workspace!: Workspace;
+  /** send message with message center */
+  protected _sendMessage!: ReturnType<
+    InstanceType<typeof MessageCenter>['getMessageSender']
+  >;
 
-  constructor() {
-    // Nothing to do here
+  public constructor({
+    logger,
+    workspaces,
+    messageCenter,
+  }: ProviderConstructorParams) {
+    this._logger = (logger || defaultLogger) as Logger;
+    this._workspaces = workspaces;
+    this._sendMessage = messageCenter.getMessageSender(this.id);
   }
 
-  get id(): string {
-    return (this.constructor as any).id;
+  /**
+   * hook after provider registered
+   */
+  public async init() {
+    return;
   }
 
-  async init(params: InitialParams) {
-    this._apis = params.apis;
-    this._config = params.config;
-    this._logger = params.logger;
-    this._signals = params.signals;
-    this._workspace = params.workspace;
-    this._logger.enabled = params.debug;
+  /**
+   * auth provider
+   */
+  public async auth() {
+    return;
   }
 
+  /**
+   * logout provider
+   */
+  public async logout() {
+    return;
+  }
+
+  /**
+   * warp workspace with provider functions
+   * @param workspace
+   * @returns
+   */
+  public async warpWorkspace(
+    workspace: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
+    return workspace;
+  }
+
+  /**
+   * @deprecated Temporary for public workspace
+   * @param blocksuiteWorkspace
+   * @returns
+   */
+  public async loadPublicWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
+    return blocksuiteWorkspace;
+  }
+
+  /**
+   * load workspaces
+   **/
+  public async loadWorkspaces(): Promise<WorkspaceUnit[]> {
+    throw new Error(`provider: ${this.id} loadWorkSpace Not implemented`);
+  }
+
+  /**
+   * get auth user info
+   * @returns
+   */
+  public async getUserInfo(): Promise<User | undefined> {
+    return;
+  }
+
+  // async getBlob(id: string): Promise<string | null> {
+  //   return await this._blobs.get(id);
+  // }
+
+  // async setBlob(blob: Blob): Promise<string> {
+  //   return await this._blobs.set(blob);
+  // }
+
+  /**
+   * clear all local data in provider
+   */
   async clear() {
-    await this.destroy();
-    await this._config.clear();
+    // this._blobs.clear();
   }
 
-  async destroy() {
-    // Nothing to do here
+  /**
+   * delete workspace include all data
+   * @param id workspace id
+   */
+  public async deleteWorkspace(id: string): Promise<void> {
+    id;
+    return;
   }
 
-  async initData() {
-    throw Error('Not implemented: initData');
+  /**
+   * leave workspace by workspace id
+   * @param id workspace id
+   */
+  public async leaveWorkspace(id: string): Promise<void> {
+    id;
+    return;
   }
 
-  // should return a blob url
-  async getBlob(_id: string): Promise<string | null> {
-    throw Error('Not implemented: getBlob');
+  /**
+   * close db link and websocket connection and other resources
+   * @param id workspace id
+   */
+  public async closeWorkspace(id: string) {
+    id;
+    return;
   }
 
-  // should return a blob unique id
-  async setBlob(_blob: Blob): Promise<string> {
-    throw Error('Not implemented: setBlob');
+  /**
+   * invite workspace member
+   * @param id workspace id
+   */
+  public async invite(id: string, email: string): Promise<void> {
+    id;
+    email;
+    return;
   }
 
-  get workspace() {
-    return this._workspace;
+  /**
+   * remove workspace member by permission id
+   * @param permissionId
+   */
+  public async removeMember(permissionId: number): Promise<void> {
+    permissionId;
+    return;
   }
 
-  static async auth(
-    _config: Readonly<ConfigStore>,
-    logger: Logger,
-    _signals: DataCenterSignals
-  ) {
-    logger("This provider doesn't require authentication");
+  public async publish(id: string, isPublish: boolean): Promise<void> {
+    id;
+    isPublish;
+    return;
   }
 
-  // get workspace list，return a map of workspace id and boolean
-  // if value is true, it exists locally, otherwise it does not exist locally
-  static async list(
-    _config: Readonly<ConfigStore>
-  ): Promise<Map<string, boolean> | undefined> {
-    throw Error('Not implemented: list');
+  /**
+   * change workspace meta by workspace id , work for cached list in different provider
+   * @param id
+   * @param meta
+   * @returns
+   */
+  public async updateWorkspaceMeta(
+    id: string,
+    params: UpdateWorkspaceMetaParams
+  ): Promise<void> {
+    id;
+    params;
+    return;
+  }
+
+  /**
+   * create workspace by workspace meta
+   * @param {CreateWorkspaceInfoParams} meta
+   */
+  public async createWorkspace(
+    meta: CreateWorkspaceInfoParams
+  ): Promise<WorkspaceUnit | undefined> {
+    throw new Error(`provider: ${this.id} createWorkspace not implemented`);
+  }
+
+  public async extendWorkspace(
+    workspaceUnit: WorkspaceUnit
+  ): Promise<WorkspaceUnit | undefined> {
+    throw new Error(`provider: ${this.id} extendWorkspace not implemented`);
+  }
+
+  /**
+   * get user by email
+   * @param {string} id
+   * @param {string} email
+   * @returns
+   */
+  public async getUserByEmail(id: string, email: string): Promise<User | null> {
+    email;
+    return null;
+  }
+
+  /**
+   * link workspace to local caches
+   * @param workspace
+   * @returns
+   */
+  public async linkLocal(
+    workspace: BlocksuiteWorkspace
+  ): Promise<BlocksuiteWorkspace> {
+    return workspace;
+  }
+
+  /**
+   * get workspace members
+   * @param {string} workspaceId
+   * @returns
+   */
+  public getWorkspaceMembers(workspaceId: string): Promise<Member[]> {
+    workspaceId;
+    return Promise.resolve([]);
+  }
+
+  /**
+   * accept invitation
+   * @param {string} inviteCode
+   * @returns
+   */
+  public async acceptInvitation(
+    inviteCode: string
+  ): Promise<Permission | null> {
+    inviteCode;
+    return null;
   }
 }

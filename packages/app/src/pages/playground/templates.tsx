@@ -4,7 +4,7 @@ import exampleMarkdown1 from '@/templates/Welcome-to-the-AFFiNE-Alpha.md';
 import exampleMarkdown2 from '@/templates/AFFiNE-Docs.md';
 
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { Button } from '@/ui/button';
 interface Template {
   name: string;
@@ -37,11 +37,11 @@ const All = () => {
   const { openPage, createPage } = usePageHelper();
   const { currentWorkspace } = useAppState();
   const _applyTemplate = function (pageId: string, template: Template) {
-    const page = currentWorkspace?.getPage(pageId);
+    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId);
 
     const title = template.name;
     if (page) {
-      currentWorkspace?.setPageMeta(page.id, { title });
+      currentWorkspace?.blocksuiteWorkspace?.setPageMeta(page.id, { title });
       if (page && page.root === null) {
         setTimeout(async () => {
           const editor = document.querySelector('editor-container');

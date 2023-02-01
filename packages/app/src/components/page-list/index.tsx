@@ -20,7 +20,7 @@ import DateCell from '@/components/page-list/DateCell';
 import { IconButton } from '@/ui/button';
 import { Tooltip } from '@/ui/tooltip';
 import { useRouter } from 'next/router';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -51,7 +51,7 @@ const FavoriteTag = ({
         style={{
           color: favorite ? theme.colors.primaryColor : theme.colors.iconColor,
         }}
-        className="favorite-button"
+        className={favorite ? '' : 'favorite-button'}
       >
         {favorite ? (
           <FavouritedIcon data-testid="favourited-icon" />
@@ -67,16 +67,20 @@ export const PageList = ({
   pageList,
   showFavoriteTag = false,
   isTrash = false,
+  isPublic = false,
+  listType,
 }: {
   pageList: PageMeta[];
   showFavoriteTag?: boolean;
   isTrash?: boolean;
+  isPublic?: boolean;
+  listType?: 'all' | 'trash' | 'favorite';
 }) => {
   const router = useRouter();
-  const { currentWorkspaceId } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
   if (pageList.length === 0) {
-    return <Empty />;
+    return <Empty listType={listType} />;
   }
 
   return (
@@ -98,9 +102,15 @@ export const PageList = ({
               <StyledTableRow
                 key={`${pageMeta.id}-${index}`}
                 onClick={() => {
-                  router.push(
-                    `/workspace/${currentWorkspaceId}/${pageMeta.id}`
-                  );
+                  if (isPublic) {
+                    router.push(
+                      `/public-workspace/${router.query.workspaceId}/${pageMeta.id}`
+                    );
+                  } else {
+                    router.push(
+                      `/workspace/${currentWorkspace?.id}/${pageMeta.id}`
+                    );
+                  }
                 }}
               >
                 <TableCell>
@@ -124,19 +134,21 @@ export const PageList = ({
                   dateKey={isTrash ? 'trashDate' : 'updatedDate'}
                   backupKey={isTrash ? 'trashDate' : 'createDate'}
                 />
-                <TableCell
-                  style={{ padding: 0 }}
-                  data-testid={`more-actions-${pageMeta.id}`}
-                  onClick={e => {
-                    e.stopPropagation();
-                  }}
-                >
-                  {isTrash ? (
-                    <TrashOperationCell pageMeta={pageMeta} />
-                  ) : (
-                    <OperationCell pageMeta={pageMeta} />
-                  )}
-                </TableCell>
+                {!isPublic ? (
+                  <TableCell
+                    style={{ padding: 0 }}
+                    data-testid={`more-actions-${pageMeta.id}`}
+                    onClick={e => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    {isTrash ? (
+                      <TrashOperationCell pageMeta={pageMeta} />
+                    ) : (
+                      <OperationCell pageMeta={pageMeta} />
+                    )}
+                  </TableCell>
+                ) : null}
               </StyledTableRow>
             );
           })}

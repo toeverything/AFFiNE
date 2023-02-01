@@ -29,8 +29,6 @@ export const DeleteModal = ({
         <ModalWrapper width={620} height={334}>
           <Header>
             <ModalCloseButton
-              top={6}
-              right={6}
               onClick={() => {
                 onClose();
               }}

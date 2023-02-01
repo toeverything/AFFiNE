@@ -1,35 +1,38 @@
-import { ResetIcon } from '@blocksuite/icons';
 import { styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { TextButton } from '@/ui/button';
-import { GoogleLoginButton, StayLogOutButton } from './LoginOptionButton';
-
+import { GoogleLoginButton } from './LoginOptionButton';
+import { useAppState } from '@/providers/app-state-provider';
+import { useTranslation } from '@affine/i18n';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
 }
 
 export const LoginModal = ({ open, onClose }: LoginModalProps) => {
+  const { login } = useAppState();
+  const { t } = useTranslation();
   return (
     <Modal open={open} onClose={onClose} data-testid="login-modal">
-      <ModalWrapper width={620} height={334}>
+      <ModalWrapper width={560} height={292}>
         <Header>
           <ModalCloseButton
-            top={6}
-            right={6}
             onClick={() => {
               onClose();
             }}
           />
         </Header>
         <Content>
-          <ContentTitle>Currently not logged in</ContentTitle>
-          <GoogleLoginButton />
-          <StayLogOutButton />
+          <ContentTitle>{t('Sign in')}</ContentTitle>
+          <SignDes>{t('Set up an AFFiNE account to sync data')}</SignDes>
+          <span
+            onClick={async () => {
+              await login();
+              onClose();
+            }}
+          >
+            <GoogleLoginButton />
+          </span>
         </Content>
-        <Footer>
-          <TextButton icon={<StyledResetIcon />}>Clear local data</TextButton>
-        </Footer>
       </ModalWrapper>
     </Modal>
   );
@@ -55,14 +58,10 @@ const ContentTitle = styled('h1')({
   paddingBottom: '16px',
 });
 
-const Footer = styled('div')({
-  height: '70px',
-  paddingLeft: '24px',
-  marginTop: '32px',
-});
-
-const StyledResetIcon = styled(ResetIcon)({
-  marginRight: '12px',
-  width: '20px',
-  height: '20px',
+const SignDes = styled('div')(({ theme }) => {
+  return {
+    fontWeight: 400,
+    color: theme.colors.textColor,
+    fontSize: '16px',
+  };
 });

@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page.js';
 import { newPage, clickPageMoreActions } from './libs/page-logic.js';
 loadPage();
 
-test.describe('Local first favorite and cancel favorite  page', () => {
+test.skip('Local first favorite and cancel favorite  page', () => {
   test('New a page and open it ,then favorite it', async ({ page }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();

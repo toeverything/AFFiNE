@@ -1,6 +1,7 @@
 import { Button } from '@/ui/button';
 import { FC, useRef, ChangeEvent, ReactElement } from 'react';
 import { styled } from '@/styles';
+import { useTranslation } from '@affine/i18n';
 interface Props {
   uploadType?: string;
   children?: ReactElement;
@@ -9,6 +10,7 @@ interface Props {
 }
 export const Upload: FC<Props> = props => {
   const { fileChange, accept } = props;
+  const { t } = useTranslation();
   const input_ref = useRef<HTMLInputElement>(null);
   const _chooseFile = () => {
     if (input_ref.current) {
@@ -28,7 +30,7 @@ export const Upload: FC<Props> = props => {
   };
   return (
     <UploadStyle onClick={_chooseFile}>
-      {props.children ?? <Button>Upload</Button>}
+      {props.children ?? <Button>{t('Upload')}</Button>}
       <input
         ref={input_ref}
         type="file"

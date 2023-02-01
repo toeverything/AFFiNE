@@ -1,4 +1,10 @@
-import { InputHTMLAttributes, useEffect, useState } from 'react';
+import {
+  InputHTMLAttributes,
+  useEffect,
+  useState,
+  FocusEventHandler,
+  KeyboardEventHandler,
+} from 'react';
 import { StyledInput } from './style';
 
 type inputProps = {
@@ -6,11 +12,12 @@ type inputProps = {
   placeholder?: string;
   disabled?: boolean;
   width?: number;
+  height?: number;
   maxLength?: number;
   minLength?: number;
   onChange?: (value: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onBlur?: (e: any) => void;
+  onBlur?: FocusEventHandler<HTMLInputElement>;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 };
 
 export const Input = (props: inputProps) => {
@@ -20,9 +27,11 @@ export const Input = (props: inputProps) => {
     placeholder,
     maxLength,
     minLength,
+    height,
     width = 260,
     onChange,
     onBlur,
+    onKeyDown,
   } = props;
   const [value, setValue] = useState<string>(valueProp || '');
   const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
@@ -37,6 +46,10 @@ export const Input = (props: inputProps) => {
   const handleBlur: InputHTMLAttributes<HTMLInputElement>['onBlur'] = e => {
     onBlur && onBlur(e);
   };
+  const handleKeyDown: InputHTMLAttributes<HTMLInputElement>['onKeyDown'] =
+    e => {
+      onKeyDown && onKeyDown(e);
+    };
   useEffect(() => {
     setValue(valueProp || '');
   }, [valueProp]);
@@ -50,6 +63,8 @@ export const Input = (props: inputProps) => {
       minLength={minLength}
       onChange={handleChange}
       onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      height={height}
     ></StyledInput>
   );
 };

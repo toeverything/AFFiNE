@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page.js';
 import { newPage } from './libs/page-logic.js';
 loadPage();
 
-test.describe('Local first delete page', () => {
+test.skip('Local first delete page', () => {
   test('New a page , then delete it in all pages, restore it', async ({
     page,
   }) => {

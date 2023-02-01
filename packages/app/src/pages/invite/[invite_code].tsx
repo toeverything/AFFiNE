@@ -1,43 +1,34 @@
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { styled } from '@/styles';
 import { Empty } from '@/ui/empty';
-import { Avatar } from '@mui/material';
-import { getDataCenter } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
-const User = ({ name, avatar }: { name: string; avatar?: string }) => {
-  return (
-    <UserContent>
-      {avatar ? (
-        <Avatar src={avatar}></Avatar>
-      ) : (
-        <UserIcon>{name.slice(0, 1)}</UserIcon>
-      )}
-      <span>{name}</span>
-    </UserContent>
-  );
-};
+// const User = ({ name, avatar }: { name: string; avatar?: string }) => {
+//   return (
+//     <UserContent>
+//       {avatar ? (
+//         <Avatar src={avatar}></Avatar>
+//       ) : (
+//         <UserIcon>{name.slice(0, 1)}</UserIcon>
+//       )}
+//       <span>{name}</span>
+//     </UserContent>
+//   );
+// };
 
 export default function DevPage() {
   const router = useRouter();
   const [successInvited, setSuccessInvited] = useState<boolean>(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [inviteData, setInviteData] = useState<any>(null);
+  const { acceptInvite } = useWorkspaceHelper();
   useEffect(() => {
-    getDataCenter()
-      .then(dc =>
-        dc.apis.acceptInviting({
-          invitingCode: router.query.invite_code as string,
-        })
-      )
-      .then(data => {
-        setSuccessInvited(true);
-        setInviteData(data);
-      })
-      .catch(err => {
-        console.log('err: ', err);
+    router.query.invite_code &&
+      acceptInvite(router.query.invite_code as string).then(data => {
+        if (data && data.accepted) {
+          setSuccessInvited(true);
+        }
       });
-  }, [router.query.invite_code]);
+  }, [router, acceptInvite]);
 
   return (
     <Invited>
@@ -45,11 +36,12 @@ export default function DevPage() {
         <Empty width={310} height={310}></Empty>
 
         <Content>
-          <User name={inviteData?.name ? inviteData.name : '-'}></User> invited
-          you to join
-          <User
+          {/* TODO add inviteInfo*/}
+          {/* <User name={inviteData?.name ? inviteData.name : '-'}></User> invited */}
+          {/* you to join */}
+          {/* <User
             name={inviteData?.workspaceName ? inviteData.workspaceName : '-'}
-          ></User>
+          ></User> */}
           {successInvited ? (
             <Status>
               <svg
@@ -102,16 +94,16 @@ export default function DevPage() {
     </Invited>
   );
 }
-const UserIcon = styled('div')({
-  display: 'inline-block',
-  width: '28px',
-  height: '28px',
-  borderRadius: '50%',
-  backgroundColor: '#FFF5AB',
-  textAlign: 'center',
-  color: '#896406',
-  lineHeight: '28px',
-});
+// const UserIcon = styled('div')({
+//   display: 'inline-block',
+//   width: '28px',
+//   height: '28px',
+//   borderRadius: '50%',
+//   backgroundColor: '#FFF5AB',
+//   textAlign: 'center',
+//   color: '#896406',
+//   lineHeight: '28px',
+// });
 
 const Invited = styled('div')(({ theme }) => {
   return {
@@ -128,14 +120,6 @@ const Invited = styled('div')(({ theme }) => {
 const Content = styled('div')({
   fontSize: '16px',
   marginTop: '35px',
-});
-
-const UserContent = styled('span')({
-  fontSize: '18px',
-  marginLeft: '12px',
-  span: {
-    padding: '0 12px',
-  },
 });
 
 const Status = styled('div')(() => {

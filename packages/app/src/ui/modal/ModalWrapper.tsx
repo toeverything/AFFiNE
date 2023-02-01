@@ -11,7 +11,7 @@ export const ModalWrapper = styled.div<{
     height,
     minHeight,
     backgroundColor: theme.colors.popoverBackground,
-    borderRadius: '12px',
+    borderRadius: '24px',
     position: 'relative',
   };
 });

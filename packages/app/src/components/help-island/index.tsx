@@ -6,7 +6,7 @@ import {
   StyledTransformIcon,
 } from './style';
 import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
-import Grow from '@mui/material/Grow';
+import { MuiGrow } from '@/ui/mui';
 import { Tooltip } from '@/ui/tooltip';
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/providers/GlobalModalProvider';
@@ -35,7 +35,7 @@ export const HelpIsland = ({
           setShowContent(false);
         }}
       >
-        <Grow in={showContent}>
+        <MuiGrow in={showContent}>
           <StyledIslandWrapper>
             {showList.includes('contact') && (
               <Tooltip content={t('Contact Us')} placement="left-end">
@@ -66,7 +66,7 @@ export const HelpIsland = ({
               </Tooltip>
             )}
           </StyledIslandWrapper>
-        </Grow>
+        </MuiGrow>
 
         <div style={{ position: 'relative' }}>
           <StyledIconWrapper

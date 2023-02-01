@@ -1,35 +1,29 @@
 import { styled } from '@/styles';
-import { Button } from '@/ui/button';
-import MuiAvatar from '@mui/material/Avatar';
 
-export const StyledSettingContainer = styled('div')(({ theme }) => {
+export const StyledSettingContainer = styled('div')(() => {
   return {
-    position: 'relative',
     display: 'flex',
-    padding: '0px',
-    width: '961px',
-    background: theme.colors.popoverBackground,
-    borderRadius: '12px',
-    overflow: 'hidden',
+    flexDirection: 'column',
+
+    padding: '0 34px 20px 48px',
+    height: '100vh',
   };
 });
 
-export const StyledSettingSidebar = styled('div')(({ theme }) => {
+export const StyledSettingSidebar = styled('div')(() => {
   {
     return {
-      width: '212px',
-      height: '620px',
-      background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
-      flexShrink: 0,
-      flexGrow: 0,
+      // height: '48px',
+      marginTop: '50px',
     };
   }
 });
 
 export const StyledSettingContent = styled('div')(() => {
   return {
-    paddingLeft: '48px',
-    height: '620px',
+    overflow: 'hidden',
+    flex: 1,
+    paddingTop: '48px',
   };
 });
 
@@ -37,7 +31,6 @@ export const StyledSetting = styled('div')(({ theme }) => {
   {
     return {
       width: '236px',
-      height: '620px',
       background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
     };
   }
@@ -49,7 +42,7 @@ export const StyledSettingSidebarHeader = styled('div')(() => {
       fontWeight: '500',
       fontSize: '18px',
       lineHeight: '26px',
-      textAlign: 'center',
+      textAlign: 'left',
       marginTop: '37px',
     };
   }
@@ -59,8 +52,6 @@ export const StyledSettingTabContainer = styled('ul')(() => {
   {
     return {
       display: 'flex',
-      flexDirection: 'column',
-      marginTop: '25px',
     };
   }
 });
@@ -70,14 +61,18 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
     {
       return {
         display: 'flex',
-        marginBottom: '12px',
-        padding: '0 24px',
-        height: '32px',
+        margin: '0 48px 0 0',
+        height: '34px',
         color: isActive ? theme.colors.primaryColor : theme.colors.textColor,
-        fontWeight: '400',
-        fontSize: '16px',
-        lineHeight: '32px',
+        fontWeight: '500',
+        fontSize: theme.font.base,
+        lineHeight: theme.font.lineHeightBase,
         cursor: 'pointer',
+        transition: 'all 0.15s ease',
+        borderBottom: `2px solid ${
+          isActive ? theme.colors.primaryColor : 'none'
+        }`,
+        ':hover': { color: theme.colors.primaryColor },
       };
     }
   }
@@ -87,144 +82,72 @@ export const StyledSettingTagIconContainer = styled('div')(() => {
   return {
     display: 'flex',
     alignItems: 'center',
-    marginRight: '14.64px',
-    width: '14.47px',
-    fontSize: '14.47px',
   };
 });
 
-export const StyledSettingH2 = styled('h2')<{ marginTop?: number }>(
-  ({ marginTop }) => {
-    return {
-      fontWeight: '500',
-      fontSize: '18px',
-      lineHeight: '26px',
-      marginTop: marginTop ? `${marginTop}px` : '0px',
-    };
-  }
-);
-
-export const StyledAvatarUploadBtn = styled(Button)(({ theme }) => {
+export const StyledSettingH2 = styled('h2')<{
+  marginTop?: number;
+  marginBottom?: number;
+}>(({ marginTop, marginBottom, theme }) => {
   return {
-    backgroundColor: theme.colors.hoverBackground,
-    color: theme.colors.primaryColor,
-    margin: '0 12px 0 24px',
-  };
-});
-
-export const StyledMemberTitleContainer = styled('div')(() => {
-  return {
-    display: 'flex',
-    marginTop: '60px',
-    fontWeight: '500',
-  };
-});
-
-export const StyledMemberAvatar = styled(MuiAvatar)(() => {
-  return { height: '40px', width: '40px' };
-});
-
-export const StyledMemberNameContainer = styled('div')(() => {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    width: '402px',
-  };
-});
-
-export const StyledMemberRoleContainer = styled('div')(() => {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    width: '222px',
-  };
-});
-
-export const StyledMemberListContainer = styled('ul')(() => {
-  return {
-    marginTop: '15px',
-    height: '432px',
-    overflowY: 'scroll',
-  };
-});
-
-export const StyledMemberListItem = styled('li')(() => {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    height: '72px',
-  };
-});
-
-export const StyledMemberInfo = styled('div')(() => {
-  return {
-    paddingLeft: '12px',
-  };
-});
-
-export const StyledMemberName = styled('div')(({ theme }) => {
-  return {
-    fontWeight: '400',
-    fontSize: '18px',
-    lineHeight: '16px',
-    color: theme.colors.textColor,
-  };
-});
-
-export const StyledMemberEmail = styled('div')(({ theme }) => {
-  return {
-    fontWeight: '400',
-    fontSize: '16px',
-    lineHeight: '22px',
-    color: theme.colors.iconColor,
-  };
-});
-
-export const StyledMemberButtonContainer = styled('div')(() => {
-  return {
-    marginTop: '14px',
-  };
-});
-
-export const StyledMoreVerticalButton = styled('button')(() => {
-  return {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '24px',
-    height: '24px',
-    cursor: 'pointer',
+    // fontWeight: '500',
+    fontSize: theme.font.base,
+    lineHeight: theme.font.lineHeightBase,
+    marginTop: marginTop ? `${marginTop}px` : '0px',
+    marginBottom: marginBottom ? `${marginBottom}px` : '0px',
   };
 });
 
 export const StyledPublishExplanation = styled('div')(() => {
   return {
-    marginTop: '56px',
     paddingRight: '48px',
-    fontWeight: '500',
-    fontSize: '18px',
-    lineHeight: '26px',
+    // fontWeight: '500',
+    marginBottom: '22px',
+  };
+});
+export const StyledWorkspaceName = styled('span')(() => {
+  return {
+    fontWeight: '400',
+  };
+});
+export const StyledWorkspaceType = styled('span')(() => {
+  return {
+    // fontWeight: '500',
   };
 });
 
 export const StyledPublishCopyContainer = styled('div')(() => {
   return {
     marginTop: '12px',
+    marginBottom: '20px',
+    paddingTop: '20px',
+    flex: 1,
+  };
+});
+export const StyledStopPublishContainer = styled('div')(() => {
+  return {
+    textAlign: 'center',
+  };
+});
+
+export const StyledButtonContainer = styled('div')(() => {
+  return {
+    marginTop: '64px',
+  };
+});
+export const StyledEmail = styled('span')(() => {
+  return {
+    color: '#E8178A',
+  };
+});
+
+export const StyledPublishContent = styled('div')(({ theme }) => {
+  return {
     display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: '38px',
-  };
-});
-
-export const StyledCopyButtonContainer = styled('div')(() => {
-  return {
-    marginLeft: '12px',
-  };
-});
-
-export const StyledPublishContent = styled('div')(() => {
-  return {
-    height: '494px',
+    fontWeight: '500',
+    flexDirection: 'column',
+    fontSize: theme.font.base,
+    lineHeight: theme.font.lineHeightBase,
+    flex: 1,
   };
 });

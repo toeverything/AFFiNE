@@ -7,31 +7,21 @@ import {
 } from './style';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { getDataCenter } from '@affine/datacenter';
-import { useRouter } from 'next/router';
-import { useAppState } from '@/providers/app-state-provider';
+import { useTranslation } from '@affine/i18n';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+// import { getDataCenter } from '@affine/datacenter';
+// import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
-  workspaceName: string;
-  workspaceId: string;
-  nextWorkSpaceId: string;
 }
 
-export const WorkspaceLeave = ({
-  open,
-  onClose,
-  nextWorkSpaceId,
-  workspaceId,
-}: WorkspaceDeleteProps) => {
-  const router = useRouter();
-  const { refreshWorkspacesMeta } = useAppState();
+export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
+  const { leaveWorkSpace } = useWorkspaceHelper();
+  const { t } = useTranslation();
   const handleLeave = async () => {
-    const dc = await getDataCenter();
-    await dc.apis.leaveWorkspace({ id: workspaceId });
-    router.push(`/workspace/${nextWorkSpaceId}`);
-    refreshWorkspacesMeta();
+    await leaveWorkSpace();
     onClose();
   };
 
@@ -39,14 +29,13 @@ export const WorkspaceLeave = ({
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>Leave Workspace</StyledModalHeader>
+        <StyledModalHeader>{t('Leave Workspace')}</StyledModalHeader>
         <StyledTextContent>
-          After you leave, you will not be able to access all the contents of
-          this workspace.
+          {t('Leave Workspace Description')}
         </StyledTextContent>
         <StyledButtonContent>
           <Button shape="circle" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button
             onClick={handleLeave}
@@ -54,7 +43,7 @@ export const WorkspaceLeave = ({
             shape="circle"
             style={{ marginLeft: '24px' }}
           >
-            Leave
+            {t('Leave')}
           </Button>
         </StyledButtonContent>
       </StyledModalWrapper>

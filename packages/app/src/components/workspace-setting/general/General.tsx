@@ -1,168 +1,169 @@
 import {
   StyledDeleteButtonContainer,
-  StyledSettingAvatar,
+  // StyledSettingAvatar,
   StyledSettingAvatarContent,
   StyledSettingInputContainer,
+  StyledDoneButtonContainer,
+  StyledInput,
+  StyledProviderInfo,
+  StyleGeneral,
+  StyledAvatar,
 } from './style';
 import { StyledSettingH2 } from '../style';
 
 import { useState } from 'react';
 import { Button } from '@/ui/button';
-import Input from '@/ui/input';
-import { getDataCenter, Workspace, WorkspaceType } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
-import { WorkspaceDetails } from '@/components/workspace-slider-bar/WorkspaceSelector/SelectorPopperContent';
 import { WorkspaceDelete } from './delete';
-import { Workspace as StoreWorkspace } from '@blocksuite/store';
-import { debounce } from '@/utils';
 import { WorkspaceLeave } from './leave';
+import { DoneIcon, UsersIcon } from '@blocksuite/icons';
+// import { Upload } from '@/components/file-upload';
+import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
+import { WorkspaceUnit } from '@affine/datacenter';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+import { useTranslation } from '@affine/i18n';
+import { CloudIcon, LocalIcon } from '@/components/workspace-modal/icons';
+import { CameraIcon } from './icons';
 import { Upload } from '@/components/file-upload';
-
-export const GeneralPage = ({
-  workspace,
-  owner,
-}: {
-  workspace: Workspace;
-  owner: WorkspaceDetails[string]['owner'];
-  workspaces: Record<string, StoreWorkspace | null>;
-}) => {
-  const {
-    user,
-    currentWorkspace,
-    workspacesMeta,
-    workspaces,
-    refreshWorkspacesMeta,
-  } = useAppState();
+export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
-  const [uploading, setUploading] = useState<boolean>(false);
-  const [workspaceName, setWorkspaceName] = useState<string>(
-    workspaces[workspace.id]?.meta.name ||
-      (workspace.type === WorkspaceType.Private && user ? user.name : '')
-  );
-  const debouncedRefreshWorkspacesMeta = debounce(() => {
-    refreshWorkspacesMeta();
-  }, 100);
-  const isOwner = user && owner.id === user.id;
+  const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
+  const { currentWorkspace, isOwner } = useAppState();
+  const { updateWorkspace } = useWorkspaceHelper();
+  const { t } = useTranslation();
+
   const handleChangeWorkSpaceName = (newName: string) => {
     setWorkspaceName(newName);
-    currentWorkspace?.meta.setName(newName);
-    workspaces[workspace.id]?.meta.setName(newName);
-    debouncedRefreshWorkspacesMeta();
   };
-  const currentWorkspaceIndex = workspacesMeta.findIndex(
-    meta => meta.id === workspace.id
-  );
-  const nextWorkSpaceId =
-    currentWorkspaceIndex === workspacesMeta.length - 1
-      ? workspacesMeta[currentWorkspaceIndex - 1]?.id
-      : workspacesMeta[currentWorkspaceIndex + 1]?.id;
-  const handleClickDelete = () => {
-    setShowDelete(true);
-  };
-  const handleCloseDelete = () => {
-    setShowDelete(false);
-  };
-
-  const handleClickLeave = () => {
-    setShowLeave(true);
-  };
-  const handleCloseLeave = () => {
-    setShowLeave(false);
+  const handleUpdateWorkspaceName = () => {
+    currentWorkspace &&
+      updateWorkspace({ name: workspaceName }, currentWorkspace);
   };
 
   const fileChange = async (file: File) => {
-    setUploading(true);
     const blob = new Blob([file], { type: file.type });
-    const blobId = await getDataCenter()
-      .then(dc => dc.apis.uploadBlob({ blob }))
-      .finally(() => {
-        setUploading(false);
-      });
-    if (blobId) {
-      currentWorkspace?.meta.setAvatar(blobId);
-      workspaces[workspace.id]?.meta.setAvatar(blobId);
-      setUploading(false);
-      debouncedRefreshWorkspacesMeta();
-    }
+    currentWorkspace &&
+      (await updateWorkspace({ avatarBlob: blob }, currentWorkspace));
   };
 
   return workspace ? (
-    <div>
-      <StyledSettingH2 marginTop={56}>Workspace Avatar</StyledSettingH2>
-      <StyledSettingAvatarContent>
-        <StyledSettingAvatar
-          alt="workspace avatar"
-          src={
-            workspaces[workspace.id]?.meta.avatar
-              ? '/api/blob/' + workspaces[workspace.id]?.meta.avatar
-              : ''
-          }
-        >
-          {workspaces[workspace.id]?.meta.name[0]}
-        </StyledSettingAvatar>
-        <Upload
+    <StyleGeneral>
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <StyledSettingH2>{t('Workspace Avatar')}</StyledSettingH2>
+        <StyledSettingAvatarContent>
+          <StyledAvatar>
+            <Upload
+              accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+              fileChange={fileChange}
+            >
+              <>
+                <div className="camera-icon">
+                  <CameraIcon></CameraIcon>
+                </div>
+                <WorkspaceUnitAvatar
+                  size={60}
+                  name={workspace.name}
+                  workspaceUnit={workspace}
+                />
+              </>
+            </Upload>
+          </StyledAvatar>
+          {/* TODO: Wait for image sync to complete  */}
+          {/* <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
           fileChange={fileChange}
         >
-          <Button loading={uploading}>Upload</Button>
-        </Upload>
-        {/* TODO: add upload logic */}
-        {/* {isOwner ? (
-          <StyledAvatarUploadBtn shape="round">upload</StyledAvatarUploadBtn>
-        ) : null} */}
-        {/* <Button shape="round">remove</Button> */}
-      </StyledSettingAvatarContent>
-      <StyledSettingH2 marginTop={36}>Workspace Name</StyledSettingH2>
-      <StyledSettingInputContainer>
-        <Input
-          width={327}
-          value={workspaceName}
-          placeholder="Workspace Name"
-          disabled={!isOwner}
-          maxLength={14}
-          minLength={1}
-          onChange={handleChangeWorkSpaceName}
-        ></Input>
-      </StyledSettingInputContainer>
-      <StyledSettingH2 marginTop={36}>Workspace Owner</StyledSettingH2>
-      <StyledSettingInputContainer>
-        <Input
-          width={327}
-          disabled
-          value={owner.name}
-          placeholder="Workspace Owner"
-        ></Input>
-      </StyledSettingInputContainer>
+          <Button loading={uploading}>{t('Upload')}</Button>
+        </Upload> */}
+          {/* TODO: add upload logic */}
+        </StyledSettingAvatarContent>
+        <StyledSettingH2 marginTop={20}>{t('Workspace Name')}</StyledSettingH2>
+        <StyledSettingInputContainer>
+          <StyledInput
+            width={284}
+            height={32}
+            value={workspaceName}
+            placeholder={t('Workspace Name')}
+            maxLength={14}
+            minLength={1}
+            disabled={!isOwner}
+            onChange={handleChangeWorkSpaceName}
+          ></StyledInput>
+          {isOwner ? (
+            <StyledDoneButtonContainer
+              onClick={() => {
+                handleUpdateWorkspaceName();
+              }}
+            >
+              <DoneIcon />
+            </StyledDoneButtonContainer>
+          ) : null}
+        </StyledSettingInputContainer>
+        <StyledSettingH2 marginTop={20}>{t('Workspace Type')}</StyledSettingH2>
+        <StyledSettingInputContainer>
+          {isOwner ? (
+            currentWorkspace?.provider === 'local' ? (
+              <StyledProviderInfo>
+                <LocalIcon />
+                {t('Local Workspace')}
+              </StyledProviderInfo>
+            ) : (
+              <StyledProviderInfo>
+                <CloudIcon />
+                {t('Available Offline')}
+              </StyledProviderInfo>
+            )
+          ) : (
+            <StyledProviderInfo>
+              <UsersIcon fontSize={20} color={'#FF646B'} />
+              {t('Joined Workspace')}
+            </StyledProviderInfo>
+          )}
+        </StyledSettingInputContainer>
+      </div>
+
       <StyledDeleteButtonContainer>
         {isOwner ? (
           <>
-            <Button type="danger" shape="circle" onClick={handleClickDelete}>
-              Delete Workspace
+            <Button
+              type="danger"
+              shape="circle"
+              style={{ borderRadius: '40px' }}
+              onClick={() => {
+                setShowDelete(true);
+              }}
+            >
+              {t('Delete Workspace')}
             </Button>
             <WorkspaceDelete
               open={showDelete}
-              onClose={handleCloseDelete}
-              workspaceName={workspaceName}
-              workspaceId={workspace.id}
-              nextWorkSpaceId={nextWorkSpaceId}
+              onClose={() => {
+                setShowDelete(false);
+              }}
+              workspace={workspace}
             />
           </>
         ) : (
           <>
-            <Button type="danger" shape="circle" onClick={handleClickLeave}>
-              Leave Workspace
+            <Button
+              type="danger"
+              shape="circle"
+              onClick={() => {
+                setShowLeave(true);
+              }}
+            >
+              {t('Leave Workspace')}
             </Button>
             <WorkspaceLeave
               open={showLeave}
-              onClose={handleCloseLeave}
-              workspaceName={workspaceName}
-              workspaceId={workspace.id}
-              nextWorkSpaceId={nextWorkSpaceId}
+              onClose={() => {
+                setShowLeave(false);
+              }}
             />
           </>
         )}
       </StyledDeleteButtonContainer>
-    </div>
+    </StyleGeneral>
   ) : null;
 };

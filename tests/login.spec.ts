@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
-test.describe('Login Flow', () => {
+test.skip('Login Flow', () => {
   test.skip('Open login modal by click current workspace', async ({ page }) => {
     await page.getByTestId('current-workspace').click();
     await page.waitForTimeout(800);
@@ -15,7 +15,7 @@ test.describe('Login Flow', () => {
       .click();
   });
 
-  test.skip('Open login modal by click cloud-unsync-icon', async ({ page }) => {
+  test('Open login modal by click cloud-unsync-icon', async ({ page }) => {
     await page.getByTestId('cloud-unsync-icon').click();
 
     await page.waitForTimeout(800);

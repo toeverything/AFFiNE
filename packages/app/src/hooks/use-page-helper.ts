@@ -1,9 +1,10 @@
-import { Workspace, uuidv4 } from '@blocksuite/store';
+import { uuidv4, Workspace } from '@blocksuite/store';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
 import { PageMeta, useAppState } from '@/providers/app-state-provider';
 import { EditorContainer } from '@blocksuite/editor';
 import { useChangePageMeta } from '@/hooks/use-change-page-meta';
 import { useRouter } from 'next/router';
+import { WorkspaceUnit } from '@affine/datacenter';
 
 export type EditorHandlers = {
   createPage: (params?: {
@@ -19,7 +20,10 @@ export type EditorHandlers = {
   toggleDeletePage: (pageId: string) => Promise<boolean>;
   toggleFavoritePage: (pageId: string) => Promise<boolean>;
   permanentlyDeletePage: (pageId: string) => void;
-  search: (query: QueryContent) => Map<string, string | undefined>;
+  search: (
+    query: QueryContent,
+    workspace?: Workspace
+  ) => Map<string, string | undefined>;
   // changeEditorMode: (pageId: string) => void;
   changePageMode: (
     pageId: string,
@@ -27,13 +31,15 @@ export type EditorHandlers = {
   ) => Promise<EditorContainer['mode']>;
 };
 
-const getPageMeta = (workspace: Workspace | null, pageId: string) => {
-  return workspace?.meta.pageMetas.find(p => p.id === pageId);
+const getPageMeta = (workspace: WorkspaceUnit | null, pageId: string) => {
+  return workspace?.blocksuiteWorkspace?.meta.pageMetas.find(
+    p => p.id === pageId
+  );
 };
 export const usePageHelper = (): EditorHandlers => {
   const router = useRouter();
   const changePageMeta = useChangePageMeta();
-  const { currentWorkspace, editor, currentWorkspaceId } = useAppState();
+  const { currentWorkspace, editor } = useAppState();
 
   return {
     createPage: ({
@@ -44,11 +50,15 @@ export const usePageHelper = (): EditorHandlers => {
         if (!currentWorkspace) {
           return resolve(null);
         }
-        currentWorkspace.createPage(pageId);
-        currentWorkspace.signals.pageAdded.once(addedPageId => {
-          currentWorkspace.setPageMeta(addedPageId, { title });
-          resolve(addedPageId);
-        });
+        currentWorkspace.blocksuiteWorkspace?.createPage(pageId);
+        currentWorkspace.blocksuiteWorkspace?.signals.pageAdded.once(
+          addedPageId => {
+            currentWorkspace.blocksuiteWorkspace?.setPageMeta(addedPageId, {
+              title,
+            });
+            resolve(addedPageId);
+          }
+        );
       });
     },
     toggleFavoritePage: async pageId => {
@@ -76,9 +86,16 @@ export const usePageHelper = (): EditorHandlers => {
       });
       return trash;
     },
-    search: (query: QueryContent) => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return currentWorkspace!.search(query);
+    search: (query: QueryContent, workspace?: Workspace) => {
+      if (workspace) {
+        return workspace.search(query);
+      }
+      if (currentWorkspace) {
+        if (currentWorkspace.blocksuiteWorkspace) {
+          return currentWorkspace.blocksuiteWorkspace.search(query);
+        }
+      }
+      return new Map();
     },
     changePageMode: async (pageId, mode) => {
       const pageMeta = getPageMeta(currentWorkspace, pageId);
@@ -96,17 +113,17 @@ export const usePageHelper = (): EditorHandlers => {
     permanentlyDeletePage: pageId => {
       // TODO:  workspace.meta.removePage or workspace.removePage?
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      currentWorkspace!.meta.removePage(pageId);
+      currentWorkspace!.blocksuiteWorkspace?.meta.removePage(pageId);
     },
     openPage: (pageId, query = {}, newTab = false) => {
       pageId = pageId.replace('space:', '');
 
       if (newTab) {
-        window.open(`/workspace/${currentWorkspaceId}/${pageId}`, '_blank');
+        window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
         return Promise.resolve(true);
       }
       return router.push({
-        pathname: `/workspace/${currentWorkspaceId}/${pageId}`,
+        pathname: `/workspace/${currentWorkspace?.id}/${pageId}`,
         query,
       });
     },
@@ -116,7 +133,7 @@ export const usePageHelper = (): EditorHandlers => {
       }
 
       return (
-        (currentWorkspace.meta.pageMetas.find(
+        (currentWorkspace.blocksuiteWorkspace?.meta.pageMetas.find(
           page => page.id === pageId
         ) as PageMeta) || null
       );

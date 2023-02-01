@@ -8,20 +8,18 @@ import React, {
 import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
-import { useAppState } from '@/providers/app-state-provider';
+import { useTranslation } from '@affine/i18n';
 export const Input = (props: {
   query: string;
   setQuery: Dispatch<SetStateAction<string>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
+  isPublic: boolean;
+  publishWorkspaceName: string | undefined;
 }) => {
   const [isComposition, setIsComposition] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const { currentWorkspaceId, workspacesMeta, currentWorkspace } =
-    useAppState();
-  const isPublic = workspacesMeta.find(
-    meta => String(meta.id) === String(currentWorkspaceId)
-  )?.public;
+  const { t } = useTranslation();
   useEffect(() => {
     inputRef.current?.addEventListener(
       'blur',
@@ -80,9 +78,11 @@ export const Input = (props: {
           }
         }}
         placeholder={
-          isPublic
-            ? `Search in ${currentWorkspace?.meta.name}`
-            : 'Quick Search...'
+          props.isPublic
+            ? t('Quick search placeholder2', {
+                workspace: props.publishWorkspaceName,
+              })
+            : t('Quick search placeholder')
         }
       />
     </StyledInputContent>

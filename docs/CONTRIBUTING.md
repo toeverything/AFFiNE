@@ -13,7 +13,7 @@ Use the table of contents icon on the top left corner of this document to get to
 Currently we have two versions of AFFiNE:
 
 - [AFFiNE Pre-Alpha](https://livedemo.affine.pro/). This version users the branch `Pre-Alpha`, it is no longer actively developed but contains some different functions and features.
-- [AFFiNE Alpha](https://pathfinder.affine.pro/). This version uses the `master` branch,  this is the latest version under active development.
+- [AFFiNE Alpha](https://pathfinder.affine.pro/). This version uses the `master` branch, this is the latest version under active development.
 
 To get an overview of the project, read the [README](../README.md). Here are some resources to help you get started with open source contributions:
 

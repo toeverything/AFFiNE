@@ -1,181 +1,171 @@
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import type { ReactNode } from 'react';
-import dynamic from 'next/dynamic';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import type { PropsWithChildren } from 'react';
 import { getDataCenter } from '@affine/datacenter';
-import { AppState, AppStateContext } from './context';
-import type {
+import {
+  AppStateContext,
+  AppStateFunction,
   AppStateValue,
-  CreateEditorHandler,
-  LoadWorkspaceHandler,
-} from './context';
-import { Page, Workspace as StoreWorkspace } from '@blocksuite/store';
-import { EditorContainer } from '@blocksuite/editor';
-const DynamicBlocksuite = dynamic(() => import('./DynamicBlocksuite'), {
-  ssr: false,
-});
+  PageMeta,
+} from './interface';
+import { createDefaultWorkspace } from './utils';
+import { User } from '@affine/datacenter';
 
-export const AppStateProvider = ({ children }: { children?: ReactNode }) => {
-  const refreshWorkspacesMeta = async () => {
-    const dc = await getDataCenter();
-    const workspacesMeta = await dc.apis.getWorkspaces().catch(() => {
-      return [];
-    });
-    setState(state => ({ ...state, workspacesMeta }));
-  };
+type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
-  const [state, setState] = useState<AppStateValue>({
-    user: null,
-    workspacesMeta: [],
-    currentWorkspaceId: '',
-    currentWorkspace: null,
-    currentPage: null,
-    editor: null,
-    // Synced is used to ensure that the provider has synced with the server,
-    // So after Synced set to true, the other state is sure to be set.
-    synced: false,
-    refreshWorkspacesMeta,
-    workspaces: {},
-  });
+export const AppState = createContext<AppStateContext>({} as AppStateContext);
 
+export const useAppState = () => useContext(AppState);
+
+export const AppStateProvider = ({
+  children,
+}: PropsWithChildren<AppStateContextProps>) => {
+  const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
   useEffect(() => {
-    (async () => {
-      const workspacesList = await Promise.all(
-        state.workspacesMeta.map(async ({ id }) => {
-          const workspace =
-            (await loadWorkspaceHandler?.(id, state.user)) || null;
-          return { id, workspace };
-        })
-      );
-      const workspaces: Record<string, StoreWorkspace | null> = {};
-      workspacesList.forEach(({ id, workspace }) => {
-        workspaces[id] = workspace;
+    const initState = async () => {
+      const dataCenter = await getDataCenter();
+      // Ensure datacenter has at least one workspace
+      if (dataCenter.workspaces.length === 0) {
+        await createDefaultWorkspace(dataCenter);
+      }
+
+      setAppState({
+        dataCenter,
+        user: (await dataCenter.getUserInfo()) || null,
+        workspaceList: dataCenter.workspaces,
+        currentWorkspace: null,
+        pageList: [],
+        currentPage: null,
+        editor: null,
+        synced: true,
+        isOwner: false,
       });
-      setState(state => ({
-        ...state,
-        workspaces,
-      }));
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.workspacesMeta]);
+    };
 
-  const [loadWorkspaceHandler, _setLoadWorkspaceHandler] =
-    useState<LoadWorkspaceHandler>();
-  const setLoadWorkspaceHandler = useCallback(
-    (handler: LoadWorkspaceHandler) => {
-      _setLoadWorkspaceHandler(() => handler);
-    },
-    [_setLoadWorkspaceHandler]
-  );
-
-  const [createEditorHandler, _setCreateEditorHandler] =
-    useState<CreateEditorHandler>();
-
-  const setCreateEditorHandler = useCallback(
-    (handler: CreateEditorHandler) => {
-      _setCreateEditorHandler(() => handler);
-    },
-    [_setCreateEditorHandler]
-  );
-
-  const loadWorkspace = useRef<AppStateContext['loadWorkspace']>(() =>
-    Promise.resolve(null)
-  );
-  loadWorkspace.current = async (workspaceId: string) => {
-    if (state.currentWorkspaceId === workspaceId) {
-      return state.currentWorkspace;
-    }
-    const workspace =
-      (await loadWorkspaceHandler?.(workspaceId, state.user)) || null;
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    window.workspace = workspace;
-    // FIXME: there needs some method to destroy websocket.
-    // Or we need a manager to manage websocket.
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    state.currentWorkspace?.__ws__?.destroy();
-
-    setState(state => ({
-      ...state,
-      currentWorkspace: workspace,
-      currentWorkspaceId: workspaceId,
-    }));
-    return workspace;
-  };
-  const loadPage = useRef<AppStateContext['loadPage']>(() =>
-    Promise.resolve(null)
-  );
-  loadPage.current = async (pageId: string) => {
-    const { currentWorkspace, currentPage } = state;
-    if (pageId === currentPage?.id) {
-      return currentPage;
-    }
-    const page = (pageId ? currentWorkspace?.getPage(pageId) : null) || null;
-    setState(state => ({ ...state, currentPage: page }));
-    return page;
-  };
-
-  const createEditor = useRef<
-    ((page: Page) => EditorContainer | null) | undefined
-  >();
-  createEditor.current = () => {
-    const { currentPage, currentWorkspace } = state;
-    if (!currentPage || !currentWorkspace) {
-      return null;
-    }
-    const editor = createEditorHandler?.(currentPage) || null;
-
-    if (editor) {
-      const pageMeta = currentWorkspace.meta.pageMetas.find(
-        p => p.id === currentPage.id
-      );
-      if (pageMeta?.mode) {
-        editor.mode = pageMeta.mode as 'page' | 'edgeless' | undefined;
-      }
-      if (pageMeta?.trash) {
-        editor.readonly = true;
-      }
-    }
-
-    return editor;
-  };
-
-  const setEditor = useRef<(editor: AppStateValue['editor']) => void>();
-
-  setEditor.current = (editor: AppStateValue['editor']) => {
-    setState(state => ({ ...state, editor }));
-  };
+    initState();
+  }, []);
 
   useEffect(() => {
-    if (!loadWorkspaceHandler) {
+    if (!appState?.currentWorkspace?.blocksuiteWorkspace) {
       return;
     }
-    setState(state => ({
-      ...state,
-      workspacesMeta: [],
-      synced: true,
-    }));
-  }, [loadWorkspaceHandler]);
+    const currentWorkspace = appState.currentWorkspace;
+    const dispose = currentWorkspace?.blocksuiteWorkspace?.meta.pagesUpdated.on(
+      () => {
+        setAppState({
+          ...appState,
+          pageList: currentWorkspace.blocksuiteWorkspace?.meta
+            .pageMetas as PageMeta[],
+        });
+      }
+    ).dispose;
+    return () => {
+      dispose && dispose();
+    };
+  }, [appState]);
 
-  const context = useMemo(
-    () => ({
-      ...state,
-      setState,
-      createEditor,
-      setEditor,
-      loadWorkspace: loadWorkspace.current,
-      loadPage: loadPage.current,
-    }),
-    [state, setState, loadPage, loadWorkspace]
-  );
+  useEffect(() => {
+    const { dataCenter } = appState;
+    // FIXME: onWorkspacesChange should have dispose function
+    dataCenter?.onWorkspacesChange(
+      () => {
+        setAppState({
+          ...appState,
+          workspaceList: dataCenter.workspaces,
+        });
+      },
+      { immediate: false }
+    );
+  }, [appState]);
+
+  const loadPage = useRef<AppStateFunction['loadPage']>();
+  loadPage.current = (pageId: string) => {
+    const { currentWorkspace, currentPage } = appState;
+    if (pageId === currentPage?.id) {
+      return;
+    }
+    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId) || null;
+    setAppState({
+      ...appState,
+      currentPage: page,
+    });
+  };
+
+  const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
+  loadWorkspace.current = async (workspaceId: string) => {
+    const { dataCenter, workspaceList, currentWorkspace, user } = appState;
+    if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
+      return null;
+    }
+    if (workspaceId === currentWorkspace?.id) {
+      return currentWorkspace;
+    }
+    const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
+    let isOwner;
+    if (workspace?.provider === 'local') {
+      // isOwner is useful only in the cloud
+      isOwner = true;
+    } else {
+      // We must ensure workspace.owner exists, then ensure id same.
+      isOwner = workspace?.owner && user?.id === workspace.owner.id;
+    }
+    const pageList =
+      (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
+    setAppState({
+      ...appState,
+      currentWorkspace: workspace,
+      pageList: pageList,
+      currentPage: null,
+      editor: null,
+      isOwner,
+    });
+
+    return workspace;
+  };
+
+  const setEditor: AppStateFunction['setEditor'] =
+    useRef() as AppStateFunction['setEditor'];
+  setEditor.current = editor => {
+    setAppState({
+      ...appState,
+      editor,
+    });
+  };
+
+  const login = async () => {
+    const { dataCenter } = appState;
+    await dataCenter.login();
+
+    const user = (await dataCenter.getUserInfo()) as User;
+    if (!user) {
+      throw new Error('User info not found');
+    }
+    setAppState({
+      ...appState,
+      user,
+    });
+    return user;
+  };
+
+  const logout = async () => {
+    const { dataCenter } = appState;
+    await dataCenter.logout();
+    setAppState({
+      ...appState,
+      user: null,
+    });
+  };
 
   return (
-    <AppState.Provider value={context}>
-      <DynamicBlocksuite
-        setLoadWorkspaceHandler={setLoadWorkspaceHandler}
-        setCreateEditorHandler={setCreateEditorHandler}
-      />
+    <AppState.Provider
+      value={{
+        ...appState,
+        setEditor,
+        loadPage: loadPage.current,
+        loadWorkspace: loadWorkspace.current,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AppState.Provider>
   );

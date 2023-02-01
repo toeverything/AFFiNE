@@ -3,8 +3,10 @@ import Modal, { ModalCloseButton, ModalWrapper } from '@/ui/modal';
 import getIsMobile from '@/utils/get-is-mobile';
 import { StyledButton, StyledContent, StyledTitle } from './styles';
 import bg from './bg.png';
+import { useTranslation } from '@affine/i18n';
 export const MobileModal = () => {
   const [showModal, setShowModal] = useState(getIsMobile());
+  const { t } = useTranslation();
   return (
     <Modal
       open={showModal}
@@ -25,20 +27,17 @@ export const MobileModal = () => {
           }}
         />
 
-        <StyledTitle>Ooops!</StyledTitle>
+        <StyledTitle>{t('Ooops!')}</StyledTitle>
         <StyledContent>
-          <p>Looks like you are browsing on a mobile device.</p>
-          <p>
-            We are still working on mobile support and recommend you use a
-            desktop device.
-          </p>
+          <p>{t('mobile device')}</p>
+          <p>{t('mobile device description')}</p>
         </StyledContent>
         <StyledButton
           onClick={() => {
             setShowModal(false);
           }}
         >
-          Got it
+          {t('Got it')}
         </StyledButton>
       </ModalWrapper>
     </Modal>

@@ -1,10 +1,10 @@
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { StyledButtonWrapper, StyledTitle } from './styles';
 import { Button } from '@/ui/button';
-import { Wrapper, Content } from '@/ui/layout';
+import { Content, FlexWrapper } from '@/ui/layout';
 import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@affine/i18n';
 // import { Tooltip } from '@/ui/tooltip';
@@ -22,21 +22,28 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
   const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
   const _applyTemplate = function (pageId: string, template: Template) {
-    const page = currentWorkspace?.getPage(pageId);
+    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId);
 
     const title = template.name;
     if (page) {
-      currentWorkspace?.setPageMeta(page.id, { title });
+      currentWorkspace?.blocksuiteWorkspace?.setPageMeta(page.id, { title });
       if (page && page.root === null) {
         setTimeout(() => {
-          const editor = document.querySelector('editor-container');
-          if (editor) {
-            page.addBlock({ flavour: 'affine:surface' }, null);
-            const frameId = page.addBlock({ flavour: 'affine:frame' }, pageId);
-            // TODO blocksuite should offer a method to import markdown from store
-            editor.clipboard.importMarkdown(template.source, `${frameId}`);
-            page.resetHistory();
-            editor.requestUpdate();
+          try {
+            const editor = document.querySelector('editor-container');
+            if (editor) {
+              page.addBlock({ flavour: 'affine:surface' }, null);
+              const frameId = page.addBlock(
+                { flavour: 'affine:frame' },
+                pageId
+              );
+              // TODO blocksuite should offer a method to import markdown from store
+              editor.clipboard.importMarkdown(template.source, `${frameId}`);
+              page.resetHistory();
+              editor.requestUpdate();
+            }
+          } catch (e) {
+            console.error(e);
           }
         }, 300);
       }
@@ -98,18 +105,18 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
             >
               Markdown
             </Button>
-            {/* <Button
+            <Button
               onClick={() => {
                 _handleAppleTemplateFromFilePicker();
               }}
             >
               HTML
-            </Button> */}
+            </Button>
           </StyledButtonWrapper>
         )}
 
         {status === 'importing' && (
-          <Wrapper
+          <FlexWrapper
             wrap={true}
             justifyContent="center"
             style={{ marginTop: 22, paddingBottom: '32px' }}
@@ -119,7 +126,7 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
               OOOOPS! Sorry forgot to remind you that we are working on the
               import function
             </Content>
-          </Wrapper>
+          </FlexWrapper>
         )}
       </ModalWrapper>
     </Modal>

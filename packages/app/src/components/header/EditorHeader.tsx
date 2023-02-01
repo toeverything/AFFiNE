@@ -6,12 +6,12 @@ import {
   StyledTitleWrapper,
 } from './styles';
 import { Content } from '@/ui/layout';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
+import QuickSearchButton from './QuickSearchButton';
 import Header from './Header';
 import usePropsUpdated from '@/hooks/use-props-updated';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
-import QuickSearchButton from './QuickSearchButton';
 
 export const EditorHeader = () => {
   const [title, setTitle] = useState('');

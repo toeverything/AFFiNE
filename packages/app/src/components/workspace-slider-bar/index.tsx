@@ -4,42 +4,41 @@ import {
   StyledArrowButton,
   StyledLink,
   StyledListItem,
-  // StyledListItemForWorkspace,
+  StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
   StyledSliderBarWrapper,
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
-// import { WorkspaceSelector } from './WorkspaceSelector';
-import Collapse from '@mui/material/Collapse';
 import {
   ArrowDownIcon,
   SearchIcon,
   AllPagesIcon,
   FavouritesIcon,
-  ImportIcon,
   TrashIcon,
   AddIcon,
+  SettingsIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
+import { MuiCollapse } from '@/ui/mui';
 import { Tooltip } from '@/ui/tooltip';
 import { useModal } from '@/providers/GlobalModalProvider';
-import { useAppState } from '@/providers/app-state-provider/context';
+import { useAppState } from '@/providers/app-state-provider';
 import { IconButton } from '@/ui/button';
 import useLocalStorage from '@/hooks/use-local-storage';
-import usePageMetaList from '@/hooks/use-page-meta-list';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
-  const pageList = usePageMetaList();
+  const { pageList } = useAppState();
   const router = useRouter();
   const { t } = useTranslation();
   const favoriteList = pageList.filter(p => p.favorite && !p.trash);
   return (
-    <Collapse in={showList}>
+    <MuiCollapse in={showList}>
       {favoriteList.map((pageMeta, index) => {
         const active = router.query.pageId === pageMeta.id;
         return (
@@ -61,27 +60,29 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
       {favoriteList.length === 0 && (
         <StyledSubListItem disable={true}>{t('No item')}</StyledSubListItem>
       )}
-    </Collapse>
+    </MuiCollapse>
   );
 };
 export const WorkSpaceSliderBar = () => {
-  const { triggerQuickSearchModal, triggerImportModal } = useModal();
+  const { triggerQuickSearchModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
-  const { currentWorkspaceId } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { openPage, createPage } = usePageHelper();
   const router = useRouter();
   const { t } = useTranslation();
   const [showTip, setShowTip] = useState(false);
   const [show, setShow] = useLocalStorage('AFFiNE_SLIDE_BAR', false, true);
-
+  const currentWorkspaceId = currentWorkspace?.id;
   const paths = {
     all: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
     favorite: currentWorkspaceId
       ? `/workspace/${currentWorkspaceId}/favorite`
       : '',
     trash: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/trash` : '',
+    setting: currentWorkspaceId
+      ? `/workspace/${currentWorkspaceId}/setting`
+      : '',
   };
-
   return (
     <>
       <StyledSliderBar show={show}>
@@ -109,9 +110,9 @@ export const WorkSpaceSliderBar = () => {
         </Tooltip>
 
         <StyledSliderBarWrapper data-testid="sliderBar">
-          {/* <StyledListItemForWorkspace>
+          <StyledListItemForWorkspace>
             <WorkspaceSelector />
-          </StyledListItemForWorkspace> */}
+          </StyledListItemForWorkspace>
           <StyledListItem
             data-testid="sliderBar-quickSearchButton"
             style={{ cursor: 'pointer' }}
@@ -146,14 +147,27 @@ export const WorkSpaceSliderBar = () => {
             </IconButton>
           </StyledListItem>
           <FavoriteList showList={showSubFavorite} />
+          <StyledListItem active={router.asPath === paths.setting}>
+            <StyledLink href={{ pathname: paths.setting }}>
+              <SettingsIcon />
+              {t('Settings')}
+            </StyledLink>
+          </StyledListItem>
 
-          <StyledListItem
+          {/* <WorkspaceSetting
+            isShow={showWorkspaceSetting}
+            onClose={() => {
+              setShowWorkspaceSetting(false);
+            }}
+          /> */}
+          {/* TODO: will finish the feature next version */}
+          {/* <StyledListItem
             onClick={() => {
               triggerImportModal();
             }}
           >
             <ImportIcon /> {t('Import')}
-          </StyledListItem>
+          </StyledListItem> */}
 
           <Link href={{ pathname: paths.trash }}>
             <StyledListItem active={router.asPath === paths.trash}>

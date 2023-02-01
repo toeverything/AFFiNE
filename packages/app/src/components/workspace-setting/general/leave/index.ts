@@ -1,1 +1,1 @@
-export * from './Leave';
+export { WorkspaceLeave } from './Leave';

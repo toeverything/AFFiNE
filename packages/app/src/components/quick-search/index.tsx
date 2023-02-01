@@ -13,7 +13,8 @@ import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { getUaHelper } from '@/utils';
-import { useAppState } from '@/providers/app-state-provider';
+import { useRouter } from 'next/router';
+import { PublishedResults } from './PublishedResults';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
@@ -22,16 +23,13 @@ const isMac = () => {
   return getUaHelper().isMacOs;
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
+  const [publishWorkspaceName, setPublishWorkspaceName] = useState('');
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
-  const { currentWorkspaceId, workspacesMeta } = useAppState();
-
-  const currentWorkspace = workspacesMeta.find(
-    meta => String(meta.id) === String(currentWorkspaceId)
-  );
-  const isPublic = currentWorkspace?.public;
 
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
@@ -54,6 +52,14 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
     return () =>
       document.removeEventListener('keydown', down, { capture: true });
   }, [open, triggerQuickSearchModal]);
+
+  useEffect(() => {
+    if (router.pathname.startsWith('/public-workspace')) {
+      return setIsPublic(true);
+    } else {
+      return setIsPublic(false);
+    }
+  }, [router]);
 
   return (
     <Modal
@@ -85,28 +91,44 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           }}
         >
           <StyledModalHeader>
-            <Input query={query} setQuery={setQuery} setLoading={setLoading} />
+            <Input
+              query={query}
+              setQuery={setQuery}
+              setLoading={setLoading}
+              isPublic={isPublic}
+              publishWorkspaceName={publishWorkspaceName}
+            />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider />
           <Command.List>
             <StyledContent>
-              <Results
-                query={query}
-                loading={loading}
-                setLoading={setLoading}
-                setShowCreatePage={setShowCreatePage}
-              />
+              {!isPublic ? (
+                <Results
+                  query={query}
+                  loading={loading}
+                  setLoading={setLoading}
+                  setShowCreatePage={setShowCreatePage}
+                />
+              ) : (
+                <PublishedResults
+                  query={query}
+                  loading={loading}
+                  setLoading={setLoading}
+                  onClose={onClose}
+                  setPublishWorkspaceName={setPublishWorkspaceName}
+                />
+              )}
             </StyledContent>
-            {isPublic ? (
-              <></>
-            ) : showCreatePage ? (
-              <>
-                <StyledModalDivider />
-                <StyledModalFooter>
-                  <Footer query={query} />
-                </StyledModalFooter>
-              </>
+            {!isPublic ? (
+              showCreatePage ? (
+                <>
+                  <StyledModalDivider />
+                  <StyledModalFooter>
+                    <Footer query={query} />
+                  </StyledModalFooter>
+                </>
+              ) : null
             ) : null}
           </Command.List>
         </Command>

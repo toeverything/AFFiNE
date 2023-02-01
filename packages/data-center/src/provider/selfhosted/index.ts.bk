@@ -1,0 +1,63 @@
+// import assert from 'assert';
+
+// import { LocalProvider } from '../local/index.js';
+// import { WebsocketProvider } from './sync.js';
+
+// export class SelfHostedProvider extends LocalProvider {
+//   static id = 'selfhosted';
+//   private _ws?: WebsocketProvider;
+
+//   constructor() {
+//     super();
+//   }
+
+//   async destroy() {
+//     this._ws?.disconnect();
+//   }
+
+//   async initData() {
+//     const databases = await indexedDB.databases();
+//     await super.initData(
+//       // set locally to true if exists a same name db
+//       databases
+//         .map(db => db.name)
+//         .filter(v => v)
+//         .includes(this._workspace.room)
+//     );
+
+//     const workspace = this._workspace;
+//     const doc = workspace.doc;
+
+//     if (workspace.room) {
+//       try {
+//         // Wait for ws synchronization to complete, otherwise the data will be modified in reverse, which can be optimized later
+//         this._ws = new WebsocketProvider(this.host, workspace.room, doc);
+//         await new Promise<void>((resolve, reject) => {
+//           // TODO: synced will also be triggered on reconnection after losing sync
+//           // There needs to be an event mechanism to emit the synchronization state to the upper layer
+//           assert(this._ws);
+//           this._ws.once('synced', () => resolve());
+//           this._ws.once('lost-connection', () => resolve());
+//           this._ws.once('connection-error', () => reject());
+//         });
+//         this._signals.listAdd.emit({
+//           workspace: workspace.room,
+//           provider: this.id,
+//           locally: true,
+//         });
+//       } catch (e) {
+//         this._logger('Failed to init cloud workspace', e);
+//       }
+//     }
+
+//     // if after update, the space:meta is empty
+//     // then we need to get map with doc
+//     // just a workaround for yjs
+//     doc.getMap('space:meta');
+//   }
+
+//   private get host() {
+//     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+//     return `${protocol}//${location.host}/collaboration/`;
+//   }
+// }

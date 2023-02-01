@@ -21,5 +21,10 @@
     "outDir": "./dist"
   },
   "include": ["next-env.d.ts", "src/**/*.ts", "pages/**/*.tsx"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/provider/affine/sync.js",
+    "src/**/*.spec.ts"
+  ]
 }
