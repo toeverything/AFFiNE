@@ -33,8 +33,8 @@ export const useWorkspaceHelper = () => {
       await dataCenter.updateWorkspaceMeta({ name }, workspace);
     }
     if (avatarBlob) {
-      // const blobId = await dataCenter.setBlob(workspace, avatarBlob);
-      // await dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
+      const blobId = await dataCenter.setBlob(workspace, avatarBlob);
+      await dataCenter.updateWorkspaceMeta({ avatar: blobId }, workspace);
     }
   };
 

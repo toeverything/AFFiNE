@@ -16,7 +16,6 @@ import {
   SearchIcon,
   AllPagesIcon,
   FavouritesIcon,
-  ImportIcon,
   TrashIcon,
   AddIcon,
   SettingsIcon,
@@ -65,7 +64,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
   );
 };
 export const WorkSpaceSliderBar = () => {
-  const { triggerQuickSearchModal, triggerImportModal } = useModal();
+  const { triggerQuickSearchModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
   const { currentWorkspace } = useAppState();
   const { openPage, createPage } = usePageHelper();
@@ -161,14 +160,14 @@ export const WorkSpaceSliderBar = () => {
               setShowWorkspaceSetting(false);
             }}
           /> */}
-
-          <StyledListItem
+          {/* TODO: will finish the feature next version */}
+          {/* <StyledListItem
             onClick={() => {
               triggerImportModal();
             }}
           >
             <ImportIcon /> {t('Import')}
-          </StyledListItem>
+          </StyledListItem> */}
 
           <Link href={{ pathname: paths.trash }}>
             <StyledListItem active={router.asPath === paths.trash}>

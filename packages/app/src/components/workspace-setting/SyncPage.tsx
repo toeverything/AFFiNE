@@ -9,11 +9,13 @@ import { DownloadIcon } from '@blocksuite/icons';
 import { Button } from '@/ui/button';
 import { Menu, MenuItem } from '@/ui/menu';
 import { WorkspaceUnit } from '@affine/datacenter';
-import { Trans, useTranslation } from '@affine/i18n';
+import { useTranslation, Trans } from '@affine/i18n';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { EnableWorkspaceButton } from '../enable-workspace';
+import { useAppState } from '@/providers/app-state-provider';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const { t } = useTranslation();
+  const { user } = useAppState();
   return (
     <div>
       <StyledPublishContent>
@@ -51,7 +53,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 All data will be synchronised and saved to the AFFiNE account
                 <StyledEmail>
                   {{
-                    email: '{' + workspace.owner?.email + '}.',
+                    email: '{' + user?.email + '}.',
                   }}
                 </StyledEmail>
               </Trans>

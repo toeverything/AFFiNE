@@ -148,5 +148,6 @@ export const StyledPublishContent = styled('div')(({ theme }) => {
     flexDirection: 'column',
     fontSize: theme.font.base,
     lineHeight: theme.font.lineHeightBase,
+    flex: 1,
   };
 });
