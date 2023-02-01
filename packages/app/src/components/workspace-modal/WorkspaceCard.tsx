@@ -3,8 +3,9 @@ import {
   CloudIcon,
   LocalIcon,
   OfflineIcon,
+  PublishedIcon,
 } from '@/components/workspace-modal/icons';
-import { PublishIcon, UsersIcon } from '@blocksuite/icons';
+import { UsersIcon } from '@blocksuite/icons';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
 import { StyleWorkspaceInfo, StyleWorkspaceTitle, StyledCard } from './styles';
@@ -60,7 +61,7 @@ export const WorkspaceCard = ({
         )}
         {workspaceData.published && (
           <p>
-            <PublishIcon fontSize={16} /> Published to Web
+            <PublishedIcon /> Published to Web
           </p>
         )}
       </StyleWorkspaceInfo>
