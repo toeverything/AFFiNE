@@ -152,6 +152,11 @@ export const Popper = ({
                   onPointerLeave={onPointerLeaveHandler}
                   style={popoverStyle}
                   className={popoverClassName}
+                  onClick={() => {
+                    if (hasClickTrigger && !visibleControlledByParent) {
+                      setVisible(false);
+                    }
+                  }}
                 >
                   {showArrow && (
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
