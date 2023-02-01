@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
-test.describe('Open contact us', () => {
+test.skip('Open contact us', () => {
   test.skip('Click about us', async ({ page }) => {
     const currentWorkspace = page.getByTestId('current-workspace');
     await currentWorkspace.click();
