@@ -42,19 +42,18 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
         ? 'Welcome to AFFiNE Alpha "Downhill"'
         : '';
       workspace?.setPageMeta(page.id, { title });
-
-      const pageId = page.addBlock({
-        flavour: 'affine:page',
-        title,
-      });
-      page.addBlock({ flavour: 'affine:surface' });
-      const frameId = page.addBlock({ flavour: 'affine:frame' }, pageId);
-      page.addBlock({ flavour: 'affine:frame' }, pageId);
+      const pageBlockId = page.addBlockByFlavour('affine:page', { title });
+      page.addBlockByFlavour('affine:surface', {}, null);
+      // Add frame block inside page block
+      const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
+      // Add paragraph block inside frame block
       // If this is a first page in workspace, init an introduction markdown
       if (isFirstPage) {
-        editor.clipboard.importMarkdown(exampleMarkdown, `${frameId}`);
+        editor.clipboard.importMarkdown(exampleMarkdown, frameId);
         workspace.setPageMeta(page.id, { title });
         page.resetHistory();
+      } else {
+        page.addBlockByFlavour('affine:paragraph', {}, frameId);
       }
       page.resetHistory();
     }

@@ -78,6 +78,7 @@ export const InviteMemberModal = ({
             <ModalCloseButton
               onClick={() => {
                 onClose();
+                setEmail('');
               }}
             />
           </Header>
@@ -123,6 +124,7 @@ export const InviteMemberModal = ({
               style={{ width: '364px', height: '38px', borderRadius: '40px' }}
               onClick={async () => {
                 await inviteMember(email);
+                setEmail('');
                 onInviteSuccess();
               }}
             >
