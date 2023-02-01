@@ -3,6 +3,7 @@ import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
 import { Check, UnCheck } from './icon';
 import { useState } from 'react';
+import { useTranslation } from '@affine/i18n';
 interface LoginModalProps {
   open: boolean;
   onClose: (wait: boolean) => void;
@@ -10,6 +11,7 @@ interface LoginModalProps {
 
 export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
   const [localCache, setLocalCache] = useState(false);
+  const { t } = useTranslation();
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
       <ModalWrapper width={560} height={292}>
@@ -21,8 +23,8 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
           />
         </Header>
         <Content>
-          <ContentTitle>{'Sign out?'}</ContentTitle>
-          <SignDes>Set up an AFFINE account to sync data</SignDes>
+          <ContentTitle>{t('Sign out')}?</ContentTitle>
+          <SignDes>{t('Set up an AFFiNE account to sync data')}</SignDes>
           <StyleTips>
             {localCache ? (
               <StyleCheck
@@ -41,7 +43,7 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
                 <UnCheck></UnCheck>
               </StyleCheck>
             )}
-            Retain local cached data
+            {t('Retain local cached data')}
           </StyleTips>
           <div>
             <Button
@@ -51,7 +53,7 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
                 onClose(true);
               }}
             >
-              Wait for Sync
+              {t('Wait for Sync')}
             </Button>
             <Button
               type="danger"
@@ -60,7 +62,7 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
                 onClose(false);
               }}
             >
-              Force Sign Out
+              {t('Force Sign Out')}
             </Button>
           </div>
         </Content>

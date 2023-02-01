@@ -4,6 +4,7 @@ import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { IconButton } from '@/ui/button';
 import { useAppState } from '@/providers/app-state-provider';
 import { StyledFooter, StyleUserInfo, StyleSignIn } from './styles';
+import { useTranslation } from '@affine/i18n';
 
 export const Footer = ({
   onLogin,
@@ -13,6 +14,7 @@ export const Footer = ({
   onLogout: () => void;
 }) => {
   const { user } = useAppState();
+  const { t } = useTranslation();
 
   return (
     <StyledFooter>
@@ -48,7 +50,7 @@ export const Footer = ({
           <span>
             <CloudInsyncIcon fontSize={16} />
           </span>
-          Sign in to sync with AFFINE Cloud
+          {t('Sign in')}
         </StyleSignIn>
       )}
     </StyledFooter>

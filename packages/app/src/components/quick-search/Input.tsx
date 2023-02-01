@@ -8,17 +8,17 @@ import React, {
 import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
-import { useAppState } from '@/providers/app-state-provider';
 import { useTranslation } from '@affine/i18n';
 export const Input = (props: {
   query: string;
   setQuery: Dispatch<SetStateAction<string>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
+  isPublic: boolean;
+  publishWorkspaceName: string | undefined;
 }) => {
   const [isComposition, setIsComposition] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
   useEffect(() => {
     inputRef.current?.addEventListener(
@@ -78,9 +78,9 @@ export const Input = (props: {
           }
         }}
         placeholder={
-          currentWorkspace?.isPublish
+          props.isPublic
             ? t('Quick search placeholder2', {
-                workspace: currentWorkspace?.blocksuiteWorkspace?.meta.name,
+                workspace: props.publishWorkspaceName,
               })
             : t('Quick search placeholder')
         }

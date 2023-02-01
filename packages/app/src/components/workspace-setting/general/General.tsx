@@ -50,7 +50,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   return workspace ? (
     <StyleGeneral>
       <div style={{ flex: 1, overflow: 'auto' }}>
-        <StyledSettingH2>Workspace Avatar</StyledSettingH2>
+        <StyledSettingH2>{t('Workspace Avatar')}</StyledSettingH2>
         <StyledSettingAvatarContent>
           <StyledAvatar>
             <Upload
@@ -106,18 +106,18 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             currentWorkspace?.provider === 'local' ? (
               <StyledProviderInfo>
                 <LocalIcon />
-                Local Workspace
+                {t('Local Workspace')}
               </StyledProviderInfo>
             ) : (
               <StyledProviderInfo>
                 <CloudIcon />
-                All data can be accessed offline
+                {t('Available Offline')}
               </StyledProviderInfo>
             )
           ) : (
             <StyledProviderInfo>
               <UsersIcon fontSize={20} color={'#FF646B'} />
-              Joined Workspace
+              {t('Joined Workspace')}
             </StyledProviderInfo>
           )}
         </StyledSettingInputContainer>

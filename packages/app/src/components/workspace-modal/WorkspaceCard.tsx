@@ -8,6 +8,7 @@ import { PublishIcon, UsersIcon } from '@blocksuite/icons';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
 import { StyleWorkspaceInfo, StyleWorkspaceTitle, StyledCard } from './styles';
+import { useTranslation } from '@affine/i18n';
 import { FlexWrapper } from '@/ui/layout';
 
 export const WorkspaceCard = ({
@@ -18,7 +19,7 @@ export const WorkspaceCard = ({
   onClick: (data: WorkspaceUnit) => void;
 }) => {
   const { currentWorkspace, isOwner } = useAppState();
-
+  const { t } = useTranslation();
   return (
     <StyledCard
       onClick={() => {
@@ -38,29 +39,30 @@ export const WorkspaceCard = ({
           workspaceData.provider === 'local' ? (
             <p>
               <LocalIcon />
-              Local Workspace
+              {t('Local Workspace')}
             </p>
           ) : (
             <p>
               <CloudIcon />
-              Cloud Workspace
+              {t('Cloud Workspace')}
             </p>
           )
         ) : (
           <p>
             <UsersIcon fontSize={20} color={'#FF646B'} />
-            Joined Workspace
+            {t('Joined Workspace')}
           </p>
         )}
         {workspaceData.provider === 'local' && (
           <p>
             <OfflineIcon />
-            All data can be accessed offline
+            {t('Available Offline')}
           </p>
         )}
         {workspaceData.published && (
           <p>
-            <PublishIcon fontSize={16} /> Published to Web
+            <PublishIcon fontSize={16} />
+            {t('Published to Web')}
           </p>
         )}
       </StyleWorkspaceInfo>

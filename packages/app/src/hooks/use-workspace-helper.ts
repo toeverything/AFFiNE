@@ -3,9 +3,11 @@ import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import { WorkspaceUnit } from '@affine/datacenter';
 import router from 'next/router';
+import { useTranslation } from '@affine/i18n';
 
 export const useWorkspaceHelper = () => {
   const { confirm } = useConfirm();
+  const { t } = useTranslation();
   const { dataCenter, currentWorkspace, user, login } = useAppState();
   const createWorkspace = async (name: string) => {
     const workspaceInfo = await dataCenter.createWorkspace({
@@ -38,10 +40,10 @@ export const useWorkspaceHelper = () => {
 
   const enableWorkspace = async () => {
     confirm({
-      title: 'Enable AFFiNE Cloud?',
-      content: `If enabled, the data in this workspace will be backed up and synchronized via AFFiNE Cloud.`,
-      confirmText: user ? 'Enable' : 'Sign in and Enable',
-      cancelText: 'Skip',
+      title: `${t('Enable AFFiNE Cloud')}?`,
+      content: t('Enable AFFiNE Cloud Description'),
+      confirmText: user ? t('Enable') : t('Sign in and Enable'),
+      cancelText: t('Skip'),
       confirmType: 'primary',
       buttonDirection: 'column',
     }).then(async confirm => {
@@ -53,7 +55,7 @@ export const useWorkspaceHelper = () => {
           currentWorkspace
         );
         workspace && router.push(`/workspace/${workspace.id}/setting`);
-        toast('Enabled success');
+        toast(t('Enabled success'));
       }
     });
   };
