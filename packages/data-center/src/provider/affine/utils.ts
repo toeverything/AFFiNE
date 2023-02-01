@@ -83,6 +83,6 @@ export const migrateBlobDB = async (
   });
   await newPendingDB.setMany(pendingEntries);
 
-  await oldDB.clear();
-  await oldPendingDB.clear();
+  await oldDB.deleteDB();
+  await oldPendingDB.deleteDB();
 };
