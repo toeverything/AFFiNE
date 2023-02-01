@@ -8,7 +8,7 @@ export const Check = () => {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <g clip-path="url(#clip0_9266_16831)">
+        <g clipPath="url(#clip0_9266_16831)">
           <path
             fillRule="evenodd"
             clipRule="evenodd"
