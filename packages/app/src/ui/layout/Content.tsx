@@ -14,8 +14,21 @@ export type ContentProps = {
   lineNum?: number;
   children: string;
 };
-
-export const Content = styled.div<ContentProps>(
+export const Content = styled('div', {
+  shouldForwardProp: prop => {
+    return ![
+      'color',
+      'fontSize',
+      'weight',
+      'lineHeight',
+      'ellipsis',
+      'lineNum',
+      'width',
+      'maxWidth',
+      'align',
+    ].includes(prop);
+  },
+})<ContentProps>(
   ({
     theme,
     color,

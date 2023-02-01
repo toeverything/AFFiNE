@@ -1,7 +1,7 @@
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { PageMeta } from '@/providers/app-state-provider';
 import { Menu, MenuItem } from '@/ui/menu';
-import { Wrapper } from '@/ui/layout';
+import { FlexWrapper } from '@/ui/layout';
 import { IconButton } from '@/ui/button';
 import {
   MoreVerticalIcon,
@@ -63,13 +63,13 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
     </>
   );
   return (
-    <Wrapper alignItems="center" justifyContent="center">
+    <FlexWrapper alignItems="center" justifyContent="center">
       <Menu content={OperationMenu} placement="bottom-end" disablePortal={true}>
         <IconButton darker={true}>
           <MoreVerticalIcon />
         </IconButton>
       </Menu>
-    </Wrapper>
+    </FlexWrapper>
   );
 };
 
@@ -80,7 +80,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { confirm } = useConfirm();
   const { t } = useTranslation();
   return (
-    <Wrapper>
+    <FlexWrapper>
       <IconButton
         darker={true}
         style={{ marginRight: '12px' }}
@@ -108,6 +108,6 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
       >
         <DeleteIcon />
       </IconButton>
-    </Wrapper>
+    </FlexWrapper>
   );
 };

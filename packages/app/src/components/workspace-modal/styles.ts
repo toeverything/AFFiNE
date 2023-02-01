@@ -45,6 +45,7 @@ export const StyledCard = styled.div<{
     borderRadius: '12px',
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),
+    marginBottom: '24px',
     ':hover': {
       background: theme.colors.hoverBackground,
       '.add-icon': {
@@ -125,7 +126,7 @@ export const StyledModalContent = styled('div')({
   padding: '8px 40px',
   marginTop: '72px',
   overflow: 'auto',
-  ...displayFlex('space-between', 'flex-start', 'column'),
+  ...displayFlex('space-between', 'flex-start', 'flex-start'),
   flexWrap: 'wrap',
 });
 export const StyledOperationWrapper = styled.div(() => {
