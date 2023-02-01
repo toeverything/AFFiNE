@@ -58,6 +58,7 @@ importers:
       '@types/react-dom': ^18.0.9
       '@typescript-eslint/eslint-plugin': 5.47.0
       '@typescript-eslint/parser': 5.47.0
+      concurrently: ^7.6.0
       cross-env: ^7.0.3
       esbuild: ^0.16.10
       eslint: 8.30.0
@@ -116,6 +117,7 @@ importers:
       '@types/react-dom': 18.0.10
       '@typescript-eslint/eslint-plugin': 5.47.0_ncmi6noazr3nzas7jxykisekym
       '@typescript-eslint/parser': 5.47.0_lzzuuodtsqwxnvqeq4g4likcqa
+      concurrently: 7.6.0
       cross-env: 7.0.3
       esbuild: 0.16.17
       eslint: 8.30.0
