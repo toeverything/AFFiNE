@@ -1,14 +1,8 @@
 import { useAppState } from '@/providers/app-state-provider';
-import { useConfirm } from '@/providers/ConfirmProvider';
-import { toast } from '@/ui/toast';
 import { WorkspaceUnit } from '@affine/datacenter';
-import router from 'next/router';
-import { useTranslation } from '@affine/i18n';
 
 export const useWorkspaceHelper = () => {
-  const { confirm } = useConfirm();
-  const { t } = useTranslation();
-  const { dataCenter, currentWorkspace, user, login } = useAppState();
+  const { dataCenter, currentWorkspace } = useAppState();
   const createWorkspace = async (name: string) => {
     const workspaceInfo = await dataCenter.createWorkspace({
       name: name,
@@ -38,28 +32,6 @@ export const useWorkspaceHelper = () => {
     }
   };
 
-  const enableWorkspace = async () => {
-    confirm({
-      title: `${t('Enable AFFiNE Cloud')}?`,
-      content: t('Enable AFFiNE Cloud Description'),
-      confirmText: user ? t('Enable') : t('Sign in and Enable'),
-      cancelText: t('Skip'),
-      confirmType: 'primary',
-      buttonDirection: 'column',
-    }).then(async confirm => {
-      if (confirm && currentWorkspace) {
-        if (!user) {
-          await login();
-        }
-        const workspace = await dataCenter.enableWorkspaceCloud(
-          currentWorkspace
-        );
-        workspace && router.push(`/workspace/${workspace.id}/setting`);
-        toast(t('Enabled success'));
-      }
-    });
-  };
-
   const deleteWorkSpace = async () => {
     currentWorkspace && (await dataCenter.deleteWorkspace(currentWorkspace.id));
   };
@@ -79,7 +51,6 @@ export const useWorkspaceHelper = () => {
     createWorkspace,
     publishWorkspace,
     updateWorkspace,
-    enableWorkspace,
     deleteWorkSpace,
     leaveWorkSpace,
     acceptInvite,
