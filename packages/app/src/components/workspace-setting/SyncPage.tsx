@@ -5,9 +5,9 @@ import {
   StyledWorkspaceName,
   StyledEmail,
 } from './style';
-import { DownloadIcon } from '@blocksuite/icons';
-import { Button } from '@/ui/button';
-import { Menu, MenuItem } from '@/ui/menu';
+// import { DownloadIcon } from '@blocksuite/icons';
+// import { Button } from '@/ui/button';
+// import { Menu, MenuItem } from '@/ui/menu';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation, Trans } from '@affine/i18n';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
