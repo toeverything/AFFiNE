@@ -360,6 +360,10 @@ export class AffineProvider extends BaseProvider {
     await this._apis.updateWorkspace({ id, public: isPublish });
   }
 
+  public override getToken(): string {
+    return this._apis.token.token;
+  }
+
   public override async getUserByEmail(
     workspace_id: string,
     email: string

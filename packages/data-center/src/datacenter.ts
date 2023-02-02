@@ -17,7 +17,6 @@ import { getLogger } from './logger';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
 import { WorkspaceUnit } from './workspace-unit';
-import { token } from './provider/affine/apis/token';
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business
@@ -169,7 +168,7 @@ export class DataCenter {
     const params: StoreOptions = {};
     if (provider.id === 'affine') {
       params.blobOptionsGetter = (k: string) =>
-        ({ api: '/api/workspace', token: token.token }[k]);
+        ({ api: '/api/workspace', token: provider.getToken() }[k]);
     } else {
       params.blobOptionsGetter = (k: string) => undefined;
     }
