@@ -397,7 +397,6 @@ export class AffineProvider extends BaseProvider {
       provider: this.id,
       syncMode: 'core',
     });
-
     await migrateBlobDB(workspaceUnit.id, id);
 
     const blocksuiteWorkspace = createBlocksuiteWorkspace(id);
