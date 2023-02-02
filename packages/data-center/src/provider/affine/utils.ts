@@ -82,7 +82,6 @@ export const migrateBlobDB = async (
     return [id, { id, blob }] as [string, PendingTask];
   });
   await newPendingDB.setMany(pendingEntries);
-  // FIXME: delete old db
-  // await oldDB.deleteDB();
-  // await oldPendingDB.deleteDB();
+  await oldDB.clear();
+  await oldPendingDB.clear();
 };

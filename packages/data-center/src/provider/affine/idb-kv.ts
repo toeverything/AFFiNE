@@ -1,9 +1,8 @@
-import { createStore, keys, setMany, getMany } from 'idb-keyval';
-import * as idb from 'lib0/indexeddb.js';
+import { createStore, keys, setMany, getMany, clear } from 'idb-keyval';
 
 type IDBInstance<T = ArrayBufferLike> = {
   keys: () => Promise<string[]>;
-  deleteDB: () => Promise<void>;
+  clear: () => Promise<void>;
   setMany: (entries: [string, T][]) => Promise<void>;
   getMany: (keys: string[]) => Promise<T[]>;
 };
@@ -16,7 +15,7 @@ export function getDatabase<T = ArrayBufferLike>(
   const db = createStore(name, type);
   return {
     keys: () => keys(db),
-    deleteDB: () => idb.deleteDB(name),
+    clear: () => clear(db),
     setMany: entries => setMany(entries, db),
     getMany: keys => getMany(keys, db),
   };
