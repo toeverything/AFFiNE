@@ -58,8 +58,8 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                 </StyledEmail>
               </Trans>
             </div>
-
-            <StyledButtonContainer>
+            {/* TODO: will finish the feature next version  */}
+            {/* <StyledButtonContainer>
               <Menu
                 content={
                   <>
@@ -88,7 +88,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                   {t('Download data', { CoreOrAll: '' })}
                 </Button>
               </Menu>
-            </StyledButtonContainer>
+            </StyledButtonContainer> */}
           </>
         )}
       </StyledPublishContent>
