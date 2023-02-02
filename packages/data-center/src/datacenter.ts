@@ -6,23 +6,32 @@ import type {
   CreateWorkspaceInfoParams,
   UpdateWorkspaceMetaParams,
 } from './provider/base';
-import { LocalProvider } from './provider/local/local';
+import { LocalProvider } from './provider/local';
 import { AffineProvider } from './provider';
 import type { Message } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
-import { createBlocksuiteWorkspace } from './utils/index';
+import { createBlocksuiteWorkspace } from './utils';
 import { MessageCenter } from './message';
 import { WorkspaceUnit } from './workspace-unit';
+import { Observable } from 'lib0/observable';
+import { HTTPError } from 'ky';
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business
  */
+
+type EventNames = 'error';
 export class DataCenter {
   private readonly _workspaceUnitCollection = new WorkspaceUnitCollection();
   private readonly _logger = getLogger('dc');
   private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
   private _messageCenter = MessageCenter.getInstance();
+  private _events = new Observable();
+  public on(type: EventNames, callback: (error: HTTPError) => void) {
+    this._events.on(type, callback);
+  }
+
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -104,7 +113,11 @@ export class DataCenter {
       'There is no provider. You should add provider first.'
     );
 
-    const workspaceUnit = await this._mainProvider.createWorkspace(params);
+    const workspaceUnit = await this._mainProvider
+      .createWorkspace(params)
+      .catch(error => {
+        this._events.emit('error', [error]);
+      });
     return workspaceUnit;
   }
 
@@ -117,7 +130,9 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     assert(provider, `Workspace exists, but we couldn't find its provider.`);
-    await provider.deleteWorkspace(workspaceId);
+    await provider.deleteWorkspace(workspaceId).catch(error => {
+      this._events.emit('error', [error]);
+    });
   }
 
   /**
@@ -140,7 +155,9 @@ export class DataCenter {
   public async login(providerId = 'affine') {
     const provider = this.providerMap.get(providerId);
     assert(provider, `provide '${providerId}' is not registered`);
-    await provider.auth();
+    await provider.auth().catch(error => {
+      this._events.emit('error', [error]);
+    });
     provider.loadWorkspaces();
   }
 
@@ -150,7 +167,9 @@ export class DataCenter {
   public async logout(providerId = 'affine') {
     const provider = this.providerMap.get(providerId);
     assert(provider, `provide '${providerId}' is not registered`);
-    await provider.logout();
+    await provider.logout().catch(error => {
+      this._events.emit('error', [error]);
+    });
   }
 
   /**
@@ -214,7 +233,9 @@ export class DataCenter {
     // XXX: maybe return all user info
     const provider = this.providerMap.get(providerId);
     assert(provider, `provide '${providerId}' is not registered`);
-    return provider.getUserInfo();
+    return provider.getUserInfo().catch(error => {
+      this._events.emit('error', [error]);
+    });
   }
 
   /**
@@ -261,7 +282,9 @@ export class DataCenter {
     const workspaceInfo = this._workspaceUnitCollection.find(workspaceUnit.id);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
-    provider?.updateWorkspaceMeta(workspaceUnit.id, update);
+    provider?.updateWorkspaceMeta(workspaceUnit.id, update).catch(error => {
+      this._events.emit('error', [error]);
+    });
   }
 
   /**
@@ -274,8 +297,12 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      await provider.closeWorkspace(workspaceId);
-      await provider.leaveWorkspace(workspaceId);
+      await provider.closeWorkspace(workspaceId).catch(error => {
+        this._events.emit('error', [error]);
+      });
+      await provider.leaveWorkspace(workspaceId).catch(error => {
+        this._events.emit('error', [error]);
+      });
     }
   }
 
@@ -284,7 +311,9 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      await provider.publish(workspaceId, isPublish);
+      await provider.publish(workspaceId, isPublish).catch(error => {
+        this._events.emit('error', [error]);
+      });
     }
   }
 
@@ -298,20 +327,23 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      await provider.invite(workspaceId, email);
+      await provider.invite(workspaceId, email).catch(error => {
+        this._events.emit('error', [error]);
+      });
     }
   }
 
   /**
    * remove the new member to the workspace
-   * @param {number} permissionId permission id
    */
   public async removeMember(workspaceId: string, permissionId: number) {
     const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      await provider.removeMember(permissionId);
+      await provider.removeMember(permissionId).catch(error => {
+        this._events.emit('error', [error]);
+      });
     }
   }
 
@@ -329,7 +361,11 @@ export class DataCenter {
   ) {
     const providerInstance = this.providerMap.get(provider);
     if (providerInstance) {
-      return await providerInstance.getUserByEmail(workspaceId, email);
+      return await providerInstance
+        .getUserByEmail(workspaceId, email)
+        .catch(error => {
+          this._events.emit('error', [error]);
+        });
     }
   }
 
@@ -343,7 +379,11 @@ export class DataCenter {
     }
     const provider = this.providerMap.get(providerId);
     assert(provider);
-    const newWorkspaceUnit = await provider.extendWorkspace(workspaceUnit);
+    const newWorkspaceUnit = await provider
+      .extendWorkspace(workspaceUnit)
+      .catch(error => {
+        this._events.emit('error', [error]);
+      });
 
     // Currently we only allow enable one provider, so after enable new provider,
     // delete the old workspace from its provider.
@@ -422,7 +462,9 @@ export class DataCenter {
     assert(workspaceInfo, 'Workspace not found');
     const provider = this.providerMap.get(workspaceInfo.provider);
     if (provider) {
-      return await provider.getWorkspaceMembers(workspaceId);
+      return await provider.getWorkspaceMembers(workspaceId).catch(error => {
+        this._events.emit('error', [error]);
+      });
     }
     return [];
   }
@@ -435,7 +477,9 @@ export class DataCenter {
   async acceptInvitation(inviteCode: string, providerStr = 'affine') {
     const provider = this.providerMap.get(providerStr);
     if (provider) {
-      return await provider.acceptInvitation(inviteCode);
+      return await provider.acceptInvitation(inviteCode).catch(error => {
+        this._events.emit('error', [error]);
+      });
     }
     return null;
   }
