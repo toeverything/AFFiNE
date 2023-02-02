@@ -64,6 +64,10 @@ export class BaseProvider {
     return;
   }
 
+  public getToken(): string {
+    return '';
+  }
+
   /**
    * warp workspace with provider functions
    * @param workspace

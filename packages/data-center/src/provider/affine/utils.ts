@@ -66,7 +66,7 @@ export const migrateBlobDB = async (
   newWorkspaceId: string
 ) => {
   const oldDB = getDatabase('blob', oldWorkspaceId);
-  const oldPendingDB = getDatabase<PendingTask>('pending', newWorkspaceId);
+  const oldPendingDB = getDatabase<PendingTask>('pending', oldWorkspaceId);
 
   const newDB = getDatabase('blob', newWorkspaceId);
   const newPendingDB = getDatabase<PendingTask>('pending', newWorkspaceId);
