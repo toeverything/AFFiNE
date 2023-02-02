@@ -1,9 +1,16 @@
-import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import {
+  StoreOptions,
+  Workspace as BlocksuiteWorkspace,
+} from '@blocksuite/store';
 import { builtInSchemas } from '@blocksuite/blocks/models';
 
-export const createBlocksuiteWorkspace = (workspaceId: string) => {
+export const createBlocksuiteWorkspace = (
+  workspaceId: string,
+  workspaceOption?: StoreOptions
+) => {
   return new BlocksuiteWorkspace({
     room: workspaceId,
+    ...workspaceOption,
   }).register(builtInSchemas);
 };
 
