@@ -1,11 +1,12 @@
 import { styled } from '@/styles';
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { Button } from '@/ui/button';
+import { Modal, ModalWrapper } from '@/ui/modal';
+import { Button, IconButton } from '@/ui/button';
 import { useTranslation } from '@affine/i18n';
 import { useAppState } from '@/providers/app-state-provider';
 import { useState } from 'react';
 import router from 'next/router';
 import { toast } from '@/ui/toast';
+import { CloseIcon } from '@blocksuite/icons';
 interface EnableWorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -22,11 +23,13 @@ export const EnableWorkspaceModal = ({
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
       <ModalWrapper width={560} height={292}>
         <Header>
-          <ModalCloseButton
+          <IconButton
             onClick={() => {
               onClose();
             }}
-          />
+          >
+            <CloseIcon />
+          </IconButton>
         </Header>
         <Content>
           <ContentTitle>{t('Enable AFFiNE Cloud')}?</ContentTitle>
