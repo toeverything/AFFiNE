@@ -27,8 +27,8 @@
     "yjs": "^13.5.44"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.4.0-20230201063624-4e0463b",
-    "@blocksuite/store": "0.4.0-20230201063624-4e0463b",
+    "@blocksuite/blocks": "0.4.0-20230203030233-b22bea7",
+    "@blocksuite/store": "0.4.0-20230203030233-b22bea7",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
     "firebase": "^9.15.0",
