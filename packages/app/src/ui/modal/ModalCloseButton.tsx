@@ -13,7 +13,7 @@ const StyledIconButton = styled(IconButton)<
   Pick<ModalCloseButtonProps, 'top' | 'right'>
 >(({ top, right }) => {
   return {
-    position: top ? 'absolute' : 'unset',
+    position: 'absolute',
     top: top ?? 24,
     right: right ?? 40,
   };
