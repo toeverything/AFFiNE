@@ -1,5 +1,5 @@
 import { styled } from '@/styles';
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
+import { Modal, ModalWrapper } from '@/ui/modal';
 import { Button, IconButton } from '@/ui/button';
 import { useTranslation } from '@affine/i18n';
 import { useAppState } from '@/providers/app-state-provider';
