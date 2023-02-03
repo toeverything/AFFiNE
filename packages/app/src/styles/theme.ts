@@ -102,8 +102,8 @@ export const getDarkTheme = (
           ? lightTheme.colors.codeBackground
           : '#505662',
       codeBlockBackground: '#36383D',
-      blockHubBackground: '#fbfbfc',
-      blockHubHoverBackground: '#f8f9ff',
+      blockHubBackground: '#272727',
+      blockHubHoverBackground: '#363636',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
 
