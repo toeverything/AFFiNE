@@ -2,7 +2,7 @@ import {
   StoreOptions,
   Workspace as BlocksuiteWorkspace,
 } from '@blocksuite/store';
-import { builtInSchemas } from '@blocksuite/blocks/models';
+import { builtInSchemas, __unstableSchemas } from '@blocksuite/blocks/models';
 
 export const createBlocksuiteWorkspace = (
   workspaceId: string,
@@ -11,7 +11,9 @@ export const createBlocksuiteWorkspace = (
   return new BlocksuiteWorkspace({
     room: workspaceId,
     ...workspaceOption,
-  }).register(builtInSchemas);
+  })
+    .register(builtInSchemas)
+    .register(__unstableSchemas);
 };
 
 const DefaultHeadImgColors = [
