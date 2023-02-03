@@ -93,7 +93,8 @@ const StyleTips = styled('div')(() => {
   return {
     userSelect: 'none',
     width: '400px',
-    marginBottom: '32px',
+    margin: 'auto',
+    marginBottom: '24px',
     marginTop: '16px',
   };
 });
