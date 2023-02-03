@@ -24,3 +24,9 @@ Using this version format, you can easily check the diff between each version.
 
 For example, the diff from old version `0.4.0-20230201063624-4e0463b` to new version `0.4.0-20230203030233-b22bea7`
 is <https://github.com/toeverything/blocksuite/compare/4e0463b...b22bea7>.
+
+## Fix the breaking change
+
+You can follow this file to keep updated:
+
+https://github.com/toeverything/blocksuite/blob/master/packages/playground/src/main.ts
