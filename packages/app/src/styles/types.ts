@@ -26,6 +26,8 @@ export interface AffineTheme {
     innerHoverBackground: string;
     codeBackground: string;
     codeBlockBackground: string;
+    blockHubBackground: string;
+    blockHubHoverBackground: string;
     warningBackground: string;
     errorBackground: string;
     // Use for the page`s text
@@ -37,6 +39,7 @@ export interface AffineTheme {
     linkColor2: string;
     linkVisitedColor: string;
     iconColor: string;
+    handleColor: string;
     popoverColor: string;
     inputColor: string;
     tooltipColor: string;
