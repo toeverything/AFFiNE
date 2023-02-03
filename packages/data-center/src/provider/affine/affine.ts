@@ -109,17 +109,17 @@ export class AffineProvider extends BaseProvider {
     this._logger('receive server message');
     const newlyCreatedWorkspaces: WorkspaceUnit[] = [];
     const currentWorkspaceIds = this._workspaces.list().map(w => w.id);
-    const newlyRemoveWorkspaceIds = [];
-
+    const newlyRemovedWorkspacecIds = currentWorkspaceIds;
     for (const [id, detail] of Object.entries(ws_details)) {
       const { name, avatar } = metadata[id];
 
       /**
        * collect the workspaces that need to be removed in the context
        */
-      const ifWorkspaceNotExists = currentWorkspaceIds.indexOf(id) < 0;
-      if (ifWorkspaceNotExists) {
-        newlyRemoveWorkspaceIds.push(id);
+      const workspaceIndex = currentWorkspaceIds.indexOf(id);
+      const ifWorkspaceExist = workspaceIndex !== -1;
+      if (ifWorkspaceExist) {
+        newlyRemovedWorkspacecIds.splice(workspaceIndex, 1);
       }
 
       /**
@@ -159,7 +159,7 @@ export class AffineProvider extends BaseProvider {
     this._workspaces.add(newlyCreatedWorkspaces);
 
     // sync newlyRemoveWorkspaces to context
-    this._workspaces.remove(newlyRemoveWorkspaceIds);
+    this._workspaces.remove(newlyRemovedWorkspacecIds);
   }
 
   private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
