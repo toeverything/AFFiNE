@@ -33,7 +33,9 @@ dotenvy = "0.15.6"
 tauri = { version = "1.2", features = ["api-all", "devtools"] }
 tokio = { version = "1.23.0", features = ["rt", "macros"] }
 lib0 = "0.12.0"
+moka = { version = "0.9.6", features = ["future"] }
 yrs = { path = "../src-OctoBase/libs/vendors/y-crdt/yrs" }
+y-sync = { path = "../src-OctoBase/libs/vendors/y-sync" }
 
 [features]
 # by default Tauri runs in production mode

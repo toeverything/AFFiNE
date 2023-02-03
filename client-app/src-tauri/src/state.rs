@@ -1,11 +1,14 @@
 use cloud_database::SqliteDBContext;
+use jwst::Workspace;
 use jwst_storage::{BlobAutoStorage, DocAutoStorage};
 use std::{fs, path::Path};
 use tauri::api::path::document_dir;
 use tokio::sync::Mutex;
 
 pub struct AppStateRaw {
-  pub doc_storage: DocAutoStorage,
+  pub doc_db: DocAutoStorage,
+  /// yDoc for receiving yjs update and merge them, before serialize update into sqlite
+  pub doc_store: Workspace,
   pub blob_storage: BlobAutoStorage,
   pub metadata_db: SqliteDBContext,
 }
@@ -37,7 +40,10 @@ impl AppStateRaw {
     fs::create_dir_all(affine_document_path.clone()).unwrap();
 
     Some(Self {
-      doc_storage: DocAutoStorage::init_pool(&doc_db_env).await.unwrap(),
+      doc_db: DocAutoStorage::init_pool(&doc_db_env).await.unwrap(),
+      // with fake id, we only use yDoc inside of it
+      // TODO: use workspace pool, to handle multiple workspace
+      doc_store: Workspace::new(""),
       blob_storage: BlobAutoStorage::init_pool(&blob_db_env).await.unwrap(),
       metadata_db: SqliteDBContext::new(metadata_db_env).await,
     })

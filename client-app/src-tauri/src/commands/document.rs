@@ -1,13 +1,15 @@
-use std::io::ErrorKind;
-
 use ipc_types::document::{
   CreateDocumentParameter, GetDocumentParameter, GetDocumentResponse, YDocumentUpdate,
 };
+use jwst::encode_update;
 use jwst::DocStorage;
 use jwst::Workspace as OctoBaseWorkspace;
 use lib0::any::Any;
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
+use std::sync::{Arc, RwLock};
+use y_sync::sync::Message;
+use y_sync::sync::MessageReader;
+use y_sync::sync::SyncMessage;
+use yrs::updates::decoder::DecoderV1;
 use yrs::{updates::decoder::Decode, Doc, StateVector, Update};
 
 use crate::state::AppState;
@@ -30,7 +32,7 @@ pub async fn create_doc<'s>(
     .0
     .lock()
     .await
-    .doc_storage
+    .doc_db
     .write_doc(parameters.workspace_id.clone(), workspace_doc.doc())
     .await
   {
@@ -51,9 +53,12 @@ pub async fn get_doc<'s>(
 ) -> Result<GetDocumentResponse, String> {
   // TODO: check user permission
 
-  if let Ok(all_updates_of_workspace) = &state.0.lock().await.doc_storage.all(&parameters.id).await {
+  if let Ok(all_updates_of_workspace) = &state.0.lock().await.doc_db.all(&parameters.id).await {
     Ok(GetDocumentResponse {
-      updates: all_updates_of_workspace.iter().map(|model| model.blob.clone()).collect::<Vec<Vec<u8>>>(),
+      updates: all_updates_of_workspace
+        .iter()
+        .map(|model| model.blob.clone())
+        .collect::<Vec<Vec<u8>>>(),
     })
   } else {
     Err(format!(
@@ -68,17 +73,47 @@ pub async fn update_y_document<'s>(
   state: tauri::State<'s, AppState>,
   parameters: YDocumentUpdate,
 ) -> Result<bool, String> {
-  if let Some(success) = &state
-    .0
-    .lock()
-    .await
-    .doc_storage
-    .write_update(parameters.id.clone(), &parameters.update)
-    .await
-    .ok()
-  {
-    Ok(*success)
-  } else {
-    Err(format!("Failed to update yDoc to {}", parameters.id))
+  let state = &state.0.lock().await;
+  let doc_store = &state.doc_store;
+  let doc_db = &state.doc_db;
+  let update = Update::decode_v1(&parameters.update).unwrap();
+  let mut decoder = DecoderV1::from(&parameters.update[..]);
+  for msg in MessageReader::new(&mut decoder) {
+    msg.ok().and_then(|msg| match msg {
+      Message::Sync(msg) => match msg {
+        SyncMessage::SyncStep1(sv) => {
+          Some(())
+        }
+        SyncMessage::SyncStep2(update) => {
+          Some(())
+        }
+        SyncMessage::Update(update) => {
+          let mut tx = doc_store.doc().transact();
+          tx.apply_update(Update::decode_v1(&update).unwrap());
+          tx.commit();
+          let merged_update = tx.encode_update_v1();
+          Some(())
+        }
+      },
+      Message::Auth(reason) => {
+        Some(())
+      }
+      Message::AwarenessQuery => {
+        Some(())
+      }
+      Message::Awareness(update) => {
+        Some(())
+      }
+      Message::Custom(tag, data) => {
+        Some(())
+      }
+    });
   }
+  let merged_update = doc_store.doc().transact().encode_update_v1();
+  doc_db
+    .insert(&parameters.id.clone(), &merged_update)
+    .await
+    .ok();
+
+  Ok(true)
 }
