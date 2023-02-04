@@ -107,47 +107,59 @@ export class AffineProvider extends BaseProvider {
     metadata,
   }: ChannelMessage) {
     this._logger('receive server message');
-    const addedWorkspaces: WorkspaceUnit[] = [];
-    const removeWorkspaceList = this._workspaces.list().map(w => w.id);
+    const newlyCreatedWorkspaces: WorkspaceUnit[] = [];
+    const currentWorkspaceIds = this._workspaces.list().map(w => w.id);
+    const newlyRemovedWorkspacecIds = currentWorkspaceIds;
     for (const [id, detail] of Object.entries(ws_details)) {
       const { name, avatar } = metadata[id];
-      const index = removeWorkspaceList.indexOf(id);
-      if (index !== -1) {
-        removeWorkspaceList.splice(index, 1);
+
+      /**
+       * collect the workspaces that need to be removed in the context
+       */
+      const workspaceIndex = currentWorkspaceIds.indexOf(id);
+      const ifWorkspaceExist = workspaceIndex !== -1;
+      if (ifWorkspaceExist) {
+        newlyRemovedWorkspacecIds.splice(workspaceIndex, 1);
       }
-      assert(
-        name,
-        'workspace name not found by id when receive server message'
-      );
-      const workspace = {
-        name: name,
-        avatar,
-        owner: {
-          name: detail.owner.name,
-          id: detail.owner.id,
-          email: detail.owner.email,
-          avatar: detail.owner.avatar_url,
-        },
-        published: detail.public,
-        memberCount: detail.member_count,
-        provider: this.id,
-        syncMode: 'core' as SyncMode,
-      };
-      if (this._workspaces.get(id)) {
-        // update workspaces
-        this._workspaces.update(id, workspace);
+
+      /**
+       * if workspace name is  not empty, it is  a valid workspace, so sync its state
+       */
+      if (name) {
+        const workspace = {
+          name: name,
+          avatar,
+          owner: {
+            name: detail.owner.name,
+            id: detail.owner.id,
+            email: detail.owner.email,
+            avatar: detail.owner.avatar_url,
+          },
+          published: detail.public,
+          memberCount: detail.member_count,
+          provider: this.id,
+          syncMode: 'core' as SyncMode,
+        };
+        if (this._workspaces.get(id)) {
+          // update workspaces
+          this._workspaces.update(id, workspace);
+        } else {
+          const workspaceUnit = await loadWorkspaceUnit(
+            { id, ...workspace },
+            this._apis
+          );
+          newlyCreatedWorkspaces.push(workspaceUnit);
+        }
       } else {
-        const workspaceUnit = await loadWorkspaceUnit(
-          { id, ...workspace },
-          this._apis
-        );
-        addedWorkspaces.push(workspaceUnit);
+        console.log(`[log warn]  ${id} name is empty`);
       }
     }
-    // add workspaces
-    this._workspaces.add(addedWorkspaces);
-    // remove workspaces
-    this._workspaces.remove(removeWorkspaceList);
+
+    // sync newlyCreatedWorkspaces to context
+    this._workspaces.add(newlyCreatedWorkspaces);
+
+    // sync newlyRemoveWorkspaces to context
+    this._workspaces.remove(newlyRemovedWorkspacecIds);
   }
 
   private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
