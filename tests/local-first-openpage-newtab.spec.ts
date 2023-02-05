@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './libs/playwright.js';
 import { loadPage } from './libs/load-page.js';
 import { newPage } from './libs/page-logic.js';
 loadPage();
 
-test.skip('local first new page', () => {
+test.describe('local first new page', () => {
   test('click btn bew page and open in tab', async ({ page }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();

@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './libs/playwright.js';
 import { loadPage } from './libs/load-page.js';
 import { newPage, clickPageMoreActions } from './libs/page-logic.js';
 loadPage();
 
-test.skip('Local first favorite items ui', () => {
+test.describe('Local first favorite items ui', () => {
   test('Show favorite items in sidebar', async ({ page }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();

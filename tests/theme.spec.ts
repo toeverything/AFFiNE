@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './libs/playwright.js';
 import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
-test.skip('Change Theme', () => {
+test.describe('Change Theme', () => {
   test('default white', async ({ page }) => {
     await page.waitForSelector('html');
     const root = page.locator('html');

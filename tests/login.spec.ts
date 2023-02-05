@@ -1,9 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test } from './libs/playwright.js';
 import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
-test.skip('Login Flow', () => {
+test.describe('Login Flow', () => {
   test.skip('Open login modal by click current workspace', async ({ page }) => {
     await page.getByTestId('current-workspace').click();
     await page.waitForTimeout(800);
@@ -15,7 +15,7 @@ test.skip('Login Flow', () => {
       .click();
   });
 
-  test('Open login modal by click cloud-unsync-icon', async ({ page }) => {
+  test.skip('Open login modal by click cloud-unsync-icon', async ({ page }) => {
     await page.getByTestId('cloud-unsync-icon').click();
 
     await page.waitForTimeout(800);

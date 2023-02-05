@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './libs/playwright.js';
 import { loadPage } from './libs/load-page.js';
 
 loadPage();
 
-test.skip('Shortcuts Modal', () => {
+test.describe('Shortcuts Modal', () => {
   test('Open shortcuts modal', async ({ page }) => {
     const faqIcon = page.locator('[data-testid=faq-icon]');
     const box = await faqIcon.boundingBox();

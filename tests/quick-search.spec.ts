@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './libs/playwright.js';
 import { loadPage } from './libs/load-page.js';
 import { withCtrlOrMeta } from './libs/keyboard.js';
 import { newPage } from './libs/page-logic.js';
@@ -21,7 +22,7 @@ async function assertResultList(page: Page, texts: string[]) {
   expect(actual).toEqual(texts);
 }
 
-test.skip('Open quick search', () => {
+test.describe('Open quick search', () => {
   test('Click slider bar button', async ({ page }) => {
     await newPage(page);
     const quickSearchButton = page.locator(
@@ -50,7 +51,7 @@ test.skip('Open quick search', () => {
   });
 });
 
-test.skip('Add new page in quick search', () => {
+test.describe('Add new page in quick search', () => {
   // FIXME: not working
   test('Create a new page without keyword', async ({ page }) => {
     await newPage(page);
@@ -72,7 +73,7 @@ test.skip('Add new page in quick search', () => {
   });
 });
 
-test.skip('Search and select', () => {
+test.describe('Search and select', () => {
   test('Create a new page and search this page', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);

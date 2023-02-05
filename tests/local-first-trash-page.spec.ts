@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './libs/playwright.js';
 import { loadPage } from './libs/load-page.js';
 import { newPage } from './libs/page-logic.js';
 loadPage();
 
-test.skip('Local first trash page', () => {
+test.describe('Local first trash page', () => {
   test('New a page , then delete it in all pages, finally find it in trash', async ({
     page,
   }) => {
