@@ -12,16 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 'latest'
+
       - uses: actions/setup-node@v3
         with:
           node-version: 16
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
           cache: 'pnpm'
-
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 'latest'
 
       - run: node scripts/module-resolve/ci.cjs
 
@@ -60,16 +60,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 'latest'
+
       - uses: actions/setup-node@v3
         with:
           node-version: 16
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
           cache: 'pnpm'
-
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 'latest'
 
       - run: node scripts/module-resolve/ci.cjs
 
