@@ -1,6 +1,6 @@
 const plugins = [];
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'development' || process.env.COVERAGE === 'true') {
   console.log(
     'Detected development environment. Instrumenting code for coverage.'
   );
