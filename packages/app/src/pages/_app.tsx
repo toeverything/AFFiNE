@@ -71,7 +71,7 @@ const AppDefender = ({ children }: PropsWithChildren) => {
   const router = useRouter();
 
   useEffect(() => {
-    if (router.pathname === '/') {
+    if (router.asPath === '/') {
       router.replace('/workspace');
     }
   }, [router]);
