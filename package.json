@@ -15,8 +15,6 @@
     "lint": "pnpm --filter @affine/app lint",
     "test": "playwright test",
     "test:coverage": "cross-env COVERAGE=true pnpm test && nyc report -t .nyc_output --report-dir .coverage --reporter=lcov",
-    "test:dc": "pnpm --filter @affine/datacenter test",
-    "test:e2e:codegen": "npx playwright codegen http://localhost:8080",
     "test:unit": "playwright test --config=playwright.config.unit.ts",
     "postinstall": "husky install",
     "notify": "node --experimental-modules scripts/notify.mjs",

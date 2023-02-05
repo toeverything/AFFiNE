@@ -33,8 +33,8 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium
 
-      # - name: Run E2E tests
-      #   run: pnpm run test:e2e
+      - name: Run E2E tests
+        run: pnpm run test:coverage
       #   env:
       #     NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
       #     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -43,6 +43,15 @@ jobs:
       #     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
       #     NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
       #     NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+
+      - name: Upload e2e test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/lcov.info
+          flags: e2etest
+          name: affine
+          fail_ci_if_error: true
 
       - name: Run Unit tests
         run: pnpm run test:unit
