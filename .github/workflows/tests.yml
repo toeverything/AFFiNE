@@ -5,16 +5,12 @@ on:
   pull_request:
     branches: [master]
 jobs:
-  test:
+  e2e-test:
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v3
-
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 'latest'
 
       - uses: actions/setup-node@v3
         with:
@@ -22,6 +18,10 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
           cache: 'pnpm'
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 'latest'
 
       - run: node scripts/module-resolve/ci.cjs
 
@@ -52,6 +52,34 @@ jobs:
           flags: e2etest
           name: affine
           fail_ci_if_error: true
+
+  unit-test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+          cache: 'pnpm'
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 'latest'
+
+      - run: node scripts/module-resolve/ci.cjs
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
 
       - name: Run Unit tests
         run: pnpm run test:unit
