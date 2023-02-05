@@ -55,7 +55,7 @@ test.describe.serial('workspace meta collection observable', () => {
     workspaceUnitCollection.once(
       'change',
       (event: WorkspaceUnitCollectionChangeEvent) => {
-        expect(event.deleted?.[0]?.id).toEqual('123');
+        expect(event.deleted?.id).toEqual('123');
       }
     );
     scope.remove('123');

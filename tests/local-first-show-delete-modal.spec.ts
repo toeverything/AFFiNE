@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page.js';
 import { newPage, clickPageMoreActions } from './libs/page-logic.js';
 loadPage();
 
-test.skip('Local first delete page', () => {
+test.describe('Local first delete page', () => {
   test('New a page ,then open it and show delete modal', async ({ page }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();

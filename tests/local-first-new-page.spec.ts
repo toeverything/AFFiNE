@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page.js';
 import { newPage } from './libs/page-logic.js';
 loadPage();
 
-test.skip('local first new page', () => {
+test.describe('local first new page', () => {
   test('click btn new page', async ({ page }) => {
     const originPageId = page.url().split('/').reverse()[0];
     await newPage(page);

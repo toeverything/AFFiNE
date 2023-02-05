@@ -3,7 +3,7 @@ import { loadPage } from './libs/load-page.js';
 import { newPage, clickPageMoreActions } from './libs/page-logic.js';
 loadPage();
 
-test.skip('Local first export page', () => {
+test.describe('Local first export page', () => {
   test('New a page ,then open it and export html', async ({ page }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();

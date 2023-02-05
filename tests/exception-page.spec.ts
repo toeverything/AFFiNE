@@ -4,7 +4,7 @@ import { loadPage } from './libs/load-page.js';
 loadPage();
 
 // ps aux | grep 8080
-test.skip('exception page', () => {
+test.describe('exception page', () => {
   test('visit 404 page', async ({ page }) => {
     await page.goto('http://localhost:8080/404');
     await page.waitForTimeout(1000);
