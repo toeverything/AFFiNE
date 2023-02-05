@@ -14,11 +14,10 @@
     "start": "pnpm --filter @affine/app start",
     "lint": "pnpm --filter @affine/app lint",
     "test": "playwright test",
-    "test:coverage": "cross-env COVERAGE=true pnpm test && nyc report -t .nyc_output --report-dir .coverage --reporter=lcov",
+    "test:coverage": "cross-env COVERAGE=true pnpm test -- --forbid-only",
     "test:unit": "playwright test --config=playwright.config.unit.ts",
     "postinstall": "husky install",
     "notify": "node --experimental-modules scripts/notify.mjs",
-    "check:ci": "pnpm lint & pnpm test",
     "update:blocksuite": "pnpm i --filter @affine/app --filter @affine/datacenter @blocksuite/blocks@nightly @blocksuite/store@nightly && pnpm i --filter @affine/app @blocksuite/editor@nightly"
   },
   "lint-staged": {

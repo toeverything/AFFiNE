@@ -44,6 +44,9 @@ jobs:
       #     NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
       #     NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
 
+      - name: Collect code coverage report
+        run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
       - name: Upload e2e test coverage results
         uses: codecov/codecov-action@v3
         with:
