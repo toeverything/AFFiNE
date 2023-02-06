@@ -1,6 +1,10 @@
 import { PropsWithChildren, ReactNode } from 'react';
 import Header from './Header';
-import { StyledPageListTittleWrapper } from './styles';
+import QuickSearchButton from './QuickSearchButton';
+import {
+  StyledPageListTittleWrapper,
+  StyledSearchArrowWrapper,
+} from './styles';
 // import QuickSearchButton from './QuickSearchButton';
 
 export type PageListHeaderProps = PropsWithChildren<{
@@ -12,7 +16,7 @@ export const PageListHeader = ({ icon, children }: PageListHeaderProps) => {
       <StyledPageListTittleWrapper>
         {icon}
         {children}
-        {/* <QuickSearchButton style={{ marginLeft: '5px' }} /> */}
+        <QuickSearchButton />
       </StyledPageListTittleWrapper>
     </Header>
   );
