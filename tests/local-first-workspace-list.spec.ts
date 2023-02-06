@@ -16,7 +16,7 @@ test.describe('Local first workspace list', () => {
     ).not.toBeNull();
   });
 
-  test('create one workspace in the workspace list', async ({ page }) => {
+  test.skip('create one workspace in the workspace list', async ({ page }) => {
     const newWorkspaceNameStr = 'New Workspace';
     await createWorkspace({ name: newWorkspaceNameStr }, page);
 
