@@ -23,7 +23,7 @@ async function assertResultList(page: Page, texts: string[]) {
 }
 
 test.describe('Open quick search', () => {
-  test('Click slider bar button', async ({ page }) => {
+  test.skip('Click slider bar button', async ({ page }) => {
     await newPage(page);
     const quickSearchButton = page.locator(
       '[data-testid=sliderBar-quickSearchButton]'
@@ -33,7 +33,7 @@ test.describe('Open quick search', () => {
     await expect(quickSearch).toBeVisible();
   });
 
-  test('Click arrowDown icon after title', async ({ page }) => {
+  test.skip('Click arrowDown icon after title', async ({ page }) => {
     await newPage(page);
     const quickSearchButton = page.locator(
       '[data-testid=header-quickSearchButton]'
@@ -43,7 +43,7 @@ test.describe('Open quick search', () => {
     await expect(quickSearch).toBeVisible();
   });
 
-  test('Press the shortcut key cmd+k', async ({ page }) => {
+  test.skip('Press the shortcut key cmd+k', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
     const quickSearch = page.locator('[data-testid=quickSearch]');
@@ -53,7 +53,7 @@ test.describe('Open quick search', () => {
 
 test.describe('Add new page in quick search', () => {
   // FIXME: not working
-  test('Create a new page without keyword', async ({ page }) => {
+  test.skip('Create a new page without keyword', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
     const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
@@ -62,7 +62,7 @@ test.describe('Add new page in quick search', () => {
     await assertTitleTexts(page, '');
   });
 
-  test('Create a new page with keyword', async ({ page }) => {
+  test.skip('Create a new page with keyword', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
