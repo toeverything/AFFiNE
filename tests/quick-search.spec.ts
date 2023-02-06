@@ -81,6 +81,7 @@ test.describe('Search and select', () => {
     const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
     await addNewPage.click();
     await page.waitForTimeout(200);
+    await assertTitleTexts(page, 'test123456');
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
     await assertResultList(page, ['test123456']);
