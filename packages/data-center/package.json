@@ -23,12 +23,12 @@
     "@playwright/test": "^1.29.1",
     "@types/debug": "^4.1.7",
     "fake-indexeddb": "4.0.1",
-    "typescript": "^4.8.4",
+    "typescript": "^4.9.5",
     "yjs": "^13.5.44"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.4.0-20230203030233-b22bea7",
-    "@blocksuite/store": "0.4.0-20230203030233-b22bea7",
+    "@blocksuite/blocks": "0.4.0-20230205175611-17a62e3",
+    "@blocksuite/store": "0.4.0-20230205175611-17a62e3",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
     "firebase": "^9.15.0",
