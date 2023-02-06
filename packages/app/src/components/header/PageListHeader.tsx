@@ -1,10 +1,7 @@
 import { PropsWithChildren, ReactNode } from 'react';
 import Header from './Header';
 import QuickSearchButton from './QuickSearchButton';
-import {
-  StyledPageListTittleWrapper,
-  StyledSearchArrowWrapper,
-} from './styles';
+import { StyledPageListTittleWrapper } from './styles';
 // import QuickSearchButton from './QuickSearchButton';
 
 export type PageListHeaderProps = PropsWithChildren<{
