@@ -63,7 +63,7 @@ export const EnableWorkspaceModal = ({
                 onClose();
               }}
             >
-              {t('Skip')}
+              {t('Not now')}
             </StyleButton>
           </div>
         </Content>

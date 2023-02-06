@@ -128,7 +128,7 @@
   "Enable AFFiNE Cloud Description": "If enabled, the data in this workspace will be backed up and synchronised via AFFiNE Cloud.",
   "Enable": "Enable",
   "Sign in and Enable": "Sign in and Enable",
-  "Skip": "Skip",
+  "Not now": "Not now",
   "Publishing": "Publishing to web requires AFFiNE Cloud service.",
   "Share with link": "Share with link",
   "Copy Link": "Copy Link",
