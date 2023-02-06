@@ -1,4 +1,5 @@
-import { displayFlex, styled } from '@/styles';
+import { displayFlex, displayInlineFlex, styled } from '@/styles';
+import { Button } from '@/ui/button';
 
 export const StyledSplitLine = styled.div(({ theme }) => {
   return {
@@ -80,28 +81,6 @@ export const StyleUserInfo = styled.div(({ theme }) => {
   };
 });
 
-export const StyleSignIn = styled.div(({ theme }) => {
-  return {
-    cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: 700,
-    color: theme.colors.iconColor,
-    span: {
-      display: 'inline-block',
-      width: '40px',
-      height: '40px',
-      borderRadius: '40px',
-      backgroundColor: theme.colors.innerHoverBackground,
-      textAlign: 'center',
-      lineHeight: '44px',
-      marginRight: '16px',
-      svg: {
-        fill: theme.colors.primaryColor,
-      },
-    },
-  };
-});
-
 export const StyledModalHeaderLeft = styled.div(() => {
   return { ...displayFlex('flex-start', 'center') };
 });
@@ -158,5 +137,21 @@ export const StyledModalHeader = styled('div')(({ theme }) => {
     borderRadius: '24px 24px 0 0',
     padding: '0 40px',
     ...displayFlex('space-between', 'center'),
+  };
+});
+
+export const StyledSignInButton = styled(Button)(({ theme }) => {
+  return {
+    fontWeight: 700,
+    paddingLeft: 0,
+    '.circle': {
+      width: '40px',
+      height: '40px',
+      borderRadius: '20px',
+      backgroundColor: theme.colors.innerHoverBackground,
+      flexShrink: 0,
+      marginRight: '16px',
+      ...displayInlineFlex('center', 'center'),
+    },
   };
 });
