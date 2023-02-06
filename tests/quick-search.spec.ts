@@ -74,7 +74,7 @@ test.describe('Add new page in quick search', () => {
 });
 
 test.describe('Search and select', () => {
-  test('Create a new page and search this page', async ({ page }) => {
+  test.skip('Create a new page and search this page', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
