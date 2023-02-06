@@ -67,7 +67,7 @@ jobs:
 
   lint:
     name: Lint and E2E Test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: development
     needs: build
 
