@@ -5,7 +5,7 @@ import { IconButton } from '@/ui/button';
 import { useAppState } from '@/providers/app-state-provider';
 import { StyledFooter, StyleUserInfo, StyleSignIn } from './styles';
 import { useTranslation } from '@affine/i18n';
-
+import { Tooltip } from '@/ui/tooltip';
 export const Footer = ({
   onLogin,
   onLogout,
@@ -31,13 +31,15 @@ export const Footer = ({
               <p>{user.email}</p>
             </StyleUserInfo>
           </FlexWrapper>
-          <IconButton
-            onClick={() => {
-              onLogout();
-            }}
-          >
-            <LogOutIcon />
-          </IconButton>
+          <Tooltip content={t('Sign out')} disablePortal={true}>
+            <IconButton
+              onClick={() => {
+                onLogout();
+              }}
+            >
+              <LogOutIcon />
+            </IconButton>
+          </Tooltip>
         </>
       )}
 
