@@ -3,6 +3,7 @@ import { PageMeta } from '@/providers/app-state-provider';
 import { Menu, MenuItem } from '@/ui/menu';
 import { FlexWrapper } from '@/ui/layout';
 import { IconButton } from '@/ui/button';
+import { Tooltip } from '@/ui/tooltip';
 import {
   MoreVerticalIcon,
   RestoreIcon,
@@ -15,6 +16,7 @@ import {
 import { toast } from '@/ui/toast';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTranslation } from '@affine/i18n';
+
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
   const { openPage } = usePageHelper();
@@ -81,33 +83,39 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { t } = useTranslation();
   return (
     <FlexWrapper>
-      <IconButton
-        darker={true}
-        style={{ marginRight: '12px' }}
-        onClick={() => {
-          toggleDeletePage(id);
-          toast(t('restored', { title: getPageMeta(id)?.title || 'Untitled' }));
-          openPage(id);
-        }}
-      >
-        <RestoreIcon />
-      </IconButton>
-      <IconButton
-        darker={true}
-        onClick={() => {
-          confirm({
-            title: t('Delete permanently?'),
-            content: t("Once deleted, you can't undo this action."),
-            confirmText: t('Delete'),
-            confirmType: 'danger',
-          }).then(confirm => {
-            confirm && permanentlyDeletePage(id);
-            toast(t('Permanently deleted'));
-          });
-        }}
-      >
-        <DeleteIcon />
-      </IconButton>
+      <Tooltip content={t('Restore it')} placement="top-start">
+        <IconButton
+          darker={true}
+          style={{ marginRight: '12px' }}
+          onClick={() => {
+            toggleDeletePage(id);
+            toast(
+              t('restored', { title: getPageMeta(id)?.title || 'Untitled' })
+            );
+            openPage(id);
+          }}
+        >
+          <RestoreIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip content={t('Delete permanently')} placement="top-start">
+        <IconButton
+          darker={true}
+          onClick={() => {
+            confirm({
+              title: t('Delete permanently?'),
+              content: t("Once deleted, you can't undo this action."),
+              confirmText: t('Delete'),
+              confirmType: 'danger',
+            }).then(confirm => {
+              confirm && permanentlyDeletePage(id);
+              toast(t('Permanently deleted'));
+            });
+          }}
+        >
+          <DeleteIcon />
+        </IconButton>
+      </Tooltip>
     </FlexWrapper>
   );
 };
