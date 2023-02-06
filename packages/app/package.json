@@ -39,6 +39,7 @@
     "yjs": "^13.5.44"
   },
   "devDependencies": {
+    "@emotion/babel-plugin": "^11.10.5",
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
