@@ -32,7 +32,6 @@ import { EnableWorkspaceButton } from '@/components/enable-workspace';
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const { members, removeMember, loaded } = useMembers();
-
   const { t } = useTranslation();
   const { confirm } = useConfirm();
 
@@ -94,41 +93,45 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                         : t('Pending')}
                     </StyledMemberRoleContainer>
                     <StyledMoreVerticalButton>
-                      <Menu
-                        content={
-                          <>
-                            <MenuItem
-                              onClick={async () => {
-                                const confirmRemove = await confirm({
-                                  title: t('Delete Member?'),
-                                  content: t('will delete member'),
-                                  confirmText: t('Delete'),
-                                  confirmType: 'danger',
-                                });
+                      {member.type === 99 ? (
+                        <></>
+                      ) : (
+                        <Menu
+                          content={
+                            <>
+                              <MenuItem
+                                onClick={async () => {
+                                  const confirmRemove = await confirm({
+                                    title: t('Delete Member?'),
+                                    content: t('will delete member'),
+                                    confirmText: t('Delete'),
+                                    confirmType: 'danger',
+                                  });
 
-                                if (!confirmRemove) {
-                                  return;
-                                }
-                                await removeMember(member.id);
-                                toast(
-                                  t('Member has been removed', {
-                                    name: user.name,
-                                  })
-                                );
-                              }}
-                              icon={<TrashIcon />}
-                            >
-                              {t('Delete')}
-                            </MenuItem>
-                          </>
-                        }
-                        placement="bottom-end"
-                        disablePortal={true}
-                      >
-                        <IconButton>
-                          <MoreVerticalIcon />
-                        </IconButton>
-                      </Menu>
+                                  if (!confirmRemove) {
+                                    return;
+                                  }
+                                  await removeMember(member.id);
+                                  toast(
+                                    t('Member has been removed', {
+                                      name: user.name,
+                                    })
+                                  );
+                                }}
+                                icon={<TrashIcon />}
+                              >
+                                {t('Delete')}
+                              </MenuItem>
+                            </>
+                          }
+                          placement="bottom-end"
+                          disablePortal={true}
+                        >
+                          <IconButton>
+                            <MoreVerticalIcon />
+                          </IconButton>
+                        </Menu>
+                      )}
                     </StyledMoreVerticalButton>
                   </StyledMemberListItem>
                 );
