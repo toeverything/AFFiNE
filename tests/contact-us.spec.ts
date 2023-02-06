@@ -23,12 +23,7 @@ test.describe('Open contact us', () => {
     await expect(contactUsModal).toContainText('AFFiNE Community');
   });
   test('Click right-bottom corner contact icon', async ({ page }) => {
-    const faqIcon = page.locator('[data-testid=faq-icon]');
-    const box = await faqIcon.boundingBox();
-    expect(box?.x).not.toBeUndefined();
-
-    await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
-    await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
+    await page.locator('[data-testid=help-island]').click();
     const rightBottomContactUs = page.locator(
       '[data-testid=right-bottom-contact-us-icon]'
     );

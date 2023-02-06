@@ -27,6 +27,7 @@ export const HelpIsland = ({
   return (
     <>
       <StyledIsland
+        data-testid="help-island"
         onClick={() => {
           setShowContent(!showContent);
         }}
