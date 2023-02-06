@@ -1,5 +1,6 @@
-import { displayFlex, displayInlineFlex, styled } from '@/styles';
+import { displayFlex, displayInlineFlex, styled, textEllipsis } from '@/styles';
 import { Button } from '@/ui/button';
+import text from '*.md';
 
 export const StyledSplitLine = styled.div(({ theme }) => {
   return {
@@ -30,6 +31,8 @@ export const StyleWorkspaceTitle = styled.div(({ theme }) => {
     fontWeight: 600,
     lineHeight: '24px',
     marginBottom: '10px',
+    maxWidth: '200px',
+    ...textEllipsis(1),
   };
 });
 
