@@ -68,6 +68,9 @@ const nextConfig = {
     return profile;
   },
   basePath: process.env.BASE_PATH,
+  experimental: {
+    forceSwcTransforms: true,
+  },
 };
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
