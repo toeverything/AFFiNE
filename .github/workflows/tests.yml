@@ -23,8 +23,6 @@ jobs:
           scope: '@toeverything'
           cache: 'pnpm'
 
-      - run: node scripts/module-resolve/ci.cjs
-
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
         env:
@@ -73,8 +71,6 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
           cache: 'pnpm'
-
-      - run: node scripts/module-resolve/ci.cjs
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
