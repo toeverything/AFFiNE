@@ -6,3 +6,6 @@
 .affine-default-page-block-container {
   width: 686px !important;
 }
+.block-hub-menu-container {
+  bottom: 80px !important;
+}

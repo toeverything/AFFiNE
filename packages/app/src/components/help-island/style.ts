@@ -10,6 +10,7 @@ export const StyledIsland = styled('div')(({ theme }) => {
     bottom: '30px',
     borderRadius: '50%',
     zIndex: theme.zIndex.popover,
+    cursor: 'pointer',
   };
 });
 export const StyledTransformIcon = styled('div', {

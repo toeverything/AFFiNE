@@ -27,12 +27,8 @@ export const HelpIsland = ({
   return (
     <>
       <StyledIsland
-        className=""
-        onMouseEnter={() => {
-          setShowContent(true);
-        }}
-        onMouseLeave={() => {
-          setShowContent(false);
+        onClick={() => {
+          setShowContent(!showContent);
         }}
       >
         <MuiGrow in={showContent}>
