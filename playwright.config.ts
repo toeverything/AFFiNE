@@ -17,6 +17,7 @@ const config: PlaywrightTestConfig = {
     browserName: 'chromium',
     viewport: { width: 1440, height: 800 },
     actionTimeout: 5 * 1000,
+    locale: 'en-US',
     // Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer
     // You can open traces locally(`npx playwright show-trace trace.zip`)
     // or in your browser on [Playwright Trace Viewer](https://trace.playwright.dev/).
