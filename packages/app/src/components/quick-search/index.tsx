@@ -33,40 +33,48 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const isPublicAndNoQuery = () => {
     return isPublic && query.length === 0;
   };
+  const handleClose = () => {
+    setQuery('');
+    onClose();
+  };
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
         const selection = window.getSelection();
+        setQuery('');
         if (selection?.toString()) {
           triggerQuickSearchModal(false);
           return;
         }
-        if (selection?.isCollapsed) {
+        if (
+          selection?.isCollapsed &&
+          router.pathname.startsWith('/404') !== true
+        ) {
           triggerQuickSearchModal(!open);
         }
       }
     };
-    if (!open) {
-      setQuery('');
-    }
     document.addEventListener('keydown', down, { capture: true });
     return () =>
       document.removeEventListener('keydown', down, { capture: true });
-  }, [open, triggerQuickSearchModal]);
+  }, [open, router.pathname, triggerQuickSearchModal]);
 
   useEffect(() => {
+    if (router.pathname.startsWith('/404')) {
+      return handleClose();
+    }
     if (router.pathname.startsWith('/public-workspace')) {
       return setIsPublic(true);
     } else {
       return setIsPublic(false);
     }
-  }, [router]);
+  }, [handleClose, router]);
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       wrapperPosition={['top', 'center']}
       data-testid="quickSearch"
     >
@@ -102,47 +110,42 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
             />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
-          <>
-            <StyledModalDivider
+          <StyledModalDivider
+            style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
+          />
+          <Command.List>
+            <StyledContent
               style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
-            />
-            <Command.List>
-              <StyledContent
-                style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
-              >
-                {!isPublic ? (
-                  <Results
-                    query={query}
-                    loading={loading}
-                    setLoading={setLoading}
-                    setShowCreatePage={setShowCreatePage}
-                  />
-                ) : (
-                  <PublishedResults
-                    query={query}
-                    loading={loading}
-                    setLoading={setLoading}
-                    onClose={onClose}
-                    setPublishWorkspaceName={setPublishWorkspaceName}
-                  />
-                )}
-              </StyledContent>
+            >
               {!isPublic ? (
-                showCreatePage ? (
-                  <>
-                    <StyledModalDivider />
-                    <StyledModalFooter>
-                      <Footer query={query} />
-                    </StyledModalFooter>
-                  </>
-                ) : (
-                  <></>
-                )
+                <Results
+                  query={query}
+                  loading={loading}
+                  setLoading={setLoading}
+                  onClose={handleClose}
+                  setShowCreatePage={setShowCreatePage}
+                />
               ) : (
-                <></>
+                <PublishedResults
+                  query={query}
+                  loading={loading}
+                  setLoading={setLoading}
+                  onClose={handleClose}
+                  setPublishWorkspaceName={setPublishWorkspaceName}
+                />
               )}
-            </Command.List>
-          </>
+            </StyledContent>
+            {!isPublic ? (
+              showCreatePage ? (
+                <>
+                  <StyledModalDivider />
+                  <StyledModalFooter>
+                    <Footer query={query} onClose={handleClose} />
+                  </StyledModalFooter>
+                </>
+              ) : null
+            ) : null}
+          </Command.List>
         </Command>
       </ModalWrapper>
     </Modal>
