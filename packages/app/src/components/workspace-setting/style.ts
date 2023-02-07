@@ -66,7 +66,7 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
         color: isActive ? theme.colors.primaryColor : theme.colors.textColor,
         fontWeight: '500',
         fontSize: theme.font.base,
-        lineHeight: theme.font.lineHeightBase,
+        lineHeight: theme.font.lineHeight,
         cursor: 'pointer',
         transition: 'all 0.15s ease',
         borderBottom: `2px solid ${
@@ -92,7 +92,7 @@ export const StyledSettingH2 = styled('h2')<{
   return {
     // fontWeight: '500',
     fontSize: theme.font.base,
-    lineHeight: theme.font.lineHeightBase,
+    lineHeight: theme.font.lineHeight,
     marginTop: marginTop ? `${marginTop}px` : '0px',
     marginBottom: marginBottom ? `${marginBottom}px` : '0px',
   };
@@ -147,7 +147,7 @@ export const StyledPublishContent = styled('div')(({ theme }) => {
     fontWeight: '500',
     flexDirection: 'column',
     fontSize: theme.font.base,
-    lineHeight: theme.font.lineHeightBase,
+    lineHeight: theme.font.lineHeight,
     flex: 1,
   };
 });

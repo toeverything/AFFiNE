@@ -193,7 +193,6 @@ export const globalThemeVariables: (
     '--affine-font-sm': theme.font.sm, // small
     '--affine-font-xs': theme.font.xs, // tiny
 
-    // '--affine-line-height-base': theme.font.lineHeightBase,
     '--affine-line-height': theme.font.lineHeight,
 
     '--affine-z-index-modal': theme.zIndex.modal,
