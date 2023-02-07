@@ -1,6 +1,5 @@
 import { Command } from 'cmdk';
 import { StyledListItem, StyledNotFound } from './style';
-import { useModal } from '@/providers/GlobalModalProvider';
 import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
@@ -12,14 +11,11 @@ import usePageHelper from '@/hooks/use-page-helper';
 export const Results = (props: {
   query: string;
   loading: boolean;
+  onClose: () => void;
   setLoading: Dispatch<SetStateAction<boolean>>;
   setShowCreatePage: Dispatch<SetStateAction<boolean>>;
 }) => {
-  const query = props.query;
-  const loading = props.loading;
-  const setLoading = props.setLoading;
-  const setShowCreatePage = props.setShowCreatePage;
-  const { triggerQuickSearchModal } = useModal();
+  const { query, loading, setLoading, setShowCreatePage, onClose } = props;
   const { openPage } = usePageHelper();
   const router = useRouter();
   const { currentWorkspace, pageList } = useAppState();
@@ -55,8 +51,8 @@ export const Results = (props: {
                 <Command.Item
                   key={result.id}
                   onSelect={() => {
+                    onClose();
                     openPage(result.id);
-                    triggerQuickSearchModal();
                   }}
                   value={result.id}
                 >
@@ -86,8 +82,8 @@ export const Results = (props: {
                 key={link.title}
                 value={link.title}
                 onSelect={() => {
+                  onClose();
                   router.push(link.href);
-                  triggerQuickSearchModal();
                 }}
               >
                 <StyledListItem>

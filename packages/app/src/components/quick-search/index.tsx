@@ -31,11 +31,16 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
 
+  const handleClose = () => {
+    setQuery('');
+    onClose();
+  };
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
         const selection = window.getSelection();
+        setQuery('');
         if (selection?.toString()) {
           triggerQuickSearchModal(false);
           return;
@@ -45,9 +50,6 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         }
       }
     };
-    if (!open) {
-      setQuery('');
-    }
     document.addEventListener('keydown', down, { capture: true });
     return () =>
       document.removeEventListener('keydown', down, { capture: true });
@@ -64,7 +66,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       wrapperPosition={['top', 'center']}
       data-testid="quickSearch"
     >
@@ -108,6 +110,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                   query={query}
                   loading={loading}
                   setLoading={setLoading}
+                  onClose={handleClose}
                   setShowCreatePage={setShowCreatePage}
                 />
               ) : (
@@ -115,7 +118,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                   query={query}
                   loading={loading}
                   setLoading={setLoading}
-                  onClose={onClose}
+                  onClose={handleClose}
                   setPublishWorkspaceName={setPublishWorkspaceName}
                 />
               )}
@@ -125,7 +128,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                 <>
                   <StyledModalDivider />
                   <StyledModalFooter>
-                    <Footer query={query} />
+                    <Footer query={query} onClose={handleClose} />
                   </StyledModalFooter>
                 </>
               ) : null
