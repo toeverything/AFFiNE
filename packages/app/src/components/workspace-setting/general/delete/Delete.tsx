@@ -1,3 +1,4 @@
+import { useRouter } from 'next/router';
 import Modal from '@/ui/modal';
 import Input from '@/ui/input';
 import {
@@ -29,6 +30,7 @@ export const WorkspaceDelete = ({
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
   const { t } = useTranslation();
+  const router = useRouter();
   const { deleteWorkSpace } = useWorkspaceHelper();
   const handlerInputChange = (workspaceName: string) => {
     setDeleteStr(workspaceName);
@@ -37,6 +39,7 @@ export const WorkspaceDelete = ({
   const handleDelete = async () => {
     await deleteWorkSpace();
     onClose();
+    router.push(`/workspace`);
   };
 
   return (

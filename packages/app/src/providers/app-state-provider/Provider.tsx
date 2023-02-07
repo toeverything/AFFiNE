@@ -72,7 +72,6 @@ export const AppStateProvider = ({
     // FIXME: onWorkspacesChange should have dispose function
     dataCenter?.onWorkspacesChange(
       () => {
-        console.log(123);
         setAppState({
           ...appState,
           workspaceList: dataCenter.workspaces,
