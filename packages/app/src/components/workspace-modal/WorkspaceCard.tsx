@@ -48,7 +48,6 @@ export const WorkspaceCard = ({
 }) => {
   const { currentWorkspace, user } = useAppState();
   const { t } = useTranslation();
-  const isOwner = user?.id === workspaceData.owner?.id;
   return (
     <StyledCard
       data-testid="workspace-card"
