@@ -39,6 +39,10 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   };
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
+    if (router.pathname.startsWith('/404')) {
+      triggerQuickSearchModal(false);
+      return;
+    }
     const down = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
         const selection = window.getSelection();
@@ -47,10 +51,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           triggerQuickSearchModal(false);
           return;
         }
-        if (
-          selection?.isCollapsed &&
-          router.pathname.startsWith('/404') !== true
-        ) {
+        if (selection?.isCollapsed) {
           triggerQuickSearchModal(!open);
         }
       }
@@ -61,15 +62,12 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   }, [open, router.pathname, triggerQuickSearchModal]);
 
   useEffect(() => {
-    if (router.pathname.startsWith('/404')) {
-      return handleClose();
-    }
     if (router.pathname.startsWith('/public-workspace')) {
       return setIsPublic(true);
     } else {
       return setIsPublic(false);
     }
-  }, [handleClose, router]);
+  }, [router]);
 
   return (
     <Modal
