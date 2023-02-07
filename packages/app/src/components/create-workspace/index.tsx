@@ -57,8 +57,10 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
             <Input
               onKeyDown={handleKeyDown}
               placeholder={t('Set a Workspace name')}
+              maxLength={15}
+              minLength={0}
               onChange={value => {
-                setWorkspaceName(value.slice(0, 15));
+                setWorkspaceName(value);
               }}
             ></Input>
             <Button
