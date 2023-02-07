@@ -19,11 +19,11 @@ type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 export const AppState = createContext<AppStateContext>({} as AppStateContext);
 
 export const useAppState = () => useContext(AppState);
-let syncChangeDisposable: Disposable | undefined = undefined;
 export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
+  const [blobState, setBlobState] = useState(false);
   useEffect(() => {
     const initState = async () => {
       const dataCenter = await getDataCenter();
@@ -94,7 +94,8 @@ export const AppStateProvider = ({
     });
   };
 
-  const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
+  const loadWorkspace: AppStateFunction['loadWorkspace'] =
+    useRef() as AppStateFunction['loadWorkspace'];
   loadWorkspace.current = async (workspaceId: string) => {
     const { dataCenter, workspaceList, currentWorkspace, user } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
@@ -103,7 +104,7 @@ export const AppStateProvider = ({
     if (workspaceId === currentWorkspace?.id) {
       return currentWorkspace;
     }
-    syncChangeDisposable?.dispose();
+
     const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
     let isOwner;
     if (workspace?.provider === 'local') {
@@ -113,13 +114,7 @@ export const AppStateProvider = ({
       // We must ensure workspace.owner exists, then ensure id same.
       isOwner = workspace?.owner && user?.id === workspace.owner.id;
     }
-    const blobStorage = await workspace?.blocksuiteWorkspace?.blobs;
-    syncChangeDisposable = blobStorage?.signals.onBlobSyncStateChange.on(() => {
-      setAppState({
-        ...appState,
-        blobDataSynced: blobStorage?.uploading,
-      });
-    });
+
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
@@ -129,11 +124,30 @@ export const AppStateProvider = ({
       currentPage: null,
       editor: null,
       isOwner,
-      blobDataSynced: blobStorage?.uploading,
     });
 
     return workspace;
   };
+
+  useEffect(() => {
+    let syncChangeDisposable: Disposable | undefined;
+    const currentWorkspace = appState.currentWorkspace;
+    if (!currentWorkspace) {
+      return;
+    }
+    const getBlobStorage = async () => {
+      const blobStorage = await currentWorkspace?.blocksuiteWorkspace?.blobs;
+      syncChangeDisposable = blobStorage?.signals.onBlobSyncStateChange.on(
+        () => {
+          setBlobState(blobStorage?.uploading);
+        }
+      );
+    };
+    getBlobStorage();
+    return () => {
+      syncChangeDisposable?.dispose();
+    };
+  }, [appState.currentWorkspace]);
 
   const setEditor: AppStateFunction['setEditor'] =
     useRef() as AppStateFunction['setEditor'];
@@ -176,9 +190,10 @@ export const AppStateProvider = ({
         ...appState,
         setEditor,
         loadPage: loadPage.current,
-        loadWorkspace: loadWorkspace.current,
+        loadWorkspace: loadWorkspace,
         login,
         logout,
+        blobDataSynced: blobState,
       }}
     >
       {children}
