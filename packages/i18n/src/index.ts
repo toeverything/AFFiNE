@@ -33,15 +33,18 @@ const resources = LOCALES.reduce<Resource>(
 
 const fallbackLng = LOCALES[0].tag;
 const standardizeLocale = (language: string) => {
-  if (LOCALES.find(locale => locale.tag === language)) return language;
   if (language === 'zh-CN' || language === 'zh') {
-    return 'zh-Hans';
+    language = 'zh-Hans';
+  } else if (language.slice(0, 2).toLowerCase() === 'zh') {
+    language = 'zh-Hant';
   }
-  if (language.slice(0, 2).toLowerCase() === 'zh') {
-    return 'zh-Hant';
+  if (LOCALES.find(locale => locale.tag === language)) return language;
+  if (
+    LOCALES.find(locale => locale.tag === language.slice(0, 2).toLowerCase())
+  ) {
+    return language.slice(0, 2).toLowerCase();
   }
-  if (LOCALES.find(locale => locale.tag === language.slice(0, 2).toLowerCase()))
-    return language;
+
   return fallbackLng;
 };
 let language = 'en';
