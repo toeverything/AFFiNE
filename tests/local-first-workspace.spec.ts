@@ -17,3 +17,12 @@ test.describe('Local first default workspace', () => {
     ).not.toBeNull();
   });
 });
+test.describe('Language switch', () => {
+  test('Open language switch menu', async ({ page }) => {
+    await page.getByTestId('current-workspace').click();
+    const languageMenuButton = page.getByTestId('language-menu-button');
+    await expect(languageMenuButton).toBeVisible();
+    const actual = await languageMenuButton.innerText();
+    expect(actual).toEqual('English');
+  });
+});
