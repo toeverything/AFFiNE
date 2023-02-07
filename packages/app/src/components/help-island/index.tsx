@@ -6,8 +6,8 @@ import {
   StyledTransformIcon,
 } from './style';
 import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
-import { MuiGrow } from '@/ui/mui';
-import { Tooltip } from '@/ui/tooltip';
+import { MuiGrow } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { useTheme } from '@/providers/ThemeProvider';

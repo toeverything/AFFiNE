@@ -1,6 +1,6 @@
-import { styled } from '@/styles';
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { Button } from '@/ui/button';
+import { styled } from '@affine/component';
+import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Button } from '@affine/component';
 import { Check, UnCheck } from './icon';
 import { useState } from 'react';
 import { useTranslation } from '@affine/i18n';

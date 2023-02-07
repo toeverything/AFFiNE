@@ -3,7 +3,7 @@ import type { Page, Workspace } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 
 const StyledEditorContainer = styled('div')(() => {
   return {

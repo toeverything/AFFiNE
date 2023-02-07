@@ -1,4 +1,4 @@
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 
 // Inspired by https://codepen.io/graphilla/pen/rNvBMYY
 export const StyledLoadingWrapper = styled('div', {

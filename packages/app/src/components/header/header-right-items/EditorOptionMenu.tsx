@@ -1,5 +1,5 @@
-import { Menu, MenuItem } from '@/ui/menu';
-import { IconButton } from '@/ui/button';
+import { Menu, MenuItem } from '@affine/component';
+import { IconButton } from '@affine/component';
 import {
   EdgelessIcon,
   ExportIcon,
@@ -15,7 +15,7 @@ import { useAppState } from '@/providers/app-state-provider';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
-import { toast } from '@/ui/toast';
+import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 const PopoverContent = () => {
   const { editor } = useAppState();

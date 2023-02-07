@@ -1,10 +1,10 @@
 import { EmailIcon } from '@blocksuite/icons';
-import { styled } from '@/styles';
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { Button } from '@/ui/button';
-import Input from '@/ui/input';
+import { styled } from '@affine/component';
+import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Button } from '@affine/component';
+import { Input } from '@affine/component';
 import { useState } from 'react';
-import { MuiAvatar } from '@/ui/mui';
+import { MuiAvatar } from '@affine/component';
 import useMembers from '@/hooks/use-members';
 import { User } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';

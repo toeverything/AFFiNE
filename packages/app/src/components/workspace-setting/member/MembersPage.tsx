@@ -12,19 +12,19 @@ import {
   StyledMoreVerticalButton,
   StyledMemberContainer,
 } from './style';
-import { Wrapper } from '@/ui/layout';
+import { Wrapper } from '@affine/component';
 import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useState } from 'react';
-import { Button, IconButton } from '@/ui/button';
+import { Button, IconButton } from '@affine/component';
 import { InviteMemberModal } from './InviteMemberModal';
-import { Menu, MenuItem } from '@/ui/menu';
-import { Empty } from '@/ui/empty';
+import { Menu, MenuItem } from '@affine/component';
+import { Empty } from '@affine/component';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useConfirm } from '@/providers/ConfirmProvider';
-import { toast } from '@/ui/toast';
+import { toast } from '@affine/component';
 import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
-import { FlexWrapper } from '@/ui/layout';
+import { FlexWrapper } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { EnableWorkspaceButton } from '@/components/enable-workspace';
 
@@ -171,7 +171,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         fontSize: '18px',
       }}
     >
-      <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
+      <Wrapper margin="0 0 32px 0">{t('Collaboration Description')}</Wrapper>
       <EnableWorkspaceButton />
     </Wrapper>
   );

@@ -1,10 +1,10 @@
-import { displayFlex, styled } from '@/styles';
+import { displayFlex, styled } from '@affine/component';
 import Loading from '@/components/loading';
-import Modal from '@/ui/modal';
+import { Modal } from '@affine/component';
 import { useState } from 'react';
-import { Button } from '@/ui/button';
+import { Button } from '@affine/component';
 import { FavouritedIcon } from '@blocksuite/icons';
-import { toast } from '@/ui/toast';
+import { toast } from '@affine/component';
 export const StyledHeader = styled('div')({
   height: '60px',
   width: '100vw',

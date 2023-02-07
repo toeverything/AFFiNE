@@ -1,4 +1,4 @@
-import { Modal, ModalWrapper } from '@/ui/modal';
+import { Modal, ModalWrapper } from '@affine/component';
 import {
   StyledContent,
   StyledModalHeader,

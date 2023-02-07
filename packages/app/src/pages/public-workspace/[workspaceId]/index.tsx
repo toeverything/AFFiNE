@@ -8,7 +8,7 @@ import {
   StyledBreadcrumbs,
   SearchButton,
 } from './[pageId]';
-import { Breadcrumbs } from '@/ui/breadcrumbs';
+import { Breadcrumbs } from '@affine/component';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { SearchIcon } from '@blocksuite/icons';
 import { useModal } from '@/providers/GlobalModalProvider';

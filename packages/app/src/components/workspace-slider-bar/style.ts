@@ -1,4 +1,4 @@
-import { displayFlex, styled, textEllipsis } from '@/styles';
+import { displayFlex, styled, textEllipsis } from '@affine/component';
 import Link from 'next/link';
 
 export const StyledSliderBar = styled.div<{ show: boolean }>(

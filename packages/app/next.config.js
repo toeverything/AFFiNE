@@ -35,6 +35,9 @@ const getRedirectConfig = profile => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    forceSwcTransforms: true,
+  },
   productionBrowserSourceMaps: true,
   reactStrictMode: false,
   swcMinify: false,
@@ -47,6 +50,7 @@ const nextConfig = {
     COMMIT_HASH: getCommitHash(),
     EDITOR_VERSION,
   },
+  transpilePackages: ['@affine/component'],
   webpack: config => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
     config.resolve.alias['yjs'] = require.resolve('yjs');

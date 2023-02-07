@@ -1,4 +1,4 @@
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 
 export const StyledModalWrapper = styled('div')(({ theme }) => {
   return {

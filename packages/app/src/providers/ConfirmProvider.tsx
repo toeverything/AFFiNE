@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import type { PropsWithChildren } from 'react';
-import { Confirm, ConfirmProps } from '@/ui/confirm';
+import { Confirm, ConfirmProps } from '@affine/component';
 
 type ConfirmContextValue = {
   confirm: (props: ConfirmProps) => Promise<boolean>;

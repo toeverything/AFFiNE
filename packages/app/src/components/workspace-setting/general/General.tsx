@@ -1,9 +1,9 @@
 import { StyledInput, StyledProviderInfo, StyledAvatar } from './style';
 import { StyledSettingKey, StyledRow } from '../style';
-import { FlexWrapper, Content } from '@/ui/layout';
+import { FlexWrapper, Content } from '@affine/component';
 
 import { useState } from 'react';
-import { Button } from '@/ui/button';
+import { Button } from '@affine/component';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
