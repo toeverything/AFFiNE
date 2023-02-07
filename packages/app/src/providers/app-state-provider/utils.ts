@@ -1,6 +1,6 @@
 import { DataCenter } from '@affine/datacenter';
 
-const DEFAULT_WORKSPACE_NAME = 'affine';
+const DEFAULT_WORKSPACE_NAME = 'AFFINE Test';
 
 export const createDefaultWorkspace = async (dataCenter: DataCenter) => {
   return dataCenter.createWorkspace({
