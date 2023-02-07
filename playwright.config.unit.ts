@@ -23,6 +23,11 @@ const config: PlaywrightTestConfig = {
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
+
+  // 'github' for GitHub Actions CI to generate annotations, plus a concise 'dot'
+  // default 'list' when running locally
+  // See https://playwright.dev/docs/test-reporters#github-actions-annotations
+  reporter: process.env.CI ? 'github' : 'list',
 };
 
 export default config;

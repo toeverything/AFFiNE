@@ -11,10 +11,10 @@
   "dependencies": {
     "@affine/datacenter": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@blocksuite/blocks": "0.4.0-20230203030233-b22bea7",
-    "@blocksuite/editor": "0.4.0-20230203030233-b22bea7",
+    "@blocksuite/blocks": "0.4.0-20230205175611-17a62e3",
+    "@blocksuite/editor": "0.4.0-20230205175611-17a62e3",
     "@blocksuite/icons": "^2.0.2",
-    "@blocksuite/store": "0.4.0-20230203030233-b22bea7",
+    "@blocksuite/store": "0.4.0-20230205175611-17a62e3",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
@@ -39,6 +39,7 @@
     "yjs": "^13.5.44"
   },
   "devDependencies": {
+    "@emotion/babel-plugin": "^11.10.5",
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
@@ -50,7 +51,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "next-pwa": "^5.6.0",
     "raw-loader": "^4.0.2",
-    "typescript": "4.8.3"
+    "typescript": "^4.9.5"
   },
   "eslintConfig": {
     "extends": [
