@@ -72,7 +72,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         width={620}
         style={{
           maxHeight: '80vh',
-          minHeight: '350px',
+          minHeight: isPublic && query.length === 0 ? '72px' : '350px',
           top: '12vh',
         }}
       >
@@ -100,37 +100,41 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
             />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
-          <StyledModalDivider />
-          <Command.List>
-            <StyledContent>
-              {!isPublic ? (
-                <Results
-                  query={query}
-                  loading={loading}
-                  setLoading={setLoading}
-                  setShowCreatePage={setShowCreatePage}
-                />
-              ) : (
-                <PublishedResults
-                  query={query}
-                  loading={loading}
-                  setLoading={setLoading}
-                  onClose={onClose}
-                  setPublishWorkspaceName={setPublishWorkspaceName}
-                />
-              )}
-            </StyledContent>
-            {!isPublic ? (
-              showCreatePage ? (
-                <>
-                  <StyledModalDivider />
-                  <StyledModalFooter>
-                    <Footer query={query} />
-                  </StyledModalFooter>
-                </>
-              ) : null
-            ) : null}
-          </Command.List>
+          {isPublic && query.length === 0 ? null : (
+            <>
+              <StyledModalDivider />
+              <Command.List>
+                <StyledContent>
+                  {!isPublic ? (
+                    <Results
+                      query={query}
+                      loading={loading}
+                      setLoading={setLoading}
+                      setShowCreatePage={setShowCreatePage}
+                    />
+                  ) : (
+                    <PublishedResults
+                      query={query}
+                      loading={loading}
+                      setLoading={setLoading}
+                      onClose={onClose}
+                      setPublishWorkspaceName={setPublishWorkspaceName}
+                    />
+                  )}
+                </StyledContent>
+                {!isPublic ? (
+                  showCreatePage ? (
+                    <>
+                      <StyledModalDivider />
+                      <StyledModalFooter>
+                        <Footer query={query} />
+                      </StyledModalFooter>
+                    </>
+                  ) : null
+                ) : null}
+              </Command.List>
+            </>
+          )}
         </Command>
       </ModalWrapper>
     </Modal>
