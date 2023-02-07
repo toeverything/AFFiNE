@@ -4,9 +4,11 @@ import { PageListHeader } from '@/components/header';
 import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useTranslation } from '@affine/i18n';
-import { useAppState } from '@/providers/app-state-provider';
+import { PageMeta, useAppState } from '@/providers/app-state-provider';
 const All = () => {
-  const { pageList } = useAppState();
+  const { currentWorkspace } = useAppState();
+  const pageList = (currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas ||
+    []) as PageMeta[];
   const { t } = useTranslation();
   return (
     <>
