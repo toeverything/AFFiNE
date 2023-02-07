@@ -23,6 +23,7 @@ export const WorkspaceCard = ({
   const { t } = useTranslation();
   return (
     <StyledCard
+      data-testid="workspace-card"
       onClick={() => {
         onClick(workspaceData);
       }}

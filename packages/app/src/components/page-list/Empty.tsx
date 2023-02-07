@@ -14,7 +14,6 @@ export const PageListEmpty = (props: { listType?: string }) => {
       {listType === 'all' && <p>{t('emptyAllPages')}</p>}
       {listType === 'favorite' && <p>{t('emptyFavourite')}</p>}
       {listType === 'trash' && <p>{t('emptyTrash')}</p>}
-      <p>{t('still designed')}</p>
     </div>
   );
 };
