@@ -10,27 +10,31 @@ import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
 import { useTranslation } from '@affine/i18n';
 export const Input = (props: {
+  open: boolean;
   query: string;
   setQuery: Dispatch<SetStateAction<string>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
   isPublic: boolean;
   publishWorkspaceName: string | undefined;
 }) => {
+  const { open, query, setQuery, setLoading, isPublic, publishWorkspaceName } =
+    props;
   const [isComposition, setIsComposition] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
   useEffect(() => {
-    inputRef.current?.addEventListener(
-      'blur',
-      () => {
-        inputRef.current?.focus();
-      },
-      true
-    );
-    setInputValue(props.query);
-    return inputRef.current?.focus();
-  }, [inputRef, props.query]);
+    const inputElement = inputRef.current;
+    const handleFocus = () => {
+      inputElement?.focus();
+    };
+    setInputValue(query);
+    inputElement?.addEventListener('blur', handleFocus, true);
+    return () => inputElement?.removeEventListener('blur', handleFocus, true);
+  }, [inputRef, open, query]);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
   return (
     <StyledInputContent>
       <StyledLabel htmlFor=":r5:">
@@ -43,18 +47,18 @@ export const Input = (props: {
           setIsComposition(true);
         }}
         onCompositionEnd={e => {
-          props.setQuery(e.data);
+          setQuery(e.data);
           setIsComposition(false);
-          if (!props.query) {
-            props.setLoading(true);
+          if (!query) {
+            setLoading(true);
           }
         }}
         onValueChange={str => {
           setInputValue(str);
           if (!isComposition) {
-            props.setQuery(str);
-            if (!props.query) {
-              props.setLoading(true);
+            setQuery(str);
+            if (!query) {
+              setLoading(true);
             }
           }
         }}
@@ -75,9 +79,9 @@ export const Input = (props: {
           }
         }}
         placeholder={
-          props.isPublic
+          isPublic
             ? t('Quick search placeholder2', {
-                workspace: props.publishWorkspaceName,
+                workspace: publishWorkspaceName,
               })
             : t('Quick search placeholder')
         }

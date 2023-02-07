@@ -100,6 +100,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         >
           <StyledModalHeader>
             <Input
+              open={open}
               query={query}
               setQuery={setQuery}
               setLoading={setLoading}
