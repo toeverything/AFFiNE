@@ -85,8 +85,8 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             height={32}
             value={workspaceName}
             placeholder={t('Workspace Name')}
-            maxLength={14}
-            minLength={1}
+            maxLength={15}
+            minLength={0}
             disabled={!isOwner}
             onChange={handleChangeWorkSpaceName}
           ></StyledInput>

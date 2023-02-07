@@ -128,7 +128,7 @@
   "Enable AFFiNE Cloud Description": "如启用，此工作区中的数据将通过AFFiNE Cloud进行备份和同步。",
   "Enable": "启动",
   "Sign in and Enable": "登录并启用",
-  "Skip": "跳过",
+  "Not now": "下次再说",
   "Publishing": "发布到web需要AFFiNE云服务。",
   "Share with link": "通过链接分享",
   "Copy Link": "复制链接",

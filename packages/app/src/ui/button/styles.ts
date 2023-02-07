@@ -145,6 +145,7 @@ export const StyledButton = styled('button', {
   shouldForwardProp: prop => {
     return ![
       'hoverBackground',
+      'shape',
       'hoverColor',
       'hoverStyle',
       'type',
@@ -201,6 +202,9 @@ export const StyledButton = styled('button', {
       fontSize,
       fontWeight: bold ? '500' : '400',
       '.affine-button-icon': {
+        color: theme.colors.iconColor,
+      },
+      '.affine-button-icon__fixed': {
         color: theme.colors.iconColor,
       },
       '>span': {

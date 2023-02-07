@@ -3,9 +3,9 @@ import { FlexWrapper } from '@/ui/layout';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { IconButton } from '@/ui/button';
 import { useAppState } from '@/providers/app-state-provider';
-import { StyledFooter, StyleUserInfo, StyleSignIn } from './styles';
+import { StyledFooter, StyleUserInfo, StyledSignInButton } from './styles';
 import { useTranslation } from '@affine/i18n';
-
+import { Tooltip } from '@/ui/tooltip';
 export const Footer = ({
   onLogin,
   onLogout,
@@ -31,27 +31,33 @@ export const Footer = ({
               <p>{user.email}</p>
             </StyleUserInfo>
           </FlexWrapper>
-          <IconButton
-            onClick={() => {
-              onLogout();
-            }}
-          >
-            <LogOutIcon />
-          </IconButton>
+          <Tooltip content={t('Sign out')} disablePortal={true}>
+            <IconButton
+              onClick={() => {
+                onLogout();
+              }}
+            >
+              <LogOutIcon />
+            </IconButton>
+          </Tooltip>
         </>
       )}
 
       {!user && (
-        <StyleSignIn
+        <StyledSignInButton
+          noBorder
+          bold
+          icon={
+            <div className="circle">
+              <CloudInsyncIcon fontSize={16} />
+            </div>
+          }
           onClick={async () => {
             onLogin();
           }}
         >
-          <span>
-            <CloudInsyncIcon fontSize={16} />
-          </span>
           {t('Sign in')}
-        </StyleSignIn>
+        </StyledSignInButton>
       )}
     </StyledFooter>
   );
