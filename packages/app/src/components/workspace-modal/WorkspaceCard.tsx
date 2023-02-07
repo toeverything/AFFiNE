@@ -46,7 +46,7 @@ export const WorkspaceCard = ({
   workspaceData: WorkspaceUnit;
   onClick: (data: WorkspaceUnit) => void;
 }) => {
-  const { currentWorkspace, user } = useAppState();
+  const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
   return (
     <StyledCard
