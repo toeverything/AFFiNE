@@ -19,6 +19,7 @@ import WorkspaceLayout from '@/components/workspace-layout';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { PageListHeader } from '@/components/header';
+import Head from 'next/head';
 
 const useTabMap = () => {
   const { t } = useTranslation();
@@ -79,6 +80,9 @@ const WorkspaceSetting = () => {
     useTabMap();
   return (
     <>
+      <Head>
+        <title>{t('Settings')} - AFFiNE</title>
+      </Head>
       <StyledSettingContainer>
         <PageListHeader icon={<SettingsIcon />}>{t('Settings')}</PageListHeader>
         <StyledSettingSidebar>

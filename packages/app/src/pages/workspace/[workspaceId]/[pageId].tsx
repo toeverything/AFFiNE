@@ -15,6 +15,8 @@ import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import dynamic from 'next/dynamic';
 import { EditorContainer } from '@blocksuite/editor';
+import Head from 'next/head';
+import { useTranslation } from '@affine/i18n';
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
@@ -25,8 +27,12 @@ const Page: NextPageWithLayout = () => {
     (editor: EditorContainer) => setEditor.current(editor),
     [setEditor]
   );
+  const { t } = useTranslation();
   return (
     <>
+      <Head>
+        <title>{currentPage?.meta?.title || t('Untitled')} - AFFiNE</title>
+      </Head>
       <EditorHeader />
       <MobileModal />
 
