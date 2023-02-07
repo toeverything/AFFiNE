@@ -17,7 +17,7 @@ const WORKSPACE_KEY = 'workspaces';
 
 export class LocalProvider extends BaseProvider {
   public id = 'local';
-  private _idbMap: Map<string, IndexedDBProvider> = new Map();
+  private _idbMap: Map<BlocksuiteWorkspace, IndexedDBProvider> = new Map();
 
   constructor(params: ProviderConstructorParams) {
     super(params);
@@ -36,11 +36,11 @@ export class LocalProvider extends BaseProvider {
 
   public override async linkLocal(workspace: BlocksuiteWorkspace) {
     assert(workspace.room);
-    let idb = this._idbMap.get(workspace.room);
+    let idb = this._idbMap.get(workspace);
     if (!idb) {
       idb = new IndexedDBProvider(workspace.room, workspace.doc);
     }
-    this._idbMap.set(workspace.room, idb);
+    this._idbMap.set(workspace, idb);
     this._logger('Local data loaded');
     return workspace;
   }
@@ -79,6 +79,9 @@ export class LocalProvider extends BaseProvider {
       IndexedDBProvider.delete(id);
       this._workspaces.remove(id);
       this._storeWorkspaces(this._workspaces.list());
+      if (workspace.blocksuiteWorkspace) {
+        this._idbMap.delete(workspace.blocksuiteWorkspace);
+      }
     } else {
       this._logger(`Failed to delete workspace ${id}`);
     }
@@ -115,5 +118,6 @@ export class LocalProvider extends BaseProvider {
     workspaces.forEach(ws => IndexedDBProvider.delete(ws.id));
     this._storeWorkspaces([]);
     this._workspaces.clear();
+    this._idbMap.clear();
   }
 }
