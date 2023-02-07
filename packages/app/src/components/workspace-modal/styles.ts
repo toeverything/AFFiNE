@@ -1,6 +1,5 @@
 import { displayFlex, displayInlineFlex, styled, textEllipsis } from '@/styles';
 import { Button } from '@/ui/button';
-import text from '*.md';
 
 export const StyledSplitLine = styled.div(({ theme }) => {
   return {
