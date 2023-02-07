@@ -53,21 +53,29 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         <StyledSettingH2>{t('Workspace Avatar')}</StyledSettingH2>
         <StyledSettingAvatarContent>
           <StyledAvatar>
-            <Upload
-              accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-              fileChange={fileChange}
-            >
-              <>
-                <div className="camera-icon">
-                  <CameraIcon></CameraIcon>
-                </div>
-                <WorkspaceUnitAvatar
-                  size={60}
-                  name={workspace.name}
-                  workspaceUnit={workspace}
-                />
-              </>
-            </Upload>
+            {isOwner ? (
+              <Upload
+                accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+                fileChange={fileChange}
+              >
+                <>
+                  <div className="camera-icon">
+                    <CameraIcon></CameraIcon>
+                  </div>
+                  <WorkspaceUnitAvatar
+                    size={60}
+                    name={workspace.name}
+                    workspaceUnit={workspace}
+                  />
+                </>
+              </Upload>
+            ) : (
+              <WorkspaceUnitAvatar
+                size={60}
+                name={workspace.name}
+                workspaceUnit={workspace}
+              />
+            )}
           </StyledAvatar>
           {/* TODO: Wait for image sync to complete  */}
           {/* <Upload
