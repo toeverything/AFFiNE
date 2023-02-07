@@ -3,6 +3,7 @@ import { styled } from '@/styles';
 import { Empty } from '@/ui/empty';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { PageLoading } from '@/components/loading';
 
 // const User = ({ name, avatar }: { name: string; avatar?: string }) => {
 //   return (
@@ -18,19 +19,29 @@ import { useEffect, useState } from 'react';
 // };
 
 export default function DevPage() {
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [successInvited, setSuccessInvited] = useState<boolean>(false);
   const { acceptInvite } = useWorkspaceHelper();
   useEffect(() => {
-    router.query.invite_code &&
-      acceptInvite(router.query.invite_code as string).then(data => {
-        if (data && data.accepted) {
-          setSuccessInvited(true);
-        }
-      });
+    if (router.query.invite_code) {
+      acceptInvite(router.query.invite_code as string)
+        .then(data => {
+          if (data && data.accepted) {
+            setSuccessInvited(true);
+          }
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
   }, [router, acceptInvite]);
 
-  return (
+  return loading ? (
+    <PageLoading />
+  ) : (
     <Invited>
       <div>
         <Empty width={310} height={310}></Empty>
