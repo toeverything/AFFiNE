@@ -126,7 +126,7 @@ export const StyledBreadcrumbs = styled(NextLink)(({ theme }) => {
     span: {
       padding: '0 12px',
       fontSize: theme.font.base,
-      lineHeight: theme.font.lineHeightBase,
+      lineHeight: theme.font.lineHeight,
     },
     ':hover': { color: theme.colors.primaryColor },
     transition: 'all .15s',
