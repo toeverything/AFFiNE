@@ -141,6 +141,7 @@ export const AppStateProvider = ({
     }
     setAppState({
       ...appState,
+      workspaceList: dataCenter.workspaces,
       user,
     });
     return user;
@@ -151,6 +152,7 @@ export const AppStateProvider = ({
     await dataCenter.logout();
     setAppState({
       ...appState,
+      workspaceList: dataCenter.workspaces,
       user: null,
     });
   };
