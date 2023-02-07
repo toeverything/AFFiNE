@@ -36,7 +36,7 @@ interface WorkspaceModalProps {
 
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-  const { workspaceList, logout } = useAppState();
+  const { logout, dataCenter } = useAppState();
   const router = useRouter();
   const { t } = useTranslation();
   const [loginOpen, setLoginOpen] = useState(false);
@@ -80,7 +80,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
           </StyledModalHeader>
 
           <StyledModalContent>
-            {workspaceList.map((item, index) => {
+            {dataCenter.workspaces.map((item, index) => {
               return (
                 <WorkspaceCard
                   workspaceData={item}
@@ -132,6 +132,11 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
         onClose={async wait => {
           if (!wait) {
             await logout();
+            if (dataCenter.workspaces.length === 0) {
+              router.push(`/workspace`);
+            } else {
+              router.push(`/workspace/${dataCenter.workspaces[0].id}`);
+            }
           }
           setLogoutOpen(false);
         }}

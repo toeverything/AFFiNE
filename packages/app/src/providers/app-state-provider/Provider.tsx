@@ -24,6 +24,7 @@ export const AppStateProvider = ({
 }: PropsWithChildren<AppStateContextProps>) => {
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
   const [blobState, setBlobState] = useState(false);
+  const [userInfo, setUser] = useState<User | null>({} as User);
   useEffect(() => {
     const initState = async () => {
       const dataCenter = await getDataCenter();
@@ -31,10 +32,9 @@ export const AppStateProvider = ({
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
       }
-
+      setUser((await dataCenter.getUserInfo()) || null);
       setAppState({
         dataCenter,
-        user: (await dataCenter.getUserInfo()) || null,
         workspaceList: dataCenter.workspaces,
         currentWorkspace: null,
         pageList: [],
@@ -72,6 +72,7 @@ export const AppStateProvider = ({
     // FIXME: onWorkspacesChange should have dispose function
     dataCenter?.onWorkspacesChange(
       () => {
+        console.log(123);
         setAppState({
           ...appState,
           workspaceList: dataCenter.workspaces,
@@ -97,7 +98,7 @@ export const AppStateProvider = ({
   const loadWorkspace: AppStateFunction['loadWorkspace'] =
     useRef() as AppStateFunction['loadWorkspace'];
   loadWorkspace.current = async (workspaceId: string) => {
-    const { dataCenter, workspaceList, currentWorkspace, user } = appState;
+    const { dataCenter, workspaceList, currentWorkspace } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
     }
@@ -112,7 +113,7 @@ export const AppStateProvider = ({
       isOwner = true;
     } else {
       // We must ensure workspace.owner exists, then ensure id same.
-      isOwner = workspace?.owner && user?.id === workspace.owner.id;
+      isOwner = workspace?.owner && userInfo?.id === workspace.owner.id;
     }
 
     const pageList =
@@ -166,22 +167,13 @@ export const AppStateProvider = ({
     if (!user) {
       throw new Error('User info not found');
     }
-    setAppState({
-      ...appState,
-      workspaceList: dataCenter.workspaces,
-      user,
-    });
+    setUser(user);
     return user;
   };
-
   const logout = async () => {
     const { dataCenter } = appState;
     await dataCenter.logout();
-    setAppState({
-      ...appState,
-      workspaceList: dataCenter.workspaces,
-      user: null,
-    });
+    setUser(null);
   };
 
   return (
@@ -194,6 +186,7 @@ export const AppStateProvider = ({
         login,
         logout,
         blobDataSynced: blobState,
+        user: userInfo,
       }}
     >
       {children}

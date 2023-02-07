@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
-  const { dataCenter, loadWorkspace, user } = useAppState();
+  const { dataCenter, loadWorkspace } = useAppState();
   const router = useRouter();
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(
     router.query.workspaceId as string
@@ -24,7 +24,7 @@ export const useEnsureWorkspace = () => {
         meta => meta.id.toString() === router.query.workspaceId
       ) === -1
     ) {
-      router.push(`/workspace/${dataCenter.workspaces[0].id}`);
+      router.push(`/404`);
       return;
     }
     // If user is not login and input a custom workspaceId, jump to 404 page
@@ -42,7 +42,7 @@ export const useEnsureWorkspace = () => {
       setWorkspaceLoaded(true);
       setActiveWorkspaceId(activeWorkspaceId);
     });
-  }, [loadWorkspace, router, user, dataCenter.workspaces, activeWorkspaceId]);
+  }, [loadWorkspace, router, dataCenter.workspaces, activeWorkspaceId]);
 
   return {
     workspaceLoaded,
