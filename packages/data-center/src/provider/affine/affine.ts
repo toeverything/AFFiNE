@@ -173,6 +173,8 @@ export class AffineProvider extends BaseProvider {
       }://${window.location.host}/api/sync/`;
       ws = new WebsocketProvider(wsUrl, room, doc, {
         params: { token: this._apis.token.refresh },
+        // @ts-expect-error ignore the type
+        awareness: workspace.awarenessStore.awareness,
       });
       this._wsMap.set(workspace, ws);
     }
