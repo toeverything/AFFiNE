@@ -30,7 +30,9 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [publishWorkspaceName, setPublishWorkspaceName] = useState('');
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
-
+  const isPublicAndNoQuery = () => {
+    return isPublic && query.length === 0;
+  };
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -72,7 +74,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         width={620}
         style={{
           maxHeight: '80vh',
-          minHeight: isPublic && query.length === 0 ? '72px' : '350px',
+          minHeight: isPublicAndNoQuery() ? '72px' : '350px',
           top: '12vh',
         }}
       >
@@ -100,41 +102,47 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
             />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
-          {isPublic && query.length === 0 ? null : (
-            <>
-              <StyledModalDivider />
-              <Command.List>
-                <StyledContent>
-                  {!isPublic ? (
-                    <Results
-                      query={query}
-                      loading={loading}
-                      setLoading={setLoading}
-                      setShowCreatePage={setShowCreatePage}
-                    />
-                  ) : (
-                    <PublishedResults
-                      query={query}
-                      loading={loading}
-                      setLoading={setLoading}
-                      onClose={onClose}
-                      setPublishWorkspaceName={setPublishWorkspaceName}
-                    />
-                  )}
-                </StyledContent>
+          <>
+            <StyledModalDivider
+              style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
+            />
+            <Command.List>
+              <StyledContent
+                style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
+              >
                 {!isPublic ? (
-                  showCreatePage ? (
-                    <>
-                      <StyledModalDivider />
-                      <StyledModalFooter>
-                        <Footer query={query} />
-                      </StyledModalFooter>
-                    </>
-                  ) : null
-                ) : null}
-              </Command.List>
-            </>
-          )}
+                  <Results
+                    query={query}
+                    loading={loading}
+                    setLoading={setLoading}
+                    setShowCreatePage={setShowCreatePage}
+                  />
+                ) : (
+                  <PublishedResults
+                    query={query}
+                    loading={loading}
+                    setLoading={setLoading}
+                    onClose={onClose}
+                    setPublishWorkspaceName={setPublishWorkspaceName}
+                  />
+                )}
+              </StyledContent>
+              {!isPublic ? (
+                showCreatePage ? (
+                  <>
+                    <StyledModalDivider />
+                    <StyledModalFooter>
+                      <Footer query={query} />
+                    </StyledModalFooter>
+                  </>
+                ) : (
+                  <></>
+                )
+              ) : (
+                <></>
+              )}
+            </Command.List>
+          </>
         </Command>
       </ModalWrapper>
     </Modal>
