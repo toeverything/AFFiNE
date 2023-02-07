@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
-  const { workspaceList, loadWorkspace, user } = useAppState();
+  const { dataCenter, loadWorkspace, user } = useAppState();
   const router = useRouter();
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(
     router.query.workspaceId as string
@@ -17,14 +17,14 @@ export const useEnsureWorkspace = () => {
     // If router.query.workspaceId is not in workspace list, jump to 404 page
     // If workspaceList is empty, we need to create a default workspace but not jump to 404
     if (
-      workspaceList.length &&
+      dataCenter.workspaces.length &&
       // FIXME: router is not ready when this hook is called
       location.pathname.startsWith(`/workspace/${router.query.workspaceId}`) &&
-      workspaceList.findIndex(
+      dataCenter.workspaces.findIndex(
         meta => meta.id.toString() === router.query.workspaceId
       ) === -1
     ) {
-      router.push('/404');
+      router.push(`/workspace/${dataCenter.workspaces[0].id}`);
       return;
     }
     // If user is not login and input a custom workspaceId, jump to 404 page
@@ -37,12 +37,12 @@ export const useEnsureWorkspace = () => {
     //   return;
     // }
     const workspaceId =
-      (router.query.workspaceId as string) || workspaceList[0]?.id;
+      (router.query.workspaceId as string) || dataCenter.workspaces[0]?.id;
     loadWorkspace.current(workspaceId).finally(() => {
       setWorkspaceLoaded(true);
       setActiveWorkspaceId(activeWorkspaceId);
     });
-  }, [loadWorkspace, router, user, workspaceList, activeWorkspaceId]);
+  }, [loadWorkspace, router, user, dataCenter.workspaces, activeWorkspaceId]);
 
   return {
     workspaceLoaded,

@@ -132,7 +132,6 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
         onClose={async wait => {
           if (!wait) {
             await logout();
-            router.push(`/workspace`);
           }
           setLogoutOpen(false);
         }}

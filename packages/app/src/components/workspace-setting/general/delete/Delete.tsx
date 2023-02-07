@@ -11,7 +11,6 @@ import {
 import { useState } from 'react';
 import { ModalCloseButton } from '@/ui/modal';
 import { Button } from '@/ui/button';
-import { useRouter } from 'next/router';
 
 import { WorkspaceUnit } from '@affine/datacenter';
 import { Trans, useTranslation } from '@affine/i18n';
@@ -30,7 +29,6 @@ export const WorkspaceDelete = ({
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
   const { t } = useTranslation();
-  const router = useRouter();
   const { deleteWorkSpace } = useWorkspaceHelper();
   const handlerInputChange = (workspaceName: string) => {
     setDeleteStr(workspaceName);
@@ -39,7 +37,6 @@ export const WorkspaceDelete = ({
   const handleDelete = async () => {
     await deleteWorkSpace();
     onClose();
-    router.push(`/workspace`);
   };
 
   return (
