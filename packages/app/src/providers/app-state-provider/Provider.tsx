@@ -10,12 +10,16 @@ import {
 import { createDefaultWorkspace } from './utils';
 import { User } from '@affine/datacenter';
 
+export interface Disposable {
+  dispose(): void;
+}
+
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
 export const AppState = createContext<AppStateContext>({} as AppStateContext);
 
 export const useAppState = () => useContext(AppState);
-
+let syncChangeDisposable: Disposable | undefined = undefined;
 export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
@@ -92,6 +96,7 @@ export const AppStateProvider = ({
 
   const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
   loadWorkspace.current = async (workspaceId: string) => {
+    syncChangeDisposable && syncChangeDisposable.dispose();
     const { dataCenter, workspaceList, currentWorkspace, user } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
@@ -108,6 +113,13 @@ export const AppStateProvider = ({
       // We must ensure workspace.owner exists, then ensure id same.
       isOwner = workspace?.owner && user?.id === workspace.owner.id;
     }
+    const blobStorage = await workspace?.blocksuiteWorkspace?.blobs;
+    syncChangeDisposable = blobStorage?.signals.onBlobSyncStateChange.on(() => {
+      setAppState({
+        ...appState,
+        synced: blobStorage?.uploading,
+      });
+    });
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
@@ -117,6 +129,7 @@ export const AppStateProvider = ({
       currentPage: null,
       editor: null,
       isOwner,
+      blobDataSynced: blobStorage?.uploading,
     });
 
     return workspace;

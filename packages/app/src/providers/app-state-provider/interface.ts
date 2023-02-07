@@ -24,6 +24,7 @@ export type AppStateValue = {
   editor?: EditorContainer | null;
   synced: boolean;
   isOwner?: boolean;
+  blobDataSynced?: boolean;
 };
 
 export type AppStateFunction = {
