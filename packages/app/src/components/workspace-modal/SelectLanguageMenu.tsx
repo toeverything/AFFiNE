@@ -45,6 +45,7 @@ export const LanguageMenu = () => {
         iconPosition="end"
         noBorder={true}
         style={{ textTransform: 'capitalize' }}
+        data-testid="language-menu-button"
       >
         {currentLanguage?.originalName}
       </Button>
