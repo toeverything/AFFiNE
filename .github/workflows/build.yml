@@ -67,18 +67,16 @@ jobs:
 
   lint:
     name: Lint and E2E Test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: development
     needs: build
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
           version: 'latest'
-
-      - name: Use Node.js
-        uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
           node-version: 18.x
           cache: 'pnpm'
@@ -96,8 +94,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
       - name: Download artifact
         uses: actions/download-artifact@v3
@@ -105,20 +101,40 @@ jobs:
           name: artifact
           path: packages/app/.next/
 
-      - name: Lint & E2E Test
+      - name: Lint & E2E Test & Unit Test
         run: |
           pnpm lint --max-warnings=0
-          PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
-          PLAYWRIGHT_BROWSERS_PATH=0 pnpm test
-          PLAYWRIGHT_BROWSERS_PATH=0 pnpm test:dc
-        env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          npx playwright install chromium
+          pnpm run test:coverage
+          pnpm run test:unit
+        # env:
+        #   NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+        #   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+        #   NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+        #   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+        #   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+        #   NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+        #   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+
+      - name: Collect code coverage report
+        run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
+      - name: Upload e2e test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/lcov.info
+          flags: e2etest
+          name: affine
+          fail_ci_if_error: true
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results-main
+          path: ./test-results
+          if-no-files-found: ignore
 
   build-community:
     name: Build Community
