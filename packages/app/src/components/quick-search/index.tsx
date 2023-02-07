@@ -130,6 +130,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                   setLoading={setLoading}
                   onClose={handleClose}
                   setPublishWorkspaceName={setPublishWorkspaceName}
+                  data-testid="publishedSearchResults"
                 />
               )}
             </StyledContent>

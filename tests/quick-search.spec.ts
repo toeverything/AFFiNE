@@ -106,3 +106,11 @@ test.describe('Disable search on 404 page', () => {
     await expect(quickSearch).toBeVisible({ visible: false });
   });
 });
+test.describe('Open quick search on the published page', () => {
+  test('Open quick search on local page', async ({ page }) => {
+    await newPage(page);
+    await openQuickSearchByShortcut(page);
+    const publishedSearchResults = page.locator('[publishedSearchResults]');
+    await expect(publishedSearchResults).toBeVisible({ visible: false });
+  });
+});
