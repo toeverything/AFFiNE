@@ -38,7 +38,7 @@ export const useEnsureWorkspace = () => {
     // }
     const workspaceId =
       (router.query.workspaceId as string) || workspaceList[0]?.id;
-    loadWorkspace(workspaceId).finally(() => {
+    loadWorkspace.current(workspaceId).finally(() => {
       setWorkspaceLoaded(true);
       setActiveWorkspaceId(activeWorkspaceId);
     });

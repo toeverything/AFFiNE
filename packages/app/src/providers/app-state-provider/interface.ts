@@ -24,12 +24,15 @@ export type AppStateValue = {
   editor?: EditorContainer | null;
   synced: boolean;
   isOwner?: boolean;
+  blobDataSynced?: boolean;
 };
 
 export type AppStateFunction = {
   setEditor: MutableRefObject<(page: EditorContainer) => void>;
 
-  loadWorkspace: (workspaceId: string) => Promise<WorkspaceUnit | null>;
+  loadWorkspace: MutableRefObject<
+    (workspaceId: string) => Promise<WorkspaceUnit | null>
+  >;
   loadPage: (pageId: string) => void;
 
   login: () => Promise<User>;
