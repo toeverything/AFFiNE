@@ -96,7 +96,6 @@ export const AppStateProvider = ({
 
   const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
   loadWorkspace.current = async (workspaceId: string) => {
-    syncChangeDisposable && syncChangeDisposable.dispose();
     const { dataCenter, workspaceList, currentWorkspace, user } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
@@ -104,6 +103,7 @@ export const AppStateProvider = ({
     if (workspaceId === currentWorkspace?.id) {
       return currentWorkspace;
     }
+    syncChangeDisposable?.dispose();
     const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
     let isOwner;
     if (workspace?.provider === 'local') {
@@ -117,7 +117,7 @@ export const AppStateProvider = ({
     syncChangeDisposable = blobStorage?.signals.onBlobSyncStateChange.on(() => {
       setAppState({
         ...appState,
-        synced: blobStorage?.uploading,
+        blobDataSynced: blobStorage?.uploading,
       });
     });
     const pageList =
