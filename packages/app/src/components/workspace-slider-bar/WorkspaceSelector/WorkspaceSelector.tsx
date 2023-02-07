@@ -32,13 +32,13 @@ export const WorkspaceSelector = () => {
           >
             <WorkspaceUnitAvatar
               size={28}
-              name={currentWorkspace?.name ?? 'AFFiNE'}
+              name={currentWorkspace?.name ?? 'AFFiNE Test'}
               workspaceUnit={currentWorkspace}
             />
           </div>
         </Avatar>
         <WorkspaceName data-testid="workspace-name">
-          {currentWorkspace?.name ?? 'AFFiNE'}
+          {currentWorkspace?.name ?? 'AFFiNE Test'}
         </WorkspaceName>
       </SelectorWrapper>
       <WorkspaceModal

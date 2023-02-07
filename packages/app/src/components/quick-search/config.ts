@@ -1,5 +1,10 @@
 import { FC, SVGProps } from 'react';
-import { AllPagesIcon, FavouritesIcon, TrashIcon } from '@blocksuite/icons';
+import {
+  AllPagesIcon,
+  FavouritesIcon,
+  TrashIcon,
+  SettingsIcon,
+} from '@blocksuite/icons';
 import { useTranslation } from '@affine/i18n';
 
 export const useSwitchToConfig = (
@@ -22,6 +27,13 @@ export const useSwitchToConfig = (
         ? `/workspace/${currentWorkspaceId}/favorite`
         : '',
       icon: FavouritesIcon,
+    },
+    {
+      title: t('Settings'),
+      href: currentWorkspaceId
+        ? `/workspace/${currentWorkspaceId}/setting`
+        : '',
+      icon: SettingsIcon,
     },
     {
       title: t('Trash'),

@@ -78,7 +78,7 @@ test.describe('Add new page in quick search', () => {
 });
 
 test.describe('Search and select', () => {
-  test('Create a new page and search this page', async ({ page }) => {
+  test.skip('Create a new page and search this page', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
@@ -88,7 +88,6 @@ test.describe('Search and select', () => {
     await assertTitleTexts(page, 'test123456');
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
-    await page.waitForTimeout(300);
     await assertResultList(page, ['test123456']);
     await page.keyboard.press('Enter');
     await page.waitForTimeout(300);

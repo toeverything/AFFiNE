@@ -7,7 +7,7 @@ export const NotfoundPage = () => {
   const router = useRouter();
   return (
     <PageContainer>
-      <NotFoundTitle>
+      <NotFoundTitle data-testid="notFound">
         {t('404 - Page Not Found')}
         <p>
           <Button

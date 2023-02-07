@@ -6,7 +6,6 @@
   "type": "module",
   "types": "dist/src/index.d.ts",
   "exports": {
-    "./src/*": "./dist/src/*.js",
     ".": "./dist/src/index.js"
   },
   "scripts": {
