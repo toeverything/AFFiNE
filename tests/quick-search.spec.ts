@@ -94,3 +94,23 @@ test.describe('Search and select', () => {
     await assertTitleTexts(page, 'test123456', true);
   });
 });
+test.describe('Disable search on 404 page', () => {
+  test('Navigate to the 404 page and try to open quick search', async ({
+    page,
+  }) => {
+    await page.goto('http://localhost:8080/404');
+    const notFoundTip = page.locator('[data-testid=notFound]');
+    await expect(notFoundTip).toBeVisible();
+    await openQuickSearchByShortcut(page);
+    const quickSearch = page.locator('[data-testid=quickSearch]');
+    await expect(quickSearch).toBeVisible({ visible: false });
+  });
+});
+test.describe('Open quick search on the published page', () => {
+  test('Open quick search on local page', async ({ page }) => {
+    await newPage(page);
+    await openQuickSearchByShortcut(page);
+    const publishedSearchResults = page.locator('[publishedSearchResults]');
+    await expect(publishedSearchResults).toBeVisible({ visible: false });
+  });
+});

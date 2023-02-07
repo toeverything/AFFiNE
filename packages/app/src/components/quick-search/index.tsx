@@ -30,13 +30,19 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const [publishWorkspaceName, setPublishWorkspaceName] = useState('');
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
-
+  const isPublicAndNoQuery = () => {
+    return isPublic && query.length === 0;
+  };
   const handleClose = () => {
     setQuery('');
     onClose();
   };
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
+    if (router.pathname.startsWith('/404')) {
+      triggerQuickSearchModal(false);
+      return;
+    }
     const down = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
         const selection = window.getSelection();
@@ -53,7 +59,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
     document.addEventListener('keydown', down, { capture: true });
     return () =>
       document.removeEventListener('keydown', down, { capture: true });
-  }, [open, triggerQuickSearchModal]);
+  }, [open, router.pathname, triggerQuickSearchModal]);
 
   useEffect(() => {
     if (router.pathname.startsWith('/public-workspace')) {
@@ -74,7 +80,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         width={620}
         style={{
           maxHeight: '80vh',
-          minHeight: '350px',
+          minHeight: isPublicAndNoQuery() ? '72px' : '350px',
           top: '12vh',
         }}
       >
@@ -102,9 +108,13 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
             />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
-          <StyledModalDivider />
+          <StyledModalDivider
+            style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
+          />
           <Command.List>
-            <StyledContent>
+            <StyledContent
+              style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
+            >
               {!isPublic ? (
                 <Results
                   query={query}
@@ -120,6 +130,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
                   setLoading={setLoading}
                   onClose={handleClose}
                   setPublishWorkspaceName={setPublishWorkspaceName}
+                  data-testid="publishedSearchResults"
                 />
               )}
             </StyledContent>
