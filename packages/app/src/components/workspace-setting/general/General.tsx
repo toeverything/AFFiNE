@@ -52,7 +52,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       <div style={{ flex: 1, overflow: 'auto' }}>
         <StyledSettingH2>{t('Workspace Avatar')}</StyledSettingH2>
         <StyledSettingAvatarContent>
-          <StyledAvatar>
+          <StyledAvatar disabled={!isOwner}>
             {isOwner ? (
               <Upload
                 accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
