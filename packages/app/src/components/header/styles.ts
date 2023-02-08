@@ -103,7 +103,7 @@ export const StyledSearchArrowWrapper = styled.div(() => {
 
 export const StyledPageListTittleWrapper = styled(StyledTitle)(({ theme }) => {
   return {
-    fontSize: theme.font.sm,
+    fontSize: theme.font.base,
     color: theme.colors.textColor,
     '>svg': {
       fontSize: '20px',

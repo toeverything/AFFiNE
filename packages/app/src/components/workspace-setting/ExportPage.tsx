@@ -1,24 +1,16 @@
-import { styled } from '@/styles';
-import { WorkspaceUnit } from '@affine/datacenter';
-import { Trans } from '@affine/i18n';
-export const ExportPageTitleContainer = styled('div')(() => {
-  return {
-    display: 'flex',
+import { useTranslation } from '@affine/i18n';
+import { Wrapper } from '@/ui/layout';
+import { Button } from '@/ui/button';
 
-    fontWeight: '500',
-    flex: 1,
-  };
-});
-export const ExportPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
+export const ExportPage = () => {
+  const { t } = useTranslation();
+
   return (
-    <ExportPageTitleContainer>
-      <Trans i18nKey="Export Workspace">
-        Export Workspace
-        <code style={{ margin: '0 10px' }}>
-          {{ workspace: workspace.name }}
-        </code>
-        Is Comming
-      </Trans>
-    </ExportPageTitleContainer>
+    <>
+      <Wrapper marginBottom="32px"> {t('Export Description')}</Wrapper>
+      <Button type="light" shape="circle" disabled>
+        {t('Export AFFINE backup file (coming soon)')}
+      </Button>
+    </>
   );
 };

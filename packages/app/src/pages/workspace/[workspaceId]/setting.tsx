@@ -11,6 +11,7 @@ import {
   MembersPage,
   PublishPage,
   SyncPage,
+  ExportPage,
 } from '@/components/workspace-setting';
 import { SettingsIcon } from '@blocksuite/icons';
 import { useAppState } from '@/providers/app-state-provider';
@@ -43,10 +44,10 @@ const useTabMap = () => {
       panelRender: workspace => <PublishPage workspace={workspace} />,
     },
     // TODO: next version will finish this feature
-    // {
-    //   name: t('Export'),
-    //   panelRender: workspace => <ExportPage workspace={workspace} />,
-    // },
+    {
+      name: t('Export'),
+      panelRender: workspace => <ExportPage workspace={workspace} />,
+    },
   ];
   const [activeTab, setActiveTab] = useState<string>(tabMap[0].name);
   const handleTabChange = (tab: string) => {

@@ -1,11 +1,3 @@
-import {
-  StyledButtonContainer,
-  StyledPublishContent,
-  StyledPublishCopyContainer,
-  StyledPublishExplanation,
-  StyledSettingH2,
-  StyledStopPublishContainer,
-} from './style';
 import { useState } from 'react';
 import { Button } from '@/ui/button';
 import Input from '@/ui/input';
@@ -14,6 +6,7 @@ import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useTranslation } from '@affine/i18n';
 import { EnableWorkspaceButton } from '../enable-workspace';
+import { Wrapper, Content, FlexWrapper } from '@/ui/layout';
 export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
   const { publishWorkspace } = useWorkspaceHelper();
@@ -33,82 +26,64 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     toast(t('Copied link to clipboard'));
   };
 
+  if (workspace.provider === 'affine') {
+    if (workspace.published) {
+      return (
+        <>
+          <Wrapper marginBottom="32px">{t('Published Description')}</Wrapper>
+
+          <Wrapper marginBottom="12px">
+            <Content weight="500">{t('Share with link')}</Content>
+          </Wrapper>
+          <FlexWrapper>
+            <Input width={582} value={shareUrl} disabled={true}></Input>
+            <Button
+              onClick={copyUrl}
+              type="light"
+              shape="circle"
+              style={{ marginLeft: '24px' }}
+            >
+              {t('Copy Link')}
+            </Button>
+          </FlexWrapper>
+          <Button
+            onClick={async () => {
+              setLoaded(true);
+              await togglePublic(false);
+            }}
+            loading={false}
+            type="danger"
+            shape="circle"
+            style={{ marginTop: '38px' }}
+          >
+            {t('Stop publishing')}
+          </Button>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <Wrapper marginBottom="32px">{t('Publishing Description')}</Wrapper>
+        <Button
+          onClick={async () => {
+            setLoaded(true);
+            await togglePublic(true);
+          }}
+          loading={loaded}
+          type="light"
+          shape="circle"
+        >
+          {t('Publish to web')}
+        </Button>
+      </>
+    );
+  }
+
   return (
     <>
-      {workspace.provider === 'affine' ? (
-        <div
-          style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-        >
-          <StyledPublishContent>
-            {workspace.published ? (
-              <>
-                <StyledPublishExplanation>
-                  {t('Published Description')}
-                </StyledPublishExplanation>
-
-                <StyledPublishCopyContainer>
-                  <StyledSettingH2 marginBottom={16}>
-                    {t('Share with link')}
-                  </StyledSettingH2>
-                  <Input width={500} value={shareUrl} disabled={true}></Input>
-                  <StyledButtonContainer>
-                    <Button onClick={copyUrl} type="primary" shape="circle">
-                      {t('Copy Link')}
-                    </Button>
-                  </StyledButtonContainer>
-                </StyledPublishCopyContainer>
-              </>
-            ) : (
-              <StyledPublishExplanation>
-                {t('Publishing Description')}
-                <div style={{ marginTop: '64px' }}>
-                  <Button
-                    onClick={async () => {
-                      setLoaded(true);
-                      await togglePublic(true);
-                    }}
-                    loading={loaded}
-                    type="primary"
-                    shape="circle"
-                  >
-                    {t('Publish to web')}
-                  </Button>
-                </div>
-              </StyledPublishExplanation>
-            )}
-          </StyledPublishContent>
-
-          {workspace.published ? (
-            <StyledStopPublishContainer>
-              <Button
-                onClick={async () => {
-                  setLoaded(true);
-                  await togglePublic(false);
-                }}
-                loading={false}
-                type="danger"
-                shape="circle"
-              >
-                {t('Stop publishing')}
-              </Button>
-            </StyledStopPublishContainer>
-          ) : (
-            <></>
-          )}
-        </div>
-      ) : (
-        <StyledPublishContent>
-          <>
-            <StyledPublishExplanation>
-              {t('Publishing')}
-            </StyledPublishExplanation>
-
-            <div style={{ marginTop: '72px' }}>
-              <EnableWorkspaceButton></EnableWorkspaceButton>
-            </div>
-          </>
-        </StyledPublishContent>
-      )}
+      <Wrapper marginBottom="32px">{t('Publishing')}</Wrapper>
+      <EnableWorkspaceButton />
     </>
   );
 };
