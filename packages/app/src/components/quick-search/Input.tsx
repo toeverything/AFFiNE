@@ -25,22 +25,25 @@ export const Input = (props: {
   const { t } = useTranslation();
   useEffect(() => {
     const inputElement = inputRef.current;
+    if (!open) {
+      return;
+    }
     const handleFocus = () => {
       inputElement?.focus();
     };
-    setInputValue(query);
     inputElement?.addEventListener('blur', handleFocus, true);
     return () => inputElement?.removeEventListener('blur', handleFocus, true);
-  }, [inputRef, open, query]);
+  }, [inputRef, open]);
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    setInputValue(query);
+  }, [query]);
   return (
     <StyledInputContent>
       <StyledLabel htmlFor=":r5:">
         <SearchIcon />
       </StyledLabel>
       <Command.Input
+        autoFocus={true}
         ref={inputRef}
         value={inputValue}
         onCompositionStart={() => {
