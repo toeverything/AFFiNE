@@ -24,15 +24,13 @@ export const HelpIsland = ({
   const { triggerShortcutsModal, triggerContactModal } = useModal();
   const isEdgelessDark = mode === 'dark' && editorMode === 'edgeless';
   const { t } = useTranslation();
+  let expanded = false;
   return (
     <>
       <StyledIsland
         className=""
-        onMouseEnter={() => {
-          setShowContent(true);
-        }}
-        onMouseLeave={() => {
-          setShowContent(false);
+        onClick={() => {
+          setShowContent((expanded = !expanded));
         }}
       >
         <MuiGrow in={showContent}>

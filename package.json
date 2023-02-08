@@ -77,5 +77,10 @@
       "**/__tests__/**",
       "**/tests/**"
     ]
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "next@13.1.0": "patches/next@13.1.0.patch"
+    }
   }
 }

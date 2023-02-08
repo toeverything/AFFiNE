@@ -16,3 +16,11 @@ export const StyledWrapper = styled('div')(() => {
     position: 'relative',
   };
 });
+
+export const StyledToolWrapper = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  };
+});
