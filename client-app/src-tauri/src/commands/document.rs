@@ -1,16 +1,9 @@
 use ipc_types::document::{
   CreateDocumentParameter, GetDocumentParameter, GetDocumentResponse, YDocumentUpdate,
 };
-use jwst::encode_update;
 use jwst::DocStorage;
 use jwst::Workspace as OctoBaseWorkspace;
 use lib0::any::Any;
-use std::sync::{Arc, RwLock};
-use y_sync::sync::Message;
-use y_sync::sync::MessageReader;
-use y_sync::sync::SyncMessage;
-use yrs::updates::decoder::DecoderV1;
-use yrs::{updates::decoder::Decode, Doc, StateVector, Update};
 
 use crate::state::AppState;
 
@@ -53,7 +46,6 @@ pub async fn get_doc<'s>(
 ) -> Result<GetDocumentResponse, String> {
   // TODO: check user permission
   let state = &state.0.lock().await;
-  let doc_store = &state.doc_store;
   let doc_db = &state.doc_db;
 
   if let Ok(all_updates_of_workspace) = doc_db.all(&parameters.id).await {
@@ -61,18 +53,8 @@ pub async fn get_doc<'s>(
       .iter()
       .map(|model| model.blob.clone())
       .collect::<Vec<Vec<u8>>>();
-    all_updates
-      .iter()
-      .for_each(|update_blob| {
-        let mut tx = doc_store.doc().transact();
-        let update = Update::decode_v1(&update_blob).unwrap();
-        tx.apply_update(update);
-        tx.commit();
-      });
-      let merged_update = doc_store.doc().transact().encode_update_v1();
-      // TODO: store merged update here
     Ok(GetDocumentResponse {
-      updates: vec![merged_update],
+      updates: all_updates,
     })
   } else {
     Err(format!(
@@ -88,16 +70,10 @@ pub async fn update_y_document<'s>(
   parameters: YDocumentUpdate,
 ) -> Result<bool, String> {
   let state = &state.0.lock().await;
-  let doc_store = &state.doc_store;
-  let mut tx = doc_store.doc().transact();
-  let update = Update::decode_v1(&parameters.update).unwrap();
-  tx.apply_update(update);
-  let merged_update = tx.encode_update_v1();
-  tx.commit();
   let doc_db = &state.doc_db;
 
   doc_db
-    .replace_with(&parameters.id.clone(), merged_update)
+    .replace_with(&parameters.id.clone(), parameters.update)
     .await
     .ok();
 

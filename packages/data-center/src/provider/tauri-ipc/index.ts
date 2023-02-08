@@ -39,7 +39,7 @@ export class TauriIPCProvider extends LocalProvider {
     }
     // we create a default user if we don't have one.
     try {
-      const user = await this.#ipc!.createUser({
+      const user = await this.#ipc?.createUser({
         email: 'xxx@xx.xx',
         name: 'xxx',
         password: 'xxx',
@@ -57,7 +57,7 @@ export class TauriIPCProvider extends LocalProvider {
     blocksuiteWorkspace: BlocksuiteWorkspace
   ) {
     this._logger(`Loading ${workspaceID}...`);
-    const result = await this.#ipc!.getYDocument({ id: workspaceID });
+    const result = await this.#ipc?.getYDocument({ id: workspaceID });
     if (result) {
       const updates = result.updates.map(
         binaryUpdate => new Uint8Array(binaryUpdate)
@@ -65,21 +65,6 @@ export class TauriIPCProvider extends LocalProvider {
 
       const mergedUpdate = Y.mergeUpdates(updates);
       await applyUpdate(blocksuiteWorkspace, mergedUpdate);
-      console.group('#initDocFromIPC');
-      // DEBUG: console blocksuiteWorkspace.room
-      console.log(`blocksuiteWorkspace.room`, blocksuiteWorkspace.room);
-      // DEBUG: console blocksuiteWorkspace.doc.guid
-      console.log(`blocksuiteWorkspace.doc.guid`, blocksuiteWorkspace.doc.guid);
-      // DEBUG: console blocksuiteWorkspace
-      console.log(`blocksuiteWorkspace`, blocksuiteWorkspace);
-      // DEBUG: console blocksuiteWorkspace.meta
-      console.log(`blocksuiteWorkspace.meta`, blocksuiteWorkspace.meta);
-      // DEBUG: console blocksuiteWorkspace.meta.pageMetas
-      console.log(
-        `blocksuiteWorkspace.meta.pageMetas`,
-        blocksuiteWorkspace.meta.pageMetas
-      );
-      console.groupEnd();
       this._logger(`Loaded: ${workspaceID}`);
     }
   }
@@ -91,33 +76,14 @@ export class TauriIPCProvider extends LocalProvider {
     this._logger(`Connecting yDoc for ${workspaceID}...`);
     blocksuiteWorkspace.doc.on('update', async (update: Uint8Array) => {
       try {
-        // TODO: need handle potential data race when update is frequent?
-        // TODO: update seems too frequent upon each keydown, why no batching?
-        const success = await this.#ipc!.updateYDocument({
-          update: Array.from(update),
+        const binary = Y.encodeStateAsUpdate(blocksuiteWorkspace.doc);
+        const success = await this.#ipc?.updateYDocument({
+          update: Array.from(binary),
           id: workspaceID,
         });
         if (!success) {
           throw new Error(`YDoc update failed, id: ${workspaceID}`);
         }
-        console.group('update');
-        // DEBUG: console blocksuiteWorkspa?ce.meta
-        console.log(`blocksuiteWorkspace?.meta`, blocksuiteWorkspace?.meta);
-        // DEBUG: console blocksuiteWorkspace?.meta?.pageMetas
-        console.log(
-          `blocksuiteWorkspace?.meta?.pageMetas`,
-          blocksuiteWorkspace?.meta?.pageMetas
-        );
-        // DEBUG: console doc
-        console.log(`doc1`, blocksuiteWorkspace.doc);
-        // DEBUG: console doc.meta
-        console.log(`doc1.meta`, blocksuiteWorkspace.doc.meta);
-        // DEBUG: console doc.meta.pageMetas
-        console.log(
-          `doc1.meta?.pageMetas`,
-          blocksuiteWorkspace.doc.meta?.pageMetas
-        );
-        console.groupEnd();
       } catch (error) {
         // TODO: write error log to disk, and add button to open them in settings panel
         console.error("#yDocument.on('update'", error);
@@ -130,7 +96,7 @@ export class TauriIPCProvider extends LocalProvider {
   }
 
   override async warpWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
-    const { doc, room } = blocksuiteWorkspace;
+    const { room } = blocksuiteWorkspace;
     assert(room);
 
     (await blocksuiteWorkspace.blobs)?.addProvider(new IPCBlobProvider());
@@ -144,8 +110,8 @@ export class TauriIPCProvider extends LocalProvider {
     meta: CreateWorkspaceInfoParams
   ): Promise<WorkspaceUnit | undefined> {
     this._logger('Creating client app workspace');
-
-    const { id } = await this.#ipc!.createWorkspace({
+    assert(this.#ipc);
+    const { id } = await this.#ipc.createWorkspace({
       name: meta.name,
       // TODO: get userID here
       user_id: this.#defaultUserID,
@@ -165,7 +131,7 @@ export class TauriIPCProvider extends LocalProvider {
     const doc = workspaceUnit?.blocksuiteWorkspace?.doc;
     if (doc) {
       const update = Y.encodeStateAsUpdate(doc);
-      const success = await this.#ipc!.updateYDocument({
+      const success = await this.#ipc?.updateYDocument({
         update: Array.from(update),
         id,
       });
@@ -174,7 +140,8 @@ export class TauriIPCProvider extends LocalProvider {
   }
 
   override async loadWorkspaces(): Promise<WorkspaceUnit[]> {
-    const { workspaces } = await this.#ipc!.getWorkspaces({
+    assert(this.#ipc);
+    const { workspaces } = await this.#ipc.getWorkspaces({
       user_id: this.#defaultUserID,
     });
     const workspaceUnits = await Promise.all(
@@ -192,13 +159,4 @@ export class TauriIPCProvider extends LocalProvider {
     this._workspaces.add(workspaceUnits);
     return workspaceUnits;
   }
-}
-
-function stringifyUint8Array(uint8: Uint8Array): string {
-  return (
-    ' ' +
-    Array.from(uint8)
-      .map(a => a.toString(16).padStart(2, '0'))
-      .join(' ')
-  ).replace(/((?: \S+){8})/g, '$1\n');
 }
