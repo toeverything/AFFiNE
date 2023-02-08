@@ -19,7 +19,7 @@ export type ButtonProps = PropsWithChildren &
     icon?: ReactElement;
     iconPosition?: 'start' | 'end';
     shape?: 'default' | 'round' | 'circle';
-    type?: 'primary' | 'warning' | 'danger' | 'default';
+    type?: 'primary' | 'light' | 'warning' | 'danger' | 'default';
     bold?: boolean;
     loading?: boolean;
     noBorder?: boolean;

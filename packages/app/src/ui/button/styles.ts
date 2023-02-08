@@ -213,7 +213,7 @@ export const StyledButton = styled('button', {
       },
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      ...getButtonColors(theme, type, {
+      ...getButtonColors(theme, type, disabled, {
         hoverBackground,
         hoverColor,
         hoverStyle,

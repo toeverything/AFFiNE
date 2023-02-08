@@ -89,7 +89,6 @@ const ContentTitle = styled('h1')({
   lineHeight: '28px',
   fontWeight: 600,
   textAlign: 'center',
-  paddingBottom: '16px',
 });
 
 const StyleTips = styled('div')(() => {
@@ -97,8 +96,8 @@ const StyleTips = styled('div')(() => {
     userSelect: 'none',
     width: '400px',
     margin: 'auto',
-    marginBottom: '24px',
-    marginTop: '16px',
+    marginBottom: '32px',
+    marginTop: '12px',
   };
 });
 

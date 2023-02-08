@@ -9,7 +9,7 @@ export const EnableWorkspaceButton = () => {
   return (
     <>
       <Button
-        type="primary"
+        type="light"
         shape="circle"
         onClick={async () => {
           setEnableModalOpen(true);
