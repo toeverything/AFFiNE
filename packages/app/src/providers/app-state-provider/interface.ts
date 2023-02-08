@@ -16,7 +16,7 @@ export interface PageMeta extends StorePageMeta {
 
 export type AppStateValue = {
   dataCenter: DataCenter;
-  user: User | null;
+  user?: User | null;
   workspaceList: WorkspaceUnit[];
   currentWorkspace: WorkspaceUnit | null;
   pageList: PageMeta[];

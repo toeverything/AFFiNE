@@ -51,26 +51,49 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
             )}
             {t('Retain local cached data')}
           </StyleTips>
-          <div>
-            <Button
-              style={{ marginRight: '16px' }}
-              shape="round"
-              onClick={() => {
-                onClose(true);
-              }}
-            >
-              {t('Wait for Sync')}
-            </Button>
-            <Button
-              type="danger"
-              shape="round"
-              onClick={() => {
-                onClose(false);
-              }}
-            >
-              {t('Force Sign Out')}
-            </Button>
-          </div>
+          {blobDataSynced ? (
+            <div>
+              <Button
+                type="danger"
+                shape="round"
+                style={{ marginRight: '16px' }}
+                onClick={async () => {
+                  onClose(false);
+                }}
+              >
+                {t('Force Sign Out')}
+              </Button>
+              <Button
+                shape="round"
+                onClick={() => {
+                  onClose(true);
+                }}
+              >
+                {t('Wait for Sync')}
+              </Button>
+            </div>
+          ) : (
+            <div>
+              <Button
+                type="primary"
+                style={{ marginRight: '16px' }}
+                shape="round"
+                onClick={() => {
+                  onClose(true);
+                }}
+              >
+                {t('Cancel')}
+              </Button>
+              <Button
+                shape="round"
+                onClick={() => {
+                  onClose(false);
+                }}
+              >
+                {t('Sign out')}
+              </Button>
+            </div>
+          )}
         </Content>
       </ModalWrapper>
     </Modal>
