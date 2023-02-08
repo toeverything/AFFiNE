@@ -74,6 +74,13 @@ test.describe('Add new page in quick search', () => {
 });
 
 test.describe('Search and select', () => {
+  test('Enter a keyword to search for', async ({ page }) => {
+    await newPage(page);
+    await openQuickSearchByShortcut(page);
+    await page.keyboard.insertText('test123456');
+    const actual = await page.locator('[cmdk-input]').inputValue();
+    expect(actual).toBe('test123456');
+  });
   test('Create a new page and search this page', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
