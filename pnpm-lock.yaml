@@ -142,6 +142,7 @@ importers:
       fake-indexeddb: 4.0.1
       firebase: ^9.15.0
       idb-keyval: ^6.2.0
+      js-base64: ^3.7.5
       ky: ^0.33.0
       ky-universal: ^0.11.0
       lib0: ^0.2.58
@@ -157,6 +158,7 @@ importers:
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
       idb-keyval: 6.2.0
+      js-base64: 3.7.5
       ky: 0.33.1
       ky-universal: 0.11.0_ky@0.33.1
       lib0: 0.2.58
@@ -6314,6 +6316,10 @@ packages:
       merge-stream: 2.0.0
       supports-color: 8.1.1
     dev: true
+
+  /js-base64/3.7.5:
+    resolution: {integrity: sha512-3MEt5DTINKqfScXKfJFrRbxkrnk2AxPWGBL/ycjz4dK8iqiSJ06UxD8jh8xuh6p10TX4t2+7FsBYVxxQbMg+qA==}
+    dev: false
 
   /js-sdsl/4.2.0:
     resolution: {integrity: sha512-dyBIzQBDkCqCu+0upx25Y2jGdbTGxE9fshMsCdK0ViOongpV+n5tXRcZY9v7CaVQ79AGS9KA1KHtojxiM7aXSQ==}
