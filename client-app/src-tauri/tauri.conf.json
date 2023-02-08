@@ -1,7 +1,7 @@
 {
   "build": {
     "beforeDevCommand": "pnpm dev:prerequisite",
-    "beforeBuildCommand": "pnpm build:web && pnpm build:affine && pnpm build:preload",
+    "beforeBuildCommand": "pnpm build:web && pnpm build:preload && pnpm build:affine && pnpm build:preload",
     "devPath": "http://localhost:8080",
     "distDir": "../dist",
     "withGlobalTauri": false
