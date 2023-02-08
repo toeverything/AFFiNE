@@ -24,6 +24,12 @@ export const Input = (props: {
   const inputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
   useEffect(() => {
+    if (open) {
+      const inputElement = inputRef.current;
+      return inputElement?.focus();
+    }
+  }, [open]);
+  useEffect(() => {
     const inputElement = inputRef.current;
     if (!open) {
       return;
@@ -43,7 +49,6 @@ export const Input = (props: {
         <SearchIcon />
       </StyledLabel>
       <Command.Input
-        autoFocus={true}
         ref={inputRef}
         value={inputValue}
         onCompositionStart={() => {

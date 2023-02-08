@@ -71,14 +71,6 @@ test.describe('Add new page in quick search', () => {
     await page.waitForTimeout(300);
     await assertTitle(page, 'test123456');
   });
-
-  test('Focus title after creating a new page', async ({ page }) => {
-    await newPage(page);
-    await openQuickSearchByShortcut(page);
-    const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
-    await addNewPage.click();
-    await titleIsFocused(page);
-  });
 });
 
 test.describe('Search and select', () => {
@@ -116,5 +108,30 @@ test.describe('Open quick search on the published page', () => {
     await openQuickSearchByShortcut(page);
     const publishedSearchResults = page.locator('[publishedSearchResults]');
     await expect(publishedSearchResults).toBeVisible({ visible: false });
+  });
+});
+
+test.describe('Focus event for quick search', () => {
+  test('Autofocus input after opening quick search', async ({ page }) => {
+    await newPage(page);
+    await openQuickSearchByShortcut(page);
+    const locator = page.locator('[cmdk-input]');
+    await expect(locator).toBeVisible();
+    await expect(locator).toBeFocused();
+  });
+  test('Autofocus input after select', async ({ page }) => {
+    await newPage(page);
+    await openQuickSearchByShortcut(page);
+    await page.keyboard.press('ArrowUp');
+    const locator = page.locator('[cmdk-input]');
+    await expect(locator).toBeVisible();
+    await expect(locator).toBeFocused();
+  });
+  test('Focus title after creating a new page', async ({ page }) => {
+    await newPage(page);
+    await openQuickSearchByShortcut(page);
+    const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
+    await addNewPage.click();
+    await titleIsFocused(page);
   });
 });
