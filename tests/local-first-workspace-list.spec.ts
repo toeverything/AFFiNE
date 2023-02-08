@@ -16,13 +16,17 @@ test.describe('Local first workspace list', () => {
     ).not.toBeNull();
   });
 
-  test.skip('create one workspace in the workspace list', async ({ page }) => {
+  test('create one workspace in the workspace list', async ({ page }) => {
     const newWorkspaceNameStr = 'New Workspace';
     await createWorkspace({ name: newWorkspaceNameStr }, page);
 
     // check new workspace name
     const newWorkspaceName = page.getByTestId('workspace-name');
-    expect(await newWorkspaceName.textContent()).toBe(newWorkspaceNameStr);
+    await newWorkspaceName.click();
+
+    //check workspace list length
+    const workspaceCards = await page.$$('data-testid=workspace-card');
+    expect(workspaceCards.length).toBe(2);
   });
 
   test('create multi workspace in the workspace list', async ({ page }) => {
