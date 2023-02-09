@@ -45,3 +45,11 @@ export const StyledAvatar = styled('div')(
     };
   }
 );
+
+export const StyledEditButton = styled('div')(({ theme }) => {
+  return {
+    color: theme.colors.primaryColor,
+    cursor: 'pointer',
+    marginLeft: '36px',
+  };
+});

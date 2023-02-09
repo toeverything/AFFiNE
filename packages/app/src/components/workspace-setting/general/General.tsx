@@ -1,4 +1,9 @@
-import { StyledInput, StyledProviderInfo, StyledAvatar } from './style';
+import {
+  StyledInput,
+  StyledProviderInfo,
+  StyledAvatar,
+  StyledEditButton,
+} from './style';
 import { StyledSettingKey, StyledRow } from '../style';
 import { FlexWrapper, Content } from '@affine/component';
 
@@ -15,10 +20,12 @@ import { useTranslation } from '@affine/i18n';
 import { CloudIcon, LocalIcon } from '@/components/workspace-modal/icons';
 import { CameraIcon } from './icons';
 import { Upload } from '@/components/file-upload';
+import { MuiFade } from '@affine/component';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(workspace?.name);
+  const [showEditInput, setShowEditInput] = useState(false);
   const { currentWorkspace, isOwner } = useAppState();
   const { updateWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
@@ -70,44 +77,64 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
       <StyledRow>
         <StyledSettingKey>{t('Workspace Name')}</StyledSettingKey>
-        <FlexWrapper>
-          <StyledInput
-            width={284}
-            height={38}
-            value={workspaceName}
-            placeholder={t('Workspace Name')}
-            maxLength={15}
-            minLength={0}
-            disabled={!isOwner}
-            onChange={newName => {
-              setWorkspaceName(newName);
-            }}
-          ></StyledInput>
+
+        <div style={{ position: 'relative' }}>
+          <MuiFade in={!showEditInput}>
+            <FlexWrapper>
+              {workspace.name}
+              {isOwner && (
+                <StyledEditButton
+                  onClick={() => {
+                    setShowEditInput(true);
+                  }}
+                >
+                  Edit
+                </StyledEditButton>
+              )}
+            </FlexWrapper>
+          </MuiFade>
+
           {isOwner && (
-            <>
-              <Button
-                type="default"
-                shape="circle"
-                style={{ marginLeft: '24px' }}
-                onClick={() => {
-                  setWorkspaceName(workspace.name);
-                }}
-              >
-                {t('Cancel')}
-              </Button>
-              <Button
-                type="light"
-                shape="circle"
-                style={{ marginLeft: '24px' }}
-                onClick={() => {
-                  handleUpdateWorkspaceName();
-                }}
-              >
-                {t('Confirm')}
-              </Button>
-            </>
+            <MuiFade in={showEditInput}>
+              <FlexWrapper style={{ position: 'absolute', top: 0, left: 0 }}>
+                <StyledInput
+                  width={284}
+                  height={38}
+                  value={workspaceName}
+                  placeholder={t('Workspace Name')}
+                  maxLength={15}
+                  minLength={0}
+                  onChange={newName => {
+                    setWorkspaceName(newName);
+                  }}
+                ></StyledInput>
+                <Button
+                  type="light"
+                  shape="circle"
+                  style={{ marginLeft: '24px' }}
+                  disabled={workspaceName === workspace.name}
+                  onClick={() => {
+                    handleUpdateWorkspaceName();
+                    setShowEditInput(false);
+                  }}
+                >
+                  {t('Confirm')}
+                </Button>
+                <Button
+                  type="default"
+                  shape="circle"
+                  style={{ marginLeft: '24px' }}
+                  onClick={() => {
+                    setWorkspaceName(workspace.name);
+                    setShowEditInput(false);
+                  }}
+                >
+                  {t('Cancel')}
+                </Button>
+              </FlexWrapper>
+            </MuiFade>
           )}
-        </FlexWrapper>
+        </div>
       </StyledRow>
 
       <StyledRow>
