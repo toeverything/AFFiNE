@@ -41,7 +41,6 @@ pnpm dev
 
 The playground page should work at [http://localhost:8080/](http://localhost:8080/)
 
-
 ## Testing
 
 Adding test cases is strongly encouraged when you contribute new features and bug fixes.

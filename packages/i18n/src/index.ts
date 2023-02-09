@@ -31,7 +31,7 @@ const resources = LOCALES.reduce<Resource>(
   {}
 );
 
-const fallbackLng = LOCALES[0].tag;
+const fallbackLng = 'en';
 const standardizeLocale = (language: string) => {
   if (language === 'zh-CN' || language === 'zh') {
     language = 'zh-Hans';
