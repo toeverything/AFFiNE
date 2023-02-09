@@ -27,6 +27,13 @@ test.describe('Local first workspace list', () => {
     //check workspace list length
     const workspaceCards = await page.$$('data-testid=workspace-card');
     expect(workspaceCards.length).toBe(2);
+    const closeWorkspaceModal = page.getByTestId('close-workspace-modal');
+    await closeWorkspaceModal.click();
+    const allPageButton = page.getByTestId('all-pages');
+    await allPageButton.click();
+    await page.reload();
+    const pageList = await page.$$('data-testid=page-list-item');
+    expect(pageList.length).toBe(1);
   });
 
   test('create multi workspace in the workspace list', async ({ page }) => {
