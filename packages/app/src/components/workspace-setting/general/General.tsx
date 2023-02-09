@@ -18,7 +18,7 @@ import { Upload } from '@/components/file-upload';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
-  const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
+  const [workspaceName, setWorkspaceName] = useState<string>(workspace?.name);
   const { currentWorkspace, isOwner } = useAppState();
   const { updateWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();

@@ -71,6 +71,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
               <LanguageMenu />
               <StyledSplitLine />
               <ModalCloseButton
+                data-testid="close-workspace-modal"
                 onClick={() => {
                   onClose();
                 }}

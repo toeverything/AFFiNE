@@ -106,6 +106,7 @@ export const PageList = ({
           {pageList.map((pageMeta, index) => {
             return (
               <StyledTableRow
+                data-testid="page-list-item"
                 key={`${pageMeta.id}-${index}`}
                 onClick={() => {
                   if (isPublic) {
