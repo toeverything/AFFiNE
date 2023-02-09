@@ -99,7 +99,9 @@ export class TauriIPCProvider extends LocalProvider {
     const { room } = blocksuiteWorkspace;
     assert(room);
 
-    (await blocksuiteWorkspace.blobs)?.addProvider(new IPCBlobProvider());
+    (await blocksuiteWorkspace.blobs)?.setProvider(
+      await IPCBlobProvider.init(room)
+    );
     await this.#initDocFromIPC(room, blocksuiteWorkspace);
     await this.#connectDocToIPC(room, blocksuiteWorkspace);
 
