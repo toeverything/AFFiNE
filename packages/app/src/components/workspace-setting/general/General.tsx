@@ -42,29 +42,29 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       <StyledRow>
         <StyledSettingKey>{t('Workspace Avatar')}</StyledSettingKey>
         <StyledAvatar disabled={!isOwner}>
-         {isOwner ? (
-              <Upload
-                accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-                fileChange={fileChange}
-              >
-                <>
-                  <div className="camera-icon">
-                    <CameraIcon></CameraIcon>
-                  </div>
-                  <WorkspaceUnitAvatar
-                    size={72}
-                    name={workspace.name}
-                    workspaceUnit={workspace}
-                  />
-                </>
-              </Upload>
-            ) : (
-              <WorkspaceUnitAvatar
-                size={72}
-                name={workspace.name}
-                workspaceUnit={workspace}
-              />
-            )}
+          {isOwner ? (
+            <Upload
+              accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+              fileChange={fileChange}
+            >
+              <>
+                <div className="camera-icon">
+                  <CameraIcon></CameraIcon>
+                </div>
+                <WorkspaceUnitAvatar
+                  size={72}
+                  name={workspace.name}
+                  workspaceUnit={workspace}
+                />
+              </>
+            </Upload>
+          ) : (
+            <WorkspaceUnitAvatar
+              size={72}
+              name={workspace.name}
+              workspaceUnit={workspace}
+            />
+          )}
         </StyledAvatar>
       </StyledRow>
 
