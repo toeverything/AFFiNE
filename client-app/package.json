@@ -9,14 +9,11 @@
     "dev:app": "pnpm build:preload && cross-env NODE_ENV=development tauri dev",
     "dev:prerequisite": "concurrently \"cd ../packages/data-center && pnpm dev\" \"cd ../packages/app && pnpm dev\"",
     "build:prerequisite": "pnpm build:submodules && pnpm build:rs-types && pnpm build:affine && pnpm build:preload",
-    "dev:web": "vite",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
-    "build:web": "tsc && vite build",
     "build:submodules": "zx scripts/buildSubModules.mjs",
     "build:affine": "zx scripts/buildAffine.mjs",
     "build:preload": "esbuild src/preload/index.ts --outdir=public/preload",
-    "build:app": "tauri build",
-    "preview": "vite preview"
+    "build:app": "tauri build"
   },
   "dependencies": {
     "@blocksuite/store": "^0.3.1",
