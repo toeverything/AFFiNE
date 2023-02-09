@@ -40,7 +40,6 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     if (router.pathname.startsWith('/404')) {
-      triggerQuickSearchModal(false);
       return;
     }
     const down = (e: KeyboardEvent) => {
@@ -59,7 +58,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
     document.addEventListener('keydown', down, { capture: true });
     return () =>
       document.removeEventListener('keydown', down, { capture: true });
-  }, [open, router.pathname, triggerQuickSearchModal]);
+  }, [open, router, triggerQuickSearchModal]);
 
   useEffect(() => {
     if (router.pathname.startsWith('/public-workspace')) {
@@ -68,6 +67,12 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
       return setIsPublic(false);
     }
   }, [router]);
+  useEffect(() => {
+    if (router.pathname.startsWith('/404')) {
+      return onClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Modal
