@@ -58,3 +58,7 @@ module-resolve.cjs
 
 # Cache
 .eslintcache
+
+# generated assets
+client-app/public/affine-out
+client-app/public/preload
