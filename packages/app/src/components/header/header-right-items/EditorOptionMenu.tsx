@@ -5,8 +5,8 @@ import {
   ExportIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
-  FavoritedIcon,
-  FavoritesIcon,
+  FavouritedIcon,
+  FavouritesIcon,
   MoreVerticalIcon,
   PaperIcon,
   TrashIcon,
@@ -40,7 +40,7 @@ const PopoverContent = () => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavoritedIcon /> : <FavoritesIcon />}
+        icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
         {favorite ? t('Remove from favorites') : t('Add to favorites')}
       </MenuItem>

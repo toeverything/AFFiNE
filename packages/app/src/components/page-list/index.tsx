@@ -1,7 +1,7 @@
 import { PageMeta } from '@/providers/app-state-provider';
 import {
-  FavoritedIcon,
-  FavoritesIcon,
+  FavouritedIcon,
+  FavouritesIcon,
   PaperIcon,
   EdgelessIcon,
 } from '@blocksuite/icons';
@@ -60,9 +60,9 @@ const FavoriteTag = ({
         className={favorite ? '' : 'favorite-button'}
       >
         {favorite ? (
-          <FavoritedIcon data-testid="favorited-icon" />
+          <FavouritedIcon data-testid="favorited-icon" />
         ) : (
-          <FavoritesIcon />
+          <FavouritesIcon />
         )}
       </IconButton>
     </Tooltip>
