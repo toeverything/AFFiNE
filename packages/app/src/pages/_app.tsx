@@ -50,6 +50,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
           sizes="180x180"
           href="/icons/apple-touch-icon.png"
         />
+        <title>AFFiNE</title>
       </Head>
       <Logger />
       <ProviderComposer

@@ -11,17 +11,23 @@ import {
   StyledTitleLink,
   StyledTitleWrapper,
 } from './styles';
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from '@affine/component';
 import { OperationCell, TrashOperationCell } from './OperationCell';
 import Empty from './Empty';
-import { Content } from '@/ui/layout';
+import { Content } from '@affine/component';
 import React from 'react';
 import DateCell from '@/components/page-list/DateCell';
-import { IconButton } from '@/ui/button';
-import { Tooltip } from '@/ui/tooltip';
+import { IconButton } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
-import { toast } from '@/ui/toast';
+import { toast } from '@affine/component';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useTranslation } from '@affine/i18n';
@@ -35,7 +41,7 @@ const FavoriteTag = ({
   const { t } = useTranslation();
   return (
     <Tooltip
-      content={favorite ? t('Favourited') : t('Favourite')}
+      content={favorite ? t('Favorited') : t('Favorite')}
       placement="top-start"
     >
       <IconButton
@@ -45,7 +51,7 @@ const FavoriteTag = ({
           e.stopPropagation();
           toggleFavoritePage(id);
           toast(
-            favorite ? t('Removed from Favourites') : t('Added to Favourites')
+            favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
         style={{
@@ -54,7 +60,7 @@ const FavoriteTag = ({
         className={favorite ? '' : 'favorite-button'}
       >
         {favorite ? (
-          <FavouritedIcon data-testid="favourited-icon" />
+          <FavouritedIcon data-testid="favorited-icon" />
         ) : (
           <FavouritesIcon />
         )}
@@ -100,6 +106,7 @@ export const PageList = ({
           {pageList.map((pageMeta, index) => {
             return (
               <StyledTableRow
+                data-testid="page-list-item"
                 key={`${pageMeta.id}-${index}`}
                 onClick={() => {
                   if (isPublic) {

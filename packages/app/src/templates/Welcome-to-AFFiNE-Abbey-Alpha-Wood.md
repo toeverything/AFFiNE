@@ -22,7 +22,7 @@ docker run -it --name affine -d -v [YOUR_PATH]:/app/data -p 3000:3000 ghcr.io/to
 
 ### In this release, you can now:
 
-- Manage your pages from the collapsible **sidebar**, which allows you to add **favourites** and restore deleted files from the **trash**
+- Manage your pages from the collapsible **sidebar**, which allows you to add **favorites** and restore deleted files from the **trash**
 - Search through all your content with the quick search - activate with `Ctrl/⌘ + K`
   - A friendly Reminder:
     - In the case of unselected text, `Ctrl/⌘ + K` activates quick search;
@@ -53,7 +53,7 @@ console.log('Hello world');
 
 [] Send a page to trash
 
-[] Favourite a page
+[] Favorite a page
 
 **Have an enjoyable editing experience !!!** 😃
 

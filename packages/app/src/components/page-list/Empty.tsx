@@ -1,5 +1,5 @@
 import React from 'react';
-import { Empty } from '@/ui/empty';
+import { Empty } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 export const PageListEmpty = (props: { listType?: string }) => {
   const { listType } = props;
@@ -12,7 +12,7 @@ export const PageListEmpty = (props: { listType?: string }) => {
         sx={{ marginTop: '100px', marginBottom: '30px' }}
       />
       {listType === 'all' && <p>{t('emptyAllPages')}</p>}
-      {listType === 'favorite' && <p>{t('emptyFavourite')}</p>}
+      {listType === 'favorite' && <p>{t('emptyFavorite')}</p>}
       {listType === 'trash' && <p>{t('emptyTrash')}</p>}
     </div>
   );

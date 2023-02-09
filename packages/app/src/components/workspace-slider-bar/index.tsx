@@ -21,11 +21,11 @@ import {
   SettingsIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
-import { MuiCollapse } from '@/ui/mui';
-import { Tooltip } from '@/ui/tooltip';
+import { MuiCollapse } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider';
-import { IconButton } from '@/ui/button';
+import { IconButton } from '@affine/component';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTranslation } from '@affine/i18n';
@@ -125,13 +125,14 @@ export const WorkSpaceSliderBar = () => {
           </StyledListItem>
           <Link href={{ pathname: paths.all }}>
             <StyledListItem active={router.asPath === paths.all}>
-              <AllPagesIcon /> <span>{t('All pages')}</span>
+              <AllPagesIcon />
+              <span data-testid="all-pages">{t('All pages')}</span>
             </StyledListItem>
           </Link>
           <StyledListItem active={router.asPath === paths.favorite}>
             <StyledLink href={{ pathname: paths.favorite }}>
               <FavouritesIcon />
-              {t('Favourites')}
+              {t('Favorites')}
             </StyledLink>
             <IconButton
               darker={true}

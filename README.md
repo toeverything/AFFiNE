@@ -89,6 +89,8 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 
 Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to get stuck in to show us what you’re made of.
 
+**Before you start contributing, please make sure you have read and accepted our [Contributor License Agreement]. To indicate your agreement, simply edit this file and submit a pull request.**
+
 For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropiate template for your feedback.
 
 For **translation** and **language support** you can visit our [i18n General Space](https://community.affine.pro/c/i18n-general).
@@ -197,15 +199,15 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 
 ## Self-Host
 
-Get started with Docker and deploy your own feature-rich, restriction-free deployment of AFFiNE - check the [latest packages](https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted).
+Get started with Docker and deploy your own feature-rich, restriction-free deployment of AFFiNE - check the [latest packages].
 
 ## Hiring
 
-Some amazing companies including AFFiNE are looking for developers! Are you interested in helping build with AFFiNE and/or its partners? Check out some of the latest [jobs available](./docs/jobs/summary.md).
+Some amazing companies including AFFiNE are looking for developers! Are you interested in helping build with AFFiNE and/or its partners? Check out some of the latest [jobs available].
 
 ## Upgrading
 
-For upgrading information please see our [update page](https://affine.pro/blog?tag=Release%20Note).
+For upgrading information please see our [update page].
 
 ## Feature Request
 
@@ -213,8 +215,20 @@ For feature request please see https://community.affine.pro/c/feature-requests/
 
 ## Is it awesome?
 
-[These people](https://twitter.com/AffineOfficial/followers) seem to like it.
+[These people] seem to like it.
+
+## Building
+
+See [BUILDING.md] for instructions on how to build AFFiNE from source code.
 
 ## License
 
-See [LICENSE](/LICENSE) for details.
+See [LICENSE] for details.
+
+[license]: ./LICENSE
+[building.md]: ./docs/BUILDING.md
+[these people]: https://twitter.com/AffineOfficial/followers
+[update page]: https://affine.pro/blog?tag=Release%20Note
+[jobs available]: ./docs/jobs/summary.md
+[latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
+[contributor license agreement]: https://github.com/toeverything/affine/edit/master/.github/CLA.md

@@ -1,9 +1,9 @@
 import { StyledInput, StyledProviderInfo, StyledAvatar } from './style';
 import { StyledSettingKey, StyledRow } from '../style';
-import { FlexWrapper, Content } from '@/ui/layout';
+import { FlexWrapper, Content } from '@affine/component';
 
 import { useState } from 'react';
-import { Button } from '@/ui/button';
+import { Button } from '@affine/component';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
@@ -18,7 +18,7 @@ import { Upload } from '@/components/file-upload';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
-  const [workspaceName, setWorkspaceName] = useState<string>(workspace.name);
+  const [workspaceName, setWorkspaceName] = useState<string>(workspace?.name);
   const { currentWorkspace, isOwner } = useAppState();
   const { updateWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
@@ -33,7 +33,6 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     currentWorkspace &&
       (await updateWorkspace({ avatarBlob: blob }, currentWorkspace));
   };
-
   if (!workspace) {
     return null;
   }
@@ -42,22 +41,30 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     <>
       <StyledRow>
         <StyledSettingKey>{t('Workspace Avatar')}</StyledSettingKey>
-        <StyledAvatar>
-          <Upload
-            accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-            fileChange={fileChange}
-          >
-            <>
-              <div className="camera-icon">
-                <CameraIcon></CameraIcon>
-              </div>
-              <WorkspaceUnitAvatar
-                size={72}
-                name={workspace.name}
-                workspaceUnit={workspace}
-              />
-            </>
-          </Upload>
+        <StyledAvatar disabled={!isOwner}>
+          {isOwner ? (
+            <Upload
+              accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+              fileChange={fileChange}
+            >
+              <>
+                <div className="camera-icon">
+                  <CameraIcon></CameraIcon>
+                </div>
+                <WorkspaceUnitAvatar
+                  size={72}
+                  name={workspace.name}
+                  workspaceUnit={workspace}
+                />
+              </>
+            </Upload>
+          ) : (
+            <WorkspaceUnitAvatar
+              size={72}
+              name={workspace.name}
+              workspaceUnit={workspace}
+            />
+          )}
         </StyledAvatar>
       </StyledRow>
 

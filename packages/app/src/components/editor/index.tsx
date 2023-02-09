@@ -3,7 +3,7 @@ import type { Page, Workspace } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 
 const StyledEditorContainer = styled('div')(() => {
   return {
@@ -59,7 +59,6 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
     }
 
     setEditor(editor);
-    document.title = page.meta.title || 'Untitled';
     return ret;
   }, [workspace, page, setEditor]);
 

@@ -7,7 +7,9 @@ import { setDefaultAvatar } from '../utils.js';
 export const loadWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
   const workspaceUnit = new WorkspaceUnit(params);
 
-  const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceUnit.id);
+  const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceUnit.id, {
+    blobOptionsGetter: (k: string) => undefined,
+  });
 
   await applyLocalUpdates(blocksuiteWorkspace);
 
@@ -19,7 +21,9 @@ export const loadWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
 export const createWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
   const workspaceUnit = new WorkspaceUnit(params);
 
-  const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceUnit.id);
+  const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceUnit.id, {
+    blobOptionsGetter: (k: string) => undefined,
+  });
   blocksuiteWorkspace.meta.setName(workspaceUnit.name);
   if (!workspaceUnit.avatar) {
     await setDefaultAvatar(blocksuiteWorkspace);

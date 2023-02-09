@@ -45,6 +45,7 @@ export class AffineProvider extends BaseProvider {
   private _apis: Apis;
   private _channel?: WebsocketClient;
   // private _idbMap: Map<string, IndexedDBProvider> = new Map();
+  private _workspaceLoadingQueue: Set<string> = new Set();
 
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
@@ -64,6 +65,7 @@ export class AffineProvider extends BaseProvider {
     if (this._apis.token.isExpired) {
       try {
         const refreshToken = storage.getItem('token');
+        if (!refreshToken) return;
         await this._apis.token.refreshToken(refreshToken);
 
         if (this._apis.token.refresh) {
@@ -144,11 +146,13 @@ export class AffineProvider extends BaseProvider {
           // update workspaces
           this._workspaces.update(id, workspace);
         } else {
-          const workspaceUnit = await loadWorkspaceUnit(
-            { id, ...workspace },
-            this._apis
-          );
-          newlyCreatedWorkspaces.push(workspaceUnit);
+          if (!this._workspaceLoadingQueue.has(id)) {
+            const workspaceUnit = await loadWorkspaceUnit(
+              { id, ...workspace },
+              this._apis
+            );
+            newlyCreatedWorkspaces.push(workspaceUnit);
+          }
         }
       } else {
         console.log(`[log warn]  ${id} name is empty`);
@@ -176,6 +180,12 @@ export class AffineProvider extends BaseProvider {
         // @ts-expect-error ignore the type
         awareness: workspace.awarenessStore.awareness,
       });
+      workspace.awarenessStore.awareness.setLocalStateField('user', {
+        name: token.user?.name ?? 'other',
+        id: Number(token.user?.id ?? -1),
+        color: '#ffa500',
+      });
+
       this._wsMap.set(workspace, ws);
     }
     return ws;
@@ -197,6 +207,7 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async warpWorkspace(workspace: BlocksuiteWorkspace) {
+    // FIXME: if add indexedDB cache in the future, can remove following line.
     await this._applyCloudUpdates(workspace);
     const { room } = workspace;
     assert(room);
@@ -227,6 +238,7 @@ export class AffineProvider extends BaseProvider {
     const workspacesList = await this._apis.getWorkspaces();
     const workspaceUnits = await Promise.all(
       workspacesList.map(w => {
+        this._workspaceLoadingQueue.add(w.id);
         return loadWorkspaceUnit(
           {
             id: w.id,
@@ -239,7 +251,9 @@ export class AffineProvider extends BaseProvider {
             syncMode: 'core',
           },
           this._apis
-        );
+        ).finally(() => {
+          this._workspaceLoadingQueue.delete(w.id);
+        });
       })
     );
     this._workspaces.add(workspaceUnits);

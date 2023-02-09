@@ -1,8 +1,8 @@
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { PageMeta } from '@/providers/app-state-provider';
-import { Menu, MenuItem } from '@/ui/menu';
-import { FlexWrapper } from '@/ui/layout';
-import { IconButton } from '@/ui/button';
+import { Menu, MenuItem } from '@affine/component';
+import { FlexWrapper } from '@affine/component';
+import { IconButton } from '@affine/component';
 import {
   MoreVerticalIcon,
   RestoreIcon,
@@ -12,7 +12,7 @@ import {
   OpenInNewIcon,
   TrashIcon,
 } from '@blocksuite/icons';
-import { toast } from '@/ui/toast';
+import { toast } from '@affine/component';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTranslation } from '@affine/i18n';
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
@@ -27,12 +27,12 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         onClick={() => {
           toggleFavoritePage(id);
           toast(
-            favorite ? t('Removed from Favourites') : t('Added to Favourites')
+            favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
         icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
-        {favorite ? t('Remove from favourites') : t('Add to favourites')}
+        {favorite ? t('Remove from favorites') : t('Add to favorites')}
       </MenuItem>
       <MenuItem
         onClick={() => {

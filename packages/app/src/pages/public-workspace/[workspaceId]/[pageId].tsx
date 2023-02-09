@@ -1,13 +1,13 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import type { NextPageWithLayout } from '../..//_app';
-import { displayFlex, styled } from '@/styles';
+import { displayFlex, styled } from '@affine/component';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { Page as PageStore, Workspace } from '@blocksuite/store';
 import { PageLoading } from '@/components/loading';
-import { Breadcrumbs } from '@/ui/breadcrumbs';
-import { IconButton } from '@/ui/button';
+import { Breadcrumbs } from '@affine/component';
+import { IconButton } from '@affine/component';
 import NextLink from 'next/link';
 import { PaperIcon, SearchIcon } from '@blocksuite/icons';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';

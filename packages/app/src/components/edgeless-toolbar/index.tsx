@@ -14,8 +14,8 @@ import {
   UndoIcon,
   RedoIcon,
 } from './Icons';
-import { MuiSlide } from '@/ui/mui';
-import { Tooltip } from '@/ui/tooltip';
+import { MuiSlide } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { useAppState } from '@/providers/app-state-provider';
 import useHistoryUpdated from '@/hooks/use-history-update';

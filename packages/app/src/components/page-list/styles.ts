@@ -1,5 +1,5 @@
-import { displayFlex, styled } from '@/styles';
-import { TableRow } from '@/ui/table';
+import { displayFlex, styled } from '@affine/component';
+import { TableRow } from '@affine/component';
 
 export const StyledTableContainer = styled.div(() => {
   return {

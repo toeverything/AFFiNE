@@ -37,7 +37,7 @@ test.describe('Local first favorite and cancel favorite  page', () => {
     await favoriteBtn.click();
 
     // expect it in favorite list
-    await page.getByRole('link', { name: 'Favourites' }).click();
+    await page.getByRole('link', { name: 'Favorites' }).click();
     expect(
       page.getByRole('cell', { name: 'this is a new page to favorite' })
     ).not.toBeUndefined();
@@ -52,13 +52,13 @@ test.describe('Local first favorite and cancel favorite  page', () => {
     //hover table record
     await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
 
-    await page.getByTestId('favourited-icon').click();
+    await page.getByTestId('favorited-icon').click();
 
     // expect it not in favorite list
-    await page.getByRole('link', { name: 'Favourites' }).click();
+    await page.getByRole('link', { name: 'Favorites' }).click();
     expect(
       page.getByText(
-        'Tips: Click Add to Favourites/Trash and the page will appear here.'
+        'Tips: Click Add to Favorites/Trash and the page will appear here.'
       )
     ).not.toBeUndefined();
   });

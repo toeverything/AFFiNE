@@ -5,7 +5,7 @@ import {
   StyledTitle,
   StyledTitleWrapper,
 } from './styles';
-import { Content } from '@/ui/layout';
+import { Content } from '@affine/component';
 import { useAppState } from '@/providers/app-state-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import QuickSearchButton from './QuickSearchButton';
