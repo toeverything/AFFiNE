@@ -79,12 +79,6 @@ export const StyledWorkspaceName = styled('span')(({ theme }) => {
   };
 });
 
-export const StyledEmail = styled('span')(() => {
-  return {
-    color: '#E8178A',
-  };
-});
-
 // export const StyledDownloadCard = styled.div<{ active?: boolean }>(
 //   ({ theme, active }) => {
 //     return {

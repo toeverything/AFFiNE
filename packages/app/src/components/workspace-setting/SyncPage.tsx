@@ -1,6 +1,5 @@
 import {
   StyledWorkspaceName,
-  StyledEmail,
   // StyledDownloadCard,
   // StyledDownloadCardDes,
 } from './style';
@@ -74,11 +73,9 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       </FlexWrapper>
       <Trans i18nKey="Cloud Workspace Description">
         All data will be synchronised and saved to the AFFiNE account
-        <StyledEmail>
-          {{
-            email: '{' + user?.email + '}.',
-          }}
-        </StyledEmail>
+        {{
+          email: user?.email,
+        }}
       </Trans>
 
       {/*<Wrapper marginBottom="12px" marginTop="32px">*/}
