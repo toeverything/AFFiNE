@@ -34,7 +34,7 @@ export interface CreateWorkspace {
    * only set name, avatar is update in datacenter to yDoc directly
    */
   name: string;
-  user_id: number;
+  user_id: string;
   [k: string]: unknown;
 }
 export interface GetWorkspace {

@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CreateWorkspace {
-  // TODO: make all id string, on Octobase side, and rewrite all related tests
-  pub user_id: i32,
+  pub user_id: String,
   /**
    * only set name, avatar is update in datacenter to yDoc directly
    */

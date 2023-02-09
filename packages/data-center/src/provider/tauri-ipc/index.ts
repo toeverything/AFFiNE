@@ -121,6 +121,7 @@ export class TauriIPCProvider extends LocalProvider {
   ): Promise<WorkspaceUnit | undefined> {
     this._logger('Creating client app workspace');
     assert(this.#ipc);
+    assert(this.#userID);
     const { id } = await this.#ipc.createWorkspace({
       name: meta.name,
       // TODO: get userID here
@@ -151,6 +152,7 @@ export class TauriIPCProvider extends LocalProvider {
 
   override async loadWorkspaces(): Promise<WorkspaceUnit[]> {
     assert(this.#ipc);
+    assert(this.#userID);
     const { workspaces } = await this.#ipc.getWorkspaces({
       user_id: this.#userID,
     });
