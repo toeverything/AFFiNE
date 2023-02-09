@@ -1,1 +1,3 @@
-export { varStorage as storage } from 'lib0/storage';
+import { varStorage } from 'lib0/storage';
+
+export const storage = varStorage as Storage;

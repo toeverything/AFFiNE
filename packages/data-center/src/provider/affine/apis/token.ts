@@ -5,9 +5,10 @@ import { decode } from 'js-base64';
 
 import { getLogger } from '../../../logger.js';
 import { bareClient } from './request.js';
+import { storage } from '../storage.js';
 
 export interface AccessTokenMessage {
-  create_at: number;
+  created_at: number;
   exp: number;
   email: string;
   id: string;
@@ -29,55 +30,85 @@ type LoginResponse = {
   refresh: string;
 };
 
-const login = (params: LoginParams): Promise<LoginResponse> =>
+// TODO: organize storage keys in a better way
+const AFFINE_LOGIN_STORAGE_KEY = 'affine:login';
+
+/**
+ * Use refresh token to get a new access token (JWT)
+ * The returned token also contains the user info payload.
+ */
+const doLogin = (params: LoginParams): Promise<LoginResponse> =>
   bareClient.post('api/user/token', { json: params }).json();
 
 export class Token {
   private readonly _logger;
-  private _accessToken!: string;
-  private _refreshToken!: string;
+  private _accessToken = ''; // idtoken (JWT)
+  private _refreshToken = '';
 
-  private _user!: AccessTokenMessage | null;
+  private _user: AccessTokenMessage | null = null;
   private _padding?: Promise<LoginResponse>;
 
   constructor() {
     this._logger = getLogger('token');
     this._logger.enabled = true;
 
-    this._setToken(); // fill with default value
+    this.restoreLogin();
   }
 
   get user() {
     return this._user;
   }
 
-  private _setToken(login?: LoginResponse) {
-    this._accessToken = login?.token || '';
-    this._refreshToken = login?.refresh || '';
-
+  setLogin(login: LoginResponse) {
+    this._accessToken = login.token;
+    this._refreshToken = login.refresh;
     this._user = Token.parse(this._accessToken);
-    if (login) {
-      this._logger('set login', login);
-      this.triggerChange(this._user);
-    } else {
-      this._logger('empty login');
+
+    this.triggerChange(this._user);
+    this.storeLogin();
+  }
+
+  private storeLogin() {
+    if (this.refresh) {
+      const { token, refresh } = this;
+      storage.setItem(
+        AFFINE_LOGIN_STORAGE_KEY,
+        JSON.stringify({ token, refresh })
+      );
+    }
+  }
+
+  private restoreLogin() {
+    const loginStr = storage.getItem(AFFINE_LOGIN_STORAGE_KEY);
+    if (!loginStr) {
+      return;
+    }
+    try {
+      const login: LoginResponse = JSON.parse(loginStr);
+      this.setLogin(login);
+    } catch (err) {
+      this._logger('Failed to parse login info', err);
     }
   }
 
   async initToken(token: string) {
-    const tokens = await login({ token, type: 'Google' });
-    this._setToken(tokens);
+    const res = await doLogin({ token, type: 'Google' });
+    this.setLogin(res);
     return this._user;
   }
 
-  async refreshToken(token?: string) {
+  async refreshToken(refreshToken?: string) {
     if (!this._padding) {
-      this._padding = login({
+      this._padding = doLogin({
         type: 'Refresh',
-        token: this._refreshToken || token!,
+        token: refreshToken || this._refreshToken,
       });
+      this._refreshToken = refreshToken || this._refreshToken;
     }
-    this._setToken(await this._padding);
+    const res = await this._padding;
+    if (!refreshToken || refreshToken !== this._refreshToken) {
+      this.setLogin(res);
+    }
     this._padding = undefined;
   }
 
@@ -95,7 +126,7 @@ export class Token {
 
   get isExpired() {
     if (!this._user) return true;
-    return Date.now() - this._user.create_at > this._user.exp;
+    return Date.now() > this._user.exp;
   }
 
   static parse(token: string): AccessTokenMessage | null {
@@ -128,7 +159,9 @@ export class Token {
   }
 
   clear() {
-    this._setToken();
+    this._accessToken = '';
+    this._refreshToken = '';
+    storage.removeItem(AFFINE_LOGIN_STORAGE_KEY);
   }
 }
 

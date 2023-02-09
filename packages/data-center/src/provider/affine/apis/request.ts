@@ -43,6 +43,7 @@ export const client: KyInstance = bareClient.extend({
 
     beforeRetry: [
       async ({ request }) => {
+        console.log('beforeRetry');
         await token.refreshToken();
         request.headers.set('Authorization', token.token);
       },

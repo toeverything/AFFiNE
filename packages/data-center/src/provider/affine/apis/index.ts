@@ -6,11 +6,20 @@ import * as user from './user.js';
 import * as workspace from './workspace.js';
 import { token } from './token.js';
 
-export type Apis = typeof user &
-  Omit<typeof workspace, 'WorkspaceType' | 'PermissionType'> & {
-    signInWithGoogle: ReturnType<typeof getAuthorizer>[0];
-    onAuthStateChanged: ReturnType<typeof getAuthorizer>[1];
-  } & { token: typeof token };
+// See https://twitter.com/mattpocockuk/status/1622730173446557697
+// TODO: move to ts utils?
+type Prettify<T> = {
+  [K in keyof T]: T[K];
+  // eslint-disable-next-line @typescript-eslint/ban-types
+} & {};
+
+export type Apis = Prettify<
+  typeof user &
+    Omit<typeof workspace, 'WorkspaceType' | 'PermissionType'> & {
+      signInWithGoogle: ReturnType<typeof getAuthorizer>[0];
+      onAuthStateChanged: ReturnType<typeof getAuthorizer>[1];
+    } & { token: typeof token }
+>;
 
 export const getApis = (): Apis => {
   const [signInWithGoogle, onAuthStateChanged] = getAuthorizer();
