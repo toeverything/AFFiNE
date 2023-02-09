@@ -32,7 +32,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         <>
           <Wrapper marginBottom="32px">{t('Published Description')}</Wrapper>
 
-          <Wrapper margin="0 0 32px 0">
+          <Wrapper marginBottom="12px">
             <Content weight="500">{t('Share with link')}</Content>
           </Wrapper>
           <FlexWrapper>
