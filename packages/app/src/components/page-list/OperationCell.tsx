@@ -53,7 +53,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
             confirmType: 'danger',
           }).then(confirm => {
             confirm && toggleDeletePage(id);
-            toast(t('Moved to Trash'));
+            confirm && toast(t('Moved to Trash'));
           });
         }}
         icon={<TrashIcon />}
