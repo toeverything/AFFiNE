@@ -82,7 +82,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
   return (
     <>
-      <Wrapper margin="0 0 32px 0">{t('Publishing')}</Wrapper>
+      <Wrapper marginBottom="32px">{t('Publishing')}</Wrapper>
       <EnableWorkspaceButton />
     </>
   );
