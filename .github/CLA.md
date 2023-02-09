@@ -1,4 +1,4 @@
-AFFiNE Contributor License Agreement
+## AFFiNE Contributor License Agreement
 
 To clarify the intellectual property license granted with contributions from any person or entity, AFFiNE must have on file a signed Contributor License Agreement ("CLA") from each contributor, indicating agreement with the license terms below. This agreement is for your protection as a contributor as well as the protection of the AFFiNE and its users; it does not change your rights to use your own contributions for any other purpose.
 
@@ -6,9 +6,9 @@ You accept and agree to the following terms and conditions for your past, presen
 
 1. Parties.
 
-(a) “AFFiNE ” refers to the project’s operator, TOEVERYTHING PTE. LTD registered in Republic of Singapore.
+   (a) “AFFiNE ” refers to the project’s operator, TOEVERYTHING PTE. LTD registered in Republic of Singapore.
 
-(b) “You” (or “Your”) means the copyright owner or legal entity authorized by the copyright owner that is making this Agreement with AFFiNE .
+   (b) “You” (or “Your”) means the copyright owner or legal entity authorized by the copyright owner that is making this Agreement with AFFiNE .
 
 2. Definitions. “Contribution” shall mean any original work of authorship, including any modifications or additions to an existing work, that is intentionally submitted by You to AFFiNE for inclusion in, or documentation of, any of the products owned or managed by AFFiNE (the “Work”). For the purposes of this definition, “submitted” means any form of electronic, verbal, or written communication sent to AFFiNE or its representatives, including but not limited to communication on electronic mailing lists, source code control systems, and issue tracking systems that are managed by, or on behalf of, AFFiNE for the purpose of discussing and improving the Work, but excluding communication that is conspicuously marked or otherwise designated in writing by You as “Not a Contribution.”
 
