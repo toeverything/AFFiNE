@@ -26,6 +26,7 @@ test.describe('Open contact us', () => {
     const faqIcon = page.locator('[data-testid=faq-icon]');
     const box = await faqIcon.boundingBox();
     expect(box?.x).not.toBeUndefined();
+    await faqIcon.click();
 
     await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
     await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);

@@ -56,9 +56,9 @@ export const HelpIsland = ({
         )}
       </StyledAnimateWrapper>
 
-      <MuiFade in={!spread}>
+      <MuiFade in={!spread} data-testid="faq-icon">
         <StyledTriggerWrapper>
-          <HelpIcon data-testid="faq-icon" />
+          <HelpIcon />
         </StyledTriggerWrapper>
       </MuiFade>
       <MuiFade in={spread}>
