@@ -34,6 +34,7 @@ module.exports = {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, '..', 'src'),
+      '@affine/i18n': path.resolve(__dirname, '..', '..', 'i18n', 'src'),
     };
     return config;
   },
