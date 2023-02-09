@@ -1,6 +1,6 @@
 import i18next, { Resource } from 'i18next';
 import { Trans, initReactI18next, useTranslation } from 'react-i18next';
-import { LOCALES } from './resources/index.js';
+import { LOCALES } from './resources';
 import type en_US from './resources/en.json';
 
 // const localStorage = {
