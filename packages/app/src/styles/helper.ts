@@ -60,8 +60,8 @@ export const absoluteCenter = ({
     position: 'absolute',
     left: left ? left : horizontal ? '50%' : 'auto',
     top: top ? top : vertical ? '50%' : 'auto',
-    right: right ? right : horizontal ? 'auto' : 'auto',
-    bottom: bottom ? bottom : vertical ? 'auto' : 'auto',
+    right: right ? right : 'auto',
+    bottom: bottom ? bottom : 'auto',
     transform: `translate(${horizontal ? '-50%' : '0'}, ${
       vertical ? '-50%' : '0'
     })`,
@@ -92,8 +92,8 @@ export const fixedCenter = ({
     position: 'fixed',
     left: left ? left : horizontal ? '50%' : 'auto',
     top: top ? top : vertical ? '50%' : 'auto',
-    right: right ? right : horizontal ? 'auto' : 'auto',
-    bottom: bottom ? bottom : vertical ? 'auto' : 'auto',
+    right: right ? right : 'auto',
+    bottom: bottom ? bottom : 'auto',
     transform: `translate(${horizontal ? '-50%' : '0'}, ${
       vertical ? '-50%' : '0'
     })`,
