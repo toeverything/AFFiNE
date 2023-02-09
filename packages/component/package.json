@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@affine/i18n": "workspace:*",
-    "@blocksuite/editor": "0.4.0-alpha.3",
+    "@blocksuite/editor": "0.4.0-20230209191848-0a912e3",
     "@blocksuite/icons": "^2.0.2",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
