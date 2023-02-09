@@ -3,6 +3,7 @@
 # AFFiNE Contributor License Agreement
 
 To clarify the intellectual property license granted with contributions from any person or entity, AFFiNE must have on file a signed Contributor License Agreement ("CLA") from each contributor, indicating agreement with the license terms below. This agreement is for your protection as a contributor as well as the protection of the AFFiNE and its users; it does not change your rights to use your own contributions for any other purpose.
+
 You accept and agree to the following terms and conditions for your past, present and future contributions submitted to AFFiNE. You should sign this agreement before submitting your first contribution. Except for the license granted herein to AFFiNE and recipients of software distributed by AFFiNE, You reserve all right, title, and interest in and to Your Contributions.
 
 1. Parties.
