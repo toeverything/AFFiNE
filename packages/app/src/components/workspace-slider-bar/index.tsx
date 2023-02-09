@@ -131,7 +131,7 @@ export const WorkSpaceSliderBar = () => {
           <StyledListItem active={router.asPath === paths.favorite}>
             <StyledLink href={{ pathname: paths.favorite }}>
               <FavouritesIcon />
-              {t('Favourites')}
+              {t('Favorites')}
             </StyledLink>
             <IconButton
               darker={true}

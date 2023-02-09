@@ -12,10 +12,10 @@ export const Favorite = () => {
   return (
     <>
       <Head>
-        <title>{t('Favourites')} - AFFiNE</title>
+        <title>{t('Favorites')} - AFFiNE</title>
       </Head>
       <PageListHeader icon={<FavouritesIcon />}>
-        {t('Favourites')}
+        {t('Favorites')}
       </PageListHeader>
       <PageList
         pageList={pageList.filter(p => p.favorite && !p.trash)}
