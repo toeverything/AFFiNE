@@ -1,4 +1,4 @@
-# Building BlockSuite
+# Building AFFiNE
 
 ## Table of Contents
 
