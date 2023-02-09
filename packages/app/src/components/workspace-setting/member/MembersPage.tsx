@@ -171,7 +171,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         fontSize: '18px',
       }}
     >
-      <Wrapper margin="0 0 32px 0">{t('Collaboration Description')}</Wrapper>
+      <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
       <EnableWorkspaceButton />
     </Wrapper>
   );
