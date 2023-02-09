@@ -21,7 +21,7 @@ pub async fn get_workspaces<'s>(
     .lock()
     .await
     .metadata_db
-    .get_user_workspaces(parameters.user_id)
+    .get_user_workspaces(parameters.user_id.to_string())
     .await
   {
     Ok(user_workspaces) => Ok(GetWorkspacesResult {
@@ -66,7 +66,7 @@ pub async fn create_workspace<'s>(
     .lock()
     .await
     .metadata_db
-    .create_normal_workspace(parameters.user_id)
+    .create_normal_workspace(parameters.user_id.to_string())
     .await;
   match new_workspace_result {
     Ok(new_workspace) => {
