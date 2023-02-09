@@ -4,13 +4,15 @@ import { Button } from '@/ui/button';
 import { Check, UnCheck } from './icon';
 import { useState } from 'react';
 import { useTranslation } from '@affine/i18n';
+import { useAppState } from '@/providers/app-state-provider';
 interface LoginModalProps {
   open: boolean;
   onClose: (wait: boolean) => void;
 }
 
 export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
-  const [localCache, setLocalCache] = useState(false);
+  const [localCache, setLocalCache] = useState(true);
+  const { blobDataSynced } = useAppState();
   const { t } = useTranslation();
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
@@ -24,7 +26,11 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
         </Header>
         <Content>
           <ContentTitle>{t('Sign out')}?</ContentTitle>
-          <SignDes>{t('Set up an AFFiNE account to sync data')}</SignDes>
+          <SignDes>
+            {blobDataSynced
+              ? t('Set up an AFFiNE account to sync data')
+              : 'All data has been stored in the cloud'}
+          </SignDes>
           <StyleTips>
             {localCache ? (
               <StyleCheck
@@ -45,26 +51,49 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
             )}
             {t('Retain local cached data')}
           </StyleTips>
-          <div>
-            <Button
-              style={{ marginRight: '16px' }}
-              shape="round"
-              onClick={() => {
-                onClose(true);
-              }}
-            >
-              {t('Wait for Sync')}
-            </Button>
-            <Button
-              type="danger"
-              shape="round"
-              onClick={() => {
-                onClose(false);
-              }}
-            >
-              {t('Force Sign Out')}
-            </Button>
-          </div>
+          {blobDataSynced ? (
+            <div>
+              <Button
+                type="danger"
+                shape="round"
+                style={{ marginRight: '16px' }}
+                onClick={async () => {
+                  onClose(false);
+                }}
+              >
+                {t('Force Sign Out')}
+              </Button>
+              <Button
+                shape="round"
+                onClick={() => {
+                  onClose(true);
+                }}
+              >
+                {t('Wait for Sync')}
+              </Button>
+            </div>
+          ) : (
+            <div>
+              <Button
+                type="primary"
+                style={{ marginRight: '16px' }}
+                shape="round"
+                onClick={() => {
+                  onClose(true);
+                }}
+              >
+                {t('Cancel')}
+              </Button>
+              <Button
+                shape="round"
+                onClick={() => {
+                  onClose(false);
+                }}
+              >
+                {t('Sign out')}
+              </Button>
+            </div>
+          )}
         </Content>
       </ModalWrapper>
     </Modal>

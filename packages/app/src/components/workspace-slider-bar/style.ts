@@ -58,7 +58,6 @@ export const StyledListItem = styled.div<{
     width: '296px',
     height: '32px',
     marginTop: '12px',
-    fontSize: theme.font.sm,
     color: active ? theme.colors.primaryColor : theme.colors.popoverColor,
     paddingLeft: '12px',
     borderRadius: '5px',
@@ -122,9 +121,8 @@ export const StyledSubListItem = styled.button<{
     width: '296px',
     height: '32px',
     marginTop: '4px',
-    fontSize: theme.font.sm,
     color: disable
-      ? theme.colors.iconColor
+      ? theme.colors.disableColor
       : active
       ? theme.colors.primaryColor
       : theme.colors.popoverColor,

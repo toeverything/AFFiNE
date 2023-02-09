@@ -10,10 +10,9 @@ import {
   StyledMemberRoleContainer,
   StyledMemberTitleContainer,
   StyledMoreVerticalButton,
-  StyledPublishExplanation,
-  StyledMemberWarp,
   StyledMemberContainer,
 } from './style';
+import { Wrapper } from '@/ui/layout';
 import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useState } from 'react';
 import { Button, IconButton } from '@/ui/button';
@@ -166,11 +165,14 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   }
 
   return (
-    <StyledMemberWarp>
-      {t('Collaboration Description')}
-      <StyledPublishExplanation>
-        <EnableWorkspaceButton></EnableWorkspaceButton>
-      </StyledPublishExplanation>
-    </StyledMemberWarp>
+    <Wrapper
+      style={{
+        fontWeight: '500',
+        fontSize: '18px',
+      }}
+    >
+      <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
+      <EnableWorkspaceButton />
+    </Wrapper>
   );
 };

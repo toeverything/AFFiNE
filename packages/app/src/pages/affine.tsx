@@ -36,7 +36,6 @@ const Affine = () => {
         <div>hi</div>
       </Modal>
       <Loading />
-
       <Button
         icon={<FavouritedIcon />}
         onClick={() => {
@@ -48,13 +47,15 @@ const Affine = () => {
       <Button icon={<FavouritedIcon />} type={'primary'}>
         click me!
       </Button>
+      <Button icon={<FavouritedIcon />} type={'light'}>
+        click me!
+      </Button>
       <Button icon={<FavouritedIcon />} type={'warning'}>
         click me!
       </Button>
       <Button icon={<FavouritedIcon />} type={'danger'}>
         click me!
       </Button>
-
       <Button icon={<FavouritedIcon />}></Button>
       <Button icon={<FavouritedIcon />} shape="round"></Button>
       <Button loading={true}></Button>

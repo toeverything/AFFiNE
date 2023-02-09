@@ -35,6 +35,7 @@
   "Permanently deleted": "Permanently deleted",
   "restored": "{{title}} restored",
   "Cancel": "Cancel",
+  "Confirm": "Confirm",
   "Keyboard Shortcuts": "Keyboard Shortcuts",
   "Contact Us": "Contact Us",
   "Official Website": "Official Website",
@@ -133,6 +134,7 @@
   "Share with link": "Share with link",
   "Copy Link": "Copy Link",
   "Publishing Description": "After publishing to the web, everyone can view the content of this workspace through the link.",
+  "Export Description": "You can export the entire Workspace data for backup, and the exported data can be re-impored.",
   "Stop publishing": "Stop publishing",
   "Publish to web": "Publish to web",
   "Download data": "Download {{CoreOrAll}} data",
@@ -174,5 +176,11 @@
   "Cloud Workspace Description": "All data will be synchronized and saved to the AFFiNE account <1>{{email}}</1>",
   "Download data Description1": "It takes up more space on your device.",
   "Download data Description2": "It takes up little space on your device.",
-  "Enabled success": "Enabled success"
+  "Enabled success": "Enabled success",
+  "Export AFFINE backup file": "Export AFFINE backup file (coming soon)",
+  "Data sync mode": "Data sync mode",
+  "Download all data": "Download all data",
+  "It takes up more space on your device.": "It takes up more space on your device.",
+  "Download core data": "Download core data",
+  "It takes up little space on your device.": "It takes up little space on your device."
 }

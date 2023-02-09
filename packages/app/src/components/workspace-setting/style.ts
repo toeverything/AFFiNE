@@ -1,5 +1,5 @@
 import { styled } from '@/styles';
-
+import { FlexWrapper } from '@/ui/layout';
 export const StyledSettingContainer = styled('div')(() => {
   return {
     display: 'flex',
@@ -13,39 +13,17 @@ export const StyledSettingContainer = styled('div')(() => {
 export const StyledSettingSidebar = styled('div')(() => {
   {
     return {
-      // height: '48px',
-      marginTop: '50px',
+      marginTop: '48px',
     };
   }
 });
 
 export const StyledSettingContent = styled('div')(() => {
   return {
-    overflow: 'hidden',
+    overflow: 'auto',
     flex: 1,
     paddingTop: '48px',
   };
-});
-
-export const StyledSetting = styled('div')(({ theme }) => {
-  {
-    return {
-      width: '236px',
-      background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
-    };
-  }
-});
-
-export const StyledSettingSidebarHeader = styled('div')(() => {
-  {
-    return {
-      fontWeight: '500',
-      fontSize: '18px',
-      lineHeight: '26px',
-      textAlign: 'left',
-      marginTop: '37px',
-    };
-  }
 });
 
 export const StyledSettingTabContainer = styled('ul')(() => {
@@ -65,7 +43,7 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
         height: '34px',
         color: isActive ? theme.colors.primaryColor : theme.colors.textColor,
         fontWeight: '500',
-        fontSize: theme.font.base,
+        fontSize: theme.font.h6,
         lineHeight: theme.font.lineHeight,
         cursor: 'pointer',
         transition: 'all 0.15s ease',
@@ -78,76 +56,60 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
   }
 );
 
-export const StyledSettingTagIconContainer = styled('div')(() => {
+export const StyledSettingKey = styled.div(({ theme }) => {
   return {
-    display: 'flex',
-    alignItems: 'center',
-  };
-});
-
-export const StyledSettingH2 = styled('h2')<{
-  marginTop?: number;
-  marginBottom?: number;
-}>(({ marginTop, marginBottom, theme }) => {
-  return {
-    // fontWeight: '500',
+    width: '140px',
+    textAlign: 'right',
     fontSize: theme.font.base,
-    lineHeight: theme.font.lineHeight,
-    marginTop: marginTop ? `${marginTop}px` : '0px',
-    marginBottom: marginBottom ? `${marginBottom}px` : '0px',
+    fontWeight: 500,
+    marginRight: '56px',
+    flexShrink: 0,
+  };
+});
+export const StyledRow = styled(FlexWrapper)(() => {
+  return {
+    marginBottom: '32px',
   };
 });
 
-export const StyledPublishExplanation = styled('div')(() => {
-  return {
-    paddingRight: '48px',
-    // fontWeight: '500',
-    marginBottom: '22px',
-  };
-});
-export const StyledWorkspaceName = styled('span')(() => {
+export const StyledWorkspaceName = styled('span')(({ theme }) => {
   return {
     fontWeight: '400',
-  };
-});
-export const StyledWorkspaceType = styled('span')(() => {
-  return {
-    // fontWeight: '500',
+    fontSize: theme.font.h6,
   };
 });
 
-export const StyledPublishCopyContainer = styled('div')(() => {
-  return {
-    marginTop: '12px',
-    marginBottom: '20px',
-    paddingTop: '20px',
-    flex: 1,
-  };
-});
-export const StyledStopPublishContainer = styled('div')(() => {
-  return {
-    textAlign: 'center',
-  };
-});
-
-export const StyledButtonContainer = styled('div')(() => {
-  return {
-    marginTop: '64px',
-  };
-});
 export const StyledEmail = styled('span')(() => {
   return {
     color: '#E8178A',
   };
 });
 
-export const StyledPublishContent = styled('div')(({ theme }) => {
-  return {
-    display: 'flex',
-    fontWeight: '500',
-    flexDirection: 'column',
-    fontSize: theme.font.base,
-    lineHeight: theme.font.lineHeight,
-    flex: 1,
-  };
-});
+// export const StyledDownloadCard = styled.div<{ active?: boolean }>(
+//   ({ theme, active }) => {
+//     return {
+//       width: '240px',
+//       height: '86px',
+//       border: '1px solid',
+//       borderColor: active
+//         ? theme.colors.primaryColor
+//         : theme.colors.borderColor,
+//       borderRadius: '10px',
+//       padding: '8px 12px',
+//       position: 'relative',
+//       ':not(:last-of-type)': {
+//         marginRight: '24px',
+//       },
+//       svg: {
+//         display: active ? 'block' : 'none',
+//         ...positionAbsolute({ top: '-12px', right: '-12px' }),
+//       },
+//     };
+//   }
+// );
+// export const StyledDownloadCardDes = styled.div(({ theme }) => {
+//   return {
+//     fontSize: theme.font.sm,
+//     color: theme.colors.iconColor,
+//   };
+// });

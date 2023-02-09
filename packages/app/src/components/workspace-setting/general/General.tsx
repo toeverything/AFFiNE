@@ -1,23 +1,13 @@
-import {
-  StyledDeleteButtonContainer,
-  // StyledSettingAvatar,
-  StyledSettingAvatarContent,
-  StyledSettingInputContainer,
-  StyledDoneButtonContainer,
-  StyledInput,
-  StyledProviderInfo,
-  StyleGeneral,
-  StyledAvatar,
-} from './style';
-import { StyledSettingH2 } from '../style';
+import { StyledInput, StyledProviderInfo, StyledAvatar } from './style';
+import { StyledSettingKey, StyledRow } from '../style';
+import { FlexWrapper, Content } from '@/ui/layout';
 
 import { useState } from 'react';
 import { Button } from '@/ui/button';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
-import { DoneIcon, UsersIcon } from '@blocksuite/icons';
-// import { Upload } from '@/components/file-upload';
+import { UsersIcon } from '@blocksuite/icons';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
@@ -33,9 +23,6 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const { updateWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
 
-  const handleChangeWorkSpaceName = (newName: string) => {
-    setWorkspaceName(newName);
-  };
   const handleUpdateWorkspaceName = () => {
     currentWorkspace &&
       updateWorkspace({ name: workspaceName }, currentWorkspace);
@@ -46,14 +33,16 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     currentWorkspace &&
       (await updateWorkspace({ avatarBlob: blob }, currentWorkspace));
   };
+  if (!workspace) {
+    return null;
+  }
 
-  return workspace ? (
-    <StyleGeneral>
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        <StyledSettingH2>{t('Workspace Avatar')}</StyledSettingH2>
-        <StyledSettingAvatarContent>
-          <StyledAvatar disabled={!isOwner}>
-            {isOwner ? (
+  return (
+    <>
+      <StyledRow>
+        <StyledSettingKey>{t('Workspace Avatar')}</StyledSettingKey>
+        <StyledAvatar disabled={!isOwner}>
+         {isOwner ? (
               <Upload
                 accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
                 fileChange={fileChange}
@@ -63,7 +52,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                     <CameraIcon></CameraIcon>
                   </div>
                   <WorkspaceUnitAvatar
-                    size={60}
+                    size={72}
                     name={workspace.name}
                     workspaceUnit={workspace}
                   />
@@ -71,56 +60,74 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               </Upload>
             ) : (
               <WorkspaceUnitAvatar
-                size={60}
+                size={72}
                 name={workspace.name}
                 workspaceUnit={workspace}
               />
             )}
-          </StyledAvatar>
-          {/* TODO: Wait for image sync to complete  */}
-          {/* <Upload
-          accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-          fileChange={fileChange}
-        >
-          <Button loading={uploading}>{t('Upload')}</Button>
-        </Upload> */}
-          {/* TODO: add upload logic */}
-        </StyledSettingAvatarContent>
-        <StyledSettingH2 marginTop={20}>{t('Workspace Name')}</StyledSettingH2>
-        <StyledSettingInputContainer>
+        </StyledAvatar>
+      </StyledRow>
+
+      <StyledRow>
+        <StyledSettingKey>{t('Workspace Name')}</StyledSettingKey>
+        <FlexWrapper>
           <StyledInput
             width={284}
-            height={32}
+            height={38}
             value={workspaceName}
             placeholder={t('Workspace Name')}
             maxLength={15}
             minLength={0}
             disabled={!isOwner}
-            onChange={handleChangeWorkSpaceName}
+            onChange={newName => {
+              setWorkspaceName(newName);
+            }}
           ></StyledInput>
-          {isOwner ? (
-            <StyledDoneButtonContainer
-              onClick={() => {
-                handleUpdateWorkspaceName();
-              }}
-            >
-              <DoneIcon />
-            </StyledDoneButtonContainer>
-          ) : null}
-        </StyledSettingInputContainer>
-        <StyledSettingH2 marginTop={20}>{t('Workspace Type')}</StyledSettingH2>
-        <StyledSettingInputContainer>
+          {isOwner && (
+            <>
+              <Button
+                type="default"
+                shape="circle"
+                style={{ marginLeft: '24px' }}
+                onClick={() => {
+                  setWorkspaceName(workspace.name);
+                }}
+              >
+                {t('Cancel')}
+              </Button>
+              <Button
+                type="light"
+                shape="circle"
+                style={{ marginLeft: '24px' }}
+                onClick={() => {
+                  handleUpdateWorkspaceName();
+                }}
+              >
+                {t('Confirm')}
+              </Button>
+            </>
+          )}
+        </FlexWrapper>
+      </StyledRow>
+
+      <StyledRow>
+        <StyledSettingKey>{t('Workspace Type')}</StyledSettingKey>
+        <FlexWrapper>
           {isOwner ? (
             currentWorkspace?.provider === 'local' ? (
-              <StyledProviderInfo>
+              <FlexWrapper alignItems="center">
                 <LocalIcon />
-                {t('Local Workspace')}
-              </StyledProviderInfo>
+                <Content style={{ marginLeft: '15px' }}>
+                  {t('Local Workspace')}
+                </Content>
+              </FlexWrapper>
             ) : (
-              <StyledProviderInfo>
+              <FlexWrapper alignItems="center">
                 <CloudIcon />
-                {t('Available Offline')}
-              </StyledProviderInfo>
+                <Content style={{ marginLeft: '15px' }}>
+                  {t('Available Offline')}
+                </Content>
+              </FlexWrapper>
             )
           ) : (
             <StyledProviderInfo>
@@ -128,10 +135,11 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
               {t('Joined Workspace')}
             </StyledProviderInfo>
           )}
-        </StyledSettingInputContainer>
-      </div>
+        </FlexWrapper>
+      </StyledRow>
 
-      <StyledDeleteButtonContainer>
+      <StyledRow>
+        <StyledSettingKey> {t('Delete Workspace')}</StyledSettingKey>
         {isOwner ? (
           <>
             <Button
@@ -171,7 +179,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
             />
           </>
         )}
-      </StyledDeleteButtonContainer>
-    </StyleGeneral>
-  ) : null;
+      </StyledRow>
+    </>
+  );
 };
