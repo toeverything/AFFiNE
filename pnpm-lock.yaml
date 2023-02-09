@@ -1,5 +1,10 @@
 lockfileVersion: 5.4
 
+patchedDependencies:
+  next@13.1.0:
+    hash: rdilrli7uexa22ralt77ekax24
+    path: patches/next@13.1.0.patch
+
 importers:
 
   .:
@@ -47,10 +52,10 @@ importers:
       '@affine/component': workspace:*
       '@affine/datacenter': workspace:*
       '@affine/i18n': workspace:*
-      '@blocksuite/blocks': 0.4.0-alpha.2
-      '@blocksuite/editor': 0.4.0-alpha.2
+      '@blocksuite/blocks': 0.4.0-alpha.3
+      '@blocksuite/editor': 0.4.0-alpha.3
       '@blocksuite/icons': ^2.0.2
-      '@blocksuite/store': 0.4.0-alpha.2
+      '@blocksuite/store': 0.4.0-alpha.3
       '@emotion/css': ^11.10.5
       '@emotion/react': ^11.10.5
       '@emotion/server': ^11.10.0
@@ -89,10 +94,10 @@ importers:
       '@affine/component': link:../component
       '@affine/datacenter': link:../data-center
       '@affine/i18n': link:../i18n
-      '@blocksuite/blocks': 0.4.0-alpha.2_yjs@13.5.45
-      '@blocksuite/editor': 0.4.0-alpha.2_yjs@13.5.45
+      '@blocksuite/blocks': 0.4.0-alpha.3_yjs@13.5.45
+      '@blocksuite/editor': 0.4.0-alpha.3_yjs@13.5.45
       '@blocksuite/icons': 2.0.4_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/store': 0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45
       '@emotion/css': 11.10.5
       '@emotion/react': 11.10.5_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.5
@@ -107,7 +112,7 @@ importers:
       css-spring: 4.1.0
       dayjs: 1.11.7
       lit: 2.6.1
-      next: 13.1.0_biqbaboplfbrettd7655fr4n2y
+      next: 13.1.0_rdilrli7uexa22ralt77ekax24_biqbaboplfbrettd7655fr4n2y
       next-debug-local: 0.1.5
       prettier: 2.7.1
       quill: 1.3.7
@@ -132,7 +137,7 @@ importers:
   packages/component:
     specifiers:
       '@affine/i18n': workspace:*
-      '@blocksuite/editor': 0.4.0-alpha.2
+      '@blocksuite/editor': 0.4.0-alpha.3
       '@blocksuite/icons': ^2.0.2
       '@emotion/react': ^11.10.5
       '@emotion/styled': ^11.10.5
@@ -156,7 +161,7 @@ importers:
       webpack: ^5.75.0
     dependencies:
       '@affine/i18n': link:../i18n
-      '@blocksuite/editor': 0.4.0-alpha.2
+      '@blocksuite/editor': 0.4.0-alpha.3
       '@blocksuite/icons': 2.0.4_3stiutgnnbnfnf3uowm5cip22i
       '@emotion/react': 11.10.5_3stiutgnnbnfnf3uowm5cip22i
       '@emotion/styled': 11.10.5_jrh5enlbqfbnumycmktdqgd6se
@@ -182,8 +187,8 @@ importers:
 
   packages/data-center:
     specifiers:
-      '@blocksuite/blocks': 0.4.0-alpha.2
-      '@blocksuite/store': 0.4.0-alpha.2
+      '@blocksuite/blocks': 0.4.0-alpha.3
+      '@blocksuite/store': 0.4.0-alpha.3
       '@playwright/test': ^1.29.1
       '@types/debug': ^4.1.7
       debug: ^4.3.4
@@ -201,8 +206,8 @@ importers:
       y-protocols: ^1.0.5
       yjs: ^13.5.45
     dependencies:
-      '@blocksuite/blocks': 0.4.0-alpha.2_yjs@13.5.45
-      '@blocksuite/store': 0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/blocks': 0.4.0-alpha.3_yjs@13.5.45
+      '@blocksuite/store': 0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45
       debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
@@ -2615,21 +2620,21 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@blocksuite/blocks/0.4.0-alpha.2:
-    resolution: {integrity: sha512-rsG1wXNmZpZrCQeADLYkJyFQJ6tTW5QutmN9kr5e1HI3cZgV6n1szcDBh+/32xp6xFn1q1RgknYVNS6jHsbd+A==}
+  /@blocksuite/blocks/0.4.0-alpha.3:
+    resolution: {integrity: sha512-DKRWJmNhaCLQSMYRdVMR6okuWRjvU3o+NZcrnXitNzEH2jes7gl9DxpCI4kfAWTGHKLtblDqkMwRtKJhhxE8ng==}
     dependencies:
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
-      '@blocksuite/phasor': 0.4.0-alpha.2_lit@2.6.1
-      '@blocksuite/store': 0.4.0-alpha.2_lit@2.6.1
-      '@blocksuite/virgo': 0.4.0-alpha.2_lit@2.6.1
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
+      '@blocksuite/phasor': 0.4.0-alpha.3_lit@2.6.1
+      '@blocksuite/store': 0.4.0-alpha.3_lit@2.6.1
+      '@blocksuite/virgo': 0.4.0-alpha.3_lit@2.6.1
       '@popperjs/core': 2.11.6
       autosize: 5.0.2
       highlight.js: 11.7.0
       hotkeys-js: 3.10.1
       lit: 2.6.1
       quill: 1.3.7
-      quill-cursors: 4.0.0
-      zod: 3.20.2
+      quill-cursors: 4.0.2
+      zod: 3.20.5
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -2637,21 +2642,21 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/blocks/0.4.0-alpha.2_yjs@13.5.45:
-    resolution: {integrity: sha512-rsG1wXNmZpZrCQeADLYkJyFQJ6tTW5QutmN9kr5e1HI3cZgV6n1szcDBh+/32xp6xFn1q1RgknYVNS6jHsbd+A==}
+  /@blocksuite/blocks/0.4.0-alpha.3_yjs@13.5.45:
+    resolution: {integrity: sha512-DKRWJmNhaCLQSMYRdVMR6okuWRjvU3o+NZcrnXitNzEH2jes7gl9DxpCI4kfAWTGHKLtblDqkMwRtKJhhxE8ng==}
     dependencies:
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
-      '@blocksuite/phasor': 0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45
-      '@blocksuite/store': 0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45
-      '@blocksuite/virgo': 0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
+      '@blocksuite/phasor': 0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/store': 0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/virgo': 0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45
       '@popperjs/core': 2.11.6
       autosize: 5.0.2
       highlight.js: 11.7.0
       hotkeys-js: 3.10.1
       lit: 2.6.1
       quill: 1.3.7
-      quill-cursors: 4.0.0
-      zod: 3.20.2
+      quill-cursors: 4.0.2
+      zod: 3.20.5
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -2659,12 +2664,12 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/editor/0.4.0-alpha.2:
-    resolution: {integrity: sha512-77+uY8ljus+W70sf3J5sjzS6jzfLXeA5wBnPVALtq7LBIzkQesFZ/FCewpPPaqDy3Up8rnq4mvWDB2GCbpmwuA==}
+  /@blocksuite/editor/0.4.0-alpha.3:
+    resolution: {integrity: sha512-PLF8apMEOzvwS8sliZFRyHrgWKwR5XgpeIoqZ3CTUXvmkZ2cX6d8UP+GjS6GWKZarbpGJNtvuABYTFraJycMig==}
     dependencies:
-      '@blocksuite/blocks': 0.4.0-alpha.2
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
-      '@blocksuite/store': 0.4.0-alpha.2_lit@2.6.1
+      '@blocksuite/blocks': 0.4.0-alpha.3
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
+      '@blocksuite/store': 0.4.0-alpha.3_lit@2.6.1
       lit: 2.6.1
       marked: 4.2.12
       turndown: 7.1.1
@@ -2675,12 +2680,12 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/editor/0.4.0-alpha.2_yjs@13.5.45:
-    resolution: {integrity: sha512-77+uY8ljus+W70sf3J5sjzS6jzfLXeA5wBnPVALtq7LBIzkQesFZ/FCewpPPaqDy3Up8rnq4mvWDB2GCbpmwuA==}
+  /@blocksuite/editor/0.4.0-alpha.3_yjs@13.5.45:
+    resolution: {integrity: sha512-PLF8apMEOzvwS8sliZFRyHrgWKwR5XgpeIoqZ3CTUXvmkZ2cX6d8UP+GjS6GWKZarbpGJNtvuABYTFraJycMig==}
     dependencies:
-      '@blocksuite/blocks': 0.4.0-alpha.2_yjs@13.5.45
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
-      '@blocksuite/store': 0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/blocks': 0.4.0-alpha.3_yjs@13.5.45
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
+      '@blocksuite/store': 0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45
       lit: 2.6.1
       marked: 4.2.12
       turndown: 7.1.1
@@ -2691,8 +2696,8 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/global/0.4.0-alpha.2_lit@2.6.1:
-    resolution: {integrity: sha512-LS58Itk+rrHmU51rEl6X4yqVpNRW9GCZBSrlLnlxSBaqqOwa7aE57vF2zfDiamjBXmCnwbcdAlucyMoHcuqrGA==}
+  /@blocksuite/global/0.4.0-alpha.3_lit@2.6.1:
+    resolution: {integrity: sha512-nCxWV8PoZNgoIMQjBX/c9x7BrvivCabY712bHy89K/QSNgXlKsPT0KN3tuLHdm96/q+3Suf6RhvB60SurPYv1g==}
     peerDependencies:
       lit: ^2.6
     peerDependenciesMeta:
@@ -2701,7 +2706,7 @@ packages:
     dependencies:
       ansi-colors: 4.1.3
       lit: 2.6.1
-      zod: 3.20.2
+      zod: 3.20.5
     dev: false
 
   /@blocksuite/icons/2.0.4_3stiutgnnbnfnf3uowm5cip22i:
@@ -2724,12 +2729,12 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/phasor/0.4.0-alpha.2_lit@2.6.1:
-    resolution: {integrity: sha512-+T9hXOyadQh5A2TpzOvY7KntBImzt8fVMfgq0McGnPQP8whSDmgKmGn0N442ObUM09X9XwzmF1i2claYIiPW+g==}
+  /@blocksuite/phasor/0.4.0-alpha.3_lit@2.6.1:
+    resolution: {integrity: sha512-GLw+LPK5avc/fXZk9fxtAQtYxovTHMPrEs48OJtSlrVqvTAJwGQpK3W2BL7HKBhgHlsbOcaBQ2pAaqKAFypwEw==}
     peerDependencies:
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
       fractional-indexing: 3.2.0
       nanoid: 4.0.1
       perfect-freehand: 1.2.0
@@ -2737,12 +2742,12 @@ packages:
       - lit
     dev: false
 
-  /@blocksuite/phasor/0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45:
-    resolution: {integrity: sha512-+T9hXOyadQh5A2TpzOvY7KntBImzt8fVMfgq0McGnPQP8whSDmgKmGn0N442ObUM09X9XwzmF1i2claYIiPW+g==}
+  /@blocksuite/phasor/0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45:
+    resolution: {integrity: sha512-GLw+LPK5avc/fXZk9fxtAQtYxovTHMPrEs48OJtSlrVqvTAJwGQpK3W2BL7HKBhgHlsbOcaBQ2pAaqKAFypwEw==}
     peerDependencies:
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
       fractional-indexing: 3.2.0
       nanoid: 4.0.1
       perfect-freehand: 1.2.0
@@ -2751,23 +2756,23 @@ packages:
       - lit
     dev: false
 
-  /@blocksuite/store/0.4.0-alpha.2_lit@2.6.1:
-    resolution: {integrity: sha512-Tezn9P5EoggO03lBAusYTldUW+twoXSfaU+mJoTSCbW4DC8aDpgFRZgZlxjon2MC1aZnz1sShjFa6zKkNerRFg==}
+  /@blocksuite/store/0.4.0-alpha.3_lit@2.6.1:
+    resolution: {integrity: sha512-Ib8vjhMIC4PeWrbfz7usiXKIgw0VYPujfWwDZ3fDq+OWHbb2KzfnXBQ93W5oDZhv0tVpxoT2RYCtVSvrh7sY5A==}
     peerDependencies:
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
       '@types/flexsearch': 0.7.3
       buffer: 6.0.3
       flexsearch: 0.7.21
       idb-keyval: 6.2.0
       ky: 0.33.2
-      lib0: 0.2.61
+      lib0: 0.2.62
       merge: 2.1.1
       nanoid: 4.0.1
       y-protocols: 1.0.5
       y-webrtc: 10.2.4
-      zod: 3.20.2
+      zod: 3.20.5
     transitivePeerDependencies:
       - bufferutil
       - lit
@@ -2775,24 +2780,24 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/store/0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45:
-    resolution: {integrity: sha512-Tezn9P5EoggO03lBAusYTldUW+twoXSfaU+mJoTSCbW4DC8aDpgFRZgZlxjon2MC1aZnz1sShjFa6zKkNerRFg==}
+  /@blocksuite/store/0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45:
+    resolution: {integrity: sha512-Ib8vjhMIC4PeWrbfz7usiXKIgw0VYPujfWwDZ3fDq+OWHbb2KzfnXBQ93W5oDZhv0tVpxoT2RYCtVSvrh7sY5A==}
     peerDependencies:
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
       '@types/flexsearch': 0.7.3
       buffer: 6.0.3
       flexsearch: 0.7.21
       idb-keyval: 6.2.0
       ky: 0.33.2
-      lib0: 0.2.61
+      lib0: 0.2.62
       merge: 2.1.1
       nanoid: 4.0.1
       y-protocols: 1.0.5
       y-webrtc: 10.2.4
       yjs: 13.5.45
-      zod: 3.20.2
+      zod: 3.20.5
     transitivePeerDependencies:
       - bufferutil
       - lit
@@ -2800,23 +2805,23 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/virgo/0.4.0-alpha.2_lit@2.6.1:
-    resolution: {integrity: sha512-ZLyQeBULa4yD0+wlP56miSZi4ljWYLvvZH54CEplVsOFqtYs0LruBsELc6z7cBkfJR1awdeJxNj/6qgKEwP5FA==}
+  /@blocksuite/virgo/0.4.0-alpha.3_lit@2.6.1:
+    resolution: {integrity: sha512-uEa2bH2XCNI5whF3LUJAOogmv+5gux4m80dge7dXslw+6UfbdS6tDTP268a0k7FCPiV7suAcGbT/y5wZUbJ0ow==}
     peerDependencies:
       lit: ^2
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
       lit: 2.6.1
     dev: false
 
-  /@blocksuite/virgo/0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45:
-    resolution: {integrity: sha512-ZLyQeBULa4yD0+wlP56miSZi4ljWYLvvZH54CEplVsOFqtYs0LruBsELc6z7cBkfJR1awdeJxNj/6qgKEwP5FA==}
+  /@blocksuite/virgo/0.4.0-alpha.3_lit@2.6.1+yjs@13.5.45:
+    resolution: {integrity: sha512-uEa2bH2XCNI5whF3LUJAOogmv+5gux4m80dge7dXslw+6UfbdS6tDTP268a0k7FCPiV7suAcGbT/y5wZUbJ0ow==}
     peerDependencies:
       lit: ^2
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-alpha.2_lit@2.6.1
+      '@blocksuite/global': 0.4.0-alpha.3_lit@2.6.1
       lit: 2.6.1
       yjs: 13.5.45
     dev: false
@@ -12871,6 +12876,13 @@ packages:
     dependencies:
       isomorphic.js: 0.2.5
 
+  /lib0/0.2.62:
+    resolution: {integrity: sha512-DY0G8AaQloUvpiss7EpAo/t4R82b9m/AydbQRNAa9Khssn9oGDJnSN8Q1qQ8u82Wog4iaT1O8yM+DfhzGCrrpQ==}
+    engines: {node: '>=14'}
+    dependencies:
+      isomorphic.js: 0.2.5
+    dev: false
+
   /lilconfig/2.0.6:
     resolution: {integrity: sha512-9JROoBW7pobfsx+Sq2JsASvCo6Pfo6WWoUW79HuB1BCoBXD4PLWJPqDF6fNj67pqBYTbAHkE57M1kS/+L1neOg==}
     engines: {node: '>=10'}
@@ -13645,7 +13657,7 @@ packages:
       babel-loader: 8.3.0
       clean-webpack-plugin: 4.0.0
       globby: 11.1.0
-      next: 13.1.0_biqbaboplfbrettd7655fr4n2y
+      next: 13.1.0_rdilrli7uexa22ralt77ekax24_biqbaboplfbrettd7655fr4n2y
       terser-webpack-plugin: 5.3.6
       workbox-webpack-plugin: 6.5.4
       workbox-window: 6.5.4
@@ -13704,7 +13716,7 @@ packages:
       - babel-plugin-macros
     dev: false
 
-  /next/13.1.0_biqbaboplfbrettd7655fr4n2y:
+  /next/13.1.0_rdilrli7uexa22ralt77ekax24_biqbaboplfbrettd7655fr4n2y:
     resolution: {integrity: sha512-lQMZH1V94L5IL/WaihQkTYabSY73aqgrkGPJB5uz+2O3ES4I3losV/maXLY7l7x5e+oNyE9N81upNQ8uRsR5/A==}
     engines: {node: '>=14.6.0'}
     hasBin: true
@@ -13746,6 +13758,7 @@ packages:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
+    patched: true
 
   /nice-try/1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
@@ -14970,6 +14983,10 @@ packages:
 
   /quill-cursors/4.0.0:
     resolution: {integrity: sha512-nCwCZtQPl4EnxJSheHtb067Jo48A6mc8/t7waGSLqXvbE68a5vHBFfMOQPZI7jxjksbDhpfzQta3a3/MoPvKzQ==}
+    dev: false
+
+  /quill-cursors/4.0.2:
+    resolution: {integrity: sha512-/5mEfB6rDXwBy9rt3XieMKmQE8+OMnMBi2DFwea3t06QXH6i/NsICpteEoC++WGkQ/qyurIACUNnY7eBVh4Bmg==}
     dev: false
 
   /quill-delta/3.6.3:
@@ -18046,7 +18063,7 @@ packages:
     engines: {node: '>=12'}
     hasBin: true
     dependencies:
-      lib0: 0.2.61
+      lib0: 0.2.62
       simple-peer: 9.11.1
       y-protocols: 1.0.5
     optionalDependencies:
@@ -18160,8 +18177,8 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /zod/3.20.2:
-    resolution: {integrity: sha512-1MzNQdAvO+54H+EaK5YpyEy0T+Ejo/7YLHS93G3RnYWh5gaotGHwGeN/ZO687qEDU2y4CdStQYXVHIgrUl5UVQ==}
+  /zod/3.20.5:
+    resolution: {integrity: sha512-BTAAliwfoB9dWf2hC+TXlyWKk/YTqRGZjHQR0WLC2A2pzierWo7KuQ1ebjS4SNaFaxg/lDItzl9/QTgLjcHbgw==}
     dev: false
 
   /zwitch/1.0.5:

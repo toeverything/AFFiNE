@@ -16,3 +16,12 @@ export const StyledWrapper = styled('div')(() => {
     position: 'relative',
   };
 });
+
+export const StyledToolWrapper = styled('div')(({ theme }) => {
+  return {
+    position: 'fixed',
+    right: '30px',
+    bottom: '30px',
+    zIndex: theme.zIndex.popover,
+  };
+});
