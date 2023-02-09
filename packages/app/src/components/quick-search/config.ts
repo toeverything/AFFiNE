@@ -22,7 +22,7 @@ export const useSwitchToConfig = (
       icon: AllPagesIcon,
     },
     {
-      title: t('Favourites'),
+      title: t('Favorites'),
       href: currentWorkspaceId
         ? `/workspace/${currentWorkspaceId}/favorite`
         : '',

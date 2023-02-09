@@ -215,6 +215,10 @@ For feature request please see https://community.affine.pro/c/feature-requests/
 
 [These people](https://twitter.com/AffineOfficial/followers) seem to like it.
 
+## Building
+
+See [BUILDING.md](./docs/BUILDING.md) for instructions on how to build AFFiNE from source code.
+
 ## License
 
 See [LICENSE](/LICENSE) for details.
