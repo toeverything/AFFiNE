@@ -176,6 +176,12 @@ export class AffineProvider extends BaseProvider {
         // @ts-expect-error ignore the type
         awareness: workspace.awarenessStore.awareness,
       });
+      workspace.awarenessStore.awareness.setLocalStateField('user', {
+        name: token.user?.name ?? 'other',
+        id: Number(token.user?.id ?? -1),
+        color: '#ffa500',
+      });
+
       this._wsMap.set(workspace, ws);
     }
     return ws;
