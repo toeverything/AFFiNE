@@ -126,7 +126,8 @@ export class Token {
 
   get isExpired() {
     if (!this._user) return true;
-    return Date.now() > this._user.exp;
+    // exp is in seconds
+    return Date.now() > this._user.exp * 1000;
   }
 
   static parse(token: string): AccessTokenMessage | null {
