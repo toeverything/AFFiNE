@@ -10,8 +10,6 @@ import { Tooltip } from '@affine/component';
 
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/providers/GlobalModalProvider';
-import { useTheme } from '@/providers/ThemeProvider';
-import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { MuiFade } from '@affine/component';
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({
@@ -20,8 +18,6 @@ export const HelpIsland = ({
   showList?: IslandItemNames[];
 }) => {
   const [spread, setShowSpread] = useState(false);
-  const { mode } = useTheme();
-  const { mode: editorMode } = useCurrentPageMeta() || {};
   const { triggerShortcutsModal, triggerContactModal } = useModal();
   const { t } = useTranslation();
   return (
