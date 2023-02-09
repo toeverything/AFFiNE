@@ -54,9 +54,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm i -r
-      - name: Install OctoBase
-        run: pnpm build:prerequisite
-        working-directory: client-app
 
       - name: Make macOS (x64)
         run: pnpm build:app
