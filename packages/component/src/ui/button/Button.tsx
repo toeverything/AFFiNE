@@ -46,7 +46,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         hoverStyle={hoverStyle}
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        type={type as 'button' | 'submit' | 'reset'}
+        type={type}
         bold={bold}
         noBorder={noBorder}
         {...props}

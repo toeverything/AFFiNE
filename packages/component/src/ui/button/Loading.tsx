@@ -4,7 +4,7 @@ import { getButtonColors } from './utils';
 
 export const LoadingContainer = styled('div')<Pick<ButtonProps, 'type'>>(
   ({ theme, type = 'default' }) => {
-    const { color } = getButtonColors(theme, type);
+    const { color } = getButtonColors(theme, type, false);
     return `
     margin: 0px auto;
     width: 38px;
