@@ -1,5 +1,5 @@
 import { useModal } from '@/providers/GlobalModalProvider';
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 import { AffineIcon } from '../../icons/Icons';
 import {
   WorkspaceItemAvatar,

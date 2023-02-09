@@ -1,4 +1,4 @@
-import { Button } from '@/ui/button';
+import { Button } from '@affine/component';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';

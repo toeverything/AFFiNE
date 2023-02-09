@@ -1,11 +1,11 @@
-import { styled } from '@/styles';
-import { Modal, ModalWrapper } from '@/ui/modal';
-import { Button, IconButton } from '@/ui/button';
+import { styled } from '@affine/component';
+import { Modal, ModalWrapper } from '@affine/component';
+import { Button, IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useAppState } from '@/providers/app-state-provider';
 import { useState } from 'react';
 import router from 'next/router';
-import { toast } from '@/ui/toast';
+import { toast } from '@affine/component';
 import { CloseIcon } from '@blocksuite/icons';
 interface EnableWorkspaceModalProps {
   open: boolean;

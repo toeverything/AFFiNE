@@ -1,4 +1,4 @@
-import { Modal, ModalCloseButton, ModalWrapper } from '@/ui/modal';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import {
   LogoIcon,
   DocIcon,

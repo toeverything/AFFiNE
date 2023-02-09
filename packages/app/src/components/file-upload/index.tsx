@@ -1,6 +1,6 @@
-import { Button } from '@/ui/button';
+import { Button } from '@affine/component';
 import { FC, useRef, ChangeEvent, ReactElement } from 'react';
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 interface Props {
   uploadType?: string;

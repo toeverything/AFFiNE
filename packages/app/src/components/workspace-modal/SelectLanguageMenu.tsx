@@ -1,9 +1,9 @@
 import { LOCALES } from '@affine/i18n';
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { ArrowDownIcon } from '@blocksuite/icons';
-import { Button } from '@/ui/button';
-import { Menu, MenuItem } from '@/ui/menu';
+import { Button } from '@affine/component';
+import { Menu, MenuItem } from '@affine/component';
 
 const LanguageMenuContent = () => {
   const { i18n } = useTranslation();

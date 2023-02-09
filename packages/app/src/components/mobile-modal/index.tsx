@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Modal, { ModalCloseButton, ModalWrapper } from '@/ui/modal';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import getIsMobile from '@/utils/get-is-mobile';
 import { StyledButton, StyledContent, StyledTitle } from './styles';
 import bg from './bg.png';

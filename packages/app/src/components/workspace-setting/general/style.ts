@@ -1,5 +1,5 @@
-import { styled } from '@/styles';
-import Input from '@/ui/input';
+import { styled } from '@affine/component';
+import { Input } from '@affine/component';
 
 export const StyledInput = styled(Input)(({ theme }) => {
   return {

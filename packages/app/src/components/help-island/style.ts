@@ -1,4 +1,4 @@
-import { displayFlex, styled } from '@/styles';
+import { displayFlex, styled } from '@affine/component';
 
 export const StyledIsland = styled('div')(({ theme }) => {
   return {

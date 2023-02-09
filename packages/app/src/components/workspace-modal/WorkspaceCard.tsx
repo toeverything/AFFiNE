@@ -10,7 +10,7 @@ import { WorkspaceUnit } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
 import { StyleWorkspaceInfo, StyleWorkspaceTitle, StyledCard } from './styles';
 import { useTranslation } from '@affine/i18n';
-import { FlexWrapper } from '@/ui/layout';
+import { FlexWrapper } from '@affine/component';
 
 const WorkspaceType = ({ workspaceData }: { workspaceData: WorkspaceUnit }) => {
   const { user } = useAppState();

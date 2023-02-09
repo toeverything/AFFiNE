@@ -1,5 +1,5 @@
-import { styled } from '@/styles';
-import { FlexWrapper } from '@/ui/layout';
+import { styled } from '@affine/component';
+import { FlexWrapper } from '@affine/component';
 export const StyledSettingContainer = styled('div')(() => {
   return {
     display: 'flex',

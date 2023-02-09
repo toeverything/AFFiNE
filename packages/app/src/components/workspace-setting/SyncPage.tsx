@@ -9,7 +9,7 @@ import { useTranslation, Trans } from '@affine/i18n';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { EnableWorkspaceButton } from '../enable-workspace';
 import { useAppState } from '@/providers/app-state-provider';
-import { FlexWrapper, Content, Wrapper } from '@/ui/layout';
+import { FlexWrapper, Content, Wrapper } from '@affine/component';
 
 // // FIXME: Temporary solution, since the @blocksuite/icons is broken
 // const ActiveIcon = () => {

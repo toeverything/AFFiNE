@@ -1,4 +1,4 @@
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 import Loading from './Loading';
 import { useTranslation } from '@affine/i18n';
 
