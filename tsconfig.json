@@ -18,6 +18,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@affine/component": ["packages/component/src/index"],
       "@affine/datacenter": ["packages/datacenter/src"],
       "@affine/i18n": ["packages/i18n/src"],
       "@affine/logger": ["packages/logger/src"]

@@ -1,12 +1,12 @@
-import Modal from '@/ui/modal';
+import { Modal } from '@affine/component';
 import {
   StyledModalHeader,
   StyledTextContent,
   StyledModalWrapper,
   StyledButtonContent,
 } from './style';
-import { ModalCloseButton } from '@/ui/modal';
-import { Button } from '@/ui/button';
+import { ModalCloseButton } from '@affine/component';
+import { Button } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 // import { getDataCenter } from '@affine/datacenter';

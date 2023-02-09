@@ -1,6 +1,6 @@
-import { positionAbsolute, styled } from '@/styles';
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { Button } from '@/ui/button';
+import { positionAbsolute, styled } from '@affine/component';
+import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Button } from '@affine/component';
 import { useAppState } from '@/providers/app-state-provider';
 import { useTranslation } from '@affine/i18n';
 import { GoogleIcon } from './GoogleIcon';

@@ -1,4 +1,4 @@
-import { displayFlex, styled } from '@/styles';
+import { displayFlex, styled } from '@affine/component';
 
 export const StyledContent = styled('div')(({ theme }) => {
   return {
@@ -13,7 +13,7 @@ export const StyledContent = styled('div')(({ theme }) => {
     letterSpacing: '0.06em',
     '[cmdk-group-heading]': {
       margin: '5px 16px',
-      fontSize: theme.font.sm,
+      fontSize: theme.font.base,
       fontWeight: '500',
     },
     '[aria-selected="true"]': {
@@ -28,7 +28,7 @@ export const StyledJumpTo = styled('div')(({ theme }) => {
     ...displayFlex('center', 'start'),
     flexDirection: 'column',
     padding: '10px 10px 10px 0',
-    fontSize: theme.font.sm,
+    fontSize: theme.font.base,
     strong: {
       fontWeight: '500',
       marginBottom: '10px',
@@ -41,7 +41,7 @@ export const StyledNotFound = styled('div')(({ theme }) => {
     ...displayFlex('center', 'center'),
     flexDirection: 'column',
     padding: '5px 16px',
-    fontSize: theme.font.sm,
+    fontSize: theme.font.base,
     span: {
       width: '100%',
       fontWeight: '500',
@@ -75,7 +75,7 @@ export const StyledInputContent = styled('div')(({ theme }) => {
 export const StyledShortcut = styled('div')(({ theme }) => {
   return {
     color: theme.colors.placeHolderColor,
-    fontSize: theme.font.sm,
+    fontSize: theme.font.base,
     whiteSpace: 'nowrap',
   };
 });
@@ -109,7 +109,7 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
 
 export const StyledModalFooter = styled('div')(({ theme }) => {
   return {
-    fontSize: theme.font.sm,
+    fontSize: theme.font.base,
     lineHeight: '22px',
     marginBottom: '8px',
     textAlign: 'center',
@@ -127,7 +127,7 @@ export const StyledModalFooterContent = styled.button(({ theme }) => {
   return {
     width: '612px',
     height: '32px',
-    fontSize: theme.font.sm,
+    fontSize: theme.font.base,
     lineHeight: '22px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),
@@ -144,7 +144,7 @@ export const StyledListItem = styled.button(({ theme }) => {
   return {
     width: '612px',
     height: '32px',
-    fontSize: theme.font.sm,
+    fontSize: theme.font.base,
     color: 'inherit',
     paddingLeft: '12px',
     borderRadius: '5px',

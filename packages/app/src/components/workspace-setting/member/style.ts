@@ -1,5 +1,5 @@
-import { styled } from '@/styles';
-import { MuiAvatar } from '@/ui/mui';
+import { styled } from '@affine/component';
+import { MuiAvatar } from '@affine/component';
 
 export const StyledMemberTitleContainer = styled('li')(() => {
   return {

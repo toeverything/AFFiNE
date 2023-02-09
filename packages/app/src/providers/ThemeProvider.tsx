@@ -1,9 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import {
-  ThemeProvider as EmotionThemeProvider,
-  Global,
-  css,
-} from '@emotion/react';
+import { Global, css } from '@emotion/react';
 import {
   ThemeProvider as MuiThemeProvider,
   createTheme as MuiCreateTheme,
@@ -14,13 +10,14 @@ import {
   ThemeMode,
   ThemeProviderProps,
   ThemeProviderValue,
-} from '@/styles/types';
+} from '@affine/component';
 import {
   getLightTheme,
   getDarkTheme,
   globalThemeVariables,
-} from '@/styles/theme';
-import { SystemThemeHelper, localStorageThemeHelper } from '@/styles/utils';
+  ThemeProvider as ComponentThemeProvider,
+} from '@affine/component';
+import { SystemThemeHelper, localStorageThemeHelper } from '@affine/component';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
@@ -106,9 +103,9 @@ export const ThemeProvider = ({
             }
           `}
         />
-        <EmotionThemeProvider theme={themeStyle}>
+        <ComponentThemeProvider theme={themeStyle}>
           {children}
-        </EmotionThemeProvider>
+        </ComponentThemeProvider>
       </ThemeContext.Provider>
     </MuiThemeProvider>
   );

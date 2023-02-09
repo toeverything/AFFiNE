@@ -1,5 +1,10 @@
-import { displayFlex, displayInlineFlex, styled, textEllipsis } from '@/styles';
-import { Button } from '@/ui/button';
+import {
+  displayFlex,
+  displayInlineFlex,
+  styled,
+  textEllipsis,
+} from '@affine/component';
+import { Button } from '@affine/component';
 
 export const StyledSplitLine = styled.div(({ theme }) => {
   return {

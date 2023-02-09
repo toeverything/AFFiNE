@@ -1,6 +1,6 @@
-import { MuiAvatar } from '@/ui/mui';
-import { styled } from '@/styles';
-import { StyledPopperContainer } from '@/ui/shared/Container';
+import { MuiAvatar } from '@affine/component';
+import { styled } from '@affine/component';
+import { StyledPopperContainer } from '@affine/component';
 
 export const SelectorWrapper = styled('div')({
   width: '100%',

@@ -1,4 +1,4 @@
-import { displayFlex, styled } from '@/styles';
+import { displayFlex, styled } from '@affine/component';
 
 export const StyledShortcutsModal = styled.div(({ theme }) => ({
   width: '288px',

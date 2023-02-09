@@ -1,4 +1,4 @@
-import { displayFlex, keyframes, styled } from '@/styles';
+import { displayFlex, keyframes, styled } from '@affine/component';
 import { CSSProperties } from 'react';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore

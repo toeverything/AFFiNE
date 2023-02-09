@@ -1,8 +1,8 @@
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 
 import { ReactElement, ReactNode } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
-import { Button } from '@/ui/button';
+import { Button } from '@affine/component';
 
 export const FeatureCardDiv = styled('section')({
   width: '800px',

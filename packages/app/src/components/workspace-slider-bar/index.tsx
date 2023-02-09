@@ -21,11 +21,11 @@ import {
   SettingsIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
-import { MuiCollapse } from '@/ui/mui';
-import { Tooltip } from '@/ui/tooltip';
+import { MuiCollapse } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider';
-import { IconButton } from '@/ui/button';
+import { IconButton } from '@affine/component';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTranslation } from '@affine/i18n';

@@ -1,9 +1,9 @@
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { FlexWrapper } from '@/ui/layout';
+import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { FlexWrapper } from '@affine/component';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
 
-import { Tooltip } from '@/ui/tooltip';
+import { Tooltip } from '@affine/component';
 
 import { AddIcon, HelpCenterIcon } from '@blocksuite/icons';
 

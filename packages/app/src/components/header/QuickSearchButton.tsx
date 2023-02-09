@@ -1,8 +1,8 @@
 import React from 'react';
-import { IconButton, IconButtonProps } from '@/ui/button';
+import { IconButton, IconButtonProps } from '@affine/component';
 import { ArrowDownIcon } from '@blocksuite/icons';
 import { useModal } from '@/providers/GlobalModalProvider';
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 
 const StyledIconButtonWithAnimate = styled(IconButton)(({ theme }) => {
   return {
