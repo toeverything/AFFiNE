@@ -217,7 +217,7 @@ For feature request please see https://community.affine.pro/c/feature-requests/
 
 ## Building
 
-See [BUILDING.md](./docs/BUILDING.md) for instructions on how to build BlockSuite from source code.
+See [BUILDING.md](./docs/BUILDING.md) for instructions on how to build AFFiNE from source code.
 
 ## License
 
