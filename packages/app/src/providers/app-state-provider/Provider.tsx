@@ -32,7 +32,9 @@ export const AppStateProvider = ({
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
       }
-      setUser((await dataCenter.getUserInfo()) || null);
+      setUser(
+        (await dataCenter.getUserInfo(dataCenter.providers[0]?.id)) || null
+      );
       setAppState({
         dataCenter,
         workspaceList: dataCenter.workspaces,

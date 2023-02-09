@@ -13,6 +13,7 @@ import type { WorkspaceUnit } from 'src/workspace-unit.js';
 import { createWorkspaceUnit, loadWorkspaceUnit } from '../local/utils.js';
 import { WorkspaceWithPermission } from './ipc/types/workspace.js';
 import { applyUpdate } from '../../utils/index.js';
+import { User } from 'src/types/index.js';
 
 /**
  * init - createUser - create first workspace and ydoc - loadWorkspace - return the first workspace - wrapWorkspace - #initDocFromIPC - applyUpdate - on('update') - updateYDocument
@@ -20,7 +21,7 @@ import { applyUpdate } from '../../utils/index.js';
  * (init - createUser - error) loadWorkspace - return the first workspace - wrapWorkspace - #initDocFromIPC - applyUpdate - on('update') - updateYDocument
  */
 export class TauriIPCProvider extends LocalProvider {
-  static id = 'tauri-ipc';
+  public id = 'tauri-ipc';
   static defaultUserEmail = 'xxx@xx.xx';
   /**
    * // TODO: We only have one user in this version of app client. But may support switch user later.
@@ -57,6 +58,22 @@ export class TauriIPCProvider extends LocalProvider {
         // maybe user existed, which can be omited
         console.error(error);
       }
+    }
+  }
+
+  /**
+   * get auth user info
+   * @returns
+   */
+  public async getUserInfo(): Promise<User | undefined> {
+    const user = await this.#ipc?.getUser({
+      email: TauriIPCProvider.defaultUserEmail,
+    });
+    if (user?.name !== undefined) {
+      return {
+        ...user,
+        avatar: user?.avatar_url || '',
+      };
     }
   }
 
