@@ -35,9 +35,6 @@ const getRedirectConfig = profile => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    forceSwcTransforms: true,
-  },
   productionBrowserSourceMaps: true,
   reactStrictMode: false,
   swcMinify: false,
