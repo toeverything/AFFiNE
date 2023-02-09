@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
-import Modal from '@/ui/modal';
-import Input from '@/ui/input';
+import { Modal } from '@affine/component';
+import { Input } from '@affine/component';
 import {
   StyledModalHeader,
   StyledTextContent,
@@ -10,8 +10,8 @@ import {
   StyledWorkspaceName,
 } from './style';
 import { useState } from 'react';
-import { ModalCloseButton } from '@/ui/modal';
-import { Button } from '@/ui/button';
+import { ModalCloseButton } from '@affine/component';
+import { Button } from '@affine/component';
 
 import { WorkspaceUnit } from '@affine/datacenter';
 import { Trans, useTranslation } from '@affine/i18n';

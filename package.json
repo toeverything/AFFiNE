@@ -10,6 +10,7 @@
     "dev:ac": "pnpm --filter=!@affine/app build && NODE_API_SERVER=ac pnpm --filter @affine/app dev",
     "dev:local": "pnpm --filter=!@affine/app build && cross-env NODE_API_SERVER=local pnpm --filter @affine/app dev",
     "build": " pnpm --filter=!@affine/app build && pnpm --filter!=@affine/datacenter -r build",
+    "build:storybook": " pnpm -r build-storybook",
     "export": "pnpm --filter @affine/app export",
     "start": "pnpm --filter @affine/app start",
     "lint": "pnpm --filter @affine/app lint",

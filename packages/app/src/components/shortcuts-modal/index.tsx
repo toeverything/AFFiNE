@@ -13,8 +13,8 @@ import {
   useWindowsKeyboardShortcuts,
   useWinMarkdownShortcuts,
 } from '@/components/shortcuts-modal/config';
-import { MuiSlide } from '@/ui/mui';
-import { ModalCloseButton } from '@/ui/modal';
+import { MuiSlide } from '@affine/component';
+import { ModalCloseButton } from '@affine/component';
 import { getUaHelper } from '@/utils';
 import { useTranslation } from '@affine/i18n';
 type ModalProps = {

@@ -5,7 +5,7 @@ import exampleMarkdown2 from '@/templates/AFFiNE-Docs.md';
 
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider';
-import { Button } from '@/ui/button';
+import { Button } from '@affine/component';
 interface Template {
   name: string;
   source: string;
@@ -21,7 +21,7 @@ const TemplateItemContainer = styled('div')(() => {
     },
   };
 });
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 const TEMPLATES: Template[] = [
   {
     name: 'Welcome-to-the-AFFiNE-Alpha.md',

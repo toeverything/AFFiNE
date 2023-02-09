@@ -1,4 +1,4 @@
-import { Button } from '@/ui/button';
+import { Button } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useState } from 'react';
 import { EnableWorkspaceModal } from './EnableWorkspaceModal';

@@ -1,4 +1,4 @@
-import { styled } from '@/styles';
+import { styled } from '@affine/component';
 
 export const StyledTitle = styled.div(({ theme }) => {
   return {

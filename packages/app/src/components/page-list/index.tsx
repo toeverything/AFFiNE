@@ -11,17 +11,23 @@ import {
   StyledTitleLink,
   StyledTitleWrapper,
 } from './styles';
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from '@affine/component';
 import { OperationCell, TrashOperationCell } from './OperationCell';
 import Empty from './Empty';
-import { Content } from '@/ui/layout';
+import { Content } from '@affine/component';
 import React from 'react';
 import DateCell from '@/components/page-list/DateCell';
-import { IconButton } from '@/ui/button';
-import { Tooltip } from '@/ui/tooltip';
+import { IconButton } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import { useRouter } from 'next/router';
 import { useAppState } from '@/providers/app-state-provider';
-import { toast } from '@/ui/toast';
+import { toast } from '@affine/component';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useTranslation } from '@affine/i18n';

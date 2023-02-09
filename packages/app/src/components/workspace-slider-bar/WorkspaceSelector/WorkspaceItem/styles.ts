@@ -1,5 +1,5 @@
-import { MuiAvatar } from '@/ui/mui';
-import { styled } from '@/styles';
+import { MuiAvatar } from '@affine/component';
+import { styled } from '@affine/component';
 
 export const WorkspaceItemWrapper = styled('div')(({ theme }) => ({
   display: 'flex',

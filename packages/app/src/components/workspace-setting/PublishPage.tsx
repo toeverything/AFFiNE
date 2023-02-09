@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Button } from '@/ui/button';
-import Input from '@/ui/input';
-import { toast } from '@/ui/toast';
+import { Button } from '@affine/component';
+import { Input } from '@affine/component';
+import { toast } from '@affine/component';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useTranslation } from '@affine/i18n';
 import { EnableWorkspaceButton } from '../enable-workspace';
-import { Wrapper, Content, FlexWrapper } from '@/ui/layout';
+import { Wrapper, Content, FlexWrapper } from '@affine/component';
 export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
   const { publishWorkspace } = useWorkspaceHelper();

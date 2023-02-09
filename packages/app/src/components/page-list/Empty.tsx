@@ -1,5 +1,5 @@
 import React from 'react';
-import { Empty } from '@/ui/empty';
+import { Empty } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 export const PageListEmpty = (props: { listType?: string }) => {
   const { listType } = props;

@@ -1,13 +1,13 @@
-import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
+import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
 import { StyledButtonWrapper, StyledTitle } from './styles';
-import { Button } from '@/ui/button';
-import { Content, FlexWrapper } from '@/ui/layout';
+import { Button } from '@affine/component';
+import { Content, FlexWrapper } from '@affine/component';
 import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useAppState } from '@/providers/app-state-provider';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@affine/i18n';
-// import { Tooltip } from '@/ui/tooltip';
+// import { Tooltip } from '@affine/component';
 type ImportModalProps = {
   open: boolean;
   onClose: () => void;

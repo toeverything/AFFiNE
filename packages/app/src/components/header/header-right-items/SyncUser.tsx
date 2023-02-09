@@ -1,7 +1,7 @@
 import { CloudUnsyncedIcon } from '@blocksuite/icons';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider';
-import { IconButton } from '@/ui/button';
+import { IconButton } from '@affine/component';
 
 // Temporary solution to use this component, since the @blocksuite/icons has not been published yet
 const DefaultSyncIcon = () => {
