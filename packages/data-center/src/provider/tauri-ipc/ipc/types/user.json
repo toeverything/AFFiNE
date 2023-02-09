@@ -21,6 +21,16 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["GetUserParameters"],
+      "properties": {
+        "GetUserParameters": {
+          "$ref": "#/definitions/GetUserParameters"
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
@@ -42,6 +52,15 @@
         }
       }
     },
+    "GetUserParameters": {
+      "type": "object",
+      "required": ["email"],
+      "properties": {
+        "email": {
+          "type": "string"
+        }
+      }
+    },
     "User": {
       "type": "object",
       "required": ["created_at", "email", "id", "name"],
@@ -57,8 +76,7 @@
           "type": "string"
         },
         "id": {
-          "type": "integer",
-          "format": "int32"
+          "type": "string"
         },
         "name": {
           "type": "string"

@@ -14,7 +14,7 @@ import {
   User,
 } from './types/workspace';
 import { GetBlob, PutBlob } from './types/blob';
-import { CreateUser } from './types/user';
+import { CreateUser, GetUserParameters } from './types/user';
 
 export interface IPCMethodsType {
   updateYDocument: typeof updateYDocument;
@@ -25,6 +25,7 @@ export interface IPCMethodsType {
   putBlob: typeof putBlob;
   getBlob: typeof getBlob;
   createUser: typeof createUser;
+  getUser: typeof getUser;
 }
 
 export const updateYDocument = async (parameters: YDocumentUpdate) =>
@@ -68,5 +69,10 @@ export const getBlob = async (parameters: GetBlob) =>
  */
 export const createUser = async (parameters: CreateUser) =>
   await invoke<User>('create_user', {
+    parameters,
+  });
+
+export const getUser = async (parameters: GetUserParameters) =>
+  await invoke<User>('get_user', {
     parameters,
   });

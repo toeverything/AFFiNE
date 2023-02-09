@@ -21,10 +21,11 @@ import { applyUpdate } from '../../utils/index.js';
  */
 export class TauriIPCProvider extends LocalProvider {
   static id = 'tauri-ipc';
+  static defaultUserEmail = 'xxx@xx.xx';
   /**
    * // TODO: We only have one user in this version of app client. But may support switch user later.
    */
-  #defaultUserID = 1;
+  #userID?: string;
   #ipc: IPCMethodsType | undefined;
 
   constructor(params: ProviderConstructorParams) {
@@ -37,18 +38,25 @@ export class TauriIPCProvider extends LocalProvider {
     } else {
       this.#ipc = await import('./ipc/methods.js');
     }
-    // we create a default user if we don't have one.
     try {
-      const user = await this.#ipc?.createUser({
-        email: 'xxx@xx.xx',
-        name: 'xxx',
-        password: 'xxx',
-        avatar_url: '',
+      const user = await this.#ipc?.getUser({
+        email: TauriIPCProvider.defaultUserEmail,
       });
-      this.#defaultUserID = user.id;
+      this.#userID = user.id;
     } catch (error) {
-      // maybe user existed, which can be omited
-      console.error(error);
+      // maybe user not existed, we create a default user if we don't have one.
+      try {
+        const user = await this.#ipc?.createUser({
+          email: TauriIPCProvider.defaultUserEmail,
+          name: 'xxx',
+          password: 'xxx',
+          avatar_url: '',
+        });
+        this.#userID = user.id;
+      } catch (error) {
+        // maybe user existed, which can be omited
+        console.error(error);
+      }
     }
   }
 
@@ -116,7 +124,7 @@ export class TauriIPCProvider extends LocalProvider {
     const { id } = await this.#ipc.createWorkspace({
       name: meta.name,
       // TODO: get userID here
-      user_id: this.#defaultUserID,
+      user_id: this.#userID,
     });
 
     const workspaceUnit = await createWorkspaceUnit({
@@ -144,7 +152,7 @@ export class TauriIPCProvider extends LocalProvider {
   override async loadWorkspaces(): Promise<WorkspaceUnit[]> {
     assert(this.#ipc);
     const { workspaces } = await this.#ipc.getWorkspaces({
-      user_id: this.#defaultUserID,
+      user_id: this.#userID,
     });
     const workspaceUnits = await Promise.all(
       workspaces.map((meta: WorkspaceWithPermission) => {

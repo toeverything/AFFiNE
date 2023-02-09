@@ -16,6 +16,7 @@ pub fn invoke_handler() -> impl Fn(tauri::Invoke) + Send + Sync + 'static {
     get_workspaces,
     get_workspace,
     create_user,
+    get_user,
     create_doc,
     get_doc,
     put_blob,

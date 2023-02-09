@@ -123,8 +123,7 @@
       "required": ["user_id"],
       "properties": {
         "user_id": {
-          "type": "integer",
-          "format": "int32"
+          "type": "string"
         }
       }
     },
@@ -172,8 +171,7 @@
           "type": "string"
         },
         "id": {
-          "type": "integer",
-          "format": "int32"
+          "type": "string"
         },
         "name": {
           "type": "string"

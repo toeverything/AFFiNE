@@ -14,8 +14,7 @@ pub struct CreateWorkspace {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct GetWorkspaces {
-  // TODO: make all id string, on Octobase side, and rewrite all related tests
-  pub user_id: i32,
+  pub user_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

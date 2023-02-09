@@ -10,6 +10,9 @@ export type IUserParameters =
     }
   | {
       User: User;
+    }
+  | {
+      GetUserParameters: GetUserParameters;
     };
 
 export interface CreateUser {
@@ -23,7 +26,11 @@ export interface User {
   avatar_url?: string | null;
   created_at: number;
   email: string;
-  id: number;
+  id: string;
   name: string;
+  [k: string]: unknown;
+}
+export interface GetUserParameters {
+  email: string;
   [k: string]: unknown;
 }

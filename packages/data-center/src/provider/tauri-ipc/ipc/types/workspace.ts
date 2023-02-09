@@ -42,7 +42,7 @@ export interface GetWorkspace {
   [k: string]: unknown;
 }
 export interface GetWorkspaces {
-  user_id: number;
+  user_id: string;
   [k: string]: unknown;
 }
 export interface GetWorkspaceResult {
@@ -62,7 +62,7 @@ export interface User {
   avatar_url?: string | null;
   created_at: number;
   email: string;
-  id: number;
+  id: string;
   name: string;
   [k: string]: unknown;
 }
