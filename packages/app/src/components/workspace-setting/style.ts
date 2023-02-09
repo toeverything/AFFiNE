@@ -4,8 +4,7 @@ export const StyledSettingContainer = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
-
-    padding: '0 34px 20px 48px',
+    padding: '0 0 20px 48px',
     height: '100vh',
   };
 });

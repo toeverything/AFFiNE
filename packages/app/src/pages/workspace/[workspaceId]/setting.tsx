@@ -83,8 +83,9 @@ const WorkspaceSetting = () => {
       <Head>
         <title>{t('Settings')} - AFFiNE</title>
       </Head>
+      <PageListHeader icon={<SettingsIcon />}>{t('Settings')}</PageListHeader>
+
       <StyledSettingContainer>
-        <PageListHeader icon={<SettingsIcon />}>{t('Settings')}</PageListHeader>
         <StyledSettingSidebar>
           <StyledSettingTabContainer>
             {tableArr.map(({ name }) => {
