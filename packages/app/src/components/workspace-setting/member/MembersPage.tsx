@@ -10,10 +10,9 @@ import {
   StyledMemberRoleContainer,
   StyledMemberTitleContainer,
   StyledMoreVerticalButton,
-  StyledPublishExplanation,
-  StyledMemberWarp,
   StyledMemberContainer,
 } from './style';
+import { Wrapper } from '@/ui/layout';
 import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
 import { useState } from 'react';
 import { Button, IconButton } from '@/ui/button';
@@ -25,14 +24,13 @@ import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@/ui/toast';
 import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
-import { Wrapper } from '@/ui/layout';
+import { FlexWrapper } from '@/ui/layout';
 import { useTranslation } from '@affine/i18n';
 import { EnableWorkspaceButton } from '@/components/enable-workspace';
 
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const { members, removeMember, loaded } = useMembers();
-
   const { t } = useTranslation();
   const { confirm } = useConfirm();
 
@@ -41,9 +39,9 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
       <StyledMemberContainer>
         <StyledMemberListContainer>
           {!loaded && (
-            <Wrapper justifyContent="center">
+            <FlexWrapper justifyContent="center">
               <Loading size={25} />
-            </Wrapper>
+            </FlexWrapper>
           )}
           {loaded && members.length === 0 && (
             <Empty width={648} sx={{ marginTop: '60px' }} height={300} />
@@ -89,42 +87,50 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                     <StyledMemberRoleContainer>
                       {member.accepted
                         ? member.type !== 99
-                          ? 'Member'
-                          : 'Workspace Owner'
-                        : 'Pending'}
+                          ? t('Member')
+                          : t('Owner')
+                        : t('Pending')}
                     </StyledMemberRoleContainer>
                     <StyledMoreVerticalButton>
-                      <Menu
-                        content={
-                          <>
-                            <MenuItem
-                              onClick={async () => {
-                                const confirmRemove = await confirm({
-                                  title: 'Delete Member?',
-                                  content: `will delete member`,
-                                  confirmText: 'Delete',
-                                  confirmType: 'danger',
-                                });
+                      {member.type === 99 ? (
+                        <></>
+                      ) : (
+                        <Menu
+                          content={
+                            <>
+                              <MenuItem
+                                onClick={async () => {
+                                  const confirmRemove = await confirm({
+                                    title: t('Delete Member?'),
+                                    content: t('will delete member'),
+                                    confirmText: t('Delete'),
+                                    confirmType: 'danger',
+                                  });
 
-                                if (!confirmRemove) {
-                                  return;
-                                }
-                                await removeMember(member.id);
-                                toast(`${user.name} has been removed`);
-                              }}
-                              icon={<TrashIcon />}
-                            >
-                              Delete
-                            </MenuItem>
-                          </>
-                        }
-                        placement="bottom-end"
-                        disablePortal={true}
-                      >
-                        <IconButton>
-                          <MoreVerticalIcon />
-                        </IconButton>
-                      </Menu>
+                                  if (!confirmRemove) {
+                                    return;
+                                  }
+                                  await removeMember(member.id);
+                                  toast(
+                                    t('Member has been removed', {
+                                      name: user.name,
+                                    })
+                                  );
+                                }}
+                                icon={<TrashIcon />}
+                              >
+                                {t('Delete')}
+                              </MenuItem>
+                            </>
+                          }
+                          placement="bottom-end"
+                          disablePortal={true}
+                        >
+                          <IconButton>
+                            <MoreVerticalIcon />
+                          </IconButton>
+                        </Menu>
+                      )}
                     </StyledMoreVerticalButton>
                   </StyledMemberListItem>
                 );
@@ -159,11 +165,14 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   }
 
   return (
-    <StyledMemberWarp>
-      {t('Collaboration Description')}
-      <StyledPublishExplanation>
-        <EnableWorkspaceButton></EnableWorkspaceButton>
-      </StyledPublishExplanation>
-    </StyledMemberWarp>
+    <Wrapper
+      style={{
+        fontWeight: '500',
+        fontSize: '18px',
+      }}
+    >
+      <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
+      <EnableWorkspaceButton />
+    </Wrapper>
   );
 };

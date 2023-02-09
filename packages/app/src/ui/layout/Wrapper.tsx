@@ -3,6 +3,22 @@ import { styled } from '@/styles';
 
 export type WrapperProps = {
   display?: CSSProperties['display'];
+  width?: CSSProperties['width'];
+  height?: CSSProperties['height'];
+  padding?: CSSProperties['padding'];
+  paddingTop?: CSSProperties['paddingTop'];
+  paddingRight?: CSSProperties['paddingRight'];
+  paddingLeft?: CSSProperties['paddingLeft'];
+  paddingBottom?: CSSProperties['paddingBottom'];
+  margin?: CSSProperties['margin'];
+  marginTop?: CSSProperties['marginTop'];
+  marginLeft?: CSSProperties['marginLeft'];
+  marginRight?: CSSProperties['marginRight'];
+  marginBottom?: CSSProperties['marginBottom'];
+};
+
+export type FlexWrapperProps = {
+  display?: CSSProperties['display'];
   flexDirection?: CSSProperties['flexDirection'];
   justifyContent?: CSSProperties['justifyContent'];
   alignItems?: CSSProperties['alignItems'];
@@ -16,6 +32,57 @@ export const Wrapper = styled('div', {
   shouldForwardProp: prop => {
     return ![
       'display',
+      'width',
+      'height',
+      'padding',
+      'margin',
+      'paddingTop',
+      'paddingRight',
+      'paddingLeft',
+      'paddingBottom',
+      'marginTop',
+      'marginLeft',
+      'marginRight',
+      'marginBottom',
+    ].includes(prop);
+  },
+})<WrapperProps>(
+  ({
+    display,
+    width,
+    height,
+    padding,
+    margin,
+    paddingTop,
+    paddingRight,
+    paddingLeft,
+    paddingBottom,
+    marginTop,
+    marginLeft,
+    marginRight,
+    marginBottom,
+  }) => {
+    return {
+      display,
+      width,
+      height,
+      padding,
+      margin,
+      paddingTop,
+      paddingRight,
+      paddingLeft,
+      paddingBottom,
+      marginTop,
+      marginLeft,
+      marginRight,
+      marginBottom,
+    };
+  }
+);
+
+export const FlexWrapper = styled(Wrapper, {
+  shouldForwardProp: prop => {
+    return ![
       'justifyContent',
       'alignItems',
       'wrap',
@@ -24,18 +91,17 @@ export const Wrapper = styled('div', {
       'flexGrow',
     ].includes(prop);
   },
-})<WrapperProps>(
+})<FlexWrapperProps>(
   ({
-    display = 'flex',
-    justifyContent = 'flex-start',
-    alignItems = 'center',
+    justifyContent,
+    alignItems,
     wrap = false,
-    flexDirection = 'row',
-    flexShrink = '0',
-    flexGrow = '0',
+    flexDirection,
+    flexShrink,
+    flexGrow,
   }) => {
     return {
-      display,
+      display: 'flex',
       justifyContent,
       alignItems,
       flexWrap: wrap ? 'wrap' : 'nowrap',
@@ -45,5 +111,16 @@ export const Wrapper = styled('div', {
     };
   }
 );
+
+// TODO: Complete me
+export const GridWrapper = styled(Wrapper, {
+  shouldForwardProp: prop => {
+    return ![''].includes(prop);
+  },
+})<WrapperProps>(() => {
+  return {
+    display: 'grid',
+  };
+});
 
 export default Wrapper;

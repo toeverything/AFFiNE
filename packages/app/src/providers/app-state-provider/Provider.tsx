@@ -10,16 +10,21 @@ import {
 import { createDefaultWorkspace } from './utils';
 import { User } from '@affine/datacenter';
 
+export interface Disposable {
+  dispose(): void;
+}
+
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
 export const AppState = createContext<AppStateContext>({} as AppStateContext);
 
 export const useAppState = () => useContext(AppState);
-
 export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
+  const [blobState, setBlobState] = useState(false);
+  const [userInfo, setUser] = useState<User | null>({} as User);
   useEffect(() => {
     const initState = async () => {
       const dataCenter = await getDataCenter();
@@ -27,10 +32,9 @@ export const AppStateProvider = ({
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
       }
-
+      setUser((await dataCenter.getUserInfo()) || null);
       setAppState({
         dataCenter,
-        user: (await dataCenter.getUserInfo()) || null,
         workspaceList: dataCenter.workspaces,
         currentWorkspace: null,
         pageList: [],
@@ -90,15 +94,17 @@ export const AppStateProvider = ({
     });
   };
 
-  const loadWorkspace = useRef<AppStateFunction['loadWorkspace']>();
+  const loadWorkspace: AppStateFunction['loadWorkspace'] =
+    useRef() as AppStateFunction['loadWorkspace'];
   loadWorkspace.current = async (workspaceId: string) => {
-    const { dataCenter, workspaceList, currentWorkspace, user } = appState;
+    const { dataCenter, workspaceList, currentWorkspace } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
     }
     if (workspaceId === currentWorkspace?.id) {
       return currentWorkspace;
     }
+
     const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
     let isOwner;
     if (workspace?.provider === 'local') {
@@ -106,8 +112,9 @@ export const AppStateProvider = ({
       isOwner = true;
     } else {
       // We must ensure workspace.owner exists, then ensure id same.
-      isOwner = workspace?.owner && user?.id === workspace.owner.id;
+      isOwner = workspace?.owner && userInfo?.id === workspace.owner.id;
     }
+
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     setAppState({
@@ -121,6 +128,26 @@ export const AppStateProvider = ({
 
     return workspace;
   };
+
+  useEffect(() => {
+    let syncChangeDisposable: Disposable | undefined;
+    const currentWorkspace = appState.currentWorkspace;
+    if (!currentWorkspace) {
+      return;
+    }
+    const getBlobStorage = async () => {
+      const blobStorage = await currentWorkspace?.blocksuiteWorkspace?.blobs;
+      syncChangeDisposable = blobStorage?.signals.onBlobSyncStateChange.on(
+        () => {
+          setBlobState(blobStorage?.uploading);
+        }
+      );
+    };
+    getBlobStorage();
+    return () => {
+      syncChangeDisposable?.dispose();
+    };
+  }, [appState.currentWorkspace]);
 
   const setEditor: AppStateFunction['setEditor'] =
     useRef() as AppStateFunction['setEditor'];
@@ -139,20 +166,13 @@ export const AppStateProvider = ({
     if (!user) {
       throw new Error('User info not found');
     }
-    setAppState({
-      ...appState,
-      user,
-    });
+    setUser(user);
     return user;
   };
-
   const logout = async () => {
     const { dataCenter } = appState;
     await dataCenter.logout();
-    setAppState({
-      ...appState,
-      user: null,
-    });
+    setUser(null);
   };
 
   return (
@@ -161,9 +181,11 @@ export const AppStateProvider = ({
         ...appState,
         setEditor,
         loadPage: loadPage.current,
-        loadWorkspace: loadWorkspace.current,
+        loadWorkspace: loadWorkspace,
         login,
         logout,
+        blobDataSynced: blobState,
+        user: userInfo,
       }}
     >
       {children}

@@ -145,10 +145,12 @@ export const StyledButton = styled('button', {
   shouldForwardProp: prop => {
     return ![
       'hoverBackground',
+      'shape',
       'hoverColor',
       'hoverStyle',
       'type',
       'bold',
+      'noBorder',
     ].includes(prop);
   },
 })<
@@ -162,6 +164,7 @@ export const StyledButton = styled('button', {
     | 'shape'
     | 'type'
     | 'bold'
+    | 'noBorder'
   >
 >(
   ({
@@ -174,6 +177,7 @@ export const StyledButton = styled('button', {
     bold = false,
     shape = 'default',
     type = 'default',
+    noBorder = false,
   }) => {
     const { fontSize, borderRadius, padding, height } = getSize(size);
 
@@ -181,7 +185,7 @@ export const StyledButton = styled('button', {
       height,
       paddingLeft: padding,
       paddingRight: padding,
-      border: '1px solid',
+      border: noBorder ? 'none' : '1px solid',
       ...displayInlineFlex('center', 'center'),
       position: 'relative',
       // TODO: disabled color is not decided
@@ -200,13 +204,16 @@ export const StyledButton = styled('button', {
       '.affine-button-icon': {
         color: theme.colors.iconColor,
       },
+      '.affine-button-icon__fixed': {
+        color: theme.colors.iconColor,
+      },
       '>span': {
         marginLeft: '5px',
         width: '100%',
       },
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      ...getButtonColors(theme, type, {
+      ...getButtonColors(theme, type, disabled, {
         hoverBackground,
         hoverColor,
         hoverStyle,

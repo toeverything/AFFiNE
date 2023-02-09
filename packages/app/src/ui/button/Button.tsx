@@ -15,15 +15,25 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       hoverStyle,
       shape = 'default',
       icon,
+      iconPosition = 'start',
       type = 'default',
       children,
       bold = false,
       loading = false,
+      noBorder = false,
       ...props
     },
     ref
   ) => {
     const { iconSize } = getSize(size);
+
+    const iconElement =
+      icon &&
+      cloneElement(Children.only(icon), {
+        width: iconSize,
+        height: iconSize,
+        className: `affine-button-icon ${icon.props.className ?? ''}`,
+      });
 
     return (
       <StyledButton
@@ -38,19 +48,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         // @ts-ignore
         type={type}
         bold={bold}
+        noBorder={noBorder}
         {...props}
       >
         {loading ? (
           <Loading type={type}></Loading>
         ) : (
           <>
-            {icon &&
-              cloneElement(Children.only(icon), {
-                width: iconSize,
-                height: iconSize,
-                className: `affine-button-icon ${icon.props.className ?? ''}`,
-              })}
+            {iconPosition === 'start' && iconElement}
             {children && <span>{children}</span>}
+            {iconPosition === 'end' && iconElement}
           </>
         )}
       </StyledButton>

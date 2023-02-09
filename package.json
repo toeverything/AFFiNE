@@ -15,12 +15,10 @@
     "start": "pnpm --filter @affine/app start",
     "lint": "pnpm --filter @affine/app lint",
     "test": "playwright test",
-    "test:dc": "pnpm --filter @affine/datacenter test",
-    "test:e2e:codegen": "npx playwright codegen http://localhost:8080",
+    "test:coverage": "cross-env COVERAGE=true pnpm test -- --forbid-only",
     "test:unit": "playwright test --config=playwright.config.unit.ts",
     "postinstall": "husky install",
     "notify": "node --experimental-modules scripts/notify.mjs",
-    "check:ci": "pnpm lint & pnpm test",
     "update:blocksuite": "pnpm i --filter @affine/app --filter @affine/datacenter @blocksuite/blocks@nightly @blocksuite/store@nightly && pnpm i --filter @affine/app @blocksuite/editor@nightly"
   },
   "lint-staged": {
@@ -29,13 +27,13 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.0",
-    "@jest/globals": "^29.3.1",
     "@playwright/test": "^1.29.1",
     "@types/eslint": "^8.4.10",
     "@types/node": "^18.11.17",
     "@typescript-eslint/eslint-plugin": "^5.47.0",
     "@typescript-eslint/parser": "^5.47.0",
     "concurrently": "^7.6.0",
+    "babel-plugin-istanbul": "^6.1.1",
     "cross-env": "^7.0.3",
     "eslint": "^8.30.0",
     "eslint-config-next": "12.3.1",
@@ -44,10 +42,10 @@
     "fake-indexeddb": "4.0.1",
     "got": "^12.5.3",
     "husky": "^8.0.2",
-    "jest": "^29.3.1",
     "lint-staged": "^13.1.0",
+    "nyc": "^15.1.0",
     "prettier": "^2.7.1",
-    "typescript": "^4.9.3"
+    "typescript": "^4.9.5"
   },
   "eslintConfig": {
     "root": true,
@@ -70,9 +68,16 @@
     },
     "reportUnusedDisableDirectives": true,
     "ignorePatterns": [
-      "src/**/*.test.ts",
       "package/**/dist/*",
-      "package/**/sync.js"
+      "package/**/.babelrc.js",
+      "package/**/sync.js",
+      "src/**/*.test.ts",
+      "**/webpack.config.js",
+      "**/scripts/*.js",
+      "**/node_modules/**",
+      ".github/**",
+      "**/__tests__/**",
+      "**/tests/**"
     ]
   }
 }

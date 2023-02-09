@@ -10,8 +10,8 @@ import {
   GeneralPage,
   MembersPage,
   PublishPage,
-  ExportPage,
   SyncPage,
+  ExportPage,
 } from '@/components/workspace-setting';
 import { SettingsIcon } from '@blocksuite/icons';
 import { useAppState } from '@/providers/app-state-provider';
@@ -20,41 +20,37 @@ import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { PageListHeader } from '@/components/header';
 
-type TabNames = 'General' | 'Sync' | 'Collaboration' | 'Publish' | 'Export';
-
-const tabMap: {
-  name: TabNames;
-  panelRender: (workspace: WorkspaceUnit) => ReactNode;
-}[] = [
-  {
-    name: 'General',
-    panelRender: workspace => <GeneralPage workspace={workspace} />,
-  },
-  {
-    name: 'Sync',
-    panelRender: workspace => <SyncPage workspace={workspace} />,
-  },
-  {
-    name: 'Collaboration',
-    panelRender: workspace => <MembersPage workspace={workspace} />,
-  },
-  {
-    name: 'Publish',
-    panelRender: workspace => <PublishPage workspace={workspace} />,
-  },
-
-  {
-    name: 'Export',
-    panelRender: workspace => <ExportPage workspace={workspace} />,
-  },
-];
-
-const WorkspaceSetting = () => {
+const useTabMap = () => {
   const { t } = useTranslation();
-  const { currentWorkspace, isOwner } = useAppState();
-
-  const [activeTab, setActiveTab] = useState<TabNames>(tabMap[0].name);
-  const handleTabChange = (tab: TabNames) => {
+  const { isOwner } = useAppState();
+  const tabMap: {
+    name: string;
+    panelRender: (workspace: WorkspaceUnit) => ReactNode;
+  }[] = [
+    {
+      name: t('General'),
+      panelRender: workspace => <GeneralPage workspace={workspace} />,
+    },
+    {
+      name: t('Sync'),
+      panelRender: workspace => <SyncPage workspace={workspace} />,
+    },
+    {
+      name: t('Collaboration'),
+      panelRender: workspace => <MembersPage workspace={workspace} />,
+    },
+    {
+      name: t('Publish'),
+      panelRender: workspace => <PublishPage workspace={workspace} />,
+    },
+    // TODO: next version will finish this feature
+    {
+      name: t('Export'),
+      panelRender: workspace => <ExportPage workspace={workspace} />,
+    },
+  ];
+  const [activeTab, setActiveTab] = useState<string>(tabMap[0].name);
+  const handleTabChange = (tab: string) => {
     setActiveTab(tab);
   };
 
@@ -62,7 +58,7 @@ const WorkspaceSetting = () => {
     tab => tab.name === activeTab
   )?.panelRender;
   let tableArr: {
-    name: TabNames;
+    name: string;
     panelRender: (workspace: WorkspaceUnit) => ReactNode;
   }[] = tabMap;
   if (!isOwner) {
@@ -73,6 +69,14 @@ const WorkspaceSetting = () => {
       },
     ];
   }
+  return { activeTabPanelRender, tableArr, handleTabChange, activeTab };
+};
+
+const WorkspaceSetting = () => {
+  const { t } = useTranslation();
+  const { currentWorkspace } = useAppState();
+  const { activeTabPanelRender, tableArr, handleTabChange, activeTab } =
+    useTabMap();
   return (
     <>
       <StyledSettingContainer>

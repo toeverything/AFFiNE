@@ -68,6 +68,9 @@ const nextConfig = {
     return profile;
   },
   basePath: process.env.BASE_PATH,
+  experimental: {
+    forceSwcTransforms: true,
+  },
 };
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
@@ -98,6 +101,7 @@ const withDebugLocal = require('next-debug-local')(
 
 const withPWA = require('next-pwa')({
   dest: 'public',
+  scope: '/_next',
   disable: process.env.NODE_ENV !== 'production',
 });
 

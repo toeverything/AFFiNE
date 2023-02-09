@@ -1,7 +1,9 @@
-import { styled } from '@/styles';
+import { positionAbsolute, styled } from '@/styles';
 import { Modal, ModalWrapper, ModalCloseButton } from '@/ui/modal';
-import { GoogleLoginButton } from './LoginOptionButton';
+import { Button } from '@/ui/button';
 import { useAppState } from '@/providers/app-state-provider';
+import { useTranslation } from '@affine/i18n';
+import { GoogleIcon } from './GoogleIcon';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -9,38 +11,44 @@ interface LoginModalProps {
 
 export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const { login } = useAppState();
+  const { t } = useTranslation();
   return (
     <Modal open={open} onClose={onClose} data-testid="login-modal">
-      <ModalWrapper width={560} height={292}>
-        <Header>
-          <ModalCloseButton
-            top={6}
-            right={6}
-            onClick={() => {
-              onClose();
-            }}
-          />
-        </Header>
+      <ModalWrapper width={560} height={292} style={{ paddingTop: '44px' }}>
+        <ModalCloseButton
+          onClick={() => {
+            onClose();
+          }}
+        />
         <Content>
-          <ContentTitle>{'Sign in'}</ContentTitle>
-          <SignDes>Set up an AFFINE account to sync data</SignDes>
-          <span
+          <ContentTitle>{t('Sign in')}</ContentTitle>
+          <SignDes>{t('Set up an AFFiNE account to sync data')}</SignDes>
+          <StyledLoginButton
+            shape="round"
             onClick={async () => {
               await login();
               onClose();
             }}
           >
-            <GoogleLoginButton />
-          </span>
+            <GoogleIcon />
+            {t('Continue with Google')}
+          </StyledLoginButton>
         </Content>
       </ModalWrapper>
     </Modal>
   );
 };
 
-const Header = styled('div')({
-  position: 'relative',
-  height: '44px',
+const StyledLoginButton = styled(Button)(() => {
+  return {
+    width: '284px',
+    marginTop: '30px',
+    position: 'relative',
+    svg: {
+      ...positionAbsolute({ left: '18px', top: '0', bottom: '0' }),
+      margin: 'auto',
+    },
+  };
 });
 
 const Content = styled('div')({

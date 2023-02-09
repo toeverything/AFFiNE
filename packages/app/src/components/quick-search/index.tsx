@@ -13,7 +13,8 @@ import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { getUaHelper } from '@/utils';
-import { useAppState } from '@/providers/app-state-provider';
+import { useRouter } from 'next/router';
+import { PublishedResults } from './PublishedResults';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
@@ -22,18 +23,30 @@ const isMac = () => {
   return getUaHelper().isMacOs;
 };
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
-  const { currentWorkspace } = useAppState();
-
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
+  const [publishWorkspaceName, setPublishWorkspaceName] = useState('');
   const [showCreatePage, setShowCreatePage] = useState(true);
   const { triggerQuickSearchModal } = useModal();
-
+  const isPublicAndNoQuery = () => {
+    return isPublic && query.length === 0;
+  };
+  const handleClose = () => {
+    setQuery('');
+    onClose();
+  };
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
+    if (router.pathname.startsWith('/404')) {
+      triggerQuickSearchModal(false);
+      return;
+    }
     const down = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
         const selection = window.getSelection();
+        setQuery('');
         if (selection?.toString()) {
           triggerQuickSearchModal(false);
           return;
@@ -43,18 +56,23 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         }
       }
     };
-    if (!open) {
-      setQuery('');
-    }
     document.addEventListener('keydown', down, { capture: true });
     return () =>
       document.removeEventListener('keydown', down, { capture: true });
-  }, [open, triggerQuickSearchModal]);
+  }, [open, router.pathname, triggerQuickSearchModal]);
+
+  useEffect(() => {
+    if (router.pathname.startsWith('/public-workspace')) {
+      return setIsPublic(true);
+    } else {
+      return setIsPublic(false);
+    }
+  }, [router]);
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       wrapperPosition={['top', 'center']}
       data-testid="quickSearch"
     >
@@ -62,7 +80,7 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
         width={620}
         style={{
           maxHeight: '80vh',
-          minHeight: '350px',
+          minHeight: isPublicAndNoQuery() ? '72px' : '350px',
           top: '12vh',
         }}
       >
@@ -81,28 +99,51 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           }}
         >
           <StyledModalHeader>
-            <Input query={query} setQuery={setQuery} setLoading={setLoading} />
+            <Input
+              open={open}
+              query={query}
+              setQuery={setQuery}
+              setLoading={setLoading}
+              isPublic={isPublic}
+              publishWorkspaceName={publishWorkspaceName}
+            />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
-          <StyledModalDivider />
+          <StyledModalDivider
+            style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
+          />
           <Command.List>
-            <StyledContent>
-              <Results
-                query={query}
-                loading={loading}
-                setLoading={setLoading}
-                setShowCreatePage={setShowCreatePage}
-              />
+            <StyledContent
+              style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
+            >
+              {!isPublic ? (
+                <Results
+                  query={query}
+                  loading={loading}
+                  setLoading={setLoading}
+                  onClose={handleClose}
+                  setShowCreatePage={setShowCreatePage}
+                />
+              ) : (
+                <PublishedResults
+                  query={query}
+                  loading={loading}
+                  setLoading={setLoading}
+                  onClose={handleClose}
+                  setPublishWorkspaceName={setPublishWorkspaceName}
+                  data-testid="publishedSearchResults"
+                />
+              )}
             </StyledContent>
-            {currentWorkspace?.published ? (
-              <></>
-            ) : showCreatePage ? (
-              <>
-                <StyledModalDivider />
-                <StyledModalFooter>
-                  <Footer query={query} />
-                </StyledModalFooter>
-              </>
+            {!isPublic ? (
+              showCreatePage ? (
+                <>
+                  <StyledModalDivider />
+                  <StyledModalFooter>
+                    <Footer query={query} onClose={handleClose} />
+                  </StyledModalFooter>
+                </>
+              ) : null
             ) : null}
           </Command.List>
         </Command>

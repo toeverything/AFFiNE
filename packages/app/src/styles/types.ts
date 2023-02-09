@@ -26,6 +26,8 @@ export interface AffineTheme {
     innerHoverBackground: string;
     codeBackground: string;
     codeBlockBackground: string;
+    blockHubBackground: string;
+    blockHubHoverBackground: string;
     warningBackground: string;
     errorBackground: string;
     // Use for the page`s text
@@ -37,6 +39,7 @@ export interface AffineTheme {
     linkColor2: string;
     linkVisitedColor: string;
     iconColor: string;
+    handleColor: string;
     popoverColor: string;
     inputColor: string;
     tooltipColor: string;
@@ -51,20 +54,22 @@ export interface AffineTheme {
     lineNumberColor: string;
   };
   font: {
-    xs: string; // tiny
-    sm: string; // small
-    base: string;
+    title: string;
     h1: string;
     h2: string;
     h3: string;
     h4: string;
     h5: string;
     h6: string;
+    base: string;
+    sm: string; // small
+    xs: string; // tiny
 
     family: string;
-    mono: string;
+    numberFamily: string;
+    codeFamily: string;
 
-    lineHeightBase: string | number;
+    lineHeight: string | number;
   };
   zIndex: {
     modal: number;
@@ -116,17 +121,23 @@ export interface AffineThemeCSSVariables {
   '--affine-modal-shadow': AffineTheme['shadow']['modal'];
   '--affine-popover-shadow': AffineTheme['shadow']['popover'];
   '--affine-tooltip-shadow': AffineTheme['shadow']['tooltip'];
-
-  '--affine-font-xs': AffineTheme['font']['xs']; // tiny
-  '--affine-font-sm': AffineTheme['font']['sm']; // small
+  '--affine-font-h1': AffineTheme['font']['h1'];
+  '--affine-font-h2': AffineTheme['font']['h2'];
+  '--affine-font-h3': AffineTheme['font']['h3'];
+  '--affine-font-h4': AffineTheme['font']['h4'];
+  '--affine-font-h5': AffineTheme['font']['h5'];
+  '--affine-font-h6': AffineTheme['font']['h6'];
   '--affine-font-base': AffineTheme['font']['base'];
-  '--affine-line-height-base': AffineTheme['font']['lineHeightBase'];
+  '--affine-font-sm': AffineTheme['font']['sm']; // small
+  '--affine-font-xs': AffineTheme['font']['xs']; // tiny
+  '--affine-line-height': AffineTheme['font']['lineHeight'];
 
   '--affine-z-index-modal': AffineTheme['zIndex']['modal'];
   '--affine-z-index-popover': AffineTheme['zIndex']['popover'];
 
   '--affine-font-family': AffineTheme['font']['family'];
-  '--affine-font-mono': AffineTheme['font']['mono'];
+  '--affine-font-number-family': AffineTheme['font']['numberFamily'];
+  '--affine-font-code-family': AffineTheme['font']['codeFamily'];
 
   '--affine-paragraph-space': AffineTheme['space']['paragraph'];
 

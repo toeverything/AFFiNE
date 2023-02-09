@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import type { User } from 'firebase/auth';
+import { decode } from 'js-base64';
 
 import { getLogger } from '../../../logger.js';
 import { bareClient } from './request.js';
@@ -31,7 +32,7 @@ type LoginResponse = {
 const login = (params: LoginParams): Promise<LoginResponse> =>
   bareClient.post('api/user/token', { json: params }).json();
 
-class Token {
+export class Token {
   private readonly _logger;
   private _accessToken!: string;
   private _refreshToken!: string;
@@ -99,21 +100,9 @@ class Token {
 
   static parse(token: string): AccessTokenMessage | null {
     try {
-      return JSON.parse(
-        String.fromCharCode.apply(
-          null,
-          Array.from(
-            Uint8Array.from(
-              window.atob(
-                // split jwt
-                token.split('.')[1]
-              ),
-              c => c.charCodeAt(0)
-            )
-          )
-        )
-      );
+      return JSON.parse(decode(token.split('.')[1]));
     } catch (error) {
+      // todo: log errors?
       return null;
     }
   }

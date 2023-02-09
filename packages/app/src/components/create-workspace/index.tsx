@@ -53,13 +53,12 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
           </Header>
           <Content>
             <ContentTitle>{t('New Workspace')}</ContentTitle>
-            <p>
-              Workspace is your virtual space to capture, create and plan as
-              just one person or together as a team.
-            </p>
+            <p>{t('Workspace description')}</p>
             <Input
               onKeyDown={handleKeyDown}
-              placeholder={'Set a Workspace name'}
+              placeholder={t('Set a Workspace name')}
+              maxLength={15}
+              minLength={0}
               onChange={value => {
                 setWorkspaceName(value);
               }}

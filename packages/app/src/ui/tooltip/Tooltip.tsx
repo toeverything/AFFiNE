@@ -5,6 +5,7 @@ import type { TooltipProps } from '@mui/material';
 
 const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   return {
+    maxWidth: '320px',
     boxShadow: theme.shadow.tooltip,
     padding: '4px 12px',
     backgroundColor: theme.colors.tooltipBackground,

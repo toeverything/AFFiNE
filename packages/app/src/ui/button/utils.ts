@@ -40,6 +40,7 @@ export const getSize = (
 export const getButtonColors = (
   theme: AffineTheme,
   type: ButtonProps['type'],
+  disabled: boolean,
   extend?: {
     hoverBackground: ButtonProps['hoverBackground'];
     hoverColor: ButtonProps['hoverColor'];
@@ -54,6 +55,18 @@ export const getButtonColors = (
         borderColor: theme.colors.primaryColor,
         '.affine-button-icon': {
           color: '#fff',
+        },
+      };
+    case 'light':
+      return {
+        background: theme.colors.hoverBackground,
+        color: disabled ? theme.colors.disableColor : theme.colors.primaryColor,
+        borderColor: theme.colors.hoverBackground,
+        '.affine-button-icon': {
+          borderColor: theme.colors.primaryColor,
+        },
+        ':hover': {
+          borderColor: theme.colors.primaryColor,
         },
       };
     case 'warning':

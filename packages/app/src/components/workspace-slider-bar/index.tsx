@@ -11,18 +11,17 @@ import {
   StyledSubListItem,
 } from './style';
 import { Arrow } from './icons';
-import Collapse from '@mui/material/Collapse';
 import {
   ArrowDownIcon,
   SearchIcon,
   AllPagesIcon,
   FavouritesIcon,
-  ImportIcon,
   TrashIcon,
   AddIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
+import { MuiCollapse } from '@/ui/mui';
 import { Tooltip } from '@/ui/tooltip';
 import { useModal } from '@/providers/GlobalModalProvider';
 import { useAppState } from '@/providers/app-state-provider';
@@ -39,7 +38,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { t } = useTranslation();
   const favoriteList = pageList.filter(p => p.favorite && !p.trash);
   return (
-    <Collapse in={showList}>
+    <MuiCollapse in={showList}>
       {favoriteList.map((pageMeta, index) => {
         const active = router.query.pageId === pageMeta.id;
         return (
@@ -61,11 +60,11 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
       {favoriteList.length === 0 && (
         <StyledSubListItem disable={true}>{t('No item')}</StyledSubListItem>
       )}
-    </Collapse>
+    </MuiCollapse>
   );
 };
 export const WorkSpaceSliderBar = () => {
-  const { triggerQuickSearchModal, triggerImportModal } = useModal();
+  const { triggerQuickSearchModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
   const { currentWorkspace } = useAppState();
   const { openPage, createPage } = usePageHelper();
@@ -161,14 +160,14 @@ export const WorkSpaceSliderBar = () => {
               setShowWorkspaceSetting(false);
             }}
           /> */}
-
-          <StyledListItem
+          {/* TODO: will finish the feature next version */}
+          {/* <StyledListItem
             onClick={() => {
               triggerImportModal();
             }}
           >
             <ImportIcon /> {t('Import')}
-          </StyledListItem>
+          </StyledListItem> */}
 
           <Link href={{ pathname: paths.trash }}>
             <StyledListItem active={router.asPath === paths.trash}>

@@ -38,8 +38,9 @@ export const Input = (props: inputProps) => {
     if (
       (maxLength && e.target.value.length > maxLength) ||
       (minLength && e.target.value.length < minLength)
-    )
+    ) {
       return;
+    }
     setValue(e.target.value);
     onChange && onChange(e.target.value);
   };

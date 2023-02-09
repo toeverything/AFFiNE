@@ -1,7 +1,0 @@
-**/webpack.config.js
-**/scripts/*.js
-**/node_modules/**
-.github/**
-**/__tests__/**
-**/tests/**
-

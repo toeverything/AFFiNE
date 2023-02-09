@@ -5,6 +5,7 @@ import { styled } from '@/styles';
 export type ModalCloseButtonProps = {
   top?: number;
   right?: number;
+  absolute?: boolean;
 } & Omit<IconButtonProps, 'children'> &
   HTMLAttributes<HTMLButtonElement>;
 
@@ -13,16 +14,23 @@ const StyledIconButton = styled(IconButton)<
 >(({ top, right }) => {
   return {
     position: 'absolute',
-    top: top ?? 6,
-    right: right ?? 6,
+    top: top ?? 24,
+    right: right ?? 40,
   };
 });
 
-export const ModalCloseButton = ({ ...props }: ModalCloseButtonProps) => {
-  return (
+export const ModalCloseButton = ({
+  absolute = true,
+  ...props
+}: ModalCloseButtonProps) => {
+  return absolute ? (
     <StyledIconButton {...props}>
       <CloseIcon />
     </StyledIconButton>
+  ) : (
+    <IconButton {...props}>
+      <CloseIcon />
+    </IconButton>
   );
 };
 

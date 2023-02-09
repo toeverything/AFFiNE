@@ -11,10 +11,10 @@
   "dependencies": {
     "@affine/datacenter": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@blocksuite/blocks": "0.4.0-20230111171650-bc63456",
-    "@blocksuite/editor": "0.4.0-20230111171650-bc63456",
+    "@blocksuite/blocks": "0.4.0-alpha.2",
+    "@blocksuite/editor": "0.4.0-alpha.2",
     "@blocksuite/icons": "^2.0.2",
-    "@blocksuite/store": "0.4.0-20230111171650-bc63456",
+    "@blocksuite/store": "0.4.0-alpha.2",
     "@emotion/css": "^11.10.0",
     "@emotion/react": "^11.10.4",
     "@emotion/server": "^11.10.0",
@@ -28,7 +28,7 @@
     "cmdk": "^0.1.20",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
-    "lit": "^2.3.1",
+    "lit": "^2.6.1",
     "next": "13.1.0",
     "next-debug-local": "^0.1.5",
     "prettier": "^2.7.1",
@@ -36,9 +36,10 @@
     "quill-cursors": "^4.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "yjs": "^13.5.44"
+    "yjs": "^13.5.45"
   },
   "devDependencies": {
+    "@emotion/babel-plugin": "^11.10.5",
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
@@ -50,7 +51,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "next-pwa": "^5.6.0",
     "raw-loader": "^4.0.2",
-    "typescript": "4.8.3"
+    "typescript": "^4.9.5"
   },
   "eslintConfig": {
     "extends": [

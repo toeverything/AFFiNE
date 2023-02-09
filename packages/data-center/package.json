@@ -6,7 +6,6 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "exports": {
-    "./src/*": "./dist/src/*.js",
     ".": "./dist/src/index.js"
   },
   "scripts": {
@@ -23,17 +22,19 @@
     "@playwright/test": "^1.29.1",
     "@types/debug": "^4.1.7",
     "fake-indexeddb": "4.0.1",
-    "typescript": "^4.8.4",
-    "yjs": "^13.5.44"
+    "lit": "^2.6.1",
+    "typescript": "^4.9.5",
+    "yjs": "^13.5.45"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.4.0-20230111171650-bc63456",
-    "@blocksuite/store": "0.4.0-20230111171650-bc63456",
+    "@blocksuite/blocks": "0.4.0-alpha.2",
+    "@blocksuite/store": "0.4.0-alpha.2",
     "@tauri-apps/api": "^1.2.0",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
     "firebase": "^9.15.0",
     "idb-keyval": "^6.2.0",
+    "js-base64": "^3.7.5",
     "ky": "^0.33.0",
     "ky-universal": "^0.11.0",
     "lib0": "^0.2.58",

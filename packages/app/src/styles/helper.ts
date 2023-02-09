@@ -2,12 +2,12 @@ import type { CSSProperties } from 'react';
 
 export const displayFlex = (
   justifyContent: CSSProperties['justifyContent'] = 'unset',
-  alignItems: CSSProperties['alignContent'] = 'unset',
+  alignItems: CSSProperties['alignItems'] = 'unset',
   alignContent: CSSProperties['alignContent'] = 'unset'
 ): {
   display: CSSProperties['display'];
   justifyContent: CSSProperties['justifyContent'];
-  alignItems: CSSProperties['alignContent'];
+  alignItems: CSSProperties['alignItems'];
   alignContent: CSSProperties['alignContent'];
 } => {
   return {
@@ -115,5 +115,31 @@ export const textEllipsis = (lineNum = 1): CSSProperties => {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  };
+};
+
+export const positionAbsolute = ({
+  left,
+  top,
+  right,
+  bottom,
+}: {
+  left?: CSSProperties['left'];
+  top?: CSSProperties['top'];
+  right?: CSSProperties['right'];
+  bottom?: CSSProperties['bottom'];
+}): {
+  position: CSSProperties['position'];
+  left: CSSProperties['left'];
+  top: CSSProperties['top'];
+  right: CSSProperties['right'];
+  bottom: CSSProperties['bottom'];
+} => {
+  return {
+    position: 'absolute',
+    left,
+    top,
+    right,
+    bottom,
   };
 };

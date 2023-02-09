@@ -67,14 +67,19 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 };
 
 const AppDefender = ({ children }: PropsWithChildren) => {
-  const { synced } = useAppState();
   const router = useRouter();
+  const { synced } = useAppState();
 
   useEffect(() => {
-    if (router.pathname === '/') {
+    if (router.asPath === '/') {
       router.replace('/workspace');
     }
   }, [router]);
+
+  // if you visit /404, you will see the children directly
+  if (router.route === '/404') {
+    return <div>{children}</div>;
+  }
 
   return <div>{synced ? children : <PageLoading />}</div>;
 };

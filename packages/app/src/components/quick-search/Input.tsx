@@ -8,32 +8,41 @@ import React, {
 import { SearchIcon } from '@blocksuite/icons';
 import { StyledInputContent, StyledLabel } from './style';
 import { Command } from 'cmdk';
-import { useAppState } from '@/providers/app-state-provider';
 import { useTranslation } from '@affine/i18n';
 export const Input = (props: {
+  open: boolean;
   query: string;
   setQuery: Dispatch<SetStateAction<string>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
+  isPublic: boolean;
+  publishWorkspaceName: string | undefined;
 }) => {
+  const { open, query, setQuery, setLoading, isPublic, publishWorkspaceName } =
+    props;
   const [isComposition, setIsComposition] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const { currentWorkspace } = useAppState();
   const { t } = useTranslation();
   useEffect(() => {
-    inputRef.current?.addEventListener(
-      'blur',
-      () => {
-        inputRef.current?.focus();
-      },
-      true
-    );
-    return inputRef.current?.focus();
-  }, [inputRef]);
+    if (open) {
+      const inputElement = inputRef.current;
+      return inputElement?.focus();
+    }
+  }, [open]);
   useEffect(() => {
-    return setInputValue(props.query);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const inputElement = inputRef.current;
+    if (!open) {
+      return;
+    }
+    const handleFocus = () => {
+      inputElement?.focus();
+    };
+    inputElement?.addEventListener('blur', handleFocus, true);
+    return () => inputElement?.removeEventListener('blur', handleFocus, true);
+  }, [inputRef, open]);
+  useEffect(() => {
+    setInputValue(query);
+  }, [query]);
   return (
     <StyledInputContent>
       <StyledLabel htmlFor=":r5:">
@@ -46,18 +55,18 @@ export const Input = (props: {
           setIsComposition(true);
         }}
         onCompositionEnd={e => {
-          props.setQuery(e.data);
+          setQuery(e.data);
           setIsComposition(false);
-          if (!props.query) {
-            props.setLoading(true);
+          if (!query) {
+            setLoading(true);
           }
         }}
         onValueChange={str => {
           setInputValue(str);
           if (!isComposition) {
-            props.setQuery(str);
-            if (!props.query) {
-              props.setLoading(true);
+            setQuery(str);
+            if (!query) {
+              setLoading(true);
             }
           }
         }}
@@ -78,9 +87,9 @@ export const Input = (props: {
           }
         }}
         placeholder={
-          currentWorkspace?.isPublish
+          isPublic
             ? t('Quick search placeholder2', {
-                workspace: currentWorkspace?.blocksuiteWorkspace?.meta.name,
+                workspace: publishWorkspaceName,
               })
             : t('Quick search placeholder')
         }

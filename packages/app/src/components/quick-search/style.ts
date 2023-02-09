@@ -9,6 +9,7 @@ export const StyledContent = styled('div')(({ theme }) => {
     marginBottom: '10px',
     ...displayFlex('center', 'flex-start'),
     color: theme.colors.popoverColor,
+    transition: 'all 0.15s',
     letterSpacing: '0.06em',
     '[cmdk-group-heading]': {
       margin: '5px 16px',
@@ -16,7 +17,6 @@ export const StyledContent = styled('div')(({ theme }) => {
       fontWeight: '500',
     },
     '[aria-selected="true"]': {
-      transition: 'background .15s, color .15s',
       borderRadius: '5px',
       color: theme.colors.primaryColor,
       backgroundColor: theme.colors.hoverBackground,
@@ -103,6 +103,7 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
     margin: '6px 16px 6.5px 16px',
     position: 'relative',
     borderTop: `0.5px solid ${theme.colors.placeHolderColor}`,
+    transition: 'all 0.15s',
   };
 });
 

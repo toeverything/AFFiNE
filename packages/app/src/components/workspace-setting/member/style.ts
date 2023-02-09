@@ -1,5 +1,5 @@
 import { styled } from '@/styles';
-import MuiAvatar from '@mui/material/Avatar';
+import { MuiAvatar } from '@/ui/mui';
 
 export const StyledMemberTitleContainer = styled('li')(() => {
   return {
@@ -95,26 +95,5 @@ export const StyledMoreVerticalButton = styled('button')(() => {
     height: '24px',
     cursor: 'pointer',
     paddingRight: '48px',
-  };
-});
-
-export const StyledPublishExplanation = styled('div')(() => {
-  return {
-    paddingRight: '48px',
-    fontWeight: '500',
-    fontSize: '18px',
-    lineHeight: '26px',
-    flex: 1,
-    marginTop: '64px',
-  };
-});
-
-export const StyledMemberWarp = styled('div')(() => {
-  return {
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '0 0 48px 0',
-    fontWeight: '500',
-    fontSize: '18px',
   };
 });

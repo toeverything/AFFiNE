@@ -4,9 +4,9 @@ import Link from 'next/link';
 export const StyledSliderBar = styled.div<{ show: boolean }>(
   ({ theme, show }) => {
     return {
-      width: show ? '320px' : '0',
+      width: show ? '256px' : '0',
       height: '100vh',
-      background: theme.mode === 'dark' ? '#272727' : '#FBFBFC',
+      background: theme.mode === 'dark' ? '#272727' : '#F9F9FB',
       boxShadow: theme.shadow.modal,
       transition: 'width .15s, padding .15s',
       position: 'relative',
@@ -58,7 +58,6 @@ export const StyledListItem = styled.div<{
     width: '296px',
     height: '32px',
     marginTop: '12px',
-    fontSize: theme.font.sm,
     color: active ? theme.colors.primaryColor : theme.colors.popoverColor,
     paddingLeft: '12px',
     borderRadius: '5px',
@@ -122,9 +121,8 @@ export const StyledSubListItem = styled.button<{
     width: '296px',
     height: '32px',
     marginTop: '4px',
-    fontSize: theme.font.sm,
     color: disable
-      ? theme.colors.iconColor
+      ? theme.colors.disableColor
       : active
       ? theme.colors.primaryColor
       : theme.colors.popoverColor,

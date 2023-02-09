@@ -4,6 +4,7 @@ import { createBlocksuiteWorkspace } from '../../utils/index.js';
 import type { Apis } from './apis';
 import { setDefaultAvatar } from '../utils.js';
 import { applyUpdate } from '../../utils/index.js';
+import { getDatabase } from './idb-kv.js';
 
 export const loadWorkspaceUnit = async (
   params: WorkspaceUnitCtorParams,
@@ -53,4 +54,35 @@ export const createWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
   workspaceUnit.setBlocksuiteWorkspace(blocksuiteWorkspace);
 
   return workspaceUnit;
+};
+
+interface PendingTask {
+  id: string;
+  blob: ArrayBufferLike;
+}
+
+export const migrateBlobDB = async (
+  oldWorkspaceId: string,
+  newWorkspaceId: string
+) => {
+  const oldDB = getDatabase('blob', oldWorkspaceId);
+  const oldPendingDB = getDatabase<PendingTask>('pending', oldWorkspaceId);
+
+  const newDB = getDatabase('blob', newWorkspaceId);
+  const newPendingDB = getDatabase<PendingTask>('pending', newWorkspaceId);
+
+  const keys = await oldDB.keys();
+  const values = await oldDB.getMany(keys);
+  const entries = keys.map((key, index) => {
+    return [key, values[index]] as [string, ArrayBufferLike];
+  });
+  await newDB.setMany(entries);
+
+  const pendingEntries = entries.map(([id, blob]) => {
+    return [id, { id, blob }] as [string, PendingTask];
+  });
+  await newPendingDB.setMany(pendingEntries);
+
+  await oldDB.clear();
+  await oldPendingDB.clear();
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { WorkspaceUnit } from '@affine/datacenter';
 import { WorkspaceAvatar as Avatar } from './Avatar';
 
-const useAvatar = (workspaceUnit?: WorkspaceUnit) => {
+const useAvatar = (workspaceUnit: WorkspaceUnit | null) => {
   const [avatarUrl, setAvatarUrl] = useState('');
   const avatarId =
     workspaceUnit?.avatar || workspaceUnit?.blocksuiteWorkspace?.meta.avatar;
@@ -23,7 +23,7 @@ const useAvatar = (workspaceUnit?: WorkspaceUnit) => {
 export const WorkspaceUnitAvatar = ({
   size = 20,
   name,
-  workspaceUnit,
+  workspaceUnit = null,
   style,
 }: {
   size?: number;
@@ -31,7 +31,7 @@ export const WorkspaceUnitAvatar = ({
   workspaceUnit?: WorkspaceUnit | null;
   style?: React.CSSProperties;
 }) => {
-  const avatarUrl = useAvatar(workspaceUnit || undefined);
+  const avatarUrl = useAvatar(workspaceUnit);
   return (
     <Avatar
       size={size}

@@ -1,6 +1,9 @@
 import { WorkspaceUnitCollection } from './workspace-unit-collection.js';
 import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
-import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import {
+  StoreOptions,
+  Workspace as BlocksuiteWorkspace,
+} from '@blocksuite/store';
 import type {
   BaseProvider,
   CreateWorkspaceInfoParams,
@@ -14,7 +17,6 @@ import { getLogger } from './logger';
 import { createBlocksuiteWorkspace } from './utils/index.js';
 import { MessageCenter } from './message';
 import { WorkspaceUnit } from './workspace-unit';
-
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business
@@ -125,12 +127,12 @@ export class DataCenter {
    * get a new workspace only has room id
    * @param {string} workspaceId workspace id
    */
-  private _getBlocksuiteWorkspace(workspaceId: string) {
+  private _getBlocksuiteWorkspace(workspaceId: string, params: StoreOptions) {
     // const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
     // assert(workspaceInfo, 'Workspace not found');
     return (
       // this._workspaceInstances.get(workspaceId) ||
-      createBlocksuiteWorkspace(workspaceId)
+      createBlocksuiteWorkspace(workspaceId, params)
     );
   }
 
@@ -171,7 +173,15 @@ export class DataCenter {
     const provider = this.providerMap.get(workspaceUnit.provider);
     assert(provider, `provide '${workspaceUnit.provider}' is not registered`);
     this._logger(`Loading ${workspaceUnit.provider} workspace: `, workspaceId);
-    const workspace = this._getBlocksuiteWorkspace(workspaceId);
+
+    const params: StoreOptions = {};
+    if (provider.id === 'affine') {
+      params.blobOptionsGetter = (k: string) =>
+        ({ api: '/api/workspace', token: provider.getToken() }[k]);
+    } else {
+      params.blobOptionsGetter = (k: string) => undefined;
+    }
+    const workspace = this._getBlocksuiteWorkspace(workspaceId, params);
     this._workspaceInstances.set(workspaceId, workspace);
     await provider.warpWorkspace(workspace);
     this._workspaceUnitCollection.workspaces.forEach(workspaceUnit => {
@@ -187,7 +197,7 @@ export class DataCenter {
     // FIXME: hard code for public workspace
     const provider = this.providerMap.get('affine');
     assert(provider);
-    const blocksuiteWorkspace = this._getBlocksuiteWorkspace(workspaceId);
+    const blocksuiteWorkspace = this._getBlocksuiteWorkspace(workspaceId, {});
     await provider.loadPublicWorkspace(blocksuiteWorkspace);
 
     const workspaceUnitForPublic = new WorkspaceUnit({
