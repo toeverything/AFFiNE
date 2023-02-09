@@ -7,8 +7,8 @@ import {
   MoreVerticalIcon,
   RestoreIcon,
   DeleteIcon,
-  FavouritesIcon,
-  FavouritedIcon,
+  FavoritesIcon,
+  FavoritedIcon,
   OpenInNewIcon,
   TrashIcon,
 } from '@blocksuite/icons';
@@ -27,12 +27,12 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         onClick={() => {
           toggleFavoritePage(id);
           toast(
-            favorite ? t('Removed from Favourites') : t('Added to Favourites')
+            favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
+        icon={favorite ? <FavoritedIcon /> : <FavoritesIcon />}
       >
-        {favorite ? t('Remove from favourites') : t('Add to favourites')}
+        {favorite ? t('Remove from favorites') : t('Add to favorites')}
       </MenuItem>
       <MenuItem
         onClick={() => {

@@ -5,8 +5,8 @@ import {
   ExportIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
-  FavouritedIcon,
-  FavouritesIcon,
+  FavoritedIcon,
+  FavoritesIcon,
   MoreVerticalIcon,
   PaperIcon,
   TrashIcon,
@@ -37,12 +37,12 @@ const PopoverContent = () => {
         onClick={() => {
           toggleFavoritePage(id);
           toast(
-            favorite ? t('Removed from Favourites') : t('Added to Favourites')
+            favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
+        icon={favorite ? <FavoritedIcon /> : <FavoritesIcon />}
       >
-        {favorite ? t('Remove from favourites') : t('Add to favourites')}
+        {favorite ? t('Remove from favorites') : t('Add to favorites')}
       </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}

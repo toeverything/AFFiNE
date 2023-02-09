@@ -43,7 +43,7 @@ test.describe('Local first delete page', () => {
     // show empty tip
     expect(
       page.getByText(
-        'Tips: Click Add to Favourites/Trash and the page will appear here.'
+        'Tips: Click Add to Favorites/Trash and the page will appear here.'
       )
     ).not.toBeUndefined();
   });

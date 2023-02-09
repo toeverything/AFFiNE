@@ -1,7 +1,7 @@
 import { PageMeta } from '@/providers/app-state-provider';
 import {
-  FavouritedIcon,
-  FavouritesIcon,
+  FavoritedIcon,
+  FavoritesIcon,
   PaperIcon,
   EdgelessIcon,
 } from '@blocksuite/icons';
@@ -41,7 +41,7 @@ const FavoriteTag = ({
   const { t } = useTranslation();
   return (
     <Tooltip
-      content={favorite ? t('Favourited') : t('Favourite')}
+      content={favorite ? t('Favorited') : t('Favorite')}
       placement="top-start"
     >
       <IconButton
@@ -51,7 +51,7 @@ const FavoriteTag = ({
           e.stopPropagation();
           toggleFavoritePage(id);
           toast(
-            favorite ? t('Removed from Favourites') : t('Added to Favourites')
+            favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
         style={{
@@ -60,9 +60,9 @@ const FavoriteTag = ({
         className={favorite ? '' : 'favorite-button'}
       >
         {favorite ? (
-          <FavouritedIcon data-testid="favourited-icon" />
+          <FavoritedIcon data-testid="favorited-icon" />
         ) : (
-          <FavouritesIcon />
+          <FavoritesIcon />
         )}
       </IconButton>
     </Tooltip>

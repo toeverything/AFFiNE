@@ -1,6 +1,6 @@
 import { PageListHeader } from '@/components/header';
 import { PageList } from '@/components/page-list';
-import { FavouritesIcon } from '@blocksuite/icons';
+import { FavoritesIcon } from '@blocksuite/icons';
 import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useTranslation } from '@affine/i18n';
@@ -12,11 +12,9 @@ export const Favorite = () => {
   return (
     <>
       <Head>
-        <title>{t('Favourites')} - AFFiNE</title>
+        <title>{t('Favorites')} - AFFiNE</title>
       </Head>
-      <PageListHeader icon={<FavouritesIcon />}>
-        {t('Favourites')}
-      </PageListHeader>
+      <PageListHeader icon={<FavoritesIcon />}>{t('Favorites')}</PageListHeader>
       <PageList
         pageList={pageList.filter(p => p.favorite && !p.trash)}
         listType="favorite"
