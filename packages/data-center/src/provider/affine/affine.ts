@@ -64,6 +64,7 @@ export class AffineProvider extends BaseProvider {
     if (this._apis.token.isExpired) {
       try {
         const refreshToken = storage.getItem('token');
+        if (!refreshToken) return;
         await this._apis.token.refreshToken(refreshToken);
 
         if (this._apis.token.refresh) {
