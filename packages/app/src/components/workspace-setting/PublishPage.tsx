@@ -64,7 +64,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
     return (
       <>
-        <Wrapper margin="0 0 32px 0">{t('Publishing Description')}</Wrapper>
+        <Wrapper marginBottom="32px">{t('Publishing Description')}</Wrapper>
         <Button
           onClick={async () => {
             setLoaded(true);
