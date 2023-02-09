@@ -1,24 +1,46 @@
-We've been working hard on improving the user experience and have made several new features live for you to use.
+Welcome,
 
-If you are looking for **support**, would like to **suggest** your ideas, and keep on top of all the **latest updates**. We suggest you visit the [AFFiNE Community](https://community.affine.pro/home) site.
+Thank you for checking out **AFFiNE**. We've put together a playground below for you to try out the app. If you are looking for more **support**, offer your **ideas** and **feedback**, or find the l**atest updates** don't forget to head over to our [AFFiNE Community](https://community.affine.pro/home) site.
 
-Let us know what you think of this latest version.
+* * *
 
-**AFFiNE Alpha Downhills brings:**
+###### New Features
 
-We are mainly working on features for pathfinder.
+*   Drag Handle
+*   Block Hub
+*   Slash Menu
+*   Workspaces
 
-- [feat] SlashMenu #629
-- [feat] BlockHub + DragHandle #630
-- [feat] edgeless with basic usability #631
-- [feat] bracket autocomplete #632 @lawvs
-- [feat] database #633
-- [feat] login with Google #608 @alt1o @darkskygit
-- [feat] collaboration by AFFiNE Cloud #609 @darkskygit @zuoxiaodong0815
-- [feat] local first multi workspace #610 @QiShaoXuan @darkskygit
-- [feat] AFFiNE Cloud sync #611 @alt1o @SaikaSakura @darkskygit
-- [feat] download workspace by AFFiNE Cloud #612 @darkskygit @alt1o @SaikaSakura
-- [feat] workspace sharing with AFFiNE Cloud #613 @alt1o @SaikaSakura
-- [feat] import markdown #615 @QiShaoXuan @thorseraq
-- [feat] i18n integration #567 @JimmFly
-- [feat] implement cloud provider for DataCenter @SaikaSakura @alt1o #708
+* * *
+
+###### Playground
+
+There are common styling options from such as **bold**, _italics,_ <u>underline</u> and strikethrough. As well as `in-line code blocks`. These can all be applied throughout your text, just highlight some text - you can try it here.
+
+> Let's explore some different blocks and features of AFFiNE. Such as this quote block
+
+Or maybe we can list the latest features:
+
+*   Drag Handle
+    *   Easily select, drag and rearrange your blocks.
+*   Block Hub
+    *   A convenient home for all blocks that can empower your doc.
+*   Workspaces
+    *   Further improved, with cloud support, collaboration and publishing.
+
+We can insert images:
+
+<u>/single image - 3 seperate sections [1][2][3]</u>
+
+```JavaScript
+// We can also write code in a code block
+let scrambled = "V2VsY29tZSB0byBBRkZpTkU="
+
+// To-do - function to unscramble
+```
+
+And before the next release here are some planned updates, in a to-do list:
+
+*   [ ] Database blocks
+*   [ ] feature
+*   [ ] feature
