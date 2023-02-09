@@ -17,10 +17,11 @@ export const StyledWrapper = styled('div')(() => {
   };
 });
 
-export const StyledToolWrapper = styled('div')(() => {
+export const StyledToolWrapper = styled('div')(({ theme }) => {
   return {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
+    position: 'fixed',
+    right: '30px',
+    bottom: '30px',
+    zIndex: theme.zIndex.popover,
   };
 });

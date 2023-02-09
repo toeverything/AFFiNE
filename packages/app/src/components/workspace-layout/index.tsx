@@ -19,7 +19,10 @@ export const WorkspaceLayout = ({ children }: PropsWithChildren) => {
       <WorkSpaceSliderBar />
       <StyledWrapper>
         {children}
-        <StyledToolWrapper id="toolWrapper">
+        <StyledToolWrapper>
+          <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+            {/* Slot for block hub */}
+          </div>
           <HelpIsland
             showList={router.query.pageId ? undefined : ['contact']}
           />

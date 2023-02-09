@@ -40,7 +40,7 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
         throw new Error('Can not find toolWrapper');
       }
       blockHubElement = blockHub;
-      toolWrapper.insertBefore(blockHub, toolWrapper.firstChild);
+      toolWrapper.appendChild(blockHub);
     });
     editorContainer.current?.appendChild(editor);
     if (page.isEmpty) {
