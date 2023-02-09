@@ -30,7 +30,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     if (workspace.published) {
       return (
         <>
-          <Wrapper margin="0 0 32px 0">{t('Published Description')}</Wrapper>
+          <Wrapper marginBottom="32px">{t('Published Description')}</Wrapper>
 
           <Wrapper margin="0 0 32px 0">
             <Content weight="500">{t('Share with link')}</Content>
