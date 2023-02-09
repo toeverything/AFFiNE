@@ -7,8 +7,8 @@ import {
   MoreVerticalIcon,
   RestoreIcon,
   DeleteIcon,
-  FavoritesIcon,
-  FavoritedIcon,
+  FavouritesIcon,
+  FavouritedIcon,
   OpenInNewIcon,
   TrashIcon,
 } from '@blocksuite/icons';
@@ -30,7 +30,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavoritedIcon /> : <FavoritesIcon />}
+        icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
         {favorite ? t('Remove from favorites') : t('Add to favorites')}
       </MenuItem>

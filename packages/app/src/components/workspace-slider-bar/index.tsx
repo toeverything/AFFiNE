@@ -15,7 +15,7 @@ import {
   ArrowDownIcon,
   SearchIcon,
   AllPagesIcon,
-  FavoritesIcon,
+  FavouritesIcon,
   TrashIcon,
   AddIcon,
   SettingsIcon,
@@ -130,7 +130,7 @@ export const WorkSpaceSliderBar = () => {
           </Link>
           <StyledListItem active={router.asPath === paths.favorite}>
             <StyledLink href={{ pathname: paths.favorite }}>
-              <FavoritesIcon />
+              <FavouritesIcon />
               {t('Favorites')}
             </StyledLink>
             <IconButton
