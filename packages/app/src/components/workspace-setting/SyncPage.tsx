@@ -54,7 +54,7 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           <Content weight={500}>{t('is a Local Workspace')}</Content>
         </FlexWrapper>
         <p>{t('Local Workspace Description')}</p>
-        <Wrapper margin="32px 0 0 0">
+        <Wrapper marginTop="32px">
           <EnableWorkspaceButton />
         </Wrapper>
       </>
