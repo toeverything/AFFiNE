@@ -71,7 +71,7 @@ const AppDefender = ({ children }: PropsWithChildren) => {
   const { synced } = useAppState();
 
   useEffect(() => {
-    if (router.asPath === '/') {
+    if (['/index.html', '/'].includes(router.asPath)) {
       router.replace('/workspace');
     }
   }, [router]);
