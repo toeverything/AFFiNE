@@ -27,7 +27,9 @@ export const HelpIsland = ({
         setShowSpread(!spread);
       }}
     >
-      <StyledAnimateWrapper spread={spread}>
+      <StyledAnimateWrapper
+        style={{ height: spread ? `${showList.length * 44}px` : 0 }}
+      >
         {showList.includes('contact') && (
           <Tooltip content={t('Contact Us')} placement="left-end">
             <StyledIconWrapper
