@@ -1,48 +1,30 @@
 import { PageList } from '@/components/page-list';
-import { ReactElement, useEffect, useMemo, useState } from 'react';
-import { PageMeta, useAppState } from '@/providers/app-state-provider';
-import { useRouter } from 'next/router';
-import {
-  PageContainer,
-  NavContainer,
-  StyledBreadcrumbs,
-  SearchButton,
-} from './[pageId]';
-import { Breadcrumbs } from '@affine/component';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { SearchIcon } from '@blocksuite/icons';
+import { usePublicWorkspace } from '@/hooks/use-public-workspace';
+import { PageMeta } from '@/providers/app-state-provider';
 import { useModal } from '@/store/globalModal';
-import { WorkspaceUnit } from '@affine/datacenter';
+import { Breadcrumbs } from '@affine/component';
+import { SearchIcon } from '@blocksuite/icons';
+import { useRouter } from 'next/router';
+import { ReactElement, useMemo } from 'react';
+import {
+  NavContainer,
+  PageContainer,
+  SearchButton,
+  StyledBreadcrumbs,
+} from './[pageId]';
+
 const All = () => {
-  const { dataCenter } = useAppState();
   const router = useRouter();
   const { triggerQuickSearchModal } = useModal();
-  const [workspace, setWorkspace] = useState<WorkspaceUnit>();
+  const workspaceUnit = usePublicWorkspace(router.query.workspaceId as string);
 
   const pageList = useMemo(() => {
-    return (workspace?.blocksuiteWorkspace?.meta.pageMetas ?? []) as PageMeta[];
-  }, [workspace]);
+    return (workspaceUnit?.blocksuiteWorkspace?.meta.pageMetas ??
+      []) as PageMeta[];
+  }, [workspaceUnit]);
 
-  const workspaceName = workspace?.blocksuiteWorkspace?.meta.name;
-
-  useEffect(() => {
-    const workspaceId = router.query.workspaceId as string;
-    if (workspaceId) {
-      dataCenter
-        .loadPublicWorkspace(router.query.workspaceId as string)
-        .then(data => {
-          if (workspaceId === router.query.workspaceId) {
-            setWorkspace(data);
-          }
-        })
-        .catch(() => {
-          if (workspaceId === router.query.workspaceId) {
-            router.push('/404');
-          }
-        });
-    }
-  }, [router, router.query, dataCenter]);
-
+  const workspaceName = workspaceUnit?.blocksuiteWorkspace?.meta.name;
   return (
     <PageContainer>
       <NavContainer>
@@ -53,7 +35,7 @@ const All = () => {
             <WorkspaceUnitAvatar
               size={24}
               name={workspaceName}
-              workspaceUnit={workspace}
+              workspaceUnit={workspaceUnit}
             />
             <span>{workspaceName}</span>
           </StyledBreadcrumbs>

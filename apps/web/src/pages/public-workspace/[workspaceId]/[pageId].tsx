@@ -1,10 +1,8 @@
-import { ReactElement, useEffect, useState } from 'react';
-import { useAppState } from '@/providers/app-state-provider';
+import { ReactElement, useEffect, useMemo, useState } from 'react';
 import type { NextPageWithLayout } from '../..//_app';
 import { displayFlex, styled } from '@affine/component';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import { Page as PageStore, Workspace } from '@blocksuite/store';
 import { PageLoading } from '@/components/loading';
 import { Breadcrumbs } from '@affine/component';
 import { IconButton } from '@affine/component';
@@ -12,64 +10,58 @@ import NextLink from 'next/link';
 import { PaperIcon, SearchIcon } from '@blocksuite/icons';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { useModal } from '@/store/globalModal';
+import { usePublicWorkspace } from '@/hooks/use-public-workspace';
+import { useTranslation } from '@affine/i18n';
 
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
+
 const Page: NextPageWithLayout = () => {
-  const [workspace, setWorkspace] = useState<Workspace>();
-  const [page, setPage] = useState<PageStore>();
-  const { dataCenter } = useAppState();
   const router = useRouter();
+  const { workspaceId, pageId } = router.query as Record<string, string>;
+  const workspaceUnit = usePublicWorkspace(workspaceId);
   const [loaded, setLoaded] = useState(false);
-  const [workspaceName, setWorkspaceName] = useState('');
-  const [pageTitle, setPageTitle] = useState('');
   const { triggerQuickSearchModal } = useModal();
+  const { t } = useTranslation();
+
+  const page = useMemo(() => {
+    if (workspaceUnit?.blocksuiteWorkspace) {
+      return workspaceUnit.blocksuiteWorkspace.getPage(pageId);
+    }
+    return null;
+  }, [workspaceUnit, pageId]);
+
+  const workspace = workspaceUnit?.blocksuiteWorkspace;
+  const pageTitle = page?.meta.title;
+  const workspaceName = workspace?.meta.name;
 
   useEffect(() => {
-    dataCenter
-      .loadPublicWorkspace(router.query.workspaceId as string)
-      .then(data => {
-        setWorkspaceName(data.blocksuiteWorkspace?.meta.name as string);
-        if (data.blocksuiteWorkspace) {
-          setWorkspace(data.blocksuiteWorkspace);
-          if (
-            router.query.pageId &&
-            data.blocksuiteWorkspace.meta.pageMetas.find(
-              p => p.id === router.query.pageId
-            )
-          ) {
-            const page = data.blocksuiteWorkspace.getPage(
-              router.query.pageId as string
-            );
-            page && setPageTitle(page.meta.title);
-            page && setPage(page);
-          } else {
-            router.push('/404');
-          }
-        }
-      })
-      .catch(() => {
-        router.push('/404');
-      });
-  }, [router, dataCenter]);
+    const pageNotFound = workspace?.meta.pageMetas.every(p => p.id !== pageId);
+    if (workspace && pageNotFound) {
+      router.push('/404');
+    }
+  }, [workspace, router, pageId]);
+
   return (
     <>
       {!loaded && <PageLoading />}
       <PageContainer>
         <NavContainer>
           <Breadcrumbs>
-            <StyledBreadcrumbs
-              href={`/public-workspace/${router.query.workspaceId}`}
-            >
-              <WorkspaceUnitAvatar size={24} name={workspaceName} />
+            <StyledBreadcrumbs href={`/public-workspace/${workspaceId}`}>
+              <WorkspaceUnitAvatar
+                size={24}
+                name={workspaceName}
+                workspaceUnit={workspaceUnit}
+              />
               <span>{workspaceName}</span>
             </StyledBreadcrumbs>
             <StyledBreadcrumbs
-              href={`/public-workspace/${router.query.workspaceId}/${router.query.pageId}`}
+              href={`/public-workspace/${workspaceId}/${pageId}`}
             >
               <PaperIcon fontSize={24} />
-              <span>{pageTitle ? pageTitle : 'Untitled'}</span>
+              <span>{pageTitle ? pageTitle : t('Untitled')}</span>
             </StyledBreadcrumbs>
           </Breadcrumbs>
           <SearchButton
