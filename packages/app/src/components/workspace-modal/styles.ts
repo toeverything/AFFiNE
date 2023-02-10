@@ -104,6 +104,7 @@ export const StyledHelperContainer = styled.div(({ theme }) => {
     color: theme.colors.iconColor,
     marginLeft: '15px',
     fontWeight: 400,
+    fontSize: theme.font.h6,
     ...displayFlex('center', 'center'),
   };
 });
