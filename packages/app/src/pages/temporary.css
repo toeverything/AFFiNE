@@ -9,3 +9,10 @@
 .affine-default-page-block-container > .affine-block-children-container {
   margin-left: -26px !important;
 }
+
+affine-block-hub {
+  position: unset !important;
+}
+.block-hub-menu-container {
+  position: unset !important;
+}

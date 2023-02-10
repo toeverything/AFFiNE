@@ -11,7 +11,7 @@ import { IconButton } from '@affine/component';
 import NextLink from 'next/link';
 import { PaperIcon, SearchIcon } from '@blocksuite/icons';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { useModal } from '@/providers/GlobalModalProvider';
+import { useModal } from '@/store/globalModal';
 
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,

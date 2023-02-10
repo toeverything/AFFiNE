@@ -66,7 +66,7 @@ const main = async () => {
   );
 
   const availableLanguages = languagesWithTranslations.filter(
-    language => language.completeRate === 1
+    language => language.completeRate > 0.8
   );
 
   availableLanguages
