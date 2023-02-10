@@ -8,8 +8,11 @@
   },
   "dependencies": {
     "@affine/i18n": "workspace:*",
-    "@blocksuite/editor": "0.4.0-20230209191848-0a912e3",
+    "@blocksuite/blocks": "0.4.0-20230210201705-1ce0043",
+    "@blocksuite/editor": "0.4.0-20230210201705-1ce0043",
     "@blocksuite/icons": "^2.0.2",
+    "@blocksuite/react": "0.4.0-20230210201705-1ce0043",
+    "@blocksuite/store": "0.4.0-20230210201705-1ce0043",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@mui/base": "=5.0.0-alpha.117",
