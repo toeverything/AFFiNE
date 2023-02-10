@@ -1,3 +1,4 @@
+import React from 'react';
 import { getLightTheme, ThemeProvider } from '../src';
 
 export const parameters = {
@@ -13,7 +14,7 @@ export const parameters = {
 const lightTheme = getLightTheme('page');
 
 export const decorators = [
-  Story => {
+  (Story: React.ComponentType) => {
     return (
       <ThemeProvider theme={lightTheme}>
         <Story />
