@@ -6,7 +6,6 @@ import {
   useState,
 } from 'react';
 import { EditorHeader } from '@/components/header';
-import EdgelessToolbar from '@/components/edgeless-toolbar';
 import MobileModal from '@/components/mobile-modal';
 import { useAppState } from '@/providers/app-state-provider';
 import type { NextPageWithLayout } from '../..//_app';
@@ -43,7 +42,6 @@ const Page: NextPageWithLayout = () => {
           setEditor={setEditorHandler}
         />
       )}
-      <EdgelessToolbar />
     </>
   );
 };
