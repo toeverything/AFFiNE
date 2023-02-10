@@ -1,5 +1,4 @@
 import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
-import { FlexWrapper } from '@affine/component';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
 

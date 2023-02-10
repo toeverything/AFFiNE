@@ -1,7 +1,5 @@
 import { MuiAvatar, textEllipsis } from '@affine/component';
 import { styled } from '@affine/component';
-import { StyledPopperContainer } from '@affine/component';
-
 export const SelectorWrapper = styled('div')({
   height: '100%',
   display: 'flex',
