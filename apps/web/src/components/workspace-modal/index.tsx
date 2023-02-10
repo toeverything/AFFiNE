@@ -1,11 +1,10 @@
 import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
-import { FlexWrapper } from '@affine/component';
 import { useState } from 'react';
 import { CreateWorkspaceModal } from '../create-workspace';
 
 import { Tooltip } from '@affine/component';
 
-import { AddIcon, HelpCenterIcon } from '@blocksuite/icons';
+import { PlusIcon, HelpIcon } from '@blocksuite/icons';
 
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
@@ -62,7 +61,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                 disablePortal={true}
               >
                 <StyledHelperContainer>
-                  <HelpCenterIcon />
+                  <HelpIcon />
                 </StyledHelperContainer>
               </Tooltip>
             </StyledModalHeaderLeft>
@@ -98,11 +97,9 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                 setCreateWorkspaceOpen(true);
               }}
             >
-              <FlexWrapper>
-                <StyleWorkspaceAdd className="add-icon">
-                  <AddIcon fontSize={18} />
-                </StyleWorkspaceAdd>
-              </FlexWrapper>
+              <StyleWorkspaceAdd className="add-icon">
+                <PlusIcon />
+              </StyleWorkspaceAdd>
 
               <StyleWorkspaceInfo>
                 <StyleWorkspaceTitle>{t('New Workspace')}</StyleWorkspaceTitle>

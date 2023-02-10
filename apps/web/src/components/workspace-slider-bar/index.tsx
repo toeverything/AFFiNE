@@ -17,7 +17,7 @@ import {
   AllPagesIcon,
   FavouritesIcon,
   TrashIcon,
-  AddIcon,
+  PlusIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
@@ -183,7 +183,7 @@ export const WorkSpaceSliderBar = () => {
               }
             }}
           >
-            <AddIcon /> {t('New Page')}
+            <PlusIcon /> {t('New Page')}
           </StyledNewPageButton>
         </StyledSliderBarWrapper>
       </StyledSliderBar>

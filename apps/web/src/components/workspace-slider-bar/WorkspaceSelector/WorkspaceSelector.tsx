@@ -1,4 +1,4 @@
-import { Avatar, WorkspaceName, SelectorWrapper } from './styles';
+import { WorkspaceName, SelectorWrapper } from './styles';
 import { useEffect, useState } from 'react';
 import { WorkspaceModal } from '@/components/workspace-modal';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
@@ -20,23 +20,16 @@ export const WorkspaceSelector = () => {
         }}
         data-testid="current-workspace"
       >
-        <Avatar
-          alt="Affine"
-          data-testid="workspace-avatar"
-          // src={currentWorkspace?.avatar}
-        >
-          <div
+        <div data-testid="workspace-avatar">
+          <WorkspaceUnitAvatar
             style={{
-              float: 'left',
+              flexShrink: 0,
             }}
-          >
-            <WorkspaceUnitAvatar
-              size={28}
-              name={currentWorkspace?.name ?? 'AFFiNE Test'}
-              workspaceUnit={currentWorkspace}
-            />
-          </div>
-        </Avatar>
+            size={32}
+            name={currentWorkspace?.name ?? 'AFFiNE Test'}
+            workspaceUnit={currentWorkspace}
+          />
+        </div>
         <WorkspaceName data-testid="workspace-name">
           {currentWorkspace?.name ?? 'AFFiNE Test'}
         </WorkspaceName>

@@ -8,6 +8,6 @@ export async function clickPageMoreActions(page: Page) {
   return page
     .getByTestId('editor-header-items')
     .getByRole('button')
-    .nth(2)
+    .nth(1)
     .click();
 }

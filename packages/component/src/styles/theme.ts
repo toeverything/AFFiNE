@@ -55,8 +55,8 @@ export const getLightTheme = (
       h5: '20px',
       h6: '18px',
       base: '16px',
-      xs: '14px',
-      sm: '12px',
+      sm: '14px',
+      xs: '12px',
 
       family: `Avenir Next, Poppins, ${basicFontFamily}`,
       numberFamily: `Roboto Mono, ${basicFontFamily}`,

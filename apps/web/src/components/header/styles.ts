@@ -4,6 +4,7 @@ export const StyledHeaderContainer = styled.div<{ hasWarning: boolean }>(
   ({ hasWarning }) => {
     return {
       height: hasWarning ? '96px' : '60px',
+      padding: '0 28px',
     };
   }
 );
@@ -39,6 +40,9 @@ export const StyledHeaderRightSide = styled('div')({
   height: '100%',
   display: 'flex',
   alignItems: 'center',
+  '>*:not(:last-child)': {
+    marginRight: '12px',
+  },
 });
 
 export const StyledBrowserWarning = styled.div<{ show: boolean }>(

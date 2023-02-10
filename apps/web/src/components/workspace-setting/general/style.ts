@@ -1,4 +1,4 @@
-import { styled } from '@affine/component';
+import { displayFlex, styled } from '@affine/component';
 import { Input } from '@affine/component';
 
 export const StyledInput = styled(Input)(({ theme }) => {
@@ -8,17 +8,16 @@ export const StyledInput = styled(Input)(({ theme }) => {
     fontSize: theme.font.sm,
   };
 });
-
-export const StyledProviderInfo = styled('p')(({ theme }) => {
+export const StyledWorkspaceInfo = styled.div(({ theme }) => {
   return {
-    color: theme.colors.iconColor,
-    svg: {
-      verticalAlign: 'sub',
-      marginRight: '10px',
+    ...displayFlex('flex-start', 'center'),
+    fontSize: '20px',
+    span: {
+      fontSize: theme.font.base,
+      marginLeft: '15px',
     },
   };
 });
-
 export const StyledAvatar = styled('div')(
   ({ disabled }: { disabled: boolean }) => {
     return {
@@ -27,21 +26,29 @@ export const StyledAvatar = styled('div')(
       cursor: disabled ? 'default' : 'pointer',
       ':hover': {
         '.camera-icon': {
-          display: 'block',
+          display: 'flex',
         },
       },
       '.camera-icon': {
         position: 'absolute',
+        top: 0,
+        left: 0,
         display: 'none',
         width: '100%',
         height: '100%',
         borderRadius: '50%',
         backgroundColor: 'rgba(60, 61, 63, 0.5)',
-        top: 0,
-        left: 0,
-        textAlign: 'center',
-        lineHeight: '72px',
+        justifyContent: 'center',
+        alignItems: 'center',
       },
     };
   }
 );
+
+export const StyledEditButton = styled('div')(({ theme }) => {
+  return {
+    color: theme.colors.primaryColor,
+    cursor: 'pointer',
+    marginLeft: '36px',
+  };
+});

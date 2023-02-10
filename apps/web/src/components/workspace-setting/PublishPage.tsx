@@ -5,11 +5,12 @@ import { toast } from '@affine/component';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useTranslation } from '@affine/i18n';
-import { EnableWorkspaceButton } from '../enable-workspace';
 import { Wrapper, Content, FlexWrapper } from '@affine/component';
+import { useModal } from '@/store/globalModal';
 export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const shareUrl = window.location.host + '/public-workspace/' + workspace.id;
   const { publishWorkspace } = useWorkspaceHelper();
+  const { triggerEnableWorkspaceModal } = useModal();
   const { t } = useTranslation();
   const [loaded, setLoaded] = useState(false);
   const togglePublic = async (flag: boolean) => {
@@ -83,7 +84,15 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   return (
     <>
       <Wrapper marginBottom="32px">{t('Publishing')}</Wrapper>
-      <EnableWorkspaceButton />
+      <Button
+        type="light"
+        shape="circle"
+        onClick={async () => {
+          triggerEnableWorkspaceModal();
+        }}
+      >
+        {t('Enable AFFiNE Cloud')}
+      </Button>
     </>
   );
 };

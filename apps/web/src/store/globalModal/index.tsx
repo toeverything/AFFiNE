@@ -8,6 +8,7 @@ import ShortcutsModal from '@/components/shortcuts-modal';
 import QuickSearch from '@/components/quick-search';
 import { LoginModal } from '@/components/login-modal';
 import ImportModal from '@/components/import';
+import { EnableWorkspaceModal } from '@/components/enable-workspace-modal';
 
 export type ModalState = {
   contact: boolean;
@@ -15,6 +16,7 @@ export type ModalState = {
   quickSearch: boolean;
   import: boolean;
   login: boolean;
+  enableWorkspace: boolean;
 };
 
 export type ModalActions = {
@@ -23,6 +25,7 @@ export type ModalActions = {
   triggerQuickSearchModal: (visible?: boolean) => void;
   triggerImportModal: () => void;
   triggerLoginModal: () => void;
+  triggerEnableWorkspaceModal: () => void;
 };
 
 const create = () =>
@@ -35,6 +38,7 @@ const create = () =>
           quickSearch: false,
           import: false,
           login: false,
+          enableWorkspace: false,
         },
         set => ({
           triggerShortcutsModal: () => {
@@ -60,6 +64,11 @@ const create = () =>
           triggerLoginModal: () => {
             set(({ login }) => ({
               login: !login,
+            }));
+          },
+          triggerEnableWorkspaceModal: () => {
+            set(({ enableWorkspace }) => ({
+              enableWorkspace: !enableWorkspace,
             }));
           },
         })
@@ -128,6 +137,14 @@ const Modals: React.FC = function Modal() {
         onClose={useCallback(() => {
           api.setState({
             login: false,
+          });
+        }, [api])}
+      />
+      <EnableWorkspaceModal
+        open={useModal(state => state.enableWorkspace)}
+        onClose={useCallback(() => {
+          api.setState({
+            enableWorkspace: false,
           });
         }, [api])}
       />

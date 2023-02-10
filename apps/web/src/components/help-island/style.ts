@@ -51,10 +51,7 @@ export const StyledIconWrapper = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledAnimateWrapper = styled('div', {
-  shouldForwardProp: prop => prop !== 'spread',
-})<{ spread: boolean }>(({ spread }) => ({
-  height: spread ? '88px' : '0',
+export const StyledAnimateWrapper = styled('div')(() => ({
   transition: 'height 0.2s cubic-bezier(0, 0, 0.55, 1.6)',
   overflow: 'hidden',
 }));

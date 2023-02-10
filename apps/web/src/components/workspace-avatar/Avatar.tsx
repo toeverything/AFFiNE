@@ -18,7 +18,6 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
             ...props.style,
             width: sizeStr,
             height: sizeStr,
-            border: '1px solid #fff',
             color: '#fff',
             borderRadius: '50%',
             overflow: 'hidden',

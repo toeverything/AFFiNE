@@ -14,6 +14,7 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
   const [localCache, setLocalCache] = useState(true);
   const { blobDataSynced } = useAppState();
   const { t } = useTranslation();
+
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
       <ModalWrapper width={560} height={292}>
@@ -28,8 +29,8 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
           <ContentTitle>{t('Sign out')}?</ContentTitle>
           <SignDes>
             {blobDataSynced
-              ? t('Set up an AFFiNE account to sync data')
-              : 'All data has been stored in the cloud'}
+              ? t('Sign out description')
+              : t('All data has been stored in the cloud')}
           </SignDes>
           <StyleTips>
             {localCache ? (

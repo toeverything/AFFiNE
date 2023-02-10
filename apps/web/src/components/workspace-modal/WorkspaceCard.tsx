@@ -1,16 +1,15 @@
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import {
-  CloudIcon,
-  LocalIcon,
-  OfflineIcon,
-  PublishedIcon,
-} from '@/components/workspace-modal/icons';
-import { UsersIcon } from '@blocksuite/icons';
+  JoinedWorkspaceIcon,
+  LocalWorkspaceIcon,
+  CloudWorkspaceIcon,
+  LocalDataIcon,
+  PublishIcon,
+} from '@/components/icons';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
 import { StyleWorkspaceInfo, StyleWorkspaceTitle, StyledCard } from './styles';
 import { useTranslation } from '@affine/i18n';
-import { FlexWrapper } from '@affine/component';
 
 const WorkspaceType = ({ workspaceData }: { workspaceData: WorkspaceUnit }) => {
   const { user } = useAppState();
@@ -20,7 +19,7 @@ const WorkspaceType = ({ workspaceData }: { workspaceData: WorkspaceUnit }) => {
   if (workspaceData.provider === 'local') {
     return (
       <p>
-        <LocalIcon />
+        <LocalWorkspaceIcon />
         {t('Local Workspace')}
       </p>
     );
@@ -28,12 +27,12 @@ const WorkspaceType = ({ workspaceData }: { workspaceData: WorkspaceUnit }) => {
 
   return isOwner ? (
     <p>
-      <CloudIcon />
+      <CloudWorkspaceIcon />
       {t('Cloud Workspace')}
     </p>
   ) : (
     <p>
-      <UsersIcon fontSize={20} color={'#FF646B'} />
+      <JoinedWorkspaceIcon />
       {t('Joined Workspace')}
     </p>
   );
@@ -56,9 +55,7 @@ export const WorkspaceCard = ({
       }}
       active={workspaceData.id === currentWorkspace?.id}
     >
-      <FlexWrapper>
-        <WorkspaceUnitAvatar size={58} workspaceUnit={workspaceData} />
-      </FlexWrapper>
+      <WorkspaceUnitAvatar size={58} workspaceUnit={workspaceData} />
 
       <StyleWorkspaceInfo>
         <StyleWorkspaceTitle>
@@ -67,13 +64,13 @@ export const WorkspaceCard = ({
         <WorkspaceType workspaceData={workspaceData} />
         {workspaceData.provider === 'local' && (
           <p>
-            <OfflineIcon />
+            <LocalDataIcon />
             {t('Available Offline')}
           </p>
         )}
         {workspaceData.published && (
           <p>
-            <PublishedIcon />
+            <PublishIcon />
             {t('Published to Web')}
           </p>
         )}

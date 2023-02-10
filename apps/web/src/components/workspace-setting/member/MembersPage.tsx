@@ -26,11 +26,12 @@ import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
 import { FlexWrapper } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { EnableWorkspaceButton } from '@/components/enable-workspace';
+import { useModal } from '@/store/globalModal';
 
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
   const { members, removeMember, loaded } = useMembers();
+  const { triggerEnableWorkspaceModal } = useModal();
   const { t } = useTranslation();
   const { confirm } = useConfirm();
 
@@ -165,14 +166,17 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   }
 
   return (
-    <Wrapper
-      style={{
-        fontWeight: '500',
-        fontSize: '18px',
-      }}
-    >
+    <>
       <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
-      <EnableWorkspaceButton />
-    </Wrapper>
+      <Button
+        type="light"
+        shape="circle"
+        onClick={async () => {
+          triggerEnableWorkspaceModal();
+        }}
+      >
+        {t('Enable AFFiNE Cloud')}
+      </Button>
+    </>
   );
 };

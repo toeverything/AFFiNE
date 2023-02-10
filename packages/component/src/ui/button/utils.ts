@@ -66,7 +66,9 @@ export const getButtonColors = (
           borderColor: theme.colors.primaryColor,
         },
         ':hover': {
-          borderColor: theme.colors.primaryColor,
+          borderColor: disabled
+            ? theme.colors.hoverBackground
+            : theme.colors.primaryColor,
         },
       };
     case 'warning':

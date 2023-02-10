@@ -6,6 +6,7 @@ export const StyledSliderBar = styled.div<{ show: boolean }>(
     return {
       width: show ? '256px' : '0',
       height: '100vh',
+      minHeight: '450px',
       background: theme.mode === 'dark' ? '#272727' : '#F9F9FB',
       boxShadow: theme.shadow.modal,
       transition: 'width .15s, padding .15s',
@@ -81,8 +82,9 @@ export const StyledListItem = styled.div<{
   };
 });
 
-export const StyledListItemForWorkspace = styled(StyledListItem)({
-  height: '52px',
+export const StyledListItemForWorkspace = styled.div({
+  height: '42px',
+  padding: '0 12px',
 });
 
 export const StyledLink = styled(Link)(() => {
