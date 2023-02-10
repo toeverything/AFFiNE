@@ -163,6 +163,9 @@ export class TauriIPCProvider extends LocalProvider {
         update: Array.from(update),
         id,
       });
+      if (!success) {
+        throw new Error(`YDoc update failed, id: ${id}`);
+      }
     }
     return workspaceUnit;
   }

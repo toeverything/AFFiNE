@@ -1,6 +1,6 @@
 import { BlobSyncState } from '@blocksuite/store';
 import * as ipcMethods from '../ipc/methods.js';
-import { BlobOptionsGetter, Signal } from '@blocksuite/store';
+import { Signal } from '@blocksuite/store';
 import type {
   BlobProvider,
   BlobSyncStateChangeEvent,
@@ -41,12 +41,10 @@ export class IPCBlobProvider implements BlobProvider {
     });
     // Make a Blob from the bytes
     const blob = new Blob([new Uint8Array(blobArray)], { type: 'image/bmp' });
-    if (blob) {
-      this.signals.onBlobSyncStateChange.emit({
-        id,
-        state: BlobSyncState.Success,
-      });
-    }
+    this.signals.onBlobSyncStateChange.emit({
+      id,
+      state: BlobSyncState.Success,
+    });
     return window.URL.createObjectURL(blob);
   }
 
