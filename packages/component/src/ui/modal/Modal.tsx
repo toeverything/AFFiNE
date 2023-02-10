@@ -40,7 +40,7 @@ export const Modal = (props: ModalProps) => {
     <StyledModal
       {...otherProps}
       open={open}
-      components={{ Backdrop }}
+      slots={{ backdrop: Backdrop }}
       alignItems={transformConfig[vertical]}
       justifyContent={transformConfig[horizontal]}
     >

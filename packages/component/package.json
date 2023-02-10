@@ -12,9 +12,9 @@
     "@blocksuite/icons": "^2.0.2",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
-    "@mui/base": "=5.0.0-alpha.101",
-    "@mui/icons-material": "=5.10.9",
-    "@mui/material": "=5.8.6",
+    "@mui/base": "=5.0.0-alpha.117",
+    "@mui/icons-material": "=5.11.0",
+    "@mui/material": "=5.11.8",
     "lit": "^2.6.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
