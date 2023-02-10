@@ -3,10 +3,10 @@ name = "ipc_types"
 version = "0.1.0"
 
 [dependencies]
-jwst-storage = { path = "../../src-OctoBase/libs/jwst-storage", features = [
+cloud-database = { git = "https://github.com/toeverything/OctoBase", rev = "5f1162b", features = [
   "sqlite",
 ] }
-cloud-database = { path = "../../src-OctoBase/libs/cloud-database", features = [
+jwst-storage = { git = "https://github.com/toeverything/OctoBase", rev = "5f1162b", features = [
   "sqlite",
 ] }
 project-root = "0.2.2"

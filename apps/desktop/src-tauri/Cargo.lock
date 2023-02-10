@@ -3,8 +3,24 @@
 version = 3
 
 [[package]]
-name = "AFFiNE"
-version = "0.0.0"
+name = "Inflector"
+version = "0.11.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
+dependencies = [
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
+name = "adler"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
+
+[[package]]
+name = "affine-client"
+version = "0.0.1"
 dependencies = [
  "bytes",
  "cloud-database",
@@ -28,24 +44,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "Inflector"
-version = "0.11.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
-dependencies = [
- "lazy_static",
- "regex",
-]
-
-[[package]]
-name = "adler"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
-
-[[package]]
 name = "affine-cloud-migration"
 version = "0.1.0"
+source = "git+https://github.com/toeverything/OctoBase?rev=5f1162b#5f1162b570588224687169158446168164be1fd5"
 dependencies = [
  "sea-orm-migration",
  "tokio",
@@ -464,6 +465,7 @@ dependencies = [
 [[package]]
 name = "cang-jie"
 version = "0.14.0"
+source = "git+https://github.com/toeverything/OctoBase?rev=5f1162b#5f1162b570588224687169158446168164be1fd5"
 dependencies = [
  "jieba-rs",
  "log",
@@ -621,6 +623,7 @@ dependencies = [
 [[package]]
 name = "cloud-database"
 version = "0.1.0"
+source = "git+https://github.com/toeverything/OctoBase?rev=5f1162b#5f1162b570588224687169158446168164be1fd5"
 dependencies = [
  "affine-cloud-migration",
  "anyhow",
@@ -1999,6 +2002,7 @@ dependencies = [
 [[package]]
 name = "jwst"
 version = "0.1.0"
+source = "git+https://github.com/toeverything/OctoBase?rev=5f1162b#5f1162b570588224687169158446168164be1fd5"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2021,6 +2025,7 @@ dependencies = [
 [[package]]
 name = "jwst-blob-migration"
 version = "0.1.0"
+source = "git+https://github.com/toeverything/OctoBase?rev=5f1162b#5f1162b570588224687169158446168164be1fd5"
 dependencies = [
  "sea-orm-migration",
  "tokio",
@@ -2029,6 +2034,7 @@ dependencies = [
 [[package]]
 name = "jwst-doc-migration"
 version = "0.1.0"
+source = "git+https://github.com/toeverything/OctoBase?rev=5f1162b#5f1162b570588224687169158446168164be1fd5"
 dependencies = [
  "sea-orm-migration",
  "tokio",
@@ -2037,6 +2043,7 @@ dependencies = [
 [[package]]
 name = "jwst-logger"
 version = "0.1.0"
+source = "git+https://github.com/toeverything/OctoBase?rev=5f1162b#5f1162b570588224687169158446168164be1fd5"
 dependencies = [
  "chrono",
  "nu-ansi-term",
@@ -2049,6 +2056,7 @@ dependencies = [
 [[package]]
 name = "jwst-storage"
 version = "0.1.0"
+source = "git+https://github.com/toeverything/OctoBase?rev=5f1162b#5f1162b570588224687169158446168164be1fd5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5765,6 +5773,7 @@ checksum = "d2d7d3948613f75c98fd9328cfdcc45acc4d360655289d0a7d4ec931392200a3"
 [[package]]
 name = "y-sync"
 version = "0.1.0"
+source = "git+https://github.com/toeverything/y-sync?rev=e061fa3#e061fa3f7b74c6350b2d2ff141ce79c3cb78925e"
 dependencies = [
  "lib0",
  "thiserror",
@@ -5774,8 +5783,14 @@ dependencies = [
 [[package]]
 name = "yrs"
 version = "0.12.0"
+source = "git+https://github.com/toeverything/y-crdt?rev=a1034b4#a1034b46ac852c13112c0a3cd94cb1587901315b"
 dependencies = [
  "lib0",
  "rand 0.7.3",
  "smallstr",
 ]
+
+[[patch.unused]]
+name = "rust-embed"
+version = "6.4.2"
+source = "git+https://github.com/pyrossh/rust-embed?rev=7c0fc42#7c0fc42f2dbecba295d956b3273b9b117ccbdc45"

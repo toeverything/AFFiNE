@@ -1,28 +1,33 @@
 [package]
-name = "AFFiNE"
-version = "0.0.0"
-description = "Development Tool for BlockSuite"
-authors = ["you"]
-license = ""
-repository = ""
+name = "affine-client"
+version = "0.0.1"
+description = "Multiple platform client for AFFiNE"
+authors = [
+  "linonetwo <linonetwo012@gmail.com>",
+  "DarkSky <darksky2048@gmail.com>",
+]
+license = "MPL-2.0"
+repository = "https://github.com/toeverything/AFFiNE"
 edition = "2021"
-rust-version = "1.57"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[build-dependencies]
-tauri-build = { version = "1.2", features = [] }
+[features]
+# by default Tauri runs in production mode
+# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
+default = ["custom-protocol"]
+# this feature is used used for production builds where `devPath` points to the filesystem
+# DO NOT remove this
+custom-protocol = ["tauri/custom-protocol"]
 
 [dependencies]
 bytes = "1.3.0"
 ipc_types = { path = "./types" }
 futures = "^0.3.25"
 js-sys = "0.3.60"
-jwst = { path = "../src-OctoBase/libs/jwst" }
-jwst-storage = { path = "../src-OctoBase/libs/jwst-storage", features = [
+jwst = { git = "https://github.com/toeverything/OctoBase", rev = "5f1162b" }
+jwst-storage = { git = "https://github.com/toeverything/OctoBase", rev = "5f1162b", features = [
   "sqlite",
 ] }
-cloud-database = { path = "../src-OctoBase/libs/cloud-database", features = [
+cloud-database = { git = "https://github.com/toeverything/OctoBase", rev = "5f1162b", features = [
   "sqlite",
 ] }
 project-root = "0.2.2"
@@ -34,16 +39,16 @@ tauri = { version = "1.2", features = ["api-all", "devtools"] }
 tokio = { version = "1.23.0", features = ["rt", "macros"] }
 lib0 = "0.12.0"
 moka = { version = "0.9.6", features = ["future"] }
-yrs = { path = "../src-OctoBase/libs/vendors/y-crdt/yrs" }
-y-sync = { path = "../src-OctoBase/libs/vendors/y-sync" }
+y-sync = "0.1.0"
+yrs = "=0.12.0"
 
-[features]
-# by default Tauri runs in production mode
-# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
-default = ["custom-protocol"]
-# this feature is used used for production builds where `devPath` points to the filesystem
-# DO NOT remove this
-custom-protocol = ["tauri/custom-protocol"]
+[build-dependencies]
+tauri-build = { version = "1.2", features = [] }
+
+[patch.crates-io]
+rust-embed = { git = "https://github.com/pyrossh/rust-embed", rev = "7c0fc42" }
+yrs = { git = "https://github.com/toeverything/y-crdt", rev = "a1034b4" }
+y-sync = { git = "https://github.com/toeverything/y-sync", rev = "e061fa3" }
 
 [profile.release.package.wry]
 debug = true
