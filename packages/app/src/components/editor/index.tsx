@@ -37,7 +37,8 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
     editor.createBlockHub().then(blockHub => {
       const toolWrapper = document.querySelector('#toolWrapper');
       if (!toolWrapper) {
-        throw new Error('Can not find toolWrapper');
+        // In an invitation page there is no toolWrapper, which contains helper icon and blockHub icon
+        return;
       }
       blockHubElement = blockHub;
       toolWrapper.appendChild(blockHub);
