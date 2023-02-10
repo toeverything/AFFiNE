@@ -78,7 +78,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: ./packages/app/out
+          path: ./apps/web/out
 
   push_to_registry:
     # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
@@ -104,7 +104,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: packages/app/out/
+          path: apps/web/out/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2

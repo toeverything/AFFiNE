@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const pkgPath = path.join(__dirname, '../packages/app/package.json');
+const pkgPath = path.join(__dirname, '../apps/web/package.json');
 const record = fs.readFileSync(pkgPath, 'utf8');
 const temp = JSON.parse(record);
 loadPage();

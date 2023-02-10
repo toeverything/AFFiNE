@@ -63,7 +63,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: ./packages/app/.next
+          path: ./apps/web/.next
 
   lint:
     name: Lint and E2E Test
@@ -99,7 +99,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: packages/app/.next/
+          path: apps/web/.next/
 
       - name: Lint & E2E Test & Unit Test
         run: |
@@ -187,7 +187,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: ./packages/app/out
+          path: ./apps/web/out
 
   publish-community:
     name: Push Community Image
@@ -213,7 +213,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: packages/app/out/
+          path: apps/web/out/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -316,7 +316,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: packages/app/out/
+          path: apps/web/out/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2

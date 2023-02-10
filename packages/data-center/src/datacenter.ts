@@ -46,7 +46,16 @@ export class DataCenter {
       };
     };
     // TODO: switch different provider
-    await dc.registerProvider(new LocalProvider(getInitParams()));
+    if (
+      typeof window !== 'undefined' &&
+      window.CLIENT_APP &&
+      typeof window.__TAURI_IPC__ === 'function'
+    ) {
+      const { TauriIPCProvider } = await import('./provider/tauri-ipc');
+      await dc.registerProvider(new TauriIPCProvider(getInitParams()));
+    } else {
+      await dc.registerProvider(new LocalProvider(getInitParams()));
+    }
     await dc.registerProvider(new AffineProvider(getInitParams()));
 
     for (const provider of dc.providerMap.values()) {

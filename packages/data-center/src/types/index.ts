@@ -11,6 +11,13 @@ import { getLogger } from '../logger';
 //   provider: string;
 // };
 
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    __TAURI_IPC__: Function;
+  }
+}
+
 export type User = {
   name: string;
   id: string;

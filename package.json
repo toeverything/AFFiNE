@@ -6,10 +6,11 @@
   "license": "MPL-2.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev",
-    "dev:ac": "pnpm --filter=!@affine/app build && NODE_API_SERVER=ac pnpm --filter @affine/app dev",
+    "dev": "cross-env NODE_ENV=development pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev",
+    "dev:ac": "pnpm --filter=!@affine/app build && cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
     "dev:local": "pnpm --filter=!@affine/app build && cross-env NODE_API_SERVER=local pnpm --filter @affine/app dev",
     "build": " pnpm --filter=!@affine/app build && pnpm --filter!=@affine/datacenter -r build",
+    "build:client": " pnpm --filter=@affine/client-app build:app",
     "build:storybook": " pnpm -r build-storybook",
     "export": "pnpm --filter @affine/app export",
     "start": "pnpm --filter @affine/app start",
@@ -32,6 +33,7 @@
     "@types/node": "^18.11.17",
     "@typescript-eslint/eslint-plugin": "^5.47.0",
     "@typescript-eslint/parser": "^5.47.0",
+    "concurrently": "^7.6.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.30.0",
     "eslint-config-next": "12.3.1",
@@ -80,6 +82,7 @@
   },
   "pnpm": {
     "patchedDependencies": {
+      "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch",
       "next@13.1.0": "patches/next@13.1.0.patch"
     }
   }

@@ -2,7 +2,7 @@ const path = require('node:path');
 
 module.exports = {
   stories: ['../src/**/*.stories.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
-  staticDirs: ['../../app/public'],
+  staticDirs: ['../../../apps/web/public'],
   addons: ['@storybook/addon-links', '@storybook/addon-essentials'],
   core: {
     builder: '@storybook/builder-webpack5',
