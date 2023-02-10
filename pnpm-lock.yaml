@@ -90,6 +90,7 @@ importers:
       react-dom: 18.2.0
       typescript: ^4.9.5
       yjs: ^13.5.45
+      zustand: ^4.3.2
     dependencies:
       '@affine/component': link:../component
       '@affine/datacenter': link:../data-center
@@ -120,6 +121,7 @@ importers:
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       yjs: 13.5.45
+      zustand: 4.3.2_react@18.2.0
     devDependencies:
       '@types/node': 18.7.18
       '@types/react': 18.0.20
@@ -18150,6 +18152,22 @@ packages:
 
   /zod/3.20.6:
     resolution: {integrity: sha512-oyu0m54SGCtzh6EClBVqDDlAYRz4jrVtKwQ7ZnsEmMI9HnzuZFj8QFwAY1M5uniIYACdGvv0PBWPF2kO0aNofA==}
+    dev: false
+
+  /zustand/4.3.2_react@18.2.0:
+    resolution: {integrity: sha512-rd4haDmlwMTVWVqwvgy00ny8rtti/klRoZjFbL/MAcDnmD5qSw/RZc+Vddstdv90M5Lv6RPgWvm1Hivyn0QgJw==}
+    engines: {node: '>=12.7.0'}
+    peerDependencies:
+      immer: '>=9.0'
+      react: '>=16.8'
+    peerDependenciesMeta:
+      immer:
+        optional: true
+      react:
+        optional: true
+    dependencies:
+      react: 18.2.0
+      use-sync-external-store: 1.2.0_react@18.2.0
     dev: false
 
   /zwitch/1.0.5:

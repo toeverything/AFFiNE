@@ -9,7 +9,7 @@ import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
 import { Tooltip } from '@affine/component';
 
 import { useTranslation } from '@affine/i18n';
-import { useModal } from '@/providers/GlobalModalProvider';
+import { useModal } from '@/store/globalModal';
 import { MuiFade } from '@affine/component';
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({

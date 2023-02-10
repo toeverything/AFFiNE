@@ -1,4 +1,4 @@
-import { useModal } from '@/providers/GlobalModalProvider';
+import { useModal } from '@/store/globalModal';
 import { styled } from '@affine/component';
 import { AffineIcon } from '../../icons/Icons';
 import {
