@@ -11,7 +11,7 @@ import { Results } from './Results';
 import { Footer } from './Footer';
 import { Command } from 'cmdk';
 import { useEffect, useState } from 'react';
-import { useModal } from '@/providers/GlobalModalProvider';
+import { useModal } from '@/store/globalModal';
 import { getUaHelper } from '@/utils';
 import { useRouter } from 'next/router';
 import { PublishedResults } from './PublishedResults';

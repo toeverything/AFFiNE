@@ -23,7 +23,7 @@ import {
 import Link from 'next/link';
 import { MuiCollapse } from '@affine/component';
 import { Tooltip } from '@affine/component';
-import { useModal } from '@/providers/GlobalModalProvider';
+import { useModal } from '@/store/globalModal';
 import { useAppState } from '@/providers/app-state-provider';
 import { IconButton } from '@affine/component';
 import useLocalStorage from '@/hooks/use-local-storage';

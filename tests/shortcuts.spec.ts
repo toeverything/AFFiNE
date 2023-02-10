@@ -10,6 +10,7 @@ test.describe('Shortcuts Modal', () => {
     const box = await faqIcon.boundingBox();
     expect(box?.x).not.toBeUndefined();
     await page.mouse.move((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
+    await faqIcon.click();
 
     const shortcutsIcon = page.locator('[data-testid=shortcuts-icon]');
     expect(await shortcutsIcon.isVisible()).toEqual(true);

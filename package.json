@@ -82,7 +82,8 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch"
+      "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch",
+      "next@13.1.0": "patches/next@13.1.0.patch"
     }
   }
 }

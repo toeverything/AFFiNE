@@ -1,28 +1,20 @@
+import fs from 'fs';
+import path from 'path';
 import { expect } from '@playwright/test';
 import { test } from './libs/playwright.js';
 import { loadPage } from './libs/load-page.js';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const pkgPath = path.join(__dirname, '../packages/app/package.json');
+const record = fs.readFileSync(pkgPath, 'utf8');
+const temp = JSON.parse(record);
 loadPage();
-
 test.describe('web console', () => {
-  // TODO: playwright need to support json import in esm
-  test.skip('editor version', async ({ page }) => {
-    // TODO: playwright need to support json import in esm
-    // const pkg = await import('./../packages/app/package.json', {
-    //   assert: { type: 'json' },
-    // });
-    const pkg = {} as any;
-
-    // https://playwright.dev/docs/evaluating
-    // https://github.com/microsoft/playwright/issues/13059
-    // Get the handle to a specific function.
-    //Later on, call this function with some arguments.
-    // const msg = await getEditoVersionHandle.evaluate((post, args) => post);
-    // console.log(getEditoVersionHandle);
+  test('editor version', async ({ page }) => {
+    const pkgEditorVersion = temp.dependencies['@blocksuite/editor'];
     const editoVersion = await page.evaluate(() => window.__editoVersion);
-    // const documentEditorVersion = await page.inputValue('input#editor-version');
-    const pkgEditorVersion = pkg.dependencies['@blocksuite/editor'];
-
     expect(editoVersion).toBe(pkgEditorVersion);
   });
 });
