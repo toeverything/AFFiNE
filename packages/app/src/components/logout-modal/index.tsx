@@ -29,9 +29,7 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
           <ContentTitle>{t('Sign out')}?</ContentTitle>
           <SignDes>
             {blobDataSynced
-              ? t(
-                  'Signing out will cause the unsynchronized content to be lost'
-                )
+              ? t('Sign out description')
               : t('All data has been stored in the cloud')}
           </SignDes>
           <StyleTips>

@@ -6,6 +6,9 @@
   "will delete member": "将删除成员",
   "Download data Description1": "此操作会在你的设备上占用更多空间。",
   "Download data Description2": "此操作会在你的设备上占用少许空间。",
+  "It takes up more space on your device": {
+    "": "此操作会在你的设备上占用更多空间。"
+  },
   "Cloud Workspace": "云端工作区",
   "Cloud Workspace Description": "所有数据将被同步并保存在AFFiNE账户(<1>{{email}}</1>)中",
   "Copied link to clipboard": "复制链接到剪贴板",
@@ -13,10 +16,14 @@
   "Back Home": "返回首页",
   "Enabled success": "启用成功",
   "Published Description": "当前工作区已被发布到Web，所有人都可以通过链接来查看此工作区内容。",
+  "All data has been stored in the cloud": "所有数据已被保存在云端。",
   "Download data": "下载 {{CoreOrAll}} 数据",
   "Force Sign Out": "强制登出",
   "Joined Workspace": "加入工作区",
   "Local Workspace": "本地工作区",
+  "Confirm": "确认",
+  "Download all data": "下载所有数据",
+  "Download core data": "下载核心数据",
   "Add to favorites": "加入收藏",
   "All pages": "全部页面",
   "Cancel": "取消",
@@ -167,8 +174,13 @@
   "Member has been removed": "{{name}} 已被移除。",
   "Owner": "所有者",
   "Published to Web": "公开到互联网",
+  "Data sync mode": "数据同步模式",
+  "Export AFFiNE backup file": "导出 AFFiNE 备份文件（即将到来）",
   "Retain local cached data": "保留本地缓存数据",
   "Set a Workspace name": "设置工作区名字",
   "Workspace Avatar": "工作区头像",
-  "is a Local Workspace": "是本地工作区"
+  "is a Local Workspace": "是本地工作区",
+  "Sign out description": "登出会导致未同步的内容丢失",
+  "Not now": "稍后再说",
+  "Saved then enable AFFiNE Cloud": "所有改动已保存在本地，点击启用 AFFiNE 云服务"
 }

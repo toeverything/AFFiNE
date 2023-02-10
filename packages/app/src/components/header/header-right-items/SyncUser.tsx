@@ -21,9 +21,7 @@ export const SyncUser = () => {
   if (currentWorkspace?.provider === 'local') {
     return (
       <Tooltip
-        content={t(
-          'All changes are saved locally, click to enable AFFiNE Cloud.'
-        )}
+        content={t('Saved then enable AFFiNE Cloud')}
         placement="bottom-end"
       >
         <IconWrapper
@@ -39,7 +37,7 @@ export const SyncUser = () => {
   }
 
   return (
-    <Tooltip content={t('AFFINE Cloud')} placement="bottom-end">
+    <Tooltip content={t('AFFiNE Cloud')} placement="bottom-end">
       <IconWrapper>
         <CloudWorkspaceIcon />
       </IconWrapper>

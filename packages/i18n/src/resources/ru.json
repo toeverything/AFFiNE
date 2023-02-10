@@ -7,6 +7,9 @@
   "is a Cloud Workspace": "это облачное рабочее пространство.",
   "Workspace Avatar": "Аватар рабочего пространства",
   "Published to Web": "Опубликовано в Интернете",
+  "Sign out description": "Выход приведет к потере несинхронизированного контента.",
+  "Export Description": "Вы можете экспортировать все данные рабочего пространства, а экспортированные данные можно повторно импортировать.",
+  "Export AFFiNE backup file": "Экспорт файла резервной копии AFFINE (скоро)",
   "is a Local Workspace": "это локальное рабочее пространство",
   "Wait for Sync": "Дождитесь синхронизации",
   "Set a Workspace name": "Задайте имя рабочего пространства",
@@ -16,6 +19,12 @@
   "will delete member": "удалит участника",
   "Not now": "Не сейчас",
   "Download all data": "Скачать все данные",
+  "It takes up little space on your device": {
+    "": "Занимает мало места на вашем устройстве."
+  },
+  "It takes up more space on your device": {
+    "": "Занимает много места на вашем устройстве."
+  },
   "All data has been stored in the cloud": "Все данные хранятся в облаке.",
   "Confirm": "Подтвердить",
   "Data sync mode": "Режим синхронизации данных",
