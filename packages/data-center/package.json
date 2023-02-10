@@ -29,6 +29,7 @@
   "dependencies": {
     "@blocksuite/blocks": "0.4.0-20230210031655-264744e",
     "@blocksuite/store": "0.4.0-20230210031655-264744e",
+    "@tauri-apps/api": "^1.2.0",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
     "firebase": "^9.15.0",

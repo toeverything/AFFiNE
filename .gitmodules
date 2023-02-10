@@ -1,0 +1,3 @@
+[submodule "client-app/src-OctoBase"]
+	path = client-app/src-OctoBase
+	url = https://github.com/toeverything/OctoBase

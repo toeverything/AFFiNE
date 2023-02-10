@@ -1,0 +1,240 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IWorkspaceParameters",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["CreateWorkspace"],
+      "properties": {
+        "CreateWorkspace": {
+          "$ref": "#/definitions/CreateWorkspace"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["GetWorkspace"],
+      "properties": {
+        "GetWorkspace": {
+          "$ref": "#/definitions/GetWorkspace"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["GetWorkspaces"],
+      "properties": {
+        "GetWorkspaces": {
+          "$ref": "#/definitions/GetWorkspaces"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["GetWorkspaceResult"],
+      "properties": {
+        "GetWorkspaceResult": {
+          "$ref": "#/definitions/GetWorkspaceResult"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["GetWorkspacesResult"],
+      "properties": {
+        "GetWorkspacesResult": {
+          "$ref": "#/definitions/GetWorkspacesResult"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["UpdateWorkspace"],
+      "properties": {
+        "UpdateWorkspace": {
+          "$ref": "#/definitions/UpdateWorkspace"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["CreateWorkspaceResult"],
+      "properties": {
+        "CreateWorkspaceResult": {
+          "$ref": "#/definitions/CreateWorkspaceResult"
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "CreateWorkspace": {
+      "type": "object",
+      "required": ["name", "user_id"],
+      "properties": {
+        "name": {
+          "description": "only set name, avatar is update in datacenter to yDoc directly",
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        }
+      }
+    },
+    "CreateWorkspaceResult": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "GetWorkspace": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "GetWorkspaceResult": {
+      "type": "object",
+      "required": ["workspace"],
+      "properties": {
+        "workspace": {
+          "$ref": "#/definitions/WorkspaceDetail"
+        }
+      }
+    },
+    "GetWorkspaces": {
+      "type": "object",
+      "required": ["user_id"],
+      "properties": {
+        "user_id": {
+          "type": "string"
+        }
+      }
+    },
+    "GetWorkspacesResult": {
+      "type": "object",
+      "required": ["workspaces"],
+      "properties": {
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WorkspaceWithPermission"
+          }
+        }
+      }
+    },
+    "PermissionType": {
+      "type": "integer",
+      "enum": [0, 1, 10, 99]
+    },
+    "UpdateWorkspace": {
+      "type": "object",
+      "required": ["id", "public"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "public": {
+          "type": "boolean"
+        }
+      }
+    },
+    "User": {
+      "type": "object",
+      "required": ["created_at", "email", "id", "name"],
+      "properties": {
+        "avatar_url": {
+          "type": ["string", "null"]
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "email": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "WorkspaceDetail": {
+      "type": "object",
+      "required": ["created_at", "id", "member_count", "public", "type"],
+      "properties": {
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "member_count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/User"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "public": {
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/WorkspaceType"
+        }
+      }
+    },
+    "WorkspaceType": {
+      "type": "integer",
+      "enum": [0, 1]
+    },
+    "WorkspaceWithPermission": {
+      "type": "object",
+      "required": ["created_at", "id", "permission", "public", "type"],
+      "properties": {
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "permission": {
+          "$ref": "#/definitions/PermissionType"
+        },
+        "public": {
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/WorkspaceType"
+        }
+      }
+    }
+  }
+}
