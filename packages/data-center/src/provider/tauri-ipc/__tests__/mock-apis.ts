@@ -4,7 +4,7 @@ import {
   GetDocumentParameter,
   GetDocumentResponse,
 } from '../ipc/types/document';
-import { CreateUser, User } from '../ipc/types/user';
+import { CreateUser, GetUserParameters, User } from '../ipc/types/user';
 import {
   CreateWorkspace,
   CreateWorkspaceResult,
@@ -59,6 +59,14 @@ export const getBlob = async (parameters: GetBlob): Promise<number[]> =>
  * @returns
  */
 export const createUser = async (parameters: CreateUser): Promise<User> =>
+  await {
+    created_at: 0,
+    id: '1',
+    email: 'xxx@xxx.xxx',
+    name: 'xxx',
+  };
+
+export const getUser = async (parameters: GetUserParameters): Promise<User> =>
   await {
     created_at: 0,
     id: '1',

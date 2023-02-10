@@ -4,6 +4,8 @@ import { TauriIPCProvider } from '../index.js';
 import { MessageCenter } from '../../../message/index.js';
 import * as ipcMethods from './mock-apis.js';
 
+import 'fake-indexeddb/auto';
+
 test.describe.serial('tauri-ipc provider', async () => {
   const workspaceMetaCollection = new WorkspaceUnitCollection();
   const provider = new TauriIPCProvider({
@@ -25,14 +27,20 @@ test.describe.serial('tauri-ipc provider', async () => {
     expect(workspaceMetaCollection.workspaces[0].name).toEqual(workspaceName);
   });
 
-  test('workspace list cache', async () => {
+  test('workspace list', async () => {
     const workspacesMetaCollection1 = new WorkspaceUnitCollection();
     const provider1 = new TauriIPCProvider({
       workspaces: workspacesMetaCollection1.createScope(),
       messageCenter: new MessageCenter(),
     });
+    provider1.init(ipcMethods);
+
+    await provider1.getUserInfo();
     await provider1.loadWorkspaces();
-    expect(workspacesMetaCollection1.workspaces.length).toEqual(1);
+    expect(workspacesMetaCollection1.workspaces.length).toEqual(0);
+    await provider1.createWorkspace({
+      name: workspaceName,
+    });
     expect(workspacesMetaCollection1.workspaces[0].name).toEqual(workspaceName);
     expect(workspacesMetaCollection1.workspaces[0].id).toEqual(workspaceId);
   });
