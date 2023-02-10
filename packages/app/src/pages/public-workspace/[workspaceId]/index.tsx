@@ -11,7 +11,7 @@ import {
 import { Breadcrumbs } from '@affine/component';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { SearchIcon } from '@blocksuite/icons';
-import { useModal } from '@/providers/GlobalModalProvider';
+import { useModal } from '@/store/globalModal';
 const All = () => {
   const { dataCenter } = useAppState();
   const router = useRouter();

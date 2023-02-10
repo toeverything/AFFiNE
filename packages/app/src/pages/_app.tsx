@@ -12,7 +12,7 @@ import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import type { NextPage } from 'next';
 import { AppStateProvider } from '@/providers/app-state-provider';
 import ConfirmProvider from '@/providers/ConfirmProvider';
-import { ModalProvider } from '@/providers/GlobalModalProvider';
+import { ModalProvider } from '@/store/globalModal';
 // import AppStateProvider2 from '@/providers/app-state-provider2/provider';
 
 import { useRouter } from 'next/router';
