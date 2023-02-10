@@ -19,7 +19,6 @@ type inputProps = {
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 };
-
 export const Input = (props: inputProps) => {
   const {
     disabled,
@@ -35,15 +34,11 @@ export const Input = (props: inputProps) => {
   } = props;
   const [value, setValue] = useState<string>(valueProp || '');
   const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
-    if (
-      (maxLength && e.target.value.length > maxLength) ||
-      (minLength && e.target.value.length < minLength)
-    ) {
-      return;
-    }
-    setValue(e.target.value);
-    onChange && onChange(e.target.value);
+    const { value } = e.target;
+    setValue(value);
+    onChange && onChange(value);
   };
+
   const handleBlur: InputHTMLAttributes<HTMLInputElement>['onBlur'] = e => {
     onBlur && onBlur(e);
   };
