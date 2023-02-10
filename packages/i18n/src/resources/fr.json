@@ -175,7 +175,6 @@
   "Export Description": "Vous pouvez exporter l'intégralité des données de l'espace de travail à titre de sauvegarde ; les données ainsi exportées peuvent être réimportées.",
   "Download all data": "Télécharger toutes les données",
   "Download data Description1": "Cela prendra davantage d'espace sur votre appareil.",
-  "Export AFFiNE backup file": "Exporter un fichier de sauvegarde AFFINE (à venir...)",
   "It takes up more space on your device": {
     "": "Cela prendra davantage d'espace sur votre appareil."
   },
@@ -185,5 +184,6 @@
   "is a Cloud Workspace": "est un espace de travail distant",
   "will delete member": "supprimera le membre",
   "is a Local Workspace": "est un espace de travail local",
-  "Cloud Workspace Description": "Toutes les données vont être synchronisées et sauvegardées sur le compte AFFiNE <1>{{email}}</1>"
+  "Cloud Workspace Description": "Toutes les données vont être synchronisées et sauvegardées sur le compte AFFiNE <1>{{email}}</1>",
+  "Export AFFiNE backup file": "Exporter un fichier de sauvegarde AFFiNE (à venir...)"
 }
