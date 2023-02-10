@@ -21,6 +21,8 @@ import { useAppState } from '@/providers/app-state-provider';
 import { PageLoading } from '@/components/loading';
 import Head from 'next/head';
 import '@affine/i18n';
+import { useTranslation } from '@affine/i18n';
+import React from 'react';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -39,6 +41,11 @@ type AppPropsWithLayout = AppProps & {
 
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout || (page => page);
+  const { i18n } = useTranslation();
+
+  React.useEffect(() => {
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
 
   return (
     <>
