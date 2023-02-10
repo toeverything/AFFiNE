@@ -1,5 +1,5 @@
 import React from 'react';
-import { AddIcon } from '@blocksuite/icons';
+import { PlusIcon } from '@blocksuite/icons';
 import { StyledModalFooterContent } from './style';
 import { Command } from 'cmdk';
 import { usePageHelper } from '@/hooks/use-page-helper';
@@ -21,7 +21,7 @@ export const Footer = (props: { query: string; onClose: () => void }) => {
       }}
     >
       <StyledModalFooterContent>
-        <AddIcon />
+        <PlusIcon />
         {query ? (
           <span>{t('New Keyword Page', { query: query })}</span>
         ) : (

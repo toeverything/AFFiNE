@@ -5,7 +5,7 @@ import { CreateWorkspaceModal } from '../create-workspace';
 
 import { Tooltip } from '@affine/component';
 
-import { AddIcon, HelpCenterIcon } from '@blocksuite/icons';
+import { PlusIcon, HelpIcon } from '@blocksuite/icons';
 
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
@@ -62,7 +62,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                 disablePortal={true}
               >
                 <StyledHelperContainer>
-                  <HelpCenterIcon />
+                  <HelpIcon />
                 </StyledHelperContainer>
               </Tooltip>
             </StyledModalHeaderLeft>
@@ -100,7 +100,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
             >
               <FlexWrapper>
                 <StyleWorkspaceAdd className="add-icon">
-                  <AddIcon fontSize={18} />
+                  <PlusIcon />
                 </StyleWorkspaceAdd>
               </FlexWrapper>
 

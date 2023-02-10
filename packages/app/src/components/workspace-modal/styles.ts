@@ -19,12 +19,14 @@ export const StyleWorkspaceInfo = styled.div(({ theme }) => {
   return {
     marginLeft: '15px',
     p: {
+      color: theme.colors.popoverColor,
       height: '20px',
-      fontSize: theme.font.xs,
+      fontSize: theme.font.sm,
       ...displayFlex('flex-start', 'center'),
     },
     svg: {
       marginRight: '10px',
+      fontSize: '16px',
     },
   };
 });

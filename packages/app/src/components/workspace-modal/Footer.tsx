@@ -1,4 +1,4 @@
-import { CloudInsyncIcon, LogOutIcon } from '@blocksuite/icons';
+import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
 import { FlexWrapper } from '@affine/component';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { IconButton } from '@affine/component';
@@ -37,7 +37,7 @@ export const Footer = ({
                 onLogout();
               }}
             >
-              <LogOutIcon />
+              <SignOutIcon />
             </IconButton>
           </Tooltip>
         </>
@@ -49,7 +49,7 @@ export const Footer = ({
           bold
           icon={
             <div className="circle">
-              <CloudInsyncIcon fontSize={16} />
+              <CloudWorkspaceIcon fontSize={16} />
             </div>
           }
           onClick={async () => {

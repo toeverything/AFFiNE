@@ -1,6 +1,6 @@
 import {
   StyledInput,
-  StyledProviderInfo,
+  StyledWorkspaceInfo,
   StyledAvatar,
   StyledEditButton,
 } from './style';
@@ -12,12 +12,15 @@ import { Button } from '@affine/component';
 import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
-import { UsersIcon } from '@blocksuite/icons';
+import {
+  JoinedWorkspaceIcon,
+  CloudWorkspaceIcon,
+  LocalWorkspaceIcon,
+} from '@/components/icons';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useTranslation } from '@affine/i18n';
-import { CloudIcon, LocalIcon } from '@/components/workspace-modal/icons';
 import { CameraIcon } from './icons';
 import { Upload } from '@/components/file-upload';
 import { MuiFade } from '@affine/component';
@@ -139,30 +142,24 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
       <StyledRow>
         <StyledSettingKey>{t('Workspace Type')}</StyledSettingKey>
-        <FlexWrapper>
-          {isOwner ? (
-            currentWorkspace?.provider === 'local' ? (
-              <FlexWrapper alignItems="center">
-                <LocalIcon />
-                <Content style={{ marginLeft: '15px' }}>
-                  {t('Local Workspace')}
-                </Content>
-              </FlexWrapper>
-            ) : (
-              <FlexWrapper alignItems="center">
-                <CloudIcon />
-                <Content style={{ marginLeft: '15px' }}>
-                  {t('Available Offline')}
-                </Content>
-              </FlexWrapper>
-            )
+        {isOwner ? (
+          currentWorkspace?.provider === 'local' ? (
+            <StyledWorkspaceInfo>
+              <LocalWorkspaceIcon />
+              <span>{t('Local Workspace')}</span>
+            </StyledWorkspaceInfo>
           ) : (
-            <StyledProviderInfo>
-              <UsersIcon fontSize={20} color={'#FF646B'} />
-              {t('Joined Workspace')}
-            </StyledProviderInfo>
-          )}
-        </FlexWrapper>
+            <StyledWorkspaceInfo>
+              <CloudWorkspaceIcon />
+              <span>{t('Available Offline')}</span>
+            </StyledWorkspaceInfo>
+          )
+        ) : (
+          <StyledWorkspaceInfo>
+            <JoinedWorkspaceIcon />
+            <span>{t('Joined Workspace')}</span>
+          </StyledWorkspaceInfo>
+        )}
       </StyledRow>
 
       <StyledRow>
