@@ -5,7 +5,7 @@ import {
   StyledEditButton,
 } from './style';
 import { StyledSettingKey, StyledRow } from '../style';
-import { FlexWrapper, Content } from '@affine/component';
+import { FlexWrapper } from '@affine/component';
 
 import { useState } from 'react';
 import { Button } from '@affine/component';

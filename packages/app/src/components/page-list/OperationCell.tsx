@@ -6,10 +6,10 @@ import { IconButton } from '@affine/component';
 import {
   MoreVerticalIcon,
   RestoreIcon,
-  DeleteIcon,
   FavouritesIcon,
   FavouritedIcon,
   OpenInNewIcon,
+  DeleteForeverIcon,
   TrashIcon,
 } from '@blocksuite/icons';
 import { toast } from '@affine/component';
@@ -106,7 +106,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
           });
         }}
       >
-        <DeleteIcon />
+        <DeleteForeverIcon />
       </IconButton>
     </FlexWrapper>
   );
