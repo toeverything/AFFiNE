@@ -52,7 +52,7 @@ importers:
       prettier: 2.7.1
       typescript: 4.9.5
 
-  client-app:
+  apps/desktop:
     specifiers:
       '@blocksuite/store': ^0.3.1
       '@emotion/react': ^11.10.5
@@ -108,7 +108,7 @@ importers:
       '@emotion/styled': 11.10.5_jrh5enlbqfbnumycmktdqgd6se
       '@tauri-apps/api': 1.2.0_nb4isgkwd3sres4g7j7rgtldsu
       json-schema-to-typescript: 11.0.3
-      lib0: 0.2.61
+      lib0: 0.2.62
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       react-is: 18.2.0
@@ -2896,7 +2896,7 @@ packages:
       flexsearch: 0.7.21
       idb-keyval: 6.2.0
       ky: 0.33.2
-      lib0: 0.2.61
+      lib0: 0.2.62
       y-protocols: 1.0.5
       y-webrtc: 10.2.4
       yjs: 13.5.45
@@ -11042,7 +11042,7 @@ packages:
       is-core-module: 2.11.0
       is-glob: 4.0.3
       minimatch: 3.1.2
-      object.values: 1.1.5
+      object.values: 1.1.6
       resolve: 1.22.1
       tsconfig-paths: 3.14.1
     transitivePeerDependencies:
@@ -11073,7 +11073,7 @@ packages:
       is-core-module: 2.11.0
       is-glob: 4.0.3
       minimatch: 3.1.2
-      object.values: 1.1.5
+      object.values: 1.1.6
       resolve: 1.22.1
       tsconfig-paths: 3.14.1
     transitivePeerDependencies:
@@ -11104,7 +11104,7 @@ packages:
       is-core-module: 2.11.0
       is-glob: 4.0.3
       minimatch: 3.1.2
-      object.values: 1.1.5
+      object.values: 1.1.6
       resolve: 1.22.1
       tsconfig-paths: 3.14.1
     transitivePeerDependencies:
@@ -14292,18 +14292,11 @@ packages:
       isomorphic.js: 0.2.5
     dev: false
 
-  /lib0/0.2.61:
-    resolution: {integrity: sha512-yVhT0uMXNWk50KqBgsZPxmcoO7Yft341wDTByKjXIzBpkhUjEzXl/M9b/GfqyDFBdiLCGg19Cv26NHUEnbL1pA==}
-    engines: {node: '>=14'}
-    dependencies:
-      isomorphic.js: 0.2.5
-
   /lib0/0.2.62:
     resolution: {integrity: sha512-DY0G8AaQloUvpiss7EpAo/t4R82b9m/AydbQRNAa9Khssn9oGDJnSN8Q1qQ8u82Wog4iaT1O8yM+DfhzGCrrpQ==}
     engines: {node: '>=14'}
     dependencies:
       isomorphic.js: 0.2.5
-    dev: false
 
   /lilconfig/2.0.6:
     resolution: {integrity: sha512-9JROoBW7pobfsx+Sq2JsASvCo6Pfo6WWoUW79HuB1BCoBXD4PLWJPqDF6fNj67pqBYTbAHkE57M1kS/+L1neOg==}
@@ -19773,7 +19766,7 @@ packages:
   /y-protocols/1.0.5:
     resolution: {integrity: sha512-Wil92b7cGk712lRHDqS4T90IczF6RkcvCwAD0A2OPg+adKmOe+nOiT/N2hvpQIWS3zfjmtL4CPaH5sIW1Hkm/A==}
     dependencies:
-      lib0: 0.2.61
+      lib0: 0.2.62
     dev: false
 
   /y-webrtc/10.2.4:
@@ -19883,7 +19876,7 @@ packages:
   /yjs/13.5.45:
     resolution: {integrity: sha512-9VUNDvb9oJHdYSMdzIpdM/agVm+EEFKRN+843CFqQuq5bo/BP3EAaxofRG9jQut3sqtGQT4A9YdQvOeeAjU6aA==}
     dependencies:
-      lib0: 0.2.61
+      lib0: 0.2.62
 
   /yn/3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
