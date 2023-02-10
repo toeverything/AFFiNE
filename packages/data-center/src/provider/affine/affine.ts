@@ -51,22 +51,22 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async init() {
-    this._apis.token.onChange(() => {
-      if (this._apis.token.isLogin) {
+    this._apis.auth.onChange(() => {
+      if (this._apis.auth.isLogin) {
         this._reconnectChannel();
       } else {
         this._destroyChannel();
       }
     });
 
-    if (this._apis.token.isExpired && this._apis.token.refresh) {
+    if (this._apis.auth.isExpired && this._apis.auth.refresh) {
       // do we need to await the following?
-      this._apis.token.refreshToken();
+      this._apis.auth.refreshToken();
     }
   }
 
   private _reconnectChannel() {
-    if (this._refreshToken !== this._apis.token.refresh) {
+    if (this._refreshToken !== this._apis.auth.refresh) {
       // need to reconnect
       this._destroyChannel();
 
@@ -77,7 +77,7 @@ export class AffineProvider extends BaseProvider {
         this._logger,
         {
           params: {
-            token: this._apis.token.refresh,
+            token: this._apis.auth.refresh,
           },
         }
       );
@@ -86,7 +86,7 @@ export class AffineProvider extends BaseProvider {
         this._handlerAffineListMessage(msg);
       });
 
-      this._refreshToken = this._apis.token.refresh;
+      this._refreshToken = this._apis.auth.refresh;
     }
   }
 
@@ -170,13 +170,13 @@ export class AffineProvider extends BaseProvider {
         window.location.protocol === 'https:' ? 'wss' : 'ws'
       }://${window.location.host}/api/sync/`;
       ws = new WebsocketProvider(wsUrl, room, doc, {
-        params: { token: this._apis.token.refresh },
+        params: { token: this._apis.auth.refresh },
         // @ts-expect-error ignore the type
         awareness: workspace.awarenessStore.awareness,
       });
       workspace.awarenessStore.awareness.setLocalStateField('user', {
-        name: this._apis.token.user?.name ?? 'other',
-        id: Number(this._apis.token.user?.id ?? -1),
+        name: this._apis.auth.user?.name ?? 'other',
+        id: Number(this._apis.auth.user?.id ?? -1),
         color: '#ffa500',
       });
 
@@ -226,7 +226,7 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async loadWorkspaces() {
-    if (!this._apis.token.isLogin) {
+    if (!this._apis.auth.isLogin) {
       return [];
     }
     const workspacesList = await this._apis.getWorkspaces();
@@ -255,9 +255,9 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async auth() {
-    if (this._apis.token.isLogin) {
-      await this._apis.token.refreshToken();
-      if (this._apis.token.isLogin && !this._apis.token.isExpired) {
+    if (this._apis.auth.isLogin) {
+      await this._apis.auth.refreshToken();
+      if (this._apis.auth.isLogin && !this._apis.auth.isExpired) {
         // login success
         return;
       }
@@ -272,7 +272,7 @@ export class AffineProvider extends BaseProvider {
 
   // TODO: may need to update related workspace attributes on user info change?
   public override async getUserInfo(): Promise<User | undefined> {
-    const user = this._apis.token.user;
+    const user = this._apis.auth.user;
     return user
       ? {
           id: user.id,
@@ -382,7 +382,7 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override getToken(): string {
-    return this._apis.token.token;
+    return this._apis.auth.token;
   }
 
   public override async getUserByEmail(
@@ -434,10 +434,11 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async logout(): Promise<void> {
-    this._apis.token.clear();
+    this._apis.auth.clear();
     this._destroyChannel();
     this._wsMap.forEach(ws => ws.disconnect());
     this._workspaces.clear(false);
+    await this._apis.signOutFirebase();
   }
 
   public override async getWorkspaceMembers(id: string) {

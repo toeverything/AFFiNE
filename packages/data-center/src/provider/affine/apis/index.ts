@@ -1,10 +1,10 @@
 // export { token } from './token.js';
-export type { Callback } from './token.js';
+export type { Callback } from './auth.js';
 
-import { getAuthorizer } from './token.js';
+import { getAuthorizer } from './auth.js';
 import * as user from './user.js';
 import * as workspace from './workspace.js';
-import { token } from './token.js';
+import { auth } from './auth.js';
 
 // See https://twitter.com/mattpocockuk/status/1622730173446557697
 // TODO: move to ts utils?
@@ -18,20 +18,23 @@ export type Apis = Prettify<
     Omit<typeof workspace, 'WorkspaceType' | 'PermissionType'> & {
       signInWithGoogle: ReturnType<typeof getAuthorizer>[0];
       onAuthStateChanged: ReturnType<typeof getAuthorizer>[1];
-    } & { token: typeof token }
+      signOutFirebase: ReturnType<typeof getAuthorizer>[2];
+    } & { auth: typeof auth }
 >;
 
 export const getApis = (): Apis => {
-  const [signInWithGoogle, onAuthStateChanged] = getAuthorizer();
+  const [signInWithGoogle, onAuthStateChanged, signOutFirebase] =
+    getAuthorizer();
   return {
     ...user,
     ...workspace,
     signInWithGoogle,
+    signOutFirebase,
     onAuthStateChanged,
-    token,
+    auth,
   };
 };
 
-export type { AccessTokenMessage } from './token';
+export type { AccessTokenMessage } from './auth';
 export type { Member, Workspace, WorkspaceDetail } from './workspace';
 export { WorkspaceType } from './workspace.js';

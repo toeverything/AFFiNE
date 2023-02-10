@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import {
+  type Auth as FirebaseAuth,
+  getAuth as getFirebaseAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { decode } from 'js-base64';
 
@@ -40,7 +46,7 @@ const AFFINE_LOGIN_STORAGE_KEY = 'affine:login';
 const doLogin = (params: LoginParams): Promise<LoginResponse> =>
   bareClient.post('api/user/token', { json: params }).json();
 
-export class Token {
+export class Auth {
   private readonly _logger;
   private _accessToken = ''; // idtoken (JWT)
   private _refreshToken = '';
@@ -55,14 +61,10 @@ export class Token {
     this.restoreLogin();
   }
 
-  get user() {
-    return this._user;
-  }
-
   setLogin(login: LoginResponse) {
     this._accessToken = login.token;
     this._refreshToken = login.refresh;
-    this._user = Token.parse(this._accessToken);
+    this._user = Auth.parseIdToken(this._accessToken);
 
     this.triggerChange(this._user);
     this.storeLogin();
@@ -103,13 +105,22 @@ export class Token {
         type: 'Refresh',
         token: refreshToken || this._refreshToken,
       });
+      this._padding.finally(() => {
+        // clear on settled
+        this._padding = undefined;
+      });
       this._refreshToken = refreshToken || this._refreshToken;
     }
     const res = await this._padding;
     if (!refreshToken || refreshToken !== this._refreshToken) {
       this.setLogin(res);
     }
-    this._padding = undefined;
+    return true;
+  }
+
+  get user() {
+    // computed through access token
+    return this._user;
   }
 
   get token() {
@@ -130,7 +141,7 @@ export class Token {
     return Date.now() > this._user.exp * 1000;
   }
 
-  static parse(token: string): AccessTokenMessage | null {
+  static parseIdToken(token: string): AccessTokenMessage | null {
     try {
       return JSON.parse(decode(token.split('.')[1]));
     } catch (error) {
@@ -166,55 +177,78 @@ export class Token {
   }
 }
 
-export const token = new Token();
+export const auth = new Auth();
 
 export const getAuthorizer = () => {
-  const app = initializeApp({
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-  });
-  try {
-    const firebaseAuth = getAuth(app);
+  let _firebaseAuth: FirebaseAuth | null = null;
 
-    const googleAuthProvider = new GoogleAuthProvider();
-
-    const getToken = async () => {
-      const currentUser = firebaseAuth.currentUser;
-      if (currentUser) {
-        await currentUser.getIdTokenResult(true);
-        if (!currentUser.isAnonymous) {
-          return currentUser.getIdToken();
-        }
+  // getAuth will send requests on calling thus we can lazy init it
+  const getAuth = () => {
+    try {
+      if (!_firebaseAuth) {
+        const app = initializeApp({
+          apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId:
+            process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+          appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+          measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+        });
+        _firebaseAuth = getFirebaseAuth(app);
       }
-      return;
-    };
+      return _firebaseAuth;
+    } catch (error) {
+      getLogger('getAuthorizer')(error);
+      console.error('getAuthorizer', error);
+      return null;
+    }
+  };
 
-    const signInWithGoogle = async () => {
-      const idToken = await getToken();
-      let loginUser: AccessTokenMessage | null = null;
-      if (idToken) {
-        loginUser = await token.initToken(idToken);
-      } else {
+  const getToken = async () => {
+    const currentUser = getAuth()?.currentUser;
+    if (currentUser) {
+      await currentUser.getIdTokenResult(true);
+      if (!currentUser.isAnonymous) {
+        return currentUser.getIdToken();
+      }
+    }
+    return;
+  };
+
+  const signInWithGoogle = async () => {
+    const idToken = await getToken();
+    let loginUser: AccessTokenMessage | null = null;
+    if (idToken) {
+      loginUser = await auth.initToken(idToken);
+    } else {
+      const firebaseAuth = getAuth();
+      if (firebaseAuth) {
+        const googleAuthProvider = new GoogleAuthProvider();
+        // make sure the user has a chance to select an account
+        // https://developers.google.com/identity/openid-connect/openid-connect#prompt
+        googleAuthProvider.setCustomParameters({
+          prompt: 'select_account',
+        });
         const user = await signInWithPopup(firebaseAuth, googleAuthProvider);
         const idToken = await user.user.getIdToken();
-        loginUser = await token.initToken(idToken);
+        loginUser = await auth.initToken(idToken);
       }
-      return loginUser;
-    };
+    }
+    return loginUser;
+  };
 
-    const onAuthStateChanged = (callback: (user: User | null) => void) => {
-      firebaseAuth.onAuthStateChanged(callback);
-    };
+  const onAuthStateChanged = (callback: (user: User | null) => void) => {
+    getAuth()?.onAuthStateChanged(callback);
+  };
 
-    return [signInWithGoogle, onAuthStateChanged] as const;
-  } catch (e) {
-    getLogger('getAuthorizer')(e);
-    console.error('getAuthorizer', e);
-    return [] as const;
-  }
+  const signOutFirebase = async () => {
+    const firebaseAuth = getAuth();
+    if (firebaseAuth?.currentUser) {
+      await signOut(firebaseAuth);
+    }
+  };
+
+  return [signInWithGoogle, onAuthStateChanged, signOutFirebase] as const;
 };
