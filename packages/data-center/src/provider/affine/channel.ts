@@ -1,6 +1,6 @@
 import * as websocket from 'lib0/websocket';
 import { Logger } from 'src/types';
-import { token } from './apis/token';
+import { auth } from './apis/auth';
 import * as url from 'lib0/url';
 
 const RECONNECT_INTERVAL_TIME = 500;
@@ -40,7 +40,7 @@ export class WebsocketClient extends websocket.WebsocketClient {
     this.on('disconnect', ({ error }: { error: Error }) => {
       if (error) {
         // Try reconnect if connect error has occurred
-        if (this.shouldReconnect && token.isLogin && !this.connected) {
+        if (this.shouldReconnect && auth.isLogin && !this.connected) {
           try {
             setTimeout(() => {
               if (this._retryTimes <= MAX_RECONNECT_TIMES) {

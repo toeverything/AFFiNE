@@ -1,7 +1,7 @@
 import type { Apis, AccessTokenMessage } from '../apis';
 
 const user: AccessTokenMessage = {
-  create_at: Date.now(),
+  created_at: Date.now(),
   exp: 100000000,
   email: 'demo@demo.demo',
   id: '123',
