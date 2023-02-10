@@ -98,11 +98,9 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                 setCreateWorkspaceOpen(true);
               }}
             >
-              <FlexWrapper>
-                <StyleWorkspaceAdd className="add-icon">
-                  <PlusIcon />
-                </StyleWorkspaceAdd>
-              </FlexWrapper>
+              <StyleWorkspaceAdd className="add-icon">
+                <PlusIcon />
+              </StyleWorkspaceAdd>
 
               <StyleWorkspaceInfo>
                 <StyleWorkspaceTitle>{t('New Workspace')}</StyleWorkspaceTitle>

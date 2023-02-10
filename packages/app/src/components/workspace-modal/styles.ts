@@ -56,13 +56,12 @@ export const StyledCard = styled.div<{
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),
     marginBottom: '24px',
+    transition: 'background .2s',
     ':hover': {
       background: theme.colors.hoverBackground,
       '.add-icon': {
-        border: `1.5px dashed ${theme.colors.primaryColor}`,
-        svg: {
-          fill: theme.colors.primaryColor,
-        },
+        borderColor: theme.colors.primaryColor,
+        color: theme.colors.primaryColor,
       },
     },
   };
@@ -128,11 +127,10 @@ export const StyleWorkspaceAdd = styled.div(() => {
     width: '58px',
     height: '58px',
     borderRadius: '100%',
-    textAlign: 'center',
     background: '#f4f5fa',
     border: '1.5px dashed #f4f5fa',
-    lineHeight: '58px',
-    marginTop: '2px',
+    transition: 'background .2s',
+    ...displayFlex('center', 'center'),
   };
 });
 export const StyledModalHeader = styled('div')(({ theme }) => {
