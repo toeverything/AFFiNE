@@ -1,5 +1,5 @@
 import type React from 'react';
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useCallback, useContext, useMemo } from 'react';
 import { createStore, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
 import { UseBoundStore } from 'zustand/react';
@@ -93,43 +93,43 @@ const Modals: React.FC = function Modal() {
     <>
       <ContactModal
         open={useModal(state => state.contact)}
-        onClose={() => {
+        onClose={useCallback(() => {
           api.setState({
             contact: false,
           });
-        }}
+        }, [api])}
       ></ContactModal>
       <ShortcutsModal
         open={useModal(state => state.shortcuts)}
-        onClose={() => {
+        onClose={useCallback(() => {
           api.setState({
             shortcuts: false,
           });
-        }}
+        }, [api])}
       ></ShortcutsModal>
       <QuickSearch
         open={useModal(state => state.quickSearch)}
-        onClose={() => {
+        onClose={useCallback(() => {
           api.setState({
             quickSearch: false,
           });
-        }}
+        }, [api])}
       ></QuickSearch>
       <ImportModal
         open={useModal(state => state.import)}
-        onClose={() => {
+        onClose={useCallback(() => {
           api.setState({
             import: false,
           });
-        }}
+        }, [api])}
       ></ImportModal>
       <LoginModal
         open={useModal(state => state.login)}
-        onClose={() => {
+        onClose={useCallback(() => {
           api.setState({
             login: false,
           });
-        }}
+        }, [api])}
       />
     </>
   );
