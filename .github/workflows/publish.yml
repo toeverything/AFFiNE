@@ -63,7 +63,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: ./packages/app/out
+          path: ./apps/web/out
 
   publish-self-hosted:
     name: Push Community Image
@@ -88,7 +88,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: packages/app/out/
+          path: apps/web/out/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2

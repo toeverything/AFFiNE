@@ -7,7 +7,7 @@
   "module": "true",
   "scripts": {
     "dev:app": "pnpm build:preload && cross-env NODE_ENV=development tauri dev",
-    "dev:prerequisite": "concurrently \"cd ../packages/data-center && pnpm dev\" \"cd ../packages/app && pnpm dev\"",
+    "dev:prerequisite": "concurrently \"cd ../packages/data-center && pnpm dev\" \"cd ../apps/web && pnpm dev\"",
     "build:prerequisite": "pnpm build:submodules && pnpm build:rs-types && pnpm build:affine && pnpm build:preload",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
     "build:submodules": "zx scripts/buildSubModules.mjs",
