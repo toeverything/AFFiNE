@@ -1,5 +1,10 @@
 lockfileVersion: 5.4
 
+patchedDependencies:
+  '@tauri-apps/api@1.2.0':
+    hash: nb4isgkwd3sres4g7j7rgtldsu
+    path: patches/@tauri-apps__api@1.2.0.patch
+
 importers:
 
   .:
@@ -50,7 +55,7 @@ importers:
       '@emotion/react': ^11.10.5
       '@emotion/styled': ^11.10.5
       '@tauri-apps/api': ^1.2.0
-      '@tauri-apps/cli': ^1.2.2
+      '@tauri-apps/cli': ^1.2.3
       '@types/node': ^18.11.17
       '@types/react': ^18.0.26
       '@types/react-dom': ^18.0.9
@@ -98,7 +103,7 @@ importers:
       '@blocksuite/store': 0.3.1_yjs@13.5.45
       '@emotion/react': 11.10.5_3stiutgnnbnfnf3uowm5cip22i
       '@emotion/styled': 11.10.5_jrh5enlbqfbnumycmktdqgd6se
-      '@tauri-apps/api': 1.2.0
+      '@tauri-apps/api': 1.2.0_nb4isgkwd3sres4g7j7rgtldsu
       json-schema-to-typescript: 11.0.3
       lib0: 0.2.61
       react: 18.2.0
@@ -307,7 +312,7 @@ importers:
     dependencies:
       '@blocksuite/blocks': 0.4.0-alpha.2_yjs@13.5.45
       '@blocksuite/store': 0.4.0-alpha.2_lit@2.6.1+yjs@13.5.45
-      '@tauri-apps/api': 1.2.0
+      '@tauri-apps/api': 1.2.0_nb4isgkwd3sres4g7j7rgtldsu
       debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.15.0_encoding@0.1.13
@@ -6880,10 +6885,11 @@ packages:
       defer-to-connect: 2.0.1
     dev: true
 
-  /@tauri-apps/api/1.2.0:
+  /@tauri-apps/api/1.2.0_nb4isgkwd3sres4g7j7rgtldsu:
     resolution: {integrity: sha512-lsI54KI6HGf7VImuf/T9pnoejfgkNoXveP14pVV7XarrQ46rOejIVJLFqHI9sRReJMGdh2YuCoI3cc/yCWCsrw==}
     engines: {node: '>= 14.6.0', npm: '>= 6.6.0', yarn: '>= 1.19.1'}
     dev: false
+    patched: true
 
   /@tauri-apps/cli-darwin-arm64/1.2.3:
     resolution: {integrity: sha512-phJN3fN8FtZZwqXg08bcxfq1+X1JSDglLvRxOxB7VWPq+O5SuB8uLyssjJsu+PIhyZZnIhTGdjhzLSFhSXfLsw==}
