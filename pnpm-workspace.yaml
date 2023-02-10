@@ -1,5 +1,5 @@
 packages:
+  # apps folder for multiple platform clients
+  - 'apps/*'
   # all packages in direct subdirs of packages/
   - 'packages/*'
-  # app folder is on top level because of its importance
-  - 'client-app'
