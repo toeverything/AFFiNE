@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-const repoDirectory = path.join(__dirname, '..', '..');
+const repoDirectory = path.join(__dirname, '..', '..', '..');
 const clientAppDirectory = path.join(__dirname, '..');
 const publicDistributionDirectory = path.join(clientAppDirectory, 'public');
 const affineSrcDirectory = path.join(repoDirectory, 'packages', 'app');

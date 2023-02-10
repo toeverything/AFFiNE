@@ -57,7 +57,7 @@ jobs:
 
       - name: Make macOS (x64)
         run: pnpm build:app
-        working-directory: client-app
+        working-directory: apps/desktop
         env:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
@@ -69,6 +69,6 @@ jobs:
         with:
           draft: true
           generate_release_notes: true
-          files: client-app/src-tauri/target/release/bundle/dmg/*.dmg
+          files: apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

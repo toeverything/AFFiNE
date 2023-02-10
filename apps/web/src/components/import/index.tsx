@@ -27,7 +27,7 @@ export const ImportModal = ({ open, onClose }: ImportModalProps) => {
     const title = template.name;
     if (page) {
       currentWorkspace?.blocksuiteWorkspace?.setPageMeta(page.id, { title });
-      if (page && page.root === null) {
+      if (page.root === null) {
         setTimeout(() => {
           try {
             const editor = document.querySelector('editor-container');

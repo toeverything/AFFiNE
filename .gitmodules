@@ -1,3 +1,4 @@
-[submodule "client-app/src-OctoBase"]
-	path = client-app/src-OctoBase
+[submodule "apps/desktop/src-OctoBase"]
+	path = apps/desktop/src-OctoBase
 	url = https://github.com/toeverything/OctoBase
+	branch = master

@@ -14,7 +14,7 @@ pnpm tauri dev
 
 ## Development
 
-Currently client-app depends on a rapidly developing rust library "Octobase", we use git-submodule to link it currently.
+Currently desktop client depends on a rapidly developing rust library "Octobase", we use git-submodule to link it currently.
 
 We will provide its binary binding soon, to replace the git-submodule, before Octobase become opensource.
 
