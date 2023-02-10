@@ -30,6 +30,7 @@ const getRedirectConfig = profile => {
       },
     ],
     target,
+    profile || 'dev',
   ];
 };
 
@@ -62,10 +63,10 @@ const nextConfig = {
     unoptimized: true,
   },
   rewrites: async () => {
-    const [profile, desc] = getRedirectConfig(process.env.NODE_API_SERVER);
-    printer.info(
-      `API request proxy to [${process.env.NODE_API_SERVER} Server]: ` + desc
+    const [profile, target, desc] = getRedirectConfig(
+      process.env.NODE_API_SERVER
     );
+    printer.info(`API request proxy to [${desc} Server]: ` + target);
     return profile;
   },
   basePath: process.env.BASE_PATH,
