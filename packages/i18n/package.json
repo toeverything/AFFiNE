@@ -2,11 +2,17 @@
   "name": "@affine/i18n",
   "version": "0.1.0",
   "description": "",
-  "main": "dist/src/index.js",
   "type": "module",
-  "types": "dist/src/index.d.ts",
+  "main": "src/index.ts",
   "exports": {
-    ".": "./dist/src/index.js"
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "main": "dist/src/index.js",
+    "types": "dist/src/index.d.ts",
+    "exports": {
+      ".": "./dist/src/index.js"
+    }
   },
   "scripts": {
     "build": "tsc --project ./tsconfig.json",
