@@ -183,5 +183,7 @@
   "Download all data": "Download all data",
   "It takes up more space on your device.": "It takes up more space on your device.",
   "Download core data": "Download core data",
-  "It takes up little space on your device.": "It takes up little space on your device."
+  "It takes up little space on your device.": "It takes up little space on your device.",
+  "All changes are saved locally, click to enable AFFiNE Cloud.": "All changes are saved locally, click to enable AFFiNE Cloud.",
+  "AFFINE Cloud": "AFFINE Cloud"
 }

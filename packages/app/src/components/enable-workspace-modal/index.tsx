@@ -1,12 +1,13 @@
-import { styled } from '@affine/component';
 import { Modal, ModalWrapper } from '@affine/component';
-import { Button, IconButton } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useAppState } from '@/providers/app-state-provider';
 import { useState } from 'react';
 import router from 'next/router';
 import { toast } from '@affine/component';
 import { CloseIcon } from '@blocksuite/icons';
+import { Header, Content, ContentTitle, StyleTips, StyleButton } from './style';
+
 interface EnableWorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -71,41 +72,3 @@ export const EnableWorkspaceModal = ({
     </Modal>
   );
 };
-
-const Header = styled('div')({
-  height: '44px',
-  display: 'flex',
-  flexDirection: 'row-reverse',
-  paddingRight: '10px',
-  paddingTop: '10px',
-});
-
-const Content = styled('div')({
-  textAlign: 'center',
-});
-
-const ContentTitle = styled('h1')({
-  fontSize: '20px',
-  lineHeight: '28px',
-  fontWeight: 600,
-  textAlign: 'center',
-});
-
-const StyleTips = styled('div')(() => {
-  return {
-    userSelect: 'none',
-    width: '400px',
-    margin: 'auto',
-    marginBottom: '32px',
-    marginTop: '12px',
-  };
-});
-
-const StyleButton = styled(Button)(() => {
-  return {
-    width: '284px',
-    display: 'block',
-    margin: 'auto',
-    marginTop: '16px',
-  };
-});

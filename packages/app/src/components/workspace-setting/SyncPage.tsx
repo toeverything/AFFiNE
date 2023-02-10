@@ -1,14 +1,10 @@
-import {
-  StyledWorkspaceName,
-  // StyledDownloadCard,
-  // StyledDownloadCardDes,
-} from './style';
+import { StyledWorkspaceName } from './style';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation, Trans } from '@affine/i18n';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { EnableWorkspaceButton } from '../enable-workspace';
 import { useAppState } from '@/providers/app-state-provider';
-import { FlexWrapper, Content, Wrapper } from '@affine/component';
+import { FlexWrapper, Content, Wrapper, Button } from '@affine/component';
+import { useModal } from '@/store/globalModal';
 
 // // FIXME: Temporary solution, since the @blocksuite/icons is broken
 // const ActiveIcon = () => {
@@ -39,6 +35,8 @@ import { FlexWrapper, Content, Wrapper } from '@affine/component';
 export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const { t } = useTranslation();
   const { user } = useAppState();
+  const { triggerEnableWorkspaceModal } = useModal();
+
   if (workspace.provider === 'local') {
     return (
       <>
@@ -54,7 +52,15 @@ export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
         </FlexWrapper>
         <p>{t('Local Workspace Description')}</p>
         <Wrapper marginTop="32px">
-          <EnableWorkspaceButton />
+          <Button
+            type="light"
+            shape="circle"
+            onClick={async () => {
+              triggerEnableWorkspaceModal();
+            }}
+          >
+            {t('Enable AFFiNE Cloud')}
+          </Button>
         </Wrapper>
       </>
     );
