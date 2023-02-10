@@ -20,15 +20,16 @@ export const WorkspaceSelector = () => {
         }}
         data-testid="current-workspace"
       >
-        <WorkspaceUnitAvatar
-          style={{
-            flexShrink: 0,
-          }}
-          size={32}
-          name={currentWorkspace?.name ?? 'AFFiNE Test'}
-          workspaceUnit={currentWorkspace}
-          data-testid="workspace-avatar"
-        />
+        <div data-testid="workspace-avatar">
+          <WorkspaceUnitAvatar
+            style={{
+              flexShrink: 0,
+            }}
+            size={32}
+            name={currentWorkspace?.name ?? 'AFFiNE Test'}
+            workspaceUnit={currentWorkspace}
+          />
+        </div>
         <WorkspaceName data-testid="workspace-name">
           {currentWorkspace?.name ?? 'AFFiNE Test'}
         </WorkspaceName>

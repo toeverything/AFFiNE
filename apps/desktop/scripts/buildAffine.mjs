@@ -7,7 +7,7 @@
 const repoDirectory = path.join(__dirname, '..', '..', '..');
 const clientAppDirectory = path.join(__dirname, '..');
 const publicDistributionDirectory = path.join(clientAppDirectory, 'public');
-const affineSrcDirectory = path.join(repoDirectory, 'packages', 'app');
+const affineSrcDirectory = path.join(repoDirectory, 'apps', 'web');
 const affineSrcOutDirectory = path.join(affineSrcDirectory, 'out');
 const publicAffineOutDirectory = path.join(
   publicDistributionDirectory,
