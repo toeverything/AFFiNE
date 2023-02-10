@@ -10,7 +10,7 @@ export default {
 
 const Template: Story = args => <Breadcrumbs {...args} />;
 
-export const Primary = Template.bind({});
+export const Primary = Template.bind(undefined);
 Primary.args = {
   children: [
     <Link underline="hover" color="inherit" href="/">
