@@ -1,3 +1,5 @@
+import { getLightTheme, ThemeProvider } from '../src';
+
 export const parameters = {
   actions: { argTypesRegex: '^on[A-Z].*' },
   controls: {
@@ -7,3 +9,15 @@ export const parameters = {
     },
   },
 };
+
+const lightTheme = getLightTheme('page');
+
+export const decorators = [
+  Story => {
+    return (
+      <ThemeProvider theme={lightTheme}>
+        <Story />
+      </ThemeProvider>
+    );
+  },
+];
