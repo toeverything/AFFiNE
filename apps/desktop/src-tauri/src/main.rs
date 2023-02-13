@@ -34,10 +34,12 @@ async fn main() {
         tauri::WindowBuilder::new(app, "label", tauri::WindowUrl::App(initial_path.into()))
           .title("AFFiNE")
           .inner_size(1000.0, 800.0)
-          .title_bar_style(TitleBarStyle::Overlay)
           .hidden_title(true)
-          .initialization_script(&preload)
-          .build()?;
+          .initialization_script(&preload);
+      // fix `title_bar_style` found for struct `WindowBuilder` in the current scope
+      #[cfg(target_os = "macos")]
+      let _window = _window.title_bar_style(TitleBarStyle::Overlay);
+      let _window = _window.build()?;
       #[cfg(debug_assertions)]
       _window.open_devtools();
       Ok(())
