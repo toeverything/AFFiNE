@@ -21,8 +21,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  MacOS:
-    runs-on: macos-latest
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      RELEASE_UPLOAD_ID: ${{ steps.create_release.outputs.id }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Query version number
+        id: get_version
+        shell: bash
+        run: |
+          echo "using version tag ${GITHUB_REF:10}"
+          echo "version=${GITHUB_REF:10}" >> $GITHUB_ENV
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: '${{ env.version }}'
+          release_name: 'AFFiNE ${{ env.version }}'
+          body: 'See the assets to download this version and install.'
+
+  build-tauri:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout repository
@@ -34,6 +61,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
