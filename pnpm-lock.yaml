@@ -4559,8 +4559,8 @@ packages:
     dependencies:
       '@babel/runtime': 7.20.7
       '@emotion/cache': 11.10.5
-      '@emotion/react': 11.10.5_w5j4k42lgipnm43s3brx6h3c34
-      '@emotion/styled': 11.10.5_s7uipz3r575xmfz2gje3lxfqua
+      '@emotion/react': 11.10.5_3stiutgnnbnfnf3uowm5cip22i
+      '@emotion/styled': 11.10.5_jrh5enlbqfbnumycmktdqgd6se
       csstype: 3.1.1
       prop-types: 15.8.1
       react: 18.2.0
