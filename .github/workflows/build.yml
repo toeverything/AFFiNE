@@ -31,8 +31,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 18.x
-          registry-url: https://npm.pkg.github.com
-          scope: '@toeverything'
           cache: 'pnpm'
 
       - name: Restore cache
@@ -136,112 +134,8 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
-  build-community:
-    name: Build Community
-    if: github.ref == 'refs/heads/master'
-    runs-on: self-hosted
-    environment: production
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 'latest'
-
-      - name: Use Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18.x
-          cache: 'pnpm'
-
-      - name: Restore cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            .next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
-
-      - name: Install dependencies
-        run: pnpm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
-
-      - name: Build
-        run: pnpm build
-        env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-
-      - name: Export
-        run: pnpm export
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          path: ./apps/web/out
-
-  publish-community:
-    name: Push Community Image
-    if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    needs: build-community
-
-    permissions:
-      contents: read
-      packages: write
-
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: 'toeverything/affine-pathfinder-community'
-      IMAGE_TAG: canary-${{ github.sha }}
-      IMAGE_TAG_LATEST: nightly-latest
-
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: artifact
-          path: apps/web/out/
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            ${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE_TAG_LATEST }}
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          file: ./.github/deployment/Dockerfile
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  build-livedemo:
-    name: Build LiveDemo
+  build-frontend:
+    name: Build frontend
     if: github.ref == 'refs/heads/master'
     runs-on: self-hosted
     environment: production
@@ -274,7 +168,7 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
@@ -292,8 +186,8 @@ jobs:
       - name: Export
         run: pnpm export
 
-  publish-livedemo:
-    name: Push Livedemo Image
+  publish-frontend:
+    name: Push frontend image
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs: build-livedemo

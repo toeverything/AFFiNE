@@ -1,4 +1,4 @@
-name: Build Pathfinder Self-hosted
+name: Publish Staged Frontend
 
 on:
   workflow_dispatch:
@@ -78,7 +78,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: 'toeverything/affine-static'
-      IMAGE_TAG_LATEST: abbey-wood
+      IMAGE_TAG_LATEST: downhills
 
     steps:
       - name: Check out the repo
