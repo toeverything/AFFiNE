@@ -17,7 +17,9 @@ async fn main() {
   dotenv().ok();
   let preload = include_str!("../../public/preload/index.js");
   let is_dev = env::var("NODE_ENV").unwrap_or_default() == "development";
+  // this only work in production mode, in dev mode, we load `devPath` in tauri.conf.json
   let initial_path = if is_dev {
+    // just a place holder here
     "index.html"
   } else {
     "affine-out/index.html"
