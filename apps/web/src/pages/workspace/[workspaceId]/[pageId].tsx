@@ -16,15 +16,21 @@ import dynamic from 'next/dynamic';
 import { EditorContainer } from '@blocksuite/editor';
 import Head from 'next/head';
 import { useTranslation } from '@affine/i18n';
+import { BlockHub } from '@blocksuite/blocks';
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
 const Page: NextPageWithLayout = () => {
-  const { currentPage, currentWorkspace, setEditor } = useAppState();
+  const { currentPage, currentWorkspace, setEditor, setBlockHub } =
+    useAppState();
 
   const setEditorHandler = useCallback(
     (editor: EditorContainer) => setEditor.current(editor),
     [setEditor]
+  );
+  const setBlockHubHandler = useCallback(
+    (blockHub: BlockHub) => setBlockHub.current(blockHub),
+    [setBlockHub]
   );
   const { t } = useTranslation();
   return (
@@ -40,6 +46,7 @@ const Page: NextPageWithLayout = () => {
           page={currentPage}
           workspace={currentWorkspace.blocksuiteWorkspace}
           setEditor={setEditorHandler}
+          setBlockHub={setBlockHubHandler}
         />
       )}
     </>

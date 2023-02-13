@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   StyledIsland,
   StyledIconWrapper,
@@ -11,6 +11,7 @@ import { Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/store/globalModal';
 import { MuiFade } from '@affine/component';
+import { useAppState } from '@/providers/app-state-provider';
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({
   showList = ['contact', 'shortcuts'],
@@ -19,7 +20,23 @@ export const HelpIsland = ({
 }) => {
   const [spread, setShowSpread] = useState(false);
   const { triggerShortcutsModal, triggerContactModal } = useModal();
+  const { blockHub } = useAppState();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    blockHub?.blockHubStatusUpdated.on(status => {
+      if (status) {
+        setShowSpread(false);
+      }
+    });
+    return () => {
+      blockHub?.blockHubStatusUpdated.dispose();
+    };
+  }, [blockHub]);
+
+  useEffect(() => {
+    spread && blockHub?.toggleMenu(false);
+  }, [blockHub, spread]);
   return (
     <StyledIsland
       spread={spread}

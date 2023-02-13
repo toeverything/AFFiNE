@@ -4,6 +4,7 @@ import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
 import { styled } from '@affine/component';
+import { BlockHub } from '@blocksuite/blocks';
 
 const StyledEditorContainer = styled('div')(() => {
   return {
@@ -16,9 +17,10 @@ type Props = {
   page: Page;
   workspace: Workspace;
   setEditor: (editor: EditorContainer) => void;
+  setBlockHub: (blockHub: BlockHub) => void;
 };
 
-export const Editor = ({ page, workspace, setEditor }: Props) => {
+export const Editor = ({ page, workspace, setEditor, setBlockHub }: Props) => {
   const editorContainer = useRef<HTMLDivElement>(null);
   // const { currentWorkspace, currentPage, setEditor } = useAppState();
   useEffect(() => {
@@ -41,6 +43,7 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
         return;
       }
       blockHubElement = blockHub;
+      setBlockHub(blockHub);
       toolWrapper.appendChild(blockHub);
     });
     editorContainer.current?.appendChild(editor);
@@ -72,7 +75,7 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
 
     setEditor(editor);
     return ret;
-  }, [workspace, page, setEditor]);
+  }, [workspace, page, setEditor, setBlockHub]);
 
   return <StyledEditorContainer ref={editorContainer} />;
 };

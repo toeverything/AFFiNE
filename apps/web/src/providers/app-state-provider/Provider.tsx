@@ -42,6 +42,7 @@ export const AppStateProvider = ({
         pageList: [],
         currentPage: null,
         editor: null,
+        blockHub: null,
         synced: true,
         isOwner: false,
       });
@@ -125,6 +126,7 @@ export const AppStateProvider = ({
       pageList: pageList,
       currentPage: null,
       editor: null,
+      blockHub: null,
       isOwner,
     });
 
@@ -159,6 +161,14 @@ export const AppStateProvider = ({
       editor,
     });
   };
+  const setBlockHub: AppStateFunction['setBlockHub'] =
+    useRef() as AppStateFunction['setBlockHub'];
+  setBlockHub.current = blockHub => {
+    setAppState({
+      ...appState,
+      blockHub,
+    });
+  };
 
   const login = async () => {
     const { dataCenter } = appState;
@@ -182,6 +192,7 @@ export const AppStateProvider = ({
       value={{
         ...appState,
         setEditor,
+        setBlockHub,
         loadPage: loadPage.current,
         loadWorkspace: loadWorkspace,
         login,
