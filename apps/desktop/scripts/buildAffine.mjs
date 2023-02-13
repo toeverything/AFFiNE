@@ -14,6 +14,8 @@ const publicAffineOutDirectory = path.join(
   'affine-out'
 );
 
+if (process.platform === 'win32') $.shell = 'pwsh';
+
 /**
  * Build affine dist html
  */
