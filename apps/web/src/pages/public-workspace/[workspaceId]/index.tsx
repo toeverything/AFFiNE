@@ -1,35 +1,30 @@
 import { PageList } from '@/components/page-list';
-import { ReactElement, useEffect, useState } from 'react';
-import { PageMeta, useAppState } from '@/providers/app-state-provider';
-import { useRouter } from 'next/router';
-import {
-  PageContainer,
-  NavContainer,
-  StyledBreadcrumbs,
-  SearchButton,
-} from './[pageId]';
-import { Breadcrumbs } from '@affine/component';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { SearchIcon } from '@blocksuite/icons';
+import { usePublicWorkspace } from '@/hooks/use-public-workspace';
+import { PageMeta } from '@/providers/app-state-provider';
 import { useModal } from '@/store/globalModal';
-const All = () => {
-  const { dataCenter } = useAppState();
-  const router = useRouter();
-  const [pageList, setPageList] = useState<PageMeta[]>([]);
-  const [workspaceName, setWorkspaceName] = useState('');
-  const { triggerQuickSearchModal } = useModal();
-  useEffect(() => {
-    dataCenter
-      .loadPublicWorkspace(router.query.workspaceId as string)
-      .then(data => {
-        setPageList(data.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]);
-        setWorkspaceName(data.blocksuiteWorkspace?.meta.name as string);
-      })
-      .catch(() => {
-        router.push('/404');
-      });
-  }, [router, dataCenter]);
+import { Breadcrumbs } from '@affine/component';
+import { SearchIcon } from '@blocksuite/icons';
+import { useRouter } from 'next/router';
+import { ReactElement, useMemo } from 'react';
+import {
+  NavContainer,
+  PageContainer,
+  SearchButton,
+  StyledBreadcrumbs,
+} from './[pageId]';
 
+const All = () => {
+  const router = useRouter();
+  const { triggerQuickSearchModal } = useModal();
+  const workspaceUnit = usePublicWorkspace(router.query.workspaceId as string);
+
+  const pageList = useMemo(() => {
+    return (workspaceUnit?.blocksuiteWorkspace?.meta.pageMetas ??
+      []) as PageMeta[];
+  }, [workspaceUnit]);
+
+  const workspaceName = workspaceUnit?.blocksuiteWorkspace?.meta.name;
   return (
     <PageContainer>
       <NavContainer>
@@ -37,7 +32,11 @@ const All = () => {
           <StyledBreadcrumbs
             href={`/public-workspace/${router.query.workspaceId}`}
           >
-            <WorkspaceUnitAvatar size={24} name={workspaceName} />
+            <WorkspaceUnitAvatar
+              size={24}
+              name={workspaceName}
+              workspaceUnit={workspaceUnit}
+            />
             <span>{workspaceName}</span>
           </StyledBreadcrumbs>
         </Breadcrumbs>
