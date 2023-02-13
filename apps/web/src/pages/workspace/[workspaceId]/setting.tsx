@@ -10,7 +10,6 @@ import {
   GeneralPage,
   MembersPage,
   PublishPage,
-  SyncPage,
   ExportPage,
 } from '@/components/workspace-setting';
 import { SettingsIcon } from '@blocksuite/icons';
@@ -32,10 +31,11 @@ const useTabMap = () => {
       name: t('General'),
       panelRender: workspace => <GeneralPage workspace={workspace} />,
     },
-    {
-      name: t('Sync'),
-      panelRender: workspace => <SyncPage workspace={workspace} />,
-    },
+    // TODO: add it back for desktop version
+    // {
+    //   name: t('Sync'),
+    //   panelRender: workspace => <SyncPage workspace={workspace} />,
+    // },
     {
       name: t('Collaboration'),
       panelRender: workspace => <MembersPage workspace={workspace} />,
