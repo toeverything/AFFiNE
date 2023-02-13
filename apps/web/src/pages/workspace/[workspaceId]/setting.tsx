@@ -1,11 +1,16 @@
 import {
   StyledSettingContainer,
   StyledSettingContent,
-  StyledSettingSidebar,
-  StyledSettingTabContainer,
   WorkspaceSettingTagItem,
 } from '@/components/workspace-setting/style';
-import { ReactElement, ReactNode, useState } from 'react';
+import {
+  ReactElement,
+  ReactNode,
+  useState,
+  CSSProperties,
+  useEffect,
+  startTransition,
+} from 'react';
 import {
   GeneralPage,
   MembersPage,
@@ -19,6 +24,7 @@ import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { PageListHeader } from '@/components/header';
 import Head from 'next/head';
+import { styled } from '@affine/component';
 
 const useTabMap = () => {
   const { t } = useTranslation();
@@ -73,11 +79,48 @@ const useTabMap = () => {
   return { activeTabPanelRender, tableArr, handleTabChange, activeTab };
 };
 
+const StyledIndicator = styled.div(({ theme }) => {
+  return {
+    height: '2px',
+    background: theme.colors.primaryColor,
+    position: 'absolute',
+    left: '0',
+    bottom: '0',
+    transition: 'left .3s, width .3s',
+  };
+});
+const StyledTabButtonWrapper = styled.div(() => {
+  return {
+    display: 'flex',
+    position: 'relative',
+  };
+});
 const WorkspaceSetting = () => {
   const { t } = useTranslation();
   const { currentWorkspace } = useAppState();
   const { activeTabPanelRender, tableArr, handleTabChange, activeTab } =
     useTabMap();
+  const [indicatorState, setIndicatorState] = useState<
+    Pick<CSSProperties, 'left' | 'width'>
+  >({
+    left: 0,
+    width: 0,
+  });
+
+  useEffect(() => {
+    const tabButton = document.querySelector(
+      `[data-setting-tab-button="${activeTab}"]`
+    );
+    if (tabButton instanceof HTMLElement) {
+      startTransition(() => {
+        setIndicatorState({
+          width: `${tabButton.offsetWidth}px`,
+          left: `${tabButton.offsetLeft}px`,
+        });
+      });
+    }
+  }, [activeTab]);
+
   return (
     <>
       <Head>
@@ -86,23 +129,23 @@ const WorkspaceSetting = () => {
       <PageListHeader icon={<SettingsIcon />}>{t('Settings')}</PageListHeader>
 
       <StyledSettingContainer>
-        <StyledSettingSidebar>
-          <StyledSettingTabContainer>
-            {tableArr.map(({ name }) => {
-              return (
-                <WorkspaceSettingTagItem
-                  key={name}
-                  isActive={activeTab === name}
-                  onClick={() => {
-                    handleTabChange(name);
-                  }}
-                >
-                  {name}
-                </WorkspaceSettingTagItem>
-              );
-            })}
-          </StyledSettingTabContainer>
-        </StyledSettingSidebar>
+        <StyledTabButtonWrapper>
+          {tableArr.map(({ name }) => {
+            return (
+              <WorkspaceSettingTagItem
+                key={name}
+                isActive={activeTab === name}
+                data-setting-tab-button={name}
+                onClick={() => {
+                  handleTabChange(name);
+                }}
+              >
+                {name}
+              </WorkspaceSettingTagItem>
+            );
+          })}
+          <StyledIndicator style={indicatorState} />
+        </StyledTabButtonWrapper>
 
         <StyledSettingContent>
           {currentWorkspace && activeTabPanelRender?.(currentWorkspace)}

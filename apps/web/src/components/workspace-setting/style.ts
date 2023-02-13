@@ -6,6 +6,7 @@ export const StyledSettingContainer = styled('div')(() => {
     flexDirection: 'column',
     padding: '0 0 20px 48px',
     height: '100vh',
+    marginTop: '48px',
   };
 });
 
@@ -25,14 +26,6 @@ export const StyledSettingContent = styled('div')(() => {
   };
 });
 
-export const StyledSettingTabContainer = styled('ul')(() => {
-  {
-    return {
-      display: 'flex',
-    };
-  }
-});
-
 export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
   ({ theme, isActive }) => {
     {
@@ -46,10 +39,6 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
         lineHeight: theme.font.lineHeight,
         cursor: 'pointer',
         transition: 'all 0.15s ease',
-        borderBottom: `2px solid ${
-          isActive ? theme.colors.primaryColor : 'none'
-        }`,
-        ':hover': { color: theme.colors.primaryColor },
       };
     }
   }
