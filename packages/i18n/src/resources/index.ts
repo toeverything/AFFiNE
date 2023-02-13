@@ -25,7 +25,7 @@ export const LOCALES = [
     originalName: '简体中文',
     flagEmoji: '🇨🇳',
     base: false,
-    completeRate: 0.9835164835164835,
+    completeRate: 1,
     res: zh_Hans,
   },
   {
@@ -35,7 +35,7 @@ export const LOCALES = [
     originalName: 'français',
     flagEmoji: '🇫🇷',
     base: false,
-    completeRate: 0.989010989010989,
+    completeRate: 1,
     res: fr,
   },
   {
@@ -45,7 +45,7 @@ export const LOCALES = [
     originalName: 'Deutsch',
     flagEmoji: '🇩🇪',
     base: false,
-    completeRate: 0.9285714285714286,
+    completeRate: 1,
     res: de,
   },
   {
@@ -55,7 +55,7 @@ export const LOCALES = [
     originalName: 'русский',
     flagEmoji: '🇷🇺',
     base: false,
-    completeRate: 0.989010989010989,
+    completeRate: 1,
     res: ru,
   },
 ] as const;

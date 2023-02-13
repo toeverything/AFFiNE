@@ -3,16 +3,30 @@
   "Delete Workspace Description": "Workspace (<1>{{workspace}}</1>) wird gelöscht und der Inhalt wird verloren sein. Dies kann nicht rückgängig gemacht werden.",
   "Copied link to clipboard": "Link in die Zwischenablage kopiert",
   "Local Workspace Description": "Alle Daten sind auf dem aktuellen Gerät gespeichert. Du kannst AFFiNE Cloud für diesen Workspace aktivieren, um deine Daten mit der Cloud zu synchronisieren.",
+  "Download all data": "Alle Daten herunterladen",
+  "It takes up little space on your device": {
+    "": "Es verbraucht nur wenig Speicherplatz auf deinem Gerät."
+  },
+  "Not now": "Vielleicht später",
   "Member": "Mitglied",
   "Once deleted, you can't undo this action": {
     "": "Das Löschen kann nicht rückgängig gemacht werden."
   },
   "Owner": "Besitzer",
   "Sync Description2": "<1>{{workspaceName}}</1> ist ein Cloud Workspace. Alle Daten werden synchronisiert und in der AFFiNE Cloud gespeichert.",
+  "Export Description": "Du kannst alle Workspace Daten zur Sicherung exportieren, und die exportierten Daten können wieder importiert werden.",
+  "Edit": "Bearbeiten",
   "Download data Description1": "Es verbraucht mehr Speicherplatz auf deinem Gerät.",
   "Wait for Sync": "Warte auf Sync",
   "Published Description": "Der aktuelle Workspace wurde im Web veröffentlicht, jeder mit dem Link kann den Inhalt sehen.",
   "Sync Description": "{{workspaceName}} ist ein lokaler Workspace. Alle Daten werden nur auf dem aktuellen Gerät gespeichert. Wenn du AFFiNE Cloud für diesen Workspace aktivierst, kann der Inhalt mit der Cloud synchronisiert werden. ",
+  "Export AFFiNE backup file": "AFFiNE-Backup als Datei exportieren (bald verfügbar)",
+  "Saved then enable AFFiNE Cloud": "Alle Änderungen werden lokal gespeichert. Klicke hier, um AFFiNE Cloud zu aktivieren.",
+  "AFFiNE Cloud": "AFFiNE Cloud",
+  "It takes up more space on your device": {
+    "": "Es verbraucht mehr Speicherplatz auf deinem Gerät."
+  },
+  "Sign out description": "Nach dem Abmelden gehen alle nicht synchronisierten Inhalte verloren.",
   "Joined Workspace": "Workspace beigetreten",
   "404 - Page Not Found": "404 - Seite nicht gefunden",
   "Add to favorites": "Zu Favoriten hinzufügen",
@@ -164,11 +178,15 @@
   "core": "Core",
   "is a Cloud Workspace": "ist ein Cloud Workspace.",
   "is a Local Workspace": "ist ein lokaler Workspace.",
+  "Confirm": "Bestätigen",
   "Published to Web": "Im Web veröffentlicht",
   "Download data Description2": "Es verbraucht nur wenig Speicherplatz auf deinem Gerät.",
   "will delete member": "wird Mitglied löschen",
   "Failed to publish workspace": "Workspace Veröffentlichung fehlgeschlagen",
   "Back Home": "Zurück zum Start",
   "Cloud Workspace Description": "Alle Daten werden synchronisiert und zu dem AffiNE account <1>{{email}}</1> gespeichert",
-  "Access level": "Zugriffsberechtigung"
+  "Access level": "Zugriffsberechtigung",
+  "All data has been stored in the cloud": "Alle Daten wurden in der Cloud gespeichert.",
+  "Data sync mode": "Daten-Sync Modus",
+  "Download core data": "Core Daten herunterladen"
 }
