@@ -9,6 +9,7 @@ import {
   useState,
   CSSProperties,
   useEffect,
+  startTransition,
 } from 'react';
 import {
   GeneralPage,
@@ -99,10 +100,9 @@ const WorkspaceSetting = () => {
   const { currentWorkspace } = useAppState();
   const { activeTabPanelRender, tableArr, handleTabChange, activeTab } =
     useTabMap();
-  const [indicatorState, setIndicatorState] = useState<{
-    left: CSSProperties['left'];
-    width: CSSProperties['width'];
-  }>({
+  const [indicatorState, setIndicatorState] = useState<
+    Pick<CSSProperties, 'left' | 'width'>
+  >({
     left: 0,
     width: 0,
   });
@@ -111,10 +111,12 @@ const WorkspaceSetting = () => {
     const tabButton = document.querySelector(
       `[data-setting-tab-button="${activeTab}"]`
     );
-    if (tabButton) {
-      setIndicatorState({
-        width: `${(tabButton as HTMLElement).offsetWidth}px`,
-        left: `${(tabButton as HTMLElement).offsetLeft}px`,
+    if (tabButton instanceof HTMLElement) {
+      startTransition(() => {
+        setIndicatorState({
+          width: `${tabButton.offsetWidth}px`,
+          left: `${tabButton.offsetLeft}px`,
+        });
       });
     }
   }, [activeTab]);
