@@ -190,7 +190,7 @@ jobs:
     name: Push frontend image
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    needs: build-livedemo
+    needs: build-frontend
 
     permissions:
       contents: read
