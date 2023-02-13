@@ -24,6 +24,7 @@
   "Confirm": "确认",
   "Download all data": "下载所有数据",
   "Download core data": "下载核心数据",
+  "Edit": "编辑",
   "Add to favorites": "加入收藏",
   "All pages": "全部页面",
   "Cancel": "取消",
@@ -168,6 +169,7 @@
   "core": "核心",
   "Sync Description": "{{workspaceName}}是本地工作区，所有数据都存储在当前设备上。您可以为此工作区启用AFFiNE Cloud，以使数据与云端保持同步。",
   "Delete Workspace Description2": "正在删除（<1>{{workspace}}</1>），将同时删除本地和云端数据。此操作无法撤消，请谨慎操作。",
+  "AFFiNE Cloud": "AFFiNE 云",
   "Failed to publish workspace": "工作区发布失败",
   "Local Workspace Description": "所有数据都本地存储在当前设备。您可以为此工作区启用AFFiNE Cloud，以保证数据时刻被云端同步。",
   "Member": "成员",
@@ -176,6 +178,10 @@
   "Published to Web": "公开到互联网",
   "Data sync mode": "数据同步模式",
   "Export AFFiNE backup file": "导出 AFFiNE 备份文件（即将到来）",
+  "Export Description": "您可以导出整个工作区数据进行备份，导出的数据可以重新被导入。",
+  "It takes up little space on your device": {
+    "": "此操作会在你的设备上占用少许空间。"
+  },
   "Retain local cached data": "保留本地缓存数据",
   "Set a Workspace name": "设置工作区名字",
   "Workspace Avatar": "工作区头像",

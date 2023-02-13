@@ -91,7 +91,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                     setShowEditInput(true);
                   }}
                 >
-                  Edit
+                  {t('Edit')}
                 </StyledEditButton>
               )}
             </FlexWrapper>
