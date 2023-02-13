@@ -11,7 +11,7 @@
   "Export AFFiNE backup file": "Export AFFiNE backup file (coming soon)",
   "Saved then enable AFFiNE Cloud": "All changes are saved locally, click to enable AFFiNE Cloud.",
   "Not now": "Not now",
-  "Export Description": "You can export the entire Workspace data for backup, and the exported data can be re-impored.",
+  "Export Description": "You can export the entire Workspace data for backup, and the exported data can be re-imported.",
   "Quick search": "Quick search",
   "All pages": "All pages",
   "No item": "No item",
@@ -186,5 +186,6 @@
   "All data has been stored in the cloud": "All data has been stored in the cloud. ",
   "Download all data": "Download all data",
   "emptyFavorite": "Click Add to Favorites and the page will appear here.",
+  "Edit": "Edit",
   "Sign out description": "Signing out will cause the unsynchronised content to be lost."
 }
