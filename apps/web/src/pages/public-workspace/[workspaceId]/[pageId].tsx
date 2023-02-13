@@ -89,9 +89,6 @@ const Page: NextPageWithLayout = () => {
               editor.readonly = true;
               setLoaded(true);
             }}
-            setBlockHub={() => {
-              return;
-            }}
           />
         )}
       </PageContainer>

@@ -4,7 +4,6 @@ import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
 import { styled } from '@affine/component';
-import { BlockHub } from '@blocksuite/blocks';
 
 const StyledEditorContainer = styled('div')(() => {
   return {
@@ -17,35 +16,22 @@ type Props = {
   page: Page;
   workspace: Workspace;
   setEditor: (editor: EditorContainer) => void;
-  setBlockHub: (blockHub: BlockHub) => void;
 };
 
-export const Editor = ({ page, workspace, setEditor, setBlockHub }: Props) => {
+export const Editor = ({ page, workspace, setEditor }: Props) => {
   const editorContainer = useRef<HTMLDivElement>(null);
   // const { currentWorkspace, currentPage, setEditor } = useAppState();
   useEffect(() => {
-    let blockHubElement: HTMLElement | null = null;
     const ret = () => {
       const node = editorContainer.current;
       while (node?.firstChild) {
         node.removeChild(node.firstChild);
       }
-
-      blockHubElement?.remove();
     };
 
     const editor = new EditorContainer();
     editor.page = page;
-    editor.createBlockHub().then(blockHub => {
-      const toolWrapper = document.querySelector('#toolWrapper');
-      if (!toolWrapper) {
-        // In an invitation page there is no toolWrapper, which contains helper icon and blockHub icon
-        return;
-      }
-      blockHubElement = blockHub;
-      setBlockHub(blockHub);
-      toolWrapper.appendChild(blockHub);
-    });
+
     editorContainer.current?.appendChild(editor);
     if (page.isEmpty) {
       const isFirstPage = workspace?.meta.pageMetas.length === 1;
@@ -75,7 +61,7 @@ export const Editor = ({ page, workspace, setEditor, setBlockHub }: Props) => {
 
     setEditor(editor);
     return ret;
-  }, [workspace, page, setEditor, setBlockHub]);
+  }, [workspace, page, setEditor]);
 
   return <StyledEditorContainer ref={editorContainer} />;
 };
