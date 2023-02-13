@@ -168,7 +168,7 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
