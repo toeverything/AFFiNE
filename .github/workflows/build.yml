@@ -186,6 +186,11 @@ jobs:
       - name: Export
         run: pnpm export
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./apps/web/out
+
   publish-frontend:
     name: Push frontend image
     if: github.ref == 'refs/heads/master'
