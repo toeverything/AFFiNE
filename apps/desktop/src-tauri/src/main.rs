@@ -8,6 +8,7 @@ mod state;
 use dotenvy::dotenv;
 use state::AppState;
 use std::env;
+#[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
 use tokio::sync::Mutex;
 
@@ -34,11 +35,12 @@ async fn main() {
         tauri::WindowBuilder::new(app, "label", tauri::WindowUrl::App(initial_path.into()))
           .title("AFFiNE")
           .inner_size(1000.0, 800.0)
-          .hidden_title(true)
           .initialization_script(&preload);
       // fix `title_bar_style` found for struct `WindowBuilder` in the current scope
       #[cfg(target_os = "macos")]
-      let _window = _window.title_bar_style(TitleBarStyle::Overlay);
+      let _window = _window
+        .hidden_title(true)
+        .title_bar_style(TitleBarStyle::Overlay);
       let _window = _window.build()?;
       #[cfg(debug_assertions)]
       _window.open_devtools();
