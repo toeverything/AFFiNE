@@ -27,7 +27,6 @@ export const AppStateProvider = ({
   const { dataCenter } = appState;
   const [blobState, setBlobState] = useState(false);
   const [userInfo, setUser] = useState<User | null>({} as User);
-  const router = useRouter();
   useEffect(() => {
     const initState = async () => {
       const dataCenter = await getDataCenter();
