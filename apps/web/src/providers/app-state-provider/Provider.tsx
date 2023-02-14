@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import type { PropsWithChildren } from 'react';
-import { DataCenter, getDataCenter, WorkspaceUnit } from '@affine/datacenter';
+import { getDataCenter } from '@affine/datacenter';
 import {
   AppStateContext,
   AppStateFunction,
@@ -10,23 +10,6 @@ import {
 import { createDefaultWorkspace } from './utils';
 import { User } from '@affine/datacenter';
 import { useBlockSuiteApi } from '@/store/workspace';
-
-export type AppState = {
-  dataCenter: DataCenter | null;
-  user?: User | null;
-  workspaceList: WorkspaceUnit[];
-  currentWorkspace: WorkspaceUnit | null;
-  pageList: PageMeta[];
-  synced: boolean;
-  isOwner?: boolean;
-  blobDataSynced?: boolean;
-};
-export type AppActions = {
-  loadWorkspace: (workspaceId: string) => Promise<WorkspaceUnit | null>;
-
-  login: () => Promise<User>;
-  logout: () => Promise<void>;
-};
 
 export interface Disposable {
   dispose(): void;
