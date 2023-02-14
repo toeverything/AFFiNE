@@ -47,7 +47,7 @@ const defaultModalState: ModalState = {
 const create = () =>
   createStore(
     subscribeWithSelector(
-      combine<ModalState, ModalActions>(defaultModalState, set => ({
+      combine<ModalState, ModalActions>({ ...defaultModalState }, set => ({
         triggerShortcutsModal: () => {
           set(({ shortcuts }) => ({
             shortcuts: !shortcuts,
