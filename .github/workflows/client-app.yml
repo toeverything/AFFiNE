@@ -16,24 +16,66 @@ on:
       - 'README.md'
       - '.vscode'
 
+permissions:
+  actions: write
+  contents: write
+  security-events: write
+
 concurrency:
   group: release-ci-group
   cancel-in-progress: true
 
 jobs:
-  MacOS:
-    runs-on: macos-latest
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      RELEASE_UPLOAD_ID: ${{ steps.create_release.outputs.id }}
 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Query version number
+        id: get_version
+        shell: bash
+        run: |
+          echo "using version tag ${GITHUB_REF:10}"
+          echo "version=${GITHUB_REF:10}" >> $GITHUB_ENV
+      - name: Create Release
+        id: create_release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          draft: true
+          tag_name: '${{ env.version }}'
+          release_name: 'AFFiNE ${{ env.version }}'
+          body: 'See the assets to download this version and install.'
+
+  build-tauri:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: 'true'
 
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -55,7 +97,7 @@ jobs:
       - name: Install dependencies
         run: pnpm i -r
 
-      - name: Make macOS (x64)
+      - name: Make App Binary
         run: pnpm build:app
         working-directory: apps/desktop
         env:
@@ -63,12 +105,8 @@ jobs:
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          draft: true
-          generate_release_notes: true
-          files: apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.RELEASE_UPLOAD_ID }}

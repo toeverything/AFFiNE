@@ -69,7 +69,7 @@ const nextConfig = {
     printer.info(`API request proxy to [${desc} Server]: ` + target);
     return profile;
   },
-  basePath: process.env.BASE_PATH,
+  basePath: process.env.NEXT_BASE_PATH,
   experimental: {
     forceSwcTransforms: true,
   },

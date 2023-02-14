@@ -8,6 +8,7 @@ mod state;
 use dotenvy::dotenv;
 use state::AppState;
 use std::env;
+#[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
 use tokio::sync::Mutex;
 
@@ -17,7 +18,9 @@ async fn main() {
   dotenv().ok();
   let preload = include_str!("../../public/preload/index.js");
   let is_dev = env::var("NODE_ENV").unwrap_or_default() == "development";
+  // this only work in production mode, in dev mode, we load `devPath` in tauri.conf.json
   let initial_path = if is_dev {
+    // just a place holder here
     "index.html"
   } else {
     "affine-out/index.html"
@@ -32,10 +35,13 @@ async fn main() {
         tauri::WindowBuilder::new(app, "label", tauri::WindowUrl::App(initial_path.into()))
           .title("AFFiNE")
           .inner_size(1000.0, 800.0)
-          .title_bar_style(TitleBarStyle::Overlay)
-          .hidden_title(true)
-          .initialization_script(&preload)
-          .build()?;
+          .initialization_script(&preload);
+      // fix `title_bar_style` found for struct `WindowBuilder` in the current scope
+      #[cfg(target_os = "macos")]
+      let _window = _window
+        .hidden_title(true)
+        .title_bar_style(TitleBarStyle::Overlay);
+      let _window = _window.build()?;
       #[cfg(debug_assertions)]
       _window.open_devtools();
       Ok(())

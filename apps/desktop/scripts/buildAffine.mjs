@@ -14,6 +14,8 @@ const publicAffineOutDirectory = path.join(
   'affine-out'
 );
 
+if (process.platform === 'win32') $.shell = 'pwsh';
+
 /**
  * Build affine dist html
  */
@@ -21,7 +23,7 @@ cd(repoDirectory);
 await $`pnpm i -r`;
 await $`pnpm build`;
 cd(affineSrcDirectory);
-$.env.BASE_PATH = '/affine-out';
+$.env.NEXT_BASE_PATH = '/affine-out';
 await $`pnpm build`;
 await $`pnpm export`;
 await fs.remove(publicAffineOutDirectory);
