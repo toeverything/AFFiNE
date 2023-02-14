@@ -61,6 +61,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
+          name: artifact
           path: ./apps/web/.next
 
   lint:
@@ -79,17 +80,6 @@ jobs:
           node-version: 18.x
           cache: 'pnpm'
 
-      - name: Restore cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            .next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
-
       - name: Install dependencies
         run: pnpm install
 
@@ -97,7 +87,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: apps/web/.next/
+          path: ./apps/web/.next
 
       - name: Lint & E2E Test & Unit Test
         run: |
