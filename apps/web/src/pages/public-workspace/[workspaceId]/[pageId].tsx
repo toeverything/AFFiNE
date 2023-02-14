@@ -10,7 +10,7 @@ import NextLink from 'next/link';
 import { PaperIcon, SearchIcon } from '@blocksuite/icons';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { useModal } from '@/store/globalModal';
-import { useLoadPublicWorkspace } from '@/hooks/use-public-workspace';
+import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
 import { useTranslation } from '@affine/i18n';
 
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
