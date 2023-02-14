@@ -5,6 +5,7 @@ import { EditorContainer } from '@blocksuite/editor';
 import { useChangePageMeta } from '@/hooks/use-change-page-meta';
 import { useRouter } from 'next/router';
 import { WorkspaceUnit } from '@affine/datacenter';
+import { useBlockSuite } from '@/store/workspace';
 
 export type EditorHandlers = {
   createPage: (params?: {
@@ -39,7 +40,8 @@ const getPageMeta = (workspace: WorkspaceUnit | null, pageId: string) => {
 export const usePageHelper = (): EditorHandlers => {
   const router = useRouter();
   const changePageMeta = useChangePageMeta();
-  const { currentWorkspace, editor } = useAppState();
+  const editor = useBlockSuite(store => store.editor);
+  const { currentWorkspace } = useAppState();
 
   return {
     createPage: ({

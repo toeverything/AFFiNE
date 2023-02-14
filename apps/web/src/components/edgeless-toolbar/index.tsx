@@ -17,9 +17,9 @@ import {
 import { MuiSlide } from '@affine/component';
 import { Tooltip } from '@affine/component';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
-import { useAppState } from '@/providers/app-state-provider';
 import useHistoryUpdated from '@/hooks/use-history-update';
 import { useTranslation } from '@affine/i18n';
+import { useBlockSuite } from '@/store/workspace';
 
 const useToolbarList1 = () => {
   const { t } = useTranslation();
@@ -87,7 +87,7 @@ const useToolbarList1 = () => {
 const UndoRedo = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const { currentPage } = useAppState();
+  const currentPage = useBlockSuite(store => store.currentPage);
   const onHistoryUpdated = useHistoryUpdated();
   const { t } = useTranslation();
   useEffect(() => {
