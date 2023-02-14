@@ -1,6 +1,5 @@
 import { DataCenter, User, WorkspaceUnit } from '@affine/datacenter';
 import type { EditorContainer } from '@blocksuite/editor';
-import { BlockHub } from '@blocksuite/blocks';
 
 import type {
   Page as StorePage,

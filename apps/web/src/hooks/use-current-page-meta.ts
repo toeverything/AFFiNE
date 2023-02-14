@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useAppState, PageMeta } from '@/providers/app-state-provider';
+import { PageMeta } from '@/providers/app-state-provider';
 import { useBlockSuite } from '@/store/workspace';
 
 export const useCurrentPageMeta = (): PageMeta | null => {

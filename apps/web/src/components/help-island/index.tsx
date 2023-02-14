@@ -11,7 +11,6 @@ import { Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/store/globalModal';
 import { MuiFade } from '@affine/component';
-import { useAppState } from '@/providers/app-state-provider';
 import { useBlockSuite } from '@/store/workspace';
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({

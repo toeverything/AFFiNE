@@ -1,5 +1,4 @@
 import { Page } from '@blocksuite/store';
-import { useAppState } from '@/providers/app-state-provider';
 import { useEffect, useRef } from 'react';
 import { useBlockSuite } from '@/store/workspace';
 
