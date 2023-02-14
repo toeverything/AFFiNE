@@ -9,7 +9,6 @@ import {
 } from './interface';
 import { createDefaultWorkspace } from './utils';
 import { User } from '@affine/datacenter';
-import { useRouter } from 'next/router';
 
 export interface Disposable {
   dispose(): void;
