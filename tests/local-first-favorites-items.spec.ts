@@ -43,7 +43,7 @@ test.describe('Local first favorite items ui', () => {
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();
 
-    await page.getByRole('link', { name: 'Favourites' }).click();
+    await page.getByRole('link', { name: 'Favorites' }).click();
     expect(
       page.getByRole('cell', { name: 'this is a new page to favorite' })
     ).not.toBeUndefined();

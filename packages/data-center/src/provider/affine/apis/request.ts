@@ -1,6 +1,6 @@
 import ky from 'ky-universal';
 import { MessageCenter } from '../../../message/index.js';
-import { token } from './token.js';
+import { auth } from './auth.js';
 
 type KyInstance = typeof ky;
 
@@ -28,13 +28,23 @@ export const bareClient: KyInstance = ky.extend({
   },
 });
 
+const refreshTokenIfExpired = async () => {
+  if (auth.isLogin && auth.isExpired) {
+    try {
+      await auth.refreshToken();
+    } catch (err) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+  }
+};
+
 export const client: KyInstance = bareClient.extend({
   hooks: {
     beforeRequest: [
       async request => {
-        if (token.isLogin) {
-          if (token.isExpired) await token.refreshToken();
-          request.headers.set('Authorization', token.token);
+        if (auth.isLogin) {
+          await refreshTokenIfExpired();
+          request.headers.set('Authorization', auth.token);
         } else {
           return new Response('Unauthorized', { status: 401 });
         }
@@ -43,8 +53,8 @@ export const client: KyInstance = bareClient.extend({
 
     beforeRetry: [
       async ({ request }) => {
-        await token.refreshToken();
-        request.headers.set('Authorization', token.token);
+        await refreshTokenIfExpired();
+        request.headers.set('Authorization', auth.token);
       },
     ],
 

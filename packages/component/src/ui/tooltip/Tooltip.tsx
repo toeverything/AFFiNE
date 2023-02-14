@@ -10,7 +10,7 @@ const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
     padding: '4px 12px',
     backgroundColor: theme.colors.tooltipBackground,
     color: '#fff',
-    fontSize: theme.font.xs,
+    fontSize: theme.font.sm,
   };
 });
 

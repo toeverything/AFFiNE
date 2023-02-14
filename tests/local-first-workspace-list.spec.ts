@@ -27,6 +27,21 @@ test.describe('Local first workspace list', () => {
     //check workspace list length
     const workspaceCards = await page.$$('data-testid=workspace-card');
     expect(workspaceCards.length).toBe(2);
+
+    //check page list length
+    const closeWorkspaceModal = page.getByTestId('close-workspace-modal');
+    await closeWorkspaceModal.click();
+    const allPageButton = page.getByTestId('all-pages');
+    await allPageButton.click();
+    await page.waitForTimeout(1000);
+    const pageList = page.locator('[data-testid=page-list-item]');
+    const result = await pageList.count();
+    expect(result).toBe(1);
+    await page.reload();
+    await page.waitForTimeout(1000);
+    const pageList1 = page.locator('[data-testid=page-list-item]');
+    const result1 = await pageList1.count();
+    expect(result1).toBe(1);
   });
 
   test('create multi workspace in the workspace list', async ({ page }) => {

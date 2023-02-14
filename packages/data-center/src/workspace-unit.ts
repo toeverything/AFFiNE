@@ -74,4 +74,11 @@ export class WorkspaceUnit {
       syncMode: this.syncMode,
     };
   }
+
+  /**
+   * @internal only for debug use
+   */
+  exportWorkspaceYDoc(): void {
+    this._blocksuiteWorkspace?.exportYDoc();
+  }
 }

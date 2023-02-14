@@ -14,16 +14,6 @@ test.describe('Login Flow', () => {
       .getByRole('heading', { name: 'Currently not logged in' })
       .click();
   });
-
-  test.skip('Open login modal by click cloud-unsync-icon', async ({ page }) => {
-    await page.getByTestId('cloud-unsync-icon').click();
-
-    await page.waitForTimeout(800);
-    await page
-      .getByRole('heading', { name: 'Currently not logged in' })
-      .click();
-  });
-
   // not stable
   // test.skip('Open google firebase page', async ({ page }) => {
   //   await page.getByTestId('current-workspace').click();

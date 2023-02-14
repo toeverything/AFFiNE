@@ -5,13 +5,11 @@ import type {
 } from '../base';
 import type { User } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
-import { storage } from './storage.js';
 import assert from 'assert';
 import { WebsocketProvider } from './sync.js';
 // import { IndexedDBProvider } from '../local/indexeddb';
 import { getApis, Workspace } from './apis/index.js';
-import type { Apis, WorkspaceDetail, Callback } from './apis';
-import { token } from './apis/token.js';
+import type { Apis, WorkspaceDetail } from './apis';
 import { WebsocketClient } from './channel';
 import {
   loadWorkspaceUnit,
@@ -40,11 +38,12 @@ const {
 
 export class AffineProvider extends BaseProvider {
   public id = 'affine';
-  private _onTokenRefresh?: Callback = undefined;
   private _wsMap: Map<BlocksuiteWorkspace, WebsocketProvider> = new Map();
   private _apis: Apis;
   private _channel?: WebsocketClient;
+  private _refreshToken?: string;
   // private _idbMap: Map<string, IndexedDBProvider> = new Map();
+  private _workspaceLoadingQueue: Set<string> = new Set();
 
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
@@ -52,39 +51,25 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async init() {
-    this._onTokenRefresh = () => {
-      if (this._apis.token.refresh) {
-        storage.setItem('token', this._apis.token.refresh);
+    this._apis.auth.onChange(() => {
+      if (this._apis.auth.isLogin) {
+        this._reconnectChannel();
+      } else {
+        this._destroyChannel();
       }
-    };
+    });
 
-    this._apis.token.onChange(this._onTokenRefresh);
-
-    // initial login token
-    if (this._apis.token.isExpired) {
-      try {
-        const refreshToken = storage.getItem('token');
-        await this._apis.token.refreshToken(refreshToken);
-
-        if (this._apis.token.refresh) {
-          storage.set('token', this._apis.token.refresh);
-        }
-
-        assert(this._apis.token.isLogin);
-      } catch (_) {
-        // this._logger('Authorization failed, fallback to local mode');
-      }
-    } else {
-      storage.setItem('token', this._apis.token.refresh);
-    }
-
-    if (token.isLogin) {
-      this._connectChannel();
+    if (this._apis.auth.isExpired && this._apis.auth.refresh) {
+      // do we need to await the following?
+      this._apis.auth.refreshToken();
     }
   }
 
-  private _connectChannel() {
-    if (!this._channel) {
+  private _reconnectChannel() {
+    if (this._refreshToken !== this._apis.auth.refresh) {
+      // need to reconnect
+      this._destroyChannel();
+
       this._channel = new WebsocketClient(
         `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${
           window.location.host
@@ -92,14 +77,25 @@ export class AffineProvider extends BaseProvider {
         this._logger,
         {
           params: {
-            token: this._apis.token.refresh,
+            token: this._apis.auth.refresh,
           },
         }
       );
+
+      this._channel.on('message', (msg: ChannelMessage) => {
+        this._handlerAffineListMessage(msg);
+      });
+
+      this._refreshToken = this._apis.auth.refresh;
     }
-    this._channel.on('message', (msg: ChannelMessage) => {
-      this._handlerAffineListMessage(msg);
-    });
+  }
+
+  private _destroyChannel() {
+    if (this._channel) {
+      this._channel.disconnect();
+      this._channel.destroy();
+      this._channel = undefined;
+    }
   }
 
   private async _handlerAffineListMessage({
@@ -109,7 +105,7 @@ export class AffineProvider extends BaseProvider {
     this._logger('receive server message');
     const newlyCreatedWorkspaces: WorkspaceUnit[] = [];
     const currentWorkspaceIds = this._workspaces.list().map(w => w.id);
-    const newlyRemovedWorkspacecIds = currentWorkspaceIds;
+    const newlyRemovedWorkspaceIds = currentWorkspaceIds;
     for (const [id, detail] of Object.entries(ws_details)) {
       const { name, avatar } = metadata[id];
 
@@ -119,7 +115,7 @@ export class AffineProvider extends BaseProvider {
       const workspaceIndex = currentWorkspaceIds.indexOf(id);
       const ifWorkspaceExist = workspaceIndex !== -1;
       if (ifWorkspaceExist) {
-        newlyRemovedWorkspacecIds.splice(workspaceIndex, 1);
+        newlyRemovedWorkspaceIds.splice(workspaceIndex, 1);
       }
 
       /**
@@ -144,11 +140,13 @@ export class AffineProvider extends BaseProvider {
           // update workspaces
           this._workspaces.update(id, workspace);
         } else {
-          const workspaceUnit = await loadWorkspaceUnit(
-            { id, ...workspace },
-            this._apis
-          );
-          newlyCreatedWorkspaces.push(workspaceUnit);
+          if (!this._workspaceLoadingQueue.has(id)) {
+            const workspaceUnit = await loadWorkspaceUnit(
+              { id, ...workspace },
+              this._apis
+            );
+            newlyCreatedWorkspaces.push(workspaceUnit);
+          }
         }
       } else {
         console.log(`[log warn]  ${id} name is empty`);
@@ -159,7 +157,7 @@ export class AffineProvider extends BaseProvider {
     this._workspaces.add(newlyCreatedWorkspaces);
 
     // sync newlyRemoveWorkspaces to context
-    this._workspaces.remove(newlyRemovedWorkspacecIds);
+    this._workspaces.remove(newlyRemovedWorkspaceIds);
   }
 
   private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
@@ -172,13 +170,13 @@ export class AffineProvider extends BaseProvider {
         window.location.protocol === 'https:' ? 'wss' : 'ws'
       }://${window.location.host}/api/sync/`;
       ws = new WebsocketProvider(wsUrl, room, doc, {
-        params: { token: this._apis.token.refresh },
+        params: { token: this._apis.auth.refresh },
         // @ts-expect-error ignore the type
         awareness: workspace.awarenessStore.awareness,
       });
       workspace.awarenessStore.awareness.setLocalStateField('user', {
-        name: token.user?.name ?? 'other',
-        id: Number(token.user?.id ?? -1),
+        name: this._apis.auth.user?.name ?? 'other',
+        id: Number(this._apis.auth.user?.id ?? -1),
         color: '#ffa500',
       });
 
@@ -203,6 +201,7 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async warpWorkspace(workspace: BlocksuiteWorkspace) {
+    // FIXME: if add indexedDB cache in the future, can remove following line.
     await this._applyCloudUpdates(workspace);
     const { room } = workspace;
     assert(room);
@@ -227,12 +226,13 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async loadWorkspaces() {
-    if (!this._apis.token.isLogin) {
+    if (!this._apis.auth.isLogin) {
       return [];
     }
     const workspacesList = await this._apis.getWorkspaces();
     const workspaceUnits = await Promise.all(
       workspacesList.map(w => {
+        this._workspaceLoadingQueue.add(w.id);
         return loadWorkspaceUnit(
           {
             id: w.id,
@@ -245,7 +245,9 @@ export class AffineProvider extends BaseProvider {
             syncMode: 'core',
           },
           this._apis
-        );
+        ).finally(() => {
+          this._workspaceLoadingQueue.delete(w.id);
+        });
       })
     );
     this._workspaces.add(workspaceUnits);
@@ -253,25 +255,24 @@ export class AffineProvider extends BaseProvider {
   }
 
   override async auth() {
-    const refreshToken = await storage.getItem('token');
-    if (refreshToken) {
-      await this._apis.token.refreshToken(refreshToken);
-      if (this._apis.token.isLogin && !this._apis.token.isExpired) {
+    if (this._apis.auth.isLogin) {
+      await this._apis.auth.refreshToken();
+      if (this._apis.auth.isLogin && !this._apis.auth.isExpired) {
         // login success
         return;
       }
     }
+
     const user = await this._apis.signInWithGoogle?.();
-    if (!this._channel?.connected) {
-      this._connectChannel();
-    }
+
     if (!user) {
       this._sendMessage(MessageCenter.messageCode.loginError);
     }
   }
 
+  // TODO: may need to update related workspace attributes on user info change?
   public override async getUserInfo(): Promise<User | undefined> {
-    const user = this._apis.token.user;
+    const user = this._apis.auth.user;
     return user
       ? {
           id: user.id,
@@ -381,7 +382,7 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override getToken(): string {
-    return this._apis.token.token;
+    return this._apis.auth.token;
   }
 
   public override async getUserByEmail(
@@ -433,11 +434,11 @@ export class AffineProvider extends BaseProvider {
   }
 
   public override async logout(): Promise<void> {
-    token.clear();
-    this._channel?.disconnect();
+    this._apis.auth.clear();
+    this._destroyChannel();
     this._wsMap.forEach(ws => ws.disconnect());
     this._workspaces.clear(false);
-    storage.removeItem('token');
+    await this._apis.signOutFirebase();
   }
 
   public override async getWorkspaceMembers(id: string) {

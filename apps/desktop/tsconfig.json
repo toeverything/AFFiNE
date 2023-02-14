@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "moduleResolution": "Node" /* can't use NodeNext, otherwise can't find styled-components and @emotion/styled 's type, because ts won't follow `type` field in @emotion/styled 's packagejson, will follow `main` instead */,
+    "strict": true,
+    "strictNullChecks": true /* Enable strict null checks. */,
+    "strictFunctionTypes": true /* Enable strict checking of function types. */,
+    "strictPropertyInitialization": true /* Enable strict checking of property initialization in classes. */,
+    "noImplicitThis": true /* Raise error on 'this' expressions with an implied 'any' type. */,
+    "alwaysStrict": true /* Parse in strict mode and emit "use strict" for each source file. */,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "jsx": "react-jsx" /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */,
+    "allowJs": false /* Allow javascript files to be compiled. */,
+    "esModuleInterop": true,
+    "types": ["vite/client"],
+    "typeRoots": ["types"],
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noImplicitReturns": true
+  },
+  "include": ["./src"],
+  "exclude": ["node_modules"]
+}

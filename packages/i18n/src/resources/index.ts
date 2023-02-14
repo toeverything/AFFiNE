@@ -3,6 +3,9 @@
 // To overwrite this, please overwrite download.ts script.
 import en from './en.json';
 import zh_Hans from './zh-Hans.json';
+import fr from './fr.json';
+import de from './de.json';
+import ru from './ru.json';
 
 export const LOCALES = [
   {
@@ -24,5 +27,35 @@ export const LOCALES = [
     base: false,
     completeRate: 1,
     res: zh_Hans,
+  },
+  {
+    id: 1000040006,
+    name: 'French',
+    tag: 'fr',
+    originalName: 'français',
+    flagEmoji: '🇫🇷',
+    base: false,
+    completeRate: 1,
+    res: fr,
+  },
+  {
+    id: 1000040009,
+    name: 'German',
+    tag: 'de',
+    originalName: 'Deutsch',
+    flagEmoji: '🇩🇪',
+    base: false,
+    completeRate: 1,
+    res: de,
+  },
+  {
+    id: 1000040011,
+    name: 'Russian',
+    tag: 'ru',
+    originalName: 'русский',
+    flagEmoji: '🇷🇺',
+    base: false,
+    completeRate: 1,
+    res: ru,
   },
 ] as const;
