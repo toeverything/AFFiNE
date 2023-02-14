@@ -12,10 +12,10 @@ Or maybe we can list the latest features:
 
 *   Drag Handle
     *   Easily select, drag and rearrange your blocks.
-    *   Find the ⬦ to the left of your blocks and interact with it!
+    *   Find the `⬦` to the left of your blocks and interact with it!
 *   Block Hub
     *   A convenient home for all blocks that can empower your doc.
-    *   Find it in the lower right, look for the □+.
+    *   Find it in the lower right, look for the `□+`.
 *   Workspaces
     *   Further improved, with cloud support, collaboration and publishing.
     *   Explore more features from the `Settings` in the sidebar.
