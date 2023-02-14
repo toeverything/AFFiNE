@@ -26,7 +26,8 @@ export interface AffineTheme {
     innerHoverBackground: string;
     codeBackground: string;
     codeBlockBackground: string;
-    blockHubBackground: string;
+    // Use for blockHub and slide bar background
+    hubBackground: string;
     blockHubHoverBackground: string;
     warningBackground: string;
     errorBackground: string;
@@ -102,6 +103,7 @@ export interface AffineThemeCSSVariables {
   '--affine-code-block-background': AffineTheme['colors']['codeBlockBackground'];
   '--affine-tooltip-background': AffineTheme['colors']['tooltipBackground'];
 
+  '--affine-hub-background': AffineTheme['colors']['hubBackground'];
   '--affine-text-color': AffineTheme['colors']['textColor'];
   '--affine-secondary-text-color': AffineTheme['colors']['secondaryTextColor'];
   '--affine-edgeless-text-color': AffineTheme['colors']['edgelessTextColor'];

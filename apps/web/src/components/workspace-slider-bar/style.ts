@@ -7,7 +7,7 @@ export const StyledSliderBar = styled.div<{ show: boolean }>(
       width: show ? '256px' : '0',
       height: '100vh',
       minHeight: '450px',
-      background: theme.mode === 'dark' ? '#272727' : '#F9F9FB',
+      background: theme.colors.hubBackground,
       boxShadow: theme.shadow.modal,
       transition: 'width .15s, padding .15s',
       position: 'relative',
