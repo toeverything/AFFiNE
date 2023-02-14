@@ -21,7 +21,7 @@ const PopoverContent = () => {
   const { editor } = useAppState();
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
   const { changePageMode } = usePageHelper();
-  const { confirm } = useConfirm();
+  const confirm = useConfirm(store => store.confirm);
   const { t } = useTranslation();
   const {
     mode = 'page',

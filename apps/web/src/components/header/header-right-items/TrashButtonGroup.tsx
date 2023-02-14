@@ -10,7 +10,7 @@ export const TrashButtonGroup = () => {
   const { permanentlyDeletePage } = usePageHelper();
   const { currentWorkspace } = useAppState();
   const { toggleDeletePage } = usePageHelper();
-  const { confirm } = useConfirm();
+  const confirm = useConfirm(store => store.confirm);
   const router = useRouter();
   const { id = '' } = useCurrentPageMeta() || {};
   const { t } = useTranslation();

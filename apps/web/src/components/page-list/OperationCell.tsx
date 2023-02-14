@@ -19,7 +19,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;
   const { openPage } = usePageHelper();
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
-  const { confirm } = useConfirm();
+  const confirm = useConfirm(store => store.confirm);
   const { t } = useTranslation();
   const OperationMenu = (
     <>
@@ -77,7 +77,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id } = pageMeta;
   const { openPage, getPageMeta } = usePageHelper();
   const { toggleDeletePage, permanentlyDeletePage } = usePageHelper();
-  const { confirm } = useConfirm();
+  const confirm = useConfirm(store => store.confirm);
   const { t } = useTranslation();
   return (
     <FlexWrapper>
