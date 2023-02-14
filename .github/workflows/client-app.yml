@@ -107,8 +107,15 @@ jobs:
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Upload to release on git tag Or output artifact path on nightly
+        uses: tauri-apps/tauri-action@v0
+        id: tauri-action
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           releaseId: ${{ needs.create-release.outputs.RELEASE_UPLOAD_ID }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tauri-client-app-artifact
+          path: ${{ steps.tauri-action.outputs.artifactPaths }}
