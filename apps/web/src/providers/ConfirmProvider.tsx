@@ -66,7 +66,7 @@ export const ConfirmContext = createContext<Store | null>(null);
 export const useConfirmApi = () => {
   const api = useContext(ConfirmContext);
   if (!api) {
-    throw new Error('cannot find modal context');
+    throw new Error('cannot find confirm context');
   }
   return api;
 };
