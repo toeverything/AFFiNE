@@ -2,7 +2,10 @@
 import React, { Suspense } from 'react';
 import { Meta, Story } from '@storybook/react';
 import { builtInSchemas } from '@blocksuite/blocks/models';
-import { BlockSuiteEditor, BlockSuiteEditorProps } from '..';
+import {
+  BlockSuiteEditor,
+  BlockSuiteEditorProps,
+} from '../components/BlockSuiteEditor';
 import { Page, Workspace } from '@blocksuite/store';
 
 const worksapce = new Workspace({
