@@ -15,7 +15,11 @@
     "jsx": "preserve",
     "incremental": true,
     "experimentalDecorators": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@affine/i18n": ["../i18n/src/index"]
+    }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

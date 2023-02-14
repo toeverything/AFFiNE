@@ -16,7 +16,7 @@
     "build:app": "tauri build"
   },
   "dependencies": {
-    "@blocksuite/store": "^0.3.1",
+    "@blocksuite/store": "0.4.0-20230212194855-047e1b9",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@tauri-apps/api": "^1.2.0",
