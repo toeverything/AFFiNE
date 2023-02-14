@@ -91,9 +91,7 @@ function Records() {
   );
 }
 
-export const ConfirmProvider = ({
-  children,
-}: PropsWithChildren<ConfirmContextProps>) => {
+export const ConfirmProvider = ({ children }: PropsWithChildren) => {
   return (
     <ConfirmContext.Provider value={useMemo(() => create(), [])}>
       {children}
