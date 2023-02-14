@@ -18,7 +18,7 @@ Or maybe we can list the latest features:
     *   Find it in the lower right, look for the □+.
 *   Workspaces
     *   Further improved, with cloud support, collaboration and publishing.
-    *   Find workspace settings in the left sidebar settings menu.
+    *   Explore more features from the `Settings` in the sidebar.
 
 We can insert images:
 
