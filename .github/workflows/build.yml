@@ -98,7 +98,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: apps/web/.next/
+          path: ./apps/web/.next
 
       - name: Lint & E2E Test & Unit Test
         run: |
