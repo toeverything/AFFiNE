@@ -1,4 +1,4 @@
-name: Build Pathfinder
+name: Build & Test
 
 on:
   push:
