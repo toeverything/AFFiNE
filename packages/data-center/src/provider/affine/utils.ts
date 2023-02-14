@@ -7,9 +7,9 @@ import { applyUpdate } from '../../utils/index.js';
 import { getDatabase } from './idb-kv.js';
 import { auth } from './apis/auth.js';
 
-export const createBlocksuiteWorkspaceWithAuth = (id: string) => {
-  if (auth.isExpired) {
-    throw new Error('Access token is already expired');
+export const createBlocksuiteWorkspaceWithAuth = async (id: string) => {
+  if (auth.isExpired && auth.isLogin) {
+    await auth.refreshToken();
   }
   return _createBlocksuiteWorkspace(id, {
     blobOptionsGetter: (k: string) =>
@@ -23,7 +23,7 @@ export const loadWorkspaceUnit = async (
   apis: Apis
 ) => {
   const workspaceUnit = new WorkspaceUnit(params);
-  const blocksuiteWorkspace = createBlocksuiteWorkspaceWithAuth(
+  const blocksuiteWorkspace = await createBlocksuiteWorkspaceWithAuth(
     workspaceUnit.id
   );
 
@@ -57,7 +57,7 @@ export const loadWorkspaceUnit = async (
 export const createWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
   const workspaceUnit = new WorkspaceUnit(params);
 
-  const blocksuiteWorkspace = createBlocksuiteWorkspaceWithAuth(
+  const blocksuiteWorkspace = await createBlocksuiteWorkspaceWithAuth(
     workspaceUnit.id
   );
 
