@@ -1,11 +1,13 @@
 /* eslint @typescript-eslint/no-var-requires: "off" */
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
-// const { dependencies } = require('./package.json');
+const { dependencies } = require('./package.json');
 const path = require('node:path');
 const printer = require('./scripts/printer').printer;
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
-const EDITOR_VERSION = enableDebugLocal ? 'local-version' : 'test-debug';
+const EDITOR_VERSION = enableDebugLocal
+  ? 'local-version'
+  : dependencies['@blocksuite/editor'];
 
 const profileTarget = {
   ac: '100.85.73.88:12001',
