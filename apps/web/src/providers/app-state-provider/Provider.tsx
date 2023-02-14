@@ -174,15 +174,19 @@ export const AppStateProvider = ({
 
   const login = async () => {
     const { dataCenter } = appState;
-    await dataCenter.login();
-
-    const user = (await dataCenter.getUserInfo()) as User;
-    if (!user) {
-      throw new Error('User info not found');
+    try {
+      await dataCenter.login();
+      const user = (await dataCenter.getUserInfo()) as User;
+      if (!user) {
+        throw new Error('User info not found');
+      }
+      setUser(user);
+      return user;
+    } catch (error) {
+      return null; // login failed
     }
-    setUser(user);
-    return user;
   };
+
   const logout = async () => {
     const { dataCenter } = appState;
     await dataCenter.logout();

@@ -38,7 +38,7 @@ export type AppStateFunction = {
   >;
   loadPage: (pageId: string) => void;
 
-  login: () => Promise<User>;
+  login: () => Promise<User | null>;
   logout: () => Promise<void>;
 };
 
