@@ -16,6 +16,11 @@ on:
       - 'README.md'
       - '.vscode'
 
+permissions:
+  actions: write
+  contents: write
+  security-events: write
+
 concurrency:
   group: release-ci-group
   cancel-in-progress: true
