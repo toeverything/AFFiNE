@@ -93,6 +93,8 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
+      - name: Get rust cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Install dependencies
         run: pnpm i -r
@@ -105,8 +107,18 @@ jobs:
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Upload to release on git tag Or output artifact path on nightly
+        uses: tauri-apps/tauri-action@dev
+        id: tauri-action
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           releaseId: ${{ needs.create-release.outputs.RELEASE_UPLOAD_ID }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tauri-client-app-artifact
+          path: |
+            ${{ fromJSON(steps.tauri-action.outputs.artifactPaths)[0] }}
+            ${{ fromJSON(steps.tauri-action.outputs.artifactPaths)[1] }}
+            ${{ fromJSON(steps.tauri-action.outputs.artifactPaths)[2] }}
