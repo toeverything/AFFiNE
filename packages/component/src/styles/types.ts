@@ -32,6 +32,7 @@ export interface AffineTheme {
     errorBackground: string;
     // Use for the page`s text
     textColor: string;
+    secondaryTextColor: string;
     // Use for the editor`s text, because in edgeless mode text is different form other
     edgelessTextColor: string;
     linkColor: string;
@@ -102,6 +103,7 @@ export interface AffineThemeCSSVariables {
   '--affine-tooltip-background': AffineTheme['colors']['tooltipBackground'];
 
   '--affine-text-color': AffineTheme['colors']['textColor'];
+  '--affine-secondary-text-color': AffineTheme['colors']['secondaryTextColor'];
   '--affine-edgeless-text-color': AffineTheme['colors']['edgelessTextColor'];
   '--affine-link-color': AffineTheme['colors']['linkColor'];
   // In dark mode, normal text`s (not bold) color

@@ -26,9 +26,10 @@ export const getLightTheme = (
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
 
-      textColor: '#28293D',
+      textColor: '#424149',
+      secondaryTextColor: '#8E8D91',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#555770',
+      iconColor: '#77757D',
       handleColor: '#c7c3d9',
       linkColor: '#6880FF',
       linkColor2: '#6880FF',
@@ -110,8 +111,9 @@ export const getDarkTheme = (
       errorBackground: '#FFDED8',
 
       textColor: '#fff',
+      secondaryTextColor: '#8E8D91',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#888a9e',
+      iconColor: '#77757D',
       handleColor: '#c7c3d9',
       linkColor: '#7D91FF',
       linkColor2: '#6880FF',
@@ -160,6 +162,7 @@ export const globalThemeVariables: (
     '--affine-block-hub-hover-background': theme.colors.blockHubHoverBackground,
 
     '--affine-text-color': theme.colors.textColor,
+    '--affine-secondary-text-color': theme['colors']['secondaryTextColor'],
     '--affine-edgeless-text-color': theme.colors.edgelessTextColor,
     '--affine-link-color': theme.colors.linkColor,
     // In dark mode, normal text`s (not bold) color
