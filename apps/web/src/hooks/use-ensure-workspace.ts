@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 // It is a fully effective hook
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
-  const { workspaceList, loadWorkspace, user } = useAppState();
+  const { dataCenter, loadWorkspace } = useAppState();
   const router = useRouter();
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(
     router.query.workspaceId as string
@@ -14,15 +14,20 @@ export const useEnsureWorkspace = () => {
   // const defaultOutLineWorkspaceId = '99ce7eb7';
   // console.log(defaultOutLineWorkspaceId);
   useEffect(() => {
+    setWorkspaceLoaded(false);
+    let aborted = false;
+    const abortController = new AbortController();
+
+    const workspaceList = dataCenter.workspaces;
+    const workspaceId =
+      (router.query.workspaceId as string) || workspaceList[0]?.id;
+
     // If router.query.workspaceId is not in workspace list, jump to 404 page
     // If workspaceList is empty, we need to create a default workspace but not jump to 404
     if (
+      workspaceId &&
       workspaceList.length &&
-      // FIXME: router is not ready when this hook is called
-      location.pathname.startsWith(`/workspace/${router.query.workspaceId}`) &&
-      workspaceList.findIndex(
-        meta => meta.id.toString() === router.query.workspaceId
-      ) === -1
+      workspaceList.findIndex(meta => meta.id.toString() === workspaceId) === -1
     ) {
       router.push('/404');
       return;
@@ -36,13 +41,19 @@ export const useEnsureWorkspace = () => {
     //   router.push('/404');
     //   return;
     // }
-    const workspaceId =
-      (router.query.workspaceId as string) || workspaceList[0]?.id;
-    loadWorkspace.current(workspaceId).finally(() => {
-      setWorkspaceLoaded(true);
-      setActiveWorkspaceId(activeWorkspaceId);
+
+    loadWorkspace.current(workspaceId, abortController.signal).then(unit => {
+      if (!aborted && unit) {
+        setWorkspaceLoaded(true);
+        setActiveWorkspaceId(workspaceId);
+      }
     });
-  }, [loadWorkspace, router, user, workspaceList, activeWorkspaceId]);
+
+    return () => {
+      aborted = true;
+      abortController.abort();
+    };
+  }, [dataCenter, loadWorkspace, router]);
 
   return {
     workspaceLoaded,

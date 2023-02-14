@@ -34,7 +34,7 @@ export type AppStateFunction = {
   setBlockHub: MutableRefObject<(BlockHub: BlockHub) => void>;
 
   loadWorkspace: MutableRefObject<
-    (workspaceId: string) => Promise<WorkspaceUnit | null>
+    (workspaceId: string, abort?: AbortSignal) => Promise<WorkspaceUnit | null>
   >;
   loadPage: (pageId: string) => void;
 
