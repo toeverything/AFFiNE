@@ -58,7 +58,6 @@ const create = () =>
     )
   );
 
-type ConfirmContextProps = PropsWithChildren<ConfirmState>;
 type Store = ReturnType<typeof create>;
 
 export const ConfirmContext = createContext<Store | null>(null);
