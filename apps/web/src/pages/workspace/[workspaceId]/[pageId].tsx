@@ -16,9 +16,37 @@ import dynamic from 'next/dynamic';
 import { EditorContainer } from '@blocksuite/editor';
 import Head from 'next/head';
 import { useTranslation } from '@affine/i18n';
+import { BlockHub } from '@blocksuite/blocks';
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
+
+const BlockHubAppender = () => {
+  const { setBlockHub, editor } = useAppState();
+  const setBlockHubHandler = useCallback(
+    (blockHub: BlockHub) => setBlockHub.current(blockHub),
+    [setBlockHub]
+  );
+  useEffect(() => {
+    let blockHubElement: HTMLElement | null = null;
+
+    editor?.createBlockHub().then(blockHub => {
+      const toolWrapper = document.querySelector('#toolWrapper');
+      if (!toolWrapper) {
+        // In an invitation page there is no toolWrapper, which contains helper icon and blockHub icon
+        return;
+      }
+      blockHubElement = blockHub;
+      // setBlockHubHandler(blockHub);
+      toolWrapper.appendChild(blockHub);
+    });
+    return () => {
+      blockHubElement?.remove();
+    };
+  }, [editor, setBlockHubHandler]);
+  return null;
+};
+
 const Page: NextPageWithLayout = () => {
   const { currentPage, currentWorkspace, setEditor } = useAppState();
 
@@ -26,7 +54,9 @@ const Page: NextPageWithLayout = () => {
     (editor: EditorContainer) => setEditor.current(editor),
     [setEditor]
   );
+
   const { t } = useTranslation();
+
   return (
     <>
       <Head>
@@ -36,11 +66,14 @@ const Page: NextPageWithLayout = () => {
       <MobileModal />
 
       {currentPage && currentWorkspace?.blocksuiteWorkspace && (
-        <DynamicBlocksuite
-          page={currentPage}
-          workspace={currentWorkspace.blocksuiteWorkspace}
-          setEditor={setEditorHandler}
-        />
+        <>
+          <DynamicBlocksuite
+            page={currentPage}
+            workspace={currentWorkspace.blocksuiteWorkspace}
+            setEditor={setEditorHandler}
+          />
+          <BlockHubAppender />
+        </>
       )}
     </>
   );
