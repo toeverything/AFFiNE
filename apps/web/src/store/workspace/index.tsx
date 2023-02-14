@@ -2,11 +2,11 @@ import type React from 'react';
 import { createContext, useContext, useMemo } from 'react';
 import { createStore, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
-import { UseBoundStore } from 'zustand/react';
+import type { UseBoundStore } from 'zustand/react';
 import type { Page } from '@blocksuite/store';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { Workspace } from '@blocksuite/store';
-import { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/editor';
 
 export type BlockSuiteState = {
   currentWorkspace: Workspace | null;
