@@ -1,12 +1,10 @@
-import { Modal, ModalWrapper } from '@affine/component';
-import { IconButton } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
 import { useAppState } from '@/providers/app-state-provider';
-import { useEffect, useState } from 'react';
-import router, { useRouter } from 'next/router';
-import { toast } from '@affine/component';
+import { IconButton, Modal, ModalWrapper, toast } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
-import { Header, Content, ContentTitle, StyleTips, StyleButton } from './style';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
+import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 
 interface EnableWorkspaceModalProps {
   open: boolean;
@@ -21,13 +19,6 @@ export const EnableWorkspaceModal = ({
   const { user, dataCenter, login, currentWorkspace } = useAppState();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    router.beforePopState(() => {
-      onClose();
-      return true;
-    });
-  }, [onClose, router]);
 
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
@@ -57,9 +48,10 @@ export const EnableWorkspaceModal = ({
                     const workspace = await dataCenter.enableWorkspaceCloud(
                       currentWorkspace
                     );
+                    toast(t('Enabled success'));
+
                     if (workspace) {
                       router.push(`/workspace/${workspace.id}/setting`);
-                      toast(t('Enabled success'));
                     }
                   }
                 }
