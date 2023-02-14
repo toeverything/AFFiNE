@@ -1,4 +1,3 @@
-import { useAppState } from '@/providers/app-state-provider';
 import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
