@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, ReactElement } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import type { PropsWithChildren } from 'react';
 import { Confirm, ConfirmProps } from '@affine/component';
 import { createStore, useStore } from 'zustand';
