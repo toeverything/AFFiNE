@@ -47,7 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: true
-          generate_release_notes: true
           tag_name: '${{ env.version }}'
           release_name: 'AFFiNE ${{ env.version }}'
           body: 'See the assets to download this version and install.'
