@@ -1,30 +1,47 @@
 import { PageList } from '@/components/page-list';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { usePublicWorkspace } from '@/hooks/use-public-workspace';
+import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
 import { PageMeta } from '@/providers/app-state-provider';
 import { useModal } from '@/store/globalModal';
 import { Breadcrumbs } from '@affine/component';
 import { SearchIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
-import { ReactElement, useMemo } from 'react';
+import { ReactElement, useMemo, useEffect } from 'react';
 import {
   NavContainer,
   PageContainer,
   SearchButton,
   StyledBreadcrumbs,
 } from './[pageId]';
+import { PageLoading } from '@/components/loading';
 
 const All = () => {
   const router = useRouter();
   const { triggerQuickSearchModal } = useModal();
-  const workspaceUnit = usePublicWorkspace(router.query.workspaceId as string);
+  const { status, workspace } = useLoadPublicWorkspace(
+    router.query.workspaceId as string
+  );
 
   const pageList = useMemo(() => {
-    return (workspaceUnit?.blocksuiteWorkspace?.meta.pageMetas ??
-      []) as PageMeta[];
-  }, [workspaceUnit]);
+    return (workspace?.blocksuiteWorkspace?.meta.pageMetas ?? []) as PageMeta[];
+  }, [workspace]);
 
-  const workspaceName = workspaceUnit?.blocksuiteWorkspace?.meta.name;
+  const workspaceName = workspace?.blocksuiteWorkspace?.meta.name;
+
+  useEffect(() => {
+    if (status === 'error') {
+      router.push('/404');
+    }
+  }, [router, status]);
+
+  if (status === 'loading') {
+    return <PageLoading />;
+  }
+
+  if (status === 'error') {
+    return null;
+  }
+
   return (
     <PageContainer>
       <NavContainer>
@@ -35,7 +52,7 @@ const All = () => {
             <WorkspaceUnitAvatar
               size={24}
               name={workspaceName}
-              workspaceUnit={workspaceUnit}
+              workspaceUnit={workspace}
             />
             <span>{workspaceName}</span>
           </StyledBreadcrumbs>

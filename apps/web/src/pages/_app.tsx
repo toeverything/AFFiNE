@@ -39,9 +39,16 @@ type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
 
+// Page list which do not rely on app state
+const NoNeedAppStatePageList = [
+  '/404',
+  '/public-workspace/[workspaceId]',
+  '/public-workspace/[workspaceId]/[pageId]',
+];
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout || (page => page);
   const { i18n } = useTranslation();
+  const router = useRouter();
 
   React.useEffect(() => {
     document.documentElement.lang = i18n.language;
@@ -68,7 +75,11 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
           <ConfirmProvider key="ConfirmProvider" />,
         ]}
       >
-        <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
+        {NoNeedAppStatePageList.includes(router.route) ? (
+          getLayout(<Component {...pageProps} />)
+        ) : (
+          <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
+        )}
       </ProviderComposer>
     </>
   );
@@ -83,11 +94,6 @@ const AppDefender = ({ children }: PropsWithChildren) => {
       router.replace('/workspace');
     }
   }, [router]);
-
-  // if you visit /404, you will see the children directly
-  if (router.route === '/404') {
-    return <div>{children}</div>;
-  }
 
   return <div>{synced ? children : <PageLoading />}</div>;
 };
