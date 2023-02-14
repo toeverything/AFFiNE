@@ -108,7 +108,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload to release on git tag Or output artifact path on nightly
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@dev
         id: tauri-action
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -118,4 +118,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: tauri-client-app-artifact
-          path: ${{ steps.tauri-action.outputs.artifactPaths }}
+          path: |
+            ${{ fromJSON(steps.tauri-action.outputs.artifactPaths)[0] }}
+            ${{ fromJSON(steps.tauri-action.outputs.artifactPaths)[1] }}
+            ${{ fromJSON(steps.tauri-action.outputs.artifactPaths)[2] }}
