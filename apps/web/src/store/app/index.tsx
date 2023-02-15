@@ -41,10 +41,12 @@ const create = () =>
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           dataCenter: null!,
         },
+        /* deepscan-disable TOO_MANY_ARGS */
         (set, get, api) => ({
           ...createBlockSuiteActions(set, get, api),
           ...createUserActions(set, get, api),
         })
+        /* deepscan-enable TOO_MANY_ARGS */
       )
     )
   );
