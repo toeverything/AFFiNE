@@ -1,0 +1,18 @@
+.affine-default-page-block-title-container {
+  margin-top: 78px;
+  margin-bottom: 40px;
+}
+
+.affine-default-page-block-container {
+  width: 686px !important;
+}
+.affine-default-page-block-container > .affine-block-children-container {
+  margin-left: -26px !important;
+}
+
+affine-block-hub {
+  position: unset !important;
+}
+.block-hub-menu-container {
+  position: unset !important;
+}

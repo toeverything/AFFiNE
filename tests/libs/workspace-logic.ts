@@ -18,7 +18,5 @@ export async function createWorkspace(
   await page.getByPlaceholder('Set a Workspace name').fill(params.name);
 
   // click create button
-  await page.getByRole('button', { name: 'Create' }).click();
-
-  return page.waitForTimeout(300);
+  return page.getByRole('button', { name: 'Create' }).click();
 }

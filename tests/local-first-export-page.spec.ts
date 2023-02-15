@@ -21,7 +21,7 @@ test.describe('Local first export page', () => {
     await cell.click();
     await clickPageMoreActions(page);
     const exportParentBtn = page.getByRole('tooltip', {
-      name: 'Add to favourites Convert to Edgeless Export Delete',
+      name: 'Add to favorites Convert to Edgeless Export Delete',
     });
     await exportParentBtn.click();
     const [download] = await Promise.all([
@@ -48,7 +48,7 @@ test.describe('Local first export page', () => {
     await cell.click();
     await clickPageMoreActions(page);
     const exportParentBtn = page.getByRole('tooltip', {
-      name: 'Add to favourites Convert to Edgeless Export Delete',
+      name: 'Add to favorites Convert to Edgeless Export Delete',
     });
     await exportParentBtn.click();
     const [download] = await Promise.all([

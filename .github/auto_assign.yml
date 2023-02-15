@@ -1,0 +1,8 @@
+# This is used for tracking in GitHub project.
+# See https://github.com/marketplace/actions/auto-assign-action
+
+# Set to true to add reviewers to pull requests
+addReviewers: false
+
+# Set to true to add assignees to pull requests
+addAssignees: author

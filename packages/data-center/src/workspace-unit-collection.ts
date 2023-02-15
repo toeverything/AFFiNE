@@ -8,8 +8,8 @@ export interface WorkspaceUnitCollectionScope {
   get: (workspaceId: string) => WorkspaceUnit | undefined;
   list: () => WorkspaceUnit[];
   add: (workspace: WorkspaceUnit | WorkspaceUnit[]) => void;
-  remove: (workspaceId: string | string[]) => boolean;
-  clear: () => void;
+  remove: (workspaceId: string | string[], isUpdate?: boolean) => boolean;
+  clear: (isUpdate?: boolean) => void;
   update: (
     workspaceId: string,
     workspaceUnit: UpdateWorkspaceUnitParams
@@ -35,6 +35,13 @@ export class WorkspaceUnitCollection {
     callback: (event: WorkspaceUnitCollectionChangeEvent) => void
   ) {
     this._events.on(type, callback);
+  }
+
+  public off(
+    type: 'change',
+    callback: (event: WorkspaceUnitCollectionChangeEvent) => void
+  ) {
+    this._events.off(type, callback);
   }
 
   public once(
@@ -85,7 +92,7 @@ export class WorkspaceUnitCollection {
       ]);
     };
 
-    const remove = (workspaceId: string | string[]) => {
+    const remove = (workspaceId: string | string[], isUpdate = true) => {
       const workspaceIds = Array.isArray(workspaceId)
         ? workspaceId
         : [workspaceId];
@@ -111,18 +118,19 @@ export class WorkspaceUnitCollection {
       if (!workspaceUnits.length) {
         return false;
       }
-
-      this._events.emit('change', [
-        {
-          deleted: workspaceUnits,
-        } as WorkspaceUnitCollectionChangeEvent,
-      ]);
+      if (isUpdate) {
+        this._events.emit('change', [
+          {
+            deleted: workspaceUnits,
+          } as WorkspaceUnitCollectionChangeEvent,
+        ]);
+      }
 
       return true;
     };
 
-    const clear = () => {
-      remove(Array.from(scopedWorkspaceIds));
+    const clear = (isUpdate = true) => {
+      remove(Array.from(scopedWorkspaceIds), isUpdate);
     };
 
     const update = (workspaceId: string, meta: UpdateWorkspaceUnitParams) => {

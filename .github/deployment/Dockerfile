@@ -1,6 +1,6 @@
 FROM node:16-alpine as relocate
 WORKDIR /app
-COPY ./packages/app/out ./dist
+COPY ./apps/web/out ./dist
 COPY ./.github/deployment/Caddyfile ./Caddyfile
 
 FROM caddy:2.6.2-alpine
