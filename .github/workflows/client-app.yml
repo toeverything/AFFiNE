@@ -21,6 +21,10 @@ permissions:
   contents: write
   security-events: write
 
+concurrency:
+  group: release-ci-group
+  cancel-in-progress: true
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
