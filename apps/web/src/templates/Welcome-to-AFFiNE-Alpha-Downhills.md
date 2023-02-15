@@ -25,6 +25,8 @@ Or maybe we can list the latest features:
 
 Let's explore how to collaborate with an image:
 
+![](https://cdn.affine.pro/81edf5adca8f4c0d6552d0b2a54248e88054b8f8831732fc13dc03da.png)
+
 ```JavaScript
 // We can also write code in a code block
 let scrambled = "V2VsY29tZSB0byBBRkZpTkU="
