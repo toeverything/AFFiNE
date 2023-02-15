@@ -110,7 +110,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                                 }}
                                 icon={<TrashIcon />}
                               >
-                                {t('Delete')}
+                                {t('Remove from workspace')}
                               </MenuItem>
                             </>
                           }
