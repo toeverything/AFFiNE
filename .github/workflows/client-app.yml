@@ -95,6 +95,10 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - name: Get rust cache
         uses: Swatinem/rust-cache@v2
+        id: rust-cache
+        with:
+          workspaces: |
+            "apps/desktop/src-tauri"
 
       - name: Install dependencies
         run: pnpm i -r
