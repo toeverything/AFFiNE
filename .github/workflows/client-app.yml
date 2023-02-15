@@ -22,7 +22,7 @@ permissions:
   security-events: write
 
 concurrency:
-  group: release-ci-group
+  group: ${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 
 jobs:
