@@ -18,7 +18,6 @@ const Template: StoryFn<BlockSuiteErrorBoundaryProps> = args => (
 
 export const ErrorComponent = () => {
   throw new MigrationError('Something incorrect');
-  return null;
 };
 
 export const Primary = Template.bind(undefined);
