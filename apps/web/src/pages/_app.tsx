@@ -22,14 +22,7 @@ import Head from 'next/head';
 import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
-import {
-  DataCenterLoader,
-  GlobalAppProvider,
-  useGlobalState,
-  useGlobalStateApi,
-} from '@/store/app';
-import { getDataCenter } from '@affine/datacenter';
-import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
+import { DataCenterLoader, GlobalAppProvider } from '@/store/app';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
