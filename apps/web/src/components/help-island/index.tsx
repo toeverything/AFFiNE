@@ -5,13 +5,14 @@ import {
   StyledAnimateWrapper,
   StyledTriggerWrapper,
 } from './style';
-import { CloseIcon, ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
+import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
 import { Tooltip } from '@affine/component';
 
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/store/globalModal';
 import { MuiFade } from '@affine/component';
 import { useGlobalState } from '@/store/app';
+import { CloseIcon } from '@blocksuite/icons';
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({
   showList = ['contact', 'shortcuts'],
@@ -76,11 +77,13 @@ export const HelpIsland = ({
         )}
       </StyledAnimateWrapper>
 
-      <MuiFade in={!spread} data-testid="faq-icon">
-        <StyledTriggerWrapper>
-          <HelpIcon />
-        </StyledTriggerWrapper>
-      </MuiFade>
+      <Tooltip content={t('Help and Feedback')} placement="left-end">
+        <MuiFade in={!spread} data-testid="faq-icon">
+          <StyledTriggerWrapper>
+            <HelpIcon />
+          </StyledTriggerWrapper>
+        </MuiFade>
+      </Tooltip>
       <MuiFade in={spread}>
         <StyledTriggerWrapper>
           <CloseIcon />

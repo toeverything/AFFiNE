@@ -1,15 +1,16 @@
 import { LocalWorkspaceIcon, CloudWorkspaceIcon } from '@blocksuite/icons';
 import { useAppState } from '@/providers/app-state-provider';
-import { styled, Tooltip } from '@affine/component';
+import { displayFlex, styled, Tooltip, IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/store/globalModal';
 
 const IconWrapper = styled.div(() => {
   return {
-    width: '20px',
-    height: '20px',
+    width: '32px',
+    height: '32px',
     marginRight: '12px',
-    fontSize: '20px',
+    fontSize: '22px',
+    ...displayFlex('center', 'center'),
   };
 });
 export const SyncUser = () => {
@@ -24,14 +25,14 @@ export const SyncUser = () => {
         content={t('Saved then enable AFFiNE Cloud')}
         placement="bottom-end"
       >
-        <IconWrapper
+        <IconButton
           onClick={() => {
             triggerEnableWorkspaceModal();
           }}
-          style={{ cursor: 'pointer' }}
+          style={{ marginRight: '12px' }}
         >
           <LocalWorkspaceIcon />
-        </IconWrapper>
+        </IconButton>
       </Tooltip>
     );
   }
