@@ -75,27 +75,20 @@ export const useGlobalState: UseBoundStore<Store> = ((
 }) as any;
 
 function DataCenterSideEffect() {
-  const onceRef = useRef(true);
   const api = useGlobalStateApi();
-  useEffect(() => {
-    async function init() {
-      const dataCenterPromise = getDataCenter();
-      api.setState({ dataCenterPromise });
-      dataCenterPromise.then(async dataCenter => {
-        // Ensure datacenter has at least one workspace
-        if (dataCenter.workspaces.length === 0) {
-          await createDefaultWorkspace(dataCenter);
-        }
-        api.setState({ dataCenter });
-      });
-    }
-    if (onceRef.current) {
-      onceRef.current = false;
-      init().then(() => {
-        console.log('datacenter init success');
-      });
-    }
-  }, [api]);
+  const dataCenter = useGlobalState(store => store.dataCenter);
+  const promise = useGlobalState(store => store.dataCenterPromise);
+  if (!dataCenter && !promise) {
+    const dataCenterPromise = getDataCenter();
+    api.setState({ dataCenterPromise });
+    dataCenterPromise.then(async dataCenter => {
+      // Ensure datacenter has at least one workspace
+      if (dataCenter.workspaces.length === 0) {
+        await createDefaultWorkspace(dataCenter);
+      }
+      api.setState({ dataCenter });
+    });
+  }
   return null;
 }
 

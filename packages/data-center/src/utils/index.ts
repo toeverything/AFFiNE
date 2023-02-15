@@ -11,6 +11,7 @@ export const createBlocksuiteWorkspace = (
   return new BlocksuiteWorkspace({
     room: workspaceId,
     defaultFlags: { enable_slash_menu: true },
+    isSSR: typeof window === 'undefined',
     ...workspaceOption,
   })
     .register(builtInSchemas)
