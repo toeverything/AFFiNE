@@ -22,7 +22,9 @@ permissions:
   security-events: write
 
 concurrency:
-  group: ${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
+  # The concurrency group contains the workflow name and the branch name for
+  # pull requests or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: true
 
 jobs:
