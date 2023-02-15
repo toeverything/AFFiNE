@@ -22,7 +22,9 @@ permissions:
   security-events: write
 
 concurrency:
-  group: release-ci-group
+  # The concurrency group contains the workflow name and the branch name for
+  # pull requests or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -95,6 +97,10 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - name: Get rust cache
         uses: Swatinem/rust-cache@v2
+        id: rust-cache
+        with:
+          workspaces: |
+            apps/desktop/src-tauri
 
       - name: Install dependencies
         run: pnpm i -r
