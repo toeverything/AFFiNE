@@ -4,10 +4,11 @@ import { useRouter } from 'next/router';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 import { PropsWithChildren } from 'react';
 import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
+import { PageLoading } from '../loading';
 
 export const WorkspaceDefender = ({ children }: PropsWithChildren) => {
   const { workspaceLoaded } = useEnsureWorkspace();
-  return <>{workspaceLoaded ? children : null}</>;
+  return <>{workspaceLoaded ? children : <PageLoading />}</>;
 };
 
 export const WorkspaceLayout = ({ children }: PropsWithChildren) => {

@@ -1,4 +1,7 @@
-import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import {
+  BlobOptionsGetter,
+  Workspace as BlocksuiteWorkspace,
+} from '@blocksuite/store';
 import type { User } from './types';
 
 export type SyncMode = 'all' | 'core';
@@ -13,6 +16,7 @@ export interface WorkspaceUnitCtorParams {
   provider: string;
   syncMode: SyncMode;
 
+  blobOptionsGetter?: BlobOptionsGetter;
   blocksuiteWorkspace?: BlocksuiteWorkspace | null;
 }
 
@@ -60,9 +64,18 @@ export class WorkspaceUnit {
 
   update(params: UpdateWorkspaceUnitParams) {
     Object.assign(this, params);
+    if (params.blocksuiteWorkspace) {
+      this.setBlocksuiteWorkspace(params.blocksuiteWorkspace);
+    }
+    if (params.blobOptionsGetter && this.blocksuiteWorkspace) {
+      this.blocksuiteWorkspace.setGettingBlobOptions(params.blobOptionsGetter);
+    }
   }
 
-  toJSON(): Omit<WorkspaceUnitCtorParams, 'blocksuiteWorkspace'> {
+  toJSON(): Omit<
+    WorkspaceUnitCtorParams,
+    'blocksuiteWorkspace' | 'blobOptionsGetter'
+  > {
     return {
       id: this.id,
       name: this.name,

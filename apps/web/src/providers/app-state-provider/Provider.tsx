@@ -23,6 +23,7 @@ export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
+  const { dataCenter } = appState;
   const [blobState, setBlobState] = useState(false);
   const [userInfo, setUser] = useState<User | null>({} as User);
   useEffect(() => {
@@ -73,21 +74,20 @@ export const AppStateProvider = ({
   }, [appState]);
 
   useEffect(() => {
-    const { dataCenter } = appState;
     // FIXME: onWorkspacesChange should have dispose function
-    dataCenter?.onWorkspacesChange(
+    return dataCenter?.onWorkspacesChange(
       () => {
-        setAppState({
-          ...appState,
+        setAppState(_appState => ({
+          ..._appState,
           workspaceList: dataCenter.workspaces,
-        });
+        }));
       },
       { immediate: false }
     );
-  }, [appState]);
+  }, [dataCenter]);
 
   const loadPage = useRef<AppStateFunction['loadPage']>();
-  loadPage.current = (pageId: string) => {
+  loadPage.current = pageId => {
     const { currentWorkspace, currentPage } = appState;
     if (pageId === currentPage?.id) {
       return;
@@ -101,7 +101,7 @@ export const AppStateProvider = ({
 
   const loadWorkspace: AppStateFunction['loadWorkspace'] =
     useRef() as AppStateFunction['loadWorkspace'];
-  loadWorkspace.current = async (workspaceId: string) => {
+  loadWorkspace.current = async (workspaceId, abort) => {
     const { dataCenter, workspaceList, currentWorkspace } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
@@ -110,7 +110,21 @@ export const AppStateProvider = ({
       return currentWorkspace;
     }
 
+    let aborted = false;
+
+    const onAbort = () => {
+      aborted = true;
+    };
+
+    abort?.addEventListener('abort', onAbort);
+
     const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
+
+    if (aborted) {
+      // do not update state if aborted
+      return null;
+    }
+
     let isOwner;
     if (workspace?.provider === 'local') {
       // isOwner is useful only in the cloud
@@ -131,6 +145,8 @@ export const AppStateProvider = ({
       blockHub: null,
       isOwner,
     });
+
+    abort?.removeEventListener('abort', onAbort);
 
     return workspace;
   };
@@ -174,15 +190,19 @@ export const AppStateProvider = ({
 
   const login = async () => {
     const { dataCenter } = appState;
-    await dataCenter.login();
-
-    const user = (await dataCenter.getUserInfo()) as User;
-    if (!user) {
-      throw new Error('User info not found');
+    try {
+      await dataCenter.login();
+      const user = (await dataCenter.getUserInfo()) as User;
+      if (!user) {
+        throw new Error('User info not found');
+      }
+      setUser(user);
+      return user;
+    } catch (error) {
+      return null; // login failed
     }
-    setUser(user);
-    return user;
   };
+
   const logout = async () => {
     const { dataCenter } = appState;
     await dataCenter.logout();

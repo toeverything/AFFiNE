@@ -6,6 +6,7 @@ export const Header = styled('div')({
   flexDirection: 'row-reverse',
   paddingRight: '10px',
   paddingTop: '10px',
+  flexShrink: 0,
 });
 
 export const Content = styled('div')({

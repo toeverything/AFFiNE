@@ -1,12 +1,10 @@
-import { Modal, ModalWrapper } from '@affine/component';
-import { IconButton } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
 import { useAppState } from '@/providers/app-state-provider';
-import { useState } from 'react';
-import router from 'next/router';
-import { toast } from '@affine/component';
+import { IconButton, Modal, ModalWrapper, toast } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
-import { Header, Content, ContentTitle, StyleTips, StyleButton } from './style';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
+import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 
 interface EnableWorkspaceModalProps {
   open: boolean;
@@ -20,6 +18,8 @@ export const EnableWorkspaceModal = ({
   const { t } = useTranslation();
   const { user, dataCenter, login, currentWorkspace } = useAppState();
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
       <ModalWrapper width={560} height={292}>
@@ -43,17 +43,19 @@ export const EnableWorkspaceModal = ({
               loading={loading}
               onClick={async () => {
                 setLoading(true);
-                if (!user) {
-                  await login();
+                if (user || (await login())) {
+                  if (currentWorkspace) {
+                    const workspace = await dataCenter.enableWorkspaceCloud(
+                      currentWorkspace
+                    );
+                    toast(t('Enabled success'));
+
+                    if (workspace) {
+                      router.push(`/workspace/${workspace.id}/setting`);
+                    }
+                  }
                 }
-                if (currentWorkspace) {
-                  const workspace = await dataCenter.enableWorkspaceCloud(
-                    currentWorkspace
-                  );
-                  workspace &&
-                    router.push(`/workspace/${workspace.id}/setting`);
-                  toast(t('Enabled success'));
-                }
+                setLoading(false);
               }}
             >
               {user ? t('Enable') : t('Sign in and Enable')}
