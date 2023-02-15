@@ -18,7 +18,6 @@ export type AppStateValue = {
   workspaceList: WorkspaceUnit[];
   currentWorkspace: WorkspaceUnit | null;
   pageList: PageMeta[];
-  synced: boolean;
   blobDataSynced?: boolean;
 };
 

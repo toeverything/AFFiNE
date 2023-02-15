@@ -1,5 +1,5 @@
 import type React from 'react';
-import { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { createStore, StateCreator, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
 import type { UseBoundStore } from 'zustand/react';
@@ -27,6 +27,7 @@ export type GlobalActionsCreator<Actions, Store = GlobalState> = StateCreator<
 
 export interface GlobalState extends BlockSuiteState, UserState {
   readonly dataCenter: DataCenter;
+  readonly dataCenterPromise: Promise<DataCenter>;
 }
 
 export interface GlobalActions extends BlockSuiteActions, UserActions {}
@@ -40,6 +41,8 @@ const create = () =>
           ...createUserState(),
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           dataCenter: null!,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          dataCenterPromise: null!,
         },
         /* deepscan-disable TOO_MANY_ARGS */
         (set, get, api) => ({
@@ -71,27 +74,25 @@ export const useGlobalState: UseBoundStore<Store> = ((
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
-function DataCenterSideEffect() {
-  const onceRef = useRef(true);
+export function DataCenterLoader() {
+  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenterPromise = useGlobalState(store => store.dataCenterPromise);
   const api = useGlobalStateApi();
-  useEffect(() => {
-    async function init() {
-      const dataCenterPromise = getDataCenter();
-      dataCenterPromise.then(async dataCenter => {
-        // Ensure datacenter has at least one workspace
-        if (dataCenter.workspaces.length === 0) {
-          await createDefaultWorkspace(dataCenter);
-        }
-        api.setState({ dataCenter });
-      });
-    }
-    if (onceRef.current) {
-      onceRef.current = false;
-      init().then(() => {
-        console.log('datacenter init success');
-      });
-    }
-  }, [api]);
+  if (!dataCenter && !dataCenterPromise) {
+    const promise = getDataCenter();
+    api.setState({ dataCenterPromise: promise });
+    promise.then(async dataCenter => {
+      // Ensure datacenter has at least one workspace
+      if (dataCenter.workspaces.length === 0) {
+        await createDefaultWorkspace(dataCenter);
+      }
+      api.setState({ dataCenter });
+    });
+    throw promise;
+  }
+  if (!dataCenter) {
+    throw dataCenterPromise;
+  }
   return null;
 }
 
@@ -99,7 +100,6 @@ export const GlobalAppProvider: React.FC<React.PropsWithChildren> =
   function ModelProvider({ children }) {
     return (
       <GlobalStateContext.Provider value={useMemo(() => create(), [])}>
-        <DataCenterSideEffect />
         {children}
       </GlobalStateContext.Provider>
     );

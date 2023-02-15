@@ -16,14 +16,13 @@ import { ModalProvider } from '@/store/globalModal';
 // import AppStateProvider2 from '@/providers/app-state-provider2/provider';
 
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
-import { useAppState } from '@/providers/app-state-provider';
+import { Suspense, useEffect } from 'react';
 import { PageLoading } from '@/components/loading';
 import Head from 'next/head';
 import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
-import { GlobalAppProvider } from '@/store/app';
+import { DataCenterLoader, GlobalAppProvider } from '@/store/app';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -80,7 +79,13 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
           {NoNeedAppStatePageList.includes(router.route) ? (
             getLayout(<Component {...pageProps} />)
           ) : (
-            <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
+            <Suspense fallback={<PageLoading />}>
+              {/* we should put this before every component in case of they read a null value */}
+              <DataCenterLoader />
+              <AppDefender>
+                {getLayout(<Component {...pageProps} />)}
+              </AppDefender>
+            </Suspense>
           )}
         </ProviderComposer>
       </GlobalAppProvider>
@@ -90,15 +95,13 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 
 const AppDefender = ({ children }: PropsWithChildren) => {
   const router = useRouter();
-  const { synced } = useAppState();
-
   useEffect(() => {
     if (['/index.html', '/'].includes(router.asPath)) {
       router.replace('/workspace');
     }
   }, [router]);
 
-  return <div>{synced ? children : <PageLoading />}</div>;
+  return <>{children}</>;
 };
 
 export default App;

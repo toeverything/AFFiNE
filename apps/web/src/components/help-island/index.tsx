@@ -41,6 +41,7 @@ export const HelpIsland = ({
   return (
     <StyledIsland
       spread={spread}
+      data-testid="help-island"
       onClick={() => {
         setShowSpread(!spread);
       }}

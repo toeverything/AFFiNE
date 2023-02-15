@@ -19,6 +19,7 @@ export const Favorite = () => {
       </PageListHeader>
       <PageList
         pageList={pageList.filter(p => p.favorite && !p.trash)}
+        showFavoriteTag={true}
         listType="favorite"
       />
     </>

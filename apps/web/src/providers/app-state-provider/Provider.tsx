@@ -45,21 +45,14 @@ export const AppStateProvider = ({
 
   const onceRef = useRef(true);
   const dataCenter = useGlobalState(store => store.dataCenter);
-  useEffect(() => {
-    if (dataCenter !== null) {
-      if (onceRef.current) {
-        setAppState({
-          workspaceList: dataCenter.workspaces,
-          currentWorkspace: null,
-          pageList: [],
-          synced: true,
-        });
-        onceRef.current = false;
-      } else {
-        console.warn('dataCenter Effect called twice. Please fix this ASAP');
-      }
-    }
-  }, [dataCenter]);
+  if (onceRef.current && dataCenter) {
+    setAppState({
+      workspaceList: dataCenter.workspaces,
+      currentWorkspace: null,
+      pageList: [],
+    });
+    onceRef.current = false;
+  }
 
   useEffect(() => {
     // FIXME: onWorkspacesChange should have dispose function

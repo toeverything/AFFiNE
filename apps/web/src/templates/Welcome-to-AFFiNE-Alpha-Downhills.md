@@ -10,18 +10,18 @@ There are common styling options from such as **bold**, _italics,_ <u>underline<
 
 Or maybe we can list the latest features:
 
-*   Drag Handle
-    *   Easily select, drag and rearrange your blocks.
-    *   Find the `⬦` to the left of your blocks and interact with it!
-*   Block Hub
-    *   A convenient home for all blocks that can empower your doc.
-    *   Find it in the lower right, look for the `□+`.
-*   Slash Menu
-    *   Want a convenient way to edit and empower your doc without the mouse?
-    *   Try activating this feature with just the `/` key.
-*   Workspaces
-    *   Further improved, with cloud support, collaboration and publishing.
-    *   Explore more features from the `Settings` in the sidebar.
+- Drag Handle
+  - Easily select, drag and rearrange your blocks.
+  - Find the `⬦` to the left of your blocks and interact with it!
+- Block Hub
+  - A convenient home for all blocks that can empower your doc.
+  - Find it in the lower right, look for the `□+`.
+- Slash Menu
+  - Want a convenient way to edit and empower your doc without the mouse?
+  - Try activating this feature with just the `/` key.
+- Workspaces
+  - Further improved, with cloud support, collaboration and publishing.
+  - Explore more features from the `Settings` in the sidebar.
 
 Let's explore how to collaborate with an image:
 
@@ -36,6 +36,6 @@ let scrambled = "V2VsY29tZSB0byBBRkZpTkU="
 
 And for some future features and updates, let's make a to-do list:
 
-*   [ ] Database Block
-*   [ ] Desktop and mobile clients
-*   [ ] Edgeless update (whiteboard mode)
+- [ ] Database Block
+- [ ] Desktop and mobile clients
+- [ ] Edgeless update (whiteboard mode)
