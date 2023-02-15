@@ -74,6 +74,30 @@ export const useGlobalState: UseBoundStore<Store> = ((
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
+export function DataCenterLoader() {
+  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenterPromise = useGlobalState(store => store.dataCenterPromise);
+  const api = useGlobalStateApi();
+  if (!dataCenter && !dataCenterPromise) {
+    const promise = getDataCenter();
+    api.setState({ dataCenterPromise: promise });
+    promise.then(async dataCenter => {
+      // Ensure datacenter has at least one workspace
+      if (dataCenter.workspaces.length === 0) {
+        await createDefaultWorkspace(dataCenter);
+      }
+      api.setState({ dataCenter });
+    });
+    if (!dataCenterPromise) {
+      throw promise;
+    }
+  }
+  if (!dataCenter) {
+    throw dataCenterPromise;
+  }
+  return null;
+}
+
 export const GlobalAppProvider: React.FC<React.PropsWithChildren> =
   function ModelProvider({ children }) {
     return (

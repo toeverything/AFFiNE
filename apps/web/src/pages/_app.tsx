@@ -23,6 +23,7 @@ import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
 import {
+  DataCenterLoader,
   GlobalAppProvider,
   useGlobalState,
   useGlobalStateApi,
@@ -86,6 +87,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
             getLayout(<Component {...pageProps} />)
           ) : (
             <Suspense fallback={<PageLoading />}>
+              <DataCenterLoader />
               <AppDefender>
                 {getLayout(<Component {...pageProps} />)}
               </AppDefender>
@@ -98,27 +100,6 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 };
 
 const AppDefender = ({ children }: PropsWithChildren) => {
-  const dataCenter = useGlobalState(store => store.dataCenter);
-  const dataCenterPromise = useGlobalState(store => store.dataCenterPromise);
-  const api = useGlobalStateApi();
-  if (!dataCenter && !dataCenterPromise) {
-    const promise = getDataCenter();
-    api.setState({ dataCenterPromise: promise });
-    promise.then(async dataCenter => {
-      // Ensure datacenter has at least one workspace
-      if (dataCenter.workspaces.length === 0) {
-        await createDefaultWorkspace(dataCenter);
-      }
-      api.setState({ dataCenter });
-    });
-    if (!dataCenterPromise) {
-      throw promise;
-    }
-  }
-  if (!dataCenter) {
-    throw dataCenterPromise;
-  }
-
   const router = useRouter();
   useEffect(() => {
     if (['/index.html', '/'].includes(router.asPath)) {
