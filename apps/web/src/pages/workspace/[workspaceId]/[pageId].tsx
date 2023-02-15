@@ -10,6 +10,8 @@ import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useTranslation } from '@affine/i18n';
 import { useGlobalState } from '@/store/app';
+import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
+
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
@@ -44,6 +46,10 @@ const Page: NextPageWithLayout = () => {
 
   const { t } = useTranslation();
 
+  // Only first workspace and first page will have template markdown
+  const shouldInitTemplateContent =
+    currentPage?.isEmpty &&
+    currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas.length === 1;
   return (
     <>
       <Head>
@@ -58,6 +64,14 @@ const Page: NextPageWithLayout = () => {
             page={currentPage}
             workspace={currentWorkspace.blocksuiteWorkspace}
             setEditor={setEditor}
+            templateMarkdown={
+              shouldInitTemplateContent ? exampleMarkdown : undefined
+            }
+            templateTitle={
+              shouldInitTemplateContent
+                ? 'Welcome to AFFiNE Alpha "Downhills"'
+                : undefined
+            }
           />
           <BlockHubAppender />
         </>
