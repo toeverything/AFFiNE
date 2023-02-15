@@ -98,7 +98,7 @@ jobs:
         id: rust-cache
         with:
           workspaces: |
-            "apps/desktop/src-tauri"
+            apps/desktop/src-tauri
 
       - name: Install dependencies
         run: pnpm i -r
