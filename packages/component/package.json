@@ -10,6 +10,7 @@
     "@affine/i18n": "workspace:*",
     "@blocksuite/blocks": "0.4.0-20230212194855-047e1b9",
     "@blocksuite/editor": "0.4.0-20230212194855-047e1b9",
+    "@blocksuite/global": "0.4.0-20230212194855-047e1b9",
     "@blocksuite/icons": "^2.0.2",
     "@blocksuite/react": "0.4.0-20230212194855-047e1b9",
     "@blocksuite/store": "0.4.0-20230212194855-047e1b9",
