@@ -88,9 +88,7 @@ export function DataCenterLoader() {
       }
       api.setState({ dataCenter });
     });
-    if (!dataCenterPromise) {
-      throw promise;
-    }
+    throw promise;
   }
   if (!dataCenter) {
     throw dataCenterPromise;
