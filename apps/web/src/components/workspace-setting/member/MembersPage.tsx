@@ -33,7 +33,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const { members, removeMember, loaded } = useMembers();
   const { triggerEnableWorkspaceModal } = useModal();
   const { t } = useTranslation();
-  const { confirm } = useConfirm();
+  const confirm = useConfirm(store => store.confirm);
 
   if (workspace.provider === 'affine') {
     return (
