@@ -87,6 +87,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
             getLayout(<Component {...pageProps} />)
           ) : (
             <Suspense fallback={<PageLoading />}>
+              {/* we should put this before every component in case of they read a null value */}
               <DataCenterLoader />
               <AppDefender>
                 {getLayout(<Component {...pageProps} />)}
