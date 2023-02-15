@@ -101,16 +101,6 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                             <>
                               <MenuItem
                                 onClick={async () => {
-                                  const confirmRemove = await confirm({
-                                    title: t('Delete Member?'),
-                                    content: t('will delete member'),
-                                    confirmText: t('Delete'),
-                                    confirmType: 'danger',
-                                  });
-
-                                  if (!confirmRemove) {
-                                    return;
-                                  }
                                   await removeMember(member.id);
                                   toast(
                                     t('Member has been removed', {
