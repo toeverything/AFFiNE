@@ -22,7 +22,13 @@ import Head from 'next/head';
 import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
-import { GlobalAppProvider, useGlobalState } from '@/store/app';
+import {
+  GlobalAppProvider,
+  useGlobalState,
+  useGlobalStateApi,
+} from '@/store/app';
+import { getDataCenter } from '@affine/datacenter';
+import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -94,10 +100,25 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 const AppDefender = ({ children }: PropsWithChildren) => {
   const dataCenter = useGlobalState(store => store.dataCenter);
   const dataCenterPromise = useGlobalState(store => store.dataCenterPromise);
+  const api = useGlobalStateApi();
+  if (!dataCenter && !dataCenterPromise) {
+    const promise = getDataCenter();
+    api.setState({ dataCenterPromise: promise });
+    promise.then(async dataCenter => {
+      // Ensure datacenter has at least one workspace
+      if (dataCenter.workspaces.length === 0) {
+        await createDefaultWorkspace(dataCenter);
+      }
+      api.setState({ dataCenter });
+    });
+    if (!dataCenterPromise) {
+      throw promise;
+    }
+  }
   if (!dataCenter) {
-    // if there is no dataCenter, waiting until it resolved
     throw dataCenterPromise;
   }
+
   const router = useRouter();
   useEffect(() => {
     if (['/index.html', '/'].includes(router.asPath)) {
