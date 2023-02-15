@@ -64,11 +64,8 @@ export const StyledTriggerWrapper = styled('div')(({ theme }) => {
     backgroundColor: theme.colors.pageBackground,
     color: theme.colors.iconColor,
     borderRadius: '5px',
+    fontSize: '24px',
     ...displayFlex('center', 'center'),
     ...positionAbsolute({ left: '4px', bottom: '4px' }),
-    ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
-    },
   };
 });
