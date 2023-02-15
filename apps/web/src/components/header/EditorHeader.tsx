@@ -6,17 +6,17 @@ import {
   StyledTitleWrapper,
 } from './styles';
 import { Content } from '@affine/component';
-import { useAppState } from '@/providers/app-state-provider';
 import EditorModeSwitch from '@/components/editor-mode-switch';
 import QuickSearchButton from './QuickSearchButton';
 import Header from './Header';
 import usePropsUpdated from '@/hooks/use-props-updated';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
+import { useBlockSuite } from '@/store/workspace';
 
 export const EditorHeader = () => {
   const [title, setTitle] = useState('');
   const [isHover, setIsHover] = useState(false);
-  const { editor } = useAppState();
+  const editor = useBlockSuite(store => store.editor);
   const { trash: isTrash = false } = useCurrentPageMeta() || {};
   const onPropsUpdated = usePropsUpdated();
 

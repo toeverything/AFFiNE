@@ -9,6 +9,7 @@ import {
 } from './interface';
 import { createDefaultWorkspace } from './utils';
 import { User } from '@affine/datacenter';
+import { useBlockSuiteApi } from '@/store/workspace';
 
 export interface Disposable {
   dispose(): void;
@@ -22,6 +23,7 @@ export const useAppState = () => useContext(AppState);
 export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
+  const blocksuiteApi = useBlockSuiteApi();
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
   const { dataCenter } = appState;
   const [blobState, setBlobState] = useState(false);
@@ -43,9 +45,6 @@ export const AppStateProvider = ({
         workspaceList: dataCenter.workspaces,
         currentWorkspace: null,
         pageList: [],
-        currentPage: null,
-        editor: null,
-        blockHub: null,
         synced: true,
         isOwner: false,
       });
@@ -86,19 +85,6 @@ export const AppStateProvider = ({
     );
   }, [dataCenter]);
 
-  const loadPage = useRef<AppStateFunction['loadPage']>();
-  loadPage.current = pageId => {
-    const { currentWorkspace, currentPage } = appState;
-    if (pageId === currentPage?.id) {
-      return;
-    }
-    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId) || null;
-    setAppState({
-      ...appState,
-      currentPage: page,
-    });
-  };
-
   const loadWorkspace: AppStateFunction['loadWorkspace'] =
     useRef() as AppStateFunction['loadWorkspace'];
   loadWorkspace.current = async (workspaceId, abort) => {
@@ -136,13 +122,13 @@ export const AppStateProvider = ({
 
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
+    if (workspace?.blocksuiteWorkspace) {
+      blocksuiteApi.getState().setWorkspace(workspace.blocksuiteWorkspace);
+    }
     setAppState({
       ...appState,
       currentWorkspace: workspace,
       pageList: pageList,
-      currentPage: null,
-      editor: null,
-      blockHub: null,
       isOwner,
     });
 
@@ -171,23 +157,6 @@ export const AppStateProvider = ({
     };
   }, [appState.currentWorkspace]);
 
-  const setEditor: AppStateFunction['setEditor'] =
-    useRef() as AppStateFunction['setEditor'];
-  setEditor.current = editor => {
-    setAppState({
-      ...appState,
-      editor,
-    });
-  };
-  const setBlockHub: AppStateFunction['setBlockHub'] =
-    useRef() as AppStateFunction['setBlockHub'];
-  setBlockHub.current = blockHub => {
-    setAppState({
-      ...appState,
-      blockHub,
-    });
-  };
-
   const login = async () => {
     const { dataCenter } = appState;
     try {
@@ -213,9 +182,6 @@ export const AppStateProvider = ({
     <AppState.Provider
       value={{
         ...appState,
-        setEditor,
-        setBlockHub,
-        loadPage: loadPage.current,
         loadWorkspace: loadWorkspace,
         login,
         logout,

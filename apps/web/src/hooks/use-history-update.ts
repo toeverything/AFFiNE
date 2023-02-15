@@ -1,13 +1,12 @@
 import { Page } from '@blocksuite/store';
-import { useAppState } from '@/providers/app-state-provider';
 import { useEffect, useRef } from 'react';
+import { useBlockSuite } from '@/store/workspace';
 
 export type EventCallBack<T> = (callback: (props: T) => void) => void;
 export type UseHistoryUpdated = (page?: Page) => EventCallBack<Page>;
 
 export const useHistoryUpdate: UseHistoryUpdated = () => {
-  const { currentPage } = useAppState();
-
+  const currentPage = useBlockSuite(store => store.currentPage);
   const callbackQueue = useRef<((page: Page) => void)[]>([]);
 
   useEffect(() => {

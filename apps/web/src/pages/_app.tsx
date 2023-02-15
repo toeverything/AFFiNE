@@ -23,6 +23,7 @@ import Head from 'next/head';
 import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
+import { BlockSuiteProvider } from '@/store/workspace';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -67,20 +68,22 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>AFFiNE</title>
       </Head>
       <Logger />
-      <ProviderComposer
-        contexts={[
-          <ThemeProvider key="ThemeProvider" />,
-          <AppStateProvider key="appStateProvider" />,
-          <ModalProvider key="ModalProvider" />,
-          <ConfirmProvider key="ConfirmProvider" />,
-        ]}
-      >
-        {NoNeedAppStatePageList.includes(router.route) ? (
-          getLayout(<Component {...pageProps} />)
-        ) : (
-          <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
-        )}
-      </ProviderComposer>
+      <BlockSuiteProvider key="BlockSuiteProvider">
+        <ProviderComposer
+          contexts={[
+            <ThemeProvider key="ThemeProvider" />,
+            <AppStateProvider key="appStateProvider" />,
+            <ModalProvider key="ModalProvider" />,
+            <ConfirmProvider key="ConfirmProvider" />,
+          ]}
+        >
+          {NoNeedAppStatePageList.includes(router.route) ? (
+            getLayout(<Component {...pageProps} />)
+          ) : (
+            <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
+          )}
+        </ProviderComposer>
+      </BlockSuiteProvider>
     </>
   );
 };

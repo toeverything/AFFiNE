@@ -1,10 +1,4 @@
-import {
-  PropsWithChildren,
-  ReactElement,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { PropsWithChildren, ReactElement, useEffect, useState } from 'react';
 import { EditorHeader } from '@/components/header';
 import MobileModal from '@/components/mobile-modal';
 import { useAppState } from '@/providers/app-state-provider';
@@ -13,20 +7,16 @@ import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import dynamic from 'next/dynamic';
-import { EditorContainer } from '@blocksuite/editor';
 import Head from 'next/head';
 import { useTranslation } from '@affine/i18n';
-import { BlockHub } from '@blocksuite/blocks';
+import { useBlockSuite } from '@/store/workspace';
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
 
 const BlockHubAppender = () => {
-  const { setBlockHub, editor } = useAppState();
-  const setBlockHubHandler = useCallback(
-    (blockHub: BlockHub) => setBlockHub.current(blockHub),
-    [setBlockHub]
-  );
+  const setBlockHub = useBlockSuite(store => store.setBlockHub);
+  const editor = useBlockSuite(store => store.editor);
   useEffect(() => {
     let blockHubElement: HTMLElement | null = null;
 
@@ -37,23 +27,20 @@ const BlockHubAppender = () => {
         return;
       }
       blockHubElement = blockHub;
-      // setBlockHubHandler(blockHub);
+      setBlockHub(blockHub);
       toolWrapper.appendChild(blockHub);
     });
     return () => {
       blockHubElement?.remove();
     };
-  }, [editor, setBlockHubHandler]);
+  }, [editor, setBlockHub]);
   return null;
 };
 
 const Page: NextPageWithLayout = () => {
-  const { currentPage, currentWorkspace, setEditor } = useAppState();
-
-  const setEditorHandler = useCallback(
-    (editor: EditorContainer) => setEditor.current(editor),
-    [setEditor]
-  );
+  const currentPage = useBlockSuite(store => store.currentPage);
+  const setEditor = useBlockSuite(store => store.setEditor);
+  const { currentWorkspace } = useAppState();
 
   const { t } = useTranslation();
 
@@ -70,7 +57,7 @@ const Page: NextPageWithLayout = () => {
           <DynamicBlocksuite
             page={currentPage}
             workspace={currentWorkspace.blocksuiteWorkspace}
-            setEditor={setEditorHandler}
+            setEditor={setEditor}
           />
           <BlockHubAppender />
         </>
@@ -82,7 +69,8 @@ const Page: NextPageWithLayout = () => {
 const PageDefender = ({ children }: PropsWithChildren) => {
   const router = useRouter();
   const [pageLoaded, setPageLoaded] = useState(false);
-  const { currentWorkspace, loadPage } = useAppState();
+  const loadPage = useBlockSuite(store => store.loadPage);
+  const { currentWorkspace } = useAppState();
   const { createPage } = usePageHelper();
 
   useEffect(() => {

@@ -1,6 +1,5 @@
 import { DataCenter, User, WorkspaceUnit } from '@affine/datacenter';
 import type { EditorContainer } from '@blocksuite/editor';
-import { BlockHub } from '@blocksuite/blocks';
 
 import type {
   Page as StorePage,
@@ -21,22 +20,15 @@ export type AppStateValue = {
   workspaceList: WorkspaceUnit[];
   currentWorkspace: WorkspaceUnit | null;
   pageList: PageMeta[];
-  currentPage: StorePage | null;
-  editor?: EditorContainer | null;
-  blockHub?: BlockHub | null;
   synced: boolean;
   isOwner?: boolean;
   blobDataSynced?: boolean;
 };
 
 export type AppStateFunction = {
-  setEditor: MutableRefObject<(page: EditorContainer) => void>;
-  setBlockHub: MutableRefObject<(BlockHub: BlockHub) => void>;
-
   loadWorkspace: MutableRefObject<
     (workspaceId: string, abort?: AbortSignal) => Promise<WorkspaceUnit | null>
   >;
-  loadPage: (pageId: string) => void;
 
   login: () => Promise<User | null>;
   logout: () => Promise<void>;
