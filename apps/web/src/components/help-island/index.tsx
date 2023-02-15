@@ -11,7 +11,7 @@ import { Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/store/globalModal';
 import { MuiFade } from '@affine/component';
-import { useBlockSuite } from '@/store/workspace';
+import { useGlobalState } from '@/store/app';
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({
   showList = ['contact', 'shortcuts'],
@@ -20,7 +20,7 @@ export const HelpIsland = ({
 }) => {
   const [spread, setShowSpread] = useState(false);
   const { triggerShortcutsModal, triggerContactModal } = useModal();
-  const blockHub = useBlockSuite(store => store.blockHub);
+  const blockHub = useGlobalState(store => store.blockHub);
   const { t } = useTranslation();
 
   useEffect(() => {

@@ -5,6 +5,7 @@ import { CloseIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
+import { useGlobalState } from '@/store/app';
 
 interface EnableWorkspaceModalProps {
   open: boolean;
@@ -16,7 +17,10 @@ export const EnableWorkspaceModal = ({
   onClose,
 }: EnableWorkspaceModalProps) => {
   const { t } = useTranslation();
-  const { user, dataCenter, login, currentWorkspace } = useAppState();
+  const login = useGlobalState(store => store.login);
+  const user = useGlobalState(store => store.user);
+  const dataCenter = useGlobalState(store => store.dataCenter);
+  const { currentWorkspace } = useAppState();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 

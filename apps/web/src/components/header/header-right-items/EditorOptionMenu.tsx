@@ -16,9 +16,9 @@ import { useConfirm } from '@/providers/ConfirmProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { useBlockSuite } from '@/store/workspace';
+import { useGlobalState } from '@/store/app';
 const PopoverContent = () => {
-  const editor = useBlockSuite(store => store.editor);
+  const editor = useGlobalState(store => store.editor);
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
   const { changePageMode } = usePageHelper();
   const confirm = useConfirm(store => store.confirm);

@@ -2,10 +2,10 @@ import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
 import { FlexWrapper } from '@affine/component';
 import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { IconButton } from '@affine/component';
-import { useAppState } from '@/providers/app-state-provider';
 import { StyledFooter, StyleUserInfo, StyledSignInButton } from './styles';
 import { useTranslation } from '@affine/i18n';
 import { Tooltip } from '@affine/component';
+import { useGlobalState } from '@/store/app';
 export const Footer = ({
   onLogin,
   onLogout,
@@ -13,7 +13,7 @@ export const Footer = ({
   onLogin: () => void;
   onLogout: () => void;
 }) => {
-  const { user } = useAppState();
+  const user = useGlobalState(store => store.user);
   const { t } = useTranslation();
 
   return (

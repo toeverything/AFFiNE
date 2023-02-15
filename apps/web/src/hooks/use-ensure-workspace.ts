@@ -1,11 +1,13 @@
 import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { useGlobalState } from '@/store/app';
 // It is a fully effective hook
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
-  const { dataCenter, loadWorkspace } = useAppState();
+  const dataCenter = useGlobalState(store => store.dataCenter);
+  const { loadWorkspace } = useAppState();
   const router = useRouter();
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(
     router.query.workspaceId as string

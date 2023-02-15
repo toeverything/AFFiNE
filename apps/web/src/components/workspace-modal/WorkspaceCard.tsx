@@ -10,9 +10,10 @@ import { WorkspaceUnit } from '@affine/datacenter';
 import { useAppState } from '@/providers/app-state-provider';
 import { StyleWorkspaceInfo, StyleWorkspaceTitle, StyledCard } from './styles';
 import { useTranslation } from '@affine/i18n';
+import { useGlobalState } from '@/store/app';
 
 const WorkspaceType = ({ workspaceData }: { workspaceData: WorkspaceUnit }) => {
-  const { user } = useAppState();
+  const user = useGlobalState(store => store.user);
   const { t } = useTranslation();
   const isOwner = user?.id === workspaceData.owner?.id;
 
