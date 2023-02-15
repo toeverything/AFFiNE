@@ -1,15 +1,12 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import type { PropsWithChildren } from 'react';
-import { getDataCenter } from '@affine/datacenter';
 import {
   AppStateContext,
   AppStateFunction,
   AppStateValue,
   PageMeta,
 } from './interface';
-import { createDefaultWorkspace } from './utils';
-import { User } from '@affine/datacenter';
-import { useBlockSuiteApi } from '@/store/workspace';
+import { useGlobalState, useGlobalStateApi } from '@/store/app';
 
 export interface Disposable {
   dispose(): void;
@@ -23,35 +20,9 @@ export const useAppState = () => useContext(AppState);
 export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
-  const blocksuiteApi = useBlockSuiteApi();
+  const globalStateApi = useGlobalStateApi();
   const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
-  const { dataCenter } = appState;
   const [blobState, setBlobState] = useState(false);
-  const [userInfo, setUser] = useState<User | null>({} as User);
-  useEffect(() => {
-    const initState = async () => {
-      const dataCenter = await getDataCenter();
-      // Ensure datacenter has at least one workspace
-      if (dataCenter.workspaces.length === 0) {
-        await createDefaultWorkspace(dataCenter);
-      }
-      setUser(
-        (await dataCenter.getUserInfo(
-          dataCenter.providers.filter(p => p.id !== 'local')[0]?.id
-        )) || null
-      );
-      setAppState({
-        dataCenter,
-        workspaceList: dataCenter.workspaces,
-        currentWorkspace: null,
-        pageList: [],
-        synced: true,
-        isOwner: false,
-      });
-    };
-
-    initState();
-  }, []);
 
   useEffect(() => {
     if (!appState?.currentWorkspace?.blocksuiteWorkspace) {
@@ -72,6 +43,24 @@ export const AppStateProvider = ({
     };
   }, [appState]);
 
+  const onceRef = useRef(true);
+  const dataCenter = useGlobalState(store => store.dataCenter);
+  useEffect(() => {
+    if (dataCenter !== null) {
+      if (onceRef.current) {
+        setAppState({
+          workspaceList: dataCenter.workspaces,
+          currentWorkspace: null,
+          pageList: [],
+          synced: true,
+        });
+        onceRef.current = false;
+      } else {
+        console.warn('dataCenter Effect called twice. Please fix this ASAP');
+      }
+    }
+  }, [dataCenter]);
+
   useEffect(() => {
     // FIXME: onWorkspacesChange should have dispose function
     return dataCenter?.onWorkspacesChange(
@@ -88,7 +77,8 @@ export const AppStateProvider = ({
   const loadWorkspace: AppStateFunction['loadWorkspace'] =
     useRef() as AppStateFunction['loadWorkspace'];
   loadWorkspace.current = async (workspaceId, abort) => {
-    const { dataCenter, workspaceList, currentWorkspace } = appState;
+    const { dataCenter } = globalStateApi.getState();
+    const { workspaceList, currentWorkspace } = appState;
     if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
       return null;
     }
@@ -116,6 +106,7 @@ export const AppStateProvider = ({
       // isOwner is useful only in the cloud
       isOwner = true;
     } else {
+      const userInfo = globalStateApi.getState().user;
       // We must ensure workspace.owner exists, then ensure id same.
       isOwner = workspace?.owner && userInfo?.id === workspace.owner.id;
     }
@@ -123,13 +114,16 @@ export const AppStateProvider = ({
     const pageList =
       (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
     if (workspace?.blocksuiteWorkspace) {
-      blocksuiteApi.getState().setWorkspace(workspace.blocksuiteWorkspace);
+      globalStateApi.getState().setWorkspace(workspace.blocksuiteWorkspace);
     }
+    globalStateApi.setState({
+      isOwner,
+    });
+
     setAppState({
       ...appState,
       currentWorkspace: workspace,
       pageList: pageList,
-      isOwner,
     });
 
     abort?.removeEventListener('abort', onAbort);
@@ -157,36 +151,12 @@ export const AppStateProvider = ({
     };
   }, [appState.currentWorkspace]);
 
-  const login = async () => {
-    const { dataCenter } = appState;
-    try {
-      await dataCenter.login();
-      const user = (await dataCenter.getUserInfo()) as User;
-      if (!user) {
-        throw new Error('User info not found');
-      }
-      setUser(user);
-      return user;
-    } catch (error) {
-      return null; // login failed
-    }
-  };
-
-  const logout = async () => {
-    const { dataCenter } = appState;
-    await dataCenter.logout();
-    setUser(null);
-  };
-
   return (
     <AppState.Provider
       value={{
         ...appState,
         loadWorkspace: loadWorkspace,
-        login,
-        logout,
         blobDataSynced: blobState,
-        user: userInfo,
       }}
     >
       {children}

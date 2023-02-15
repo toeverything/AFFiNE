@@ -9,14 +9,14 @@ import { usePageHelper } from '@/hooks/use-page-helper';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useTranslation } from '@affine/i18n';
-import { useBlockSuite } from '@/store/workspace';
+import { useGlobalState } from '@/store/app';
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
 
 const BlockHubAppender = () => {
-  const setBlockHub = useBlockSuite(store => store.setBlockHub);
-  const editor = useBlockSuite(store => store.editor);
+  const setBlockHub = useGlobalState(store => store.setBlockHub);
+  const editor = useGlobalState(store => store.editor);
   useEffect(() => {
     let blockHubElement: HTMLElement | null = null;
 
@@ -38,8 +38,8 @@ const BlockHubAppender = () => {
 };
 
 const Page: NextPageWithLayout = () => {
-  const currentPage = useBlockSuite(store => store.currentPage);
-  const setEditor = useBlockSuite(store => store.setEditor);
+  const currentPage = useGlobalState(store => store.currentPage);
+  const setEditor = useGlobalState(store => store.setEditor);
   const { currentWorkspace } = useAppState();
 
   const { t } = useTranslation();
@@ -69,7 +69,7 @@ const Page: NextPageWithLayout = () => {
 const PageDefender = ({ children }: PropsWithChildren) => {
   const router = useRouter();
   const [pageLoaded, setPageLoaded] = useState(false);
-  const loadPage = useBlockSuite(store => store.loadPage);
+  const loadPage = useGlobalState(store => store.loadPage);
   const { currentWorkspace } = useAppState();
   const { createPage } = usePageHelper();
 

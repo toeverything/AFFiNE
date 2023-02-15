@@ -1,16 +1,16 @@
 import { positionAbsolute, styled } from '@affine/component';
 import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
 import { Button } from '@affine/component';
-import { useAppState } from '@/providers/app-state-provider';
 import { useTranslation } from '@affine/i18n';
 import { GoogleIcon } from './GoogleIcon';
+import { useGlobalState } from '@/store/app';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
 }
 
 export const LoginModal = ({ open, onClose }: LoginModalProps) => {
-  const { login } = useAppState();
+  const login = useGlobalState(store => store.login);
   const { t } = useTranslation();
   return (
     <Modal open={open} onClose={onClose} data-testid="login-modal">

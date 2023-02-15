@@ -6,7 +6,6 @@ import { Tooltip } from '@affine/component';
 
 import { PlusIcon, HelpIcon } from '@blocksuite/icons';
 
-import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
 import { useTranslation } from '@affine/i18n';
 import { LanguageMenu } from './SelectLanguageMenu';
@@ -28,6 +27,7 @@ import {
 } from './styles';
 import { WorkspaceCard } from './WorkspaceCard';
 import { Footer } from './Footer';
+import { useGlobalState } from '@/store/app';
 interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -35,7 +35,8 @@ interface WorkspaceModalProps {
 
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-  const { logout, dataCenter } = useAppState();
+  const logout = useGlobalState(store => store.logout);
+  const dataCenter = useGlobalState(store => store.dataCenter);
   const router = useRouter();
   const { t } = useTranslation();
   const [loginOpen, setLoginOpen] = useState(false);

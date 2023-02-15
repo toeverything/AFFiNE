@@ -25,10 +25,11 @@ import { useTranslation } from '@affine/i18n';
 import { PageListHeader } from '@/components/header';
 import Head from 'next/head';
 import { styled } from '@affine/component';
+import { useGlobalState } from '@/store/app';
 
 const useTabMap = () => {
   const { t } = useTranslation();
-  const { isOwner } = useAppState();
+  const isOwner = useGlobalState(store => store.isOwner);
   const tabMap: {
     name: string;
     panelRender: (workspace: WorkspaceUnit) => ReactNode;

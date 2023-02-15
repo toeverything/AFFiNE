@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PageMeta } from '@/providers/app-state-provider';
-import { useBlockSuite } from '@/store/workspace';
+import { useGlobalState } from '@/store/app';
 
 export const useCurrentPageMeta = (): PageMeta | null => {
-  const currentPage = useBlockSuite(store => store.currentPage);
-  const currentBlockSuiteWorkspace = useBlockSuite(
+  const currentPage = useGlobalState(store => store.currentPage);
+  const currentBlockSuiteWorkspace = useGlobalState(
     store => store.currentWorkspace
   );
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { EditorContainer } from '@blocksuite/editor';
-import { useBlockSuite } from '@/store/workspace';
+import { useGlobalState } from '@/store/app';
 export type EventCallBack<T> = (callback: (props: T) => void) => void;
 
 export type UsePropsUpdated = (
@@ -8,7 +8,7 @@ export type UsePropsUpdated = (
 ) => EventCallBack<EditorContainer>;
 
 export const usePropsUpdated: UsePropsUpdated = () => {
-  const editor = useBlockSuite(store => store.editor);
+  const editor = useGlobalState(store => store.editor);
 
   const callbackQueue = useRef<((editor: EditorContainer) => void)[]>([]);
 

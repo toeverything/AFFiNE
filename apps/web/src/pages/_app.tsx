@@ -23,7 +23,7 @@ import Head from 'next/head';
 import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
-import { BlockSuiteProvider } from '@/store/workspace';
+import { GlobalAppProvider } from '@/store/app';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -68,7 +68,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>AFFiNE</title>
       </Head>
       <Logger />
-      <BlockSuiteProvider key="BlockSuiteProvider">
+      <GlobalAppProvider key="BlockSuiteProvider">
         <ProviderComposer
           contexts={[
             <ThemeProvider key="ThemeProvider" />,
@@ -83,7 +83,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
             <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
           )}
         </ProviderComposer>
-      </BlockSuiteProvider>
+      </GlobalAppProvider>
     </>
   );
 };
