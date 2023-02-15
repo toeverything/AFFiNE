@@ -153,7 +153,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           ) : (
             <StyledWorkspaceInfo>
               <CloudWorkspaceIcon />
-              <span>{t('Available Offline')}</span>
+              <span>{t('Cloud Workspace')}</span>
             </StyledWorkspaceInfo>
           )
         ) : (
