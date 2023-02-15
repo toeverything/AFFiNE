@@ -16,13 +16,14 @@ Or maybe we can list the latest features:
 *   Block Hub
     *   A convenient home for all blocks that can empower your doc.
     *   Find it in the lower right, look for the `□+`.
+*   Slash Menu
+    *   In a similar way to Block Hub you can empower your doc.
+    *   However, no mouse needed - just activate with `/`.
 *   Workspaces
     *   Further improved, with cloud support, collaboration and publishing.
     *   Explore more features from the `Settings` in the sidebar.
 
-We can insert images:
-
-*   [ ] Add image
+Let's explore how to collaborate with an image:
 
 ```JavaScript
 // We can also write code in a code block
@@ -33,6 +34,6 @@ let scrambled = "V2VsY29tZSB0byBBRkZpTkU="
 
 And for some future features and updates, let's make a to-do list:
 
-*   [ ] Database Blocks
-*   [ ] Desktop Clients
-*   [ ] Mobile Clients
+*   [ ] Database Block
+*   [ ] Desktop and mobile clients
+*   [ ] Edgeless update (whiteboard mode)
