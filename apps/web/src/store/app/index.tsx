@@ -27,6 +27,7 @@ export type GlobalActionsCreator<Actions, Store = GlobalState> = StateCreator<
 
 export interface GlobalState extends BlockSuiteState, UserState {
   readonly dataCenter: DataCenter;
+  readonly dataCenterPromise: Promise<DataCenter>;
 }
 
 export interface GlobalActions extends BlockSuiteActions, UserActions {}
@@ -40,6 +41,8 @@ const create = () =>
           ...createUserState(),
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           dataCenter: null!,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          dataCenterPromise: null!,
         },
         /* deepscan-disable TOO_MANY_ARGS */
         (set, get, api) => ({
@@ -77,6 +80,7 @@ function DataCenterSideEffect() {
   useEffect(() => {
     async function init() {
       const dataCenterPromise = getDataCenter();
+      api.setState({ dataCenterPromise });
       dataCenterPromise.then(async dataCenter => {
         // Ensure datacenter has at least one workspace
         if (dataCenter.workspaces.length === 0) {
