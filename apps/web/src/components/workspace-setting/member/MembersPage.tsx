@@ -20,7 +20,6 @@ import { InviteMemberModal } from './InviteMemberModal';
 import { Menu, MenuItem } from '@affine/component';
 import { Empty } from '@affine/component';
 import { WorkspaceUnit } from '@affine/datacenter';
-import { useConfirm } from '@/providers/ConfirmProvider';
 import { toast } from '@affine/component';
 import useMembers from '@/hooks/use-members';
 import Loading from '@/components/loading';
@@ -33,7 +32,6 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const { members, removeMember, loaded } = useMembers();
   const { triggerEnableWorkspaceModal } = useModal();
   const { t } = useTranslation();
-  const confirm = useConfirm(store => store.confirm);
 
   if (workspace.provider === 'affine') {
     return (
@@ -101,16 +99,6 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                             <>
                               <MenuItem
                                 onClick={async () => {
-                                  const confirmRemove = await confirm({
-                                    title: t('Delete Member?'),
-                                    content: t('will delete member'),
-                                    confirmText: t('Delete'),
-                                    confirmType: 'danger',
-                                  });
-
-                                  if (!confirmRemove) {
-                                    return;
-                                  }
                                   await removeMember(member.id);
                                   toast(
                                     t('Member has been removed', {
@@ -120,7 +108,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                                 }}
                                 icon={<TrashIcon />}
                               >
-                                {t('Delete')}
+                                {t('Remove from workspace')}
                               </MenuItem>
                             </>
                           }
