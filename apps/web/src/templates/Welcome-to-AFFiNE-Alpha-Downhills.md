@@ -17,8 +17,8 @@ Or maybe we can list the latest features:
     *   A convenient home for all blocks that can empower your doc.
     *   Find it in the lower right, look for the `□+`.
 *   Slash Menu
-    *   In a similar way to Block Hub you can empower your doc.
-    *   However, no mouse needed - just activate with `/`.
+    *   Want a convenient way to edit and empower your doc without the mouse?
+    *   Try activating this feature with just the `/` key.
 *   Workspaces
     *   Further improved, with cloud support, collaboration and publishing.
     *   Explore more features from the `Settings` in the sidebar.
