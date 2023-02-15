@@ -16,13 +16,16 @@ Or maybe we can list the latest features:
 *   Block Hub
     *   A convenient home for all blocks that can empower your doc.
     *   Find it in the lower right, look for the `□+`.
+*   Slash Menu
+    *   Want a convenient way to edit and empower your doc without the mouse?
+    *   Try activating this feature with just the `/` key.
 *   Workspaces
     *   Further improved, with cloud support, collaboration and publishing.
     *   Explore more features from the `Settings` in the sidebar.
 
-We can insert images:
+Let's explore how to collaborate with an image:
 
-*   [ ] Add image
+![](https://cdn.affine.pro/81edf5adca8f4c0d6552d0b2a54248e88054b8f8831732fc13dc03da.png)
 
 ```JavaScript
 // We can also write code in a code block
@@ -33,6 +36,6 @@ let scrambled = "V2VsY29tZSB0byBBRkZpTkU="
 
 And for some future features and updates, let's make a to-do list:
 
-*   [ ] Database Blocks
-*   [ ] Desktop Clients
-*   [ ] Mobile Clients
+*   [ ] Database Block
+*   [ ] Desktop and mobile clients
+*   [ ] Edgeless update (whiteboard mode)
