@@ -15,12 +15,14 @@
     "build:app": "tauri build"
   },
   "dependencies": {
+    "@blocksuite/icons": "^2.0.14",
     "@blocksuite/store": "0.4.0-20230212194855-047e1b9",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@tauri-apps/api": "^1.2.0",
     "json-schema-to-typescript": "^11.0.2",
     "lib0": "^0.2.58",
+    "next": "^13.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-is": "^18.2.0",
