@@ -7,7 +7,7 @@ loadPage();
 test.describe('Local first default workspace', () => {
   test('preset workspace name', async ({ page }) => {
     const workspaceName = page.getByTestId('workspace-name');
-    expect(await workspaceName.textContent()).toBe('AFFiNE Test');
+    expect(await workspaceName.textContent()).toBe('Demo Workspace');
   });
 
   test('default workspace avatar', async ({ page }) => {
