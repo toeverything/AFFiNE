@@ -28,12 +28,12 @@ export const WorkspaceSelector = () => {
               flexShrink: 0,
             }}
             size={32}
-            name={currentWorkspace?.name ?? 'AFFiNE Test'}
+            name={currentWorkspace?.name ?? 'Demo Workspace'}
             workspaceUnit={currentWorkspace}
           />
         </div>
         <WorkspaceName data-testid="workspace-name">
-          {currentWorkspace?.name ?? 'AFFiNE Test'}
+          {currentWorkspace?.name ?? 'Demo Workspace'}
         </WorkspaceName>
       </SelectorWrapper>
       <WorkspaceModal
