@@ -7,10 +7,10 @@ import {
   PublishIcon,
 } from '@/components/icons';
 import { WorkspaceUnit } from '@affine/datacenter';
-import { useAppState } from '@/providers/app-state-provider';
 import { StyleWorkspaceInfo, StyleWorkspaceTitle, StyledCard } from './styles';
 import { useTranslation } from '@affine/i18n';
 import { useGlobalState } from '@/store/app';
+import { useCallback } from 'react';
 
 const WorkspaceType = ({ workspaceData }: { workspaceData: WorkspaceUnit }) => {
   const user = useGlobalState(store => store.user);
@@ -46,7 +46,9 @@ export const WorkspaceCard = ({
   workspaceData: WorkspaceUnit;
   onClick: (data: WorkspaceUnit) => void;
 }) => {
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { t } = useTranslation();
   return (
     <StyledCard

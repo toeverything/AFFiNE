@@ -1,10 +1,12 @@
-import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useGlobalState } from '@/store/app';
+import { useCallback } from 'react';
 
 export const useWorkspaceHelper = () => {
   const dataCenter = useGlobalState(store => store.dataCenter);
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const createWorkspace = async (name: string) => {
     const workspaceInfo = await dataCenter.createWorkspace({
       name: name,

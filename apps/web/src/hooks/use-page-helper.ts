@@ -1,11 +1,12 @@
 import { uuidv4, Workspace } from '@blocksuite/store';
 import { QueryContent } from '@blocksuite/store/dist/workspace/search';
-import { PageMeta, useAppState } from '@/providers/app-state-provider';
+import { PageMeta } from '@/providers/app-state-provider';
 import { EditorContainer } from '@blocksuite/editor';
 import { useChangePageMeta } from '@/hooks/use-change-page-meta';
 import { useRouter } from 'next/router';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useGlobalState } from '@/store/app';
+import { useCallback } from 'react';
 
 export type EditorHandlers = {
   createPage: (params?: {
@@ -41,7 +42,9 @@ export const usePageHelper = (): EditorHandlers => {
   const router = useRouter();
   const changePageMeta = useChangePageMeta();
   const editor = useGlobalState(store => store.editor);
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
 
   return {
     createPage: ({

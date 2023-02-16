@@ -1,23 +1,24 @@
-import { useAppState } from '@/providers/app-state-provider';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useGlobalState } from '@/store/app';
+import { assertEquals } from '@blocksuite/global/utils';
+
+// todo: refactor with suspense mode
 // It is a fully effective hook
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
-  const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
-  const dataCenter = useGlobalState(store => store.dataCenter);
-  const { loadWorkspace } = useAppState();
-  const router = useRouter();
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState(
-    router.query.workspaceId as string
+  const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
   );
+  const loadWorkspace = useGlobalState(
+    useCallback(store => store.loadWorkspace, [])
+  );
+  const router = useRouter();
 
   // const defaultOutLineWorkspaceId = '99ce7eb7';
   // console.log(defaultOutLineWorkspaceId);
   useEffect(() => {
-    setWorkspaceLoaded(false);
-    let aborted = false;
     const abortController = new AbortController();
 
     const workspaceList = dataCenter.workspaces;
@@ -44,22 +45,20 @@ export const useEnsureWorkspace = () => {
     //   return;
     // }
 
-    loadWorkspace.current(workspaceId, abortController.signal).then(unit => {
-      if (!aborted && unit) {
-        setWorkspaceLoaded(true);
-        setActiveWorkspaceId(workspaceId);
+    loadWorkspace(workspaceId, abortController.signal).then(unit => {
+      if (!abortController.signal.aborted && unit) {
+        assertEquals(unit.id, workspaceId);
       }
     });
 
     return () => {
-      aborted = true;
       abortController.abort();
     };
   }, [dataCenter, loadWorkspace, router]);
 
   return {
-    workspaceLoaded,
-    activeWorkspaceId,
+    workspaceLoaded: currentWorkspace?.id === router.query.workspaceId,
+    activeWorkspaceId: currentWorkspace?.id ?? router.query.workspaceId,
   };
 };
 

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Member } from '@affine/datacenter';
-import { useAppState } from '@/providers/app-state-provider';
 import { useGlobalState } from '@/store/app';
 export const useMembers = () => {
   const dataCenter = useGlobalState(store => store.dataCenter);
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const [members, setMembers] = useState<Member[]>([]);
   const [loaded, setLoaded] = useState(false);
   const refreshMembers = useCallback(async () => {

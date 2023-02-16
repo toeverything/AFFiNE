@@ -21,16 +21,16 @@ import {
 import { OperationCell, TrashOperationCell } from './OperationCell';
 import Empty from './Empty';
 import { Content } from '@affine/component';
-import React from 'react';
+import React, { useCallback } from 'react';
 import DateCell from '@/components/page-list/DateCell';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
 import { useRouter } from 'next/router';
-import { useAppState } from '@/providers/app-state-provider';
 import { toast } from '@affine/component';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useTranslation } from '@affine/i18n';
+import { useGlobalState } from '@/store/app';
 const FavoriteTag = ({
   pageMeta: { favorite, id },
 }: {
@@ -83,7 +83,9 @@ export const PageList = ({
   listType?: 'all' | 'trash' | 'favorite';
 }) => {
   const router = useRouter();
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { t } = useTranslation();
   if (pageList.length === 0) {
     return <Empty listType={listType} />;

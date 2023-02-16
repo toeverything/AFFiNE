@@ -1,7 +1,6 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { useAppState } from '@/providers/app-state-provider';
 import { useState } from 'react';
 import router from 'next/router';
 import { toast } from '@affine/component';
@@ -22,7 +21,9 @@ export const EnableWorkspaceModal = ({
   const login = useGlobalState(store => store.login);
   const user = useGlobalState(store => store.user);
   const dataCenter = useGlobalState(store => store.dataCenter);
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const [loading, setLoading] = useState(false);
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">

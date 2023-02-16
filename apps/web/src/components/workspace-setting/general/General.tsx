@@ -7,9 +7,8 @@ import {
 import { StyledSettingKey, StyledRow } from '../style';
 import { FlexWrapper } from '@affine/component';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Button } from '@affine/component';
-import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
 import {
@@ -31,7 +30,9 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [workspaceName, setWorkspaceName] = useState<string>(workspace?.name);
   const [showEditInput, setShowEditInput] = useState(false);
   const isOwner = useGlobalState(store => store.isOwner);
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { updateWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
 
