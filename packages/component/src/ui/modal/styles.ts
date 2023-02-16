@@ -3,14 +3,19 @@ import ModalUnstyled from '@mui/base/ModalUnstyled';
 import { Wrapper } from '../layout';
 import { CSSProperties } from 'react';
 
-export const StyledBackdrop = styled.div({
-  zIndex: '-1',
-  position: 'fixed',
-  right: '0',
-  bottom: '0',
-  top: '0',
-  left: '0',
-  backgroundColor: 'rgba(58, 76, 92, 0.2)',
+export const StyledBackdrop = styled.div(({ theme }) => {
+  return {
+    zIndex: '-1',
+    position: 'fixed',
+    right: '0',
+    bottom: '0',
+    top: '0',
+    left: '0',
+    backgroundColor:
+      theme.mode === 'light'
+        ? 'rgba(58, 76, 92, 0.2)'
+        : 'rgba(34, 34, 34, 0.6)',
+  };
 });
 
 export const StyledModal = styled(ModalUnstyled, {

@@ -57,8 +57,9 @@ export const StyledCard = styled.div<{
     ...displayFlex('flex-start', 'flex-start'),
     marginBottom: '24px',
     transition: 'background .2s',
+    background: theme.mode === 'light' ? '#FFF' : '#2C2C2C',
     ':hover': {
-      background: theme.colors.hoverBackground,
+      background: theme.colors.cardHoverBackground,
       '.add-icon': {
         borderColor: theme.colors.primaryColor,
         color: theme.colors.primaryColor,
@@ -135,14 +136,13 @@ export const StyleWorkspaceAdd = styled.div(() => {
     ...displayFlex('center', 'center'),
   };
 });
-export const StyledModalHeader = styled('div')(({ theme }) => {
+export const StyledModalHeader = styled('div')(() => {
   return {
     width: '100%',
     height: '72px',
     position: 'absolute',
     left: 0,
     top: 0,
-    background: theme.colors.pageBackground,
     borderRadius: '24px 24px 0 0',
     padding: '0 40px',
     ...displayFlex('space-between', 'center'),

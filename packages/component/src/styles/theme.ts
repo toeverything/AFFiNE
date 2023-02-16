@@ -13,7 +13,6 @@ export const getLightTheme = (
     editorMode,
     colors: {
       primaryColor: '#6880FF',
-
       pageBackground: '#fff',
       hoverBackground: '#F1F3FF',
       innerHoverBackground: '#E9E9EC',
@@ -21,12 +20,13 @@ export const getLightTheme = (
       tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
       codeBlockBackground: '#F9F9FB',
-      blockHubBackground: '#fbfbfc',
-      blockHubHoverBackground: '#f8f9ff',
+      hubBackground: '#fbfbfc',
+      cardHoverBackground: '#f8f9ff',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
 
-      textColor: '#28293D',
+      textColor: '#424149',
+      secondaryTextColor: '#8E8D91',
       edgelessTextColor: '#3A4C5C',
       iconColor: '#77757D',
       handleColor: '#c7c3d9',
@@ -93,7 +93,6 @@ export const getDarkTheme = (
     mode: 'dark',
     colors: {
       primaryColor: '#6880FF',
-
       pageBackground: '#2c2c2c',
       hoverBackground: '#3C3C42',
       innerHoverBackground: '#E0E6FF',
@@ -104,17 +103,18 @@ export const getDarkTheme = (
           ? lightTheme.colors.codeBackground
           : '#505662',
       codeBlockBackground: '#36383D',
-      blockHubBackground: '#272727',
-      blockHubHoverBackground: '#363636',
+      hubBackground: '#272727',
+      cardHoverBackground: '#363636',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
 
       textColor: '#fff',
+      secondaryTextColor: '#8E8D91',
       edgelessTextColor: '#3A4C5C',
-      iconColor: '#888a9e',
+      iconColor: '#77757D',
       handleColor: '#c7c3d9',
       linkColor: '#7D91FF',
-      linkColor2: '#6880FF',
+      linkColor2: '#0C0A15',
       linkVisitedColor: '#505FAB',
       popoverColor: '#C6CBD9',
       inputColor: '#C6CBD9',
@@ -124,7 +124,7 @@ export const getDarkTheme = (
       quoteColor: '#C6CBD9',
       placeHolderColor: '#C7C7C7',
       selectedColor: 'rgba(104, 128, 255, 0.1)',
-      borderColor: '#4D4C53',
+      borderColor: '#3C3A40',
       disableColor: '#4b4b4b',
       warningColor: '#906616',
       errorColor: '#EB4335',
@@ -156,10 +156,11 @@ export const globalThemeVariables: (
     '--affine-code-background': theme.colors.codeBackground,
     '--affine-tooltip-background': theme.colors.tooltipBackground,
 
-    '--affine-block-hub-background': theme.colors.blockHubBackground,
-    '--affine-block-hub-hover-background': theme.colors.blockHubHoverBackground,
+    '--affine-hub-background': theme.colors.hubBackground,
+    '--affine-card-hover-background': theme.colors.cardHoverBackground,
 
     '--affine-text-color': theme.colors.textColor,
+    '--affine-secondary-text-color': theme.colors.secondaryTextColor,
     '--affine-edgeless-text-color': theme.colors.edgelessTextColor,
     '--affine-link-color': theme.colors.linkColor,
     // In dark mode, normal text`s (not bold) color
