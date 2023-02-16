@@ -2,7 +2,7 @@ import { DataCenter } from './datacenter';
 
 declare global {
   // eslint-disable-next-line no-var
-  var dc: DataCenter;
+  var dc: DataCenter | undefined;
 }
 
 const _initializeDataCenter = () => {
