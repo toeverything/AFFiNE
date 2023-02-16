@@ -1,7 +1,7 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import router from 'next/router';
 import { toast } from '@affine/component';
 import { CloseIcon } from '@blocksuite/icons';
