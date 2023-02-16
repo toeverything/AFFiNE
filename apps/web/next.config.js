@@ -2,8 +2,6 @@
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
 const { dependencies } = require('./package.json');
 const path = require('node:path');
-const fs = require('node:fs');
-
 const printer = require('./scripts/printer').printer;
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
