@@ -1,5 +1,5 @@
 import { WorkspaceName, SelectorWrapper } from './styles';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { WorkspaceModal } from '@/components/workspace-modal';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { useGlobalState } from '@/store/app';
