@@ -4,7 +4,6 @@ import { PageLoading } from '@/components/loading';
 import usePageHelper from '@/hooks/use-page-helper';
 import { useGlobalState } from '@/store/app';
 import { assertExists } from '@blocksuite/global/utils';
-import { WorkspaceSuspense } from '@/components/workspace-layout';
 
 const WorkspaceIndex = () => {
   const router = useRouter();
@@ -31,10 +30,4 @@ const WorkspaceIndex = () => {
   return <PageLoading />;
 };
 
-export default function WorkspaceIndexWrapper() {
-  return (
-    <WorkspaceSuspense>
-      <WorkspaceIndex />
-    </WorkspaceSuspense>
-  );
-}
+export default WorkspaceIndex;

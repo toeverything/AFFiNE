@@ -39,6 +39,7 @@ export const WorkspaceSuspense = ({ children }: PropsWithChildren) => {
       throw router.push('/404');
     }
     const promise = loadWorkspace(workspaceId);
+    // cleanup promise
     promise.then(() => api.setState({ loadingWorkspacePromise: null }));
     api.setState({
       loadingWorkspacePromise: promise,

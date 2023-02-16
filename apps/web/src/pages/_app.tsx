@@ -24,6 +24,7 @@ import { useTranslation } from '@affine/i18n';
 import React from 'react';
 import { GlobalAppProvider } from '@/store/app';
 import { DataCenterSuspense } from '@/store/app/datacenter';
+import { WorkspaceSuspense } from '@/components/workspace-layout';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -83,7 +84,9 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
             <Suspense fallback={<PageLoading />}>
               <DataCenterSuspense>
                 <AppDefender>
-                  {getLayout(<Component {...pageProps} />)}
+                  <WorkspaceSuspense>
+                    {getLayout(<Component {...pageProps} />)}
+                  </WorkspaceSuspense>
                 </AppDefender>
               </DataCenterSuspense>
             </Suspense>
