@@ -25,7 +25,8 @@ import React from 'react';
 import { GlobalAppProvider } from '@/store/app';
 import { DataCenterPreloader, dataCenterPromise } from '@/store/app/datacenter';
 import { SWRConfig, SWRConfiguration } from 'swr';
-import { DataCenter, getDataCenter } from '@affine/datacenter';
+import { DataCenter } from '@affine/datacenter';
+import { WorkspaceErrorBoundary } from '@/components/WorkspaceErrorBoundary';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -83,17 +84,18 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>AFFiNE</title>
       </Head>
       <Logger />
-      <Suspense fallback={<PageLoading />}>
-        <SWRConfig value={swrConfig}>
-          <GlobalAppProvider key="BlockSuiteProvider">
-            <ProviderComposer
-              contexts={[
-                <ThemeProvider key="ThemeProvider" />,
-                <AppStateProvider key="appStateProvider" />,
-                <ModalProvider key="ModalProvider" />,
-                <ConfirmProvider key="ConfirmProvider" />,
-              ]}
-            >
+      <ProviderComposer
+        contexts={[
+          <GlobalAppProvider key="BlockSuiteProvider" />,
+          <ThemeProvider key="ThemeProvider" />,
+          <AppStateProvider key="appStateProvider" />,
+          <ModalProvider key="ModalProvider" />,
+          <ConfirmProvider key="ConfirmProvider" />,
+        ]}
+      >
+        <WorkspaceErrorBoundary>
+          <Suspense fallback={<PageLoading />}>
+            <SWRConfig value={swrConfig}>
               {NoNeedAppStatePageList.includes(router.route) ? (
                 getLayout(<Component {...pageProps} />)
               ) : (
@@ -103,10 +105,10 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
                   </AppDefender>
                 </DataCenterPreloader>
               )}
-            </ProviderComposer>
-          </GlobalAppProvider>
-        </SWRConfig>
-      </Suspense>
+            </SWRConfig>
+          </Suspense>
+        </WorkspaceErrorBoundary>
+      </ProviderComposer>
     </>
   );
 };

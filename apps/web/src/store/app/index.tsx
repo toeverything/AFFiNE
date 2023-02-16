@@ -65,7 +65,7 @@ const GlobalStateContext = createContext<Store | null>(null);
 export const useGlobalStateApi = () => {
   const api = useContext(GlobalStateContext);
   if (!api) {
-    throw new Error('cannot find modal context');
+    throw new Error('cannot find global context');
   }
   return api;
 };
