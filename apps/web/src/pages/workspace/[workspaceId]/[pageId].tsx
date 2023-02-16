@@ -32,7 +32,7 @@ const BlockHubAppender = () => {
     abortController.signal.addEventListener('abort', () => {
       blockHubElement?.remove();
       const toolWrapper = document.querySelector('#toolWrapper');
-      assertEquals(toolWrapper?.childNodes.length, 0);
+      toolWrapper ? assertEquals(toolWrapper.childNodes.length, 0) : null;
     });
 
     editor?.createBlockHub().then(blockHub => {
