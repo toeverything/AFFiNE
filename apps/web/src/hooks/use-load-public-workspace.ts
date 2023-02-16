@@ -1,35 +1,19 @@
-import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
+import { WorkspaceUnit } from '@affine/datacenter';
 
 export function useLoadPublicWorkspace(workspaceId: string) {
   const router = useRouter();
-  const [workspace, setWorkspace] = useState<WorkspaceUnit | null>();
-  const [status, setStatus] = useState<'loading' | 'error' | 'success'>(
-    'loading'
-  );
+  const {
+    data: workspace,
+    error,
+    isLoading,
+  } = useSWR<WorkspaceUnit>(workspaceId);
+  if (error) {
+    // todo(himself65): use error boundary
+    console.error('loading error', error);
+    throw router.push('/404');
+  }
 
-  useEffect(() => {
-    setStatus('loading');
-
-    const init = async () => {
-      const dataCenter = await getDataCenter();
-
-      dataCenter
-        .loadPublicWorkspace(workspaceId)
-        .then(data => {
-          setWorkspace(data);
-          setStatus('success');
-        })
-        .catch(() => {
-          // if (!cancel) {
-          //   router.push('/404');
-          // }
-          setStatus('error');
-        });
-    };
-    init();
-  }, [router, workspaceId]);
-
-  return { status, workspace };
+  return { isLoading, workspace };
 }

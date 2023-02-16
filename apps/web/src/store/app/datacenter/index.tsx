@@ -6,13 +6,12 @@ import {
 import type { DataCenter } from '@affine/datacenter';
 import { PageMeta } from '@/providers/app-state-provider';
 import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
-import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
 import React, { useCallback, useEffect } from 'react';
 import { DisposableGroup } from '@blocksuite/global/utils';
+import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
 
 export type DataCenterState = {
   readonly dataCenter: DataCenter;
-  readonly dataCenterPromise: Promise<DataCenter>;
   currentDataCenterWorkspace: WorkspaceUnit | null;
   dataCenterPageList: PageMeta[];
 };
@@ -24,11 +23,11 @@ export type DataCenterActions = {
   ) => Promise<WorkspaceUnit | null>;
 };
 
+export const dataCenterPromise = getDataCenter();
+
 export const createDataCenterState = (): DataCenterState => ({
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   dataCenter: null!,
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  dataCenterPromise: null!,
   currentDataCenterWorkspace: null,
   dataCenterPageList: [],
 });
@@ -81,9 +80,6 @@ export const createDataCenterActions: GlobalActionsCreator<
 
 export function DataCenterPreloader({ children }: React.PropsWithChildren) {
   const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
-  const dataCenterPromise = useGlobalState(
-    useCallback(store => store.dataCenterPromise, [])
-  );
   const api = useGlobalStateApi();
   //# region effect for updating workspace page list
   useEffect(() => {
@@ -112,30 +108,29 @@ export function DataCenterPreloader({ children }: React.PropsWithChildren) {
     );
   }, [api]);
   //# endregion
-
-  if (!dataCenter && !dataCenterPromise) {
-    const promise = getDataCenter();
-    api.setState({ dataCenterPromise: promise });
-    promise.then(async dataCenter => {
-      // Ensure datacenter has at least one workspace
-      if (dataCenter.workspaces.length === 0) {
-        await createDefaultWorkspace(dataCenter);
-      }
-      // set initial state
-      api.setState({
-        dataCenter,
-        currentWorkspace: null,
-        currentDataCenterWorkspace: null,
-        dataCenterPageList: [],
-        user:
-          (await dataCenter.getUserInfo(
-            dataCenter.providers.filter(p => p.id !== 'local')[0]?.id
-          )) || null,
-      });
-    });
-    throw promise;
-  }
   if (!dataCenter) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!(dataCenterPromise as any).zustand_once) {
+      Object.defineProperty(dataCenterPromise, 'zustand_once', {
+        value: true,
+      }).then(async dataCenter => {
+        // Ensure datacenter has at least one workspace
+        if (dataCenter.workspaces.length === 0) {
+          await createDefaultWorkspace(dataCenter);
+        }
+        // set initial state
+        api.setState({
+          dataCenter,
+          currentWorkspace: null,
+          currentDataCenterWorkspace: null,
+          dataCenterPageList: [],
+          user:
+            (await dataCenter.getUserInfo(
+              dataCenter.providers.filter(p => p.id !== 'local')[0]?.id
+            )) || null,
+        });
+      });
+    }
     throw dataCenterPromise;
   }
   return <>{children}</>;

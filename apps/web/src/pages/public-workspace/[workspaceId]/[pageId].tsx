@@ -20,7 +20,7 @@ const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
 const Page: NextPageWithLayout = () => {
   const router = useRouter();
   const { workspaceId, pageId } = router.query as Record<string, string>;
-  const { status, workspace: workspaceUnit } =
+  const { isLoading, workspace: workspaceUnit } =
     useLoadPublicWorkspace(workspaceId);
   const { triggerQuickSearchModal } = useModal();
   const { t } = useTranslation();
@@ -43,19 +43,10 @@ const Page: NextPageWithLayout = () => {
     }
   }, [workspace, router, pageId]);
 
-  useEffect(() => {
-    if (status === 'error') {
-      router.push('/404');
-    }
-  }, [router, status]);
-
-  if (status === 'loading') {
+  if (isLoading) {
     return <PageLoading />;
   }
 
-  if (status === 'error') {
-    return null;
-  }
   return (
     <PageContainer>
       <NavContainer>

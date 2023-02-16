@@ -23,7 +23,9 @@ import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
 import { GlobalAppProvider } from '@/store/app';
-import { DataCenterPreloader } from '@/store/app/datacenter';
+import { DataCenterPreloader, dataCenterPromise } from '@/store/app/datacenter';
+import { SWRConfig, SWRConfiguration } from 'swr';
+import { DataCenter, getDataCenter } from '@affine/datacenter';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -38,6 +40,19 @@ export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
+};
+
+const swrConfig: SWRConfiguration = {
+  fetcher: async workspaceId => {
+    let dc: DataCenter;
+    if (globalThis.dc) {
+      dc = globalThis.dc;
+    } else {
+      dc = await dataCenterPromise;
+    }
+    return dc.loadWorkspace(workspaceId);
+  },
+  suspense: typeof window !== 'undefined',
 };
 
 // Page list which do not rely on app state
@@ -68,28 +83,30 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>AFFiNE</title>
       </Head>
       <Logger />
-      <GlobalAppProvider key="BlockSuiteProvider">
-        <ProviderComposer
-          contexts={[
-            <ThemeProvider key="ThemeProvider" />,
-            <AppStateProvider key="appStateProvider" />,
-            <ModalProvider key="ModalProvider" />,
-            <ConfirmProvider key="ConfirmProvider" />,
-          ]}
-        >
-          {NoNeedAppStatePageList.includes(router.route) ? (
-            getLayout(<Component {...pageProps} />)
-          ) : (
-            <Suspense fallback={<PageLoading />}>
-              <DataCenterPreloader>
-                <AppDefender>
-                  {getLayout(<Component {...pageProps} />)}
-                </AppDefender>
-              </DataCenterPreloader>
-            </Suspense>
-          )}
-        </ProviderComposer>
-      </GlobalAppProvider>
+      <Suspense fallback={<PageLoading />}>
+        <SWRConfig value={swrConfig}>
+          <GlobalAppProvider key="BlockSuiteProvider">
+            <ProviderComposer
+              contexts={[
+                <ThemeProvider key="ThemeProvider" />,
+                <AppStateProvider key="appStateProvider" />,
+                <ModalProvider key="ModalProvider" />,
+                <ConfirmProvider key="ConfirmProvider" />,
+              ]}
+            >
+              {NoNeedAppStatePageList.includes(router.route) ? (
+                getLayout(<Component {...pageProps} />)
+              ) : (
+                <DataCenterPreloader>
+                  <AppDefender>
+                    {getLayout(<Component {...pageProps} />)}
+                  </AppDefender>
+                </DataCenterPreloader>
+              )}
+            </ProviderComposer>
+          </GlobalAppProvider>
+        </SWRConfig>
+      </Suspense>
     </>
   );
 };

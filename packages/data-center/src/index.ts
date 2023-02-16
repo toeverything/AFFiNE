@@ -1,25 +1,31 @@
 import { DataCenter } from './datacenter';
 
+declare global {
+  // eslint-disable-next-line no-var
+  var dc: DataCenter;
+}
+
 const _initializeDataCenter = () => {
-  let _dataCenterInstance: Promise<DataCenter>;
+  let _dataCenterPromise: Promise<DataCenter>;
 
   return (debug = true) => {
-    if (!_dataCenterInstance) {
-      _dataCenterInstance = DataCenter.init(debug);
-      _dataCenterInstance.then(dc => {
-        try {
-          if (window) {
-            (window as any).dc = dc;
-          }
-        } catch (_) {
-          // ignore
+    if (!_dataCenterPromise) {
+      _dataCenterPromise = DataCenter.init(debug);
+      _dataCenterPromise.then(dc => {
+        if (globalThis.dc) {
+          console.warn('globalThis.dc already exists. Please fix this ASAP.');
         }
+        Object.defineProperty(globalThis, 'dc', {
+          get() {
+            return dc;
+          },
+        });
 
         return dc;
       });
     }
 
-    return _dataCenterInstance;
+    return _dataCenterPromise;
   };
 };
 
