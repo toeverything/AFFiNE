@@ -6,7 +6,7 @@ import { useModal } from '@/store/globalModal';
 import { Breadcrumbs } from '@affine/component';
 import { SearchIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
-import { ReactElement, useMemo, useEffect } from 'react';
+import { ReactElement, useMemo } from 'react';
 import {
   NavContainer,
   PageContainer,
