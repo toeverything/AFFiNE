@@ -47,7 +47,6 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
 export const StyledSettingKey = styled.div(({ theme }) => {
   return {
     width: '140px',
-    textAlign: 'right',
     fontSize: theme.font.base,
     fontWeight: 500,
     marginRight: '56px',

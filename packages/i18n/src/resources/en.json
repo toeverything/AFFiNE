@@ -190,5 +190,7 @@
   "Edit": "Edit",
   "Sign out description": "Signing out will cause the unsynchronised content to be lost.",
   "Help and Feedback": "Help and Feedback",
-  "Please make sure you are online": "Please make sure you are online"
+  "Please make sure you are online": "Please make sure you are online",
+  "Workspace Owner": "Workspace Owner",
+  "Members": "Members"
 }
