@@ -7,12 +7,13 @@ export const useWorkspaceHelper = () => {
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
+  const loadWorkspace = useGlobalState(store => store.loadWorkspace);
   const createWorkspace = async (name: string) => {
     const workspaceInfo = await dataCenter.createWorkspace({
       name: name,
     });
     if (workspaceInfo && workspaceInfo.id) {
-      return await dataCenter.loadWorkspace(workspaceInfo.id);
+      await loadWorkspace(workspaceInfo.id);
     }
     return null;
   };
