@@ -1,11 +1,10 @@
-import { WorkspaceUnit } from '@affine/datacenter';
 import type { EditorContainer } from '@blocksuite/editor';
 
 import type {
   Page as StorePage,
   PageMeta as StorePageMeta,
 } from '@blocksuite/store';
-import { MutableRefObject } from 'react';
+
 export interface PageMeta extends StorePageMeta {
   favorite: boolean;
   trash: boolean;
@@ -15,16 +14,14 @@ export interface PageMeta extends StorePageMeta {
 }
 
 export type AppStateValue = {
-  workspaceList: WorkspaceUnit[];
-  currentWorkspace: WorkspaceUnit | null;
-  pageList: PageMeta[];
-  blobDataSynced?: boolean;
+  blobDataSynced: boolean;
 };
 
+/**
+ * @deprecated
+ */
 export type AppStateFunction = {
-  loadWorkspace: MutableRefObject<
-    (workspaceId: string, abort?: AbortSignal) => Promise<WorkspaceUnit | null>
-  >;
+  // todo: remove this in the future
 };
 
 export type AppStateContext = AppStateValue & AppStateFunction;

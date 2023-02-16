@@ -1,7 +1,12 @@
-import { PropsWithChildren, ReactElement, useEffect, useState } from 'react';
+import {
+  PropsWithChildren,
+  ReactElement,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import { EditorHeader } from '@/components/header';
 import MobileModal from '@/components/mobile-modal';
-import { useAppState } from '@/providers/app-state-provider';
 import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
@@ -53,7 +58,9 @@ const BlockHubAppender = () => {
 const Page: NextPageWithLayout = () => {
   const currentPage = useGlobalState(store => store.currentPage);
   const setEditor = useGlobalState(store => store.setEditor);
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
 
   const { t } = useTranslation();
 
@@ -95,7 +102,9 @@ const PageDefender = ({ children }: PropsWithChildren) => {
   const router = useRouter();
   const [pageLoaded, setPageLoaded] = useState(false);
   const loadPage = useGlobalState(store => store.loadPage);
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { createPage } = usePageHelper();
 
   useEffect(() => {

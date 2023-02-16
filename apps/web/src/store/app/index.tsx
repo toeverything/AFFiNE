@@ -15,8 +15,12 @@ import {
   UserActions,
   UserState,
 } from '@/store/app/user';
-import { DataCenter, getDataCenter } from '@affine/datacenter';
-import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
+import {
+  createDataCenterActions,
+  createDataCenterState,
+  DataCenterActions,
+  DataCenterState,
+} from '@/store/app/datacenter';
 
 export type GlobalActionsCreator<Actions, Store = GlobalState> = StateCreator<
   Store,
@@ -25,12 +29,15 @@ export type GlobalActionsCreator<Actions, Store = GlobalState> = StateCreator<
   Actions
 >;
 
-export interface GlobalState extends BlockSuiteState, UserState {
-  readonly dataCenter: DataCenter;
-  readonly dataCenterPromise: Promise<DataCenter>;
-}
+export interface GlobalState
+  extends BlockSuiteState,
+    UserState,
+    DataCenterState {}
 
-export interface GlobalActions extends BlockSuiteActions, UserActions {}
+export interface GlobalActions
+  extends BlockSuiteActions,
+    UserActions,
+    DataCenterActions {}
 
 const create = () =>
   createStore(
@@ -39,15 +46,13 @@ const create = () =>
         {
           ...createBlockSuiteState(),
           ...createUserState(),
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          dataCenter: null!,
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          dataCenterPromise: null!,
+          ...createDataCenterState(),
         },
         /* deepscan-disable TOO_MANY_ARGS */
         (set, get, api) => ({
           ...createBlockSuiteActions(set, get, api),
           ...createUserActions(set, get, api),
+          ...createDataCenterActions(set, get, api),
         })
         /* deepscan-enable TOO_MANY_ARGS */
       )
@@ -73,28 +78,6 @@ export const useGlobalState: UseBoundStore<Store> = ((
   return useStore(api, selector, equals);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
-
-export function DataCenterLoader() {
-  const dataCenter = useGlobalState(store => store.dataCenter);
-  const dataCenterPromise = useGlobalState(store => store.dataCenterPromise);
-  const api = useGlobalStateApi();
-  if (!dataCenter && !dataCenterPromise) {
-    const promise = getDataCenter();
-    api.setState({ dataCenterPromise: promise });
-    promise.then(async dataCenter => {
-      // Ensure datacenter has at least one workspace
-      if (dataCenter.workspaces.length === 0) {
-        await createDefaultWorkspace(dataCenter);
-      }
-      api.setState({ dataCenter });
-    });
-    throw promise;
-  }
-  if (!dataCenter) {
-    throw dataCenterPromise;
-  }
-  return null;
-}
 
 export const GlobalAppProvider: React.FC<React.PropsWithChildren> =
   function ModelProvider({ children }) {

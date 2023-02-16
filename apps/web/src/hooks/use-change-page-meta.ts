@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { useAppState, PageMeta } from '@/providers/app-state-provider';
+import { PageMeta } from '@/providers/app-state-provider';
+import { useGlobalState } from '@/store/app';
 
 export type ChangePageMeta = (
   pageId: string,
@@ -7,7 +8,9 @@ export type ChangePageMeta = (
 ) => void;
 
 export const useChangePageMeta = () => {
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
 
   return useCallback<ChangePageMeta>(
     (pageId, pageMeta) => {

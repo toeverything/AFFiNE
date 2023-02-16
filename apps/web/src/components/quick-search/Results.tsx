@@ -1,13 +1,19 @@
 import { Command } from 'cmdk';
 import { StyledListItem, StyledNotFound } from './style';
 import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { useAppState } from '@/providers/app-state-provider';
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import { useRouter } from 'next/router';
 import { useSwitchToConfig } from './config';
 import { NoResultSVG } from './NoResultSVG';
 import { useTranslation } from '@affine/i18n';
 import usePageHelper from '@/hooks/use-page-helper';
+import { useGlobalState } from '@/store/app';
 export const Results = (props: {
   query: string;
   loading: boolean;
@@ -18,7 +24,12 @@ export const Results = (props: {
   const { query, loading, setLoading, setShowCreatePage, onClose } = props;
   const { openPage } = usePageHelper();
   const router = useRouter();
-  const { currentWorkspace, pageList } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
+  const pageList = useGlobalState(
+    useCallback(store => store.dataCenterPageList, [])
+  );
   const { search } = usePageHelper();
   const List = useSwitchToConfig(currentWorkspace?.id);
   const [results, setResults] = useState(new Map<string, string | undefined>());

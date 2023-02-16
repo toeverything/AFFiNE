@@ -4,10 +4,11 @@ import { FavouritesIcon } from '@blocksuite/icons';
 import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useTranslation } from '@affine/i18n';
-import { useAppState } from '@/providers/app-state-provider';
 import Head from 'next/head';
+import { useGlobalState } from '@/store/app';
+
 export const Favorite = () => {
-  const { pageList } = useAppState();
+  const pageList = useGlobalState(store => store.dataCenterPageList);
   const { t } = useTranslation();
   return (
     <>

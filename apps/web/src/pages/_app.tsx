@@ -22,7 +22,8 @@ import Head from 'next/head';
 import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
-import { DataCenterLoader, GlobalAppProvider } from '@/store/app';
+import { GlobalAppProvider } from '@/store/app';
+import { DataCenterLoader } from '@/store/app/datacenter';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,

@@ -1,10 +1,10 @@
 import { LocalWorkspaceIcon, CloudWorkspaceIcon } from '@blocksuite/icons';
-import { useAppState } from '@/providers/app-state-provider';
 import { displayFlex, styled, Tooltip, IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useModal } from '@/store/globalModal';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { WorkspaceUnit } from '@affine/datacenter';
+import { useGlobalState } from '@/store/app';
 
 const NoNetWorkIcon = () => {
   return (
@@ -43,7 +43,9 @@ const getStatus = (workspace: WorkspaceUnit | null) => {
   return 'cloud';
 };
 export const SyncUser = () => {
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { triggerEnableWorkspaceModal } = useModal();
 
   const [status, setStatus] = useState<'offline' | 'local' | 'cloud'>(
