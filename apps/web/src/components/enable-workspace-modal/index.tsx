@@ -40,7 +40,7 @@ export const EnableWorkspaceModal = ({
         <Content>
           <ContentTitle>{t('Enable AFFiNE Cloud')}?</ContentTitle>
           <StyleTips>{t('Enable AFFiNE Cloud Description')}</StyleTips>
-          {/* <StyleTips>{t('Retain local cached data')}</StyleTips> */}
+          {/* <StyleTips>{t('Retain cached cloud data')}</StyleTips> */}
           <div>
             <StyleButton
               shape="round"
