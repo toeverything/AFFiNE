@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useEffect, useMemo } from 'react';
 import type { NextPageWithLayout } from '../..//_app';
 import { displayFlex, styled } from '@affine/component';
 import dynamic from 'next/dynamic';
@@ -22,7 +22,6 @@ const Page: NextPageWithLayout = () => {
   const { workspaceId, pageId } = router.query as Record<string, string>;
   const { status, workspace: workspaceUnit } =
     useLoadPublicWorkspace(workspaceId);
-  const [editorLoaded, setEditorLoaded] = useState(false);
   const { triggerQuickSearchModal } = useModal();
   const { t } = useTranslation();
 
@@ -50,7 +49,7 @@ const Page: NextPageWithLayout = () => {
     }
   }, [router, status]);
 
-  if (status === 'loading' || !editorLoaded) {
+  if (status === 'loading') {
     return <PageLoading />;
   }
 
@@ -91,7 +90,6 @@ const Page: NextPageWithLayout = () => {
           workspace={workspace}
           setEditor={editor => {
             editor.readonly = true;
-            setEditorLoaded(true);
           }}
         />
       )}
