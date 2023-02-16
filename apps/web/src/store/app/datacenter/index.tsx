@@ -7,7 +7,7 @@ import type { DataCenter } from '@affine/datacenter';
 import { PageMeta } from '@/providers/app-state-provider';
 import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
 import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
-import { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { DisposableGroup } from '@blocksuite/global/utils';
 
 export type DataCenterState = {
@@ -80,7 +80,7 @@ export const createDataCenterActions: GlobalActionsCreator<
   },
 });
 
-export function DataCenterLoader() {
+export function DataCenterPreloader({ children }: React.PropsWithChildren) {
   const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
   const dataCenterPromise = useGlobalState(
     useCallback(store => store.dataCenterPromise, [])
@@ -135,5 +135,5 @@ export function DataCenterLoader() {
   if (!dataCenter) {
     throw dataCenterPromise;
   }
-  return null;
+  return <>{children}</>;
 }

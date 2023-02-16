@@ -86,7 +86,7 @@ export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
                 <WorkspaceCard
                   workspaceData={item}
                   onClick={workspaceData => {
-                    router.replace(`/workspace/${workspaceData.id}/all`);
+                    router.push(`/workspace/${workspaceData.id}/all`);
                     onClose();
                   }}
                   key={index}
