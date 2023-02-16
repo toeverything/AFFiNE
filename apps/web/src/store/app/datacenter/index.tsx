@@ -128,6 +128,10 @@ export function DataCenterPreloader({ children }: React.PropsWithChildren) {
         currentWorkspace: null,
         currentDataCenterWorkspace: null,
         dataCenterPageList: [],
+        user:
+          (await dataCenter.getUserInfo(
+            dataCenter.providers.filter(p => p.id !== 'local')[0]?.id
+          )) || null,
       });
     });
     throw promise;
