@@ -21,7 +21,7 @@ export const getLightTheme = (
       codeBackground: '#f2f5f9',
       codeBlockBackground: '#F9F9FB',
       hubBackground: '#fbfbfc',
-      blockHubHoverBackground: '#f8f9ff',
+      cardHoverBackground: '#f8f9ff',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
 
@@ -104,7 +104,7 @@ export const getDarkTheme = (
           : '#505662',
       codeBlockBackground: '#36383D',
       hubBackground: '#272727',
-      blockHubHoverBackground: '#363636',
+      cardHoverBackground: '#363636',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
 
@@ -157,7 +157,7 @@ export const globalThemeVariables: (
     '--affine-tooltip-background': theme.colors.tooltipBackground,
 
     '--affine-hub-background': theme.colors.hubBackground,
-    '--affine-block-hub-hover-background': theme.colors.blockHubHoverBackground,
+    '--affine-card-hover-background': theme.colors.cardHoverBackground,
 
     '--affine-text-color': theme.colors.textColor,
     '--affine-secondary-text-color': theme.colors.secondaryTextColor,
