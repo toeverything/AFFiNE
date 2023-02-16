@@ -1,0 +1,26 @@
+name: Add to GitHub projects
+
+on:
+  issues:
+    types:
+      - opened
+      - transferred
+      - labeled
+  pull_request:
+    types:
+      - opened
+      - labeled
+
+jobs:
+  add-to-project:
+    name: Add issues and pull requests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v0.4.0
+        with:
+          # You can target a repository in a different organization
+          # to the issue
+          project-url: https://github.com/orgs/toeverything/projects/10
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          # labeled: bug, needs-triage
+          # label-operator: OR
