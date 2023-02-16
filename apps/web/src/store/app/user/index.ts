@@ -12,6 +12,7 @@ export interface UserActions {
 }
 
 export const createUserState = (): UserState => ({
+  // initialized in DataCenterLoader (restore from localStorage)
   user: null,
   isOwner: false,
 });
