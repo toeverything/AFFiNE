@@ -159,7 +159,7 @@
   "Download data": "Download {{CoreOrAll}} data",
   "Back Home": "Back Home",
   "Set a Workspace name": "Set a Workspace name",
-  "Retain local cached data": "Retain local cached data",
+  "Retain cached cloud data": "Retain cached cloud data",
   "Wait for Sync": "Wait for Sync",
   "Force Sign Out": "Force Sign Out",
   "Local Workspace": "Local Workspace",

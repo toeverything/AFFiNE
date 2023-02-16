@@ -50,7 +50,7 @@ export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
                 <UnCheck></UnCheck>
               </StyleCheck>
             )}
-            {t('Retain local cached data')}
+            {t('Retain cached cloud data')}
           </StyleTips>
           {blobDataSynced ? (
             <div>
