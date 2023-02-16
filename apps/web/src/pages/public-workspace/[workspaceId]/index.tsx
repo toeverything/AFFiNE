@@ -18,9 +18,12 @@ import { PageLoading } from '@/components/loading';
 const All = () => {
   const router = useRouter();
   const { triggerQuickSearchModal } = useModal();
-  const { status, workspace } = useLoadPublicWorkspace(
-    router.query.workspaceId as string
-  );
+  const workspaceId = router.query.workspaceId;
+  if (typeof workspaceId !== 'string') {
+    throw router.push('/404');
+  }
+
+  const { isLoading, workspace } = useLoadPublicWorkspace(workspaceId);
 
   const pageList = useMemo(() => {
     return (workspace?.blocksuiteWorkspace?.meta.pageMetas ?? []) as PageMeta[];
@@ -28,18 +31,8 @@ const All = () => {
 
   const workspaceName = workspace?.blocksuiteWorkspace?.meta.name;
 
-  useEffect(() => {
-    if (status === 'error') {
-      router.push('/404');
-    }
-  }, [router, status]);
-
-  if (status === 'loading') {
+  if (isLoading) {
     return <PageLoading />;
-  }
-
-  if (status === 'error') {
-    return null;
   }
 
   return (

@@ -52,7 +52,7 @@ const swrConfig: SWRConfiguration = {
     }
     return dc.loadWorkspace(workspaceId);
   },
-  suspense: typeof window !== 'undefined',
+  suspense: true,
 };
 
 // Page list which do not rely on app state
