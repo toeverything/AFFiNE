@@ -11,6 +11,7 @@ import Head from 'next/head';
 import { useTranslation } from '@affine/i18n';
 import { useGlobalState } from '@/store/app';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
+import { assertEquals } from '@blocksuite/store';
 
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
@@ -20,7 +21,14 @@ const BlockHubAppender = () => {
   const setBlockHub = useGlobalState(store => store.setBlockHub);
   const editor = useGlobalState(store => store.editor);
   useEffect(() => {
+    // todo(himself65): refactor with `useRef`
+    const abortController = new AbortController();
     let blockHubElement: HTMLElement | null = null;
+    abortController.signal.addEventListener('abort', () => {
+      blockHubElement?.remove();
+      const toolWrapper = document.querySelector('#toolWrapper');
+      assertEquals(toolWrapper?.childNodes.length, 0);
+    });
 
     editor?.createBlockHub().then(blockHub => {
       const toolWrapper = document.querySelector('#toolWrapper');
@@ -28,12 +36,15 @@ const BlockHubAppender = () => {
         // In an invitation page there is no toolWrapper, which contains helper icon and blockHub icon
         return;
       }
+      if (abortController.signal.aborted) {
+        return;
+      }
       blockHubElement = blockHub;
       setBlockHub(blockHub);
       toolWrapper.appendChild(blockHub);
     });
     return () => {
-      blockHubElement?.remove();
+      abortController.abort();
     };
   }, [editor, setBlockHub]);
   return null;
@@ -73,7 +84,7 @@ const Page: NextPageWithLayout = () => {
                 : undefined
             }
           />
-          <BlockHubAppender />
+          <BlockHubAppender key={currentWorkspace.id + currentPage.id} />
         </>
       )}
     </>
