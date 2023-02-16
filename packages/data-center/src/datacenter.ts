@@ -1,9 +1,6 @@
 import { WorkspaceUnitCollection } from './workspace-unit-collection.js';
 import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
-import {
-  StoreOptions,
-  Workspace as BlocksuiteWorkspace,
-} from '@blocksuite/store';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import type {
   BaseProvider,
   CreateWorkspaceInfoParams,
@@ -127,12 +124,12 @@ export class DataCenter {
    * get a new workspace only has room id
    * @param {string} workspaceId workspace id
    */
-  private _getBlocksuiteWorkspace(workspaceId: string, params: StoreOptions) {
+  private _getBlocksuiteWorkspace(workspaceId: string) {
     // const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);
     // assert(workspaceInfo, 'Workspace not found');
     return (
       // this._workspaceInstances.get(workspaceId) ||
-      createBlocksuiteWorkspace(workspaceId, params)
+      createBlocksuiteWorkspace(workspaceId)
     );
   }
 
@@ -174,14 +171,7 @@ export class DataCenter {
     assert(provider, `provide '${workspaceUnit.provider}' is not registered`);
     this._logger(`Loading ${workspaceUnit.provider} workspace: `, workspaceId);
 
-    const params: StoreOptions = {};
-    if (provider.id === 'affine') {
-      params.blobOptionsGetter = (k: string) =>
-        ({ api: '/api/workspace', token: provider.getToken() }[k]);
-    } else {
-      params.blobOptionsGetter = (k: string) => undefined;
-    }
-    const workspace = this._getBlocksuiteWorkspace(workspaceId, params);
+    const workspace = this._getBlocksuiteWorkspace(workspaceId);
     this._workspaceInstances.set(workspaceId, workspace);
     await provider.warpWorkspace(workspace);
     this._workspaceUnitCollection.workspaces.forEach(workspaceUnit => {
@@ -197,7 +187,7 @@ export class DataCenter {
     // FIXME: hard code for public workspace
     const provider = this.providerMap.get('affine');
     assert(provider);
-    const blocksuiteWorkspace = this._getBlocksuiteWorkspace(workspaceId, {});
+    const blocksuiteWorkspace = this._getBlocksuiteWorkspace(workspaceId);
     await provider.loadPublicWorkspace(blocksuiteWorkspace);
 
     const workspaceUnitForPublic = new WorkspaceUnit({
@@ -231,7 +221,7 @@ export class DataCenter {
    * listen workspaces list change
    * @param {Function} callback callback function
    */
-  public async onWorkspacesChange(
+  public onWorkspacesChange(
     callback: (workspaces: WorkspaceUnitCollectionChangeEvent) => void,
     { immediate = true }: { immediate?: boolean } = {}
   ) {
@@ -241,6 +231,9 @@ export class DataCenter {
       });
     }
     this._workspaceUnitCollection.on('change', callback);
+    return () => {
+      this._workspaceUnitCollection.off('change', callback);
+    };
   }
 
   /**

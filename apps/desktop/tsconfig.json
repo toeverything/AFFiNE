@@ -21,7 +21,12 @@
     "experimentalDecorators": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "noImplicitReturns": true
+    "noImplicitReturns": true,
+    "paths": {
+      "@/*": ["../web/src/*"],
+      "@affine/component": ["../../packages/component/src/index"],
+      "@affine/i18n": ["../../packages/i18n/src/index"]
+    }
   },
   "include": ["./src"],
   "exclude": ["node_modules"]

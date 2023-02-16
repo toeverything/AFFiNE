@@ -11,6 +11,8 @@ const _sendMessage = messageCenter.getMessageSender('affine');
 export const bareClient: KyInstance = ky.extend({
   prefixUrl: '/',
   retry: 1,
+  // todo: report timeout error
+  timeout: 60000,
   hooks: {
     // afterResponse: [
     //   async (_request, _options, response) => {

@@ -181,6 +181,7 @@ export const auth = new Auth();
 
 export const getAuthorizer = () => {
   let _firebaseAuth: FirebaseAuth | null = null;
+  const logger = getLogger('authorizer');
 
   // getAuth will send requests on calling thus we can lazy init it
   const getAuth = () => {
@@ -200,8 +201,7 @@ export const getAuthorizer = () => {
       }
       return _firebaseAuth;
     } catch (error) {
-      getLogger('getAuthorizer')(error);
-      console.error('getAuthorizer', error);
+      logger(error);
       return null;
     }
   };

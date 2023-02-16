@@ -7,28 +7,35 @@ import {
 } from 'react';
 import { EditorHeader } from '@/components/header';
 import MobileModal from '@/components/mobile-modal';
-import { useAppState } from '@/providers/app-state-provider';
 import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import dynamic from 'next/dynamic';
-import { EditorContainer } from '@blocksuite/editor';
 import Head from 'next/head';
 import { useTranslation } from '@affine/i18n';
-import { BlockHub } from '@blocksuite/blocks';
+import { useGlobalState } from '@/store/app';
+import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
+import { assertEquals } from '@blocksuite/store';
+
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
 });
 
 const BlockHubAppender = () => {
-  const { setBlockHub, editor } = useAppState();
-  const setBlockHubHandler = useCallback(
-    (blockHub: BlockHub) => setBlockHub.current(blockHub),
-    [setBlockHub]
-  );
+  const setBlockHub = useGlobalState(store => store.setBlockHub);
+  const editor = useGlobalState(store => store.editor);
   useEffect(() => {
+    // todo(himself65): refactor with `useRef`
+    const abortController = new AbortController();
     let blockHubElement: HTMLElement | null = null;
+    abortController.signal.addEventListener('abort', () => {
+      blockHubElement?.remove();
+      const toolWrapper = document.querySelector('#toolWrapper');
+      if (toolWrapper) {
+        assertEquals(toolWrapper.childNodes.length, 0);
+      }
+    });
 
     editor?.createBlockHub().then(blockHub => {
       const toolWrapper = document.querySelector('#toolWrapper');
@@ -36,27 +43,33 @@ const BlockHubAppender = () => {
         // In an invitation page there is no toolWrapper, which contains helper icon and blockHub icon
         return;
       }
+      if (abortController.signal.aborted) {
+        return;
+      }
       blockHubElement = blockHub;
-      // setBlockHubHandler(blockHub);
+      setBlockHub(blockHub);
       toolWrapper.appendChild(blockHub);
     });
     return () => {
-      blockHubElement?.remove();
+      abortController.abort();
     };
-  }, [editor, setBlockHubHandler]);
+  }, [editor, setBlockHub]);
   return null;
 };
 
 const Page: NextPageWithLayout = () => {
-  const { currentPage, currentWorkspace, setEditor } = useAppState();
-
-  const setEditorHandler = useCallback(
-    (editor: EditorContainer) => setEditor.current(editor),
-    [setEditor]
+  const currentPage = useGlobalState(store => store.currentPage);
+  const setEditor = useGlobalState(store => store.setEditor);
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
   );
 
   const { t } = useTranslation();
 
+  // Only first workspace and first page will have template markdown
+  const shouldInitTemplateContent =
+    currentPage?.isEmpty &&
+    currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas.length === 1;
   return (
     <>
       <Head>
@@ -70,9 +83,17 @@ const Page: NextPageWithLayout = () => {
           <DynamicBlocksuite
             page={currentPage}
             workspace={currentWorkspace.blocksuiteWorkspace}
-            setEditor={setEditorHandler}
+            setEditor={setEditor}
+            templateMarkdown={
+              shouldInitTemplateContent ? exampleMarkdown : undefined
+            }
+            templateTitle={
+              shouldInitTemplateContent
+                ? 'Welcome to AFFiNE Alpha "Downhills"'
+                : undefined
+            }
           />
-          <BlockHubAppender />
+          <BlockHubAppender key={currentWorkspace.id + currentPage.id} />
         </>
       )}
     </>
@@ -82,7 +103,10 @@ const Page: NextPageWithLayout = () => {
 const PageDefender = ({ children }: PropsWithChildren) => {
   const router = useRouter();
   const [pageLoaded, setPageLoaded] = useState(false);
-  const { currentWorkspace, loadPage } = useAppState();
+  const loadPage = useGlobalState(store => store.loadPage);
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { createPage } = usePageHelper();
 
   useEffect(() => {

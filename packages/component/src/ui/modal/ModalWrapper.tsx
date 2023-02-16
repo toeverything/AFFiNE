@@ -13,6 +13,7 @@ export const ModalWrapper = styled.div<{
     backgroundColor: theme.colors.popoverBackground,
     borderRadius: '24px',
     position: 'relative',
+    maxHeight: 'calc(100vh - 32px)',
   };
 });
 

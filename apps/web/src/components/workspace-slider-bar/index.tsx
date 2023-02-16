@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useRouter } from 'next/router';
 import {
   StyledArrowButton,
@@ -24,16 +24,16 @@ import Link from 'next/link';
 import { MuiCollapse } from '@affine/component';
 import { Tooltip } from '@affine/component';
 import { useModal } from '@/store/globalModal';
-import { useAppState } from '@/providers/app-state-provider';
 import { IconButton } from '@affine/component';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
+import { useGlobalState } from '@/store/app';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
-  const { pageList } = useAppState();
+  const pageList = useGlobalState(store => store.dataCenterPageList);
   const router = useRouter();
   const { t } = useTranslation();
   const favoriteList = pageList.filter(p => p.favorite && !p.trash);
@@ -66,7 +66,9 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { openPage, createPage } = usePageHelper();
   const router = useRouter();
   const { t } = useTranslation();

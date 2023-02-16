@@ -9,7 +9,7 @@ const ANIMATE_DURATION = 400;
 export const StyledThemeModeSwitch = styled('div')({
   width: '32px',
   height: '32px',
-  borderRadius: '5px',
+  borderRadius: '6px',
   overflow: 'hidden',
   backgroundColor: 'transparent',
   position: 'relative',
@@ -62,5 +62,9 @@ export const StyledSwitchItem = styled('div')<{
     ...displayFlex('center', 'center'),
     cursor: 'pointer',
     ...activeStyle,
+    svg: {
+      width: '24px',
+      height: '24px',
+    },
   };
 });

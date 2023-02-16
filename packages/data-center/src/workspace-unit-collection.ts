@@ -37,6 +37,13 @@ export class WorkspaceUnitCollection {
     this._events.on(type, callback);
   }
 
+  public off(
+    type: 'change',
+    callback: (event: WorkspaceUnitCollectionChangeEvent) => void
+  ) {
+    this._events.off(type, callback);
+  }
+
   public once(
     type: 'change',
     callback: (event: WorkspaceUnitCollectionChangeEvent) => void

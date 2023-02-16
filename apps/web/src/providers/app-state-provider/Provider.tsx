@@ -1,18 +1,8 @@
-import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
-import { getDataCenter } from '@affine/datacenter';
-import {
-  AppStateContext,
-  AppStateFunction,
-  AppStateValue,
-  PageMeta,
-} from './interface';
-import { createDefaultWorkspace } from './utils';
-import { User } from '@affine/datacenter';
-
-export interface Disposable {
-  dispose(): void;
-}
+import { AppStateContext } from './interface';
+import type { Disposable } from '@blocksuite/global/utils';
+import { useGlobalState } from '@/store/app';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 
@@ -22,122 +12,14 @@ export const useAppState = () => useContext(AppState);
 export const AppStateProvider = ({
   children,
 }: PropsWithChildren<AppStateContextProps>) => {
-  const [appState, setAppState] = useState<AppStateValue>({} as AppStateValue);
+  const currentDataCenterWorkspace = useGlobalState(
+    store => store.currentDataCenterWorkspace
+  );
   const [blobState, setBlobState] = useState(false);
-  const [userInfo, setUser] = useState<User | null>({} as User);
-  useEffect(() => {
-    const initState = async () => {
-      const dataCenter = await getDataCenter();
-      // Ensure datacenter has at least one workspace
-      if (dataCenter.workspaces.length === 0) {
-        await createDefaultWorkspace(dataCenter);
-      }
-      setUser(
-        (await dataCenter.getUserInfo(
-          dataCenter.providers.filter(p => p.id !== 'local')[0]?.id
-        )) || null
-      );
-      setAppState({
-        dataCenter,
-        workspaceList: dataCenter.workspaces,
-        currentWorkspace: null,
-        pageList: [],
-        currentPage: null,
-        editor: null,
-        blockHub: null,
-        synced: true,
-        isOwner: false,
-      });
-    };
-
-    initState();
-  }, []);
-
-  useEffect(() => {
-    if (!appState?.currentWorkspace?.blocksuiteWorkspace) {
-      return;
-    }
-    const currentWorkspace = appState.currentWorkspace;
-    const dispose = currentWorkspace?.blocksuiteWorkspace?.meta.pagesUpdated.on(
-      () => {
-        setAppState({
-          ...appState,
-          pageList: currentWorkspace.blocksuiteWorkspace?.meta
-            .pageMetas as PageMeta[],
-        });
-      }
-    ).dispose;
-    return () => {
-      dispose && dispose();
-    };
-  }, [appState]);
-
-  useEffect(() => {
-    const { dataCenter } = appState;
-    // FIXME: onWorkspacesChange should have dispose function
-    dataCenter?.onWorkspacesChange(
-      () => {
-        setAppState({
-          ...appState,
-          workspaceList: dataCenter.workspaces,
-        });
-      },
-      { immediate: false }
-    );
-  }, [appState]);
-
-  const loadPage = useRef<AppStateFunction['loadPage']>();
-  loadPage.current = (pageId: string) => {
-    const { currentWorkspace, currentPage } = appState;
-    if (pageId === currentPage?.id) {
-      return;
-    }
-    const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId) || null;
-    setAppState({
-      ...appState,
-      currentPage: page,
-    });
-  };
-
-  const loadWorkspace: AppStateFunction['loadWorkspace'] =
-    useRef() as AppStateFunction['loadWorkspace'];
-  loadWorkspace.current = async (workspaceId: string) => {
-    const { dataCenter, workspaceList, currentWorkspace } = appState;
-    if (!workspaceList.find(v => v.id.toString() === workspaceId)) {
-      return null;
-    }
-    if (workspaceId === currentWorkspace?.id) {
-      return currentWorkspace;
-    }
-
-    const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
-    let isOwner;
-    if (workspace?.provider === 'local') {
-      // isOwner is useful only in the cloud
-      isOwner = true;
-    } else {
-      // We must ensure workspace.owner exists, then ensure id same.
-      isOwner = workspace?.owner && userInfo?.id === workspace.owner.id;
-    }
-
-    const pageList =
-      (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
-    setAppState({
-      ...appState,
-      currentWorkspace: workspace,
-      pageList: pageList,
-      currentPage: null,
-      editor: null,
-      blockHub: null,
-      isOwner,
-    });
-
-    return workspace;
-  };
 
   useEffect(() => {
     let syncChangeDisposable: Disposable | undefined;
-    const currentWorkspace = appState.currentWorkspace;
+    const currentWorkspace = currentDataCenterWorkspace;
     if (!currentWorkspace) {
       return;
     }
@@ -153,54 +35,12 @@ export const AppStateProvider = ({
     return () => {
       syncChangeDisposable?.dispose();
     };
-  }, [appState.currentWorkspace]);
-
-  const setEditor: AppStateFunction['setEditor'] =
-    useRef() as AppStateFunction['setEditor'];
-  setEditor.current = editor => {
-    setAppState({
-      ...appState,
-      editor,
-    });
-  };
-  const setBlockHub: AppStateFunction['setBlockHub'] =
-    useRef() as AppStateFunction['setBlockHub'];
-  setBlockHub.current = blockHub => {
-    setAppState({
-      ...appState,
-      blockHub,
-    });
-  };
-
-  const login = async () => {
-    const { dataCenter } = appState;
-    await dataCenter.login();
-
-    const user = (await dataCenter.getUserInfo()) as User;
-    if (!user) {
-      throw new Error('User info not found');
-    }
-    setUser(user);
-    return user;
-  };
-  const logout = async () => {
-    const { dataCenter } = appState;
-    await dataCenter.logout();
-    setUser(null);
-  };
+  }, [currentDataCenterWorkspace]);
 
   return (
     <AppState.Provider
       value={{
-        ...appState,
-        setEditor,
-        setBlockHub,
-        loadPage: loadPage.current,
-        loadWorkspace: loadWorkspace,
-        login,
-        logout,
         blobDataSynced: blobState,
-        user: userInfo,
       }}
     >
       {children}

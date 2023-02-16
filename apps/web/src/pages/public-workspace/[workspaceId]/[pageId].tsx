@@ -10,7 +10,7 @@ import NextLink from 'next/link';
 import { PaperIcon, SearchIcon } from '@blocksuite/icons';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { useModal } from '@/store/globalModal';
-import { usePublicWorkspace } from '@/hooks/use-public-workspace';
+import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
 import { useTranslation } from '@affine/i18n';
 
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
@@ -20,8 +20,9 @@ const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
 const Page: NextPageWithLayout = () => {
   const router = useRouter();
   const { workspaceId, pageId } = router.query as Record<string, string>;
-  const workspaceUnit = usePublicWorkspace(workspaceId);
-  const [loaded, setLoaded] = useState(false);
+  const { status, workspace: workspaceUnit } =
+    useLoadPublicWorkspace(workspaceId);
+  const [editorLoaded, setEditorLoaded] = useState(false);
   const { triggerQuickSearchModal } = useModal();
   const { t } = useTranslation();
 
@@ -43,48 +44,58 @@ const Page: NextPageWithLayout = () => {
     }
   }, [workspace, router, pageId]);
 
-  return (
-    <>
-      {!loaded && <PageLoading />}
-      <PageContainer>
-        <NavContainer>
-          <Breadcrumbs>
-            <StyledBreadcrumbs href={`/public-workspace/${workspaceId}`}>
-              <WorkspaceUnitAvatar
-                size={24}
-                name={workspaceName}
-                workspaceUnit={workspaceUnit}
-              />
-              <span>{workspaceName}</span>
-            </StyledBreadcrumbs>
-            <StyledBreadcrumbs
-              href={`/public-workspace/${workspaceId}/${pageId}`}
-            >
-              <PaperIcon fontSize={24} />
-              <span>{pageTitle ? pageTitle : t('Untitled')}</span>
-            </StyledBreadcrumbs>
-          </Breadcrumbs>
-          <SearchButton
-            onClick={() => {
-              triggerQuickSearchModal();
-            }}
-          >
-            <SearchIcon />
-          </SearchButton>
-        </NavContainer>
+  useEffect(() => {
+    if (status === 'error') {
+      router.push('/404');
+    }
+  }, [router, status]);
 
-        {workspace && page && (
-          <DynamicBlocksuite
-            page={page}
-            workspace={workspace}
-            setEditor={editor => {
-              editor.readonly = true;
-              setLoaded(true);
-            }}
-          />
-        )}
-      </PageContainer>
-    </>
+  if (status === 'loading' || !editorLoaded) {
+    return <PageLoading />;
+  }
+
+  if (status === 'error') {
+    return null;
+  }
+  return (
+    <PageContainer>
+      <NavContainer>
+        <Breadcrumbs>
+          <StyledBreadcrumbs href={`/public-workspace/${workspaceId}`}>
+            <WorkspaceUnitAvatar
+              size={24}
+              name={workspaceName}
+              workspaceUnit={workspaceUnit}
+            />
+            <span>{workspaceName}</span>
+          </StyledBreadcrumbs>
+          <StyledBreadcrumbs
+            href={`/public-workspace/${workspaceId}/${pageId}`}
+          >
+            <PaperIcon fontSize={24} />
+            <span>{pageTitle ? pageTitle : t('Untitled')}</span>
+          </StyledBreadcrumbs>
+        </Breadcrumbs>
+        <SearchButton
+          onClick={() => {
+            triggerQuickSearchModal();
+          }}
+        >
+          <SearchIcon />
+        </SearchButton>
+      </NavContainer>
+
+      {workspace && page && (
+        <DynamicBlocksuite
+          page={page}
+          workspace={workspace}
+          setEditor={editor => {
+            editor.readonly = true;
+            setEditorLoaded(true);
+          }}
+        />
+      )}
+    </PageContainer>
   );
 };
 

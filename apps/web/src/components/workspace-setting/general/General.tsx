@@ -7,9 +7,8 @@ import {
 import { StyledSettingKey, StyledRow } from '../style';
 import { FlexWrapper } from '@affine/component';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Button } from '@affine/component';
-import { useAppState } from '@/providers/app-state-provider';
 import { WorkspaceDelete } from './delete';
 import { WorkspaceLeave } from './leave';
 import {
@@ -24,12 +23,16 @@ import { useTranslation } from '@affine/i18n';
 import { CameraIcon } from './icons';
 import { Upload } from '@/components/file-upload';
 import { MuiFade } from '@affine/component';
+import { useGlobalState } from '@/store/app';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(workspace?.name);
   const [showEditInput, setShowEditInput] = useState(false);
-  const { currentWorkspace, isOwner } = useAppState();
+  const isOwner = useGlobalState(store => store.isOwner);
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { updateWorkspace } = useWorkspaceHelper();
   const { t } = useTranslation();
 
@@ -151,7 +154,7 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           ) : (
             <StyledWorkspaceInfo>
               <CloudWorkspaceIcon />
-              <span>{t('Available Offline')}</span>
+              <span>{t('Cloud Workspace')}</span>
             </StyledWorkspaceInfo>
           )
         ) : (

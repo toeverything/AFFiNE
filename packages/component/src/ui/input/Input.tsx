@@ -4,6 +4,7 @@ import {
   useState,
   FocusEventHandler,
   KeyboardEventHandler,
+  HTMLAttributes,
 } from 'react';
 import { StyledInput } from './style';
 
@@ -18,20 +19,20 @@ type inputProps = {
   onChange?: (value: string) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
-};
-export const Input = (props: inputProps) => {
-  const {
-    disabled,
-    value: valueProp,
-    placeholder,
-    maxLength,
-    minLength,
-    height,
-    width = 260,
-    onChange,
-    onBlur,
-    onKeyDown,
-  } = props;
+} & Omit<HTMLAttributes<HTMLInputElement>, 'onChange'>;
+export const Input = ({
+  disabled,
+  value: valueProp,
+  placeholder,
+  maxLength,
+  minLength,
+  height,
+  width = 260,
+  onChange,
+  onBlur,
+  onKeyDown,
+  ...otherProps
+}: inputProps) => {
   const [value, setValue] = useState<string>(valueProp || '');
   const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
     const { value } = e.target;
@@ -61,6 +62,7 @@ export const Input = (props: inputProps) => {
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       height={height}
+      {...otherProps}
     ></StyledInput>
   );
 };

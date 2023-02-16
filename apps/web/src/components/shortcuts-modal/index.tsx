@@ -13,8 +13,11 @@ import {
   useWindowsKeyboardShortcuts,
   useWinMarkdownShortcuts,
 } from '@/components/shortcuts-modal/config';
-import { MuiSlide } from '@affine/component';
-import { ModalCloseButton } from '@affine/component';
+import {
+  MuiSlide,
+  MuiClickAwayListener,
+  ModalCloseButton,
+} from '@affine/component';
 import { getUaHelper } from '@/utils';
 import { useTranslation } from '@affine/i18n';
 type ModalProps = {
@@ -42,44 +45,50 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
   return createPortal(
     <MuiSlide direction="left" in={open} mountOnEnter unmountOnExit>
       <StyledShortcutsModal data-testid="shortcuts-modal">
-        <>
-          <StyledModalHeader>
-            <StyledTitle>
-              <KeyboardIcon />
-              {t('Shortcuts')}
-            </StyledTitle>
+        <MuiClickAwayListener
+          onClickAway={() => {
+            onClose();
+          }}
+        >
+          <div>
+            <StyledModalHeader>
+              <StyledTitle>
+                <KeyboardIcon />
+                {t('Shortcuts')}
+              </StyledTitle>
 
-            <ModalCloseButton
-              top={6}
-              right={6}
-              size={[24, 24]}
-              iconSize={[15, 15]}
-              onClick={() => {
-                onClose();
-              }}
-            />
-          </StyledModalHeader>
-          <StyledSubTitle style={{ marginTop: 0 }}>
-            {t('Keyboard Shortcuts')}
-          </StyledSubTitle>
-          {Object.entries(keyboardShortcuts).map(([title, shortcuts]) => {
-            return (
-              <StyledListItem key={title}>
-                <span>{title}</span>
-                <span>{shortcuts}</span>
-              </StyledListItem>
-            );
-          })}
-          <StyledSubTitle>{t('Markdown Syntax')}</StyledSubTitle>
-          {Object.entries(markdownShortcuts).map(([title, shortcuts]) => {
-            return (
-              <StyledListItem key={title}>
-                <span>{title}</span>
-                <span>{shortcuts}</span>
-              </StyledListItem>
-            );
-          })}
-        </>
+              <ModalCloseButton
+                top={6}
+                right={6}
+                size={[24, 24]}
+                iconSize={[15, 15]}
+                onClick={() => {
+                  onClose();
+                }}
+              />
+            </StyledModalHeader>
+            <StyledSubTitle style={{ marginTop: 0 }}>
+              {t('Keyboard Shortcuts')}
+            </StyledSubTitle>
+            {Object.entries(keyboardShortcuts).map(([title, shortcuts]) => {
+              return (
+                <StyledListItem key={title}>
+                  <span>{title}</span>
+                  <span>{shortcuts}</span>
+                </StyledListItem>
+              );
+            })}
+            <StyledSubTitle>{t('Markdown Syntax')}</StyledSubTitle>
+            {Object.entries(markdownShortcuts).map(([title, shortcuts]) => {
+              return (
+                <StyledListItem key={title}>
+                  <span>{title}</span>
+                  <span>{shortcuts}</span>
+                </StyledListItem>
+              );
+            })}
+          </div>
+        </MuiClickAwayListener>
       </StyledShortcutsModal>
     </MuiSlide>,
     document.body

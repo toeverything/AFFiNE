@@ -16,13 +16,14 @@ import { ModalProvider } from '@/store/globalModal';
 // import AppStateProvider2 from '@/providers/app-state-provider2/provider';
 
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
-import { useAppState } from '@/providers/app-state-provider';
+import { Suspense, useEffect } from 'react';
 import { PageLoading } from '@/components/loading';
 import Head from 'next/head';
 import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
+import { GlobalAppProvider } from '@/store/app';
+import { DataCenterLoader } from '@/store/app/datacenter';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -39,9 +40,16 @@ type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
 
+// Page list which do not rely on app state
+const NoNeedAppStatePageList = [
+  '/404',
+  '/public-workspace/[workspaceId]',
+  '/public-workspace/[workspaceId]/[pageId]',
+];
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout || (page => page);
   const { i18n } = useTranslation();
+  const router = useRouter();
 
   React.useEffect(() => {
     document.documentElement.lang = i18n.language;
@@ -60,36 +68,41 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>AFFiNE</title>
       </Head>
       <Logger />
-      <ProviderComposer
-        contexts={[
-          <ThemeProvider key="ThemeProvider" />,
-          <AppStateProvider key="appStateProvider" />,
-          <ModalProvider key="ModalProvider" />,
-          <ConfirmProvider key="ConfirmProvider" />,
-        ]}
-      >
-        <AppDefender>{getLayout(<Component {...pageProps} />)}</AppDefender>
-      </ProviderComposer>
+      <GlobalAppProvider key="BlockSuiteProvider">
+        <ProviderComposer
+          contexts={[
+            <ThemeProvider key="ThemeProvider" />,
+            <AppStateProvider key="appStateProvider" />,
+            <ModalProvider key="ModalProvider" />,
+            <ConfirmProvider key="ConfirmProvider" />,
+          ]}
+        >
+          {NoNeedAppStatePageList.includes(router.route) ? (
+            getLayout(<Component {...pageProps} />)
+          ) : (
+            <Suspense fallback={<PageLoading />}>
+              {/* we should put this before every component in case of they read a null value */}
+              <DataCenterLoader />
+              <AppDefender>
+                {getLayout(<Component {...pageProps} />)}
+              </AppDefender>
+            </Suspense>
+          )}
+        </ProviderComposer>
+      </GlobalAppProvider>
     </>
   );
 };
 
 const AppDefender = ({ children }: PropsWithChildren) => {
   const router = useRouter();
-  const { synced } = useAppState();
-
   useEffect(() => {
     if (['/index.html', '/'].includes(router.asPath)) {
       router.replace('/workspace');
     }
   }, [router]);
 
-  // if you visit /404, you will see the children directly
-  if (router.route === '/404') {
-    return <div>{children}</div>;
-  }
-
-  return <div>{synced ? children : <PageLoading />}</div>;
+  return <>{children}</>;
 };
 
 export default App;

@@ -29,8 +29,9 @@ export const createWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
     await setDefaultAvatar(blocksuiteWorkspace);
     workspaceUnit.update({ avatar: blocksuiteWorkspace.meta.avatar });
   }
-
-  await writeUpdatesToLocal(blocksuiteWorkspace);
+  if (typeof window !== 'undefined') {
+    await writeUpdatesToLocal(blocksuiteWorkspace);
+  }
 
   workspaceUnit.setBlocksuiteWorkspace(blocksuiteWorkspace);
 

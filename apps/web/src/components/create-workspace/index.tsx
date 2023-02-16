@@ -1,7 +1,7 @@
 import { styled } from '@affine/component';
 import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
 import { Button } from '@affine/component';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Input } from '@affine/component';
 import { KeyboardEvent } from 'react';
 import { useTranslation } from '@affine/i18n';
@@ -18,6 +18,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
   const [loading, setLoading] = useState(false);
   const { createWorkspace } = useWorkspaceHelper();
+  const isComposition = useRef(false);
   const router = useRouter();
   const handleCreateWorkspace = async () => {
     setLoading(true);
@@ -32,8 +33,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
     }
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      // 👇 Get input value
+    if (event.key === 'Enter' && workspaceName && !isComposition.current) {
       handleCreateWorkspace();
     }
   };
@@ -62,7 +62,13 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
               onChange={value => {
                 setWorkspaceName(value);
               }}
-            ></Input>
+              onCompositionStart={() => {
+                isComposition.current = true;
+              }}
+              onCompositionEnd={() => {
+                isComposition.current = false;
+              }}
+            />
             <Button
               disabled={!workspaceName}
               style={{

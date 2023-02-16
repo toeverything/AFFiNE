@@ -11,17 +11,17 @@ import {
   PaperIcon,
   TrashIcon,
 } from '@blocksuite/icons';
-import { useAppState } from '@/providers/app-state-provider';
 import { usePageHelper } from '@/hooks/use-page-helper';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { useGlobalState } from '@/store/app';
 const PopoverContent = () => {
-  const { editor } = useAppState();
+  const editor = useGlobalState(store => store.editor);
   const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
   const { changePageMode } = usePageHelper();
-  const { confirm } = useConfirm();
+  const confirm = useConfirm(store => store.confirm);
   const { t } = useTranslation();
   const {
     mode = 'page',

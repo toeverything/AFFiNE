@@ -1,4 +1,4 @@
-name: Build Pathfinder LiveDemo Test Version
+name: Build Test Version
 
 on:
   workflow_dispatch:

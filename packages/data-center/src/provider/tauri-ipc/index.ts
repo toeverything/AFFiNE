@@ -10,10 +10,11 @@ import {
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { IPCBlobProvider } from './blocksuite-provider/blob.js';
 import type { WorkspaceUnit } from 'src/workspace-unit.js';
-import { createWorkspaceUnit, loadWorkspaceUnit } from '../local/utils.js';
+import { loadWorkspaceUnit } from '../local/utils.js';
 import { WorkspaceWithPermission } from './ipc/types/workspace.js';
 import { applyUpdate } from '../../utils/index.js';
 import { User } from 'src/types/index.js';
+import { createWorkspaceUnit } from './utils.js';
 
 /**
  * init - createUser - create first workspace and ydoc - loadWorkspace - return the first workspace - wrapWorkspace - #initDocFromIPC - applyUpdate - on('update') - updateYDocument

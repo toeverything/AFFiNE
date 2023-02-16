@@ -4,9 +4,9 @@ import { Button } from '@affine/component';
 import { Content, FlexWrapper } from '@affine/component';
 import Loading from '@/components/loading';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useAppState } from '@/providers/app-state-provider';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@affine/i18n';
+import { useGlobalState } from '@/store/app';
 // import { Tooltip } from '@affine/component';
 type ImportModalProps = {
   open: boolean;
@@ -19,7 +19,9 @@ type Template = {
 export const ImportModal = ({ open, onClose }: ImportModalProps) => {
   const [status, setStatus] = useState<'unImported' | 'importing'>('importing');
   const { openPage, createPage } = usePageHelper();
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { t } = useTranslation();
   const _applyTemplate = function (pageId: string, template: Template) {
     const page = currentWorkspace?.blocksuiteWorkspace?.getPage(pageId);

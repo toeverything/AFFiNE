@@ -10,6 +10,7 @@ import {
   CSSProperties,
   useEffect,
   startTransition,
+  useCallback,
 } from 'react';
 import {
   GeneralPage,
@@ -18,17 +19,17 @@ import {
   ExportPage,
 } from '@/components/workspace-setting';
 import { SettingsIcon } from '@blocksuite/icons';
-import { useAppState } from '@/providers/app-state-provider';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { PageListHeader } from '@/components/header';
 import Head from 'next/head';
 import { styled } from '@affine/component';
+import { useGlobalState } from '@/store/app';
 
 const useTabMap = () => {
   const { t } = useTranslation();
-  const { isOwner } = useAppState();
+  const isOwner = useGlobalState(store => store.isOwner);
   const tabMap: {
     name: string;
     panelRender: (workspace: WorkspaceUnit) => ReactNode;
@@ -97,7 +98,9 @@ const StyledTabButtonWrapper = styled.div(() => {
 });
 const WorkspaceSetting = () => {
   const { t } = useTranslation();
-  const { currentWorkspace } = useAppState();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { activeTabPanelRender, tableArr, handleTabChange, activeTab } =
     useTabMap();
   const [indicatorState, setIndicatorState] = useState<

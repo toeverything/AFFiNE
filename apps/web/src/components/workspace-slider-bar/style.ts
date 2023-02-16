@@ -120,7 +120,7 @@ export const StyledSubListItem = styled.button<{
   active?: boolean;
 }>(({ theme, disable, active }) => {
   return {
-    width: '296px',
+    width: '100%',
     height: '32px',
     marginTop: '4px',
     color: disable

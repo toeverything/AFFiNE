@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import type { Page, Workspace } from '@blocksuite/store';
 import '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
-import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
 import { styled } from '@affine/component';
 
 const StyledEditorContainer = styled('div')(() => {
@@ -16,11 +15,18 @@ type Props = {
   page: Page;
   workspace: Workspace;
   setEditor: (editor: EditorContainer) => void;
+  templateMarkdown?: string;
+  templateTitle?: string;
 };
 
-export const Editor = ({ page, workspace, setEditor }: Props) => {
+export const Editor = ({
+  page,
+  workspace,
+  setEditor,
+  templateMarkdown,
+  templateTitle = '',
+}: Props) => {
   const editorContainer = useRef<HTMLDivElement>(null);
-  // const { currentWorkspace, currentPage, setEditor } = useAppState();
   useEffect(() => {
     const ret = () => {
       const node = editorContainer.current;
@@ -34,14 +40,9 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
 
     editorContainer.current?.appendChild(editor);
     if (page.isEmpty) {
-      const isFirstPage = workspace?.meta.pageMetas.length === 1;
       // Can not use useCurrentPageMeta to get new title, cause meta title will trigger rerender, but the second time can not remove title
       const { title: metaTitle } = page.meta;
-      const title = metaTitle
-        ? metaTitle
-        : isFirstPage
-        ? 'Welcome to AFFiNE Alpha "Downhills"'
-        : '';
+      const title = metaTitle ? metaTitle : templateTitle;
       workspace?.setPageMeta(page.id, { title });
       const pageBlockId = page.addBlockByFlavour('affine:page', { title });
       page.addBlockByFlavour('affine:surface', {}, null);
@@ -49,10 +50,9 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
       const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
       // Add paragraph block inside frame block
       // If this is a first page in workspace, init an introduction markdown
-      if (isFirstPage) {
-        editor.clipboard.importMarkdown(exampleMarkdown, frameId);
+      if (templateMarkdown) {
+        editor.clipboard.importMarkdown(templateMarkdown, frameId);
         workspace.setPageMeta(page.id, { title });
-        page.resetHistory();
       } else {
         page.addBlockByFlavour('affine:paragraph', {}, frameId);
       }
@@ -61,7 +61,7 @@ export const Editor = ({ page, workspace, setEditor }: Props) => {
 
     setEditor(editor);
     return ret;
-  }, [workspace, page, setEditor]);
+  }, [workspace, page, setEditor, templateTitle, templateMarkdown]);
 
   return <StyledEditorContainer ref={editorContainer} />;
 };

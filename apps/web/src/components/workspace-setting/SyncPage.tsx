@@ -2,9 +2,9 @@ import { StyledWorkspaceName } from './style';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation, Trans } from '@affine/i18n';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { useAppState } from '@/providers/app-state-provider';
 import { FlexWrapper, Content, Wrapper, Button } from '@affine/component';
 import { useModal } from '@/store/globalModal';
+import { useGlobalState } from '@/store/app';
 
 // // FIXME: Temporary solution, since the @blocksuite/icons is broken
 // const ActiveIcon = () => {
@@ -34,7 +34,7 @@ import { useModal } from '@/store/globalModal';
 
 export const SyncPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const { t } = useTranslation();
-  const { user } = useAppState();
+  const user = useGlobalState(store => store.user);
   const { triggerEnableWorkspaceModal } = useModal();
 
   if (workspace.provider === 'local') {

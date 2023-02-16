@@ -1,5 +1,11 @@
 import type React from 'react';
-import { createContext, useCallback, useContext, useMemo } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+} from 'react';
 import { createStore, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
 import { UseBoundStore } from 'zustand/react';
@@ -9,6 +15,7 @@ import QuickSearch from '@/components/quick-search';
 import { LoginModal } from '@/components/login-modal';
 import ImportModal from '@/components/import';
 import { EnableWorkspaceModal } from '@/components/enable-workspace-modal';
+import { useRouter } from 'next/router';
 
 export type ModalState = {
   contact: boolean;
@@ -28,51 +35,50 @@ export type ModalActions = {
   triggerEnableWorkspaceModal: () => void;
 };
 
+const defaultModalState: ModalState = {
+  contact: false,
+  shortcuts: false,
+  quickSearch: false,
+  import: false,
+  login: false,
+  enableWorkspace: false,
+};
+
 const create = () =>
   createStore(
     subscribeWithSelector(
-      combine<ModalState, ModalActions>(
-        {
-          contact: false,
-          shortcuts: false,
-          quickSearch: false,
-          import: false,
-          login: false,
-          enableWorkspace: false,
+      combine<ModalState, ModalActions>({ ...defaultModalState }, set => ({
+        triggerShortcutsModal: () => {
+          set(({ shortcuts }) => ({
+            shortcuts: !shortcuts,
+          }));
         },
-        set => ({
-          triggerShortcutsModal: () => {
-            set(({ shortcuts }) => ({
-              shortcuts: !shortcuts,
-            }));
-          },
-          triggerContactModal: () => {
-            set(({ contact }) => ({
-              contact: !contact,
-            }));
-          },
-          triggerQuickSearchModal: (visible?: boolean) => {
-            set(({ quickSearch }) => ({
-              quickSearch: visible ?? !quickSearch,
-            }));
-          },
-          triggerImportModal: () => {
-            set(state => ({
-              import: !state.import,
-            }));
-          },
-          triggerLoginModal: () => {
-            set(({ login }) => ({
-              login: !login,
-            }));
-          },
-          triggerEnableWorkspaceModal: () => {
-            set(({ enableWorkspace }) => ({
-              enableWorkspace: !enableWorkspace,
-            }));
-          },
-        })
-      )
+        triggerContactModal: () => {
+          set(({ contact }) => ({
+            contact: !contact,
+          }));
+        },
+        triggerQuickSearchModal: (visible?: boolean) => {
+          set(({ quickSearch }) => ({
+            quickSearch: visible ?? !quickSearch,
+          }));
+        },
+        triggerImportModal: () => {
+          set(state => ({
+            import: !state.import,
+          }));
+        },
+        triggerLoginModal: () => {
+          set(({ login }) => ({
+            login: !login,
+          }));
+        },
+        triggerEnableWorkspaceModal: () => {
+          set(({ enableWorkspace }) => ({
+            enableWorkspace: !enableWorkspace,
+          }));
+        },
+      }))
     )
   );
 type Store = ReturnType<typeof create>;
@@ -81,9 +87,20 @@ const ModalContext = createContext<Store | null>(null);
 
 export const useModalApi = () => {
   const api = useContext(ModalContext);
+
   if (!api) {
     throw new Error('cannot find modal context');
   }
+
+  const router = useRouter();
+
+  useEffect(() => {
+    router.events.on('routeChangeStart', () => {
+      // normally modal should be closed when route change
+      api.setState(defaultModalState);
+    });
+  }, [api, router.events]);
+
   return api;
 };
 
