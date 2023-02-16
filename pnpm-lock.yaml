@@ -164,6 +164,7 @@ importers:
       '@affine/i18n': workspace:*
       '@blocksuite/blocks': 0.4.0-20230216011811-2776d93
       '@blocksuite/editor': 0.4.0-20230216011811-2776d93
+      '@blocksuite/global': 0.4.0-20230216011811-2776d93
       '@blocksuite/icons': ^2.0.14
       '@blocksuite/store': 0.4.0-20230216011811-2776d93
       '@emotion/css': ^11.10.5
@@ -207,6 +208,7 @@ importers:
       '@affine/i18n': link:../../packages/i18n
       '@blocksuite/blocks': 0.4.0-20230216011811-2776d93_trq6tjva7swiv4fhloorah5nty
       '@blocksuite/editor': 0.4.0-20230216011811-2776d93_6yfgczikbxxddpvfspgrnx2z2q
+      '@blocksuite/global': 0.4.0-20230216011811-2776d93_lit@2.6.1
       '@blocksuite/icons': 2.0.14_w5j4k42lgipnm43s3brx6h3c34
       '@blocksuite/store': 0.4.0-20230216011811-2776d93_lit@2.6.1+yjs@13.5.45
       '@emotion/css': 11.10.5
