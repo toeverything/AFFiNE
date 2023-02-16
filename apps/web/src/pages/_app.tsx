@@ -86,7 +86,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
       <Logger />
       <ProviderComposer
         contexts={[
-          <GlobalAppProvider key="BlockSuiteProvider" />,
+          <GlobalAppProvider key="GlobalAppProvider" />,
           <ThemeProvider key="ThemeProvider" />,
           <AppStateProvider key="appStateProvider" />,
           <ModalProvider key="ModalProvider" />,
