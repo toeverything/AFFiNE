@@ -38,6 +38,7 @@ export const Editor = ({
 
     const editor = new EditorContainer();
     editor.page = page;
+    editor.mode = page.meta.mode as 'page' | 'edgeless';
 
     editorContainer.current?.appendChild(editor);
     if (page.isEmpty) {
