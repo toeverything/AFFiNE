@@ -82,11 +82,6 @@ export const StyledListItem = styled.div<{
   };
 });
 
-export const StyledListItemForWorkspace = styled.div({
-  height: '42px',
-  padding: '0 12px',
-});
-
 export const StyledLink = styled(Link)(() => {
   return {
     flexGrow: 1,

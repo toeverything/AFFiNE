@@ -4,7 +4,6 @@ import {
   StyledArrowButton,
   StyledLink,
   StyledListItem,
-  StyledListItemForWorkspace,
   StyledNewPageButton,
   StyledSliderBar,
   StyledSliderBarWrapper,
@@ -112,9 +111,8 @@ export const WorkSpaceSliderBar = () => {
         </Tooltip>
 
         <StyledSliderBarWrapper data-testid="sliderBar">
-          <StyledListItemForWorkspace>
-            <WorkspaceSelector />
-          </StyledListItemForWorkspace>
+          <WorkspaceSelector />
+
           <StyledListItem
             data-testid="sliderBar-quickSearchButton"
             style={{ cursor: 'pointer' }}
