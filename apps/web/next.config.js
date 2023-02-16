@@ -106,5 +106,13 @@ const withPWA = require('next-pwa')({
   scope: '/_next',
   disable: process.env.NODE_ENV !== 'production',
 });
+const detectFirebaseConfig = () => {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+    printer.warn('NEXT_PUBLIC_FIREBASE_API_KEY not found, please check it');
+  } else {
+    printer.info('NEXT_PUBLIC_FIREBASE_API_KEY found');
+  }
+};
+detectFirebaseConfig();
 
 module.exports = withDebugLocal(withPWA(nextConfig));
