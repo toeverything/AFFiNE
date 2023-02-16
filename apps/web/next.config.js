@@ -2,6 +2,8 @@
 const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
 const { dependencies } = require('./package.json');
 const path = require('node:path');
+const fs = require('node:fs');
+
 const printer = require('./scripts/printer').printer;
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
@@ -106,5 +108,14 @@ const withPWA = require('next-pwa')({
   scope: '/_next',
   disable: process.env.NODE_ENV !== 'production',
 });
+const detectEnvLocal = () => {
+  const ENV_LOCAL_PATH = path.join(__dirname, '.env.local');
+  if (!fs.existsSync(ENV_LOCAL_PATH)) {
+    printer.warn('.env.local not found, create it from .env.local.template');
+  } else {
+    printer.info('.env.local found, use it');
+  }
+};
+detectEnvLocal();
 
 module.exports = withDebugLocal(withPWA(nextConfig));
