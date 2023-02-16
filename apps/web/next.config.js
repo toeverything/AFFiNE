@@ -108,14 +108,13 @@ const withPWA = require('next-pwa')({
   scope: '/_next',
   disable: process.env.NODE_ENV !== 'production',
 });
-const detectEnvLocal = () => {
-  const ENV_LOCAL_PATH = path.join(__dirname, '.env.local');
-  if (!fs.existsSync(ENV_LOCAL_PATH)) {
-    printer.warn('.env.local not found, create it from .env.local.template');
+const detectFirebaseConfig = () => {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+    printer.warn('NEXT_PUBLIC_FIREBASE_API_KEY not found, please check it');
   } else {
-    printer.info('.env.local found, use it');
+    printer.info('NEXT_PUBLIC_FIREBASE_API_KEY found');
   }
 };
-detectEnvLocal();
+detectFirebaseConfig();
 
 module.exports = withDebugLocal(withPWA(nextConfig));
