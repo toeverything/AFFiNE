@@ -31,10 +31,12 @@ const useTabMap = () => {
   const { t } = useTranslation();
   const isOwner = useGlobalState(store => store.isOwner);
   const tabMap: {
+    id: string;
     name: string;
     panelRender: (workspace: WorkspaceUnit) => ReactNode;
   }[] = [
     {
+      id: 'General',
       name: t('General'),
       panelRender: workspace => <GeneralPage workspace={workspace} />,
     },
@@ -44,40 +46,37 @@ const useTabMap = () => {
     //   panelRender: workspace => <SyncPage workspace={workspace} />,
     // },
     {
+      id: 'Collaboration',
       name: t('Collaboration'),
       panelRender: workspace => <MembersPage workspace={workspace} />,
     },
     {
+      id: 'Publish',
       name: t('Publish'),
       panelRender: workspace => <PublishPage workspace={workspace} />,
     },
     // TODO: next version will finish this feature
     {
+      id: 'Export',
       name: t('Export'),
       panelRender: workspace => <ExportPage workspace={workspace} />,
     },
   ];
-  const [activeTab, setActiveTab] = useState<string>(tabMap[0].name);
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
+  const [activeTab, setActiveTab] = useState<string>(tabMap[0].id);
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
   };
 
   const activeTabPanelRender = tabMap.find(
-    tab => tab.name === activeTab
+    tab => tab.id === activeTab
   )?.panelRender;
-  let tableArr: {
-    name: string;
-    panelRender: (workspace: WorkspaceUnit) => ReactNode;
-  }[] = tabMap;
-  if (!isOwner) {
-    tableArr = [
-      {
-        name: 'General',
-        panelRender: workspace => <GeneralPage workspace={workspace} />,
-      },
-    ];
-  }
-  return { activeTabPanelRender, tableArr, handleTabChange, activeTab };
+
+  return {
+    activeTabPanelRender,
+    tabMap: isOwner ? tabMap : tabMap.slice(0, 1),
+    handleTabChange,
+    activeTab,
+  };
 };
 
 const StyledIndicator = styled.div(({ theme }) => {
@@ -101,8 +100,9 @@ const WorkspaceSetting = () => {
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
-  const { activeTabPanelRender, tableArr, handleTabChange, activeTab } =
+  const { activeTabPanelRender, tabMap, handleTabChange, activeTab } =
     useTabMap();
+
   const [indicatorState, setIndicatorState] = useState<
     Pick<CSSProperties, 'left' | 'width'>
   >({
@@ -133,14 +133,14 @@ const WorkspaceSetting = () => {
 
       <StyledSettingContainer>
         <StyledTabButtonWrapper>
-          {tableArr.map(({ name }) => {
+          {tabMap.map(({ id, name }) => {
             return (
               <WorkspaceSettingTagItem
-                key={name}
-                isActive={activeTab === name}
-                data-setting-tab-button={name}
+                key={id}
+                isActive={activeTab === id}
+                data-setting-tab-button={id}
                 onClick={() => {
-                  handleTabChange(name);
+                  handleTabChange(id);
                 }}
               >
                 {name}

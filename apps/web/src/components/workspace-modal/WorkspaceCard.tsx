@@ -19,22 +19,22 @@ const WorkspaceType = ({ workspaceData }: { workspaceData: WorkspaceUnit }) => {
 
   if (workspaceData.provider === 'local') {
     return (
-      <p>
+      <p title={t('Local Workspace')}>
         <LocalWorkspaceIcon />
-        {t('Local Workspace')}
+        <span>{t('Local Workspace')}</span>
       </p>
     );
   }
 
   return isOwner ? (
-    <p>
+    <p title={t('Cloud Workspace')}>
       <CloudWorkspaceIcon />
-      {t('Cloud Workspace')}
+      <span>{t('Cloud Workspace')}</span>
     </p>
   ) : (
-    <p>
+    <p title={t('Joined Workspace')}>
       <JoinedWorkspaceIcon />
-      {t('Joined Workspace')}
+      <span>{t('Joined Workspace')}</span>
     </p>
   );
 };
@@ -66,15 +66,15 @@ export const WorkspaceCard = ({
         </StyleWorkspaceTitle>
         <WorkspaceType workspaceData={workspaceData} />
         {workspaceData.provider === 'local' && (
-          <p>
+          <p title={t('Available Offline')}>
             <LocalDataIcon />
-            {t('Available Offline')}
+            <span>{t('Available Offline')}</span>
           </p>
         )}
         {workspaceData.published && (
-          <p>
+          <p title={t('Published to Web')}>
             <PublishIcon />
-            {t('Published to Web')}
+            <span>{t('Published to Web')}</span>
           </p>
         )}
       </StyleWorkspaceInfo>

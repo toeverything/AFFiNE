@@ -5,7 +5,7 @@ import {
   StyledEditButton,
 } from './style';
 import { StyledSettingKey, StyledRow } from '../style';
-import { FlexWrapper } from '@affine/component';
+import { FlexWrapper, MuiAvatar } from '@affine/component';
 
 import { useCallback, useState } from 'react';
 import { Button } from '@affine/component';
@@ -24,6 +24,7 @@ import { CameraIcon } from './icons';
 import { Upload } from '@/components/file-upload';
 import { MuiFade } from '@affine/component';
 import { useGlobalState } from '@/store/app';
+import { EmailIcon } from '@blocksuite/icons';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
@@ -142,6 +143,30 @@ export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
           )}
         </div>
       </StyledRow>
+
+      {!isOwner && (
+        <StyledRow>
+          <StyledSettingKey>{t('Workspace Owner')}</StyledSettingKey>
+          <FlexWrapper alignItems="center">
+            <MuiAvatar
+              sx={{ width: 72, height: 72, marginRight: '12px' }}
+              alt="owner avatar"
+              src={currentWorkspace?.owner?.avatar}
+            >
+              <EmailIcon />
+            </MuiAvatar>
+            <span>{currentWorkspace?.owner?.name}</span>
+          </FlexWrapper>
+        </StyledRow>
+      )}
+      {!isOwner && (
+        <StyledRow>
+          <StyledSettingKey>{t('Members')}</StyledSettingKey>
+          <FlexWrapper alignItems="center">
+            <span>{currentWorkspace?.memberCount}</span>
+          </FlexWrapper>
+        </StyledRow>
+      )}
 
       <StyledRow>
         <StyledSettingKey>{t('Workspace Type')}</StyledSettingKey>

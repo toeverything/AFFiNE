@@ -55,9 +55,8 @@ export const createDataCenterActions: GlobalActionsCreator<
       // isOwner is useful only in the cloud
       isOwner = true;
     } else {
-      const userInfo = get().user;
-      // We must ensure workspace.owner exists, then ensure id same.
-      isOwner = workspace?.owner && userInfo?.id === workspace.owner.id;
+      const userInfo = get().user; // We must ensure workspace.owner exists, then ensure id same.
+      isOwner = isOwner = userInfo?.id === workspace?.owner?.id;
     }
 
     const pageList =

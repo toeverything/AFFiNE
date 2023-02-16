@@ -18,6 +18,7 @@ export const StyledSplitLine = styled.div(({ theme }) => {
 export const StyleWorkspaceInfo = styled.div(({ theme }) => {
   return {
     marginLeft: '15px',
+    width: '202px',
     p: {
       color: theme.colors.popoverColor,
       height: '20px',
@@ -27,6 +28,11 @@ export const StyleWorkspaceInfo = styled.div(({ theme }) => {
     svg: {
       marginRight: '10px',
       fontSize: '16px',
+      flexShrink: 0,
+    },
+    span: {
+      flexGrow: 1,
+      ...textEllipsis(1),
     },
   };
 });
