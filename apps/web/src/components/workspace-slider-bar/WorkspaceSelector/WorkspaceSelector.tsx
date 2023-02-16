@@ -9,15 +9,11 @@ export const WorkspaceSelector = () => {
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
-  const workspaceList = useGlobalState(
-    useCallback(store => store.dataCenterWorkspaceList, [])
-  );
+  const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
 
-  useEffect(() => {
-    if (workspaceList.length === 0) {
-      setWorkspaceListShow(true);
-    }
-  }, [workspaceList]);
+  if (dataCenter.workspaces.length === 0) {
+    setWorkspaceListShow(true);
+  }
   return (
     <>
       <SelectorWrapper

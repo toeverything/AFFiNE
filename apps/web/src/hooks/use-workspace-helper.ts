@@ -13,7 +13,7 @@ export const useWorkspaceHelper = () => {
       name: name,
     });
     if (workspaceInfo && workspaceInfo.id) {
-      await loadWorkspace(workspaceInfo.id);
+      return loadWorkspace(workspaceInfo.id);
     }
     return null;
   };

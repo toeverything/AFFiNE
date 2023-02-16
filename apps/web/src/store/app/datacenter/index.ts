@@ -13,8 +13,6 @@ import { DisposableGroup } from '@blocksuite/global/utils';
 export type DataCenterState = {
   readonly dataCenter: DataCenter;
   readonly dataCenterPromise: Promise<DataCenter>;
-
-  dataCenterWorkspaceList: WorkspaceUnit[];
   currentDataCenterWorkspace: WorkspaceUnit | null;
   dataCenterPageList: PageMeta[];
 };
@@ -31,7 +29,6 @@ export const createDataCenterState = (): DataCenterState => ({
   dataCenter: null!,
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   dataCenterPromise: null!,
-  dataCenterWorkspaceList: [],
   currentDataCenterWorkspace: null,
   dataCenterPageList: [],
 });
@@ -39,9 +36,8 @@ export const createDataCenterActions: GlobalActionsCreator<
   DataCenterActions
 > = (set, get) => ({
   loadWorkspace: async (workspaceId, signal) => {
-    const { dataCenter, dataCenterWorkspaceList, currentDataCenterWorkspace } =
-      get();
-    if (!dataCenterWorkspaceList.find(v => v.id.toString() === workspaceId)) {
+    const { dataCenter, currentDataCenterWorkspace } = get();
+    if (!dataCenter.workspaces.find(v => v.id.toString() === workspaceId)) {
       return null;
     }
     if (workspaceId === currentDataCenterWorkspace?.id) {
@@ -90,31 +86,6 @@ export function DataCenterLoader() {
     useCallback(store => store.dataCenterPromise, [])
   );
   const api = useGlobalStateApi();
-  //# region effect for listening workspace list change
-  useEffect(() => {
-    return api.subscribe(
-      store => store.dataCenter,
-      dataCenter => {
-        const disposableGroup = new DisposableGroup();
-        //# region init dataCenter
-        disposableGroup.add(
-          dataCenter.onWorkspacesChange(
-            () => {
-              api.setState({
-                dataCenterWorkspaceList: dataCenter.workspaces,
-              });
-            },
-            { immediate: false }
-          )
-        );
-        //# endregion
-        return () => {
-          disposableGroup.dispose();
-        };
-      }
-    );
-  }, [api]);
-  //# endregion
   //# region effect for updating workspace page list
   useEffect(() => {
     return api.subscribe(
@@ -154,7 +125,6 @@ export function DataCenterLoader() {
       // set initial state
       api.setState({
         dataCenter,
-        dataCenterWorkspaceList: dataCenter.workspaces,
         currentWorkspace: null,
         currentDataCenterWorkspace: null,
         dataCenterPageList: [],

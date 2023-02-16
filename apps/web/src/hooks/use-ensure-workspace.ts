@@ -8,9 +8,6 @@ import { assertEquals } from '@blocksuite/global/utils';
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
-  const dataCenterWorkspaceList = useGlobalState(
-    useCallback(store => store.dataCenterWorkspaceList, [])
-  );
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
@@ -30,14 +27,14 @@ export const useEnsureWorkspace = () => {
     const abortController = new AbortController();
 
     const workspaceId =
-      (router.query.workspaceId as string) || dataCenterWorkspaceList[0]?.id;
+      (router.query.workspaceId as string) || dataCenter.workspaces[0]?.id;
 
     // If router.query.workspaceId is not in workspace list, jump to 404 page
     // If workspaceList is empty, we need to create a default workspace but not jump to 404
     if (
       workspaceId &&
-      dataCenterWorkspaceList.length &&
-      dataCenterWorkspaceList.findIndex(
+      dataCenter.workspaces.length &&
+      dataCenter.workspaces.findIndex(
         meta => meta.id.toString() === workspaceId
       ) === -1
     ) {
@@ -64,7 +61,7 @@ export const useEnsureWorkspace = () => {
     return () => {
       abortController.abort();
     };
-  }, [dataCenter, dataCenterWorkspaceList, loadWorkspace, router]);
+  }, [dataCenter, loadWorkspace, router]);
 
   return {
     workspaceLoaded: currentWorkspace?.id === currentWorkspaceId,
