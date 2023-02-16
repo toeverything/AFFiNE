@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useGlobalState } from '@/store/app';
 import { assertEquals } from '@blocksuite/global/utils';
 
@@ -8,6 +8,9 @@ import { assertEquals } from '@blocksuite/global/utils';
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
   const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
+  const dataCenterWorkspaceList = useGlobalState(
+    useCallback(store => store.dataCenterWorkspaceList, [])
+  );
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
@@ -15,22 +18,28 @@ export const useEnsureWorkspace = () => {
     useCallback(store => store.loadWorkspace, [])
   );
   const router = useRouter();
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(
+    typeof router.query.workspaceId === 'string'
+      ? router.query.workspaceId
+      : null
+  );
 
   // const defaultOutLineWorkspaceId = '99ce7eb7';
   // console.log(defaultOutLineWorkspaceId);
   useEffect(() => {
     const abortController = new AbortController();
 
-    const workspaceList = dataCenter.workspaces;
     const workspaceId =
-      (router.query.workspaceId as string) || workspaceList[0]?.id;
+      (router.query.workspaceId as string) || dataCenterWorkspaceList[0]?.id;
 
     // If router.query.workspaceId is not in workspace list, jump to 404 page
     // If workspaceList is empty, we need to create a default workspace but not jump to 404
     if (
       workspaceId &&
-      workspaceList.length &&
-      workspaceList.findIndex(meta => meta.id.toString() === workspaceId) === -1
+      dataCenterWorkspaceList.length &&
+      dataCenterWorkspaceList.findIndex(
+        meta => meta.id.toString() === workspaceId
+      ) === -1
     ) {
       router.push('/404');
       return;
@@ -47,6 +56,7 @@ export const useEnsureWorkspace = () => {
 
     loadWorkspace(workspaceId, abortController.signal).then(unit => {
       if (!abortController.signal.aborted && unit) {
+        setCurrentWorkspaceId(unit.id);
         assertEquals(unit.id, workspaceId);
       }
     });
@@ -54,10 +64,10 @@ export const useEnsureWorkspace = () => {
     return () => {
       abortController.abort();
     };
-  }, [dataCenter, loadWorkspace, router]);
+  }, [dataCenter, dataCenterWorkspaceList, loadWorkspace, router]);
 
   return {
-    workspaceLoaded: currentWorkspace?.id === router.query.workspaceId,
+    workspaceLoaded: currentWorkspace?.id === currentWorkspaceId,
     activeWorkspaceId: currentWorkspace?.id ?? router.query.workspaceId,
   };
 };
