@@ -6,3 +6,5 @@ addReviewers: false
 
 # Set to true to add assignees to pull requests
 addAssignees: author
+
+runOnDraft: true
