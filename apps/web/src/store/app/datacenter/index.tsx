@@ -7,13 +7,20 @@ import type { DataCenter } from '@affine/datacenter';
 import { PageMeta } from '@/providers/app-state-provider';
 import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
 import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
-import { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { DisposableGroup } from '@blocksuite/global/utils';
 
 export type DataCenterState = {
   readonly dataCenter: DataCenter;
+  /**
+   * @internal for suspense mode
+   */
   readonly dataCenterPromise: Promise<DataCenter>;
   currentDataCenterWorkspace: WorkspaceUnit | null;
+  /**
+   * @internal for suspense mode
+   */
+  readonly loadingWorkspacePromise: Promise<WorkspaceUnit | null> | null;
   dataCenterPageList: PageMeta[];
 };
 
@@ -29,6 +36,7 @@ export const createDataCenterState = (): DataCenterState => ({
   dataCenter: null!,
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   dataCenterPromise: null!,
+  loadingWorkspacePromise: null,
   currentDataCenterWorkspace: null,
   dataCenterPageList: [],
 });
@@ -71,6 +79,10 @@ export const createDataCenterActions: GlobalActionsCreator<
       isOwner,
     });
 
+    if (workspace) {
+      localStorage.setItem('kCurrentDataCenterWorkspace', workspace.id);
+    }
+
     set({
       currentDataCenterWorkspace: workspace,
       dataCenterPageList: pageList,
@@ -80,7 +92,7 @@ export const createDataCenterActions: GlobalActionsCreator<
   },
 });
 
-export function DataCenterLoader() {
+export function DataCenterSuspense({ children }: React.PropsWithChildren) {
   const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
   const dataCenterPromise = useGlobalState(
     useCallback(store => store.dataCenterPromise, [])
@@ -135,5 +147,5 @@ export function DataCenterLoader() {
   if (!dataCenter) {
     throw dataCenterPromise;
   }
-  return null;
+  return <>{children}</>;
 }

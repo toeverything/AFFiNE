@@ -48,6 +48,7 @@ export const createBlockSuiteActions: GlobalActionsCreator<
       console.warn('cannot find page ', pageId);
       return;
     }
+    localStorage.setItem('kCurrentPage', page.id);
     set({
       currentPage: page,
     });

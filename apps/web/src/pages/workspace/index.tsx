@@ -1,7 +1,5 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/router';
-import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
-import { PageLoading } from '@/components/loading';
 import { useGlobalState } from '@/store/app';
 
 export const WorkspaceIndex = () => {
@@ -9,15 +7,23 @@ export const WorkspaceIndex = () => {
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
-  const { workspaceLoaded } = useEnsureWorkspace();
+  const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
 
-  useEffect(() => {
-    if (workspaceLoaded) {
-      router.push(`/workspace/${currentWorkspace?.id}`);
-    }
-  }, [currentWorkspace, router, workspaceLoaded]);
+  let targetId: string;
+  if (currentWorkspace) {
+    targetId = currentWorkspace.id;
+  } else if (
+    typeof window !== 'undefined' &&
+    !!localStorage.getItem('kCurrentDataCenterWorkspace')
+  ) {
+    // client side
+    targetId = localStorage.getItem('kCurrentDataCenterWorkspace') as string;
+  } else {
+    targetId = dataCenter.workspaces[0].id;
+  }
 
-  return <PageLoading />;
+  // jump to `/workspace/${targetId}`
+  throw router.push(`/workspace/${targetId}`);
 };
 
 export default WorkspaceIndex;

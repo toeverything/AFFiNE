@@ -23,7 +23,7 @@ import '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import React from 'react';
 import { GlobalAppProvider } from '@/store/app';
-import { DataCenterLoader } from '@/store/app/datacenter';
+import { DataCenterSuspense } from '@/store/app/datacenter';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -81,11 +81,11 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
             getLayout(<Component {...pageProps} />)
           ) : (
             <Suspense fallback={<PageLoading />}>
-              {/* we should put this before every component in case of they read a null value */}
-              <DataCenterLoader />
-              <AppDefender>
-                {getLayout(<Component {...pageProps} />)}
-              </AppDefender>
+              <DataCenterSuspense>
+                <AppDefender>
+                  {getLayout(<Component {...pageProps} />)}
+                </AppDefender>
+              </DataCenterSuspense>
             </Suspense>
           )}
         </ProviderComposer>
@@ -96,11 +96,10 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 
 const AppDefender = ({ children }: PropsWithChildren) => {
   const router = useRouter();
-  useEffect(() => {
-    if (['/index.html', '/'].includes(router.asPath)) {
-      router.replace('/workspace');
-    }
-  }, [router]);
+  if (['/index.html', '/'].includes(router.asPath)) {
+    // jump to `/workspace`
+    throw router.replace('/workspace');
+  }
 
   return <>{children}</>;
 };
