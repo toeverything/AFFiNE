@@ -7,7 +7,7 @@ import { styled } from '@affine/component';
 const StyledEditorContainer = styled('div')(() => {
   return {
     position: 'relative',
-    height: 'calc(100vh - 60px)',
+    height: 'calc(100% - 60px)',
     padding: '0 32px',
   };
 });

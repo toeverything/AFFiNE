@@ -154,6 +154,7 @@ legend {
 }
 body {
   background: #fff;
+  overflow: hidden;
 }
 a,
 a:hover {

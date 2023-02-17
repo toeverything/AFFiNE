@@ -4,7 +4,7 @@
 }
 
 .affine-default-page-block-container {
-  width: 686px !important;
+  max-width: 686px;
 }
 .affine-default-page-block-container > .affine-block-children-container {
   margin-left: -26px !important;
