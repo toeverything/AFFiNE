@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { expect } from '@playwright/test';
-import { test } from './libs/playwright.js';
-import { loadPage } from './libs/load-page.js';
+import { test } from './libs/playwright';
+import { loadPage } from './libs/load-page';
 
 const pkgPath = path.join(__dirname, '../apps/web/package.json');
 const record = fs.readFileSync(pkgPath, 'utf8');
