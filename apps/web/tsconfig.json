@@ -18,11 +18,7 @@
     "experimentalDecorators": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@affine/component": ["../../packages/component"],
-      "@affine/i18n": ["../../packages/i18n"],
-      "@affine/datacenter": ["../../packages/data-center"],
-      "@toeverything/pathfinder-logger": ["../../packages/logger"]
+      "@/*": ["src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
