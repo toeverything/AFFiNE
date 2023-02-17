@@ -71,9 +71,11 @@ export async function getWorkspaceDetail(
 }
 
 export interface Permission {
-  id: number;
+  id: string;
   type: PermissionType;
   workspace_id: string;
+  user_id: string;
+  user_email: string;
   accepted: boolean;
   create_at: number;
 }
