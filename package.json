@@ -4,7 +4,6 @@
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
-  "type": "module",
   "scripts": {
     "dev": "pnpm --filter @affine/app dev",
     "dev:ac": "cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
