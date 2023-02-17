@@ -6,11 +6,11 @@ import type { IPCMethodsType } from './ipc/methods';
 import { CreateWorkspaceInfoParams, ProviderConstructorParams } from '../base';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import { IPCBlobProvider } from './blocksuite-provider/blob';
-import type { WorkspaceUnit } from 'src/workspace-unit';
+import type { WorkspaceUnit } from '../../workspace-unit';
 import { loadWorkspaceUnit } from '../local/utils';
 import { WorkspaceWithPermission } from './ipc/types/workspace';
 import { applyUpdate } from '../../utils';
-import { User } from 'src/types';
+import { User } from '../../types';
 import { createWorkspaceUnit } from './utils';
 
 /**
