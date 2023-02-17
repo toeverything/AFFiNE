@@ -62,10 +62,10 @@ export const ThemeProvider = ({
   }, [mode, setTheme, theme]);
   // =====================  ====================
 
-  // useEffect(() => {
-  //   setMode(localStorageThemeHelper.get() || 'auto');
-  // }, []);
-  //
+  useEffect(() => {
+    setMode(localStorageThemeHelper.get() || 'auto');
+  }, []);
+
   // useEffect(() => {
   //   const systemThemeHelper = new SystemThemeHelper();
   //   const selectedThemeMode = localStorageThemeHelper.get();
