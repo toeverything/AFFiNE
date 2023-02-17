@@ -6,7 +6,7 @@ on:
     paths:
       - 'packages/i18n/**'
       - '.github/workflows/languages-sync.yml'
-  pull_request:
+  pull_request_target:
     branches: ['master']
     paths:
       - 'packages/i18n/**'
