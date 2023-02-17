@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { describe, test, expect } from 'vitest';
 import { WorkspaceUnitCollection } from '../../../workspace-unit-collection';
 import { TauriIPCProvider } from '..';
 import { MessageCenter } from '../../../message';
@@ -6,7 +6,7 @@ import * as ipcMethods from './mock-apis';
 
 import 'fake-indexeddb/auto';
 
-test.describe.serial('tauri-ipc provider', async () => {
+describe('tauri-ipc provider', async () => {
   const workspaceMetaCollection = new WorkspaceUnitCollection();
   const provider = new TauriIPCProvider({
     workspaces: workspaceMetaCollection.createScope(),
