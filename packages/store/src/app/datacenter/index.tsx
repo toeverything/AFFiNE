@@ -67,7 +67,7 @@ export const createDataCenterActions: GlobalActionsCreator<
       isOwner = true;
     } else {
       const userInfo = get().user; // We must ensure workspace.owner exists, then ensure id same.
-      isOwner = isOwner = userInfo?.id === workspace?.owner?.id;
+      isOwner = userInfo?.id === workspace?.owner?.id;
     }
 
     const pageList =
@@ -77,11 +77,9 @@ export const createDataCenterActions: GlobalActionsCreator<
         currentWorkspace: workspace.blocksuiteWorkspace,
       });
     }
-    set({
-      isOwner,
-    });
 
     set({
+      isOwner,
       currentDataCenterWorkspace: workspace,
       dataCenterPageList: pageList,
     });
