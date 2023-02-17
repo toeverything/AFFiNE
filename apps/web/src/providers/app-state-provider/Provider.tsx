@@ -1,8 +1,10 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import type { PropsWithChildren } from 'react';
-import { AppStateContext } from './interface';
 import type { Disposable } from '@blocksuite/global/utils';
+import type { PropsWithChildren } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+
 import { useGlobalState } from '@/store/app';
+
+import { AppStateContext } from './interface';
 
 type AppStateContextProps = PropsWithChildren<Record<string, unknown>>;
 

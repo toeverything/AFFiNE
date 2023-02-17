@@ -1,31 +1,32 @@
+import { styled } from '@affine/component';
+import { WorkspaceUnit } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
+import { SettingsIcon } from '@blocksuite/icons';
+import Head from 'next/head';
+import {
+  CSSProperties,
+  ReactElement,
+  ReactNode,
+  startTransition,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+
+import { PageListHeader } from '@/components/header';
+import WorkspaceLayout from '@/components/workspace-layout';
+import {
+  ExportPage,
+  GeneralPage,
+  MembersPage,
+  PublishPage,
+  SyncPage,
+} from '@/components/workspace-setting';
 import {
   StyledSettingContainer,
   StyledSettingContent,
   WorkspaceSettingTagItem,
 } from '@/components/workspace-setting/style';
-import {
-  ReactElement,
-  ReactNode,
-  useState,
-  CSSProperties,
-  useEffect,
-  startTransition,
-  useCallback,
-} from 'react';
-import {
-  GeneralPage,
-  MembersPage,
-  PublishPage,
-  ExportPage,
-  SyncPage,
-} from '@/components/workspace-setting';
-import { SettingsIcon } from '@blocksuite/icons';
-import WorkspaceLayout from '@/components/workspace-layout';
-import { WorkspaceUnit } from '@affine/datacenter';
-import { useTranslation } from '@affine/i18n';
-import { PageListHeader } from '@/components/header';
-import Head from 'next/head';
-import { styled } from '@affine/component';
 import { useGlobalState } from '@/store/app';
 
 const useTabMap = () => {

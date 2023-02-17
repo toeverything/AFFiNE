@@ -1,10 +1,3 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { Global, css } from '@emotion/react';
-import {
-  ThemeProvider as MuiThemeProvider,
-  createTheme as MuiCreateTheme,
-} from '@mui/material/styles';
-import type { PropsWithChildren } from 'react';
 import {
   Theme,
   ThemeMode,
@@ -12,12 +5,20 @@ import {
   ThemeProviderValue,
 } from '@affine/component';
 import {
-  getLightTheme,
   getDarkTheme,
+  getLightTheme,
   globalThemeVariables,
   ThemeProvider as ComponentThemeProvider,
 } from '@affine/component';
-import { SystemThemeHelper, localStorageThemeHelper } from '@affine/component';
+import { localStorageThemeHelper, SystemThemeHelper } from '@affine/component';
+import { css, Global } from '@emotion/react';
+import {
+  createTheme as MuiCreateTheme,
+  ThemeProvider as MuiThemeProvider,
+} from '@mui/material/styles';
+import type { PropsWithChildren } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 
 export const ThemeContext = createContext<ThemeProviderValue>({

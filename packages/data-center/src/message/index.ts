@@ -1,2 +1,2 @@
-export { MessageCenter } from './message';
 export { MessageCode } from './code';
+export { MessageCenter } from './message';

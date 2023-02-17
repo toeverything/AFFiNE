@@ -1,4 +1,5 @@
 import { Observable } from 'lib0/observable';
+
 import { Message } from '../types';
 import { MessageCode, messages } from './code';
 

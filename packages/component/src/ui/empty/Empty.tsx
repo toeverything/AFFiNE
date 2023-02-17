@@ -1,6 +1,7 @@
 import { CSSProperties } from 'react';
-import { EmptySVG } from './EmptySVG';
+
 import { styled } from '../../styles';
+import { EmptySVG } from './EmptySVG';
 
 export type EmptyContentProps = {
   width?: CSSProperties['width'];

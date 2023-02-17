@@ -1,5 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+
 import { printer } from './../printer';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const chalk = require('chalk');
 test.describe('printer', () => {
   test('test debug', () => {

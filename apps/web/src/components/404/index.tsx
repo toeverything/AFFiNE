@@ -1,7 +1,8 @@
-import { NotFoundTitle, PageContainer } from './styles';
-import { useTranslation } from '@affine/i18n';
 import { Button } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
 import { useRouter } from 'next/router';
+
+import { NotFoundTitle, PageContainer } from './styles';
 export const NotfoundPage = () => {
   const { t } = useTranslation();
   const router = useRouter();

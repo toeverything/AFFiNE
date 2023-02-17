@@ -1,7 +1,8 @@
-import { styled } from '../../styles';
 import ModalUnstyled from '@mui/base/ModalUnstyled';
-import { Wrapper } from '../layout';
 import { CSSProperties } from 'react';
+
+import { styled } from '../../styles';
+import { Wrapper } from '../layout';
 
 export const StyledBackdrop = styled.div(({ theme }) => {
   return {

@@ -1,25 +1,25 @@
-import { useConfirm } from '@/providers/ConfirmProvider';
-import { PageMeta } from '@/providers/app-state-provider';
 import {
+  FlexWrapper,
+  IconButton,
   Menu,
   MenuItem,
   Tooltip,
-  FlexWrapper,
-  IconButton,
 } from '@affine/component';
-
+import { toast } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
 import {
-  MoreVerticalIcon,
-  RestoreIcon,
-  FavouritesIcon,
-  FavouritedIcon,
-  OpenInNewIcon,
   DeleteForeverIcon,
+  FavouritedIcon,
+  FavouritesIcon,
+  MoreVerticalIcon,
+  OpenInNewIcon,
+  RestoreIcon,
   TrashIcon,
 } from '@blocksuite/icons';
-import { toast } from '@affine/component';
+
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useTranslation } from '@affine/i18n';
+import { PageMeta } from '@/providers/app-state-provider';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   const { id, favorite } = pageMeta;

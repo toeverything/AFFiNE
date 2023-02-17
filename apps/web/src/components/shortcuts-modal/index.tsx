@@ -1,4 +1,19 @@
+import {
+  ModalCloseButton,
+  MuiClickAwayListener,
+  MuiSlide,
+} from '@affine/component';
+import { useTranslation } from '@affine/i18n';
 import { createPortal } from 'react-dom';
+
+import {
+  useMacKeyboardShortcuts,
+  useMacMarkdownShortcuts,
+  useWindowsKeyboardShortcuts,
+  useWinMarkdownShortcuts,
+} from '@/components/shortcuts-modal/config';
+import { getUaHelper } from '@/utils';
+
 import { KeyboardIcon } from './Icons';
 import {
   StyledListItem,
@@ -7,19 +22,6 @@ import {
   StyledSubTitle,
   StyledTitle,
 } from './style';
-import {
-  useMacKeyboardShortcuts,
-  useMacMarkdownShortcuts,
-  useWindowsKeyboardShortcuts,
-  useWinMarkdownShortcuts,
-} from '@/components/shortcuts-modal/config';
-import {
-  MuiSlide,
-  MuiClickAwayListener,
-  ModalCloseButton,
-} from '@affine/component';
-import { getUaHelper } from '@/utils';
-import { useTranslation } from '@affine/i18n';
 type ModalProps = {
   open: boolean;
   onClose: () => void;

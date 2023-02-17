@@ -1,3 +1,4 @@
+import { useRouter } from 'next/router';
 import type React from 'react';
 import {
   createContext,
@@ -9,13 +10,13 @@ import {
 import { createStore, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
 import { UseBoundStore } from 'zustand/react';
+
 import ContactModal from '@/components/contact-modal';
-import ShortcutsModal from '@/components/shortcuts-modal';
-import QuickSearch from '@/components/quick-search';
-import { LoginModal } from '@/components/login-modal';
-import ImportModal from '@/components/import';
 import { EnableWorkspaceModal } from '@/components/enable-workspace-modal';
-import { useRouter } from 'next/router';
+import ImportModal from '@/components/import';
+import { LoginModal } from '@/components/login-modal';
+import QuickSearch from '@/components/quick-search';
+import ShortcutsModal from '@/components/shortcuts-modal';
 
 export type ModalState = {
   contact: boolean;

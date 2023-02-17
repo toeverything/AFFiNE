@@ -1,8 +1,9 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
-import React from 'react';
-import { Meta, Story } from '@storybook/react';
-import { Breadcrumbs } from '..';
 import { Link, Typography } from '@mui/material';
+import { Meta, Story } from '@storybook/react';
+import React from 'react';
+
+import { Breadcrumbs } from '..';
 
 export default {
   title: 'AFFiNE/Breadcrumbs',
@@ -14,12 +15,14 @@ const Template: Story = args => <Breadcrumbs {...args} />;
 export const Primary = Template.bind(undefined);
 Primary.args = {
   children: [
-    <Link underline="hover" color="inherit" href="/">
+    <Link key="1" underline="hover" color="inherit" href="/">
       AFFiNE
     </Link>,
-    <Link underline="hover" color="inherit" href="/Docs/">
+    <Link key="2" underline="hover" color="inherit" href="/Docs/">
       Docs
     </Link>,
-    <Typography color="text.primary">Introduction</Typography>,
+    <Typography key="3" color="text.primary">
+      Introduction
+    </Typography>,
   ],
 };

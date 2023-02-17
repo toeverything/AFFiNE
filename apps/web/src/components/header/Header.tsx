@@ -1,17 +1,18 @@
+import { CloseIcon } from '@blocksuite/icons';
 import React, { PropsWithChildren, ReactNode, useState } from 'react';
+
+import EditorOptionMenu from './header-right-items/EditorOptionMenu';
+import SyncUser from './header-right-items/SyncUser';
+import ThemeModeSwitch from './header-right-items/theme-mode-switch';
+import TrashButtonGroup from './header-right-items/TrashButtonGroup';
 import {
-  StyledHeader,
-  StyledHeaderRightSide,
-  StyledHeaderContainer,
   StyledBrowserWarning,
   StyledCloseButton,
+  StyledHeader,
+  StyledHeaderContainer,
+  StyledHeaderRightSide,
 } from './styles';
-import { CloseIcon } from '@blocksuite/icons';
-import { useWarningMessage, shouldShowWarning } from './utils';
-import EditorOptionMenu from './header-right-items/EditorOptionMenu';
-import TrashButtonGroup from './header-right-items/TrashButtonGroup';
-import ThemeModeSwitch from './header-right-items/theme-mode-switch';
-import SyncUser from './header-right-items/SyncUser';
+import { shouldShowWarning, useWarningMessage } from './utils';
 
 const BrowserWarning = ({
   show,

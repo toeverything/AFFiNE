@@ -1,8 +1,8 @@
 import { displayFlex, keyframes, styled } from '@affine/component';
-import { CSSProperties } from 'react';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import spring, { toString } from 'css-spring';
+import { CSSProperties } from 'react';
 
 const ANIMATE_DURATION = 400;
 

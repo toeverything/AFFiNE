@@ -1,7 +1,8 @@
-import StyledPopperContainer from '../shared/Container';
-import { Popper, type PopperProps } from '../popper';
-import { styled } from '../../styles';
 import type { TooltipProps } from '@mui/material';
+
+import { styled } from '../../styles';
+import { Popper, type PopperProps } from '../popper';
+import StyledPopperContainer from '../shared/Container';
 
 const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   return {

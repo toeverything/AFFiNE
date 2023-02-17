@@ -1,19 +1,20 @@
-import { WorkspaceUnitCollection } from './workspace-unit-collection';
-import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import assert from 'assert';
+
+import { getLogger } from './logger';
+import { MessageCenter } from './message';
+import { AffineProvider } from './provider';
 import type {
   BaseProvider,
   CreateWorkspaceInfoParams,
   UpdateWorkspaceMetaParams,
 } from './provider/base';
 import { LocalProvider } from './provider/local';
-import { AffineProvider } from './provider';
 import type { Message } from './types';
-import assert from 'assert';
-import { getLogger } from './logger';
 import { createBlocksuiteWorkspace } from './utils';
-import { MessageCenter } from './message';
 import { WorkspaceUnit } from './workspace-unit';
+import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
+import { WorkspaceUnitCollection } from './workspace-unit-collection';
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business

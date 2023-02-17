@@ -1,8 +1,9 @@
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+
 import { MessageCenter } from '../message';
 import { Logger, User } from '../types';
+import type { WorkspaceUnit, WorkspaceUnitCtorParams } from '../workspace-unit';
 import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
-import type { WorkspaceUnitCtorParams, WorkspaceUnit } from '../workspace-unit';
 import { Member } from './affine/apis';
 import { Permission } from './affine/apis/workspace';
 

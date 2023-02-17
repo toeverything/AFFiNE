@@ -1,5 +1,6 @@
-import { Popper, type PopperProps } from '../popper';
 import { TooltipProps } from '@mui/material';
+
+import { Popper, type PopperProps } from '../popper';
 import { StyledMenuWrapper } from './styles';
 
 export const Menu = (props: PopperProps & Omit<TooltipProps, 'title'>) => {

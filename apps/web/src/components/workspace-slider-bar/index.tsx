@@ -1,5 +1,26 @@
-import React, { useCallback, useState } from 'react';
+import { MuiCollapse } from '@affine/component';
+import { Tooltip } from '@affine/component';
+import { IconButton } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
+import {
+  AllPagesIcon,
+  ArrowDownIcon,
+  FavouritesIcon,
+  PlusIcon,
+  SearchIcon,
+  SettingsIcon,
+  TrashIcon,
+} from '@blocksuite/icons';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
+import React, { useCallback, useState } from 'react';
+
+import useLocalStorage from '@/hooks/use-local-storage';
+import { usePageHelper } from '@/hooks/use-page-helper';
+import { useGlobalState } from '@/store/app';
+import { useModal } from '@/store/globalModal';
+
+import { Arrow } from './icons';
 import {
   StyledArrowButton,
   StyledLink,
@@ -9,26 +30,7 @@ import {
   StyledSliderBarWrapper,
   StyledSubListItem,
 } from './style';
-import { Arrow } from './icons';
-import {
-  ArrowDownIcon,
-  SearchIcon,
-  AllPagesIcon,
-  FavouritesIcon,
-  TrashIcon,
-  PlusIcon,
-  SettingsIcon,
-} from '@blocksuite/icons';
-import Link from 'next/link';
-import { MuiCollapse } from '@affine/component';
-import { Tooltip } from '@affine/component';
-import { useModal } from '@/store/globalModal';
-import { IconButton } from '@affine/component';
-import useLocalStorage from '@/hooks/use-local-storage';
-import { usePageHelper } from '@/hooks/use-page-helper';
-import { useTranslation } from '@affine/i18n';
 import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
-import { useGlobalState } from '@/store/app';
 
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();

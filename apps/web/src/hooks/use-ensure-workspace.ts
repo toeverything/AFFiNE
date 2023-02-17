@@ -1,7 +1,8 @@
+import { assertEquals } from '@blocksuite/global/utils';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
+
 import { useGlobalState } from '@/store/app';
-import { assertEquals } from '@blocksuite/global/utils';
 
 // todo: refactor with suspense mode
 // It is a fully effective hook

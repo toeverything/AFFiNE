@@ -1,4 +1,5 @@
 import { CSSProperties } from 'react';
+
 import { styled } from '../../styles';
 
 export const ModalWrapper = styled.div<{

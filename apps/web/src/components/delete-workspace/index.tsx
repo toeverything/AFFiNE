@@ -1,5 +1,5 @@
 import { styled } from '@affine/component';
-import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
 import { Input } from '@affine/component';
 import { useState } from 'react';

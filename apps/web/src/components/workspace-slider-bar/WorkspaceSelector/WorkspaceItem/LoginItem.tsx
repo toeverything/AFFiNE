@@ -1,9 +1,11 @@
-import { useModal } from '@/store/globalModal';
 import { styled } from '@affine/component';
+
+import { useModal } from '@/store/globalModal';
+
 import { AffineIcon } from '../../icons/Icons';
 import {
-  WorkspaceItemAvatar,
   LoginItemWrapper,
+  WorkspaceItemAvatar,
   WorkspaceItemContent,
 } from './styles';
 

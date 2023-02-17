@@ -1,4 +1,4 @@
-import type { Apis, AccessTokenMessage } from '../apis';
+import type { AccessTokenMessage, Apis } from '../apis';
 
 const user: AccessTokenMessage = {
   created_at: Date.now(),

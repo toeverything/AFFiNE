@@ -1,7 +1,8 @@
-import * as websocket from 'lib0/websocket';
-import { auth } from './apis/auth';
 import * as url from 'lib0/url';
+import * as websocket from 'lib0/websocket';
+
 import { Logger } from '../../types';
+import { auth } from './apis/auth';
 
 const RECONNECT_INTERVAL_TIME = 500;
 const MAX_RECONNECT_TIMES = 50;

@@ -2,6 +2,7 @@ import { displayFlex, keyframes, styled } from '@affine/component';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import spring, { toString } from 'css-spring';
+
 import type { ItemStatus } from './type';
 
 const ANIMATE_DURATION = 500;

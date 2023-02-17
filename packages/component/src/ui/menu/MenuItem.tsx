@@ -5,7 +5,8 @@ import {
   PropsWithChildren,
   ReactElement,
 } from 'react';
-import { StyledMenuItem, StyledArrow } from './styles';
+
+import { StyledArrow, StyledMenuItem } from './styles';
 
 export type IconMenuProps = PropsWithChildren<{
   isDir?: boolean;

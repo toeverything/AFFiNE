@@ -1,12 +1,11 @@
-import createEmotionServer from '@emotion/server/create-instance';
 import { cache } from '@emotion/css';
-
+import createEmotionServer from '@emotion/server/create-instance';
 import Document, {
-  Html,
+  DocumentContext,
   Head,
+  Html,
   Main,
   NextScript,
-  DocumentContext,
 } from 'next/document';
 import * as React from 'react';
 

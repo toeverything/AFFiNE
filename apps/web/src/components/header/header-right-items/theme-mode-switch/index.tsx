@@ -1,7 +1,9 @@
 import { useState } from 'react';
+
 import { useTheme } from '@/providers/ThemeProvider';
+
 import { MoonIcon, SunIcon } from './Icons';
-import { StyledThemeModeSwitch, StyledSwitchItem } from './style';
+import { StyledSwitchItem, StyledThemeModeSwitch } from './style';
 export const ThemeModeSwitch = () => {
   const { mode, changeMode } = useTheme();
   const [isHover, setIsHover] = useState(false);

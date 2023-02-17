@@ -1,5 +1,6 @@
-import { styled } from '../../styles';
 import { PopperPlacementType } from '@mui/material';
+
+import { styled } from '../../styles';
 
 export type PopperDirection =
   | 'none'

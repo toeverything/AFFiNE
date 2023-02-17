@@ -1,5 +1,6 @@
-import assert from 'assert';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import assert from 'assert';
+
 import { getDefaultHeadImgBlob } from '../utils';
 
 export const setDefaultAvatar = async (

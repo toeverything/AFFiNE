@@ -1,6 +1,23 @@
+import { Wrapper } from '@affine/component';
+import { Button, IconButton } from '@affine/component';
+import { Menu, MenuItem } from '@affine/component';
+import { Empty } from '@affine/component';
+import { toast } from '@affine/component';
+import { FlexWrapper } from '@affine/component';
+import { WorkspaceUnit } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
+import { EmailIcon, MoreVerticalIcon, TrashIcon } from '@blocksuite/icons';
+import { useState } from 'react';
+
+import Loading from '@/components/loading';
+import useMembers from '@/hooks/use-members';
+import { useModal } from '@/store/globalModal';
+
+import { InviteMemberModal } from './InviteMemberModal';
 import {
   StyledMemberAvatar,
   StyledMemberButtonContainer,
+  StyledMemberContainer,
   StyledMemberEmail,
   StyledMemberInfo,
   StyledMemberListContainer,
@@ -10,22 +27,7 @@ import {
   StyledMemberRoleContainer,
   StyledMemberTitleContainer,
   StyledMoreVerticalButton,
-  StyledMemberContainer,
 } from './style';
-import { Wrapper } from '@affine/component';
-import { MoreVerticalIcon, EmailIcon, TrashIcon } from '@blocksuite/icons';
-import { useState } from 'react';
-import { Button, IconButton } from '@affine/component';
-import { InviteMemberModal } from './InviteMemberModal';
-import { Menu, MenuItem } from '@affine/component';
-import { Empty } from '@affine/component';
-import { WorkspaceUnit } from '@affine/datacenter';
-import { toast } from '@affine/component';
-import useMembers from '@/hooks/use-members';
-import Loading from '@/components/loading';
-import { FlexWrapper } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
-import { useModal } from '@/store/globalModal';
 
 export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);

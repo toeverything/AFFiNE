@@ -1,4 +1,4 @@
-import type { DOMAttributes, CSSProperties } from 'react';
+import type { CSSProperties, DOMAttributes } from 'react';
 type IconProps = {
   style?: CSSProperties;
 } & DOMAttributes<SVGElement>;

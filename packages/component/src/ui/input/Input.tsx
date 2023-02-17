@@ -1,11 +1,12 @@
 import {
+  FocusEventHandler,
+  HTMLAttributes,
   InputHTMLAttributes,
+  KeyboardEventHandler,
   useEffect,
   useState,
-  FocusEventHandler,
-  KeyboardEventHandler,
-  HTMLAttributes,
 } from 'react';
+
 import { StyledInput } from './style';
 
 type inputProps = {

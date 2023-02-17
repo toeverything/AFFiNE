@@ -1,5 +1,6 @@
-import { GlobalActionsCreator } from '@/store/app';
 import { User } from '@affine/datacenter';
+
+import { GlobalActionsCreator } from '@/store/app';
 
 export interface UserState {
   user: User | null;

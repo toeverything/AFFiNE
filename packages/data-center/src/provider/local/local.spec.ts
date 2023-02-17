@@ -1,8 +1,10 @@
-import { test, describe, expect } from 'vitest';
+import 'fake-indexeddb/auto';
+
+import { describe, expect, test } from 'vitest';
+
+import { MessageCenter } from '../../message';
 import { WorkspaceUnitCollection } from '../../workspace-unit-collection';
 import { LocalProvider } from './local';
-import { MessageCenter } from '../../message';
-import 'fake-indexeddb/auto';
 
 describe('local provider', () => {
   const workspaceMetaCollection = new WorkspaceUnitCollection();

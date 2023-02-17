@@ -1,12 +1,14 @@
 import { BlobSyncState } from '@blocksuite/store';
-import * as ipcMethods from '../ipc/methods';
 import { Signal } from '@blocksuite/store';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import type {
+  BlobId,
   BlobProvider,
   BlobSyncStateChangeEvent,
-  BlobId,
   BlobURL,
 } from '@blocksuite/store/dist/persistence/blob/types';
+
+import * as ipcMethods from '../ipc/methods';
 
 export class IPCBlobProvider implements BlobProvider {
   #ipc = ipcMethods;
