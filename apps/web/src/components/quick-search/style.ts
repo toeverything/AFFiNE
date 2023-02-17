@@ -50,7 +50,6 @@ export const StyledNotFound = styled('div')(({ theme }) => {
     '>svg': {
       marginTop: '10px',
       height: '200px',
-      width: '200px',
     },
   };
 });

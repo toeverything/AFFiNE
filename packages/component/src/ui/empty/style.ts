@@ -2,6 +2,7 @@ import { styled, displayFlex } from '../../styles';
 
 export const StyledEmptyContainer = styled.div(() => {
   return {
+    height: '100%',
     ...displayFlex('center', 'center'),
     flexDirection: 'column',
 
