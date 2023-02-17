@@ -25,6 +25,7 @@ export function MessageCenterHandler({
           //
           // fix: a better option is to keep loading the app, and prompt the user to login
           // or perhaps displaying page 401?
+          await router.push('/');
           router.reload();
         }
       });
