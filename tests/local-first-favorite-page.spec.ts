@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
-import { test } from './libs/playwright.js';
-import { loadPage } from './libs/load-page.js';
-import { newPage, clickPageMoreActions } from './libs/page-logic.js';
+import { test } from './libs/playwright';
+import { loadPage } from './libs/load-page';
+import { newPage, clickPageMoreActions } from './libs/page-logic';
 loadPage();
 
 test.describe('Local first favorite and cancel favorite  page', () => {

@@ -1,8 +1,8 @@
 import { expect, type Page } from '@playwright/test';
-import { test } from './libs/playwright.js';
-import { loadPage } from './libs/load-page.js';
-import { withCtrlOrMeta } from './libs/keyboard.js';
-import { newPage } from './libs/page-logic.js';
+import { test } from './libs/playwright';
+import { loadPage } from './libs/load-page';
+import { withCtrlOrMeta } from './libs/keyboard';
+import { newPage } from './libs/page-logic';
 loadPage();
 
 const openQuickSearchByShortcut = async (page: Page) =>

@@ -1,4 +1,4 @@
-import ky from 'ky-universal';
+import ky from 'ky-universal/browser';
 import { MessageCenter } from '../../../message';
 import { auth } from './auth';
 
