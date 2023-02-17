@@ -10,7 +10,7 @@ export const NotfoundPage = () => {
   const { t } = useTranslation();
   const router = useRouter();
   return (
-    <StyledContainer>
+    <StyledContainer data-testid="notFound">
       <Image alt="404" src={ErrorImg}></Image>
 
       <p>{t('404 - Page Not Found')}</p>
