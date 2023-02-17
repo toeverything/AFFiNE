@@ -1,5 +1,8 @@
+import { KyInstance } from 'ky/distribution/types/ky';
+
 import { MessageCenter } from '../../../message';
-import { bareClient, client } from './request';
+import { createBlocksuiteWorkspace as _createBlocksuiteWorkspace } from '../../../utils';
+import { GoogleAuth } from './google';
 import type { User } from './user';
 
 const messageCenter = MessageCenter.getInstance();
@@ -15,6 +18,7 @@ class RequestError extends Error {
     this.cause = cause;
   }
 }
+
 export interface GetWorkspaceDetailParams {
   id: string;
 }
@@ -39,35 +43,9 @@ export interface Workspace {
   create_at: number;
 }
 
-export async function getWorkspaces(): Promise<Workspace[]> {
-  try {
-    return await client
-      .get('api/workspace', {
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
-      })
-      .json();
-  } catch (error) {
-    sendMessage(messageCode.loadListFailed);
-    throw new RequestError('load list failed', error);
-  }
-}
-
 export interface WorkspaceDetail extends Workspace {
   owner: User;
   member_count: number;
-}
-
-export async function getWorkspaceDetail(
-  params: GetWorkspaceDetailParams
-): Promise<WorkspaceDetail | null> {
-  try {
-    return await client.get(`api/workspace/${params.id}`).json();
-  } catch (error) {
-    sendMessage(messageCode.getDetailFailed);
-    throw new RequestError('get detail failed', error);
-  }
 }
 
 export interface Permission {
@@ -97,30 +75,8 @@ export interface GetWorkspaceMembersParams {
   id: string;
 }
 
-export async function getWorkspaceMembers(
-  params: GetWorkspaceDetailParams
-): Promise<Member[]> {
-  try {
-    return await client.get(`api/workspace/${params.id}/permission`).json();
-  } catch (error) {
-    sendMessage(messageCode.getMembersFailed);
-    throw new RequestError('get members failed', error);
-  }
-}
-
 export interface CreateWorkspaceParams {
   name: string;
-}
-
-export async function createWorkspace(
-  encodedYDoc: Blob
-): Promise<{ id: string }> {
-  try {
-    return await client.post('api/workspace', { body: encodedYDoc }).json();
-  } catch (error) {
-    sendMessage(messageCode.createWorkspaceFailed);
-    throw new RequestError('create workspace failed', error);
-  }
 }
 
 export interface UpdateWorkspaceParams {
@@ -128,36 +84,8 @@ export interface UpdateWorkspaceParams {
   public: boolean;
 }
 
-export async function updateWorkspace(
-  params: UpdateWorkspaceParams
-): Promise<{ public: boolean | null }> {
-  try {
-    return await client
-      .post(`api/workspace/${params.id}`, {
-        json: {
-          public: params.public,
-        },
-      })
-      .json();
-  } catch (error) {
-    sendMessage(messageCode.updateWorkspaceFailed);
-    throw new RequestError('update workspace failed', error);
-  }
-}
-
 export interface DeleteWorkspaceParams {
   id: string;
-}
-
-export async function deleteWorkspace(
-  params: DeleteWorkspaceParams
-): Promise<void> {
-  try {
-    await client.delete(`api/workspace/${params.id}`);
-  } catch (error) {
-    sendMessage(messageCode.deleteWorkspaceFailed);
-    throw new RequestError('delete workspace failed', error);
-  }
 }
 
 export interface InviteMemberParams {
@@ -165,93 +93,176 @@ export interface InviteMemberParams {
   email: string;
 }
 
-/**
- * Notice: Only support normal(contrast to private) workspace.
- */
-export async function inviteMember(params: InviteMemberParams): Promise<void> {
-  try {
-    await client.post(`api/workspace/${params.id}/permission`, {
-      json: {
-        email: params.email,
-      },
-    });
-  } catch (error) {
-    sendMessage(messageCode.inviteMemberFailed);
-    throw new RequestError('invite member failed', error);
-  }
-}
-
 export interface RemoveMemberParams {
   permissionId: number;
-}
-
-export async function removeMember(params: RemoveMemberParams): Promise<void> {
-  try {
-    await client.delete(`api/permission/${params.permissionId}`);
-  } catch (error) {
-    sendMessage(messageCode.removeMemberFailed);
-    throw new RequestError('remove member failed', error);
-  }
 }
 
 export interface AcceptInvitingParams {
   invitingCode: string;
 }
 
-export async function acceptInviting(
-  params: AcceptInvitingParams
-): Promise<Permission> {
-  try {
-    return await bareClient
-      .post(`api/invitation/${params.invitingCode}`)
-      .json();
-  } catch (error) {
-    sendMessage(messageCode.acceptInvitingFailed);
-    throw new RequestError('accept inviting failed', error);
-  }
-}
-
-export async function uploadBlob(params: { blob: Blob }): Promise<string> {
-  return client.put('api/blob', { body: params.blob }).text();
-}
-
-export async function getBlob(params: {
-  blobId: string;
-}): Promise<ArrayBuffer> {
-  try {
-    return await client.get(`api/blob/${params.blobId}`).arrayBuffer();
-  } catch (error) {
-    sendMessage(messageCode.getBlobFailed);
-    throw new RequestError('get blob failed', error);
-  }
-}
-
 export interface LeaveWorkspaceParams {
   id: number | string;
 }
 
-export async function leaveWorkspace({ id }: LeaveWorkspaceParams) {
-  try {
-    await client.delete(`api/workspace/${id}/permission`);
-  } catch (error) {
-    sendMessage(messageCode.leaveWorkspaceFailed);
-    throw new RequestError('leave workspace failed', error);
-  }
-}
+export function createWorkspaceApis(
+  bareClient: KyInstance,
+  authClient: KyInstance,
+  googleAuth: GoogleAuth
+) {
+  return {
+    getWorkspaces: async (): Promise<Workspace[]> => {
+      try {
+        return await authClient
+          .get('api/workspace', {
+            headers: {
+              'Cache-Control': 'no-cache',
+            },
+          })
+          .json();
+      } catch (error) {
+        sendMessage(messageCode.loadListFailed);
+        throw new RequestError('load list failed', error);
+      }
+    },
+    getWorkspaceDetail: async (
+      params: GetWorkspaceDetailParams
+    ): Promise<WorkspaceDetail | null> => {
+      try {
+        return await authClient.get(`api/workspace/${params.id}`).json();
+      } catch (error) {
+        sendMessage(messageCode.getDetailFailed);
+        throw new RequestError('get detail failed', error);
+      }
+    },
+    getWorkspaceMembers: async (
+      params: GetWorkspaceDetailParams
+    ): Promise<Member[]> => {
+      try {
+        return await authClient
+          .get(`api/workspace/${params.id}/permission`)
+          .json();
+      } catch (error) {
+        sendMessage(messageCode.getMembersFailed);
+        throw new RequestError('get members failed', error);
+      }
+    },
+    createWorkspace: async (encodedYDoc: Blob): Promise<{ id: string }> => {
+      try {
+        return await authClient
+          .post('api/workspace', { body: encodedYDoc })
+          .json();
+      } catch (error) {
+        sendMessage(messageCode.createWorkspaceFailed);
+        throw new RequestError('create workspace failed', error);
+      }
+    },
+    updateWorkspace: async (
+      params: UpdateWorkspaceParams
+    ): Promise<{ public: boolean | null }> => {
+      try {
+        return await authClient
+          .post(`api/workspace/${params.id}`, {
+            json: {
+              public: params.public,
+            },
+          })
+          .json();
+      } catch (error) {
+        sendMessage(messageCode.updateWorkspaceFailed);
+        throw new RequestError('update workspace failed', error);
+      }
+    },
+    deleteWorkspace: async (params: DeleteWorkspaceParams): Promise<void> => {
+      try {
+        await authClient.delete(`api/workspace/${params.id}`);
+      } catch (error) {
+        sendMessage(messageCode.deleteWorkspaceFailed);
+        throw new RequestError('delete workspace failed', error);
+      }
+    },
 
-export async function downloadWorkspace(
-  workspaceId: string,
-  published = false
-): Promise<ArrayBuffer> {
-  try {
-    if (published) {
-      return await bareClient
-        .get(`api/public/doc/${workspaceId}`)
-        .arrayBuffer();
-    }
-    return await client.get(`api/workspace/${workspaceId}/doc`).arrayBuffer();
-  } catch (error) {
-    sendMessage(messageCode.downloadWorkspaceFailed);
-    throw new RequestError('download workspace failed', error);
-  }
+    /**
+     * Notice: Only support normal(contrast to private) workspace.
+     */
+    inviteMember: async (params: InviteMemberParams): Promise<void> => {
+      try {
+        await authClient.post(`api/workspace/${params.id}/permission`, {
+          json: {
+            email: params.email,
+          },
+        });
+      } catch (error) {
+        sendMessage(messageCode.inviteMemberFailed);
+        throw new RequestError('invite member failed', error);
+      }
+    },
+    removeMember: async (params: RemoveMemberParams): Promise<void> => {
+      try {
+        await authClient.delete(`api/permission/${params.permissionId}`);
+      } catch (error) {
+        sendMessage(messageCode.removeMemberFailed);
+        throw new RequestError('remove member failed', error);
+      }
+    },
+    acceptInviting: async (
+      params: AcceptInvitingParams
+    ): Promise<Permission> => {
+      try {
+        return await bareClient
+          .post(`api/invitation/${params.invitingCode}`)
+          .json();
+      } catch (error) {
+        sendMessage(messageCode.acceptInvitingFailed);
+        throw new RequestError('accept inviting failed', error);
+      }
+    },
+    uploadBlob: async (params: { blob: Blob }): Promise<string> => {
+      return authClient.put('api/blob', { body: params.blob }).text();
+    },
+    getBlob: async (params: { blobId: string }): Promise<ArrayBuffer> => {
+      try {
+        return await authClient.get(`api/blob/${params.blobId}`).arrayBuffer();
+      } catch (error) {
+        sendMessage(messageCode.getBlobFailed);
+        throw new RequestError('get blob failed', error);
+      }
+    },
+    leaveWorkspace: async ({ id }: LeaveWorkspaceParams) => {
+      try {
+        await authClient.delete(`api/workspace/${id}/permission`);
+      } catch (error) {
+        sendMessage(messageCode.leaveWorkspaceFailed);
+        throw new RequestError('leave workspace failed', error);
+      }
+    },
+    downloadWorkspace: async (
+      workspaceId: string,
+      published = false
+    ): Promise<ArrayBuffer> => {
+      try {
+        if (published) {
+          return await bareClient
+            .get(`api/public/doc/${workspaceId}`)
+            .arrayBuffer();
+        }
+        return await authClient
+          .get(`api/workspace/${workspaceId}/doc`)
+          .arrayBuffer();
+      } catch (error) {
+        sendMessage(messageCode.downloadWorkspaceFailed);
+        throw new RequestError('download workspace failed', error);
+      }
+    },
+    createBlockSuiteWorkspaceWithAuth: async (newWorkspaceId: string) => {
+      if (googleAuth.isExpired && googleAuth.isLogin) {
+        await googleAuth.refreshToken();
+      }
+      return _createBlocksuiteWorkspace(newWorkspaceId, {
+        blobOptionsGetter: (k: string) =>
+          // token could be expired
+          ({ api: '/api/workspace', token: googleAuth.token }[k]),
+      });
+    },
+  } as const;
 }

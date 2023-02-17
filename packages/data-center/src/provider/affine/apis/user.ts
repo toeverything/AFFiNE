@@ -1,4 +1,4 @@
-import { client } from './request';
+import { KyInstance } from 'ky/distribution/types/ky';
 
 export interface GetUserByEmailParams {
   email: string;
@@ -13,9 +13,13 @@ export interface User {
   create_at: string;
 }
 
-export async function getUserByEmail(
-  params: GetUserByEmailParams
-): Promise<User[] | null> {
-  const searchParams = new URLSearchParams({ ...params });
-  return client.get('api/user', { searchParams }).json<User[] | null>();
+export function createUserApis(bareClient: KyInstance, authClient: KyInstance) {
+  return {
+    getUserByEmail: async (
+      params: GetUserByEmailParams
+    ): Promise<User[] | null> => {
+      const searchParams = new URLSearchParams({ ...params });
+      return authClient.get('api/user', { searchParams }).json<User[] | null>();
+    },
+  } as const;
 }

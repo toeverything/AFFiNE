@@ -1,29 +1,16 @@
-import { createBlocksuiteWorkspace as _createBlocksuiteWorkspace } from '../../utils';
 import { applyUpdate } from '../../utils';
 import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
 import { WorkspaceUnit } from '../../workspace-unit';
 import { setDefaultAvatar } from '../utils';
 import type { Apis } from './apis';
-import { auth } from './apis/auth';
 import { getDatabase } from './idb-kv';
-
-export const createBlocksuiteWorkspaceWithAuth = async (id: string) => {
-  if (auth.isExpired && auth.isLogin) {
-    await auth.refreshToken();
-  }
-  return _createBlocksuiteWorkspace(id, {
-    blobOptionsGetter: (k: string) =>
-      // token could be expired
-      ({ api: '/api/workspace', token: auth.token }[k]),
-  });
-};
 
 export const loadWorkspaceUnit = async (
   params: WorkspaceUnitCtorParams,
   apis: Apis
 ) => {
   const workspaceUnit = new WorkspaceUnit(params);
-  const blocksuiteWorkspace = await createBlocksuiteWorkspaceWithAuth(
+  const blocksuiteWorkspace = await apis.createBlockSuiteWorkspaceWithAuth(
     workspaceUnit.id
   );
 
@@ -54,10 +41,13 @@ export const loadWorkspaceUnit = async (
   return workspaceUnit;
 };
 
-export const createWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
+export const createWorkspaceUnit = async (
+  params: WorkspaceUnitCtorParams,
+  apis: Apis
+) => {
   const workspaceUnit = new WorkspaceUnit(params);
 
-  const blocksuiteWorkspace = await createBlocksuiteWorkspaceWithAuth(
+  const blocksuiteWorkspace = await apis.createBlockSuiteWorkspaceWithAuth(
     workspaceUnit.id
   );
 

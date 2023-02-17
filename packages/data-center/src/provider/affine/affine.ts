@@ -1,5 +1,6 @@
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import assert from 'assert';
+import { KyInstance } from 'ky/distribution/types/ky';
 
 import { MessageCenter } from '../../message';
 import type { User } from '../../types';
@@ -12,16 +13,12 @@ import type {
 } from '../base';
 import { BaseProvider } from '../base';
 import type { Apis, WorkspaceDetail } from './apis';
-// import { IndexedDBProvider } from '../local/indexeddb';
 import { getApis, Workspace } from './apis';
+import { createGoogleAuth } from './apis/google';
+import { createAuthClient, createBareClient } from './apis/request';
 import { WebsocketClient } from './channel';
 import { WebsocketProvider } from './sync';
-import {
-  createBlocksuiteWorkspaceWithAuth,
-  createWorkspaceUnit,
-  loadWorkspaceUnit,
-  migrateBlobDB,
-} from './utils';
+import { createWorkspaceUnit, loadWorkspaceUnit, migrateBlobDB } from './utils';
 
 type ChannelMessage = {
   ws_list: Workspace[];
@@ -39,6 +36,9 @@ const {
 } = BlocksuiteWorkspace;
 
 export class AffineProvider extends BaseProvider {
+  private readonly bareClient: KyInstance;
+  private readonly authClient: KyInstance;
+
   public id = 'affine';
   private _wsMap: Map<BlocksuiteWorkspace, WebsocketProvider> = new Map();
   private _apis: Apis;
@@ -52,7 +52,14 @@ export class AffineProvider extends BaseProvider {
 
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
-    this._apis = apis || getApis();
+    this.bareClient = createBareClient('/');
+    const googleAuth = createGoogleAuth(this.bareClient);
+    this.authClient = createAuthClient(this.bareClient, googleAuth);
+    this._apis = apis || getApis(this.bareClient, this.authClient, googleAuth);
+  }
+
+  public get apis() {
+    return Object.freeze(this._apis);
   }
 
   override async init() {
@@ -80,6 +87,7 @@ export class AffineProvider extends BaseProvider {
           window.location.host
         }/api/global/sync/`,
         this._logger,
+        this._apis.auth,
         {
           params: {
             token: this._apis.auth.refresh,
@@ -370,16 +378,19 @@ export class AffineProvider extends BaseProvider {
   public override async createWorkspace(
     meta: CreateWorkspaceInfoParams
   ): Promise<WorkspaceUnit | undefined> {
-    const workspaceUnitForUpload = await createWorkspaceUnit({
-      id: '',
-      name: meta.name,
-      avatar: undefined,
-      owner: await this.getUserInfo(),
-      published: false,
-      memberCount: 1,
-      provider: this.id,
-      syncMode: 'core',
-    });
+    const workspaceUnitForUpload = await createWorkspaceUnit(
+      {
+        id: '',
+        name: meta.name,
+        avatar: undefined,
+        owner: await this.getUserInfo(),
+        published: false,
+        memberCount: 1,
+        provider: this.id,
+        syncMode: 'core',
+      },
+      this._apis
+    );
     const { id } = await this._apis.createWorkspace(
       new Blob([
         encodeStateAsUpdate(workspaceUnitForUpload.blocksuiteWorkspace!.doc)
@@ -387,16 +398,19 @@ export class AffineProvider extends BaseProvider {
       ])
     );
 
-    const workspaceUnit = await createWorkspaceUnit({
-      id,
-      name: meta.name,
-      avatar: undefined,
-      owner: await this.getUserInfo(),
-      published: false,
-      memberCount: 1,
-      provider: this.id,
-      syncMode: 'core',
-    });
+    const workspaceUnit = await createWorkspaceUnit(
+      {
+        id,
+        name: meta.name,
+        avatar: undefined,
+        owner: await this.getUserInfo(),
+        published: false,
+        memberCount: 1,
+        provider: this.id,
+        syncMode: 'core',
+      },
+      this._apis
+    );
 
     this._workspaces.add(workspaceUnit);
 
@@ -446,7 +460,8 @@ export class AffineProvider extends BaseProvider {
     });
     await migrateBlobDB(workspaceUnit.id, id);
 
-    const blocksuiteWorkspace = await createBlocksuiteWorkspaceWithAuth(id);
+    const blocksuiteWorkspace =
+      await this._apis.createBlockSuiteWorkspaceWithAuth(id);
     assert(workspaceUnit.blocksuiteWorkspace);
     await applyUpdate(
       blocksuiteWorkspace,
