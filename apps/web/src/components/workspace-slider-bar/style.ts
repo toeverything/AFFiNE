@@ -56,7 +56,6 @@ export const StyledListItem = styled.div<{
   disabled?: boolean;
 }>(({ theme, active, disabled }) => {
   return {
-    width: '296px',
     height: '32px',
     marginTop: '12px',
     color: active ? theme.colors.primaryColor : theme.colors.popoverColor,
