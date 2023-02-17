@@ -14,7 +14,7 @@ import { usePageHelper } from '@/hooks/use-page-helper';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useTranslation } from '@affine/i18n';
-import { useGlobalState } from '@/store/app';
+import { useGlobalState, useGlobalStateApi } from '@/store/app';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
 import { assertEquals } from '@blocksuite/store';
 
@@ -107,6 +107,7 @@ const PageDefender = ({ children }: PropsWithChildren) => {
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
+  const dataCenter = useGlobalState(store => store.dataCenter);
   const { createPage } = usePageHelper();
 
   useEffect(() => {
@@ -124,6 +125,16 @@ const PageDefender = ({ children }: PropsWithChildren) => {
     };
     initPage();
   }, [createPage, currentWorkspace, loadPage, router.query.pageId]);
+  const api = useGlobalStateApi();
+  useEffect(
+    () =>
+      dataCenter.onWorkspacesChange(({ deleted }) => {
+        if (deleted?.some(workspace => workspace.id === currentWorkspace?.id)) {
+          router.replace('/404?code=kicked');
+        }
+      }),
+    [api, currentWorkspace?.id, dataCenter, router]
+  );
 
   return <>{pageLoaded ? children : null}</>;
 };
