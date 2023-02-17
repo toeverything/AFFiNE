@@ -24,6 +24,7 @@ import { useTranslation } from '@affine/i18n';
 import React from 'react';
 import { GlobalAppProvider } from '@/store/app';
 import { DataCenterPreloader } from '@/store/app/datacenter';
+import { MessageCenterHandler } from '@/components/message-center-handler';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
   ssr: false,
@@ -77,17 +78,19 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
             <ConfirmProvider key="ConfirmProvider" />,
           ]}
         >
-          {NoNeedAppStatePageList.includes(router.route) ? (
-            getLayout(<Component {...pageProps} />)
-          ) : (
-            <Suspense fallback={<PageLoading />}>
-              <DataCenterPreloader>
-                <AppDefender>
-                  {getLayout(<Component {...pageProps} />)}
-                </AppDefender>
-              </DataCenterPreloader>
-            </Suspense>
-          )}
+          <MessageCenterHandler>
+            {NoNeedAppStatePageList.includes(router.route) ? (
+              getLayout(<Component {...pageProps} />)
+            ) : (
+              <Suspense fallback={<PageLoading />}>
+                <DataCenterPreloader>
+                  <AppDefender>
+                    {getLayout(<Component {...pageProps} />)}
+                  </AppDefender>
+                </DataCenterPreloader>
+              </Suspense>
+            )}
+          </MessageCenterHandler>
         </ProviderComposer>
       </GlobalAppProvider>
     </>

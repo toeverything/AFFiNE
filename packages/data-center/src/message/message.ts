@@ -32,5 +32,8 @@ export class MessageCenter extends Observable<string> {
 
   public onMessage(callback: (message: Message) => void) {
     this.on('message', callback);
+    return () => {
+      this.off('message', callback);
+    };
   }
 }

@@ -105,17 +105,21 @@ export class Auth {
         type: 'Refresh',
         token: refreshToken || this._refreshToken,
       });
-      this._padding.finally(() => {
-        // clear on settled
-        this._padding = undefined;
-      });
       this._refreshToken = refreshToken || this._refreshToken;
     }
-    const res = await this._padding;
-    if (!refreshToken || refreshToken !== this._refreshToken) {
-      this.setLogin(res);
+    try {
+      const res = await this._padding;
+      if (res && (!refreshToken || refreshToken !== this._refreshToken)) {
+        this.setLogin(res);
+      }
+      return true;
+    } catch {
+      this._logger('Failed to refresh token');
+    } finally {
+      // clear on settled
+      this._padding = undefined;
     }
-    return true;
+    return false;
   }
 
   get user() {

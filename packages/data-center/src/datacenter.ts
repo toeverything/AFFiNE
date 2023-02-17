@@ -6,23 +6,25 @@ import type {
   CreateWorkspaceInfoParams,
   UpdateWorkspaceMetaParams,
 } from './provider/base';
-import { LocalProvider } from './provider/local/local';
+import { LocalProvider } from './provider/local';
 import { AffineProvider } from './provider';
 import type { Message } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
-import { createBlocksuiteWorkspace } from './utils/index';
+import { createBlocksuiteWorkspace } from './utils';
 import { MessageCenter } from './message';
 import { WorkspaceUnit } from './workspace-unit';
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business
  */
+
 export class DataCenter {
   private readonly _workspaceUnitCollection = new WorkspaceUnitCollection();
   private readonly _logger = getLogger('dc');
   private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
   private _messageCenter = MessageCenter.getInstance();
+
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
@@ -304,7 +306,6 @@ export class DataCenter {
 
   /**
    * remove the new member to the workspace
-   * @param {number} permissionId permission id
    */
   public async removeMember(workspaceId: string, permissionId: number) {
     const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);

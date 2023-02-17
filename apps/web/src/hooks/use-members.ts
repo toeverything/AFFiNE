@@ -11,7 +11,7 @@ export const useMembers = () => {
   const refreshMembers = useCallback(async () => {
     if (!currentWorkspace || !dataCenter) return;
     const members = await dataCenter.getMembers(currentWorkspace.id);
-    setMembers(members);
+    setMembers(members ?? []);
   }, [dataCenter, currentWorkspace]);
 
   useEffect(() => {
