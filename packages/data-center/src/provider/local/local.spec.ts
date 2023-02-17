@@ -1,8 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { WorkspaceUnitCollection } from '../../workspace-unit-collection.js';
-import { LocalProvider } from './local.js';
-import { createBlocksuiteWorkspace } from '../../utils/index.js';
-import { MessageCenter } from '../../message/index.js';
+import { WorkspaceUnitCollection } from '../../workspace-unit-collection';
+import { LocalProvider } from './local';
+import { MessageCenter } from '../../message';
 import 'fake-indexeddb/auto';
 
 test.describe.serial('local provider', () => {

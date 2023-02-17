@@ -1,1 +1,1 @@
-export * from './local.js';
+export * from './local';

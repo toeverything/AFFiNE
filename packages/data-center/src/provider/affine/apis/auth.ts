@@ -9,9 +9,9 @@ import {
 import type { User } from 'firebase/auth';
 import { decode } from 'js-base64';
 
-import { getLogger } from '../../../logger.js';
-import { bareClient } from './request.js';
-import { storage } from '../storage.js';
+import { getLogger } from '../../../logger';
+import { bareClient } from './request';
+import { storage } from '../storage';
 
 export interface AccessTokenMessage {
   created_at: number;

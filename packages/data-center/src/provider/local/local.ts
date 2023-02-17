@@ -1,4 +1,4 @@
-import { BaseProvider } from '../base.js';
+import { BaseProvider } from '../base';
 import type {
   ProviderConstructorParams,
   WorkspaceMeta0,
@@ -7,10 +7,10 @@ import type {
 } from '../base';
 import { varStorage as storage } from 'lib0/storage';
 import { Workspace as BlocksuiteWorkspace, uuidv4 } from '@blocksuite/store';
-import { IndexedDBProvider } from './indexeddb/indexeddb.js';
-import { applyLocalUpdates } from './indexeddb/utils.js';
+import { IndexedDBProvider } from './indexeddb/indexeddb';
+import { applyLocalUpdates } from './indexeddb/utils';
 import assert from 'assert';
-import { loadWorkspaceUnit, createWorkspaceUnit } from './utils.js';
+import { loadWorkspaceUnit, createWorkspaceUnit } from './utils';
 import type { WorkspaceUnit } from '../../workspace-unit';
 
 const WORKSPACE_KEY = 'workspaces';

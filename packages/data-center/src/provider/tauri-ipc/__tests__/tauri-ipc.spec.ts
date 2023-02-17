@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { WorkspaceUnitCollection } from '../../../workspace-unit-collection.js';
-import { TauriIPCProvider } from '../index.js';
-import { MessageCenter } from '../../../message/index.js';
-import * as ipcMethods from './mock-apis.js';
+import { WorkspaceUnitCollection } from '../../../workspace-unit-collection';
+import { TauriIPCProvider } from '..';
+import { MessageCenter } from '../../../message';
+import * as ipcMethods from './mock-apis';
 
 import 'fake-indexeddb/auto';
 

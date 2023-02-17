@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { Auth } from '../auth.js';
+import { Auth } from '../auth';
 
 test.describe('class Auth', () => {
   test('parse tokens', () => {

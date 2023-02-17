@@ -1,4 +1,4 @@
-import { client } from './request.js';
+import { client } from './request';
 
 export interface GetUserByEmailParams {
   email: string;

@@ -1,7 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { AffineProvider } from '../affine.js';
-// import { Workspaces } from '../../../workspaces/index.js';
-import { apis } from './mock-apis.js';
+import { test } from '@playwright/test';
 import 'fake-indexeddb/auto';
 
 // TODO: we should find a better way for testing AffineProvider.

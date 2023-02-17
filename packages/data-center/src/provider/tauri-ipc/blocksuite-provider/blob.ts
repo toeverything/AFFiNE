@@ -1,12 +1,12 @@
 import { BlobSyncState } from '@blocksuite/store';
-import * as ipcMethods from '../ipc/methods.js';
+import * as ipcMethods from '../ipc/methods';
 import { Signal } from '@blocksuite/store';
 import type {
   BlobProvider,
   BlobSyncStateChangeEvent,
   BlobId,
   BlobURL,
-} from '@blocksuite/store/dist/persistence/blob/types.js';
+} from '@blocksuite/store/dist/persistence/blob/types';
 
 export class IPCBlobProvider implements BlobProvider {
   #ipc = ipcMethods;
