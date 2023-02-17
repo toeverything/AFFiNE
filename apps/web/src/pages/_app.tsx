@@ -78,8 +78,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
             <ConfirmProvider key="ConfirmProvider" />,
           ]}
         >
-          <>
-            <MessageCenterHandler />
+          <MessageCenterHandler>
             {NoNeedAppStatePageList.includes(router.route) ? (
               getLayout(<Component {...pageProps} />)
             ) : (
@@ -91,7 +90,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
                 </DataCenterPreloader>
               </Suspense>
             )}
-          </>
+          </MessageCenterHandler>
         </ProviderComposer>
       </GlobalAppProvider>
     </>
