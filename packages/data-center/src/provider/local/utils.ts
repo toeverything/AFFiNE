@@ -26,8 +26,13 @@ export const createWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
   });
   blocksuiteWorkspace.meta.setName(workspaceUnit.name);
   if (!workspaceUnit.avatar) {
-    await setDefaultAvatar(blocksuiteWorkspace);
-    workspaceUnit.update({ avatar: blocksuiteWorkspace.meta.avatar });
+    try {
+      await setDefaultAvatar(blocksuiteWorkspace);
+      workspaceUnit.update({ avatar: blocksuiteWorkspace.meta.avatar });
+    } catch (err) {
+      // fixme(himself65): test environment not exist
+      console.warn('set default avatar error', err);
+    }
   }
   if (typeof window !== 'undefined') {
     await writeUpdatesToLocal(blocksuiteWorkspace);

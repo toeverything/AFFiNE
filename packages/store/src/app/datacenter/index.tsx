@@ -1,15 +1,25 @@
-import type { DataCenter } from '@affine/datacenter';
 import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
+import { DataCenter } from '@affine/datacenter';
 import { DisposableGroup } from '@blocksuite/global/utils';
+import type { PageMeta as StorePageMeta } from '@blocksuite/store';
 import React, { useCallback, useEffect } from 'react';
+const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 
-import { PageMeta } from '@/providers/app-state-provider';
-import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
-import {
-  GlobalActionsCreator,
-  useGlobalState,
-  useGlobalStateApi,
-} from '@/store/app';
+export const createDefaultWorkspace = async (dataCenter: DataCenter) => {
+  return dataCenter.createWorkspace({
+    name: DEFAULT_WORKSPACE_NAME,
+  });
+};
+
+export interface PageMeta extends StorePageMeta {
+  favorite: boolean;
+  trash: boolean;
+  trashDate: number;
+  updatedDate: number;
+  mode: 'edgeless' | 'page';
+}
+
+import { GlobalActionsCreator, useGlobalState, useGlobalStateApi } from '..';
 
 export type DataCenterState = {
   readonly dataCenter: DataCenter;

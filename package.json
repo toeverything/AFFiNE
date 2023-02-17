@@ -30,10 +30,12 @@
   "devDependencies": {
     "@changesets/cli": "^2.26.0",
     "@playwright/test": "^1.29.1",
+    "@testing-library/react": "^14.0.0",
     "@types/eslint": "^8.4.10",
     "@types/node": "^18.11.17",
     "@typescript-eslint/eslint-plugin": "^5.47.0",
     "@typescript-eslint/parser": "^5.47.0",
+    "@vitejs/plugin-react": "^3.1.0",
     "@vitest/coverage-istanbul": "^0.28.5",
     "concurrently": "^7.6.0",
     "cross-env": "^7.0.3",
@@ -46,11 +48,15 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "fake-indexeddb": "4.0.1",
     "got": "^12.5.3",
+    "happy-dom": "^8.4.4",
     "husky": "^8.0.2",
     "lint-staged": "^13.1.0",
     "nyc": "^15.1.0",
     "prettier": "^2.7.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "typescript": "^4.9.5",
+    "vite": "^4.1.2",
     "vitest": "^0.28.5"
   },
   "pnpm": {
