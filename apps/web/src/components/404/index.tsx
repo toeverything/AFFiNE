@@ -1,25 +1,26 @@
-import { NotFoundTitle, PageContainer } from './styles';
+import { StyledContainer } from './styles';
 import { useTranslation } from '@affine/i18n';
 import { Button } from '@affine/component';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
+import ErrorImg from '../../../public/imgs/invite-error.svg';
 export const NotfoundPage = () => {
   const { t } = useTranslation();
   const router = useRouter();
   return (
-    <PageContainer>
-      <NotFoundTitle data-testid="notFound">
-        {t('404 - Page Not Found')}
-        <p>
-          <Button
-            onClick={() => {
-              router.push('/workspace');
-            }}
-          >
-            {t('Back Home')}
-          </Button>
-        </p>
-      </NotFoundTitle>
-    </PageContainer>
+    <StyledContainer>
+      <Image alt="404" src={ErrorImg}></Image>
+
+      <p>{t('404 - Page Not Found')}</p>
+      <Button
+        shape="round"
+        onClick={() => {
+          router.push('/workspace');
+        }}
+      >
+        {t('Back Home')}
+      </Button>
+    </StyledContainer>
   );
 };
 
