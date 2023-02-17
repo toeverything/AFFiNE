@@ -1,4 +1,4 @@
-import { WorkspaceUnitCollection } from './workspace-unit-collection.js';
+import { WorkspaceUnitCollection } from './workspace-unit-collection';
 import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import type {
@@ -11,7 +11,7 @@ import { AffineProvider } from './provider';
 import type { Message } from './types';
 import assert from 'assert';
 import { getLogger } from './logger';
-import { createBlocksuiteWorkspace } from './utils/index.js';
+import { createBlocksuiteWorkspace } from './utils/index';
 import { MessageCenter } from './message';
 import { WorkspaceUnit } from './workspace-unit';
 /**

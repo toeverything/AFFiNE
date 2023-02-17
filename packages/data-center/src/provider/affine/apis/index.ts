@@ -1,10 +1,10 @@
 // export { token } from './token.js';
-export type { Callback } from './auth.js';
+export type { Callback } from './auth';
 
-import { getAuthorizer } from './auth.js';
-import * as user from './user.js';
-import * as workspace from './workspace.js';
-import { auth } from './auth.js';
+import { getAuthorizer } from './auth';
+import * as user from './user';
+import * as workspace from './workspace';
+import { auth } from './auth';
 
 // See https://twitter.com/mattpocockuk/status/1622730173446557697
 // TODO: move to ts utils?
@@ -37,4 +37,4 @@ export const getApis = (): Apis => {
 
 export type { AccessTokenMessage } from './auth';
 export type { Member, Workspace, WorkspaceDetail } from './workspace';
-export { WorkspaceType } from './workspace.js';
+export { WorkspaceType } from './workspace';

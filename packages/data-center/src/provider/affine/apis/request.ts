@@ -1,6 +1,6 @@
 import ky from 'ky-universal';
-import { MessageCenter } from '../../../message/index.js';
-import { auth } from './auth.js';
+import { MessageCenter } from '../../../message';
+import { auth } from './auth';
 
 type KyInstance = typeof ky;
 

@@ -1,5 +1,5 @@
-import { MessageCenter } from '../../../message/index.js';
-import { bareClient, client } from './request.js';
+import { MessageCenter } from '../../../message';
+import { bareClient, client } from './request';
 import type { User } from './user';
 
 const messageCenter = MessageCenter.getInstance();

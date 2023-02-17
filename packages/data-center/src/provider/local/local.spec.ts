@@ -1,11 +1,10 @@
-import { test, expect } from '@playwright/test';
-import { WorkspaceUnitCollection } from '../../workspace-unit-collection.js';
-import { LocalProvider } from './local.js';
-import { createBlocksuiteWorkspace } from '../../utils/index.js';
-import { MessageCenter } from '../../message/index.js';
+import { test, describe, expect } from 'vitest';
+import { WorkspaceUnitCollection } from '../../workspace-unit-collection';
+import { LocalProvider } from './local';
+import { MessageCenter } from '../../message';
 import 'fake-indexeddb/auto';
 
-test.describe.serial('local provider', () => {
+describe('local provider', () => {
   const workspaceMetaCollection = new WorkspaceUnitCollection();
   const provider = new LocalProvider({
     workspaces: workspaceMetaCollection.createScope(),

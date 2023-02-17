@@ -1,8 +1,8 @@
-import { WorkspaceUnit } from '../../workspace-unit.js';
+import { WorkspaceUnit } from '../../workspace-unit';
 import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
-import { createBlocksuiteWorkspace } from '../../utils/index.js';
-import { setDefaultAvatar } from '../utils.js';
-import { IPCBlobProvider } from './blocksuite-provider/blob.js';
+import { createBlocksuiteWorkspace } from '../../utils';
+import { setDefaultAvatar } from '../utils';
+import { IPCBlobProvider } from './blocksuite-provider/blob';
 
 export const createWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
   const workspaceUnit = new WorkspaceUnit(params);

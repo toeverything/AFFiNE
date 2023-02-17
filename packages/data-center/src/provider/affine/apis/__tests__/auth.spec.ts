@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
-import { Auth } from '../auth.js';
+import { describe, test, expect } from 'vitest';
+import { Auth } from '../auth';
 
-test.describe('class Auth', () => {
+describe('class Auth', () => {
   test('parse tokens', () => {
     const tokenString = `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NzU2Nzk1MjAsImlkIjo2LCJuYW1lIjoidGVzdCIsImVtYWlsIjoidGVzdEBnbWFpbC5jb20iLCJhdmF0YXJfdXJsIjoiaHR0cHM6Ly90ZXN0LmNvbS9hdmF0YXIiLCJjcmVhdGVkX2F0IjoxNjc1Njc4OTIwMzU4fQ.R8GxrNhn3gNumtapthrP6_J5eQjXLV7i-LanSPqe7hw`;
     expect(Auth.parseIdToken(tokenString)).toEqual({

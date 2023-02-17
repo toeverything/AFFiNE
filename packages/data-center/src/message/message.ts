@@ -1,6 +1,6 @@
 import { Observable } from 'lib0/observable';
 import { Message } from '../types';
-import { MessageCode, messages } from './code.js';
+import { MessageCode, messages } from './code';
 
 export class MessageCenter extends Observable<string> {
   private _messages: Record<number, Omit<Message, 'provider' | 'code'>> =

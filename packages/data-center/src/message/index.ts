@@ -1,2 +1,2 @@
-export { MessageCenter } from './message.js';
-export { MessageCode } from './code.js';
+export { MessageCenter } from './message';
+export { MessageCode } from './code';

@@ -48,7 +48,12 @@ const nextConfig = {
     COMMIT_HASH: getCommitHash(),
     EDITOR_VERSION,
   },
-  transpilePackages: ['@affine/component', '@affine/i18n'],
+  transpilePackages: [
+    '@affine/component',
+    '@affine/i18n',
+    '@affine/datacenter',
+    '@toeverything/pathfinder-logger',
+  ],
   webpack: config => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
     config.resolve.alias['yjs'] = require.resolve('yjs');

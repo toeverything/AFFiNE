@@ -1,4 +1,4 @@
-import { BaseProvider } from '../base.js';
+import { BaseProvider } from '../base';
 import type {
   ProviderConstructorParams,
   CreateWorkspaceInfoParams,
@@ -6,9 +6,9 @@ import type {
 import type { User } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import assert from 'assert';
-import { WebsocketProvider } from './sync.js';
+import { WebsocketProvider } from './sync';
 // import { IndexedDBProvider } from '../local/indexeddb';
-import { getApis, Workspace } from './apis/index.js';
+import { getApis, Workspace } from './apis';
 import type { Apis, WorkspaceDetail } from './apis';
 import { WebsocketClient } from './channel';
 import {
@@ -16,11 +16,11 @@ import {
   createWorkspaceUnit,
   migrateBlobDB,
   createBlocksuiteWorkspaceWithAuth,
-} from './utils.js';
-import { WorkspaceUnit } from '../../workspace-unit.js';
-import { applyUpdate } from '../../utils/index.js';
+} from './utils';
+import { WorkspaceUnit } from '../../workspace-unit';
+import { applyUpdate } from '../../utils';
 import type { SyncMode } from '../../workspace-unit';
-import { MessageCenter } from '../../message/index.js';
+import { MessageCenter } from '../../message';
 
 type ChannelMessage = {
   ws_list: Workspace[];

@@ -1,5 +1,5 @@
 import { createStore, keys, setMany, getMany, clear } from 'idb-keyval';
-import * as idb from 'lib0/indexeddb.js';
+import * as idb from 'lib0/indexeddb';
 
 type IDBInstance<T = ArrayBufferLike> = {
   keys: () => Promise<string[]>;

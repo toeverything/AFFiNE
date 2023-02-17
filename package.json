@@ -4,12 +4,11 @@
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
-  "type": "module",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development pnpm --filter=!@affine/app build && pnpm --filter @affine/app dev",
-    "dev:ac": "pnpm --filter=!@affine/app build && cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
-    "dev:local": "pnpm --filter=!@affine/app build && cross-env NODE_API_SERVER=local pnpm --filter @affine/app dev",
-    "build": " pnpm --filter=!@affine/app build && pnpm --filter!=@affine/datacenter -r build",
+    "dev": "pnpm --filter @affine/app dev",
+    "dev:ac": "cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
+    "dev:local": "cross-env NODE_API_SERVER=local pnpm --filter @affine/app dev",
+    "build": "pnpm --filter @affine/app build",
     "build:client": " pnpm --filter=@affine/client-app build:app",
     "build:storybook": " pnpm -r build-storybook",
     "export": "pnpm --filter @affine/app export",
@@ -17,7 +16,8 @@
     "lint": "pnpm --filter @affine/app lint",
     "test": "playwright test",
     "test:coverage": "cross-env COVERAGE=true pnpm test -- --forbid-only",
-    "test:unit": "playwright test --config=playwright.config.unit.ts",
+    "test:unit": "vitest --run",
+    "test:unit:coverage": "vitest run --coverage",
     "postinstall": "husky install",
     "notify": "node --experimental-modules scripts/notify.mjs",
     "update:blocksuite": "pnpm i --filter @affine/app --filter @affine/datacenter @blocksuite/blocks@nightly @blocksuite/store@nightly && pnpm i --filter @affine/app @blocksuite/editor@nightly"
@@ -33,6 +33,7 @@
     "@types/node": "^18.11.17",
     "@typescript-eslint/eslint-plugin": "^5.47.0",
     "@typescript-eslint/parser": "^5.47.0",
+    "@vitest/coverage-istanbul": "^0.28.5",
     "concurrently": "^7.6.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.30.0",
@@ -45,7 +46,8 @@
     "lint-staged": "^13.1.0",
     "nyc": "^15.1.0",
     "prettier": "^2.7.1",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "vitest": "^0.28.5"
   },
   "eslintConfig": {
     "root": true,

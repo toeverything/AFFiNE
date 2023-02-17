@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import * as idb from 'lib0/indexeddb.js';
-import { Observable } from 'lib0/observable.js';
+import * as idb from 'lib0/indexeddb';
+import { Observable } from 'lib0/observable';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 
 const customStoreName = 'custom';
