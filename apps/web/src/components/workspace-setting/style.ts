@@ -55,7 +55,7 @@ export const StyledSettingKey = styled.div(({ theme }) => {
 });
 export const StyledRow = styled(FlexWrapper)(() => {
   return {
-    marginBottom: '32px',
+    marginBottom: '42px',
   };
 });
 

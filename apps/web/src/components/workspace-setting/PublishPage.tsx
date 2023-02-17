@@ -31,7 +31,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
     if (workspace.published) {
       return (
         <>
-          <Wrapper marginBottom="32px">{t('Published Description')}</Wrapper>
+          <Wrapper marginBottom="42px">{t('Published Description')}</Wrapper>
 
           <Wrapper marginBottom="12px">
             <Content weight="500">{t('Share with link')}</Content>
@@ -65,7 +65,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
     return (
       <>
-        <Wrapper marginBottom="32px">{t('Publishing Description')}</Wrapper>
+        <Wrapper marginBottom="42px">{t('Publishing Description')}</Wrapper>
         <Button
           onClick={async () => {
             setLoaded(true);
@@ -83,7 +83,7 @@ export const PublishPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
 
   return (
     <>
-      <Wrapper marginBottom="32px">{t('Publishing')}</Wrapper>
+      <Wrapper marginBottom="42px">{t('Publishing')}</Wrapper>
       <Button
         type="light"
         shape="circle"

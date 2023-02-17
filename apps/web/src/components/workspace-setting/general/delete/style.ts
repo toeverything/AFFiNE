@@ -42,7 +42,7 @@ export const StyledInputContent = styled('div')(({ theme }) => {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
-    margin: '32px 0',
+    margin: '42px 0',
     fontSize: theme.font.base,
   };
 });
@@ -52,7 +52,7 @@ export const StyledButtonContent = styled('div')(() => {
     position: 'absolute',
     left: '50%',
     transform: 'translateX(-50%)',
-    bottom: '32px',
+    bottom: '42px',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',

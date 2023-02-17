@@ -5,7 +5,7 @@ export const StyledMemberTitleContainer = styled('li')(() => {
   return {
     display: 'flex',
     fontWeight: '500',
-    marginBottom: '32px',
+    marginBottom: '42px',
     flex: 1,
   };
 });
