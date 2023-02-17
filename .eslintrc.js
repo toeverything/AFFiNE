@@ -35,7 +35,6 @@ module.exports = {
     'no-empty': 'off',
     'no-func-assign': 'off',
     'no-cond-assign': 'off',
-    'react/react-in-jsx-scope': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',

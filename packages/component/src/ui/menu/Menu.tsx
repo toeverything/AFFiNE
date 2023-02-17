@@ -1,8 +1,8 @@
 import { TooltipProps } from '@mui/material';
+import React from 'react';
 
 import { Popper, type PopperProps } from '../popper';
 import { StyledMenuWrapper } from './styles';
-
 export const Menu = (props: PopperProps & Omit<TooltipProps, 'title'>) => {
   const { content, placement = 'bottom-start', children } = props;
   return content ? (

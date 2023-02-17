@@ -6,9 +6,9 @@ import {
   HTMLAttributes,
   ReactElement,
 } from 'react';
+import React from 'react';
 
 import { StyledIconButton } from './styles';
-
 const SIZE_SMALL = 'small' as const;
 const SIZE_MIDDLE = 'middle' as const;
 const SIZE_NORMAL = 'normal' as const;

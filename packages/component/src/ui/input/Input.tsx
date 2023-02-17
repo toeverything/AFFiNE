@@ -6,9 +6,9 @@ import {
   useEffect,
   useState,
 } from 'react';
+import React from 'react';
 
 import { StyledInput } from './style';
-
 type inputProps = {
   value?: string;
   placeholder?: string;
