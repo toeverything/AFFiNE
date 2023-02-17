@@ -39,7 +39,7 @@ export const createUserActions: GlobalActionsCreator<UserActions> = (
           // isOwner is useful only in the cloud
           isOwner = true;
         } else {
-          isOwner = user?.id === workspace?.owner?.id;
+          isOwner = user.id === workspace?.owner?.id;
         }
 
         set({ user, isOwner });
