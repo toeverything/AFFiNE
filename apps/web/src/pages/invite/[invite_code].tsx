@@ -1,19 +1,20 @@
-import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { displayFlex, styled } from '@affine/component';
 import { Button } from '@affine/component';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
-
-import { PageLoading } from '@/components/loading';
-import inviteSuccess from '../../../public/imgs/invite-success.svg';
-import inviteError from '../../../public/imgs/invite-error.svg';
+import { Permission } from '@affine/datacenter';
 import {
   SucessfulDuotoneIcon,
   UnsucessfulDuotoneIcon,
 } from '@blocksuite/icons';
 import Image from 'next/image';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
+
+import { PageLoading } from '@/components/loading';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { useGlobalState } from '@/store/app';
-import { Permission } from '@affine/datacenter';
+
+import inviteError from '../../../public/imgs/invite-error.svg';
+import inviteSuccess from '../../../public/imgs/invite-success.svg';
 
 export default function DevPage() {
   const [loading, setLoading] = useState(true);
