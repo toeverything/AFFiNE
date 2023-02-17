@@ -1,4 +1,4 @@
-import { styled, displayFlex } from '../../styles';
+import { displayFlex, styled } from '../../styles';
 
 export const StyledEmptyContainer = styled.div(() => {
   return {
