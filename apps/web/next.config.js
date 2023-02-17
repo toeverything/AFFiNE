@@ -52,6 +52,7 @@ const nextConfig = {
     '@affine/component',
     '@affine/i18n',
     '@affine/datacenter',
+    '@toeverything/pathfinder-logger',
   ],
   webpack: config => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
