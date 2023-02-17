@@ -1,4 +1,4 @@
-import { MessageCenter } from '../../../message/index';
+import { MessageCenter } from '../../../message';
 import { bareClient, client } from './request';
 import type { User } from './user';
 
