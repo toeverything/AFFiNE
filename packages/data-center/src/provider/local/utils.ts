@@ -1,8 +1,8 @@
-import { WorkspaceUnit } from '../../workspace-unit';
-import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
 import { createBlocksuiteWorkspace } from '../../utils';
-import { applyLocalUpdates, writeUpdatesToLocal } from './indexeddb/utils';
+import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
+import { WorkspaceUnit } from '../../workspace-unit';
 import { setDefaultAvatar } from '../utils';
+import { applyLocalUpdates, writeUpdatesToLocal } from './indexeddb/utils';
 
 export const loadWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
   const workspaceUnit = new WorkspaceUnit(params);

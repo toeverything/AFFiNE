@@ -1,4 +1,5 @@
 import getConfig from 'next/config';
+
 import { isDev } from './env';
 type Config = {
   BUILD_DATE: string;

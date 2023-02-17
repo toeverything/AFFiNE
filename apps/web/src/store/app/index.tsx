@@ -3,6 +3,7 @@ import { createContext, useContext, useMemo } from 'react';
 import { createStore, StateCreator, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
 import type { UseBoundStore } from 'zustand/react';
+
 import {
   BlockSuiteActions,
   BlockSuiteState,
@@ -10,17 +11,17 @@ import {
   createBlockSuiteState,
 } from '@/store/app/blocksuite';
 import {
-  createUserActions,
-  createUserState,
-  UserActions,
-  UserState,
-} from '@/store/app/user';
-import {
   createDataCenterActions,
   createDataCenterState,
   DataCenterActions,
   DataCenterState,
 } from '@/store/app/datacenter';
+import {
+  createUserActions,
+  createUserState,
+  UserActions,
+  UserState,
+} from '@/store/app/user';
 
 export type GlobalActionsCreator<Actions, Store = GlobalState> = StateCreator<
   Store,

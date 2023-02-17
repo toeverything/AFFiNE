@@ -1,4 +1,4 @@
-import { styled, displayFlex } from '@affine/component';
+import { displayFlex, styled } from '@affine/component';
 
 export const StyledEdgelessToolbar = styled.div(({ theme }) => ({
   height: '320px',

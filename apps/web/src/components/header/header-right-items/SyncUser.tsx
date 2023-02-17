@@ -1,10 +1,11 @@
-import { LocalWorkspaceIcon, CloudWorkspaceIcon } from '@blocksuite/icons';
-import { displayFlex, styled, Tooltip, IconButton } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
-import { useModal } from '@/store/globalModal';
-import { useCallback, useEffect, useState } from 'react';
+import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
 import { WorkspaceUnit } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
+import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
+import { useCallback, useEffect, useState } from 'react';
+
 import { useGlobalState } from '@/store/app';
+import { useModal } from '@/store/globalModal';
 
 const NoNetWorkIcon = () => {
   return (

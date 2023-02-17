@@ -1,11 +1,12 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
+import { MigrationError } from '@blocksuite/global/error';
 import { Meta, StoryFn } from '@storybook/react';
 import React from 'react';
+
 import {
   BlockSuiteErrorBoundary,
   BlockSuiteErrorBoundaryProps,
 } from '../components/BlockSuiteErrorBoundary';
-import { MigrationError } from '@blocksuite/global/error';
 
 export default {
   title: 'BlockSuite/ErrorBoundary',
@@ -22,5 +23,8 @@ export const ErrorComponent = () => {
 
 export const Primary = Template.bind(undefined);
 Primary.args = {
-  children: [<span>There is no error</span>, <ErrorComponent />],
+  children: [
+    <span key="1">There is no error</span>,
+    <ErrorComponent key="2" />,
+  ],
 };

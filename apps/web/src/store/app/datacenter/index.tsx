@@ -1,14 +1,15 @@
+import type { DataCenter } from '@affine/datacenter';
+import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
+import { DisposableGroup } from '@blocksuite/global/utils';
+import React, { useCallback, useEffect } from 'react';
+
+import { PageMeta } from '@/providers/app-state-provider';
+import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
 import {
   GlobalActionsCreator,
   useGlobalState,
   useGlobalStateApi,
 } from '@/store/app';
-import type { DataCenter } from '@affine/datacenter';
-import { PageMeta } from '@/providers/app-state-provider';
-import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
-import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
-import React, { useCallback, useEffect } from 'react';
-import { DisposableGroup } from '@blocksuite/global/utils';
 
 export type DataCenterState = {
   readonly dataCenter: DataCenter;

@@ -1,17 +1,19 @@
-import { ReactElement, useEffect, useMemo } from 'react';
-import type { NextPageWithLayout } from '../..//_app';
 import { displayFlex, styled } from '@affine/component';
-import dynamic from 'next/dynamic';
-import { useRouter } from 'next/router';
-import { PageLoading } from '@/components/loading';
 import { Breadcrumbs } from '@affine/component';
 import { IconButton } from '@affine/component';
-import NextLink from 'next/link';
-import { PaperIcon, SearchIcon } from '@blocksuite/icons';
-import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { useModal } from '@/store/globalModal';
-import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
 import { useTranslation } from '@affine/i18n';
+import { PaperIcon, SearchIcon } from '@blocksuite/icons';
+import dynamic from 'next/dynamic';
+import NextLink from 'next/link';
+import { useRouter } from 'next/router';
+import { ReactElement, useEffect, useMemo } from 'react';
+
+import { PageLoading } from '@/components/loading';
+import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
+import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
+import { useModal } from '@/store/globalModal';
+
+import type { NextPageWithLayout } from '../..//_app';
 
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,

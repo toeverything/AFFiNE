@@ -3,6 +3,7 @@ import { displayFlex, styled } from '@affine/component';
 import { Button } from '@affine/component';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+
 import { PageLoading } from '@/components/loading';
 import inviteSuccess from '../../../public/imgs/invite-success.svg';
 import inviteError from '../../../public/imgs/invite-error.svg';

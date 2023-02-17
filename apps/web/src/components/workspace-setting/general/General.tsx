@@ -1,30 +1,31 @@
-import {
-  StyledInput,
-  StyledWorkspaceInfo,
-  StyledAvatar,
-  StyledEditButton,
-} from './style';
-import { StyledSettingKey, StyledRow } from '../style';
 import { FlexWrapper, MuiAvatar } from '@affine/component';
-
-import { useCallback, useState } from 'react';
 import { Button } from '@affine/component';
-import { WorkspaceDelete } from './delete';
-import { WorkspaceLeave } from './leave';
+import { MuiFade } from '@affine/component';
+import { WorkspaceUnit } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
+import { EmailIcon } from '@blocksuite/icons';
+import { useCallback, useState } from 'react';
+
+import { Upload } from '@/components/file-upload';
 import {
-  JoinedWorkspaceIcon,
   CloudWorkspaceIcon,
+  JoinedWorkspaceIcon,
   LocalWorkspaceIcon,
 } from '@/components/icons';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { WorkspaceUnit } from '@affine/datacenter';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-import { useTranslation } from '@affine/i18n';
-import { CameraIcon } from './icons';
-import { Upload } from '@/components/file-upload';
-import { MuiFade } from '@affine/component';
 import { useGlobalState } from '@/store/app';
-import { EmailIcon } from '@blocksuite/icons';
+
+import { StyledRow, StyledSettingKey } from '../style';
+import { WorkspaceDelete } from './delete';
+import { CameraIcon } from './icons';
+import { WorkspaceLeave } from './leave';
+import {
+  StyledAvatar,
+  StyledEditButton,
+  StyledInput,
+  StyledWorkspaceInfo,
+} from './style';
 export const GeneralPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);

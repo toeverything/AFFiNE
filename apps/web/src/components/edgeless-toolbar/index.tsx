@@ -1,25 +1,27 @@
-import { useState, useEffect } from 'react';
-import {
-  StyledEdgelessToolbar,
-  StyledToolbarWrapper,
-  StyledToolbarItem,
-} from './style';
-import {
-  SelectIcon,
-  TextIcon,
-  ShapeIcon,
-  PenIcon,
-  StickerIcon,
-  ConnectorIcon,
-  UndoIcon,
-  RedoIcon,
-} from './Icons';
 import { MuiSlide } from '@affine/component';
 import { Tooltip } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
+import { useEffect, useState } from 'react';
+
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import useHistoryUpdated from '@/hooks/use-history-update';
-import { useTranslation } from '@affine/i18n';
 import { useGlobalState } from '@/store/app';
+
+import {
+  ConnectorIcon,
+  PenIcon,
+  RedoIcon,
+  SelectIcon,
+  ShapeIcon,
+  StickerIcon,
+  TextIcon,
+  UndoIcon,
+} from './Icons';
+import {
+  StyledEdgelessToolbar,
+  StyledToolbarItem,
+  StyledToolbarWrapper,
+} from './style';
 
 const useToolbarList1 = () => {
   const { t } = useTranslation();

@@ -1,13 +1,14 @@
 import { styled } from '@affine/component';
-import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
-import { useRef, useState } from 'react';
 import { Input } from '@affine/component';
-import { KeyboardEvent } from 'react';
-import { useTranslation } from '@affine/i18n';
-import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-import { useRouter } from 'next/router';
 import { toast } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
+import { useRouter } from 'next/router';
+import { useRef, useState } from 'react';
+import { KeyboardEvent } from 'react';
+
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 
 interface ModalProps {
   open: boolean;

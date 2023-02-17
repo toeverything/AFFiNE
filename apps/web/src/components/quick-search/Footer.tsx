@@ -1,9 +1,11 @@
-import React from 'react';
-import { PlusIcon } from '@blocksuite/icons';
-import { StyledModalFooterContent } from './style';
-import { Command } from 'cmdk';
-import { usePageHelper } from '@/hooks/use-page-helper';
 import { useTranslation } from '@affine/i18n';
+import { PlusIcon } from '@blocksuite/icons';
+import { Command } from 'cmdk';
+import React from 'react';
+
+import { usePageHelper } from '@/hooks/use-page-helper';
+
+import { StyledModalFooterContent } from './style';
 export const Footer = (props: { query: string; onClose: () => void }) => {
   const { openPage, createPage } = usePageHelper();
   const { t } = useTranslation();

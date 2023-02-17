@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
 import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
-import getIsMobile from '@/utils/get-is-mobile';
-import { StyledButton, StyledContent, StyledTitle } from './styles';
-import bg from './bg.png';
 import { useTranslation } from '@affine/i18n';
+import React, { useState } from 'react';
+
+import getIsMobile from '@/utils/get-is-mobile';
+
+import bg from './bg.png';
+import { StyledButton, StyledContent, StyledTitle } from './styles';
 export const MobileModal = () => {
   const [showModal, setShowModal] = useState(getIsMobile());
   const { t } = useTranslation();

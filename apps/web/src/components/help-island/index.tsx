@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react';
+import { Tooltip } from '@affine/component';
+import { MuiFade } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
+import { CloseIcon } from '@blocksuite/icons';
+import { useEffect, useState } from 'react';
+
+import { useGlobalState } from '@/store/app';
+import { useModal } from '@/store/globalModal';
+
+import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
 import {
-  StyledIsland,
-  StyledIconWrapper,
   StyledAnimateWrapper,
+  StyledIconWrapper,
+  StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
-import { Tooltip } from '@affine/component';
-
-import { useTranslation } from '@affine/i18n';
-import { useModal } from '@/store/globalModal';
-import { MuiFade } from '@affine/component';
-import { useGlobalState } from '@/store/app';
-import { CloseIcon } from '@blocksuite/icons';
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({
   showList = ['contact', 'shortcuts'],

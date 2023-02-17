@@ -1,10 +1,11 @@
+import { useTranslation } from '@affine/i18n';
+import { FavouritesIcon } from '@blocksuite/icons';
+import Head from 'next/head';
+import { ReactElement } from 'react';
+
 import { PageListHeader } from '@/components/header';
 import { PageList } from '@/components/page-list';
-import { FavouritesIcon } from '@blocksuite/icons';
-import { ReactElement } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
-import { useTranslation } from '@affine/i18n';
-import Head from 'next/head';
 import { useGlobalState } from '@/store/app';
 
 export const Favorite = () => {

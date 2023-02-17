@@ -1,6 +1,7 @@
 import { styled } from '@affine/component';
-import Loading from './Loading';
 import { useTranslation } from '@affine/i18n';
+
+import Loading from './Loading';
 
 // Used for the full page loading
 const StyledLoadingContainer = styled('div')(() => {

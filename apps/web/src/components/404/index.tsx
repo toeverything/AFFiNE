@@ -1,9 +1,8 @@
 import { StyledContainer } from './styles';
 import { useTranslation } from '@affine/i18n';
-import { Button } from '@affine/component';
-import { useRouter } from 'next/router';
 import Image from 'next/image';
 import ErrorImg from '../../../public/imgs/invite-error.svg';
+
 export const NotfoundPage = () => {
   const { t } = useTranslation();
   const router = useRouter();

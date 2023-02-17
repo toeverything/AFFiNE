@@ -1,5 +1,4 @@
 import type { EditorContainer } from '@blocksuite/editor';
-
 import type {
   Page as StorePage,
   PageMeta as StorePageMeta,

@@ -1,5 +1,5 @@
-import React, { Component, ErrorInfo } from 'react';
 import { MigrationError } from '@blocksuite/global/error';
+import React, { Component, ErrorInfo } from 'react';
 
 export type BlockSuiteErrorBoundaryProps = React.PropsWithChildren;
 
@@ -43,6 +43,7 @@ export class BlockSuiteErrorBoundary extends Component<
                 <a
                   target="_blank"
                   href="https://github.com/toeverything/blocksuite/issues"
+                  rel="noreferrer"
                 >
                   BlockSuite Github Issue
                 </a>

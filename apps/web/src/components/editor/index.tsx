@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
-import type { Page, Workspace } from '@blocksuite/store';
 import '@blocksuite/blocks';
-import { EditorContainer } from '@blocksuite/editor';
+
 import { styled } from '@affine/component';
+import { EditorContainer } from '@blocksuite/editor';
+import type { Page, Workspace } from '@blocksuite/store';
+import { useEffect, useRef } from 'react';
 
 const StyledEditorContainer = styled('div')(() => {
   return {

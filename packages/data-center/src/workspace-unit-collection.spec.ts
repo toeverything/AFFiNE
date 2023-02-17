@@ -1,7 +1,8 @@
-import { describe, test, expect } from 'vitest';
-import { WorkspaceUnitCollection } from './workspace-unit-collection';
-import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
+import { describe, expect, test } from 'vitest';
+
 import { WorkspaceUnit } from './workspace-unit';
+import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
+import { WorkspaceUnitCollection } from './workspace-unit-collection';
 
 describe('workspace meta collection observable', () => {
   const workspaceUnitCollection = new WorkspaceUnitCollection();

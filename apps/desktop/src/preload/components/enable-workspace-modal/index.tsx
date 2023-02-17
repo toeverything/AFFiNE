@@ -1,12 +1,14 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
-import { useCallback, useState } from 'react';
-import router from 'next/router';
 import { toast } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
+import router from 'next/router';
+import { useCallback, useState } from 'react';
+
 import { useGlobalState } from '@/store/app';
-import { Header, Content, ContentTitle, StyleTips, StyleButton } from './style';
+
+import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 
 interface EnableWorkspaceModalProps {
   open: boolean;

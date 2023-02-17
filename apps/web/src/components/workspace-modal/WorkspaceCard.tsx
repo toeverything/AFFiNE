@@ -1,16 +1,18 @@
-import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
+import { WorkspaceUnit } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
+import { useCallback } from 'react';
+
 import {
-  JoinedWorkspaceIcon,
-  LocalWorkspaceIcon,
   CloudWorkspaceIcon,
+  JoinedWorkspaceIcon,
   LocalDataIcon,
+  LocalWorkspaceIcon,
   PublishIcon,
 } from '@/components/icons';
-import { WorkspaceUnit } from '@affine/datacenter';
-import { StyleWorkspaceInfo, StyleWorkspaceTitle, StyledCard } from './styles';
-import { useTranslation } from '@affine/i18n';
+import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { useGlobalState } from '@/store/app';
-import { useCallback } from 'react';
+
+import { StyledCard, StyleWorkspaceInfo, StyleWorkspaceTitle } from './styles';
 
 const WorkspaceType = ({ workspaceData }: { workspaceData: WorkspaceUnit }) => {
   const user = useGlobalState(store => store.user);

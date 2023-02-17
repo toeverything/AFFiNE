@@ -1,10 +1,12 @@
-import { StyledWorkspaceName } from './style';
+import { Button, Content, FlexWrapper, Wrapper } from '@affine/component';
 import { WorkspaceUnit } from '@affine/datacenter';
-import { useTranslation, Trans } from '@affine/i18n';
+import { Trans, useTranslation } from '@affine/i18n';
+
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { FlexWrapper, Content, Wrapper, Button } from '@affine/component';
-import { useModal } from '@/store/globalModal';
 import { useGlobalState } from '@/store/app';
+import { useModal } from '@/store/globalModal';
+
+import { StyledWorkspaceName } from './style';
 
 // // FIXME: Temporary solution, since the @blocksuite/icons is broken
 // const ActiveIcon = () => {

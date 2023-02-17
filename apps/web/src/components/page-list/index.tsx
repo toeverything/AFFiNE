@@ -1,16 +1,3 @@
-import { PageMeta } from '@/providers/app-state-provider';
-import {
-  FavouritedIcon,
-  FavouritesIcon,
-  PaperIcon,
-  EdgelessIcon,
-} from '@blocksuite/icons';
-import {
-  StyledTableContainer,
-  StyledTableRow,
-  StyledTitleLink,
-  StyledTitleWrapper,
-} from './styles';
 import {
   Table,
   TableBody,
@@ -18,19 +5,34 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
-import { OperationCell, TrashOperationCell } from './OperationCell';
-import Empty from './Empty';
 import { Content } from '@affine/component';
-import React, { useCallback } from 'react';
-import DateCell from '@/components/page-list/DateCell';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
-import { useRouter } from 'next/router';
 import { toast } from '@affine/component';
-import { usePageHelper } from '@/hooks/use-page-helper';
-import { useTheme } from '@/providers/ThemeProvider';
 import { useTranslation } from '@affine/i18n';
+import {
+  EdgelessIcon,
+  FavouritedIcon,
+  FavouritesIcon,
+  PaperIcon,
+} from '@blocksuite/icons';
+import { useRouter } from 'next/router';
+import React, { useCallback } from 'react';
+
+import DateCell from '@/components/page-list/DateCell';
+import { usePageHelper } from '@/hooks/use-page-helper';
+import { PageMeta } from '@/providers/app-state-provider';
+import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalState } from '@/store/app';
+
+import Empty from './Empty';
+import { OperationCell, TrashOperationCell } from './OperationCell';
+import {
+  StyledTableContainer,
+  StyledTableRow,
+  StyledTitleLink,
+  StyledTitleWrapper,
+} from './styles';
 const FavoriteTag = ({
   pageMeta: { favorite, id },
 }: {

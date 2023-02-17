@@ -1,6 +1,8 @@
 import '@emotion/react';
-import { AffineTheme, AffineThemeCSSVariables, ThemeMode } from './types';
+
 import type { EditorContainer } from '@blocksuite/editor';
+
+import { AffineTheme, AffineThemeCSSVariables, ThemeMode } from './types';
 
 const basicFontFamily =
   'apple-system, BlinkMacSystemFont,Helvetica Neue, Tahoma, PingFang SC, Microsoft Yahei, Arial,Hiragino Sans GB, sans-serif, Apple Color Emoji, Segoe UI Emoji,Segoe UI Symbol, Noto Color Emoji';
@@ -95,7 +97,7 @@ export const getDarkTheme = (
       primaryColor: '#6880FF',
       pageBackground: '#2c2c2c',
       hoverBackground: '#3C3C42',
-      innerHoverBackground: '#E0E6FF',
+      innerHoverBackground: '#5A5A5A',
       popoverBackground: '#1F2021',
       tooltipBackground: '#0C0A15',
       codeBackground:

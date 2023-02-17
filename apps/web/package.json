@@ -47,10 +47,7 @@
     "@types/react-dom": "18.0.6",
     "@types/wicg-file-system-access": "^2020.9.5",
     "chalk": "^4.1.2",
-    "eslint": "8.22.0",
     "eslint-config-next": "12.3.1",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1",
     "raw-loader": "^4.0.2",
     "typescript": "^4.9.5"
   },

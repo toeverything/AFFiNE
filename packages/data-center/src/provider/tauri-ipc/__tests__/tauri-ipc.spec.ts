@@ -1,10 +1,11 @@
-import { describe, test, expect } from 'vitest';
+import 'fake-indexeddb/auto';
+
+import { describe, expect, test } from 'vitest';
+
+import { MessageCenter } from '../../../message';
 import { WorkspaceUnitCollection } from '../../../workspace-unit-collection';
 import { TauriIPCProvider } from '..';
-import { MessageCenter } from '../../../message';
 import * as ipcMethods from './mock-apis';
-
-import 'fake-indexeddb/auto';
 
 describe('tauri-ipc provider', async () => {
   const workspaceMetaCollection = new WorkspaceUnitCollection();

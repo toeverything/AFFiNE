@@ -1,9 +1,11 @@
 import { positionAbsolute, styled } from '@affine/component';
-import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { GoogleIcon } from './GoogleIcon';
+
 import { useGlobalState } from '@/store/app';
+
+import { GoogleIcon } from './GoogleIcon';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
