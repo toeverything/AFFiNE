@@ -33,7 +33,7 @@ const resources = LOCALES.reduce<Resource>(
 
 const fallbackLng = 'en';
 const standardizeLocale = (language: string) => {
-  if (language === 'zh-CN' || language === 'zh') {
+  if (language === 'zh-CN' || language === 'zh' || language === 'zh-Hans') {
     language = 'zh-Hans';
   } else if (language.slice(0, 2).toLowerCase() === 'zh') {
     language = 'zh-Hant';
