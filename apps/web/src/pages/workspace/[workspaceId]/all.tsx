@@ -4,16 +4,13 @@ import { PageListHeader } from '@/components/header';
 import { ReactElement, useCallback } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useTranslation } from '@affine/i18n';
-import { PageMeta } from '@/providers/app-state-provider';
 import Head from 'next/head';
 import { useGlobalState } from '@/store/app';
 
 const All = () => {
-  const currentWorkspace = useGlobalState(
-    useCallback(store => store.currentDataCenterWorkspace, [])
+  const pageList = useGlobalState(
+    useCallback(store => store.dataCenterPageList, [])
   );
-  const pageList = (currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas ||
-    []) as PageMeta[];
   const { t } = useTranslation();
   return (
     <>
