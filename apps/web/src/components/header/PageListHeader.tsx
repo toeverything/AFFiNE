@@ -1,4 +1,5 @@
 import { PropsWithChildren, ReactNode } from 'react';
+
 import Header from './Header';
 import QuickSearchButton from './QuickSearchButton';
 import { StyledPageListTittleWrapper } from './styles';

@@ -1,10 +1,12 @@
 import { styled } from '@affine/component';
-import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
-import { Check, UnCheck } from './icon';
-import { useState } from 'react';
 import { useTranslation } from '@affine/i18n';
+import { useState } from 'react';
+
 import { useAppState } from '@/providers/app-state-provider';
+
+import { Check, UnCheck } from './icon';
 interface LoginModalProps {
   open: boolean;
   onClose: (wait: boolean) => void;

@@ -1,6 +1,7 @@
+import { useTranslation } from '@affine/i18n';
+import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { Command } from 'cmdk';
-import { StyledListItem, StyledNotFound } from './style';
-import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
+import { useRouter } from 'next/router';
 import {
   Dispatch,
   SetStateAction,
@@ -8,12 +9,13 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { useRouter } from 'next/router';
-import { useSwitchToConfig } from './config';
-import { NoResultSVG } from './NoResultSVG';
-import { useTranslation } from '@affine/i18n';
+
 import usePageHelper from '@/hooks/use-page-helper';
 import { useGlobalState } from '@/store/app';
+
+import { useSwitchToConfig } from './config';
+import { NoResultSVG } from './NoResultSVG';
+import { StyledListItem, StyledNotFound } from './style';
 export const Results = (props: {
   query: string;
   loading: boolean;

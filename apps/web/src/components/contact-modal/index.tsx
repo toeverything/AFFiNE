@@ -1,29 +1,31 @@
 import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
-import {
-  LogoIcon,
-  DocIcon,
-  TwitterIcon,
-  GithubIcon,
-  DiscordIcon,
-  TelegramIcon,
-  RedditIcon,
-  LinkIcon,
-} from './Icons';
+import { useTranslation } from '@affine/i18n';
+
+import bg from '@/components/contact-modal/bg.png';
+
 import logo from './affine-text-logo.png';
 import {
+  DiscordIcon,
+  DocIcon,
+  GithubIcon,
+  LinkIcon,
+  LogoIcon,
+  RedditIcon,
+  TelegramIcon,
+  TwitterIcon,
+} from './Icons';
+import {
   StyledBigLink,
-  StyledSmallLink,
-  StyledSubTitle,
-  StyledLeftContainer,
-  StyledRightContainer,
   StyledContent,
+  StyledLeftContainer,
   StyledLogo,
+  StyledModalFooter,
   StyledModalHeader,
   StyledModalHeaderLeft,
-  StyledModalFooter,
+  StyledRightContainer,
+  StyledSmallLink,
+  StyledSubTitle,
 } from './style';
-import bg from '@/components/contact-modal/bg.png';
-import { useTranslation } from '@affine/i18n';
 const linkList = [
   {
     icon: <GithubIcon />,

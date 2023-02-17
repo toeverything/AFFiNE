@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
 import type { WorkspaceUnit } from '@affine/datacenter';
+import { useEffect, useState } from 'react';
+
 import { WorkspaceAvatar as Avatar } from './Avatar';
 
 const useAvatar = (workspaceUnit: WorkspaceUnit | null) => {

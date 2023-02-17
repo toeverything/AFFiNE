@@ -1,20 +1,22 @@
 import { Modal, ModalWrapper } from '@affine/component';
-import {
-  StyledContent,
-  StyledModalHeader,
-  StyledModalFooter,
-  StyledModalDivider,
-  StyledShortcut,
-} from './style';
-import { Input } from './Input';
-import { Results } from './Results';
-import { Footer } from './Footer';
 import { Command } from 'cmdk';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+
 import { useModal } from '@/store/globalModal';
 import { getUaHelper } from '@/utils';
-import { useRouter } from 'next/router';
+
+import { Footer } from './Footer';
+import { Input } from './Input';
 import { PublishedResults } from './PublishedResults';
+import { Results } from './Results';
+import {
+  StyledContent,
+  StyledModalDivider,
+  StyledModalFooter,
+  StyledModalHeader,
+  StyledShortcut,
+} from './style';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;

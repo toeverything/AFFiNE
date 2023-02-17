@@ -1,9 +1,9 @@
-import { cloneElement, Children, forwardRef } from 'react';
-import { StyledButton } from './styles';
+import { Children, cloneElement, forwardRef } from 'react';
 
 import { ButtonProps } from './interface';
-import { getSize } from './utils';
 import { Loading } from './Loading';
+import { StyledButton } from './styles';
+import { getSize } from './utils';
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (

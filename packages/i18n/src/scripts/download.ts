@@ -1,7 +1,9 @@
 // cSpell:ignore Tolgee
 import fs from 'node:fs/promises';
 import path from 'node:path';
+
 import { format } from 'prettier';
+
 import { getAllProjectLanguages, getRemoteTranslations } from './api.js';
 import type { TranslationRes } from './utils.js';
 

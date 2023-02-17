@@ -7,15 +7,15 @@
 
 // import * as Y from 'yjs'; // eslint-disable-line
 import * as bc from 'lib0/broadcastchannel';
-import * as time from 'lib0/time';
-import * as encoding from 'lib0/encoding';
 import * as decoding from 'lib0/decoding';
-import * as syncProtocol from 'y-protocols/sync';
+import * as encoding from 'lib0/encoding';
+import * as math from 'lib0/math';
+import { Observable } from 'lib0/observable';
+import * as time from 'lib0/time';
+import * as url from 'lib0/url';
 import * as authProtocol from 'y-protocols/auth';
 import * as awarenessProtocol from 'y-protocols/awareness';
-import { Observable } from 'lib0/observable';
-import * as math from 'lib0/math';
-import * as url from 'lib0/url';
+import * as syncProtocol from 'y-protocols/sync';
 
 export const messageSync = 0;
 export const messageQueryAwareness = 3;

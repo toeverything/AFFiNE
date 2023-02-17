@@ -1,11 +1,11 @@
-import { WorkspaceUnit } from '../../workspace-unit';
-import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
 import { createBlocksuiteWorkspace as _createBlocksuiteWorkspace } from '../../utils';
-import type { Apis } from './apis';
-import { setDefaultAvatar } from '../utils';
 import { applyUpdate } from '../../utils';
-import { getDatabase } from './idb-kv';
+import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
+import { WorkspaceUnit } from '../../workspace-unit';
+import { setDefaultAvatar } from '../utils';
+import type { Apis } from './apis';
 import { auth } from './apis/auth';
+import { getDatabase } from './idb-kv';
 
 export const createBlocksuiteWorkspaceWithAuth = async (id: string) => {
   if (auth.isExpired && auth.isLogin) {

@@ -1,10 +1,12 @@
+import { useRouter } from 'next/router';
+import { PropsWithChildren } from 'react';
+
 import HelpIsland from '@/components/help-island';
 import { WorkSpaceSliderBar } from '@/components/workspace-slider-bar';
-import { useRouter } from 'next/router';
-import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
-import { PropsWithChildren } from 'react';
 import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
+
 import { PageLoading } from '../loading';
+import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 export const WorkspaceDefender = ({ children }: PropsWithChildren) => {
   const { workspaceLoaded } = useEnsureWorkspace();

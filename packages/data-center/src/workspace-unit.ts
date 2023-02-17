@@ -2,6 +2,7 @@ import {
   BlobOptionsGetter,
   Workspace as BlocksuiteWorkspace,
 } from '@blocksuite/store';
+
 import type { User } from './types';
 
 export type SyncMode = 'all' | 'core';

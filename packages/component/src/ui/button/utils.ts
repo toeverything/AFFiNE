@@ -1,9 +1,9 @@
 import { AffineTheme } from '../../styles';
 import {
-  SIZE_SMALL,
-  SIZE_MIDDLE,
-  SIZE_DEFAULT,
   ButtonProps,
+  SIZE_DEFAULT,
+  SIZE_MIDDLE,
+  SIZE_SMALL,
 } from './interface';
 
 // TODO: Designer is not sure about the size, Now, is just use default size

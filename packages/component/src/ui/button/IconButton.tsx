@@ -1,11 +1,12 @@
 import {
-  HTMLAttributes,
-  cloneElement,
-  ReactElement,
   Children,
+  cloneElement,
   CSSProperties,
   forwardRef,
+  HTMLAttributes,
+  ReactElement,
 } from 'react';
+
 import { StyledIconButton } from './styles';
 
 const SIZE_SMALL = 'small' as const;

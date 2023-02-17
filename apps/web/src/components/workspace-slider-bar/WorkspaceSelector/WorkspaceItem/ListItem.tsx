@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
 import { styled } from '@affine/component';
-import { WorkspaceItemWrapper, WorkspaceItemContent } from './styles';
+import type { ReactNode } from 'react';
+
+import { WorkspaceItemContent, WorkspaceItemWrapper } from './styles';
 
 interface ListItemProps {
   name: string;

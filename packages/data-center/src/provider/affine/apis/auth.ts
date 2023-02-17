@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import type { User } from 'firebase/auth';
 import {
   type Auth as FirebaseAuth,
   getAuth as getFirebaseAuth,
@@ -6,12 +7,11 @@ import {
   signInWithPopup,
   signOut,
 } from 'firebase/auth';
-import type { User } from 'firebase/auth';
 import { decode } from 'js-base64';
 
 import { getLogger } from '../../../logger';
-import { bareClient } from './request';
 import { storage } from '../storage';
+import { bareClient } from './request';
 
 export interface AccessTokenMessage {
   created_at: number;

@@ -1,4 +1,5 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
+
 import { Auth } from '../auth';
 
 describe('class Auth', () => {

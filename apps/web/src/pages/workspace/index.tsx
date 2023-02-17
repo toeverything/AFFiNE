@@ -1,7 +1,8 @@
-import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
+import { useCallback, useEffect } from 'react';
+
 import { PageLoading } from '@/components/loading';
+import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
 import { useGlobalState } from '@/store/app';
 
 export const WorkspaceIndex = () => {

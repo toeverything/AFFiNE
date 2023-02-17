@@ -1,5 +1,5 @@
-import { test } from './libs/playwright';
 import { loadPage } from './libs/load-page';
+import { test } from './libs/playwright';
 
 loadPage();
 

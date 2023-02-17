@@ -2,9 +2,9 @@
 export type { Callback } from './auth';
 
 import { getAuthorizer } from './auth';
+import { auth } from './auth';
 import * as user from './user';
 import * as workspace from './workspace';
-import { auth } from './auth';
 
 // See https://twitter.com/mattpocockuk/status/1622730173446557697
 // TODO: move to ts utils?

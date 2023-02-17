@@ -1,13 +1,14 @@
-import { EmailIcon } from '@blocksuite/icons';
 import { styled } from '@affine/component';
-import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
 import { Input } from '@affine/component';
-import { useState } from 'react';
 import { MuiAvatar } from '@affine/component';
-import useMembers from '@/hooks/use-members';
 import { User } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import { EmailIcon } from '@blocksuite/icons';
+import { useState } from 'react';
+
+import useMembers from '@/hooks/use-members';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;

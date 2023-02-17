@@ -1,6 +1,7 @@
+import { ArrowRightIcon } from '@blocksuite/icons';
+
 import { displayFlex, styled } from '../../styles';
 import StyledPopperContainer from '../shared/Container';
-import { ArrowRightIcon } from '@blocksuite/icons';
 
 export const StyledMenuWrapper = styled(StyledPopperContainer)(({ theme }) => {
   return {

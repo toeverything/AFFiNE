@@ -1,10 +1,11 @@
-import { PageList } from '@/components/page-list';
-import { AllPagesIcon } from '@blocksuite/icons';
-import { PageListHeader } from '@/components/header';
-import { ReactElement, useCallback } from 'react';
-import WorkspaceLayout from '@/components/workspace-layout';
 import { useTranslation } from '@affine/i18n';
+import { AllPagesIcon } from '@blocksuite/icons';
 import Head from 'next/head';
+import { ReactElement, useCallback } from 'react';
+
+import { PageListHeader } from '@/components/header';
+import { PageList } from '@/components/page-list';
+import WorkspaceLayout from '@/components/workspace-layout';
 import { useGlobalState } from '@/store/app';
 
 const All = () => {

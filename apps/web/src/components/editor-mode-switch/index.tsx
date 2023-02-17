@@ -1,21 +1,23 @@
-import React, { useState, useEffect, cloneElement } from 'react';
-import {
-  StyledAnimateRadioContainer,
-  StyledMiddleLine,
-  StyledRadioItem,
-  StyledLabel,
-  StyledIcon,
-} from './style';
-import type {
-  RadioItemStatus,
-  AnimateRadioProps,
-  AnimateRadioItemProps,
-} from './type';
-import { useTheme } from '@/providers/ThemeProvider';
-import { EdgelessIcon, PaperIcon } from './Icons';
+import { useTranslation } from '@affine/i18n';
+import React, { cloneElement, useEffect, useState } from 'react';
+
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useTranslation } from '@affine/i18n';
+import { useTheme } from '@/providers/ThemeProvider';
+
+import { EdgelessIcon, PaperIcon } from './Icons';
+import {
+  StyledAnimateRadioContainer,
+  StyledIcon,
+  StyledLabel,
+  StyledMiddleLine,
+  StyledRadioItem,
+} from './style';
+import type {
+  AnimateRadioItemProps,
+  AnimateRadioProps,
+  RadioItemStatus,
+} from './type';
 const PaperItem = ({ active }: { active?: boolean }) => {
   const {
     theme: {

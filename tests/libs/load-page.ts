@@ -1,5 +1,5 @@
-import { test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { test } from '@playwright/test';
 
 interface IType {
   page: Page;

@@ -1,9 +1,10 @@
-import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 import { styled } from '@affine/component';
 import { Empty } from '@affine/component';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+
 import { PageLoading } from '@/components/loading';
+import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
 
 // const User = ({ name, avatar }: { name: string; avatar?: string }) => {
 //   return (

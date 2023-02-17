@@ -1,6 +1,6 @@
-import { WorkspaceUnit } from '../../workspace-unit';
-import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
 import { createBlocksuiteWorkspace } from '../../utils';
+import type { WorkspaceUnitCtorParams } from '../../workspace-unit';
+import { WorkspaceUnit } from '../../workspace-unit';
 import { setDefaultAvatar } from '../utils';
 import { IPCBlobProvider } from './blocksuite-provider/blob';
 

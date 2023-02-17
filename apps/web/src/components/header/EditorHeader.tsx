@@ -1,17 +1,19 @@
+import { Content } from '@affine/component';
 import React, { useEffect, useState } from 'react';
+
+import EditorModeSwitch from '@/components/editor-mode-switch';
+import useCurrentPageMeta from '@/hooks/use-current-page-meta';
+import usePropsUpdated from '@/hooks/use-props-updated';
+import { useGlobalState } from '@/store/app';
+
+import Header from './Header';
+import QuickSearchButton from './QuickSearchButton';
 import {
   StyledSearchArrowWrapper,
   StyledSwitchWrapper,
   StyledTitle,
   StyledTitleWrapper,
 } from './styles';
-import { Content } from '@affine/component';
-import EditorModeSwitch from '@/components/editor-mode-switch';
-import QuickSearchButton from './QuickSearchButton';
-import Header from './Header';
-import usePropsUpdated from '@/hooks/use-props-updated';
-import useCurrentPageMeta from '@/hooks/use-current-page-meta';
-import { useGlobalState } from '@/store/app';
 
 export const EditorHeader = () => {
   const [title, setTitle] = useState('');

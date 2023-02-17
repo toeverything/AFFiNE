@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test';
-import { test } from './libs/playwright';
+
 import { loadPage } from './libs/load-page';
 import { newPage } from './libs/page-logic';
+import { test } from './libs/playwright';
 loadPage();
 
 test.describe('Local first delete page', () => {

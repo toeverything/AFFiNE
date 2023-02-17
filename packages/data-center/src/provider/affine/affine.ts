@@ -1,26 +1,27 @@
-import { BaseProvider } from '../base';
-import type {
-  ProviderConstructorParams,
-  CreateWorkspaceInfoParams,
-} from '../base';
-import type { User } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import assert from 'assert';
-import { WebsocketProvider } from './sync';
-// import { IndexedDBProvider } from '../local/indexeddb';
-import { getApis, Workspace } from './apis';
-import type { Apis, WorkspaceDetail } from './apis';
-import { WebsocketClient } from './channel';
-import {
-  loadWorkspaceUnit,
-  createWorkspaceUnit,
-  migrateBlobDB,
-  createBlocksuiteWorkspaceWithAuth,
-} from './utils';
-import { WorkspaceUnit } from '../../workspace-unit';
+
+import { MessageCenter } from '../../message';
+import type { User } from '../../types';
 import { applyUpdate } from '../../utils';
 import type { SyncMode } from '../../workspace-unit';
-import { MessageCenter } from '../../message';
+import { WorkspaceUnit } from '../../workspace-unit';
+import type {
+  CreateWorkspaceInfoParams,
+  ProviderConstructorParams,
+} from '../base';
+import { BaseProvider } from '../base';
+import type { Apis, WorkspaceDetail } from './apis';
+// import { IndexedDBProvider } from '../local/indexeddb';
+import { getApis, Workspace } from './apis';
+import { WebsocketClient } from './channel';
+import { WebsocketProvider } from './sync';
+import {
+  createBlocksuiteWorkspaceWithAuth,
+  createWorkspaceUnit,
+  loadWorkspaceUnit,
+  migrateBlobDB,
+} from './utils';
 
 type ChannelMessage = {
   ws_list: Workspace[];

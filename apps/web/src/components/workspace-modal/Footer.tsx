@@ -1,11 +1,13 @@
-import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
 import { FlexWrapper } from '@affine/component';
-import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { IconButton } from '@affine/component';
-import { StyledFooter, StyleUserInfo, StyledSignInButton } from './styles';
-import { useTranslation } from '@affine/i18n';
 import { Tooltip } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
+import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
+
+import { WorkspaceAvatar } from '@/components/workspace-avatar';
 import { useGlobalState } from '@/store/app';
+
+import { StyledFooter, StyledSignInButton, StyleUserInfo } from './styles';
 export const Footer = ({
   onLogin,
   onLogout,

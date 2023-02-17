@@ -1,12 +1,13 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
-import React, { Suspense } from 'react';
-import { Meta, Story } from '@storybook/react';
 import { builtInSchemas } from '@blocksuite/blocks/models';
+import { Page, Workspace } from '@blocksuite/store';
+import { Meta, Story } from '@storybook/react';
+import React, { Suspense } from 'react';
+
 import {
   BlockSuiteEditor,
   BlockSuiteEditorProps,
 } from '../components/BlockSuiteEditor';
-import { Page, Workspace } from '@blocksuite/store';
 
 const worksapce = new Workspace({
   room: 'test',

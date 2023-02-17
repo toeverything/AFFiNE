@@ -1,3 +1,6 @@
+import { useTranslation } from '@affine/i18n';
+import { SearchIcon } from '@blocksuite/icons';
+import { Command } from 'cmdk';
 import React, {
   Dispatch,
   SetStateAction,
@@ -5,10 +8,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { SearchIcon } from '@blocksuite/icons';
+
 import { StyledInputContent, StyledLabel } from './style';
-import { Command } from 'cmdk';
-import { useTranslation } from '@affine/i18n';
 export const Input = (props: {
   open: boolean;
   query: string;

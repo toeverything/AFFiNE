@@ -1,12 +1,12 @@
 import {
+  clear,
   createStore,
   del,
+  entries,
   get,
   keys,
   set,
   setMany,
-  clear,
-  entries,
 } from 'idb-keyval';
 
 export type ConfigStore<T = any> = {

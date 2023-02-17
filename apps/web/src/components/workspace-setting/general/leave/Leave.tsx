@@ -1,14 +1,16 @@
 import { Modal } from '@affine/component';
-import {
-  StyledModalHeader,
-  StyledTextContent,
-  StyledModalWrapper,
-  StyledButtonContent,
-} from './style';
 import { ModalCloseButton } from '@affine/component';
 import { Button } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+
+import {
+  StyledButtonContent,
+  StyledModalHeader,
+  StyledModalWrapper,
+  StyledTextContent,
+} from './style';
 // import { getDataCenter } from '@affine/datacenter';
 // import { useAppState } from '@/providers/app-state-provider';
 

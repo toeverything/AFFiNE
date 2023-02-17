@@ -1,16 +1,16 @@
-import * as Y from 'yjs';
-import assert from 'assert';
-
-import { LocalProvider } from '../local';
-import type { IPCMethodsType } from './ipc/methods';
-import { CreateWorkspaceInfoParams, ProviderConstructorParams } from '../base';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
-import { IPCBlobProvider } from './blocksuite-provider/blob';
-import type { WorkspaceUnit } from '../../workspace-unit';
-import { loadWorkspaceUnit } from '../local/utils';
-import { WorkspaceWithPermission } from './ipc/types/workspace';
-import { applyUpdate } from '../../utils';
+import assert from 'assert';
+import * as Y from 'yjs';
+
 import { User } from '../../types';
+import { applyUpdate } from '../../utils';
+import type { WorkspaceUnit } from '../../workspace-unit';
+import { CreateWorkspaceInfoParams, ProviderConstructorParams } from '../base';
+import { LocalProvider } from '../local';
+import { loadWorkspaceUnit } from '../local/utils';
+import { IPCBlobProvider } from './blocksuite-provider/blob';
+import type { IPCMethodsType } from './ipc/methods';
+import { WorkspaceWithPermission } from './ipc/types/workspace';
 import { createWorkspaceUnit } from './utils';
 
 /**

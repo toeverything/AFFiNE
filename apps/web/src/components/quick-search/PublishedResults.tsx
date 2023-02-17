@@ -1,14 +1,16 @@
-import { Command } from 'cmdk';
-import { StyledListItem, StyledNotFound } from './style';
-import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { PageMeta } from '@/providers/app-state-provider';
-import { useRouter } from 'next/router';
-import { NoResultSVG } from './NoResultSVG';
 import { useTranslation } from '@affine/i18n';
-import usePageHelper from '@/hooks/use-page-helper';
+import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { Workspace } from '@blocksuite/store';
+import { Command } from 'cmdk';
+import { useRouter } from 'next/router';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+
+import usePageHelper from '@/hooks/use-page-helper';
+import { PageMeta } from '@/providers/app-state-provider';
 import { useGlobalState } from '@/store/app';
+
+import { NoResultSVG } from './NoResultSVG';
+import { StyledListItem, StyledNotFound } from './style';
 
 export const PublishedResults = (props: {
   query: string;

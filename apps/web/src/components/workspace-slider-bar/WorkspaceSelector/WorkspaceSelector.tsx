@@ -1,8 +1,10 @@
-import { WorkspaceName, SelectorWrapper } from './styles';
 import { useCallback, useState } from 'react';
-import { WorkspaceModal } from '@/components/workspace-modal';
+
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
+import { WorkspaceModal } from '@/components/workspace-modal';
 import { useGlobalState } from '@/store/app';
+
+import { SelectorWrapper, WorkspaceName } from './styles';
 
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);

@@ -3,8 +3,10 @@ import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
 import { useCallback, useState } from 'react';
-import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
+
 import { useGlobalState } from '@/store/app';
+
+import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 
 interface EnableWorkspaceModalProps {
   open: boolean;
