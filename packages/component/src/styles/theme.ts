@@ -71,9 +71,9 @@ export const getLightTheme = (
     },
     shadow: {
       popover:
-        '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
+        '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)',
       modal:
-        '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06);',
+        '4px 4px 7px rgba(58, 76, 92, 0.04), -4px -4px 13px rgba(58, 76, 92, 0.02), 6px 6px 36px rgba(58, 76, 92, 0.06)',
       tooltip: '1px 1px 4px rgba(0, 0, 0, 0.14)',
     },
     space: {
@@ -99,7 +99,7 @@ export const getDarkTheme = (
       hoverBackground: '#3C3C42',
       innerHoverBackground: '#5A5A5A',
       popoverBackground: '#1F2021',
-      tooltipBackground: '#1F2021',
+      tooltipBackground: '#0C0A15',
       codeBackground:
         editorMode === 'edgeless'
           ? lightTheme.colors.codeBackground
@@ -135,8 +135,8 @@ export const getDarkTheme = (
     shadow: {
       popover:
         '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
-      modal:
-        '0px 1px 10px -6px rgba(24, 39, 75, 0.08), 0px 3px 16px -6px rgba(24, 39, 75, 0.04)',
+      modal: '0px 4px 24px #161616',
+
       tooltip: '1px 1px 4px rgba(0, 0, 0, 0.14)',
     },
   };

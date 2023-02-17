@@ -1,5 +1,4 @@
 import '../../public/globals.css';
-import '../../public/variable.css';
 import './temporary.css';
 import '@fontsource/space-mono';
 import '@fontsource/poppins';

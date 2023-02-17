@@ -37,4 +37,4 @@ export const getApis = (): Apis => {
 
 export type { AccessTokenMessage } from './auth';
 export type { Member, Workspace, WorkspaceDetail } from './workspace';
-export { WorkspaceType } from './workspace';
+export * from './workspace';

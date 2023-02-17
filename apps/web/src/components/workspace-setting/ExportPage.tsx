@@ -7,7 +7,7 @@ export const ExportPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
   console.log(workspace);
   return (
     <>
-      <Wrapper marginBottom="32px"> {t('Export Description')}</Wrapper>
+      <Wrapper marginBottom="42px"> {t('Export Description')}</Wrapper>
       <Button type="light" shape="circle" disabled>
         {t('Export AFFiNE backup file')}
       </Button>

@@ -1,21 +1,25 @@
 import { CSSProperties } from 'react';
 
-import { styled } from '../../styles';
 import { EmptySVG } from './EmptySVG';
+import { StyledEmptyContainer } from './style';
 
 export type EmptyContentProps = {
-  width?: CSSProperties['width'];
-  height?: CSSProperties['height'];
-  fontSize?: CSSProperties['fontSize'];
+  imageStyle?: CSSProperties;
+  description?: string;
+  descriptionStyle?: CSSProperties;
 };
-export const Empty = styled(EmptySVG)<EmptyContentProps>(
-  ({ fontSize, width, height }) => {
-    return {
-      width,
-      height,
-      fontSize,
-    };
-  }
-);
+
+export const Empty = ({
+  imageStyle,
+  description,
+  descriptionStyle,
+}: EmptyContentProps) => {
+  return (
+    <StyledEmptyContainer style={imageStyle}>
+      <EmptySVG className="empty-img" />
+      <p style={descriptionStyle}>{description}</p>
+    </StyledEmptyContainer>
+  );
+};
 
 export default Empty;

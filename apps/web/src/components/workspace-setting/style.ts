@@ -4,9 +4,8 @@ export const StyledSettingContainer = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
-    padding: '0 0 20px 48px',
-    height: '100vh',
-    marginTop: '48px',
+    padding: '48px 0 20px 48px',
+    height: 'calc(100vh - 60px)',
   };
 });
 
@@ -55,7 +54,7 @@ export const StyledSettingKey = styled.div(({ theme }) => {
 });
 export const StyledRow = styled(FlexWrapper)(() => {
   return {
-    marginBottom: '32px',
+    marginBottom: '42px',
   };
 });
 

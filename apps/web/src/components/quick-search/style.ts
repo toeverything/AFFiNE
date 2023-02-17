@@ -49,7 +49,7 @@ export const StyledNotFound = styled('div')(({ theme }) => {
 
     '>svg': {
       marginTop: '10px',
-      fontSize: '150px',
+      height: '200px',
     },
   };
 });

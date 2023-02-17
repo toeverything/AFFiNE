@@ -4,16 +4,22 @@ import React from 'react';
 export const PageListEmpty = (props: { listType?: string }) => {
   const { listType } = props;
   const { t } = useTranslation();
+
+  const getEmptyDescription = () => {
+    if (listType === 'all') {
+      return t('emptyAllPages');
+    }
+    if (listType === 'favorite') {
+      return t('emptyFavorite');
+    }
+    if (listType === 'trash') {
+      return t('emptyTrash');
+    }
+  };
+
   return (
-    <div style={{ textAlign: 'center' }}>
-      <Empty
-        width={800}
-        height={300}
-        sx={{ marginTop: '100px', marginBottom: '30px' }}
-      />
-      {listType === 'all' && <p>{t('emptyAllPages')}</p>}
-      {listType === 'favorite' && <p>{t('emptyFavorite')}</p>}
-      {listType === 'trash' && <p>{t('emptyTrash')}</p>}
+    <div style={{ height: 'calc(100% - 60px)' }}>
+      <Empty description={getEmptyDescription()} />
     </div>
   );
 };

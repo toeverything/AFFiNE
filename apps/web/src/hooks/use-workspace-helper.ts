@@ -46,11 +46,7 @@ export const useWorkspaceHelper = () => {
   };
 
   const acceptInvite = async (inviteCode: string) => {
-    let inviteInfo;
-    if (inviteCode) {
-      inviteInfo = await dataCenter.acceptInvitation(inviteCode);
-    }
-    return inviteInfo;
+    return dataCenter.acceptInvitation(inviteCode);
   };
 
   return {
