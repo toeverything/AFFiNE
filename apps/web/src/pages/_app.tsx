@@ -78,19 +78,19 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
             <ConfirmProvider key="ConfirmProvider" />,
           ]}
         >
-          <MessageCenterHandler>
-            {NoNeedAppStatePageList.includes(router.route) ? (
-              getLayout(<Component {...pageProps} />)
-            ) : (
-              <Suspense fallback={<PageLoading />}>
-                <DataCenterPreloader>
+          {NoNeedAppStatePageList.includes(router.route) ? (
+            getLayout(<Component {...pageProps} />)
+          ) : (
+            <Suspense fallback={<PageLoading />}>
+              <DataCenterPreloader>
+                <MessageCenterHandler>
                   <AppDefender>
                     {getLayout(<Component {...pageProps} />)}
                   </AppDefender>
-                </DataCenterPreloader>
-              </Suspense>
-            )}
-          </MessageCenterHandler>
+                </MessageCenterHandler>
+              </DataCenterPreloader>
+            </Suspense>
+          )}
         </ProviderComposer>
       </GlobalAppProvider>
     </>

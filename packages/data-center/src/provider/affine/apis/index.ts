@@ -1,10 +1,10 @@
-// export { token } from './token.js';
-export type { Callback } from './auth';
+export type { Callback } from './google';
 
-import { getAuthorizer } from './auth';
-import { auth } from './auth';
-import * as user from './user';
-import * as workspace from './workspace';
+import { KyInstance } from 'ky/distribution/types/ky';
+
+import { createGoogleAuth, getAuthorizer, GoogleAuth } from './google';
+import { createUserApis } from './user';
+import { createWorkspaceApis } from './workspace';
 
 // See https://twitter.com/mattpocockuk/status/1622730173446557697
 // TODO: move to ts utils?
@@ -14,27 +14,31 @@ type Prettify<T> = {
 } & {};
 
 export type Apis = Prettify<
-  typeof user &
-    Omit<typeof workspace, 'WorkspaceType' | 'PermissionType'> & {
+  ReturnType<typeof createUserApis> &
+    ReturnType<typeof createWorkspaceApis> & {
       signInWithGoogle: ReturnType<typeof getAuthorizer>[0];
       onAuthStateChanged: ReturnType<typeof getAuthorizer>[1];
       signOutFirebase: ReturnType<typeof getAuthorizer>[2];
-    } & { auth: typeof auth }
+    } & { auth: ReturnType<typeof createGoogleAuth> }
 >;
 
-export const getApis = (): Apis => {
+export const getApis = (
+  bareClient: KyInstance,
+  authClient: KyInstance,
+  googleAuth: GoogleAuth
+): Apis => {
   const [signInWithGoogle, onAuthStateChanged, signOutFirebase] =
-    getAuthorizer();
+    getAuthorizer(googleAuth);
   return {
-    ...user,
-    ...workspace,
+    ...createUserApis(bareClient, authClient),
+    ...createWorkspaceApis(bareClient, authClient, googleAuth),
     signInWithGoogle,
     signOutFirebase,
     onAuthStateChanged,
-    auth,
+    auth: googleAuth,
   };
 };
 
-export type { AccessTokenMessage } from './auth';
+export type { AccessTokenMessage } from './google';
 export type { Member, Workspace, WorkspaceDetail } from './workspace';
 export * from './workspace';
