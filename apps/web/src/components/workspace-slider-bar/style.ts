@@ -58,7 +58,7 @@ export const StyledListItem = styled.div<{
   return {
     height: '32px',
     marginTop: '12px',
-    color: active ? theme.colors.primaryColor : theme.colors.popoverColor,
+    color: active ? theme.colors.primaryColor : theme.colors.textColor,
     paddingLeft: '12px',
     borderRadius: '5px',
     cursor: 'pointer',
