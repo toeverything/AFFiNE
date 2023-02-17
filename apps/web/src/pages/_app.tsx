@@ -1,7 +1,6 @@
 import type { AppProps } from 'next/app';
 import dynamic from 'next/dynamic';
 import '../../public/globals.css';
-import '../../public/variable.css';
 import './temporary.css';
 import { Logger } from '@toeverything/pathfinder-logger';
 import '@fontsource/space-mono';
