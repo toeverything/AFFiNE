@@ -1,14 +1,16 @@
 import { PageList } from '@/components/page-list';
 import { AllPagesIcon } from '@blocksuite/icons';
 import { PageListHeader } from '@/components/header';
-import { ReactElement } from 'react';
+import { ReactElement, useCallback } from 'react';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { useTranslation } from '@affine/i18n';
 import Head from 'next/head';
 import { useGlobalState } from '@/store/app';
 
 const All = () => {
-  const pageList = useGlobalState(store => store.dataCenterPageList);
+  const pageList = useGlobalState(
+    useCallback(store => store.dataCenterPageList, [])
+  );
   const { t } = useTranslation();
   return (
     <>
