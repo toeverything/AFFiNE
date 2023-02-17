@@ -317,7 +317,6 @@ importers:
     specifiers:
       '@blocksuite/blocks': 0.4.0-20230216093909-90a4996
       '@blocksuite/store': 0.4.0-20230216093909-90a4996
-      '@playwright/test': ^1.29.1
       '@tauri-apps/api': ^1.2.0
       '@types/debug': ^4.1.7
       debug: ^4.3.4
@@ -349,7 +348,6 @@ importers:
       swr: 2.0.0
       y-protocols: 1.0.5
     devDependencies:
-      '@playwright/test': 1.29.1
       '@types/debug': 4.1.7
       fake-indexeddb: 4.0.1
       lit: 2.6.1
