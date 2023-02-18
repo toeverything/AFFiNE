@@ -6,7 +6,6 @@ import 'fake-indexeddb/auto';
 import { DataCenter, getDataCenter } from '@affine/datacenter';
 import {
   createDefaultWorkspace,
-  DataCenterPreloader,
   GlobalAppProvider,
   useGlobalState,
   useGlobalStateApi,

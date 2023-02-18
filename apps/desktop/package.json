@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@blocksuite/icons": "^2.0.14",
-    "@blocksuite/store": "0.4.0-20230217095654-a561b36",
+    "@blocksuite/store": "0.4.0-20230217222321-04d1424",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@tauri-apps/api": "^1.2.0",

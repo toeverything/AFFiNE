@@ -20,8 +20,8 @@
     "yjs": "^13.5.45"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.4.0-20230217095654-a561b36",
-    "@blocksuite/store": "0.4.0-20230217095654-a561b36",
+    "@blocksuite/blocks": "0.4.0-20230217222321-04d1424",
+    "@blocksuite/store": "0.4.0-20230217222321-04d1424",
     "@tauri-apps/api": "^1.2.0",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",

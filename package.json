@@ -21,7 +21,7 @@
     "test:unit:coverage": "vitest run --coverage",
     "postinstall": "husky install",
     "notify": "node --experimental-modules scripts/notify.mjs",
-    "update:blocksuite": "pnpm i --filter @affine/app --filter @affine/datacenter @blocksuite/blocks@nightly @blocksuite/store@nightly && pnpm i --filter @affine/app @blocksuite/editor@nightly"
+    "update:core": "pnpm up @blocksuite/*@nightly !@blocksuite/icons -r"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
