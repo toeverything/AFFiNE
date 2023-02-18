@@ -1,6 +1,5 @@
 import { useTranslation } from '@affine/i18n';
 import { useState } from 'react';
-import React from 'react';
 
 import { Button } from '../button';
 import { Modal, ModalCloseButton, ModalProps } from '../modal';

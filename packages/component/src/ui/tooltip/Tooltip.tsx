@@ -1,5 +1,4 @@
 import type { TooltipProps } from '@mui/material';
-import React from 'react';
 
 import { styled } from '../../styles';
 import { Popper, type PopperProps } from '../popper';

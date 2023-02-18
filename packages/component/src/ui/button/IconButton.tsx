@@ -6,7 +6,6 @@ import {
   HTMLAttributes,
   ReactElement,
 } from 'react';
-import React from 'react';
 
 import { StyledIconButton } from './styles';
 const SIZE_SMALL = 'small' as const;

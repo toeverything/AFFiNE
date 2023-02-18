@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { styled } from '../../styles';
 import { ButtonProps } from './interface';
 import { getButtonColors } from './utils';

@@ -5,7 +5,6 @@ import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
 import router from 'next/router';
 import { useCallback, useState } from 'react';
-import React from 'react';
 
 import { useGlobalState } from '@/store/app';
 

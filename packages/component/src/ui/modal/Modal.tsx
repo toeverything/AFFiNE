@@ -1,6 +1,5 @@
 import { ModalUnstyledOwnProps } from '@mui/base/ModalUnstyled';
 import Fade from '@mui/material/Fade';
-import React from 'react';
 
 import { StyledBackdrop, StyledModal } from './styles';
 const Backdrop = ({

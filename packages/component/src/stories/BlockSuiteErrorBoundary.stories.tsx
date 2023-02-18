@@ -1,7 +1,6 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
 import { MigrationError } from '@blocksuite/global/error';
 import { Meta, StoryFn } from '@storybook/react';
-import React from 'react';
 
 import {
   BlockSuiteErrorBoundary,

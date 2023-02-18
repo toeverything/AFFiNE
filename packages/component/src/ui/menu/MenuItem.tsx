@@ -5,7 +5,6 @@ import {
   PropsWithChildren,
   ReactElement,
 } from 'react';
-import React from 'react';
 
 import { StyledArrow, StyledMenuItem } from './styles';
 export type IconMenuProps = PropsWithChildren<{

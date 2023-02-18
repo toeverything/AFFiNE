@@ -1,6 +1,5 @@
 import { CloseIcon } from '@blocksuite/icons';
 import { HTMLAttributes } from 'react';
-import React from 'react';
 
 import { styled } from '../../styles';
 import { IconButton, IconButtonProps } from '../button/IconButton';
