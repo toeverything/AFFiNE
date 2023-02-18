@@ -9,7 +9,6 @@ import { useTranslation } from '@affine/i18n';
 import { Logger } from '@toeverything/pathfinder-logger';
 import type { NextPage } from 'next';
 import type { AppProps } from 'next/app';
-import dynamic from 'next/dynamic';
 import Head from 'next/head';
 // import AppStateProvider2 from '@/providers/app-state-provider2/provider';
 import { useRouter } from 'next/router';
@@ -22,13 +21,10 @@ import { MessageCenterHandler } from '@/components/message-center-handler';
 import ProviderComposer from '@/components/provider-composer';
 import { AppStateProvider } from '@/providers/app-state-provider';
 import ConfirmProvider from '@/providers/ConfirmProvider';
+import { ThemeProvider } from '@/providers/ThemeProvider';
 import { GlobalAppProvider } from '@/store/app';
 import { DataCenterPreloader } from '@/store/app/datacenter';
 import { ModalProvider } from '@/store/globalModal';
-
-const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
-  ssr: false,
-});
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
   P,
