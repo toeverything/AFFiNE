@@ -1,6 +1,6 @@
 import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
 import { DataCenter } from '@affine/datacenter';
-import { DisposableGroup } from '@blocksuite/global/utils';
+import { Disposable, DisposableGroup } from '@blocksuite/global/utils';
 import type { PageMeta as StorePageMeta } from '@blocksuite/store';
 import React, { useCallback, useEffect } from 'react';
 const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
@@ -26,6 +26,7 @@ export type DataCenterState = {
   readonly dataCenterPromise: Promise<DataCenter>;
   currentDataCenterWorkspace: WorkspaceUnit | null;
   dataCenterPageList: PageMeta[];
+  blobDataSynced: boolean;
 };
 
 export type DataCenterActions = {
@@ -42,7 +43,9 @@ export const createDataCenterState = (): DataCenterState => ({
   dataCenterPromise: null!,
   currentDataCenterWorkspace: null,
   dataCenterPageList: [],
+  blobDataSynced: false,
 });
+
 export const createDataCenterActions: GlobalActionsCreator<
   DataCenterActions
 > = (set, get) => ({
@@ -120,6 +123,45 @@ export function DataCenterPreloader({ children }: React.PropsWithChildren) {
       }
     );
   }, [api]);
+  //# endregion
+  //# region effect for blobDataSynced
+  useEffect(
+    () =>
+      api.subscribe(
+        store => store.currentDataCenterWorkspace,
+        workspace => {
+          if (!workspace?.blocksuiteWorkspace) {
+            return;
+          }
+          const controller = new AbortController();
+          const blocksuiteWorkspace = workspace.blocksuiteWorkspace;
+          let syncChangeDisposable: Disposable | undefined;
+          async function subscribe() {
+            const blobStorage = await blocksuiteWorkspace.blobs;
+            if (controller.signal.aborted) {
+              return;
+            }
+            syncChangeDisposable =
+              blobStorage?.signals.onBlobSyncStateChange.on(() => {
+                if (controller.signal.aborted) {
+                  syncChangeDisposable?.dispose();
+                  return;
+                } else {
+                  api.setState({
+                    blobDataSynced: blobStorage?.uploading,
+                  });
+                }
+              });
+          }
+          subscribe();
+          return () => {
+            controller.abort();
+            syncChangeDisposable?.dispose();
+          };
+        }
+      ),
+    [api]
+  );
   //# endregion
 
   if (!dataCenter && !dataCenterPromise) {

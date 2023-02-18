@@ -21,7 +21,6 @@ import React from 'react';
 import { PageLoading } from '@/components/loading';
 import { MessageCenterHandler } from '@/components/message-center-handler';
 import ProviderComposer from '@/components/provider-composer';
-import { AppStateProvider } from '@/providers/app-state-provider';
 import ConfirmProvider from '@/providers/ConfirmProvider';
 import { GlobalAppProvider } from '@/store/app';
 import { ModalProvider } from '@/store/globalModal';
@@ -69,30 +68,28 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>AFFiNE</title>
       </Head>
       <Logger />
-      <GlobalAppProvider key="BlockSuiteProvider">
-        <ProviderComposer
-          contexts={[
-            <ThemeProvider key="ThemeProvider" />,
-            <AppStateProvider key="appStateProvider" />,
-            <ModalProvider key="ModalProvider" />,
-            <ConfirmProvider key="ConfirmProvider" />,
-          ]}
-        >
-          {NoNeedAppStatePageList.includes(router.route) ? (
-            getLayout(<Component {...pageProps} />)
-          ) : (
-            <Suspense fallback={<PageLoading />}>
-              <DataCenterPreloader>
-                <MessageCenterHandler>
-                  <AppDefender>
-                    {getLayout(<Component {...pageProps} />)}
-                  </AppDefender>
-                </MessageCenterHandler>
-              </DataCenterPreloader>
-            </Suspense>
-          )}
-        </ProviderComposer>
-      </GlobalAppProvider>
+      <ProviderComposer
+        contexts={[
+          <GlobalAppProvider key="GlobalAppProvider" />,
+          <ThemeProvider key="ThemeProvider" />,
+          <ModalProvider key="ModalProvider" />,
+          <ConfirmProvider key="ConfirmProvider" />,
+        ]}
+      >
+        {NoNeedAppStatePageList.includes(router.route) ? (
+          getLayout(<Component {...pageProps} />)
+        ) : (
+          <Suspense fallback={<PageLoading />}>
+            <DataCenterPreloader>
+              <MessageCenterHandler>
+                <AppDefender>
+                  {getLayout(<Component {...pageProps} />)}
+                </AppDefender>
+              </MessageCenterHandler>
+            </DataCenterPreloader>
+          </Suspense>
+        )}
+      </ProviderComposer>
     </>
   );
 };
