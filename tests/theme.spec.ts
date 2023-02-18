@@ -6,15 +6,14 @@ import { test } from './libs/playwright';
 loadPage();
 
 test.describe('Change Theme', () => {
-  test('default white', async ({ page }) => {
+  test('load user default theme', async ({ page }) => {
     await page.waitForSelector('html');
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>
       window.getComputedStyle(element).getPropertyValue('--affine-theme-mode')
     );
-    expect(themeMode).toBe('light');
 
-    const lightButton = page.locator('[data-testid=change-theme-light]');
+    const lightButton = page.locator(`[data-testid=change-theme-${themeMode}]`);
     const buttonPositionTop = await lightButton.evaluate(
       element => window.getComputedStyle(element).top
     );
