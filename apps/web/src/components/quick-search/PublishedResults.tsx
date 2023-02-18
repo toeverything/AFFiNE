@@ -1,4 +1,5 @@
 import { useTranslation } from '@affine/i18n';
+import { PageMeta } from '@affine/store';
 import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { Workspace } from '@blocksuite/store';
 import { Command } from 'cmdk';
@@ -6,7 +7,6 @@ import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 import usePageHelper from '@/hooks/use-page-helper';
-import { PageMeta } from '@/providers/app-state-provider';
 import { useGlobalState } from '@/store/app';
 
 import { NoResultSVG } from './NoResultSVG';

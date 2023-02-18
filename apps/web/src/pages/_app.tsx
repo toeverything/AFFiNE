@@ -6,6 +6,7 @@ import '../utils/print-build-info';
 import '@affine/i18n';
 
 import { useTranslation } from '@affine/i18n';
+import { DataCenterPreloader } from '@affine/store';
 import { Logger } from '@toeverything/pathfinder-logger';
 import type { NextPage } from 'next';
 import type { AppProps } from 'next/app';
@@ -23,7 +24,6 @@ import ProviderComposer from '@/components/provider-composer';
 import { AppStateProvider } from '@/providers/app-state-provider';
 import ConfirmProvider from '@/providers/ConfirmProvider';
 import { GlobalAppProvider } from '@/store/app';
-import { DataCenterPreloader } from '@/store/app/datacenter';
 import { ModalProvider } from '@/store/globalModal';
 
 const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
