@@ -5,7 +5,6 @@ import {
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
   PublishIcon as DefaultPublishIcon,
 } from '@blocksuite/icons';
-import React from 'react';
 // Here are some icons with special color or size
 
 export const JoinedWorkspaceIcon = () => {

@@ -1,5 +1,4 @@
 import { Children, cloneElement, forwardRef } from 'react';
-import React from 'react';
 
 import { ButtonProps } from './interface';
 import { Loading } from './Loading';

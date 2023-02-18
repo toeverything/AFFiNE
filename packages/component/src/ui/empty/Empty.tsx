@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-import React from 'react';
 
 import { EmptySVG } from './EmptySVG';
 import { StyledEmptyContainer } from './style';

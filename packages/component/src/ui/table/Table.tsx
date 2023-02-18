@@ -1,5 +1,4 @@
 import { Children, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
-import React from 'react';
 
 import { StyledTable } from './styles';
 const childrenHasEllipsis = (children: ReactNode | ReactNode[]): boolean => {

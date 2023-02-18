@@ -1,7 +1,6 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
 import { Link, Typography } from '@mui/material';
 import { Meta, Story } from '@storybook/react';
-import React from 'react';
 
 import { Breadcrumbs } from '..';
 
