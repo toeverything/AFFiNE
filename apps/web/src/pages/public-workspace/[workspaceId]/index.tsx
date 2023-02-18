@@ -1,4 +1,5 @@
 import { Breadcrumbs } from '@affine/component';
+import { PageMeta } from '@affine/store';
 import { SearchIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
 import { ReactElement, useEffect, useMemo } from 'react';
@@ -7,7 +8,6 @@ import { PageLoading } from '@/components/loading';
 import { PageList } from '@/components/page-list';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
 import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
-import { PageMeta } from '@/providers/app-state-provider';
 import { useModal } from '@/store/globalModal';
 
 import {

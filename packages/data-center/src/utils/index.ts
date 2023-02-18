@@ -28,10 +28,13 @@ const DefaultHeadImgColors = [
 
 export async function getDefaultHeadImgBlob(
   workspaceName: string
-): Promise<Blob> {
+): Promise<Blob | null> {
   const canvas = document.createElement('canvas');
   canvas.height = 100;
   canvas.width = 100;
+  if (!canvas.getContext) {
+    return Promise.resolve(null);
+  }
   const ctx = canvas.getContext('2d');
   return new Promise<Blob>((resolve, reject) => {
     if (ctx) {

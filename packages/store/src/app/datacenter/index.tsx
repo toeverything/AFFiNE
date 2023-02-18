@@ -1,21 +1,32 @@
-import type { DataCenter } from '@affine/datacenter';
 import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
-import { DisposableGroup } from '@blocksuite/global/utils';
+import { DataCenter } from '@affine/datacenter';
+import { Disposable, DisposableGroup } from '@blocksuite/global/utils';
+import type { PageMeta as StorePageMeta } from '@blocksuite/store';
 import React, { useCallback, useEffect } from 'react';
+const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 
-import { PageMeta } from '@/providers/app-state-provider';
-import { createDefaultWorkspace } from '@/providers/app-state-provider/utils';
-import {
-  GlobalActionsCreator,
-  useGlobalState,
-  useGlobalStateApi,
-} from '@/store/app';
+export const createDefaultWorkspace = async (dataCenter: DataCenter) => {
+  return dataCenter.createWorkspace({
+    name: DEFAULT_WORKSPACE_NAME,
+  });
+};
+
+export interface PageMeta extends StorePageMeta {
+  favorite: boolean;
+  trash: boolean;
+  trashDate: number;
+  updatedDate: number;
+  mode: 'edgeless' | 'page';
+}
+
+import { GlobalActionsCreator, useGlobalState, useGlobalStateApi } from '..';
 
 export type DataCenterState = {
   readonly dataCenter: DataCenter;
   readonly dataCenterPromise: Promise<DataCenter>;
   currentDataCenterWorkspace: WorkspaceUnit | null;
   dataCenterPageList: PageMeta[];
+  blobDataSynced: boolean;
 };
 
 export type DataCenterActions = {
@@ -32,7 +43,9 @@ export const createDataCenterState = (): DataCenterState => ({
   dataCenterPromise: null!,
   currentDataCenterWorkspace: null,
   dataCenterPageList: [],
+  blobDataSynced: false,
 });
+
 export const createDataCenterActions: GlobalActionsCreator<
   DataCenterActions
 > = (set, get) => ({
@@ -57,7 +70,7 @@ export const createDataCenterActions: GlobalActionsCreator<
       isOwner = true;
     } else {
       const userInfo = get().user; // We must ensure workspace.owner exists, then ensure id same.
-      isOwner = isOwner = userInfo?.id === workspace?.owner?.id;
+      isOwner = userInfo?.id === workspace?.owner?.id;
     }
 
     const pageList =
@@ -67,11 +80,9 @@ export const createDataCenterActions: GlobalActionsCreator<
         currentWorkspace: workspace.blocksuiteWorkspace,
       });
     }
-    set({
-      isOwner,
-    });
 
     set({
+      isOwner,
       currentDataCenterWorkspace: workspace,
       dataCenterPageList: pageList,
     });
@@ -112,6 +123,45 @@ export function DataCenterPreloader({ children }: React.PropsWithChildren) {
       }
     );
   }, [api]);
+  //# endregion
+  //# region effect for blobDataSynced
+  useEffect(
+    () =>
+      api.subscribe(
+        store => store.currentDataCenterWorkspace,
+        workspace => {
+          if (!workspace?.blocksuiteWorkspace) {
+            return;
+          }
+          const controller = new AbortController();
+          const blocksuiteWorkspace = workspace.blocksuiteWorkspace;
+          let syncChangeDisposable: Disposable | undefined;
+          async function subscribe() {
+            const blobStorage = await blocksuiteWorkspace.blobs;
+            if (controller.signal.aborted) {
+              return;
+            }
+            syncChangeDisposable =
+              blobStorage?.signals.onBlobSyncStateChange.on(() => {
+                if (controller.signal.aborted) {
+                  syncChangeDisposable?.dispose();
+                  return;
+                } else {
+                  api.setState({
+                    blobDataSynced: blobStorage?.uploading,
+                  });
+                }
+              });
+          }
+          subscribe();
+          return () => {
+            controller.abort();
+            syncChangeDisposable?.dispose();
+          };
+        }
+      ),
+    [api]
+  );
   //# endregion
 
   if (!dataCenter && !dataCenterPromise) {
