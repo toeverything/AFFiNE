@@ -9,7 +9,6 @@ import { useCallback, useState } from 'react';
 import { useGlobalState } from '@/store/app';
 
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
-
 interface EnableWorkspaceModalProps {
   open: boolean;
   onClose: () => void;

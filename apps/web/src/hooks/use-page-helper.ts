@@ -1,4 +1,5 @@
 import { WorkspaceUnit } from '@affine/datacenter';
+import { PageMeta } from '@affine/store';
 import { EditorContainer } from '@blocksuite/editor';
 import { uuidv4, Workspace } from '@blocksuite/store';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -7,7 +8,6 @@ import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { useChangePageMeta } from '@/hooks/use-change-page-meta';
-import { PageMeta } from '@/providers/app-state-provider';
 import { useGlobalState } from '@/store/app';
 
 export type EditorHandlers = {

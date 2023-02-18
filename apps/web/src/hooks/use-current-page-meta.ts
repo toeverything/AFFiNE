@@ -1,6 +1,6 @@
+import { PageMeta } from '@affine/store';
 import { useCallback, useEffect, useState } from 'react';
 
-import { PageMeta } from '@/providers/app-state-provider';
 import { useGlobalState } from '@/store/app';
 
 export const useCurrentPageMeta = (): PageMeta | null => {

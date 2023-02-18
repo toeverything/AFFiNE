@@ -7,7 +7,6 @@ import {
 } from 'react';
 
 import { StyledArrow, StyledMenuItem } from './styles';
-
 export type IconMenuProps = PropsWithChildren<{
   isDir?: boolean;
   icon?: ReactElement;

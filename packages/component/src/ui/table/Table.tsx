@@ -1,7 +1,6 @@
 import { Children, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 
 import { StyledTable } from './styles';
-
 const childrenHasEllipsis = (children: ReactNode | ReactNode[]): boolean => {
   return Children.toArray(children).some(child => {
     if (typeof child === 'object' && 'props' in child) {

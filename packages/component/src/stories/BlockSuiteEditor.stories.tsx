@@ -2,7 +2,7 @@
 import { builtInSchemas } from '@blocksuite/blocks/models';
 import { Page, Workspace } from '@blocksuite/store';
 import { Meta, Story } from '@storybook/react';
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 
 import {
   BlockSuiteEditor,

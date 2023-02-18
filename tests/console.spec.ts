@@ -9,6 +9,13 @@ const pkgPath = path.join(__dirname, '../apps/web/package.json');
 const record = fs.readFileSync(pkgPath, 'utf8');
 const temp = JSON.parse(record);
 loadPage();
+
+declare global {
+  interface Window {
+    __editoVersion: unknown;
+  }
+}
+
 test.describe('web console', () => {
   test('editor version', async ({ page }) => {
     const pkgEditorVersion = temp.dependencies['@blocksuite/editor'];

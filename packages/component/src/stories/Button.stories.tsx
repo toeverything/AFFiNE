@@ -1,6 +1,5 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
 import { Meta, Story } from '@storybook/react';
-import React from 'react';
 
 import { Button } from '..';
 import { ButtonProps } from '../ui/button/interface';

@@ -11,8 +11,6 @@ import {
   StyledModalWrapper,
   StyledTextContent,
 } from './style';
-// import { getDataCenter } from '@affine/datacenter';
-// import { useAppState } from '@/providers/app-state-provider';
 
 interface WorkspaceDeleteProps {
   open: boolean;
