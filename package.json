@@ -53,39 +53,6 @@
     "typescript": "^4.9.5",
     "vitest": "^0.28.5"
   },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:prettier/recommended"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "project": [
-        "./tsconfig.json"
-      ]
-    },
-    "plugins": [
-      "@typescript-eslint"
-    ],
-    "rules": {
-      "prettier/prettier": "warn"
-    },
-    "reportUnusedDisableDirectives": true,
-    "ignorePatterns": [
-      "package/**/dist/*",
-      "package/**/.babelrc.js",
-      "package/**/sync.js",
-      "src/**/*.test.ts",
-      "**/webpack.config.js",
-      "**/scripts/*.js",
-      "**/node_modules/**",
-      ".github/**",
-      "**/__tests__/**",
-      "**/tests/**"
-    ]
-  },
   "pnpm": {
     "patchedDependencies": {
       "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch",

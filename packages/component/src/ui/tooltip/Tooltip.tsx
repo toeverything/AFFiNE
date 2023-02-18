@@ -1,9 +1,9 @@
 import type { TooltipProps } from '@mui/material';
+import React from 'react';
 
 import { styled } from '../../styles';
 import { Popper, type PopperProps } from '../popper';
 import StyledPopperContainer from '../shared/Container';
-
 const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   return {
     maxWidth: '320px',

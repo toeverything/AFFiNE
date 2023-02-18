@@ -1,7 +1,7 @@
 import { HTMLAttributes, PropsWithChildren } from 'react';
+import React from 'react';
 
 import { StyledTableRow } from './styles';
-
 export const TableRow = ({
   children,
   ...props
