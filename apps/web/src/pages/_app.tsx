@@ -9,7 +9,6 @@ import { useTranslation } from '@affine/i18n';
 import { Logger } from '@toeverything/pathfinder-logger';
 import type { NextPage } from 'next';
 import type { AppProps } from 'next/app';
-import dynamic from 'next/dynamic';
 import Head from 'next/head';
 // import AppStateProvider2 from '@/providers/app-state-provider2/provider';
 import { useRouter } from 'next/router';
