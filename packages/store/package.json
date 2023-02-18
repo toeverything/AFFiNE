@@ -4,11 +4,11 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@affine/datacenter": "workspace:*",
-    "@blocksuite/blocks": "0.4.0-20230217222321-04d1424",
-    "@blocksuite/editor": "0.4.0-20230217222321-04d1424",
-    "@blocksuite/global": "0.4.0-20230217222321-04d1424",
-    "@blocksuite/react": "0.4.0-20230217222321-04d1424",
-    "@blocksuite/store": "0.4.0-20230217222321-04d1424",
+    "@blocksuite/blocks": "0.4.0",
+    "@blocksuite/editor": "0.4.0",
+    "@blocksuite/global": "0.4.0",
+    "@blocksuite/react": "0.4.0",
+    "@blocksuite/store": "0.4.0",
     "react": "^18.2.0",
     "zustand": "^4.3.3"
   },
