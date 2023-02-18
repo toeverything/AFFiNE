@@ -128,11 +128,11 @@ importers:
       '@affine/component': workspace:*
       '@affine/datacenter': workspace:*
       '@affine/i18n': workspace:*
-      '@blocksuite/blocks': 0.4.0-20230217095654-a561b36
-      '@blocksuite/editor': 0.4.0-20230217095654-a561b36
-      '@blocksuite/global': 0.4.0-20230216011811-2776d93
+      '@blocksuite/blocks': 0.4.0-20230217222321-04d1424
+      '@blocksuite/editor': 0.4.0-20230217222321-04d1424
+      '@blocksuite/global': 0.4.0-20230217222321-04d1424
       '@blocksuite/icons': ^2.0.14
-      '@blocksuite/store': 0.4.0-20230217095654-a561b36
+      '@blocksuite/store': 0.4.0-20230217222321-04d1424
       '@emotion/css': ^11.10.5
       '@emotion/react': ^11.10.5
       '@emotion/server': ^11.10.0
@@ -168,11 +168,11 @@ importers:
       '@affine/component': link:../../packages/component
       '@affine/datacenter': link:../../packages/data-center
       '@affine/i18n': link:../../packages/i18n
-      '@blocksuite/blocks': 0.4.0-20230217095654-a561b36_fgkxp4oo2deujekqkhva3c3mgq
-      '@blocksuite/editor': 0.4.0-20230217095654-a561b36_s2lgz6fjlafla2itashgrkrf5u
-      '@blocksuite/global': 0.4.0-20230216011811-2776d93_lit@2.6.1
+      '@blocksuite/blocks': 0.4.0-20230217222321-04d1424_pnmcvaqnphn56osdl6rregxkse
+      '@blocksuite/editor': 0.4.0-20230217222321-04d1424_7kqtpp64rzm75dbklw7a5meghu
+      '@blocksuite/global': 0.4.0-20230217222321-04d1424_lit@2.6.1
       '@blocksuite/icons': 2.0.14_w5j4k42lgipnm43s3brx6h3c34
-      '@blocksuite/store': 0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/store': 0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45
       '@emotion/css': 11.10.5
       '@emotion/react': 11.10.5_w5j4k42lgipnm43s3brx6h3c34
       '@emotion/server': 11.10.0_@emotion+css@11.10.5
@@ -273,8 +273,8 @@ importers:
 
   packages/data-center:
     specifiers:
-      '@blocksuite/blocks': 0.4.0-20230217095654-a561b36
-      '@blocksuite/store': 0.4.0-20230217095654-a561b36
+      '@blocksuite/blocks': 0.4.0-20230217222321-04d1424
+      '@blocksuite/store': 0.4.0-20230217222321-04d1424
       '@tauri-apps/api': ^1.2.0
       '@types/debug': ^4.1.7
       debug: ^4.3.4
@@ -292,8 +292,8 @@ importers:
       y-protocols: ^1.0.5
       yjs: ^13.5.45
     dependencies:
-      '@blocksuite/blocks': 0.4.0-20230217095654-a561b36_fgkxp4oo2deujekqkhva3c3mgq
-      '@blocksuite/store': 0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/blocks': 0.4.0-20230217222321-04d1424_pnmcvaqnphn56osdl6rregxkse
+      '@blocksuite/store': 0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45
       '@tauri-apps/api': 1.2.0_nb4isgkwd3sres4g7j7rgtldsu
       debug: 4.3.4
       encoding: 0.1.13
@@ -2600,15 +2600,15 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/blocks/0.4.0-20230217095654-a561b36_fgkxp4oo2deujekqkhva3c3mgq:
-    resolution: {integrity: sha512-ulCIGxbPCRr061Va69KlcVHROU3PdOaVXZoz/R8CIaBZmtWOdV3yiYxcQTQdPW1Ll8muxEOouueZuiZx/lExYg==}
+  /@blocksuite/blocks/0.4.0-20230217222321-04d1424_pnmcvaqnphn56osdl6rregxkse:
+    resolution: {integrity: sha512-GYiTfPg66yatB5G+VV7k+ZbrRAHqvc2ReIIljAOLGbbl+TTer/g0LlRKxLe/GveuDBAEGg8U8wdpFkuMueQddA==}
     peerDependencies:
-      '@blocksuite/store': 0.4.0-20230217095654-a561b36
+      '@blocksuite/store': 0.4.0-20230217222321-04d1424
     dependencies:
-      '@blocksuite/global': 0.4.0-20230217095654-a561b36_lit@2.6.1
-      '@blocksuite/phasor': 0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45
-      '@blocksuite/store': 0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45
-      '@blocksuite/virgo': 0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/global': 0.4.0-20230217222321-04d1424_lit@2.6.1
+      '@blocksuite/phasor': 0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/store': 0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/virgo': 0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45
       '@popperjs/core': 2.11.6
       autosize: 6.0.1
       highlight.js: 11.7.0
@@ -2635,15 +2635,15 @@ packages:
       turndown: 7.1.1
     dev: false
 
-  /@blocksuite/editor/0.4.0-20230217095654-a561b36_s2lgz6fjlafla2itashgrkrf5u:
-    resolution: {integrity: sha512-7GfjI2R1fawvaNSAyPVIeZf6pIsMjVp/+bRaIGRzHSTX7IE7G2oyAs4n9y+2DWQrFe2NOhiSrRbmFQaPoHbDGA==}
+  /@blocksuite/editor/0.4.0-20230217222321-04d1424_7kqtpp64rzm75dbklw7a5meghu:
+    resolution: {integrity: sha512-+HcJ6PlT+hIoEYhBFb8j4OjDg35jikgMH19GIeP+fsXkqSDe+OsVSnMxWMLsWD9s+K/g9wFBmBXAmTzMA023yQ==}
     peerDependencies:
-      '@blocksuite/blocks': 0.4.0-20230217095654-a561b36
-      '@blocksuite/store': 0.4.0-20230217095654-a561b36
+      '@blocksuite/blocks': 0.4.0-20230217222321-04d1424
+      '@blocksuite/store': 0.4.0-20230217222321-04d1424
     dependencies:
-      '@blocksuite/blocks': 0.4.0-20230217095654-a561b36_fgkxp4oo2deujekqkhva3c3mgq
-      '@blocksuite/global': 0.4.0-20230217095654-a561b36_lit@2.6.1
-      '@blocksuite/store': 0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/blocks': 0.4.0-20230217222321-04d1424_pnmcvaqnphn56osdl6rregxkse
+      '@blocksuite/global': 0.4.0-20230217222321-04d1424_lit@2.6.1
+      '@blocksuite/store': 0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45
       lit: 2.6.1
       marked: 4.2.12
       turndown: 7.1.1
@@ -2674,8 +2674,8 @@ packages:
       zod: 3.20.6
     dev: false
 
-  /@blocksuite/global/0.4.0-20230217095654-a561b36_lit@2.6.1:
-    resolution: {integrity: sha512-aIZhQ5P5WvosfDTyk5/6pb9kmdkgBZfDOiue4FgZKX40BN1J1TKyiaQeQ0upFmTdCZmLHA2Cwuy58qXdjIW4VA==}
+  /@blocksuite/global/0.4.0-20230217222321-04d1424_lit@2.6.1:
+    resolution: {integrity: sha512-uDoQ7lVsei5R0/4rdDQN2JkuUxOJ1SJeTkW128VPsMI1NkMhJBR4qKX4Bq31MxsWVMTWXLrVruRvGntBjAvBQw==}
     peerDependencies:
       lit: ^2.6
     peerDependenciesMeta:
@@ -2730,12 +2730,12 @@ packages:
       - lit
     dev: false
 
-  /@blocksuite/phasor/0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45:
-    resolution: {integrity: sha512-MmLaWNfPERPXpHbiNRI2bfwR/wyZAfJZ/aKeRMCPf8ZKUz6xKYhW0fjboi1b+MaBJHEProTwCj0wLR97yPfqrQ==}
+  /@blocksuite/phasor/0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45:
+    resolution: {integrity: sha512-07/UYa5p7MCTLSROpPwojY1LlQFhFjMzdJyXsasqhn2xx7/wm0RqPQ3DfYzoQoPZom5MfNu4niZ2FMKoI115eA==}
     peerDependencies:
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-20230217095654-a561b36_lit@2.6.1
+      '@blocksuite/global': 0.4.0-20230217222321-04d1424_lit@2.6.1
       fractional-indexing: 3.2.0
       nanoid: 4.0.1
       perfect-freehand: 1.2.0
@@ -2816,13 +2816,13 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/store/0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45:
-    resolution: {integrity: sha512-6WaiEQwXWKuOf8DaKFu0g5AIKd0YuQpoHdblg0BWnG1kbgM5zCeySFOgrFxtXX1o8NhCNGjqenlZlkBaOn8UcA==}
+  /@blocksuite/store/0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45:
+    resolution: {integrity: sha512-fzls/XRZucI0jE2FG5GptBlWOEGit1uHUbg0iA/SHEyYAUFrCbhwirTfZVlYfpjWU8Qp7Mp4Yl96CXIXcBui1Q==}
     peerDependencies:
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-20230217095654-a561b36_lit@2.6.1
-      '@blocksuite/virgo': 0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45
+      '@blocksuite/global': 0.4.0-20230217222321-04d1424_lit@2.6.1
+      '@blocksuite/virgo': 0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45
       '@types/flexsearch': 0.7.3
       buffer: 6.0.3
       flexsearch: 0.7.21
@@ -2864,13 +2864,13 @@ packages:
       zod: 3.20.6
     dev: false
 
-  /@blocksuite/virgo/0.4.0-20230217095654-a561b36_lit@2.6.1+yjs@13.5.45:
-    resolution: {integrity: sha512-duJN3+nr+QwhTsnyU+CA/b5uDptbLmp/WdM5NjtGScsYz9/a1l4pnOph1fOF04+A9squLMAMl06nnf85G7izmA==}
+  /@blocksuite/virgo/0.4.0-20230217222321-04d1424_lit@2.6.1+yjs@13.5.45:
+    resolution: {integrity: sha512-tzul1CCMdvy4pR/Ih/wgNCTGejkUtGCRaHKS4jt42YOUGRxphrXz9yu4Zv04UrXir4Ady2cSItwVg2ARfXh/Ig==}
     peerDependencies:
       lit: ^2
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.4.0-20230217095654-a561b36_lit@2.6.1
+      '@blocksuite/global': 0.4.0-20230217222321-04d1424_lit@2.6.1
       lit: 2.6.1
       yjs: 13.5.45
       zod: 3.20.6
