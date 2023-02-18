@@ -31,6 +31,7 @@ const isMac = () => {
   return getUaHelper().isMacOs;
 };
 
+// fixme(himself65): support ssr
 export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
   const { t } = useTranslation();
   const macMarkdownShortcuts = useMacMarkdownShortcuts();
