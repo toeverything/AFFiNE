@@ -1,4 +1,5 @@
-import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
+import { WorkspaceUnit } from '@affine/datacenter';
+import { dataCenterPromise } from '@affine/store';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -13,7 +14,7 @@ export function useLoadPublicWorkspace(workspaceId: string) {
     setStatus('loading');
 
     const init = async () => {
-      const dataCenter = await getDataCenter();
+      const dataCenter = await dataCenterPromise;
 
       dataCenter
         .loadPublicWorkspace(workspaceId)

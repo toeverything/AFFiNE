@@ -383,6 +383,7 @@ importers:
       lit: ^2.6.1
       react: ^18.2.0
       react-dom: ^18.2.0
+      swr: ^2.0.3
       yjs: ^13.5.46
       zustand: ^4.3.3
     dependencies:
@@ -395,6 +396,7 @@ importers:
       lit: 2.6.1
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
+      swr: 2.0.3_react@18.2.0
       yjs: 13.5.46
       zustand: 4.3.3_react@18.2.0
     devDependencies:
@@ -13533,6 +13535,16 @@ packages:
     transitivePeerDependencies:
       - chokidar
     dev: true
+
+  /swr/2.0.3_react@18.2.0:
+    resolution: {integrity: sha512-sGvQDok/AHEWTPfhUWXEHBVEXmgGnuahyhmRQbjl9XBYxT/MSlAzvXEKQpyM++bMPaI52vcWS2HiKNaW7+9OFw==}
+    engines: {pnpm: '7'}
+    peerDependencies:
+      react: ^16.11.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.2.0
+      use-sync-external-store: 1.2.0_react@18.2.0
+    dev: false
 
   /synchronous-promise/2.0.17:
     resolution: {integrity: sha512-AsS729u2RHUfEra9xJrE39peJcc2stq2+poBXX8bcM08Y6g9j/i/PUzwNQqkaJde7Ntg1TO7bSREbR5sdosQ+g==}

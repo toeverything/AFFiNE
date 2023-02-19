@@ -1,5 +1,5 @@
 import { useTranslation } from '@affine/i18n';
-import { PageMeta } from '@affine/store';
+import { PageMeta, useDataCenter } from '@affine/store';
 import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { Workspace } from '@blocksuite/store';
 import { Command } from 'cmdk';
@@ -7,7 +7,6 @@ import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 import usePageHelper from '@/hooks/use-page-helper';
-import { useGlobalState } from '@/store/app';
 
 import { NoResultSVG } from './NoResultSVG';
 import { StyledListItem, StyledNotFound } from './style';
@@ -24,7 +23,7 @@ export const PublishedResults = (props: {
     props;
   const { search } = usePageHelper();
   const [results, setResults] = useState(new Map<string, string | undefined>());
-  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenter = useDataCenter();
   const router = useRouter();
   const [pageList, setPageList] = useState<PageMeta[]>([]);
   useEffect(() => {

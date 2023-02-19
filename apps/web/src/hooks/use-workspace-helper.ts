@@ -1,10 +1,10 @@
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useCallback } from 'react';
 
-import { useGlobalState } from '@/store/app';
+import { useDataCenter, useGlobalState } from '@/store/app';
 
 export const useWorkspaceHelper = () => {
-  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenter = useDataCenter();
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );

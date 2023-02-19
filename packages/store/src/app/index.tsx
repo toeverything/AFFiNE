@@ -1,5 +1,7 @@
+import { assertEquals } from '@blocksuite/global/utils';
 import type React from 'react';
 import { createContext, useContext, useMemo } from 'react';
+import { preload, SWRConfig, SWRConfiguration } from 'swr';
 import { createStore, StateCreator, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
 import type { UseBoundStore } from 'zustand/react';
@@ -13,7 +15,9 @@ import {
 import {
   createDataCenterActions,
   createDataCenterState,
+  createDefaultWorkspace,
   DataCenterActions,
+  dataCenterPromise,
   DataCenterState,
 } from './datacenter';
 import {
@@ -80,11 +84,37 @@ export const useGlobalState: UseBoundStore<Store> = ((
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
+export type DataKey = ['datacenter', string] | ['datacenter'];
+
+const swrFetcher = async (keys: DataKey) => {
+  assertEquals(keys[0], 'datacenter');
+  if (keys.length === 1) {
+    return await dataCenterPromise.then(async dataCenter => {
+      if (dataCenter.workspaces.length === 0) {
+        await createDefaultWorkspace(dataCenter);
+      }
+      return dataCenter;
+    });
+  } else {
+    const dataCenter = await dataCenterPromise;
+    return dataCenter.loadWorkspace(keys[1]);
+  }
+};
+
+preload(['datacenter'], swrFetcher);
+
+const swrConfig: SWRConfiguration = {
+  fetcher: swrFetcher,
+  suspense: true,
+};
+
 export const GlobalAppProvider: React.FC<React.PropsWithChildren> =
   function ModelProvider({ children }) {
     return (
-      <GlobalStateContext.Provider value={useMemo(() => create(), [])}>
-        {children}
-      </GlobalStateContext.Provider>
+      <SWRConfig value={swrConfig}>
+        <GlobalStateContext.Provider value={useMemo(() => create(), [])}>
+          {children}
+        </GlobalStateContext.Provider>
+      </SWRConfig>
     );
   };
