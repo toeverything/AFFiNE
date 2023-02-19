@@ -368,6 +368,7 @@ importers:
       '@blocksuite/store': 0.4.1
       '@types/react': ^18.0.28
       react: ^18.2.0
+      swr: ^2.0.3
       zustand: ^4.3.3
     dependencies:
       '@affine/datacenter': link:../data-center
@@ -377,6 +378,7 @@ importers:
       '@blocksuite/react': 0.4.1_6imdqfxdvhtp63fiogxmlqrieq
       '@blocksuite/store': 0.4.1
       react: 18.2.0
+      swr: 2.0.3_react@18.2.0
       zustand: 4.3.3_react@18.2.0
     devDependencies:
       '@types/react': 18.0.28
@@ -13948,6 +13950,16 @@ packages:
       react: ^16.11.0 || ^17.0.0 || ^18.0.0
     dependencies:
       use-sync-external-store: 1.2.0
+    dev: false
+
+  /swr/2.0.3_react@18.2.0:
+    resolution: {integrity: sha512-sGvQDok/AHEWTPfhUWXEHBVEXmgGnuahyhmRQbjl9XBYxT/MSlAzvXEKQpyM++bMPaI52vcWS2HiKNaW7+9OFw==}
+    engines: {pnpm: '7'}
+    peerDependencies:
+      react: ^16.11.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.2.0
+      use-sync-external-store: 1.2.0_react@18.2.0
     dev: false
 
   /synchronous-promise/2.0.17:

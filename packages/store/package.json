@@ -10,6 +10,7 @@
     "@blocksuite/react": "0.4.1",
     "@blocksuite/store": "0.4.1",
     "react": "^18.2.0",
+    "swr": "^2.0.3",
     "zustand": "^4.3.3"
   },
   "devDependencies": {
