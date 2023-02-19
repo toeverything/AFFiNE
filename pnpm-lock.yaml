@@ -76,6 +76,8 @@ importers:
 
   apps/desktop:
     specifiers:
+      '@blocksuite/blocks': 0.4.1
+      '@blocksuite/editor': 0.4.1
       '@blocksuite/icons': 2.0.12
       '@blocksuite/store': 0.4.1
       '@emotion/react': ^11.10.6
@@ -106,6 +108,8 @@ importers:
       yjs: ^13.5.46
       zx: ^7.1.1
     dependencies:
+      '@blocksuite/blocks': 0.4.1_tdlxw56kpoc45go7l7gsdk5hjm
+      '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
       '@blocksuite/icons': 2.0.12_pmekkgnqduwlme35zpnqhenc34
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.46
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34

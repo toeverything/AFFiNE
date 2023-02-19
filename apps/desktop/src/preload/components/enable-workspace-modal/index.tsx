@@ -3,11 +3,10 @@ import { IconButton } from '@affine/component';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useDataCenter } from '@affine/store';
+import { useGlobalState } from '@affine/store';
 import { CloseIcon } from '@blocksuite/icons';
 import router from 'next/router';
 import { useCallback, useState } from 'react';
-
-import { useGlobalState } from '@/store/app';
 
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 interface EnableWorkspaceModalProps {
