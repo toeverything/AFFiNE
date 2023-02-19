@@ -6,9 +6,6 @@
 .affine-default-page-block-container {
   max-width: 686px;
 }
-.affine-default-page-block-container > .affine-block-children-container {
-  margin-left: -26px !important;
-}
 
 affine-block-hub {
   position: unset !important;
