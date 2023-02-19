@@ -2,7 +2,7 @@ import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
 import { DataCenter } from '@affine/datacenter';
 import { Disposable, DisposableGroup } from '@blocksuite/global/utils';
 import type { PageMeta as StorePageMeta } from '@blocksuite/store';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useId } from 'react';
 const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 
 export const createDefaultWorkspace = async (dataCenter: DataCenter) => {
@@ -21,9 +21,23 @@ export interface PageMeta extends StorePageMeta {
 
 import { GlobalActionsCreator, useGlobalState, useGlobalStateApi } from '..';
 
+declare global {
+  // eslint-disable-next-line no-var
+  var dataCenterPromise: Promise<DataCenter>;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+let dataCenterPromise: Promise<DataCenter> = null!;
+if (!globalThis.dataCenterPromise) {
+  dataCenterPromise = getDataCenter();
+} else {
+  dataCenterPromise = globalThis.dataCenterPromise;
+}
+
+export { dataCenterPromise };
+
 export type DataCenterState = {
   readonly dataCenter: DataCenter;
-  readonly dataCenterPromise: Promise<DataCenter>;
   currentDataCenterWorkspace: WorkspaceUnit | null;
   dataCenterPageList: PageMeta[];
   blobDataSynced: boolean;
@@ -39,8 +53,6 @@ export type DataCenterActions = {
 export const createDataCenterState = (): DataCenterState => ({
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   dataCenter: null!,
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  dataCenterPromise: null!,
   currentDataCenterWorkspace: null,
   dataCenterPageList: [],
   blobDataSynced: false,
@@ -93,10 +105,8 @@ export const createDataCenterActions: GlobalActionsCreator<
 
 export function DataCenterPreloader({ children }: React.PropsWithChildren) {
   const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
-  const dataCenterPromise = useGlobalState(
-    useCallback(store => store.dataCenterPromise, [])
-  );
   const api = useGlobalStateApi();
+  const id = useId();
   //# region effect for updating workspace page list
   useEffect(() => {
     return api.subscribe(
@@ -164,10 +174,10 @@ export function DataCenterPreloader({ children }: React.PropsWithChildren) {
   );
   //# endregion
 
-  if (!dataCenter && !dataCenterPromise) {
-    const promise = getDataCenter();
-    api.setState({ dataCenterPromise: promise });
-    promise.then(async dataCenter => {
+  if ((dataCenterPromise as any)[`init-${id}`] !== true) {
+    Object.defineProperty(dataCenterPromise, `init-${id}`, {
+      value: true,
+    }).then(async dataCenter => {
       // Ensure datacenter has at least one workspace
       if (dataCenter.workspaces.length === 0) {
         await createDefaultWorkspace(dataCenter);
@@ -184,8 +194,8 @@ export function DataCenterPreloader({ children }: React.PropsWithChildren) {
           )) || null,
       });
     });
-    throw promise;
   }
+
   if (!dataCenter) {
     throw dataCenterPromise;
   }

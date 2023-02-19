@@ -23,8 +23,6 @@ describe('App Store', () => {
       const state = useGlobalState();
       expect(state).toBeTypeOf('object');
       expect(state.dataCenter).toBeInstanceOf(DataCenter);
-      expect(state.dataCenterPromise).toBeInstanceOf(Promise);
-      state.dataCenterPromise.then(dc => expect(dc).toBe(state.dataCenter));
       return <div>Test2</div>;
     };
 
@@ -33,7 +31,6 @@ describe('App Store', () => {
       if (!api.getState().dataCenter) {
         api.setState({
           dataCenter,
-          dataCenterPromise,
         });
       }
       return <>{children}</>;
