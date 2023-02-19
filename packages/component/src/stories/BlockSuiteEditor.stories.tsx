@@ -9,7 +9,7 @@ import {
   BlockSuiteEditorProps,
 } from '../components/BlockSuiteEditor';
 
-const worksapce = new Workspace({
+const workspace = new Workspace({
   room: 'test',
   providers: [],
   isSSR: typeof window === 'undefined',
@@ -39,12 +39,12 @@ As a pro tip, you can combine multiple providers! For example, feel free to open
 For any feedback, please visit [BlockSuite issues](https://github.com/toeverything/blocksuite/issues) 📍`;
 
 const pagePromise = new Promise<Page>(resolve => {
-  worksapce.signals.pageAdded.once(pageId => {
-    const page = worksapce.getPage(pageId) as Page;
+  workspace.signals.pageAdded.once(pageId => {
+    const page = workspace.getPage(pageId) as Page;
     pageOrPagePromise = page;
     resolve(page);
   });
-  worksapce.createPage('0');
+  workspace.createPage('0');
 });
 let pageOrPagePromise: Promise<Page> | Page = pagePromise;
 
