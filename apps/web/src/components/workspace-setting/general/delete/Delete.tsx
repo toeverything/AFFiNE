@@ -52,22 +52,18 @@ export const WorkspaceDelete = ({
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description">
               Deleting (
-              <StyledWorkspaceName>
-                {{ workspace: workspace.name }}
-              </StyledWorkspaceName>
-              ) cannot be undone, please proceed with caution. along with all
-              its content.
+              <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>)
+              cannot be undone, please proceed with caution. along with all its
+              content.
             </Trans>
           </StyledTextContent>
         ) : (
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description2">
               Deleting (
-              <StyledWorkspaceName>
-                {{ workspace: workspace.name }}
-              </StyledWorkspaceName>
-              ) will delete both local and cloud data, this operation cannot be
-              undone, please proceed with caution.
+              <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>) will
+              delete both local and cloud data, this operation cannot be undone,
+              please proceed with caution.
             </Trans>
           </StyledTextContent>
         )}

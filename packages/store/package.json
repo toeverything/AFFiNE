@@ -9,11 +9,15 @@
     "@blocksuite/global": "0.4.1",
     "@blocksuite/react": "0.4.1",
     "@blocksuite/store": "0.4.1",
+    "lit": "^2.6.1",
     "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "swr": "^2.0.3",
+    "yjs": "^13.5.46",
     "zustand": "^4.3.3"
   },
   "devDependencies": {
-    "@types/react": "^18.0.28"
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11"
   }
 }

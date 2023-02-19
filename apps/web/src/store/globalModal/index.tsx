@@ -118,7 +118,6 @@ export const useModal: UseBoundStore<Store> = ((
 ) => {
   const api = useModalApi();
   return useStore(api, selector, equals);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
 const Modals: React.FC = function Modal() {
