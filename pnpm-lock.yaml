@@ -378,26 +378,23 @@ importers:
       '@blocksuite/global': 0.4.1
       '@blocksuite/react': 0.4.1
       '@blocksuite/store': 0.4.1
-      '@types/react': ^18.0.28
       lit: ^2.6.1
       react: ^18.2.0
       react-dom: ^18.2.0
       yjs: ^13.5.46
       zustand: ^4.3.3
     dependencies:
-      zustand: 4.3.3_react@18.2.0
-    devDependencies:
       '@affine/datacenter': link:../data-center
       '@blocksuite/blocks': 0.4.1_tdlxw56kpoc45go7l7gsdk5hjm
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
       '@blocksuite/global': 0.4.1_lit@2.6.1
       '@blocksuite/react': 0.4.1_v4k7r3722g7d6aoxzctkttv45y
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.46
-      '@types/react': 18.0.28
       lit: 2.6.1
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       yjs: 13.5.46
+      zustand: 4.3.3_react@18.2.0
 
 packages:
 
@@ -2657,6 +2654,7 @@ packages:
       lit: 2.6.1
       marked: 4.2.12
       turndown: 7.1.1
+    dev: false
 
   /@blocksuite/global/0.4.1_lit@2.6.1:
     resolution: {integrity: sha512-m2VN9waZdKhQ/fZ5wKWCx4xeVQXFvcDJXO8vMUP3W/z/FwAv3+Z7cQAoKNPJ+q1rFeUZ+9BjvvIG7oIHMr5btQ==}
@@ -2712,6 +2710,7 @@ packages:
     transitivePeerDependencies:
       - immer
       - lit
+    dev: false
 
   /@blocksuite/store/0.4.1_lit@2.6.1+yjs@13.5.46:
     resolution: {integrity: sha512-OLAcCDwRDUB7tkxptg5TZ4bcBBRmvWESRu5y7rekCWWbiPI1Fv0hX6pZGvnIGJ6pCRFTI9SQNcs9uEhHxuXIbA==}
@@ -6451,7 +6450,7 @@ packages:
       '@babel/plugin-transform-react-jsx-source': 7.19.6_@babel+core@7.20.12
       magic-string: 0.27.0
       react-refresh: 0.14.0
-      vite: 4.1.2_@types+node@18.14.0
+      vite: 4.1.2
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -8147,6 +8146,7 @@ packages:
 
   /domino/2.1.6:
     resolution: {integrity: sha512-3VdM/SXBZX2omc9JF9nOPCtDaYQ67BGp5CoLpIQlO2KCAPETs8TcDHacF26jXadGbvUteZzRTeos2fhID5+ucQ==}
+    dev: false
 
   /dotenv-expand/10.0.0:
     resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
@@ -11014,6 +11014,7 @@ packages:
     resolution: {integrity: sha512-yr8hSKa3Fv4D3jdZmtMMPghgVt6TWbk86WQaWhDloQjRSQhMMYCAro7jP7VDJrjjdV8pxVxMssXS8B8Y5DZ5aw==}
     engines: {node: '>= 12'}
     hasBin: true
+    dev: false
 
   /mdast-util-definitions/4.0.0:
     resolution: {integrity: sha512-k8AJ6aNnUkB7IE+5azR9h81O5EQ/cTDXtWdMq9Kk5KcEW/8ritU5CeLg/9HhOC++nALHBlaogJ5jz0Ybk3kPMQ==}
@@ -13668,6 +13669,7 @@ packages:
     resolution: {integrity: sha512-BEkXaWH7Wh7e9bd2QumhfAXk5g34+6QUmmWx+0q6ThaVOLuLUqsnkq35HQ5SBHSaxjSfSM7US5o4lhJNH7B9MA==}
     dependencies:
       domino: 2.1.6
+    dev: false
 
   /type-check/0.3.2:
     resolution: {integrity: sha512-ZCmOJdvOWDBYJlzAoFkC+Q0+bUyEOS1ltgp1MGU03fqHG+dbi9tBFU2Rd9QKiDZFAYrhPh2JUf7rZRIuHRKtOg==}
@@ -13962,6 +13964,7 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:
       react: 18.2.0
+    dev: false
 
   /util-deprecate/1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -14672,6 +14675,7 @@ packages:
     dependencies:
       react: 18.2.0
       use-sync-external-store: 1.2.0_react@18.2.0
+    dev: false
 
   /zx/7.1.1:
     resolution: {integrity: sha512-5YlTO2AJ+Ku2YuZKSSSqnUKuagcM/f/j4LmHs15O84Ch80Z9gzR09ZK3gR7GV+rc8IFpz2H/XNFtFVmj31yrZA==}
