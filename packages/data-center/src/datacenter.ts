@@ -32,11 +32,14 @@ export class DataCenter {
   private _mainProvider?: BaseProvider;
   providerMap: Map<string, BaseProvider> = new Map();
 
-  constructor(debug: boolean) {
+  private constructor(debug: boolean) {
     this._logger.enabled = debug;
   }
 
-  static async init(debug: boolean): Promise<DataCenter> {
+  static async init(
+    debug: boolean,
+    exclude: 'affine'[] = []
+  ): Promise<DataCenter> {
     const dc = new DataCenter(debug);
     const getInitParams = () => {
       return {
@@ -56,7 +59,9 @@ export class DataCenter {
     } else {
       await dc.registerProvider(new LocalProvider(getInitParams()));
     }
-    await dc.registerProvider(new AffineProvider(getInitParams()));
+    if (!exclude.includes('affine')) {
+      await dc.registerProvider(new AffineProvider(getInitParams()));
+    }
 
     for (const provider of dc.providerMap.values()) {
       await provider.loadWorkspaces();

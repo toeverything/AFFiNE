@@ -10,6 +10,9 @@ export const setDefaultAvatar = async (
     return;
   }
   const blob = await getDefaultHeadImgBlob(blocksuiteWorkspace.meta.name);
+  if (!blob) {
+    return;
+  }
   const blobStorage = await blocksuiteWorkspace.blobs;
   assert(blobStorage, 'No blob storage');
   const avatar = await blobStorage.set(blob);

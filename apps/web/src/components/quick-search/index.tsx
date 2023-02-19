@@ -24,6 +24,8 @@ type TransitionsModalProps = {
 const isMac = () => {
   return getUaHelper().isMacOs;
 };
+
+// fixme(himself65): support ssr
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const router = useRouter();
   const [query, setQuery] = useState('');
