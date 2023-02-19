@@ -7,7 +7,6 @@ import '@affine/i18n';
 
 import { useTranslation } from '@affine/i18n';
 import { DataCenterPreloader } from '@affine/store';
-import { NoSsr } from '@mui/material';
 import { Logger } from '@toeverything/pathfinder-logger';
 import type { NextPage } from 'next';
 import type { AppProps } from 'next/app';
@@ -76,18 +75,15 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         {NoNeedAppStatePageList.includes(router.route) ? (
           getLayout(<Component {...pageProps} />)
         ) : (
-          // SSR is not supported for datacenter, because the initial workspace id is random
-          <NoSsr>
-            <Suspense fallback={<PageLoading />}>
-              <DataCenterPreloader>
-                <MessageCenterHandler>
-                  <AppDefender>
-                    {getLayout(<Component {...pageProps} />)}
-                  </AppDefender>
-                </MessageCenterHandler>
-              </DataCenterPreloader>
-            </Suspense>
-          </NoSsr>
+          <Suspense fallback={<PageLoading />}>
+            <DataCenterPreloader>
+              <MessageCenterHandler>
+                <AppDefender>
+                  {getLayout(<Component {...pageProps} />)}
+                </AppDefender>
+              </MessageCenterHandler>
+            </DataCenterPreloader>
+          </Suspense>
         )}
       </ProviderComposer>
     </>
