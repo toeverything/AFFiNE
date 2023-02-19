@@ -119,7 +119,7 @@ export const usePageHelper = (): EditorHandlers => {
     },
     permanentlyDeletePage: pageId => {
       // TODO:  workspace.meta.removePage or workspace.removePage?
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
       currentWorkspace!.blocksuiteWorkspace?.meta.removePage(pageId);
     },
     openPage: (pageId, query = {}, newTab = false) => {

@@ -76,7 +76,6 @@ export const useConfirm: UseBoundStore<Store> = ((
 ) => {
   const api = useConfirmApi();
   return useStore(api, selector, equals);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
 function Records() {

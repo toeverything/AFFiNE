@@ -102,7 +102,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                                 <MenuItem
                                   onClick={async () => {
                                     // FIXME: remove ignore
-                                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+
                                     // @ts-ignore
                                     await removeMember(member.id);
                                     toast(
