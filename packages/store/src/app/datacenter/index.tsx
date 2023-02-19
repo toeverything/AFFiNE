@@ -45,7 +45,6 @@ export interface PageMeta extends StorePageMeta {
 import { GlobalActionsCreator, useGlobalStateApi } from '..';
 
 export type DataCenterState = {
-  dataCenter: DataCenter;
   currentDataCenterWorkspace: WorkspaceUnit | null;
   dataCenterPageList: PageMeta[];
   blobDataSynced: boolean;
@@ -59,8 +58,6 @@ export type DataCenterActions = {
 };
 
 export const createDataCenterState = (): DataCenterState => ({
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  dataCenter: null!,
   currentDataCenterWorkspace: null,
   dataCenterPageList: [],
   blobDataSynced: false,
