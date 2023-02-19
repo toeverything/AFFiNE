@@ -1,11 +1,11 @@
-import { FC, SVGProps } from 'react';
+import { useTranslation } from '@affine/i18n';
 import {
   AllPagesIcon,
   FavouritesIcon,
-  TrashIcon,
   SettingsIcon,
+  TrashIcon,
 } from '@blocksuite/icons';
-import { useTranslation } from '@affine/i18n';
+import { FC, SVGProps } from 'react';
 
 export const useSwitchToConfig = (
   currentWorkspaceId?: string

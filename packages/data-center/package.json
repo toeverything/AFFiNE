@@ -1,44 +1,32 @@
 {
   "name": "@affine/datacenter",
   "version": "0.3.0",
+  "private": true,
   "description": "",
-  "type": "module",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
-  "exports": {
-    ".": "./dist/src/index.js"
-  },
-  "scripts": {
-    "dev": "tsc --project ./tsconfig.json -w",
-    "build": "tsc --project ./tsconfig.json"
-  },
-  "keywords": [],
-  "author": "",
+  "main": "./src/index.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/toeverything/AFFiNE.git"
   },
   "devDependencies": {
-    "@playwright/test": "^1.29.1",
     "@types/debug": "^4.1.7",
     "fake-indexeddb": "4.0.1",
-    "lit": "^2.6.1",
-    "typescript": "^4.9.5",
-    "yjs": "^13.5.45"
+    "typescript": "^4.9.5"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.4.0-20230216093909-90a4996",
-    "@blocksuite/store": "0.4.0-20230216093909-90a4996",
+    "@blocksuite/blocks": "0.4.1",
+    "@blocksuite/store": "0.4.1",
     "@tauri-apps/api": "^1.2.0",
     "debug": "^4.3.4",
     "encoding": "^0.1.13",
-    "firebase": "^9.15.0",
+    "firebase": "^9.17.1",
     "idb-keyval": "^6.2.0",
     "js-base64": "^3.7.5",
-    "ky": "^0.33.0",
+    "ky": "^0.33.2",
     "ky-universal": "^0.11.0",
-    "lib0": "^0.2.58",
-    "swr": "^2.0.0",
-    "y-protocols": "^1.0.5"
+    "lib0": "^0.2.62",
+    "lit": "^2.6.1",
+    "y-protocols": "^1.0.5",
+    "yjs": "^13.5.46"
   }
 }

@@ -1,21 +1,22 @@
-import { useRouter } from 'next/router';
 import { Modal } from '@affine/component';
 import { Input } from '@affine/component';
-import {
-  StyledModalHeader,
-  StyledTextContent,
-  StyledModalWrapper,
-  StyledInputContent,
-  StyledButtonContent,
-  StyledWorkspaceName,
-} from './style';
-import { useState } from 'react';
 import { ModalCloseButton } from '@affine/component';
 import { Button } from '@affine/component';
-
 import { WorkspaceUnit } from '@affine/datacenter';
 import { Trans, useTranslation } from '@affine/i18n';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
+
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
+
+import {
+  StyledButtonContent,
+  StyledInputContent,
+  StyledModalHeader,
+  StyledModalWrapper,
+  StyledTextContent,
+  StyledWorkspaceName,
+} from './style';
 
 interface WorkspaceDeleteProps {
   open: boolean;
@@ -51,22 +52,18 @@ export const WorkspaceDelete = ({
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description">
               Deleting (
-              <StyledWorkspaceName>
-                {{ workspace: workspace.name }}
-              </StyledWorkspaceName>
-              ) cannot be undone, please proceed with caution. along with all
-              its content.
+              <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>)
+              cannot be undone, please proceed with caution. along with all its
+              content.
             </Trans>
           </StyledTextContent>
         ) : (
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description2">
               Deleting (
-              <StyledWorkspaceName>
-                {{ workspace: workspace.name }}
-              </StyledWorkspaceName>
-              ) will delete both local and cloud data, this operation cannot be
-              undone, please proceed with caution.
+              <StyledWorkspaceName>{workspace.name}</StyledWorkspaceName>) will
+              delete both local and cloud data, this operation cannot be undone,
+              please proceed with caution.
             </Trans>
           </StyledTextContent>
         )}

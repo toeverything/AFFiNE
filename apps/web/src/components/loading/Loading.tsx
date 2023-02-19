@@ -1,7 +1,7 @@
 import {
-  StyledLoadingWrapper,
   StyledLoading,
   StyledLoadingItem,
+  StyledLoadingWrapper,
 } from './styled';
 
 export const Loading = ({ size = 40 }: { size?: number }) => {

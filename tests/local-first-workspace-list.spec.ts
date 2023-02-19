@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test';
-import { test } from './libs/playwright.js';
-import { loadPage } from './libs/load-page.js';
-import { createWorkspace } from './libs/workspace-logic.js';
+
+import { loadPage } from './libs/load-page';
+import { test } from './libs/playwright';
+import { createWorkspace } from './libs/workspace-logic';
 loadPage();
 
 test.describe('Local first workspace list', () => {

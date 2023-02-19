@@ -1,4 +1,5 @@
 import { HTMLAttributes, PropsWithChildren } from 'react';
+
 import { StyledTableHead } from './styles';
 
 export const TableHead = ({

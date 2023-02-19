@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import type { User } from 'firebase/auth';
 import {
   type Auth as FirebaseAuth,
   getAuth as getFirebaseAuth,
@@ -6,12 +7,11 @@ import {
   signInWithPopup,
   signOut,
 } from 'firebase/auth';
-import type { User } from 'firebase/auth';
 import { decode } from 'js-base64';
+import { KyInstance } from 'ky/distribution/types/ky';
 
-import { getLogger } from '../../../logger.js';
-import { bareClient } from './request.js';
-import { storage } from '../storage.js';
+import { getLogger } from '../../../logger';
+import { storage } from '../storage';
 
 export interface AccessTokenMessage {
   created_at: number;
@@ -43,20 +43,24 @@ const AFFINE_LOGIN_STORAGE_KEY = 'affine:login';
  * Use refresh token to get a new access token (JWT)
  * The returned token also contains the user info payload.
  */
-const doLogin = (params: LoginParams): Promise<LoginResponse> =>
-  bareClient.post('api/user/token', { json: params }).json();
+const createDoLogin =
+  (bareClient: KyInstance) =>
+  (params: LoginParams): Promise<LoginResponse> =>
+    bareClient.post('api/user/token', { json: params }).json();
 
-export class Auth {
+export class GoogleAuth {
   private readonly _logger;
   private _accessToken = ''; // idtoken (JWT)
   private _refreshToken = '';
 
   private _user: AccessTokenMessage | null = null;
   private _padding?: Promise<LoginResponse>;
+  private readonly _doLogin: ReturnType<typeof createDoLogin>;
 
-  constructor() {
+  constructor(bareClient: KyInstance) {
     this._logger = getLogger('token');
     this._logger.enabled = true;
+    this._doLogin = createDoLogin(bareClient);
 
     this.restoreLogin();
   }
@@ -64,7 +68,7 @@ export class Auth {
   setLogin(login: LoginResponse) {
     this._accessToken = login.token;
     this._refreshToken = login.refresh;
-    this._user = Auth.parseIdToken(this._accessToken);
+    this._user = GoogleAuth.parseIdToken(this._accessToken);
 
     this.triggerChange(this._user);
     this.storeLogin();
@@ -94,28 +98,32 @@ export class Auth {
   }
 
   async initToken(token: string) {
-    const res = await doLogin({ token, type: 'Google' });
+    const res = await this._doLogin({ token, type: 'Google' });
     this.setLogin(res);
     return this._user;
   }
 
   async refreshToken(refreshToken?: string) {
     if (!this._padding) {
-      this._padding = doLogin({
+      this._padding = this._doLogin({
         type: 'Refresh',
         token: refreshToken || this._refreshToken,
       });
-      this._padding.finally(() => {
-        // clear on settled
-        this._padding = undefined;
-      });
       this._refreshToken = refreshToken || this._refreshToken;
     }
-    const res = await this._padding;
-    if (!refreshToken || refreshToken !== this._refreshToken) {
-      this.setLogin(res);
+    try {
+      const res = await this._padding;
+      if (res && (!refreshToken || refreshToken !== this._refreshToken)) {
+        this.setLogin(res);
+      }
+      return true;
+    } catch {
+      this._logger('Failed to refresh token');
+    } finally {
+      // clear on settled
+      this._padding = undefined;
     }
-    return true;
+    return false;
   }
 
   get user() {
@@ -177,9 +185,11 @@ export class Auth {
   }
 }
 
-export const auth = new Auth();
+export function createGoogleAuth(bareAuth: KyInstance): GoogleAuth {
+  return new GoogleAuth(bareAuth);
+}
 
-export const getAuthorizer = () => {
+export const getAuthorizer = (googleAuth: GoogleAuth) => {
   let _firebaseAuth: FirebaseAuth | null = null;
   const logger = getLogger('authorizer');
 
@@ -221,7 +231,7 @@ export const getAuthorizer = () => {
     const idToken = await getToken();
     let loginUser: AccessTokenMessage | null = null;
     if (idToken) {
-      loginUser = await auth.initToken(idToken);
+      loginUser = await googleAuth.initToken(idToken);
     } else {
       const firebaseAuth = getAuth();
       if (firebaseAuth) {
@@ -233,7 +243,7 @@ export const getAuthorizer = () => {
         });
         const user = await signInWithPopup(firebaseAuth, googleAuthProvider);
         const idToken = await user.user.getIdToken();
-        loginUser = await auth.initToken(idToken);
+        loginUser = await googleAuth.initToken(idToken);
       }
     }
     return loginUser;

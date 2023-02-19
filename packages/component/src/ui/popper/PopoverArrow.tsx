@@ -1,9 +1,10 @@
 import { forwardRef } from 'react';
+
 import { styled } from '../../styles';
 import { PopperArrowProps } from './interface';
 
 export const PopperArrow = forwardRef<HTMLElement, PopperArrowProps>(
-  ({ placement }, ref) => {
+  function PopperArrow({ placement }, ref) {
     return <StyledArrow placement={placement} ref={ref} />;
   }
 );

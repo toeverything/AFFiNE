@@ -1,9 +1,10 @@
 import { WorkspaceUnit } from '@affine/datacenter';
-import { useGlobalState } from '@/store/app';
 import { useCallback } from 'react';
 
+import { useDataCenter, useGlobalState } from '@/store/app';
+
 export const useWorkspaceHelper = () => {
-  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenter = useDataCenter();
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
@@ -45,11 +46,7 @@ export const useWorkspaceHelper = () => {
   };
 
   const acceptInvite = async (inviteCode: string) => {
-    let inviteInfo;
-    if (inviteCode) {
-      inviteInfo = await dataCenter.acceptInvitation(inviteCode);
-    }
-    return inviteInfo;
+    return dataCenter.acceptInvitation(inviteCode);
   };
 
   return {

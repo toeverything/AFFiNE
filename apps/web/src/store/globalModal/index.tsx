@@ -1,3 +1,5 @@
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
 import type React from 'react';
 import {
   createContext,
@@ -9,13 +11,19 @@ import {
 import { createStore, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
 import { UseBoundStore } from 'zustand/react';
+
 import ContactModal from '@/components/contact-modal';
-import ShortcutsModal from '@/components/shortcuts-modal';
-import QuickSearch from '@/components/quick-search';
-import { LoginModal } from '@/components/login-modal';
-import ImportModal from '@/components/import';
 import { EnableWorkspaceModal } from '@/components/enable-workspace-modal';
-import { useRouter } from 'next/router';
+import ImportModal from '@/components/import';
+import { LoginModal } from '@/components/login-modal';
+
+const ShortcutsModal = dynamic(() => import('@/components/shortcuts-modal'), {
+  ssr: false,
+});
+
+const QuickSearch = dynamic(() => import('@/components/quick-search'), {
+  ssr: false,
+});
 
 export type ModalState = {
   contact: boolean;
@@ -110,7 +118,6 @@ export const useModal: UseBoundStore<Store> = ((
 ) => {
   const api = useModalApi();
   return useStore(api, selector, equals);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
 const Modals: React.FC = function Modal() {

@@ -6,17 +6,6 @@ const _initializeDataCenter = () => {
   return (debug = true) => {
     if (!_dataCenterInstance) {
       _dataCenterInstance = DataCenter.init(debug);
-      _dataCenterInstance.then(dc => {
-        try {
-          if (window) {
-            (window as any).dc = dc;
-          }
-        } catch (_) {
-          // ignore
-        }
-
-        return dc;
-      });
     }
 
     return _dataCenterInstance;
@@ -25,9 +14,10 @@ const _initializeDataCenter = () => {
 
 export const getDataCenter = _initializeDataCenter();
 
-export type { DataCenter };
-export * from './provider/affine/apis';
-export { WorkspaceUnit } from './workspace-unit';
+export { DataCenter };
 export { getLogger } from './logger';
 export * from './message';
+export { AffineProvider } from './provider/affine';
+export * from './provider/affine/apis';
 export * from './types';
+export { WorkspaceUnit } from './workspace-unit';

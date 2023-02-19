@@ -1,7 +1,8 @@
-import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
+import { useCallback, useEffect } from 'react';
+
 import { PageLoading } from '@/components/loading';
+import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
 import usePageHelper from '@/hooks/use-page-helper';
 import { useGlobalState } from '@/store/app';
 
@@ -19,7 +20,9 @@ const WorkspaceIndex = () => {
         return;
       }
       const savedPageId =
-        currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas[0]?.id;
+        currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas.find(
+          meta => !meta.trash
+        )?.id;
       if (savedPageId) {
         router.replace(`/workspace/${activeWorkspaceId}/${savedPageId}`);
         return;

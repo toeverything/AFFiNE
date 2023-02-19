@@ -1,7 +1,7 @@
-import localizedFormat from 'dayjs/plugin/localizedFormat';
-import dayjs from 'dayjs';
-import { PageMeta } from '@/providers/app-state-provider';
 import { TableCell } from '@affine/component';
+import type { PageMeta } from '@affine/store';
+import dayjs from 'dayjs';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
 import React from 'react';
 
 dayjs.extend(localizedFormat);

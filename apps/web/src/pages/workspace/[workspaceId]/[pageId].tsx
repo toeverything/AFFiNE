@@ -1,3 +1,8 @@
+import { useTranslation } from '@affine/i18n';
+import { assertEquals } from '@blocksuite/store';
+import dynamic from 'next/dynamic';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
 import {
   PropsWithChildren,
   ReactElement,
@@ -5,18 +10,15 @@ import {
   useEffect,
   useState,
 } from 'react';
+
 import { EditorHeader } from '@/components/header';
 import MobileModal from '@/components/mobile-modal';
-import type { NextPageWithLayout } from '../..//_app';
 import WorkspaceLayout from '@/components/workspace-layout';
-import { useRouter } from 'next/router';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import dynamic from 'next/dynamic';
-import Head from 'next/head';
-import { useTranslation } from '@affine/i18n';
-import { useGlobalState } from '@/store/app';
+import { useDataCenter, useGlobalState, useGlobalStateApi } from '@/store/app';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
-import { assertEquals } from '@blocksuite/store';
+
+import type { NextPageWithLayout } from '../..//_app';
 
 const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
   ssr: false,
@@ -107,6 +109,7 @@ const PageDefender = ({ children }: PropsWithChildren) => {
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
+  const dataCenter = useDataCenter();
   const { createPage } = usePageHelper();
 
   useEffect(() => {
@@ -124,6 +127,16 @@ const PageDefender = ({ children }: PropsWithChildren) => {
     };
     initPage();
   }, [createPage, currentWorkspace, loadPage, router.query.pageId]);
+  const api = useGlobalStateApi();
+  useEffect(
+    () =>
+      dataCenter.onWorkspacesChange(({ deleted }) => {
+        if (deleted?.some(workspace => workspace.id === currentWorkspace?.id)) {
+          router.replace('/404?code=kicked');
+        }
+      }),
+    [api, currentWorkspace?.id, dataCenter, router]
+  );
 
   return <>{pageLoaded ? children : null}</>;
 };

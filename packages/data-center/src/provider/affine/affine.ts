@@ -1,26 +1,24 @@
-import { BaseProvider } from '../base.js';
-import type {
-  ProviderConstructorParams,
-  CreateWorkspaceInfoParams,
-} from '../base';
-import type { User } from '../../types';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import assert from 'assert';
-import { WebsocketProvider } from './sync.js';
-// import { IndexedDBProvider } from '../local/indexeddb';
-import { getApis, Workspace } from './apis/index.js';
-import type { Apis, WorkspaceDetail } from './apis';
-import { WebsocketClient } from './channel';
-import {
-  loadWorkspaceUnit,
-  createWorkspaceUnit,
-  migrateBlobDB,
-  createBlocksuiteWorkspaceWithAuth,
-} from './utils.js';
-import { WorkspaceUnit } from '../../workspace-unit.js';
-import { applyUpdate } from '../../utils/index.js';
+import { KyInstance } from 'ky/distribution/types/ky';
+
+import { MessageCenter } from '../../message';
+import type { User } from '../../types';
+import { applyUpdate } from '../../utils';
 import type { SyncMode } from '../../workspace-unit';
-import { MessageCenter } from '../../message/index.js';
+import { WorkspaceUnit } from '../../workspace-unit';
+import type {
+  CreateWorkspaceInfoParams,
+  ProviderConstructorParams,
+} from '../base';
+import { BaseProvider } from '../base';
+import type { Apis, WorkspaceDetail } from './apis';
+import { getApis, Workspace } from './apis';
+import { createGoogleAuth } from './apis/google';
+import { createAuthClient, createBareClient } from './apis/request';
+import { WebsocketClient } from './channel';
+import { WebsocketProvider } from './sync';
+import { createWorkspaceUnit, loadWorkspaceUnit, migrateBlobDB } from './utils';
 
 type ChannelMessage = {
   ws_list: Workspace[];
@@ -38,6 +36,9 @@ const {
 } = BlocksuiteWorkspace;
 
 export class AffineProvider extends BaseProvider {
+  private readonly bareClient: KyInstance;
+  private readonly authClient: KyInstance;
+
   public id = 'affine';
   private _wsMap: Map<BlocksuiteWorkspace, WebsocketProvider> = new Map();
   private _apis: Apis;
@@ -51,7 +52,14 @@ export class AffineProvider extends BaseProvider {
 
   constructor({ apis, ...params }: AffineProviderConstructorParams) {
     super(params);
-    this._apis = apis || getApis();
+    this.bareClient = createBareClient('/');
+    const googleAuth = createGoogleAuth(this.bareClient);
+    this.authClient = createAuthClient(this.bareClient, googleAuth);
+    this._apis = apis || getApis(this.bareClient, this.authClient, googleAuth);
+  }
+
+  public get apis() {
+    return Object.freeze(this._apis);
   }
 
   override async init() {
@@ -79,6 +87,7 @@ export class AffineProvider extends BaseProvider {
           window.location.host
         }/api/global/sync/`,
         this._logger,
+        this._apis.auth,
         {
           params: {
             token: this._apis.auth.refresh,
@@ -369,16 +378,19 @@ export class AffineProvider extends BaseProvider {
   public override async createWorkspace(
     meta: CreateWorkspaceInfoParams
   ): Promise<WorkspaceUnit | undefined> {
-    const workspaceUnitForUpload = await createWorkspaceUnit({
-      id: '',
-      name: meta.name,
-      avatar: undefined,
-      owner: await this.getUserInfo(),
-      published: false,
-      memberCount: 1,
-      provider: this.id,
-      syncMode: 'core',
-    });
+    const workspaceUnitForUpload = await createWorkspaceUnit(
+      {
+        id: '',
+        name: meta.name,
+        avatar: undefined,
+        owner: await this.getUserInfo(),
+        published: false,
+        memberCount: 1,
+        provider: this.id,
+        syncMode: 'core',
+      },
+      this._apis
+    );
     const { id } = await this._apis.createWorkspace(
       new Blob([
         encodeStateAsUpdate(workspaceUnitForUpload.blocksuiteWorkspace!.doc)
@@ -386,16 +398,19 @@ export class AffineProvider extends BaseProvider {
       ])
     );
 
-    const workspaceUnit = await createWorkspaceUnit({
-      id,
-      name: meta.name,
-      avatar: undefined,
-      owner: await this.getUserInfo(),
-      published: false,
-      memberCount: 1,
-      provider: this.id,
-      syncMode: 'core',
-    });
+    const workspaceUnit = await createWorkspaceUnit(
+      {
+        id,
+        name: meta.name,
+        avatar: undefined,
+        owner: await this.getUserInfo(),
+        published: false,
+        memberCount: 1,
+        provider: this.id,
+        syncMode: 'core',
+      },
+      this._apis
+    );
 
     this._workspaces.add(workspaceUnit);
 
@@ -445,7 +460,8 @@ export class AffineProvider extends BaseProvider {
     });
     await migrateBlobDB(workspaceUnit.id, id);
 
-    const blocksuiteWorkspace = await createBlocksuiteWorkspaceWithAuth(id);
+    const blocksuiteWorkspace =
+      await this._apis.createBlockSuiteWorkspaceWithAuth(id);
     assert(workspaceUnit.blocksuiteWorkspace);
     await applyUpdate(
       blocksuiteWorkspace,

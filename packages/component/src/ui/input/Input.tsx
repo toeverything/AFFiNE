@@ -1,13 +1,13 @@
 import {
+  FocusEventHandler,
+  HTMLAttributes,
   InputHTMLAttributes,
+  KeyboardEventHandler,
   useEffect,
   useState,
-  FocusEventHandler,
-  KeyboardEventHandler,
-  HTMLAttributes,
 } from 'react';
-import { StyledInput } from './style';
 
+import { StyledInput } from './style';
 type inputProps = {
   value?: string;
   placeholder?: string;

@@ -1,15 +1,17 @@
-import { WorkspaceName, SelectorWrapper } from './styles';
 import { useCallback, useState } from 'react';
-import { WorkspaceModal } from '@/components/workspace-modal';
+
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { useGlobalState } from '@/store/app';
+import { WorkspaceModal } from '@/components/workspace-modal';
+import { useDataCenter, useGlobalState } from '@/store/app';
+
+import { SelectorWrapper, WorkspaceName } from './styles';
 
 export const WorkspaceSelector = () => {
   const [workspaceListShow, setWorkspaceListShow] = useState(false);
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
-  const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
+  const dataCenter = useDataCenter();
 
   if (dataCenter.workspaces.length === 0) {
     setWorkspaceListShow(true);

@@ -1,12 +1,14 @@
-import { uuidv4, Workspace } from '@blocksuite/store';
-import { QueryContent } from '@blocksuite/store/dist/workspace/search';
-import { PageMeta } from '@/providers/app-state-provider';
-import { EditorContainer } from '@blocksuite/editor';
-import { useChangePageMeta } from '@/hooks/use-change-page-meta';
-import { useRouter } from 'next/router';
 import { WorkspaceUnit } from '@affine/datacenter';
-import { useGlobalState } from '@/store/app';
+import { PageMeta } from '@affine/store';
+import { EditorContainer } from '@blocksuite/editor';
+import { uuidv4, Workspace } from '@blocksuite/store';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import type { QueryContent } from '@blocksuite/store/dist/workspace/search';
+import { useRouter } from 'next/router';
 import { useCallback } from 'react';
+
+import { useChangePageMeta } from '@/hooks/use-change-page-meta';
+import { useGlobalState } from '@/store/app';
 
 export type EditorHandlers = {
   createPage: (params?: {
@@ -118,7 +120,7 @@ export const usePageHelper = (): EditorHandlers => {
     },
     permanentlyDeletePage: pageId => {
       // TODO:  workspace.meta.removePage or workspace.removePage?
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
       currentWorkspace!.blocksuiteWorkspace?.meta.removePage(pageId);
     },
     openPage: (pageId, query = {}, newTab = false) => {

@@ -1,9 +1,12 @@
 import { invoke } from '@tauri-apps/api';
+
+import { GetBlob, PutBlob } from './types/blob';
 import {
   GetDocumentParameter,
   GetDocumentResponse,
   YDocumentUpdate,
 } from './types/document';
+import { CreateUser, GetUserParameters } from './types/user';
 import {
   CreateWorkspace,
   CreateWorkspaceResult,
@@ -13,8 +16,6 @@ import {
   GetWorkspacesResult,
   User,
 } from './types/workspace';
-import { GetBlob, PutBlob } from './types/blob';
-import { CreateUser, GetUserParameters } from './types/user';
 
 export interface IPCMethodsType {
   updateYDocument: typeof updateYDocument;

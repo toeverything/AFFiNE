@@ -1,20 +1,17 @@
-import * as Y from 'yjs';
-import assert from 'assert';
-
-import { LocalProvider } from '../local/index.js';
-import type { IPCMethodsType } from './ipc/methods.js';
-import {
-  CreateWorkspaceInfoParams,
-  ProviderConstructorParams,
-} from '../base.js';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
-import { IPCBlobProvider } from './blocksuite-provider/blob.js';
-import type { WorkspaceUnit } from 'src/workspace-unit.js';
-import { loadWorkspaceUnit } from '../local/utils.js';
-import { WorkspaceWithPermission } from './ipc/types/workspace.js';
-import { applyUpdate } from '../../utils/index.js';
-import { User } from 'src/types/index.js';
-import { createWorkspaceUnit } from './utils.js';
+import assert from 'assert';
+import * as Y from 'yjs';
+
+import { User } from '../../types';
+import { applyUpdate } from '../../utils';
+import type { WorkspaceUnit } from '../../workspace-unit';
+import { CreateWorkspaceInfoParams, ProviderConstructorParams } from '../base';
+import { LocalProvider } from '../local';
+import { loadWorkspaceUnit } from '../local/utils';
+import { IPCBlobProvider } from './blocksuite-provider/blob';
+import type { IPCMethodsType } from './ipc/methods';
+import { WorkspaceWithPermission } from './ipc/types/workspace';
+import { createWorkspaceUnit } from './utils';
 
 /**
  * init - createUser - create first workspace and ydoc - loadWorkspace - return the first workspace - wrapWorkspace - #initDocFromIPC - applyUpdate - on('update') - updateYDocument
@@ -38,7 +35,7 @@ export class TauriIPCProvider extends LocalProvider {
     if (ipc) {
       this.#ipc = ipc;
     } else {
-      this.#ipc = await import('./ipc/methods.js');
+      this.#ipc = await import('./ipc/methods');
     }
     try {
       const user = await this.#ipc?.getUser({

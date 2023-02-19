@@ -1,7 +1,5 @@
 // @ts-check
-
-// import { execSync } from 'child_process'
-const { execSync } = require('child_process');
+import { execSync } from 'node:child_process';
 
 const hasGit = () => {
   try {
@@ -40,7 +38,4 @@ const getGitVersion = () => {
 const getCommitHash = (rev = 'HEAD') =>
   execSync(`git rev-parse --short ${rev}`).toString();
 
-module.exports = {
-  getGitVersion,
-  getCommitHash,
-};
+export { getCommitHash, getGitVersion };

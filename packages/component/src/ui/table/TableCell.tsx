@@ -1,7 +1,7 @@
 import { HTMLAttributes, PropsWithChildren } from 'react';
+
 import { TableCellProps } from './interface';
 import { StyledTableCell } from './styles';
-
 export const TableCell = ({
   children,
   ...props

@@ -1,30 +1,32 @@
+import { styled } from '@affine/component';
+import { WorkspaceUnit } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
+import { SettingsIcon } from '@blocksuite/icons';
+import Head from 'next/head';
+import {
+  CSSProperties,
+  ReactElement,
+  ReactNode,
+  startTransition,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+
+import { PageListHeader } from '@/components/header';
+import WorkspaceLayout from '@/components/workspace-layout';
+import {
+  ExportPage,
+  GeneralPage,
+  MembersPage,
+  PublishPage,
+  SyncPage,
+} from '@/components/workspace-setting';
 import {
   StyledSettingContainer,
   StyledSettingContent,
   WorkspaceSettingTagItem,
 } from '@/components/workspace-setting/style';
-import {
-  ReactElement,
-  ReactNode,
-  useState,
-  CSSProperties,
-  useEffect,
-  startTransition,
-  useCallback,
-} from 'react';
-import {
-  GeneralPage,
-  MembersPage,
-  PublishPage,
-  ExportPage,
-} from '@/components/workspace-setting';
-import { SettingsIcon } from '@blocksuite/icons';
-import WorkspaceLayout from '@/components/workspace-layout';
-import { WorkspaceUnit } from '@affine/datacenter';
-import { useTranslation } from '@affine/i18n';
-import { PageListHeader } from '@/components/header';
-import Head from 'next/head';
-import { styled } from '@affine/component';
 import { useGlobalState } from '@/store/app';
 
 const useTabMap = () => {
@@ -41,10 +43,11 @@ const useTabMap = () => {
       panelRender: workspace => <GeneralPage workspace={workspace} />,
     },
     // TODO: add it back for desktop version
-    // {
-    //   name: t('Sync'),
-    //   panelRender: workspace => <SyncPage workspace={workspace} />,
-    // },
+    {
+      id: 'Sync',
+      name: t('Sync'),
+      panelRender: workspace => <SyncPage workspace={workspace} />,
+    },
     {
       id: 'Collaboration',
       name: t('Collaboration'),
@@ -100,6 +103,7 @@ const WorkspaceSetting = () => {
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
+  const user = useGlobalState(store => store.user);
   const { activeTabPanelRender, tabMap, handleTabChange, activeTab } =
     useTabMap();
 
@@ -109,6 +113,10 @@ const WorkspaceSetting = () => {
     left: 0,
     width: 0,
   });
+
+  const shouldHideSyncTab =
+    currentWorkspace?.owner?.id !== user?.id ||
+    currentWorkspace?.provider === 'local';
 
   useEffect(() => {
     const tabButton = document.querySelector(
@@ -134,6 +142,9 @@ const WorkspaceSetting = () => {
       <StyledSettingContainer>
         <StyledTabButtonWrapper>
           {tabMap.map(({ id, name }) => {
+            if (shouldHideSyncTab && id === 'Sync') {
+              return null;
+            }
             return (
               <WorkspaceSettingTagItem
                 key={id}

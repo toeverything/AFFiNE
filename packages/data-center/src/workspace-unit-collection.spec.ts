@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test';
-import { WorkspaceUnitCollection } from './workspace-unit-collection.js';
-import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
-import { WorkspaceUnit } from './workspace-unit.js';
+import { describe, expect, test } from 'vitest';
 
-test.describe.serial('workspace meta collection observable', () => {
+import { WorkspaceUnit } from './workspace-unit';
+import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
+import { WorkspaceUnitCollection } from './workspace-unit-collection';
+
+describe('workspace meta collection observable', () => {
   const workspaceUnitCollection = new WorkspaceUnitCollection();
 
   const scope = workspaceUnitCollection.createScope();

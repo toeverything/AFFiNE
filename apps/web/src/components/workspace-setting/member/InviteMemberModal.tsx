@@ -1,30 +1,30 @@
-import { EmailIcon } from '@blocksuite/icons';
 import { styled } from '@affine/component';
-import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
 import { Input } from '@affine/component';
-import { useState } from 'react';
 import { MuiAvatar } from '@affine/component';
-import useMembers from '@/hooks/use-members';
 import { User } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import { EmailIcon } from '@blocksuite/icons';
+import { useState } from 'react';
+
+import useMembers from '@/hooks/use-members';
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
   workspaceId: string;
   onInviteSuccess: () => void;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export const debounce = <T extends (...args: any) => any>(
   fn: T,
   time?: number,
   immediate?: boolean
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): ((...args: any) => any) => {
   let timeoutId: null | number;
   let defaultImmediate = immediate || false;
   const delay = time || 300;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   return (...args: any) => {
     if (defaultImmediate) {
       fn.apply(this, args);
@@ -34,7 +34,7 @@ export const debounce = <T extends (...args: any) => any>(
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+
     // @ts-ignore
     timeoutId = setTimeout(() => {
       fn.apply(this, args);

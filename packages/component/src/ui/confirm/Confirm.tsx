@@ -1,14 +1,15 @@
+import { useTranslation } from '@affine/i18n';
 import { useState } from 'react';
+
+import { Button } from '../button';
 import { Modal, ModalCloseButton, ModalProps } from '../modal';
 import {
-  StyledRowButtonWrapper,
   StyledColumnButtonWrapper,
   StyledConfirmContent,
   StyledConfirmTitle,
   StyledModalWrapper,
+  StyledRowButtonWrapper,
 } from './styles';
-import { Button } from '../button';
-import { useTranslation } from '@affine/i18n';
 export type ConfirmProps = {
   title?: string;
   content?: string;

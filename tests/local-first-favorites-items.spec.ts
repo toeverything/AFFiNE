@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test';
-import { test } from './libs/playwright.js';
-import { loadPage } from './libs/load-page.js';
-import { newPage, clickPageMoreActions } from './libs/page-logic.js';
+
+import { loadPage } from './libs/load-page';
+import { clickPageMoreActions, newPage } from './libs/page-logic';
+import { test } from './libs/playwright';
 loadPage();
 
 test.describe('Local first favorite items ui', () => {

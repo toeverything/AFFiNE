@@ -1,7 +1,8 @@
-import { absoluteCenter, displayInlineFlex, styled } from '../../styles';
 import { CSSProperties } from 'react';
+
+import { absoluteCenter, displayInlineFlex, styled } from '../../styles';
 import { ButtonProps } from './interface';
-import { getSize, getButtonColors } from './utils';
+import { getButtonColors, getSize } from './utils';
 
 export const StyledIconButton = styled('button', {
   shouldForwardProp: prop => {
@@ -210,7 +211,7 @@ export const StyledButton = styled('button', {
       },
       '>span': {
         marginLeft: '5px',
-        width: '100%',
+        width: 'max-content',
       },
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore

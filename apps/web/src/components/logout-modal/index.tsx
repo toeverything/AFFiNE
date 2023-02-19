@@ -1,10 +1,11 @@
 import { styled } from '@affine/component';
-import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
-import { Check, UnCheck } from './icon';
-import { useState } from 'react';
 import { useTranslation } from '@affine/i18n';
-import { useAppState } from '@/providers/app-state-provider';
+import { useGlobalState } from '@affine/store';
+import { useState } from 'react';
+
+import { Check, UnCheck } from './icon';
 interface LoginModalProps {
   open: boolean;
   onClose: (wait: boolean) => void;
@@ -12,7 +13,7 @@ interface LoginModalProps {
 
 export const LogoutModal = ({ open, onClose }: LoginModalProps) => {
   const [localCache, setLocalCache] = useState(true);
-  const { blobDataSynced } = useAppState();
+  const blobDataSynced = useGlobalState(store => store.blobDataSynced);
   const { t } = useTranslation();
 
   return (

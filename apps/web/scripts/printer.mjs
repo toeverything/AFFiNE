@@ -1,5 +1,5 @@
-const chalk = require('chalk');
-const printer = {
+import chalk from 'chalk';
+export const printer = {
   debug: msg => {
     const result = chalk.green`debug` + chalk.white('  - ' + msg);
     console.log(result);
@@ -16,5 +16,3 @@ const printer = {
     return result;
   },
 };
-
-module.exports = { printer };

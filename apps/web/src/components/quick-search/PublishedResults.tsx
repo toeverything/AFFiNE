@@ -1,14 +1,15 @@
-import { Command } from 'cmdk';
-import { StyledListItem, StyledNotFound } from './style';
-import { PaperIcon, EdgelessIcon } from '@blocksuite/icons';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { PageMeta } from '@/providers/app-state-provider';
-import { useRouter } from 'next/router';
-import { NoResultSVG } from './NoResultSVG';
 import { useTranslation } from '@affine/i18n';
-import usePageHelper from '@/hooks/use-page-helper';
+import { PageMeta, useDataCenter } from '@affine/store';
+import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { Workspace } from '@blocksuite/store';
-import { useGlobalState } from '@/store/app';
+import { Command } from 'cmdk';
+import { useRouter } from 'next/router';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+
+import usePageHelper from '@/hooks/use-page-helper';
+
+import { NoResultSVG } from './NoResultSVG';
+import { StyledListItem, StyledNotFound } from './style';
 
 export const PublishedResults = (props: {
   query: string;
@@ -22,7 +23,7 @@ export const PublishedResults = (props: {
     props;
   const { search } = usePageHelper();
   const [results, setResults] = useState(new Map<string, string | undefined>());
-  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenter = useDataCenter();
   const router = useRouter();
   const [pageList, setPageList] = useState<PageMeta[]>([]);
   useEffect(() => {

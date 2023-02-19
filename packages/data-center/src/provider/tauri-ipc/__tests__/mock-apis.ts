@@ -1,17 +1,17 @@
-import { PutBlob, GetBlob } from '../ipc/types/blob';
+import { GetBlob, PutBlob } from '../ipc/types/blob';
 import {
-  YDocumentUpdate,
   GetDocumentParameter,
   GetDocumentResponse,
+  YDocumentUpdate,
 } from '../ipc/types/document';
 import { CreateUser, GetUserParameters, User } from '../ipc/types/user';
 import {
   CreateWorkspace,
   CreateWorkspaceResult,
-  GetWorkspaces,
-  GetWorkspacesResult,
   GetWorkspace,
   GetWorkspaceResult,
+  GetWorkspaces,
+  GetWorkspacesResult,
 } from '../ipc/types/workspace';
 
 export const updateYDocument = async (parameters: YDocumentUpdate) =>

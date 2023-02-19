@@ -1,39 +1,50 @@
-import { WorkspaceUnitCollection } from './workspace-unit-collection.js';
-import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import assert from 'assert';
+
+import { getLogger } from './logger';
+import { MessageCenter } from './message';
+import { AffineProvider } from './provider';
 import type {
   BaseProvider,
   CreateWorkspaceInfoParams,
   UpdateWorkspaceMetaParams,
 } from './provider/base';
-import { LocalProvider } from './provider/local/local';
-import { AffineProvider } from './provider';
+import { LocalProvider } from './provider/local';
 import type { Message } from './types';
-import assert from 'assert';
-import { getLogger } from './logger';
-import { createBlocksuiteWorkspace } from './utils/index.js';
-import { MessageCenter } from './message';
+import { createBlocksuiteWorkspace } from './utils';
 import { WorkspaceUnit } from './workspace-unit';
+import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
+import { WorkspaceUnitCollection } from './workspace-unit-collection';
+
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business
  */
+
 export class DataCenter {
   private readonly _workspaceUnitCollection = new WorkspaceUnitCollection();
   private readonly _logger = getLogger('dc');
   private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
   private _messageCenter = MessageCenter.getInstance();
+
   /**
    * A mainProvider must exist as the only data trustworthy source.
    */
   private _mainProvider?: BaseProvider;
   providerMap: Map<string, BaseProvider> = new Map();
 
-  constructor(debug: boolean) {
+  private constructor(debug: boolean) {
     this._logger.enabled = debug;
   }
 
-  static async init(debug: boolean): Promise<DataCenter> {
+  static initEmpty() {
+    return new DataCenter(false);
+  }
+
+  static async init(
+    debug: boolean,
+    exclude: 'affine'[] = []
+  ): Promise<DataCenter> {
     const dc = new DataCenter(debug);
     const getInitParams = () => {
       return {
@@ -53,7 +64,9 @@ export class DataCenter {
     } else {
       await dc.registerProvider(new LocalProvider(getInitParams()));
     }
-    await dc.registerProvider(new AffineProvider(getInitParams()));
+    if (!exclude.includes('affine')) {
+      await dc.registerProvider(new AffineProvider(getInitParams()));
+    }
 
     for (const provider of dc.providerMap.values()) {
       await provider.loadWorkspaces();
@@ -304,7 +317,6 @@ export class DataCenter {
 
   /**
    * remove the new member to the workspace
-   * @param {number} permissionId permission id
    */
   public async removeMember(workspaceId: string, permissionId: number) {
     const workspaceInfo = this._workspaceUnitCollection.find(workspaceId);

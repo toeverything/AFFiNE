@@ -5,7 +5,7 @@ export const StyledMemberTitleContainer = styled('li')(() => {
   return {
     display: 'flex',
     fontWeight: '500',
-    marginBottom: '32px',
+    marginBottom: '42px',
     flex: 1,
   };
 });
@@ -14,6 +14,7 @@ export const StyledMemberContainer = styled('div')(() => {
     display: 'flex',
     height: '100%',
     flexDirection: 'column',
+    overflow: 'hidden',
   };
 });
 
@@ -40,8 +41,8 @@ export const StyledMemberRoleContainer = styled('div')(() => {
 export const StyledMemberListContainer = styled('ul')(() => {
   return {
     overflowY: 'scroll',
-    width: '100%',
-    flex: 1,
+    flexGrow: 1,
+    paddingBottom: '58px',
   };
 });
 
@@ -80,9 +81,8 @@ export const StyledMemberEmail = styled('div')(({ theme }) => {
 
 export const StyledMemberButtonContainer = styled('div')(() => {
   return {
-    position: 'absolute',
-    bottom: '0',
-    marginBottom: '20px',
+    position: 'fixed',
+    bottom: '20px',
   };
 });
 

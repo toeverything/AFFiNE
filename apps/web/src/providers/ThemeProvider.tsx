@@ -1,28 +1,36 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { Global, css } from '@emotion/react';
 import {
-  ThemeProvider as MuiThemeProvider,
-  createTheme as MuiCreateTheme,
-} from '@mui/material/styles';
-import type { PropsWithChildren } from 'react';
-import {
-  Theme,
   ThemeMode,
   ThemeProviderProps,
   ThemeProviderValue,
 } from '@affine/component';
 import {
-  getLightTheme,
   getDarkTheme,
+  getLightTheme,
   globalThemeVariables,
   ThemeProvider as ComponentThemeProvider,
 } from '@affine/component';
-import { SystemThemeHelper, localStorageThemeHelper } from '@affine/component';
+import { localStorageThemeHelper, SystemThemeHelper } from '@affine/component';
+import { css, Global } from '@emotion/react';
+import {
+  createTheme as MuiCreateTheme,
+  ThemeProvider as MuiThemeProvider,
+} from '@mui/material/styles';
+import type { PropsWithChildren } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
+
   changeMode: () => {},
   theme: getLightTheme('page'),
 });
@@ -34,16 +42,31 @@ export const ThemeProvider = ({
   defaultTheme = 'light',
   children,
 }: PropsWithChildren<ThemeProviderProps>) => {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
-  const [mode, setMode] = useState<ThemeMode>('auto');
+  const localStorageThemeMode = useSyncExternalStore<ThemeMode>(
+    useCallback(cb => {
+      localStorageThemeHelper.callback.add(cb);
+      return () => {
+        localStorageThemeHelper.callback.delete(cb);
+      };
+    }, []),
+    useCallback(() => localStorageThemeHelper.get() ?? 'light', []),
+    useCallback(() => defaultTheme, [defaultTheme])
+  );
+  const [mode, setMode] = useState<ThemeMode>(defaultTheme);
+  if (localStorageThemeMode !== mode) {
+    setMode(localStorageThemeMode);
+  }
   const { mode: editorMode = 'page' } = useCurrentPageMeta() || {};
   const themeStyle =
-    theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode);
-  const changeMode = (themeMode: ThemeMode) => {
-    themeMode !== mode && setMode(themeMode);
-    // Remember the theme mode which user selected for next time
-    localStorageThemeHelper.set(themeMode);
-  };
+    mode === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode);
+  const changeMode = useCallback(
+    (themeMode: ThemeMode) => {
+      themeMode !== mode && setMode(themeMode);
+      // Remember the theme mode which user selected for next time
+      localStorageThemeHelper.set(themeMode);
+    },
+    [mode]
+  );
 
   // ===================== A temporary solution, just use system theme and not remember the user selected ====================
   useEffect(() => {
@@ -56,9 +79,9 @@ export const ThemeProvider = ({
     });
   }, []);
 
-  useEffect(() => {
-    setTheme(mode === 'auto' ? theme : mode);
-  }, [mode, setTheme, theme]);
+  // useEffect(() => {
+  //   setTheme(mode === 'auto' ? theme : mode);
+  // }, [mode, setTheme, theme]);
   // =====================  ====================
 
   // useEffect(() => {
@@ -92,14 +115,16 @@ export const ThemeProvider = ({
   return (
     // Use MuiThemeProvider is just because some Transitions in Mui components need it
     <MuiThemeProvider theme={muiTheme}>
-      <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
+      <ThemeContext.Provider
+        value={useMemo(
+          () => ({ mode, changeMode, theme: themeStyle }),
+          [changeMode, mode, themeStyle]
+        )}
+      >
         <Global
           styles={css`
             :root {
-              ${
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                globalThemeVariables(mode, themeStyle) as any
-              }
+              ${globalThemeVariables(mode, themeStyle) as any}
             }
           `}
         />

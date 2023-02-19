@@ -1,7 +1,8 @@
 import { Observable } from 'lib0/observable';
+
 import type {
-  WorkspaceUnit,
   UpdateWorkspaceUnitParams,
+  WorkspaceUnit,
 } from './workspace-unit';
 
 export interface WorkspaceUnitCollectionScope {

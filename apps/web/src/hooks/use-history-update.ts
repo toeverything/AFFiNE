@@ -1,5 +1,6 @@
 import { Page } from '@blocksuite/store';
 import { useEffect, useRef } from 'react';
+
 import { useGlobalState } from '@/store/app';
 
 export type EventCallBack<T> = (callback: (props: T) => void) => void;

@@ -1,33 +1,30 @@
-import type { AppProps } from 'next/app';
-import dynamic from 'next/dynamic';
 import '../../public/globals.css';
-import '../../public/variable.css';
 import './temporary.css';
-import { Logger } from '@toeverything/pathfinder-logger';
 import '@fontsource/space-mono';
 import '@fontsource/poppins';
 import '../utils/print-build-info';
-import ProviderComposer from '@/components/provider-composer';
-import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
-import type { NextPage } from 'next';
-import { AppStateProvider } from '@/providers/app-state-provider';
-import ConfirmProvider from '@/providers/ConfirmProvider';
-import { ModalProvider } from '@/store/globalModal';
-// import AppStateProvider2 from '@/providers/app-state-provider2/provider';
-
-import { useRouter } from 'next/router';
-import { Suspense, useEffect } from 'react';
-import { PageLoading } from '@/components/loading';
-import Head from 'next/head';
 import '@affine/i18n';
-import { useTranslation } from '@affine/i18n';
-import React from 'react';
-import { GlobalAppProvider } from '@/store/app';
-import { DataCenterPreloader } from '@/store/app/datacenter';
 
-const ThemeProvider = dynamic(() => import('@/providers/ThemeProvider'), {
-  ssr: false,
-});
+import { useTranslation } from '@affine/i18n';
+import { DataCenterPreloader } from '@affine/store';
+import { NoSsr } from '@mui/material';
+import { Logger } from '@toeverything/pathfinder-logger';
+import type { NextPage } from 'next';
+import type { AppProps } from 'next/app';
+import Head from 'next/head';
+// import AppStateProvider2 from '@/providers/app-state-provider2/provider';
+import { useRouter } from 'next/router';
+import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
+import { Suspense, useEffect } from 'react';
+import React from 'react';
+
+import { PageLoading } from '@/components/loading';
+import { MessageCenterHandler } from '@/components/message-center-handler';
+import ProviderComposer from '@/components/provider-composer';
+import ConfirmProvider from '@/providers/ConfirmProvider';
+import { ThemeProvider } from '@/providers/ThemeProvider';
+import { GlobalAppProvider } from '@/store/app';
+import { ModalProvider } from '@/store/globalModal';
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
   P,
@@ -68,28 +65,30 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>AFFiNE</title>
       </Head>
       <Logger />
-      <GlobalAppProvider key="BlockSuiteProvider">
-        <ProviderComposer
-          contexts={[
-            <ThemeProvider key="ThemeProvider" />,
-            <AppStateProvider key="appStateProvider" />,
-            <ModalProvider key="ModalProvider" />,
-            <ConfirmProvider key="ConfirmProvider" />,
-          ]}
-        >
+      <ProviderComposer
+        contexts={[
+          <GlobalAppProvider key="GlobalAppProvider" />,
+          <ThemeProvider key="ThemeProvider" />,
+          <ModalProvider key="ModalProvider" />,
+          <ConfirmProvider key="ConfirmProvider" />,
+        ]}
+      >
+        <NoSsr>
           {NoNeedAppStatePageList.includes(router.route) ? (
             getLayout(<Component {...pageProps} />)
           ) : (
             <Suspense fallback={<PageLoading />}>
               <DataCenterPreloader>
-                <AppDefender>
-                  {getLayout(<Component {...pageProps} />)}
-                </AppDefender>
+                <MessageCenterHandler>
+                  <AppDefender>
+                    {getLayout(<Component {...pageProps} />)}
+                  </AppDefender>
+                </MessageCenterHandler>
               </DataCenterPreloader>
             </Suspense>
           )}
-        </ProviderComposer>
-      </GlobalAppProvider>
+        </NoSsr>
+      </ProviderComposer>
     </>
   );
 };

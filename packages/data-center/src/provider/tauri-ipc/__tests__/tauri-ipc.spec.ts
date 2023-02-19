@@ -1,12 +1,13 @@
-import { test, expect } from '@playwright/test';
-import { WorkspaceUnitCollection } from '../../../workspace-unit-collection.js';
-import { TauriIPCProvider } from '../index.js';
-import { MessageCenter } from '../../../message/index.js';
-import * as ipcMethods from './mock-apis.js';
-
 import 'fake-indexeddb/auto';
 
-test.describe.serial('tauri-ipc provider', async () => {
+import { describe, expect, test } from 'vitest';
+
+import { MessageCenter } from '../../../message';
+import { WorkspaceUnitCollection } from '../../../workspace-unit-collection';
+import { TauriIPCProvider } from '..';
+import * as ipcMethods from './mock-apis';
+
+describe('tauri-ipc provider', async () => {
   const workspaceMetaCollection = new WorkspaceUnitCollection();
   const provider = new TauriIPCProvider({
     workspaces: workspaceMetaCollection.createScope(),

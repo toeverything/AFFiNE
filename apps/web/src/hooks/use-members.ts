@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
 import { Member } from '@affine/datacenter';
-import { useGlobalState } from '@/store/app';
+import { useCallback, useEffect, useState } from 'react';
+
+import { useDataCenter, useGlobalState } from '@/store/app';
 export const useMembers = () => {
-  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenter = useDataCenter();
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
@@ -11,7 +12,7 @@ export const useMembers = () => {
   const refreshMembers = useCallback(async () => {
     if (!currentWorkspace || !dataCenter) return;
     const members = await dataCenter.getMembers(currentWorkspace.id);
-    setMembers(members);
+    setMembers(members ?? []);
   }, [dataCenter, currentWorkspace]);
 
   useEffect(() => {

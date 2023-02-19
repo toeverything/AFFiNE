@@ -1,7 +1,8 @@
-import { Page, Workspace } from '@blocksuite/store';
-import { EditorContainer } from '@blocksuite/editor';
 import { BlockHub } from '@blocksuite/blocks';
-import { GlobalActionsCreator } from '@/store/app';
+import { EditorContainer } from '@blocksuite/editor';
+import { Page, Workspace } from '@blocksuite/store';
+
+import { GlobalActionsCreator } from '..';
 
 export interface BlockSuiteState {
   currentWorkspace: Workspace | null;

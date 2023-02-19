@@ -3,6 +3,7 @@ import { styled } from '@affine/component';
 export const StyledPage = styled('div')(({ theme }) => {
   return {
     height: '100vh',
+    minHeight: '450px',
     backgroundColor: theme.colors.pageBackground,
     transition: 'background-color .5s',
     display: 'flex',
@@ -14,6 +15,7 @@ export const StyledWrapper = styled('div')(() => {
   return {
     flexGrow: 1,
     position: 'relative',
+    overflow: 'auto',
   };
 });
 

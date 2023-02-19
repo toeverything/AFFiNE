@@ -1,7 +1,8 @@
-import assert from 'assert';
-import * as idb from 'lib0/indexeddb.js';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
-import { applyUpdate } from '../../../utils/index.js';
+import assert from 'assert';
+import * as idb from 'lib0/indexeddb';
+
+import { applyUpdate } from '../../../utils';
 
 const { encodeStateAsUpdate, mergeUpdates } = BlocksuiteWorkspace.Y;
 

@@ -1,33 +1,31 @@
-import { Modal, ModalWrapper, ModalCloseButton } from '@affine/component';
-import { useState } from 'react';
-import { CreateWorkspaceModal } from '../create-workspace';
-
+import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Tooltip } from '@affine/component';
-
-import { PlusIcon, HelpIcon } from '@blocksuite/icons';
-
-import { useRouter } from 'next/router';
 import { useTranslation } from '@affine/i18n';
-import { LanguageMenu } from './SelectLanguageMenu';
+import { HelpIcon, PlusIcon } from '@blocksuite/icons';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
 
+import { useDataCenter, useGlobalState } from '@/store/app';
+
+import { CreateWorkspaceModal } from '../create-workspace';
 import { LoginModal } from '../login-modal';
 import { LogoutModal } from '../logout-modal';
+import { Footer } from './Footer';
+import { LanguageMenu } from './SelectLanguageMenu';
 import {
   StyledCard,
-  StyledSplitLine,
-  StyleWorkspaceInfo,
-  StyleWorkspaceTitle,
-  StyledModalHeaderLeft,
-  StyledModalTitle,
   StyledHelperContainer,
   StyledModalContent,
-  StyledOperationWrapper,
-  StyleWorkspaceAdd,
   StyledModalHeader,
+  StyledModalHeaderLeft,
+  StyledModalTitle,
+  StyledOperationWrapper,
+  StyledSplitLine,
+  StyleWorkspaceAdd,
+  StyleWorkspaceInfo,
+  StyleWorkspaceTitle,
 } from './styles';
 import { WorkspaceCard } from './WorkspaceCard';
-import { Footer } from './Footer';
-import { useGlobalState } from '@/store/app';
 interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
@@ -36,7 +34,7 @@ interface WorkspaceModalProps {
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const logout = useGlobalState(store => store.logout);
-  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenter = useDataCenter();
   const router = useRouter();
   const { t } = useTranslation();
   const [loginOpen, setLoginOpen] = useState(false);

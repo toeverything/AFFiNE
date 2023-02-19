@@ -1,5 +1,7 @@
-import { GlobalActionsCreator } from '@/store/app';
 import { User } from '@affine/datacenter';
+
+import { GlobalActionsCreator } from '..';
+import { dataCenterPromise } from '../datacenter';
 
 export interface UserState {
   user: User | null;
@@ -23,7 +25,8 @@ export const createUserActions: GlobalActionsCreator<UserActions> = (
 ) => {
   return {
     login: async () => {
-      const { dataCenter, currentDataCenterWorkspace: workspace } = get();
+      const { currentDataCenterWorkspace: workspace } = get();
+      const dataCenter = await dataCenterPromise;
       try {
         await dataCenter.login();
         const user = (await dataCenter.getUserInfo()) as User;
@@ -38,7 +41,7 @@ export const createUserActions: GlobalActionsCreator<UserActions> = (
           // isOwner is useful only in the cloud
           isOwner = true;
         } else {
-          isOwner = user?.id === workspace?.owner?.id;
+          isOwner = user.id === workspace?.owner?.id;
         }
 
         set({ user, isOwner });
@@ -48,7 +51,7 @@ export const createUserActions: GlobalActionsCreator<UserActions> = (
       }
     },
     logout: async () => {
-      const { dataCenter } = get();
+      const dataCenter = await dataCenterPromise;
       await dataCenter.logout();
       set({ user: null });
     },

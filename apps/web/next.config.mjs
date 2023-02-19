@@ -1,8 +1,12 @@
-/* eslint @typescript-eslint/no-var-requires: "off" */
-const { getGitVersion, getCommitHash } = require('./scripts/gitInfo');
-const { dependencies } = require('./package.json');
-const path = require('node:path');
-const printer = require('./scripts/printer').printer;
+import { getGitVersion, getCommitHash } from './scripts/gitInfo.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { printer } from './scripts/printer.mjs';
+import debugLocal from 'next-debug-local';
+
+const dependencies = JSON.parse(fs.readFileSync('./package.json', 'utf8'))[
+  'dependencies'
+];
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
 const EDITOR_VERSION = enableDebugLocal
@@ -37,7 +41,7 @@ const getRedirectConfig = profile => {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   productionBrowserSourceMaps: true,
-  reactStrictMode: false,
+  reactStrictMode: true,
   swcMinify: false,
   publicRuntimeConfig: {
     NODE_ENV: process.env.NODE_ENV,
@@ -48,10 +52,14 @@ const nextConfig = {
     COMMIT_HASH: getCommitHash(),
     EDITOR_VERSION,
   },
-  transpilePackages: ['@affine/component', '@affine/i18n'],
+  transpilePackages: [
+    '@affine/component',
+    '@affine/i18n',
+    '@affine/datacenter',
+    '@toeverything/pathfinder-logger',
+  ],
   webpack: config => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
-    config.resolve.alias['yjs'] = require.resolve('yjs');
     config.module.rules.push({
       test: /\.md$/i,
       loader: 'raw-loader',
@@ -76,7 +84,7 @@ const nextConfig = {
 };
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
-const withDebugLocal = require('next-debug-local')(
+const withDebugLocal = debugLocal(
   {
     '@blocksuite/editor': path.resolve(baseDir, 'packages', 'editor'),
     '@blocksuite/blocks/models': path.resolve(
@@ -101,10 +109,13 @@ const withDebugLocal = require('next-debug-local')(
   }
 );
 
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  scope: '/_next',
-  disable: process.env.NODE_ENV !== 'production',
-});
+const detectFirebaseConfig = () => {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+    printer.warn('NEXT_PUBLIC_FIREBASE_API_KEY not found, please check it');
+  } else {
+    printer.info('NEXT_PUBLIC_FIREBASE_API_KEY found');
+  }
+};
+detectFirebaseConfig();
 
-module.exports = withDebugLocal(withPWA(nextConfig));
+export default withDebugLocal(nextConfig);
