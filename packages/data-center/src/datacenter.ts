@@ -15,6 +15,7 @@ import { createBlocksuiteWorkspace } from './utils';
 import { WorkspaceUnit } from './workspace-unit';
 import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
 import { WorkspaceUnitCollection } from './workspace-unit-collection';
+
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business
@@ -34,6 +35,10 @@ export class DataCenter {
 
   private constructor(debug: boolean) {
     this._logger.enabled = debug;
+  }
+
+  static initEmpty() {
+    return new DataCenter(false);
   }
 
   static async init(

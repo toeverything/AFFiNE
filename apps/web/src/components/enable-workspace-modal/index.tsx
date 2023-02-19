@@ -4,7 +4,7 @@ import { CloseIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
 import { useCallback, useState } from 'react';
 
-import { useGlobalState } from '@/store/app';
+import { useDataCenter, useGlobalState } from '@/store/app';
 
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 
@@ -20,7 +20,7 @@ export const EnableWorkspaceModal = ({
   const { t } = useTranslation();
   const login = useGlobalState(store => store.login);
   const user = useGlobalState(store => store.user);
-  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenter = useDataCenter();
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );

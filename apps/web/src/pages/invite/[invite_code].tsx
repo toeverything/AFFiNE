@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 
 import { PageLoading } from '@/components/loading';
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
-import { useGlobalState } from '@/store/app';
+import { useDataCenter } from '@/store/app';
 
 import inviteError from '../../../public/imgs/invite-error.svg';
 import inviteSuccess from '../../../public/imgs/invite-success.svg';
@@ -21,7 +21,7 @@ export default function DevPage() {
   const router = useRouter();
   const [inviteData, setInviteData] = useState<Permission | null>(null);
   const { acceptInvite } = useWorkspaceHelper();
-  const dataCenter = useGlobalState(store => store.dataCenter);
+  const dataCenter = useDataCenter();
 
   useEffect(() => {
     const init = async () => {

@@ -2,13 +2,13 @@ import { assertEquals } from '@blocksuite/global/utils';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 
-import { useGlobalState } from '@/store/app';
+import { useDataCenter, useGlobalState } from '@/store/app';
 
 // todo: refactor with suspense mode
 // It is a fully effective hook
 // Cause it not just ensure workspace loaded, but also have router change.
 export const useEnsureWorkspace = () => {
-  const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
+  const dataCenter = useDataCenter();
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );

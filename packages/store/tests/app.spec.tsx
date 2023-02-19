@@ -7,11 +7,10 @@ import { DataCenter, getDataCenter } from '@affine/datacenter';
 import {
   createDefaultWorkspace,
   GlobalAppProvider,
+  useDataCenter,
   useGlobalState,
-  useGlobalStateApi,
 } from '@affine/store';
 import { render } from '@testing-library/react';
-import React from 'react';
 import { describe, expect, test } from 'vitest';
 
 describe('App Store', () => {
@@ -21,29 +20,16 @@ describe('App Store', () => {
     await createDefaultWorkspace(dataCenter);
     const Inner = () => {
       const state = useGlobalState();
+      const dataCenter = useDataCenter();
       expect(state).toBeTypeOf('object');
-      expect(state.dataCenter).toBeInstanceOf(DataCenter);
-      expect(state.dataCenterPromise).toBeInstanceOf(Promise);
-      state.dataCenterPromise.then(dc => expect(dc).toBe(state.dataCenter));
+      expect(dataCenter).toBeInstanceOf(DataCenter);
       return <div>Test2</div>;
     };
 
-    const Loader = ({ children }: React.PropsWithChildren) => {
-      const api = useGlobalStateApi();
-      if (!api.getState().dataCenter) {
-        api.setState({
-          dataCenter,
-          dataCenterPromise,
-        });
-      }
-      return <>{children}</>;
-    };
     const App = () => (
       <GlobalAppProvider>
         <div>Test1</div>
-        <Loader>
-          <Inner />
-        </Loader>
+        <Inner />
       </GlobalAppProvider>
     );
     const app = render(<App />);
