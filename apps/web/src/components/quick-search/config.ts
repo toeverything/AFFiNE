@@ -29,7 +29,7 @@ export const useSwitchToConfig = (
       icon: FavouritesIcon,
     },
     {
-      title: t('Settings'),
+      title: t('Workspace Settings'),
       href: currentWorkspaceId
         ? `/workspace/${currentWorkspaceId}/setting`
         : '',
