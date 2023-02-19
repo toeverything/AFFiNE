@@ -1,5 +1,4 @@
 import {
-  Theme,
   ThemeMode,
   ThemeProviderProps,
   ThemeProviderValue,
@@ -43,7 +42,6 @@ export const ThemeProvider = ({
   defaultTheme = 'light',
   children,
 }: PropsWithChildren<ThemeProviderProps>) => {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
   const localStorageThemeMode = useSyncExternalStore<ThemeMode>(
     useCallback(cb => {
       localStorageThemeHelper.callback.add(cb);
@@ -51,16 +49,16 @@ export const ThemeProvider = ({
         localStorageThemeHelper.callback.delete(cb);
       };
     }, []),
-    useCallback(() => localStorageThemeHelper.get() ?? 'auto', []),
+    useCallback(() => localStorageThemeHelper.get() ?? 'light', []),
     useCallback(() => defaultTheme, [defaultTheme])
   );
-  const [mode, setMode] = useState<ThemeMode>('auto');
+  const [mode, setMode] = useState<ThemeMode>(defaultTheme);
   if (localStorageThemeMode !== mode) {
     setMode(localStorageThemeMode);
   }
   const { mode: editorMode = 'page' } = useCurrentPageMeta() || {};
   const themeStyle =
-    theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode);
+    mode === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode);
   const changeMode = useCallback(
     (themeMode: ThemeMode) => {
       themeMode !== mode && setMode(themeMode);
@@ -81,9 +79,9 @@ export const ThemeProvider = ({
     });
   }, []);
 
-  useEffect(() => {
-    setTheme(mode === 'auto' ? theme : mode);
-  }, [mode, setTheme, theme]);
+  // useEffect(() => {
+  //   setTheme(mode === 'auto' ? theme : mode);
+  // }, [mode, setTheme, theme]);
   // =====================  ====================
 
   // useEffect(() => {
