@@ -1,8 +1,5 @@
 {
   "root": false,
-  "extends": ["next/core-web-vitals", "plugin:@next/next/recommended"],
-  "rules": {
-    "prettier/prettier": "warn"
-  },
+  "extends": "next/core-web-vitals",
   "reportUnusedDisableDirectives": true
 }

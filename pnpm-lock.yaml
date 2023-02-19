@@ -76,7 +76,7 @@ importers:
 
   apps/desktop:
     specifiers:
-      '@blocksuite/icons': 2.0.15
+      '@blocksuite/icons': 2.0.12
       '@blocksuite/store': 0.4.1
       '@emotion/react': ^11.10.6
       '@emotion/styled': ^11.10.6
@@ -106,7 +106,7 @@ importers:
       yjs: ^13.5.46
       zx: ^7.1.1
     dependencies:
-      '@blocksuite/icons': 2.0.15_pmekkgnqduwlme35zpnqhenc34
+      '@blocksuite/icons': 2.0.12_pmekkgnqduwlme35zpnqhenc34
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.46
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
       '@emotion/styled': 11.10.6_oouaibmszuch5k64ms7uxp2aia
@@ -146,7 +146,7 @@ importers:
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/editor': 0.4.1
       '@blocksuite/global': 0.4.1
-      '@blocksuite/icons': 2.0.15
+      '@blocksuite/icons': 2.0.12
       '@blocksuite/store': 0.4.1
       '@emotion/css': ^11.10.6
       '@emotion/react': ^11.10.6
@@ -189,7 +189,7 @@ importers:
       '@blocksuite/blocks': 0.4.1_tdlxw56kpoc45go7l7gsdk5hjm
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
       '@blocksuite/global': 0.4.1_lit@2.6.1
-      '@blocksuite/icons': 2.0.15_pmekkgnqduwlme35zpnqhenc34
+      '@blocksuite/icons': 2.0.12_pmekkgnqduwlme35zpnqhenc34
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.46
       '@emotion/css': 11.10.6
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
@@ -232,7 +232,7 @@ importers:
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/editor': 0.4.1
       '@blocksuite/global': 0.4.1
-      '@blocksuite/icons': 2.0.15
+      '@blocksuite/icons': 2.0.12
       '@blocksuite/react': 0.4.1
       '@blocksuite/store': 0.4.1
       '@emotion/react': ^11.10.6
@@ -265,7 +265,7 @@ importers:
       '@blocksuite/blocks': 0.4.1_tdlxw56kpoc45go7l7gsdk5hjm
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
       '@blocksuite/global': 0.4.1_lit@2.6.1
-      '@blocksuite/icons': 2.0.15_pmekkgnqduwlme35zpnqhenc34
+      '@blocksuite/icons': 2.0.12_pmekkgnqduwlme35zpnqhenc34
       '@blocksuite/react': 0.4.1_v4k7r3722g7d6aoxzctkttv45y
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.46
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
@@ -378,6 +378,8 @@ importers:
       '@blocksuite/global': 0.4.1
       '@blocksuite/react': 0.4.1
       '@blocksuite/store': 0.4.1
+      '@types/react': ^18.0.28
+      '@types/react-dom': ^18.0.11
       lit: ^2.6.1
       react: ^18.2.0
       react-dom: ^18.2.0
@@ -395,6 +397,9 @@ importers:
       react-dom: 18.2.0_react@18.2.0
       yjs: 13.5.46
       zustand: 4.3.3_react@18.2.0
+    devDependencies:
+      '@types/react': 18.0.28
+      '@types/react-dom': 18.0.11
 
 packages:
 
@@ -2670,8 +2675,8 @@ packages:
       zod: 3.20.6
     dev: false
 
-  /@blocksuite/icons/2.0.15_pmekkgnqduwlme35zpnqhenc34:
-    resolution: {integrity: sha512-G1ToYmQRm+AJUV8IjYKNwJo02JcLWu/Ucq5WVtuwOptXpt2FViJ/BrJaHEqnBuvpEqJrLt24nT9x78SOjLXqtw==}
+  /@blocksuite/icons/2.0.12_pmekkgnqduwlme35zpnqhenc34:
+    resolution: {integrity: sha512-mUmSXoFvHAGLPmykea5EHnVZf7QKBtj1bvCIfhRuQBopt2z3yVtEr7zD/4Cqus2oYNS3HrjwvCDiTqeE7fsjJQ==}
     peerDependencies:
       '@types/react': ^18.0.25
       react: ^18.2.0
@@ -5931,7 +5936,7 @@ packages:
     dependencies:
       '@babel/runtime': 7.20.7
       '@testing-library/dom': 9.0.0
-      '@types/react-dom': 18.0.10
+      '@types/react-dom': 18.0.11
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
     dev: true
@@ -6234,12 +6239,6 @@ packages:
 
   /@types/range-parser/1.2.4:
     resolution: {integrity: sha512-EEhsLsD6UsDM1yFhAvy0Cjr6VwmpMWqFBCb9w07wVugF7w9nfajxLuVmngTIpgS6svCnm6Vaw+MZhoDCKnOfsw==}
-    dev: true
-
-  /@types/react-dom/18.0.10:
-    resolution: {integrity: sha512-E42GW/JA4Qv15wQdqJq8DL4JhNpB3prJgjgapN3qJT9K2zO5IIAQh4VXvCEDupoqAwnz0cY4RlXeC/ajX5SFHg==}
-    dependencies:
-      '@types/react': 18.0.28
     dev: true
 
   /@types/react-dom/18.0.11:
