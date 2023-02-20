@@ -4,9 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useDataCenter, useGlobalState } from '@/store/app';
 
-// todo: refactor with suspense mode
+// todo(himself65): refactor with suspense mode
 // It is a fully effective hook
 // Cause it not just ensure workspace loaded, but also have router change.
+/**
+ * @deprecated waiting for refactor
+ */
 export const useEnsureWorkspace = () => {
   const dataCenter = useDataCenter();
   const currentWorkspace = useGlobalState(
