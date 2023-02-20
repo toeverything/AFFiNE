@@ -21,13 +21,17 @@ const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
 
 const Page: NextPageWithLayout = () => {
   const router = useRouter();
-  const { workspaceId, pageId } = router.query as Record<string, string>;
-  const { status, workspace: workspaceUnit } =
-    useLoadPublicWorkspace(workspaceId);
+  const { workspaceId, pageId } = router.query;
+  const { status, workspace: workspaceUnit } = useLoadPublicWorkspace(
+    typeof workspaceId === 'string' ? workspaceId : null
+  );
   const { triggerQuickSearchModal } = useModal();
   const { t } = useTranslation();
 
   const page = useMemo(() => {
+    if (typeof pageId !== 'string') {
+      return null;
+    }
     if (workspaceUnit?.blocksuiteWorkspace) {
       return workspaceUnit.blocksuiteWorkspace.getPage(pageId);
     }
