@@ -7,7 +7,7 @@ import { PageLoading } from '@/components/loading';
 const Home: NextPage = () => {
   const router = useRouter();
   useEffect(() => {
-    router.push('/workspace');
+    router.replace('/workspace');
   }, [router]);
   return <PageLoading />;
 };
