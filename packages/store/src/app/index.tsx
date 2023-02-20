@@ -84,7 +84,7 @@ export const useGlobalState: UseBoundStore<Store> = ((
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
-export type DataKey = ['datacenter', string] | ['datacenter'];
+export type DataKey = ['datacenter', string | null] | ['datacenter'];
 
 const swrFetcher = async (keys: DataKey) => {
   assertEquals(keys[0], 'datacenter');
@@ -96,6 +96,9 @@ const swrFetcher = async (keys: DataKey) => {
       return dataCenter;
     });
   } else {
+    if (keys[1] === null) {
+      return null;
+    }
     const dataCenter = await dataCenterPromise;
     return dataCenter.loadWorkspace(keys[1]);
   }

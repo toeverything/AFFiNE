@@ -1,44 +1,48 @@
 import { useRouter } from 'next/router';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { PageLoading } from '@/components/loading';
-import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
 import usePageHelper from '@/hooks/use-page-helper';
-import { useGlobalState } from '@/store/app';
+import { useRouterTargetWorkspace } from '@/hooks/use-router-target-workspace';
 
 const WorkspaceIndex = () => {
   const router = useRouter();
-  const currentWorkspace = useGlobalState(
-    useCallback(store => store.currentDataCenterWorkspace, [])
-  );
+  const { targetWorkspace, exist } = useRouterTargetWorkspace();
   const { createPage } = usePageHelper();
-  const { workspaceLoaded, activeWorkspaceId } = useEnsureWorkspace();
 
   useEffect(() => {
+    if (!exist) {
+      router.push('/404');
+      return;
+    }
+    const abortController = new AbortController();
     const initPage = async () => {
-      if (!workspaceLoaded) {
+      if (abortController.signal.aborted) {
+        return;
+      }
+      if (!targetWorkspace) {
         return;
       }
       const savedPageId =
-        currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas.find(
+        targetWorkspace.blocksuiteWorkspace?.meta.pageMetas.find(
           meta => !meta.trash
         )?.id;
       if (savedPageId) {
-        router.replace(`/workspace/${activeWorkspaceId}/${savedPageId}`);
+        router.replace(`/workspace/${targetWorkspace.id}/${savedPageId}`);
         return;
+      } else {
+        const pageId = await createPage();
+        if (abortController.signal.aborted) {
+          return;
+        }
+        router.replace(`/workspace/${targetWorkspace.id}/${pageId}`);
       }
-
-      const pageId = await createPage();
-      router.replace(`/workspace/${activeWorkspaceId}/${pageId}`);
     };
     initPage();
-  }, [
-    currentWorkspace,
-    createPage,
-    router,
-    workspaceLoaded,
-    activeWorkspaceId,
-  ]);
+    return () => {
+      abortController.abort();
+    };
+  }, [targetWorkspace, createPage, router, exist]);
 
   return <PageLoading />;
 };
