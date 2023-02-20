@@ -75,7 +75,11 @@ export const createDataCenterActions: GlobalActionsCreator<
     if (workspaceId === currentDataCenterWorkspace?.id) {
       return currentDataCenterWorkspace;
     }
-    const workspace = (await dataCenter.loadWorkspace(workspaceId)) ?? null;
+    const workspace = await dataCenter.loadWorkspace(workspaceId);
+
+    if (!workspace) {
+      return null;
+    }
 
     if (signal?.aborted) {
       // do not update state if aborted
@@ -83,17 +87,17 @@ export const createDataCenterActions: GlobalActionsCreator<
     }
 
     let isOwner;
-    if (workspace?.provider === 'local') {
+    if (workspace.provider === 'local') {
       // isOwner is useful only in the cloud
       isOwner = true;
     } else {
       const userInfo = get().user; // We must ensure workspace.owner exists, then ensure id same.
-      isOwner = userInfo?.id === workspace?.owner?.id;
+      isOwner = userInfo?.id === workspace.owner?.id;
     }
 
     const pageList =
-      (workspace?.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
-    if (workspace?.blocksuiteWorkspace) {
+      (workspace.blocksuiteWorkspace?.meta.pageMetas as PageMeta[]) ?? [];
+    if (workspace.blocksuiteWorkspace) {
       set({
         currentWorkspace: workspace.blocksuiteWorkspace,
       });
