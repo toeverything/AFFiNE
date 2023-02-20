@@ -21,7 +21,9 @@ const All = () => {
   const router = useRouter();
   const { triggerQuickSearchModal } = useModal();
   const { status, workspace } = useLoadPublicWorkspace(
-    router.query.workspaceId as string
+    typeof router.query.workspaceId === 'string'
+      ? router.query.workspaceId
+      : null
   );
 
   const pageList = useMemo(() => {

@@ -3,7 +3,8 @@ import { dataCenterPromise } from '@affine/store';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
-export function useLoadPublicWorkspace(workspaceId: string) {
+// fixme(himself65): remove with suspense mode
+export function useLoadPublicWorkspace(workspaceId: string | null) {
   const router = useRouter();
   const [workspace, setWorkspace] = useState<WorkspaceUnit | null>();
   const [status, setStatus] = useState<'loading' | 'error' | 'success'>(
@@ -14,6 +15,9 @@ export function useLoadPublicWorkspace(workspaceId: string) {
     setStatus('loading');
 
     const init = async () => {
+      if (workspaceId === null) {
+        return;
+      }
       const dataCenter = await dataCenterPromise;
 
       dataCenter
