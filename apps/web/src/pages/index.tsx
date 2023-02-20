@@ -1,7 +1,16 @@
-import type { NextPage } from 'next';
+import type { GetServerSideProps, NextPage } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    redirect: {
+      destination: '/workspace',
+      permanent: true,
+    },
+  };
+};
 
 const Home: NextPage = () => {
-  return <div title="Home Page"></div>;
+  throw new Error('unreachable');
 };
 
 export default Home;

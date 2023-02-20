@@ -129,6 +129,18 @@ export function useDataCenterWorkspace(
   return data ?? null;
 }
 
+export function useDataCenterPublicWorkspace(
+  workspaceId: string | null
+): WorkspaceUnit | null {
+  const { data } = useSWR<WorkspaceUnit | null>(
+    ['datacenter', workspaceId, 'public'],
+    {
+      fallbackData: null,
+    }
+  );
+  return data ?? null;
+}
+
 export function DataCenterPreloader({ children }: React.PropsWithChildren) {
   const api = useGlobalStateApi();
   //# region effect for updating workspace page list
