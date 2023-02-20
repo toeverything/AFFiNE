@@ -1,16 +1,15 @@
-import type { GetStaticProps, NextPage } from 'next';
+import type { NextPage } from 'next';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
-export const getStaticProps: GetStaticProps = async () => {
-  return {
-    redirect: {
-      destination: '/workspace',
-      permanent: true,
-    },
-  };
-};
+import { PageLoading } from '@/components/loading';
 
 const Home: NextPage = () => {
-  throw new Error('unreachable');
+  const router = useRouter();
+  useEffect(() => {
+    router.push('/workspace');
+  }, [router]);
+  return <PageLoading />;
 };
 
 export default Home;
