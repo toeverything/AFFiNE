@@ -2,6 +2,7 @@ import { displayFlex, styled } from '@affine/component';
 import { Breadcrumbs } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { useDataCenterPublicWorkspace } from '@affine/store';
 import { PaperIcon, SearchIcon } from '@blocksuite/icons';
 import dynamic from 'next/dynamic';
 import NextLink from 'next/link';
@@ -10,7 +11,6 @@ import { ReactElement, useEffect, useMemo } from 'react';
 
 import { PageLoading } from '@/components/loading';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
 import { useModal } from '@/store/globalModal';
 
 import type { NextPageWithLayout } from '../..//_app';
@@ -22,7 +22,7 @@ const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
 const Page: NextPageWithLayout = () => {
   const router = useRouter();
   const { workspaceId, pageId } = router.query;
-  const { status, workspace: workspaceUnit } = useLoadPublicWorkspace(
+  const { error, workspace: workspaceUnit } = useDataCenterPublicWorkspace(
     typeof workspaceId === 'string' ? workspaceId : null
   );
   const { triggerQuickSearchModal } = useModal();
@@ -50,18 +50,15 @@ const Page: NextPageWithLayout = () => {
   }, [workspace, router, pageId]);
 
   useEffect(() => {
-    if (status === 'error') {
+    if (error) {
       router.push('/404');
     }
-  }, [router, status]);
+  }, [router, error]);
 
-  if (status === 'loading') {
+  if (!workspace) {
     return <PageLoading />;
   }
 
-  if (status === 'error') {
-    return null;
-  }
   return (
     <PageContainer>
       <NavContainer>

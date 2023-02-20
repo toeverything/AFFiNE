@@ -4,5 +4,6 @@ export { createDefaultWorkspace, DataCenterPreloader } from './app/datacenter';
 export {
   dataCenterPromise,
   useDataCenter,
+  useDataCenterPublicWorkspace,
   useDataCenterWorkspace,
 } from './app/datacenter';

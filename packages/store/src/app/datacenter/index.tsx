@@ -129,16 +129,17 @@ export function useDataCenterWorkspace(
   return data ?? null;
 }
 
-export function useDataCenterPublicWorkspace(
-  workspaceId: string | null
-): WorkspaceUnit | null {
-  const { data } = useSWR<WorkspaceUnit | null>(
+export function useDataCenterPublicWorkspace(workspaceId: string | null) {
+  const { data, error } = useSWR<WorkspaceUnit | null>(
     ['datacenter', workspaceId, 'public'],
     {
       fallbackData: null,
     }
   );
-  return data ?? null;
+  return {
+    workspace: data ?? null,
+    error,
+  } as const;
 }
 
 export function DataCenterPreloader({ children }: React.PropsWithChildren) {
