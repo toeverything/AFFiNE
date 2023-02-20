@@ -9,7 +9,6 @@
     "dev:app": "cross-env NODE_ENV=development tauri dev",
     "dev:web": "pnpm --filter @affine/app dev",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
-    "build:submodules": "zx scripts/buildSubModules.mjs",
     "build:affine": "zx scripts/buildAffine.mjs",
     "build:preload": "esbuild src/preload/index.ts --outdir=public/preload",
     "build:app": "tauri build"
