@@ -105,15 +105,14 @@ We would also like to give thanks to open-source projects that make AFFiNE possi
 
 - [BlockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
 - [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
-- [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
-- [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
-- [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, OctoBase.
-- [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
-- [slatejs](https://github.com/ianstormtaylor/slate) -- Customizable rich-text editor.
-- [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend.
-- [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
-- [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
-- Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies)
+- [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) - Fundamental support of CRDTs for our implementation on state management and data sync.
+- [React](https://github.com/facebook/react) - View layer support and web GUI framework.
+- [Rust](https://github.com/rust-lang/rust) - High performance language that extends the ability and availability of our real-time backend, OctoBase.
+- [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) - Source code management tool made with CRDTs which inspired our design on block data structure.
+- [Zustand](https://github.com/pmndrs/zustand) - Minimal state management tool for frontend.
+- [Tldraw](https://github.com/tldraw/tldraw) - Excellent drawing board.
+- [MUI](https://github.com/mui/material-ui) - Our most used graphic UI component library.
+- Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
 
 We use the following open source projects to help us build a better development experience:
 
