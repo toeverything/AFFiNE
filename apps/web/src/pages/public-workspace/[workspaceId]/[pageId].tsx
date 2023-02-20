@@ -87,7 +87,7 @@ const Page: NextPageWithLayout = () => {
         </SearchButton>
       </NavContainer>
 
-      {workspace && page && (
+      {page && (
         <DynamicBlocksuite
           page={page}
           workspace={workspace}
