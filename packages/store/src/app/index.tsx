@@ -1,7 +1,8 @@
+import { WorkspaceUnit } from '@affine/datacenter';
 import { assertEquals } from '@blocksuite/global/utils';
 import type React from 'react';
 import { createContext, useContext, useMemo } from 'react';
-import { preload, SWRConfig, SWRConfiguration } from 'swr';
+import { mutate, preload, SWRConfig, SWRConfiguration } from 'swr';
 import { createStore, StateCreator, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
 import type { UseBoundStore } from 'zustand/react';
@@ -83,6 +84,22 @@ export const useGlobalState: UseBoundStore<Store> = ((
   return useStore(api, selector, equals);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
+
+export async function mutateDataCenter(
+  name: string
+): Promise<WorkspaceUnit | null> {
+  const dataCenter = await dataCenterPromise;
+  const workspace = await dataCenter.createWorkspace({
+    name,
+  });
+  if (workspace) {
+    await mutate(['datacenter', workspace.id]);
+    return workspace;
+  } else {
+    console.error('workspace creation failed.');
+    return null;
+  }
+}
 
 export type DataKey = ['datacenter', string | null] | ['datacenter'];
 

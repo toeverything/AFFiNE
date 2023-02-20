@@ -1,23 +1,17 @@
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useCallback } from 'react';
 
-import { useDataCenter, useGlobalState } from '@/store/app';
+import { mutateDataCenter, useDataCenter, useGlobalState } from '@/store/app';
 
 export const useWorkspaceHelper = () => {
   const dataCenter = useDataCenter();
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
-  const loadWorkspace = useGlobalState(store => store.loadWorkspace);
-  const createWorkspace = async (name: string) => {
-    const workspaceInfo = await dataCenter.createWorkspace({
-      name: name,
-    });
-    if (workspaceInfo && workspaceInfo.id) {
-      return loadWorkspace(workspaceInfo.id);
-    }
-    return null;
-  };
+
+  const createWorkspace = useCallback(async (name: string) => {
+    return mutateDataCenter(name);
+  }, []);
 
   // const updateWorkspace = async (workspace: Workspace) => {};
 

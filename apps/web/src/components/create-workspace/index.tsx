@@ -5,7 +5,7 @@ import { Input } from '@affine/component';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useRouter } from 'next/router';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { KeyboardEvent } from 'react';
 
 import { useWorkspaceHelper } from '@/hooks/use-workspace-helper';
@@ -21,7 +21,7 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
   const { createWorkspace } = useWorkspaceHelper();
   const isComposition = useRef(false);
   const router = useRouter();
-  const handleCreateWorkspace = async () => {
+  const handleCreateWorkspace = useCallback(async () => {
     setLoading(true);
     const workspace = await createWorkspace(workspaceName);
 
@@ -32,12 +32,15 @@ export const CreateWorkspaceModal = ({ open, onClose }: ModalProps) => {
     } else {
       toast('create error');
     }
-  };
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && workspaceName && !isComposition.current) {
-      handleCreateWorkspace();
-    }
-  };
+  }, [createWorkspace, onClose, router, workspaceName]);
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter' && workspaceName && !isComposition.current) {
+        handleCreateWorkspace();
+      }
+    },
+    [handleCreateWorkspace, workspaceName]
+  );
   const { t } = useTranslation();
   return (
     <div>
