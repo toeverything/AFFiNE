@@ -1,6 +1,6 @@
 import { useDataCenter, useDataCenterWorkspace } from '@affine/store';
 import { useRouter } from 'next/router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { PageLoading } from '@/components/loading';
 
@@ -12,7 +12,7 @@ function useCurrentWorkspace() {
     typeof router.query.workspaceId === 'string'
       ? router.query.workspaceId
       : dataCenter.workspaces.at(0)?.id ?? null;
-  const workspace = useDataCenterWorkspace(workspaceId);
+  const currentWorkspace = useDataCenterWorkspace(workspaceId);
   const notExist = useMemo(
     () =>
       workspaceId &&
@@ -22,19 +22,22 @@ function useCurrentWorkspace() {
       ) === -1,
     [dataCenter.workspaces, workspaceId]
   );
-  if (notExist) {
-    router.push('/404');
-  }
-  return workspace;
+  return {
+    currentWorkspace,
+    exist: !notExist,
+  };
 }
 
 export const WorkspaceIndex = () => {
   const router = useRouter();
-  const currentWorkspace = useCurrentWorkspace();
-
-  if (currentWorkspace) {
-    router.push(`/workspace/${currentWorkspace.id}`);
-  }
+  const { currentWorkspace, exist } = useCurrentWorkspace();
+  useEffect(() => {
+    if (!exist) {
+      router.push('/404');
+    } else if (currentWorkspace) {
+      router.push(`/workspace/${currentWorkspace.id}`);
+    }
+  }, [currentWorkspace, exist, router]);
   return <PageLoading />;
 };
 
