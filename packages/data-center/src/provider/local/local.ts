@@ -1,6 +1,11 @@
 import { uuidv4, Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import assert from 'assert';
 import { varStorage as storage } from 'lib0/storage';
+import {
+  applyAwarenessUpdate,
+  Awareness,
+  encodeAwarenessUpdate,
+} from 'y-protocols/awareness';
 
 import type { WorkspaceUnit } from '../../workspace-unit';
 import type {
@@ -10,6 +15,11 @@ import type {
   WorkspaceMeta0,
 } from '../base';
 import { BaseProvider } from '../base';
+import {
+  BroadcastChannelMessageEvent,
+  getClients,
+  TypedBroadcastChannel,
+} from './broadcast-channel';
 import { IndexedDBProvider } from './indexeddb/indexeddb';
 import { applyLocalUpdates } from './indexeddb/utils';
 import { createWorkspaceUnit, loadWorkspaceUnit } from './utils';
@@ -19,6 +29,8 @@ const WORKSPACE_KEY = 'workspaces';
 export class LocalProvider extends BaseProvider {
   public id = 'local';
   private _idbMap: Map<BlocksuiteWorkspace, IndexedDBProvider> = new Map();
+  private _broadcastChannel: Map<BlocksuiteWorkspace, TypedBroadcastChannel> =
+    new Map();
 
   constructor(params: ProviderConstructorParams) {
     super(params);
@@ -41,6 +53,67 @@ export class LocalProvider extends BaseProvider {
     if (!idb) {
       idb = new IndexedDBProvider(workspace.room, workspace.doc);
     }
+    const Y = BlocksuiteWorkspace.Y;
+    const doc = workspace.doc;
+    const awareness = workspace.awarenessStore
+      .awareness as unknown as Awareness;
+    let broadcastChannel: TypedBroadcastChannel | undefined =
+      this._broadcastChannel.get(workspace);
+    const handleBroadcastChannelMessage = (
+      event: BroadcastChannelMessageEvent
+    ) => {
+      const [eventName] = event.data;
+      switch (eventName) {
+        case 'doc:diff': {
+          const [, diff, clientId] = event.data;
+          const updateV2 = Y.encodeStateAsUpdateV2(doc, diff);
+          broadcastChannel!.postMessage(['doc:update', updateV2, clientId]);
+          break;
+        }
+        case 'doc:update': {
+          const [, updateV2, clientId] = event.data;
+          if (!clientId || clientId === awareness.clientID) {
+            Y.applyUpdateV2(doc, updateV2, this);
+          }
+          break;
+        }
+        case 'awareness:query': {
+          const [, clientId] = event.data;
+          const clients = getClients(awareness);
+          const update = encodeAwarenessUpdate(awareness, clients);
+          broadcastChannel!.postMessage(['awareness:update', update, clientId]);
+          break;
+        }
+        case 'awareness:update': {
+          const [, update, clientId] = event.data;
+          if (!clientId || clientId === awareness.clientID) {
+            applyAwarenessUpdate(awareness, update, this);
+          }
+          break;
+        }
+      }
+    };
+    const connectBroadcastChannel = () => {
+      if (broadcastChannel) {
+        return;
+      }
+      broadcastChannel = Object.assign(
+        new BroadcastChannel(workspace.room as string),
+        {
+          onmessage: handleBroadcastChannelMessage,
+        }
+      );
+      const docDiff = Y.encodeStateVector(doc);
+      broadcastChannel.postMessage(['doc:diff', docDiff, awareness.clientID]);
+      const docUpdateV2 = Y.encodeStateAsUpdateV2(doc);
+      broadcastChannel.postMessage(['doc:update', docUpdateV2]);
+      broadcastChannel.postMessage(['awareness:query', awareness.clientID]);
+      const awarenessUpdate = encodeAwarenessUpdate(awareness, [
+        awareness.clientID,
+      ]);
+      broadcastChannel.postMessage(['awareness:update', awarenessUpdate]);
+    };
+    connectBroadcastChannel();
     this._idbMap.set(workspace, idb);
     this._logger.debug('Local data loaded');
     return workspace;
