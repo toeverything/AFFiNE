@@ -30,6 +30,7 @@ export const WorkspaceAvatar = (props: IWorkspaceAvatar) => {
               style={{ width: sizeStr, height: sizeStr }}
               src={props.avatar}
               alt=""
+              referrerPolicy="no-referrer"
             />
           </picture>
         </div>
