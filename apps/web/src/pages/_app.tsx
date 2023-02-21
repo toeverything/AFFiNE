@@ -7,15 +7,13 @@ import '@affine/i18n';
 
 import { useTranslation } from '@affine/i18n';
 import { DataCenterPreloader } from '@affine/store';
-import { NoSsr } from '@mui/material';
 import { Logger } from '@toeverything/pathfinder-logger';
 import type { NextPage } from 'next';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 // import AppStateProvider2 from '@/providers/app-state-provider2/provider';
-import { useRouter } from 'next/router';
-import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
-import { Suspense, useEffect } from 'react';
+import type { ReactElement, ReactNode } from 'react';
+import { Suspense } from 'react';
 import React from 'react';
 
 import { PageLoading } from '@/components/loading';
@@ -37,16 +35,9 @@ type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
 
-// Page list which do not rely on app state
-const NoNeedAppStatePageList = [
-  '/404',
-  '/public-workspace/[workspaceId]',
-  '/public-workspace/[workspaceId]/[pageId]',
-];
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout || (page => page);
   const { i18n } = useTranslation();
-  const router = useRouter();
 
   React.useEffect(() => {
     document.documentElement.lang = i18n.language;
@@ -73,35 +64,16 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
           <ConfirmProvider key="ConfirmProvider" />,
         ]}
       >
-        <NoSsr>
-          {NoNeedAppStatePageList.includes(router.route) ? (
-            getLayout(<Component {...pageProps} />)
-          ) : (
-            <Suspense fallback={<PageLoading />}>
-              <DataCenterPreloader>
-                <MessageCenterHandler>
-                  <AppDefender>
-                    {getLayout(<Component {...pageProps} />)}
-                  </AppDefender>
-                </MessageCenterHandler>
-              </DataCenterPreloader>
-            </Suspense>
-          )}
-        </NoSsr>
+        <Suspense fallback={<PageLoading />}>
+          <DataCenterPreloader>
+            <MessageCenterHandler>
+              {getLayout(<Component {...pageProps} />)}
+            </MessageCenterHandler>
+          </DataCenterPreloader>
+        </Suspense>
       </ProviderComposer>
     </>
   );
-};
-
-const AppDefender = ({ children }: PropsWithChildren) => {
-  const router = useRouter();
-  useEffect(() => {
-    if (['/index.html', '/'].includes(router.asPath)) {
-      router.replace('/workspace');
-    }
-  }, [router]);
-
-  return <>{children}</>;
 };
 
 export default App;
