@@ -1,6 +1,6 @@
 import { assertEquals } from '@blocksuite/global/utils';
 import type React from 'react';
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext } from 'react';
 import { preload, SWRConfig, SWRConfiguration } from 'swr';
 import { createStore, StateCreator, useStore } from 'zustand';
 import { combine, subscribeWithSelector } from 'zustand/middleware';
@@ -44,26 +44,26 @@ export interface GlobalActions
     UserActions,
     DataCenterActions {}
 
-const create = () =>
-  createStore(
-    subscribeWithSelector(
-      combine<GlobalState, GlobalActions>(
-        {
-          ...createBlockSuiteState(),
-          ...createUserState(),
-          ...createDataCenterState(),
-        },
-        /* deepscan-disable TOO_MANY_ARGS */
-        (set, get, api) => ({
-          ...createBlockSuiteActions(set, get, api),
-          ...createUserActions(set, get, api),
-          ...createDataCenterActions(set, get, api),
-        })
-        /* deepscan-enable TOO_MANY_ARGS */
-      )
+export const globalStore = createStore(
+  subscribeWithSelector(
+    combine<GlobalState, GlobalActions>(
+      {
+        ...createBlockSuiteState(),
+        ...createUserState(),
+        ...createDataCenterState(),
+      },
+      /* deepscan-disable TOO_MANY_ARGS */
+      (set, get, api) => ({
+        ...createBlockSuiteActions(set, get, api),
+        ...createUserActions(set, get, api),
+        ...createDataCenterActions(set, get, api),
+      })
+      /* deepscan-enable TOO_MANY_ARGS */
     )
-  );
-type Store = ReturnType<typeof create>;
+  )
+);
+
+type Store = typeof globalStore;
 
 const GlobalStateContext = createContext<Store | null>(null);
 
@@ -120,7 +120,7 @@ export const GlobalAppProvider: React.FC<React.PropsWithChildren> =
   function ModelProvider({ children }) {
     return (
       <SWRConfig value={swrConfig}>
-        <GlobalStateContext.Provider value={useMemo(() => create(), [])}>
+        <GlobalStateContext.Provider value={globalStore}>
           {children}
         </GlobalStateContext.Provider>
       </SWRConfig>
