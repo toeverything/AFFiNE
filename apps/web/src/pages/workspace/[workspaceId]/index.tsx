@@ -31,7 +31,7 @@ const WorkspaceIndex = () => {
         router.replace(`/workspace/${targetWorkspace.id}/${savedPageId}`);
         return;
       } else {
-        const pageId = await createPage({}, targetWorkspace);
+        const pageId = await createPage();
         if (abortController.signal.aborted) {
           return;
         }
