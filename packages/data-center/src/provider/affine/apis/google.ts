@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { initializeApp } from 'firebase/app';
 import type { User } from 'firebase/auth';
 import {
@@ -10,7 +11,6 @@ import {
 import { decode } from 'js-base64';
 import { KyInstance } from 'ky/distribution/types/ky';
 
-import { getLogger } from '../../../logger';
 import { storage } from '../storage';
 
 export interface AccessTokenMessage {
@@ -58,7 +58,7 @@ export class GoogleAuth {
   private readonly _doLogin: ReturnType<typeof createDoLogin>;
 
   constructor(bareClient: KyInstance) {
-    this._logger = getLogger('token');
+    this._logger = new DebugLogger('token');
     this._logger.enabled = true;
     this._doLogin = createDoLogin(bareClient);
 
@@ -93,7 +93,7 @@ export class GoogleAuth {
       const login: LoginResponse = JSON.parse(loginStr);
       this.setLogin(login);
     } catch (err) {
-      this._logger('Failed to parse login info', err);
+      this._logger.warn('Failed to parse login info', err);
     }
   }
 
@@ -118,7 +118,7 @@ export class GoogleAuth {
       }
       return true;
     } catch {
-      this._logger('Failed to refresh token');
+      this._logger.warn('Failed to refresh token');
     } finally {
       // clear on settled
       this._padding = undefined;
@@ -191,7 +191,7 @@ export function createGoogleAuth(bareAuth: KyInstance): GoogleAuth {
 
 export const getAuthorizer = (googleAuth: GoogleAuth) => {
   let _firebaseAuth: FirebaseAuth | null = null;
-  const logger = getLogger('authorizer');
+  const logger = new DebugLogger('authorizer');
 
   // getAuth will send requests on calling thus we can lazy init it
   const getAuth = () => {
@@ -211,7 +211,7 @@ export const getAuthorizer = (googleAuth: GoogleAuth) => {
       }
       return _firebaseAuth;
     } catch (error) {
-      logger(error);
+      logger.error('Failed to initialize firebase', error);
       return null;
     }
   };

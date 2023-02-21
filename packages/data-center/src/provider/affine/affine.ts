@@ -86,7 +86,6 @@ export class AffineProvider extends BaseProvider {
         `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${
           window.location.host
         }/api/global/sync/`,
-        this._logger,
         this._apis.auth,
         {
           params: {
@@ -115,7 +114,7 @@ export class AffineProvider extends BaseProvider {
     ws_details,
     metadata,
   }: ChannelMessage) {
-    this._logger('receive server message');
+    this._logger.debug('receive server message');
     const newlyCreatedWorkspaces: WorkspaceUnit[] = [];
     const currentWorkspaceIds = this._workspaces.list().map(w => w.id);
     const newlyRemovedWorkspaceIds = currentWorkspaceIds;
@@ -331,7 +330,7 @@ export class AffineProvider extends BaseProvider {
           await this.deleteWorkspace(w.id);
           this._workspaces.remove(w.id);
         } catch (e) {
-          this._logger('has a problem of delete workspace ', e);
+          this._logger.error('has a problem of delete workspace ', e);
         }
       }
     }
