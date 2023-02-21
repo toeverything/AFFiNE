@@ -1,5 +1,5 @@
 import { Breadcrumbs } from '@affine/component';
-import { PageMeta } from '@affine/store';
+import { PageMeta, useDataCenterPublicWorkspace } from '@affine/store';
 import { SearchIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
 import { ReactElement, useEffect, useMemo } from 'react';
@@ -7,7 +7,6 @@ import { ReactElement, useEffect, useMemo } from 'react';
 import { PageLoading } from '@/components/loading';
 import { PageList } from '@/components/page-list';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
 import { useModal } from '@/store/globalModal';
 
 import {
@@ -20,8 +19,10 @@ import {
 const All = () => {
   const router = useRouter();
   const { triggerQuickSearchModal } = useModal();
-  const { status, workspace } = useLoadPublicWorkspace(
-    router.query.workspaceId as string
+  const { workspace, error } = useDataCenterPublicWorkspace(
+    typeof router.query.workspaceId === 'string'
+      ? router.query.workspaceId
+      : null
   );
 
   const pageList = useMemo(() => {
@@ -31,17 +32,13 @@ const All = () => {
   const workspaceName = workspace?.blocksuiteWorkspace?.meta.name;
 
   useEffect(() => {
-    if (status === 'error') {
+    if (error) {
       router.push('/404');
     }
-  }, [router, status]);
+  }, [router, error]);
 
-  if (status === 'loading') {
+  if (!workspace) {
     return <PageLoading />;
-  }
-
-  if (status === 'error') {
-    return null;
   }
 
   return (
