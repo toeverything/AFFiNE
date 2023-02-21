@@ -1,4 +1,5 @@
 import { User } from '@affine/datacenter';
+import { DebugLogger } from '@affine/debug';
 
 import { GlobalActionsCreator } from '..';
 import { dataCenterPromise } from '../datacenter';
@@ -18,6 +19,8 @@ export const createUserState = (): UserState => ({
   user: null,
   isOwner: false,
 });
+
+const logger = new DebugLogger('store:user');
 
 export const createUserActions: GlobalActionsCreator<UserActions> = (
   set,
@@ -45,14 +48,19 @@ export const createUserActions: GlobalActionsCreator<UserActions> = (
         }
 
         set({ user, isOwner });
+
+        logger.debug('login success', user);
+
         return user;
       } catch (error) {
+        logger.error('login failed', error);
         return null; // login failed
       }
     },
     logout: async () => {
       const dataCenter = await dataCenterPromise;
       await dataCenter.logout();
+      logger.debug('logout success');
       set({ user: null });
     },
   };

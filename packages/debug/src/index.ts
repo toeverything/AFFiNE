@@ -17,6 +17,7 @@ if (typeof window !== 'undefined') {
   if (sessionStorage.getItem(SESSION_KEY) === 'true' || development) {
     // enable all debug logs by default
     debug.enable('*');
+    console.warn('Debug logs enabled');
   }
 }
 
