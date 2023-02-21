@@ -23,7 +23,7 @@ const profileTarget = {
 };
 
 const getRedirectConfig = profile => {
-  const target = profileTarget[profile || 'dev'] || profileTarget['dev'];
+  const target = profileTarget[profile || 'dev'];
 
   return [
     [
