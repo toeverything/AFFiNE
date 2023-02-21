@@ -21,6 +21,7 @@ import { createWorkspaceUnit } from './utils';
 export class TauriIPCProvider extends LocalProvider {
   public id = 'tauri-ipc';
   static defaultUserEmail = 'xxx@xx.xx';
+
   /**
    * // TODO: We only have one user in this version of app client. But may support switch user later.
    */
@@ -79,7 +80,7 @@ export class TauriIPCProvider extends LocalProvider {
     workspaceID: string,
     blocksuiteWorkspace: BlocksuiteWorkspace
   ) {
-    this._logger(`Loading ${workspaceID}...`);
+    this._logger.debug(`Loading ${workspaceID}...`);
     const result = await this.#ipc?.getYDocument({ id: workspaceID });
     if (result) {
       const updates = result.updates.map(
@@ -88,7 +89,7 @@ export class TauriIPCProvider extends LocalProvider {
 
       const mergedUpdate = Y.mergeUpdates(updates);
       await applyUpdate(blocksuiteWorkspace, mergedUpdate);
-      this._logger(`Loaded: ${workspaceID}`);
+      this._logger.debug(`Loaded: ${workspaceID}`);
     }
   }
 
@@ -96,7 +97,7 @@ export class TauriIPCProvider extends LocalProvider {
     workspaceID: string,
     blocksuiteWorkspace: BlocksuiteWorkspace
   ) {
-    this._logger(`Connecting yDoc for ${workspaceID}...`);
+    this._logger.debug(`Connecting yDoc for ${workspaceID}...`);
     blocksuiteWorkspace.doc.on('update', async (update: Uint8Array) => {
       try {
         const binary = Y.encodeStateAsUpdate(blocksuiteWorkspace.doc);
@@ -109,7 +110,7 @@ export class TauriIPCProvider extends LocalProvider {
         }
       } catch (error) {
         // TODO: write error log to disk, and add button to open them in settings panel
-        console.error("#yDocument.on('update'", error);
+        this._logger.error("#yDocument.on('update'", error);
       }
     });
   }
@@ -134,7 +135,7 @@ export class TauriIPCProvider extends LocalProvider {
   public override async createWorkspace(
     meta: CreateWorkspaceInfoParams
   ): Promise<WorkspaceUnit | undefined> {
-    this._logger('Creating client app workspace');
+    this._logger.debug('Creating client app workspace');
     assert(this.#ipc);
     assert(this.#userID);
     const { id } = await this.#ipc.createWorkspace({

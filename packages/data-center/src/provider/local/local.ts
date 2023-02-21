@@ -42,7 +42,7 @@ export class LocalProvider extends BaseProvider {
       idb = new IndexedDBProvider(workspace.room, workspace.doc);
     }
     this._idbMap.set(workspace, idb);
-    this._logger('Local data loaded');
+    this._logger.debug('Local data loaded');
     return workspace;
   }
 
@@ -68,7 +68,7 @@ export class LocalProvider extends BaseProvider {
         this._workspaces.add(workspaceUnits);
         return workspaceUnits;
       } catch (error) {
-        this._logger(`Failed to parse workspaces from storage`);
+        this._logger.error(`Failed to parse workspaces from storage`);
       }
     }
     return [];
@@ -84,7 +84,7 @@ export class LocalProvider extends BaseProvider {
         this._idbMap.delete(workspace.blocksuiteWorkspace);
       }
     } else {
-      this._logger(`Failed to delete workspace ${id}`);
+      this._logger.error(`Failed to delete workspace ${id}`);
     }
   }
 
