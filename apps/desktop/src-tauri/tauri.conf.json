@@ -1,6 +1,6 @@
 {
   "build": {
-    "beforeDevCommand": "pnpm build:preload && pnpm dev:prerequisite",
+    "beforeDevCommand": "pnpm dev:web",
     "beforeBuildCommand": "pnpm build:preload && pnpm build:affine",
     "devPath": "http://localhost:8080",
     "distDir": "../public",
