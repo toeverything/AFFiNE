@@ -4,6 +4,7 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@affine/datacenter": "workspace:*",
+    "@affine/debug": "workspace:*",
     "@blocksuite/blocks": "0.4.1",
     "@blocksuite/editor": "0.4.1",
     "@blocksuite/global": "0.4.1",

@@ -3,9 +3,9 @@ import { DataCenter } from './datacenter';
 const _initializeDataCenter = () => {
   let _dataCenterInstance: Promise<DataCenter>;
 
-  return (debug = true) => {
+  return () => {
     if (!_dataCenterInstance) {
-      _dataCenterInstance = DataCenter.init(debug);
+      _dataCenterInstance = DataCenter.init();
     }
 
     return _dataCenterInstance;
@@ -15,7 +15,6 @@ const _initializeDataCenter = () => {
 export const getDataCenter = _initializeDataCenter();
 
 export { DataCenter };
-export { getLogger } from './logger';
 export * from './message';
 export { AffineProvider } from './provider/affine';
 export * from './provider/affine/apis';

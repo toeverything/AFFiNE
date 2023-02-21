@@ -11,9 +11,8 @@ const temp = JSON.parse(record);
 loadPage();
 
 declare global {
-  interface Window {
-    __editoVersion: unknown;
-  }
+  // eslint-disable-next-line no-var
+  var __editoVersion: unknown;
 }
 
 test.describe('web console', () => {

@@ -136,6 +136,7 @@ export const StyledLabel = styled('div')<{
     transition: `transform ${ANIMATE_DURATION}ms`,
     fontWeight: 'normal',
     overflow: 'hidden',
+    whiteSpace: 'nowrap',
     ...shrinkStyle,
   };
 });

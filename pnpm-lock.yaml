@@ -145,6 +145,7 @@ importers:
     specifiers:
       '@affine/component': workspace:*
       '@affine/datacenter': workspace:*
+      '@affine/debug': workspace:*
       '@affine/i18n': workspace:*
       '@affine/store': workspace:*
       '@blocksuite/blocks': 0.4.1
@@ -188,6 +189,7 @@ importers:
     dependencies:
       '@affine/component': link:../../packages/component
       '@affine/datacenter': link:../../packages/data-center
+      '@affine/debug': link:../../packages/debug
       '@affine/i18n': link:../../packages/i18n
       '@affine/store': link:../../packages/store
       '@blocksuite/blocks': 0.4.1_tdlxw56kpoc45go7l7gsdk5hjm
@@ -232,6 +234,7 @@ importers:
 
   packages/component:
     specifiers:
+      '@affine/debug': workspace:*
       '@affine/i18n': workspace:*
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/editor': 0.4.1
@@ -265,6 +268,7 @@ importers:
       webpack: ^5.75.0
       yjs: ^13.5.46
     dependencies:
+      '@affine/debug': link:../debug
       '@affine/i18n': link:../i18n
       '@blocksuite/blocks': 0.4.1_tdlxw56kpoc45go7l7gsdk5hjm
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
@@ -301,11 +305,10 @@ importers:
 
   packages/data-center:
     specifiers:
+      '@affine/debug': workspace:*
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/store': 0.4.1
       '@tauri-apps/api': ^1.2.0
-      '@types/debug': ^4.1.7
-      debug: ^4.3.4
       encoding: ^0.1.13
       fake-indexeddb: 4.0.1
       firebase: ^9.17.1
@@ -319,10 +322,10 @@ importers:
       y-protocols: ^1.0.5
       yjs: ^13.5.46
     dependencies:
+      '@affine/debug': link:../debug
       '@blocksuite/blocks': 0.4.1_tdlxw56kpoc45go7l7gsdk5hjm
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.46
       '@tauri-apps/api': 1.2.0_nb4isgkwd3sres4g7j7rgtldsu
-      debug: 4.3.4
       encoding: 0.1.13
       firebase: 9.17.1_encoding@0.1.13
       idb-keyval: 6.2.0
@@ -334,12 +337,20 @@ importers:
       y-protocols: 1.0.5
       yjs: 13.5.46
     devDependencies:
-      '@types/debug': 4.1.7
       fake-indexeddb: 4.0.1
       typescript: 4.9.5
 
+  packages/debug:
+    specifiers:
+      '@types/debug': ^4.1.7
+      debug: ^4.3.4
+    dependencies:
+      '@types/debug': 4.1.7
+      debug: 4.3.4
+
   packages/i18n:
     specifiers:
+      '@affine/debug': workspace:*
       '@types/node': ^18.14.0
       '@types/prettier': ^2.7.2
       i18next: ^22.4.10
@@ -349,6 +360,7 @@ importers:
       ts-node: ^10.9.1
       typescript: ^4.9.5
     dependencies:
+      '@affine/debug': link:../debug
       i18next: 22.4.10
       react: 18.2.0
       react-i18next: 12.1.5_dxv7ampvtjrtnimevxnrn5rvga
@@ -377,6 +389,7 @@ importers:
   packages/store:
     specifiers:
       '@affine/datacenter': workspace:*
+      '@affine/debug': workspace:*
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/editor': 0.4.1
       '@blocksuite/global': 0.4.1
@@ -392,6 +405,7 @@ importers:
       zustand: ^4.3.3
     dependencies:
       '@affine/datacenter': link:../data-center
+      '@affine/debug': link:../debug
       '@blocksuite/blocks': 0.4.1_tdlxw56kpoc45go7l7gsdk5hjm
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
       '@blocksuite/global': 0.4.1_lit@2.6.1
@@ -6157,7 +6171,7 @@ packages:
     resolution: {integrity: sha512-9AonUzyTjXXhEOa0DnqpzZi6VHlqKMswga9EXjpXnnqxwLtdvPPtlO8evrI5D9S6asFRCQ6v+wpiUKbw+vKqyg==}
     dependencies:
       '@types/ms': 0.7.31
-    dev: true
+    dev: false
 
   /@types/detect-port/1.3.2:
     resolution: {integrity: sha512-xxgAGA2SAU4111QefXPSp5eGbDm/hW6zhvYl9IeEPZEry9F4d66QAHm5qpUXjb6IsevZV/7emAEx5MhP6O192g==}
@@ -6314,7 +6328,7 @@ packages:
 
   /@types/ms/0.7.31:
     resolution: {integrity: sha512-iiUgKzV9AuaEkZqkOLDIvlQiL6ltuZd9tGcW3gwpnX8JbuiuhFlEGmmFXEXkN50Cvq7Os88IY2v0dkDqXYWVgA==}
-    dev: true
+    dev: false
 
   /@types/node-fetch/2.6.2:
     resolution: {integrity: sha512-DHqhlq5jeESLy19TYhLakJ07kNumXWjcDdxXsLUMJZ6ue8VZJj4kLPQVE/2mdHh3xZziNF1xppu5lwmS53HR+A==}

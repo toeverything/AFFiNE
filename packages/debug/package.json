@@ -1,0 +1,14 @@
+{
+  "name": "@affine/debug",
+  "private": true,
+  "main": "./src/index.ts",
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git"
+  },
+  "dependencies": {
+    "@types/debug": "^4.1.7",
+    "debug": "^4.3.4"
+  }
+}

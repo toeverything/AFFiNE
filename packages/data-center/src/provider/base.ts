@@ -1,18 +1,14 @@
+import { DebugLogger } from '@affine/debug';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 
 import { MessageCenter } from '../message';
-import { Logger, User } from '../types';
+import { User } from '../types';
 import type { WorkspaceUnit, WorkspaceUnitCtorParams } from '../workspace-unit';
 import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
 import { Member } from './affine/apis';
 import { Permission } from './affine/apis/workspace';
 
-const defaultLogger = () => {
-  return;
-};
-
 export interface ProviderConstructorParams {
-  logger?: Logger;
   workspaces: WorkspaceUnitCollectionScope;
   messageCenter: MessageCenter;
 }
@@ -23,25 +19,21 @@ export type UpdateWorkspaceMetaParams = Partial<
   Pick<WorkspaceUnitCtorParams, 'name' | 'avatar'>
 >;
 
-export class BaseProvider {
+export abstract class BaseProvider {
   /** provider id */
   public readonly id: string = 'base';
   /** workspace unit collection */
   protected _workspaces!: WorkspaceUnitCollectionScope;
-  protected _logger!: Logger;
+  protected _logger: DebugLogger;
   /** send message with message center */
   protected _sendMessage!: ReturnType<
     InstanceType<typeof MessageCenter>['getMessageSender']
   >;
 
-  public constructor({
-    logger,
-    workspaces,
-    messageCenter,
-  }: ProviderConstructorParams) {
-    this._logger = (logger || defaultLogger) as Logger;
+  public constructor({ workspaces, messageCenter }: ProviderConstructorParams) {
     this._workspaces = workspaces;
     this._sendMessage = messageCenter.getMessageSender(this.id);
+    this._logger = new DebugLogger(`provider:${this.id}`);
   }
 
   /**

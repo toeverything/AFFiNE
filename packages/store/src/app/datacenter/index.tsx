@@ -144,6 +144,17 @@ export function useDataCenterPublicWorkspace(workspaceId: string | null) {
 
 export function DataCenterPreloader({ children }: React.PropsWithChildren) {
   const api = useGlobalStateApi();
+
+  // init user info from datacenter
+  useEffect(() => {
+    dataCenterPromise.then(async dataCenter => {
+      const user = await dataCenter.getUserInfo();
+      if (!api.getState().user) {
+        api.setState({ user });
+      }
+    });
+  }, []);
+
   //# region effect for updating workspace page list
   useEffect(() => {
     return api.subscribe(
