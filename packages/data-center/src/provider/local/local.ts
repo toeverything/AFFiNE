@@ -72,9 +72,7 @@ export class LocalProvider extends BaseProvider {
         }
         case 'doc:update': {
           const [, updateV2, clientId] = event.data;
-          if (!clientId || clientId === awareness.clientID) {
-            Y.applyUpdateV2(doc, updateV2, this);
-          }
+          Y.applyUpdateV2(doc, updateV2, clientId);
           break;
         }
         case 'awareness:query': {
@@ -86,9 +84,7 @@ export class LocalProvider extends BaseProvider {
         }
         case 'awareness:update': {
           const [, update, clientId] = event.data;
-          if (!clientId || clientId === awareness.clientID) {
-            applyAwarenessUpdate(awareness, update, this);
-          }
+          applyAwarenessUpdate(awareness, update, clientId);
           break;
         }
       }
@@ -112,6 +108,7 @@ export class LocalProvider extends BaseProvider {
         awareness.clientID,
       ]);
       broadcastChannel.postMessage(['awareness:update', awarenessUpdate]);
+      this._broadcastChannel.set(workspace, broadcastChannel);
     };
     connectBroadcastChannel();
     this._idbMap.set(workspace, idb);
