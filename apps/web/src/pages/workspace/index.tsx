@@ -18,8 +18,12 @@ export const WorkspaceIndex = () => {
     if (!exist) {
       router.push('/404');
     } else if (targetWorkspace) {
-      api.getState().loadWorkspace(targetWorkspace.id);
-      router.push(`/workspace/${targetWorkspace.id}`);
+      api
+        .getState()
+        .loadWorkspace(targetWorkspace.id)
+        .then(() => {
+          router.push(`/workspace/${targetWorkspace.id}`);
+        });
     }
   }, [targetWorkspace, exist, router, api]);
   return <PageLoading />;
