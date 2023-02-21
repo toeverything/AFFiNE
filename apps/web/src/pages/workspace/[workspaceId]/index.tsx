@@ -1,3 +1,4 @@
+import { useGlobalState } from '@affine/store';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
@@ -8,6 +9,7 @@ import { useRouterTargetWorkspace } from '@/hooks/use-router-target-workspace';
 const WorkspaceIndex = () => {
   const router = useRouter();
   const { targetWorkspace, exist } = useRouterTargetWorkspace();
+  const loadWorkspace = useGlobalState(store => store.loadWorkspace);
   const { createPage } = usePageHelper();
 
   useEffect(() => {
@@ -28,9 +30,11 @@ const WorkspaceIndex = () => {
           meta => !meta.trash
         )?.id;
       if (savedPageId) {
+        await loadWorkspace(targetWorkspace.id);
         router.replace(`/workspace/${targetWorkspace.id}/${savedPageId}`);
         return;
       } else {
+        await loadWorkspace(targetWorkspace.id);
         const pageId = await createPage();
         if (abortController.signal.aborted) {
           return;
@@ -42,7 +46,7 @@ const WorkspaceIndex = () => {
     return () => {
       abortController.abort();
     };
-  }, [targetWorkspace, createPage, router, exist]);
+  }, [targetWorkspace, createPage, router, exist, loadWorkspace]);
 
   return <PageLoading />;
 };
