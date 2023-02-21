@@ -1,4 +1,4 @@
-import { useGlobalState } from '@affine/store';
+import { useGlobalState, useGlobalStateApi } from '@affine/store';
 import { useRouter } from 'next/router';
 import { PropsWithChildren, useEffect } from 'react';
 
@@ -34,6 +34,7 @@ export const Layout = ({ children }: PropsWithChildren) => {
   const { targetWorkspace, exist } = useRouterTargetWorkspace();
   const router = useRouter();
   const loadWorkspace = useGlobalState(store => store.loadWorkspace);
+  const api = useGlobalStateApi();
   useEffect(() => {
     if (!exist) {
       router.replace('/404');
@@ -42,8 +43,11 @@ export const Layout = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     if (exist && targetWorkspace) {
       loadWorkspace(targetWorkspace.id);
+      api.setState({
+        currentDataCenterWorkspace: targetWorkspace,
+      });
     }
-  }, [exist, loadWorkspace, targetWorkspace]);
+  }, [targetWorkspace, exist, loadWorkspace, api]);
   if (!targetWorkspace) {
     return <PageLoading />;
   }

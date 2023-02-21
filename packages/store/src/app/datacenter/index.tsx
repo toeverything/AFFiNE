@@ -2,7 +2,7 @@ import { getDataCenter, WorkspaceUnit } from '@affine/datacenter';
 import { DataCenter } from '@affine/datacenter';
 import { Disposable, DisposableGroup } from '@blocksuite/global/utils';
 import type { PageMeta as StorePageMeta } from '@blocksuite/store';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 
 const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
@@ -41,6 +41,8 @@ export interface PageMeta extends StorePageMeta {
   updatedDate: number;
   mode: 'edgeless' | 'page';
 }
+
+import { Page } from '@blocksuite/store';
 
 import { GlobalActionsCreator, useGlobalStateApi } from '..';
 
@@ -142,6 +144,33 @@ export function useDataCenterPublicWorkspace(workspaceId: string | null) {
   } as const;
 }
 
+export function useDataCenterWorkspacePage(
+  workspaceId: string | null,
+  pageId: string | null
+) {
+  const workspace = useDataCenterWorkspace(workspaceId);
+  const data = useMemo<Page | null>(
+    () =>
+      typeof pageId === 'string'
+        ? workspace?.blocksuiteWorkspace?.getPage(pageId) ?? null
+        : null,
+    [pageId, workspace]
+  );
+  const notExist = useMemo(() => {
+    if (pageId === null) {
+      return false;
+    }
+    return !workspace?.blocksuiteWorkspace?.meta.pageMetas.find(
+      page => page.id === pageId
+    );
+  }, []);
+
+  return {
+    page: data ?? null,
+    exist: !notExist,
+  } as const;
+}
+
 export function DataCenterPreloader({ children }: React.PropsWithChildren) {
   const api = useGlobalStateApi();
   //# region effect for updating workspace page list
@@ -149,6 +178,12 @@ export function DataCenterPreloader({ children }: React.PropsWithChildren) {
     return api.subscribe(
       store => store.currentDataCenterWorkspace,
       currentWorkspace => {
+        if (currentWorkspace) {
+          api.setState({
+            dataCenterPageList: currentWorkspace.blocksuiteWorkspace?.meta
+              .pageMetas as PageMeta[],
+          });
+        }
         const disposableGroup = new DisposableGroup();
         disposableGroup.add(
           currentWorkspace?.blocksuiteWorkspace?.meta.pagesUpdated.on(() => {

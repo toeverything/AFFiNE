@@ -6,4 +6,5 @@ export {
   useDataCenter,
   useDataCenterPublicWorkspace,
   useDataCenterWorkspace,
+  useDataCenterWorkspacePage,
 } from './app/datacenter';

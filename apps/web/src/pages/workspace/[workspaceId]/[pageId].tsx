@@ -1,20 +1,16 @@
 import { useTranslation } from '@affine/i18n';
+import { useDataCenterWorkspacePage } from '@affine/store';
 import { assertEquals } from '@blocksuite/store';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import {
-  PropsWithChildren,
-  ReactElement,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { PropsWithChildren, ReactElement, useCallback, useEffect } from 'react';
 
 import { EditorHeader } from '@/components/header';
+import { PageLoading } from '@/components/loading';
 import MobileModal from '@/components/mobile-modal';
 import WorkspaceLayout from '@/components/workspace-layout';
-import { usePageHelper } from '@/hooks/use-page-helper';
+import usePageHelper from '@/hooks/use-page-helper';
 import { useDataCenter, useGlobalState, useGlobalStateApi } from '@/store/app';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
 
@@ -103,31 +99,35 @@ const Page: NextPageWithLayout = () => {
 };
 
 const PageDefender = ({ children }: PropsWithChildren) => {
-  const router = useRouter();
-  const [pageLoaded, setPageLoaded] = useState(false);
-  const loadPage = useGlobalState(store => store.loadPage);
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
-  const dataCenter = useDataCenter();
+  const loadWorkspace = useGlobalState(
+    useCallback(store => store.loadWorkspace, [])
+  );
+  const router = useRouter();
+  const { page, exist } = useDataCenterWorkspacePage(
+    currentWorkspace?.id ?? null,
+    typeof router.query.pageId === 'string' && router.query.pageId !== 'null'
+      ? router.query.pageId
+      : null
+  );
   const { createPage } = usePageHelper();
-
-  useEffect(() => {
-    const initPage = async () => {
-      const pageId = router.query.pageId as string;
-      const isPageExist =
-        currentWorkspace?.blocksuiteWorkspace?.meta?.pageMetas.find(
-          p => p.id === pageId
-        );
-      if (!isPageExist) {
-        await createPage({ pageId });
-      }
-      await loadPage(pageId);
-      setPageLoaded(true);
-    };
-    initPage();
-  }, [createPage, currentWorkspace, loadPage, router.query.pageId]);
+  const dataCenter = useDataCenter();
   const api = useGlobalStateApi();
+  useEffect(() => {
+    if (currentWorkspace && page) {
+      api.setState({
+        currentPage: page,
+      });
+      router.push(`/workspace/${currentWorkspace.id}/${page.id}`);
+    } else if (currentWorkspace && !exist) {
+      if (currentWorkspace.blocksuiteWorkspace?.meta.pageMetas.length === 0) {
+        loadWorkspace(currentWorkspace.id);
+        createPage({}, currentWorkspace);
+      }
+    }
+  }, [api, createPage, currentWorkspace, exist, loadWorkspace, page, router]);
   useEffect(
     () =>
       dataCenter.onWorkspacesChange(({ deleted }) => {
@@ -138,7 +138,11 @@ const PageDefender = ({ children }: PropsWithChildren) => {
     [api, currentWorkspace?.id, dataCenter, router]
   );
 
-  return <>{pageLoaded ? children : null}</>;
+  if (!page) {
+    return <PageLoading />;
+  }
+
+  return <>{children}</>;
 };
 
 Page.getLayout = function getLayout(page: ReactElement) {
