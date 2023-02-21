@@ -119,6 +119,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                             }
                             placement="bottom-end"
                             disablePortal={true}
+                            trigger="click"
                           >
                             <IconButton>
                               <MoreVerticalIcon />

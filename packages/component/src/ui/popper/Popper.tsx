@@ -151,7 +151,7 @@ export const Popper = ({
                   onPointerLeave={onPointerLeaveHandler}
                   style={popoverStyle}
                   className={popoverClassName}
-                  onClick={() => {
+                  onClick={e => {
                     if (hasClickTrigger && !visibleControlledByParent) {
                       setVisible(false);
                     }

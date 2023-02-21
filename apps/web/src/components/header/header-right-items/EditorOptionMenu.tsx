@@ -43,7 +43,7 @@ const PopoverContent = () => {
         }}
         icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
-        {favorite ? t('Remove from favorites') : t('Add to favorites')}
+        {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
@@ -107,7 +107,7 @@ const PopoverContent = () => {
 
 export const EditorOptionMenu = () => {
   return (
-    <Menu content={<PopoverContent />} placement="bottom-end">
+    <Menu content={<PopoverContent />} placement="bottom-end" trigger="click">
       <IconButton>
         <MoreVerticalIcon />
       </IconButton>

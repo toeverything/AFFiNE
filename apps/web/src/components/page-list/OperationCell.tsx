@@ -38,7 +38,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         }}
         icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
       >
-        {favorite ? t('Remove from favorites') : t('Add to favorites')}
+        {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -70,7 +70,12 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
   );
   return (
     <FlexWrapper alignItems="center" justifyContent="center">
-      <Menu content={OperationMenu} placement="bottom-end" disablePortal={true}>
+      <Menu
+        content={OperationMenu}
+        placement="bottom-end"
+        disablePortal={true}
+        trigger="click"
+      >
         <IconButton darker={true}>
           <MoreVerticalIcon />
         </IconButton>

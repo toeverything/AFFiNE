@@ -17,7 +17,7 @@ export const getLightTheme = (
       primaryColor: '#6880FF',
       pageBackground: '#fff',
       hoverBackground: '#F1F3FF',
-      innerHoverBackground: '#E9E9EC',
+      innerHoverBackground: '#E0E6FF',
       popoverBackground: '#fff',
       tooltipBackground: '#6880FF',
       codeBackground: '#f2f5f9',
