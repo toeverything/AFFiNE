@@ -10,7 +10,7 @@ export const StyledSplitLine = styled.div(({ theme }) => {
   return {
     width: '1px',
     height: '20px',
-    background: theme.colors.iconColor,
+    background: theme.colors.borderColor,
     marginRight: '24px',
   };
 });

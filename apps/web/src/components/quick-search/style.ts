@@ -102,7 +102,7 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
     height: '0',
     margin: '6px 16px 6.5px 16px',
     position: 'relative',
-    borderTop: `0.5px solid ${theme.colors.placeHolderColor}`,
+    borderTop: `0.5px solid ${theme.colors.borderColor}`,
     transition: 'all 0.15s',
   };
 });
