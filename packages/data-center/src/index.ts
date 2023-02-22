@@ -29,5 +29,10 @@ export type { DataCenter };
 export * from './message';
 export { AffineProvider } from './provider/affine';
 export * from './provider/affine/apis';
+export { getAuthorizer, GoogleAuth } from './provider/affine/apis/google';
+export {
+  createAuthClient,
+  createBareClient,
+} from './provider/affine/apis/request';
 export * from './types';
 export { WorkspaceUnit } from './workspace-unit';
