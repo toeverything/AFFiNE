@@ -1,18 +1,19 @@
-import { Workspace } from '@affine/datacenter';
+import { WebsocketProvider, Workspace } from '@affine/datacenter';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+
+import { apis } from './apis';
 
 export { BlockSuiteWorkspace };
 
 export interface WorkspaceHandler {
   syncBinary: () => Promise<void>;
-  connect: () => void;
-  disconnect: () => void;
 }
 
 export interface SyncedWorkspace extends Workspace, WorkspaceHandler {
   firstBinarySynced: true;
   blockSuiteWorkspace: BlockSuiteWorkspace;
+  providers: Provider[];
 }
 
 export interface UnSyncedWorkspace extends Workspace, WorkspaceHandler {
@@ -32,19 +33,74 @@ export const transformToSyncedWorkspace = (
     blockSuiteWorkspace.doc,
     new Uint8Array(binary)
   );
+  let webSocketProvider: WebsocketProvider | null = null;
   return {
     ...unSyncedWorkspace,
     blockSuiteWorkspace,
     firstBinarySynced: true,
-    connect: () => blockSuiteWorkspace.connect(),
-    disconnect: () => blockSuiteWorkspace.disconnect(),
+    providers: [
+      {
+        flavour: 'affine',
+        connect: () => {
+          const wsUrl = `${
+            window.location.protocol === 'https:' ? 'wss' : 'ws'
+          }://${window.location.host}/api/sync/`;
+          webSocketProvider = new WebsocketProvider(
+            wsUrl,
+            blockSuiteWorkspace.room as string,
+            blockSuiteWorkspace.doc,
+            {
+              params: { token: apis.auth.refresh },
+              // @ts-expect-error ignore the type
+              awareness: blockSuiteWorkspace.awarenessStore.awareness,
+            }
+          );
+          webSocketProvider.connect();
+        },
+        disconnect: () => {
+          if (webSocketProvider) {
+            console.log('disconnect', webSocketProvider.roomname);
+          }
+          webSocketProvider?.disconnect();
+        },
+      },
+    ],
   };
 };
 
-export interface PersistenceWorkspace extends Workspace {
-  blockSuiteWorkspaceRoom: BlockSuiteWorkspace['room'];
+export type BaseProvider = {
+  flavour: string;
+  connect: () => void;
+  disconnect: () => void;
+};
+
+export interface LocalProvider extends BaseProvider {
+  flavour: 'local';
 }
 
-export const transformToJSON = (workspace: RemWorkspace) => {};
+export interface AffineProvider extends BaseProvider {
+  flavour: 'affine';
+}
+
+export type Provider = LocalProvider | AffineProvider;
+
+export interface PersistenceWorkspace extends Workspace {
+  providers: Provider['flavour'][];
+}
+
+export const transformToJSON = (
+  workspace: RemWorkspace
+): PersistenceWorkspace => {
+  return {
+    create_at: 0,
+    permission_type: workspace.permission_type,
+    public: false,
+    type: workspace.type,
+    id: workspace.id,
+    providers: workspace.firstBinarySynced
+      ? workspace.providers.map(p => p.flavour)
+      : [],
+  };
+};
 
 export type RemWorkspace = UnSyncedWorkspace | SyncedWorkspace;

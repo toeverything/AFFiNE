@@ -1,11 +1,4 @@
-import {
-  AccessTokenMessage,
-  createAuthClient,
-  createBareClient,
-  getApis,
-  GoogleAuth,
-  Workspace,
-} from '@affine/datacenter';
+import { AccessTokenMessage, Workspace } from '@affine/datacenter';
 import { PageMeta } from '@blocksuite/store';
 import { atom, useAtom } from 'jotai';
 import { NextPage } from 'next';
@@ -25,6 +18,7 @@ import {
   RemWorkspace,
   transformToSyncedWorkspace,
 } from '../shared';
+import { apis } from '../shared/apis';
 
 const Editor = dynamic(
   async () => (await import('../components/BlockSuiteEditor')).Editor,
@@ -32,11 +26,6 @@ const Editor = dynamic(
     ssr: false,
   }
 );
-
-const bareAuth = createBareClient('/');
-const googleAuth = new GoogleAuth(bareAuth);
-const clientAuth = createAuthClient(bareAuth, googleAuth);
-const apis = getApis(bareAuth, clientAuth, googleAuth);
 
 let localWorkspaces: RemWorkspace[] = [];
 const callback = new Set<() => void>();
@@ -140,12 +129,6 @@ function prefetchNecessaryData() {
                 callback.forEach(cb => cb());
               }
             },
-            connect: async () => {
-              // todo
-            },
-            disconnect: () => {
-              // todo
-            },
           };
           localWorkspaces = [...localWorkspaces, remWorkspace];
           callback.forEach(cb => cb());
@@ -179,25 +162,34 @@ function useCurrentPage() {
 }
 
 function Workspace({ workspace }: { workspace: RemWorkspace }) {
-  const [, set] = useCurrentWorkspace();
+  const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
+  const [, setCurrentPageId] = useCurrentPage();
   useEffect(() => {
     if (!workspace.firstBinarySynced) {
       workspace.syncBinary();
     }
   }, [workspace]);
   useEffect(() => {
-    workspace.connect();
-    return () => {
-      workspace.disconnect();
-    };
-  }, [workspace]);
+    if (workspace.firstBinarySynced && currentWorkspace === workspace) {
+      workspace.providers.forEach(provider => {
+        provider.connect();
+      });
+      return () => {
+        workspace.providers.forEach(provider => {
+          provider.disconnect();
+        });
+      };
+    }
+  }, [workspace, currentWorkspace]);
   if (!workspace.firstBinarySynced) {
     return <div>loading...</div>;
   }
   return (
     <div
+      data-workspace-id={workspace.id}
       onClick={() => {
-        set(workspace.id);
+        setCurrentWorkspaceId(workspace.id);
+        setCurrentPageId(null);
       }}
     >
       {workspace.blockSuiteWorkspace.meta.name}
@@ -211,6 +203,11 @@ function useBlockSuiteWorkspacePageMetas(
   const [pageMetas, setPageMetas] = useState(
     () => blockSuiteWorkspace.meta.pageMetas
   );
+  const [prev, setPrev] = useState(() => blockSuiteWorkspace);
+  if (prev !== blockSuiteWorkspace) {
+    setPrev(blockSuiteWorkspace);
+    setPageMetas(blockSuiteWorkspace.meta.pageMetas);
+  }
   useEffect(() => {
     const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
       setPageMetas(blockSuiteWorkspace.meta.pageMetas);
