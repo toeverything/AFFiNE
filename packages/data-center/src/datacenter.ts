@@ -1,7 +1,7 @@
+import { DebugLogger } from '@affine/debug';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import assert from 'assert';
 
-import { getLogger } from './logger';
 import { MessageCenter } from './message';
 import { AffineProvider } from './provider';
 import type {
@@ -15,6 +15,7 @@ import { createBlocksuiteWorkspace } from './utils';
 import { WorkspaceUnit } from './workspace-unit';
 import type { WorkspaceUnitCollectionChangeEvent } from './workspace-unit-collection';
 import { WorkspaceUnitCollection } from './workspace-unit-collection';
+
 /**
  * @class DataCenter
  * @classdesc Data center is made for managing different providers for business
@@ -22,7 +23,7 @@ import { WorkspaceUnitCollection } from './workspace-unit-collection';
 
 export class DataCenter {
   private readonly _workspaceUnitCollection = new WorkspaceUnitCollection();
-  private readonly _logger = getLogger('dc');
+  private readonly _logger = new DebugLogger('datacenter');
   private _workspaceInstances: Map<string, BlocksuiteWorkspace> = new Map();
   private _messageCenter = MessageCenter.getInstance();
 
@@ -32,12 +33,12 @@ export class DataCenter {
   private _mainProvider?: BaseProvider;
   providerMap: Map<string, BaseProvider> = new Map();
 
-  constructor(debug: boolean) {
-    this._logger.enabled = debug;
+  static initEmpty() {
+    return new DataCenter();
   }
 
-  static async init(debug: boolean): Promise<DataCenter> {
-    const dc = new DataCenter(debug);
+  static async init(exclude: 'affine'[] = []): Promise<DataCenter> {
+    const dc = new DataCenter();
     const getInitParams = () => {
       return {
         logger: dc._logger,
@@ -56,7 +57,9 @@ export class DataCenter {
     } else {
       await dc.registerProvider(new LocalProvider(getInitParams()));
     }
-    await dc.registerProvider(new AffineProvider(getInitParams()));
+    if (!exclude.includes('affine')) {
+      await dc.registerProvider(new AffineProvider(getInitParams()));
+    }
 
     for (const provider of dc.providerMap.values()) {
       await provider.loadWorkspaces();
@@ -172,7 +175,10 @@ export class DataCenter {
     }
     const provider = this.providerMap.get(workspaceUnit.provider);
     assert(provider, `provide '${workspaceUnit.provider}' is not registered`);
-    this._logger(`Loading ${workspaceUnit.provider} workspace: `, workspaceId);
+    this._logger.debug(
+      `Loading ${workspaceUnit.provider} workspace: `,
+      workspaceId
+    );
 
     const workspace = this._getBlocksuiteWorkspace(workspaceId);
     this._workspaceInstances.set(workspaceId, workspace);
@@ -340,7 +346,7 @@ export class DataCenter {
     providerId = 'affine'
   ) {
     if (workspaceUnit.provider === providerId) {
-      this._logger('Workspace provider is same');
+      this._logger.error('Workspace provider is same');
       return;
     }
     const provider = this.providerMap.get(providerId);
