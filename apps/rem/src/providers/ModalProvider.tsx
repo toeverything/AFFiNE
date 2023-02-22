@@ -6,7 +6,6 @@ import { WorkspaceListModal } from '../components/pure/workspace-list-modal';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { RemWorkspace } from '../shared';
 
 export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
@@ -14,7 +13,7 @@ export function Modals() {
   );
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
-  const [currentWorkspace] = useCurrentWorkspace();
+  const [currentWorkspace, setCurrentWorkspace] = useCurrentWorkspace();
   return (
     <>
       <WorkspaceListModal
@@ -25,9 +24,10 @@ export function Modals() {
         onClose={useCallback(() => {
           setOpenWorkspacesModal(false);
         }, [])}
-        onClickWorkspace={function (workspace: RemWorkspace): void {
-          throw new Error('Function not implemented.');
-        }}
+        onClickWorkspace={useCallback(workspace => {
+          setCurrentWorkspace(workspace.id);
+          setOpenWorkspacesModal(false);
+        }, [])}
         onClickLogin={function (): void {
           throw new Error('Function not implemented.');
         }}

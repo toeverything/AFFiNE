@@ -1,3 +1,4 @@
+import { Button } from '@affine/component';
 import { useAtom } from 'jotai/index';
 import { NextPage } from 'next';
 import dynamic from 'next/dynamic';
@@ -118,15 +119,15 @@ const IndexPage: NextPage = () => {
   const router = useRouter();
   return (
     <div>
-      <button
+      <Button
         onClick={() => {
           setOpenWorkspacesModal(true);
         }}
       >
         show all
-      </button>
+      </Button>
       {user ? (
-        <button
+        <Button
           onClick={async () => {
             apis.auth.clear();
             await apis.signOutFirebase();
@@ -134,9 +135,9 @@ const IndexPage: NextPage = () => {
           }}
         >
           sign out
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
           onClick={async () => {
             await apis.signInWithGoogle();
             router.reload();
@@ -144,10 +145,8 @@ const IndexPage: NextPage = () => {
         >
           {' '}
           sign in with google
-        </button>
+        </Button>
       )}
-      <div>all workspaces</div>
-      <WorkspaceList workspace={workspaces} />
       {currentWorkspace ? (
         <WorkspacePagePreview workspace={currentWorkspace} />
       ) : (

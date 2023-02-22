@@ -1,3 +1,5 @@
+import '../styles/globals.css';
+
 import { AppProps } from 'next/app';
 import { Suspense, useMemo } from 'react';
 import { SWRConfig } from 'swr';

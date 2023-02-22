@@ -63,7 +63,12 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
   let name = 'UNKNOWN';
   if (workspace.flavour === 'local') {
     name = workspace.blockSuiteWorkspace.meta.name;
+  } else if (workspace.flavour === 'affine') {
+    if (workspace.firstBinarySynced) {
+      name = workspace.blockSuiteWorkspace.meta.name;
+    }
   }
+
   return (
     <StyledCard
       data-testid="workspace-card"
