@@ -278,7 +278,11 @@ const IndexPage: NextPage = () => {
       ) : (
         <div>no current workspace</div>
       )}
-      {currentPage ? <Editor page={currentPage} /> : <div>no current page</div>}
+      {currentPage ? (
+        <Editor page={currentPage} key={currentPage.id} />
+      ) : (
+        <div>no current page</div>
+      )}
     </div>
   );
 };
