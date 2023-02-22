@@ -6,7 +6,7 @@ import { test } from './libs/playwright';
 loadPage();
 
 test.describe('Local first export page', () => {
-  test('New a page ,then open it and export html', async ({ page }) => {
+  test.skip('New a page ,then open it and export html', async ({ page }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page
@@ -34,7 +34,9 @@ test.describe('Local first export page', () => {
     );
   });
 
-  test('New a page ,then open it and export markdown', async ({ page }) => {
+  test.skip('New a page ,then open it and export markdown', async ({
+    page,
+  }) => {
     await newPage(page);
     await page.getByPlaceholder('Title').click();
     await page

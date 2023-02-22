@@ -7,7 +7,6 @@ import {
 } from '@affine/component';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { PageMeta } from '@affine/store';
 import {
   DeleteForeverIcon,
   FavouritedIcon,
@@ -19,6 +18,7 @@ import {
 } from '@blocksuite/icons';
 
 import { usePageHelper } from '@/hooks/use-page-helper';
+import { PageMeta } from '@/providers/app-state-provider';
 import { useConfirm } from '@/providers/ConfirmProvider';
 
 export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {

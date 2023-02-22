@@ -2,7 +2,6 @@ import { displayFlex, styled } from '@affine/component';
 import { Breadcrumbs } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { useDataCenterPublicWorkspace } from '@affine/store';
 import { PaperIcon, SearchIcon } from '@blocksuite/icons';
 import dynamic from 'next/dynamic';
 import NextLink from 'next/link';
@@ -11,6 +10,7 @@ import { ReactElement, useEffect, useMemo } from 'react';
 
 import { PageLoading } from '@/components/loading';
 import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
+import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
 import { useModal } from '@/store/globalModal';
 
 import type { NextPageWithLayout } from '../..//_app';
@@ -21,17 +21,13 @@ const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
 
 const Page: NextPageWithLayout = () => {
   const router = useRouter();
-  const { workspaceId, pageId } = router.query;
-  const { error, workspace: workspaceUnit } = useDataCenterPublicWorkspace(
-    typeof workspaceId === 'string' ? workspaceId : null
-  );
+  const { workspaceId, pageId } = router.query as Record<string, string>;
+  const { status, workspace: workspaceUnit } =
+    useLoadPublicWorkspace(workspaceId);
   const { triggerQuickSearchModal } = useModal();
   const { t } = useTranslation();
 
   const page = useMemo(() => {
-    if (typeof pageId !== 'string') {
-      return null;
-    }
     if (workspaceUnit?.blocksuiteWorkspace) {
       return workspaceUnit.blocksuiteWorkspace.getPage(pageId);
     }
@@ -50,15 +46,18 @@ const Page: NextPageWithLayout = () => {
   }, [workspace, router, pageId]);
 
   useEffect(() => {
-    if (error) {
+    if (status === 'error') {
       router.push('/404');
     }
-  }, [router, error]);
+  }, [router, status]);
 
-  if (!workspace) {
+  if (status === 'loading') {
     return <PageLoading />;
   }
 
+  if (status === 'error') {
+    return null;
+  }
   return (
     <PageContainer>
       <NavContainer>
@@ -87,7 +86,7 @@ const Page: NextPageWithLayout = () => {
         </SearchButton>
       </NavContainer>
 
-      {page && (
+      {workspace && page && (
         <DynamicBlocksuite
           page={page}
           workspace={workspace}

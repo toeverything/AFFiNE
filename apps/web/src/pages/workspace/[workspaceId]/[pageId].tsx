@@ -15,7 +15,7 @@ import { EditorHeader } from '@/components/header';
 import MobileModal from '@/components/mobile-modal';
 import WorkspaceLayout from '@/components/workspace-layout';
 import { usePageHelper } from '@/hooks/use-page-helper';
-import { useDataCenter, useGlobalState, useGlobalStateApi } from '@/store/app';
+import { useGlobalState, useGlobalStateApi } from '@/store/app';
 import exampleMarkdown from '@/templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
 
 import type { NextPageWithLayout } from '../..//_app';
@@ -109,7 +109,7 @@ const PageDefender = ({ children }: PropsWithChildren) => {
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
-  const dataCenter = useDataCenter();
+  const dataCenter = useGlobalState(store => store.dataCenter);
   const { createPage } = usePageHelper();
 
   useEffect(() => {

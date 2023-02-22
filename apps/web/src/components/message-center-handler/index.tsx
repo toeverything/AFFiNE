@@ -2,13 +2,13 @@ import { toast } from '@affine/component';
 import { MessageCenter } from '@affine/datacenter';
 import { AffineProvider } from '@affine/datacenter';
 import { useRouter } from 'next/router';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useCallback, useEffect } from 'react';
 
-import { useDataCenter } from '@/store/app';
+import { useGlobalState } from '@/store/app';
 
 export function MessageCenterHandler({ children }: { children?: ReactNode }) {
   const router = useRouter();
-  const dataCenter = useDataCenter();
+  const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
   useEffect(() => {
     const instance = MessageCenter.getInstance();
     if (instance) {

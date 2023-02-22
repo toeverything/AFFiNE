@@ -1,31 +1,23 @@
-import { useGlobalStateApi } from '@affine/store';
 import { useRouter } from 'next/router';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { PageLoading } from '@/components/loading';
-import { useRouterTargetWorkspace } from '@/hooks/use-router-target-workspace';
+import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
+import { useGlobalState } from '@/store/app';
 
 export const WorkspaceIndex = () => {
   const router = useRouter();
-  const api = useGlobalStateApi();
-  const { targetWorkspace, exist } = useRouterTargetWorkspace();
-  const onceRef = useRef(true);
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
+  const { workspaceLoaded } = useEnsureWorkspace();
+
   useEffect(() => {
-    if (!onceRef.current) {
-      return;
+    if (workspaceLoaded) {
+      router.push(`/workspace/${currentWorkspace?.id}`);
     }
-    onceRef.current = true;
-    if (!exist) {
-      router.push('/404');
-    } else if (targetWorkspace) {
-      api
-        .getState()
-        .loadWorkspace(targetWorkspace.id)
-        .then(() => {
-          router.push(`/workspace/${targetWorkspace.id}`);
-        });
-    }
-  }, [targetWorkspace, exist, router, api]);
+  }, [currentWorkspace, router, workspaceLoaded]);
+
   return <PageLoading />;
 };
 

@@ -12,7 +12,6 @@
     "@affine/component": "workspace:*",
     "@affine/datacenter": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@affine/store": "workspace:*",
     "@affine/debug": "workspace:*",
     "@blocksuite/blocks": "0.4.1",
     "@blocksuite/editor": "0.4.1",
