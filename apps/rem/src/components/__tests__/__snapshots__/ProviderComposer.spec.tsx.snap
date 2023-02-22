@@ -1,0 +1,7 @@
+// Vitest Snapshot v1
+
+exports[`ProviderComposer 1`] = `
+<DocumentFragment>
+  test1
+</DocumentFragment>
+`;
