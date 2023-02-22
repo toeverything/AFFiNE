@@ -1,7 +1,8 @@
-import { WebsocketProvider, Workspace } from '@affine/datacenter';
+import { Workspace } from '@affine/datacenter';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 
+import { createAffineProviders } from '../blocksuite';
 import { apis } from './apis';
 
 export { BlockSuiteWorkspace };
@@ -33,41 +34,11 @@ export const transformToSyncedWorkspace = (
     blockSuiteWorkspace.doc,
     new Uint8Array(binary)
   );
-  let webSocketProvider: WebsocketProvider | null = null;
   return {
     ...unSyncedWorkspace,
     blockSuiteWorkspace,
     firstBinarySynced: true,
-    providers: [
-      {
-        flavour: 'affine',
-        connect: () => {
-          const wsUrl = `${
-            window.location.protocol === 'https:' ? 'wss' : 'ws'
-          }://${window.location.host}/api/sync/`;
-          webSocketProvider = new WebsocketProvider(
-            wsUrl,
-            blockSuiteWorkspace.room as string,
-            blockSuiteWorkspace.doc,
-            {
-              params: { token: apis.auth.refresh },
-              // @ts-expect-error ignore the type
-              awareness: blockSuiteWorkspace.awarenessStore.awareness,
-            }
-          );
-          console.log('connect', webSocketProvider.roomname);
-          webSocketProvider.connect();
-        },
-        disconnect: () => {
-          if (!webSocketProvider) {
-            console.error('cannot find websocket provider');
-            return;
-          }
-          console.log('disconnect', webSocketProvider.roomname);
-          webSocketProvider?.disconnect();
-        },
-      },
-    ],
+    providers: [...createAffineProviders(blockSuiteWorkspace)],
   };
 };
 

@@ -161,6 +161,7 @@ importers:
       react-dom: ^18.2.0
       swr: ^2.0.3
       typescript: ^4.9.5
+      y-indexeddb: ^9.0.9
       yjs: ^13.5.46
     dependencies:
       '@affine/component': link:../../packages/component
@@ -176,6 +177,7 @@ importers:
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       swr: 2.0.3_react@18.2.0
+      y-indexeddb: 9.0.9_yjs@13.5.47
       yjs: 13.5.47
     devDependencies:
       '@types/react': 18.0.28
@@ -13880,6 +13882,15 @@ packages:
     engines: {node: '>=0.4'}
     dependencies:
       object-keys: 0.4.0
+    dev: false
+
+  /y-indexeddb/9.0.9_yjs@13.5.47:
+    resolution: {integrity: sha512-GcJbiJa2eD5hankj46Hea9z4hbDnDjvh1fT62E5SpZRsv8GcEemw34l1hwI2eknGcv5Ih9JfusT37JLx9q3LFg==}
+    peerDependencies:
+      yjs: ^13.0.0
+    dependencies:
+      lib0: 0.2.62
+      yjs: 13.5.47
     dev: false
 
   /y-protocols/1.0.5:
