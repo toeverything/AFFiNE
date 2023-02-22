@@ -15,7 +15,14 @@ const googleAuth = new GoogleAuth(bareAuth);
 const clientAuth = createAuthClient(bareAuth, googleAuth);
 const apis = getApis(bareAuth, clientAuth, googleAuth);
 
-type RemWorkspace = Workspace;
+interface RemWorkspace extends Workspace {
+  synced: boolean;
+
+  //# region side effect
+  connect: () => void;
+  disconnect: () => void;
+  //# endregion
+}
 
 const localWorkspaces: RemWorkspace[] = [];
 const callback = new Set<() => void>();
@@ -64,6 +71,15 @@ function useRemoteWorkspace(): RemWorkspace[] {
   return data ?? [];
 }
 
+function useWorkspaces(): RemWorkspace[] {
+  const remoteWorkspace = useRemoteWorkspace();
+  const localWorkspaces = useLocalWorkspaces();
+  return useMemo(
+    () => [...localWorkspaces, ...remoteWorkspace],
+    [remoteWorkspace, localWorkspaces]
+  );
+}
+
 function useWorkspace(workspaceId: string | null): RemWorkspace | null {
   const remoteWorkspace = useRemoteWorkspace();
   const localWorkspace = useLocalWorkspaces();
@@ -77,7 +93,7 @@ function useWorkspace(workspaceId: string | null): RemWorkspace | null {
 }
 
 const IndexPage: NextPage = () => {
-  const remoteWorkspaces = useRemoteWorkspace();
+  const remoteWorkspaces = useWorkspaces();
   const user = useCurrentUser();
   return (
     <div>
