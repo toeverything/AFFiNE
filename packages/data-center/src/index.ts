@@ -3,9 +3,9 @@ import { DataCenter } from './datacenter';
 const _initializeDataCenter = () => {
   let _dataCenterInstance: Promise<DataCenter>;
 
-  return (debug = true) => {
+  return () => {
     if (!_dataCenterInstance) {
-      _dataCenterInstance = DataCenter.init(debug);
+      _dataCenterInstance = DataCenter.init();
       _dataCenterInstance.then(dc => {
         try {
           if (window) {
