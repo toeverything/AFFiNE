@@ -49,7 +49,7 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "fake-indexeddb": "4.0.1",
     "got": "^12.5.3",
-    "happy-dom": "^8.5.0",
+    "happy-dom": "^8.7.1",
     "husky": "^8.0.3",
     "lint-staged": "^13.1.2",
     "nyc": "^15.1.0",
