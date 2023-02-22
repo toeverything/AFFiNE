@@ -6,14 +6,25 @@ import {
   GoogleAuth,
   Workspace,
 } from '@affine/datacenter';
+import { PageMeta } from '@blocksuite/store';
 import { atom, useAtom } from 'jotai';
 import { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import useSWR, { preload } from 'swr';
 
-import { RemWorkspace, transformToSyncedWorkspace } from '../shared';
+import {
+  BlockSuiteWorkspace,
+  RemWorkspace,
+  transformToSyncedWorkspace,
+} from '../shared';
 
 const Editor = dynamic(
   async () => (await import('../components/BlockSuiteEditor')).Editor,
@@ -194,12 +205,30 @@ function Workspace({ workspace }: { workspace: RemWorkspace }) {
   );
 }
 
+function useBlockSuiteWorkspacePageMetas(
+  blockSuiteWorkspace: BlockSuiteWorkspace
+): PageMeta[] {
+  const [pageMetas, setPageMetas] = useState(
+    () => blockSuiteWorkspace.meta.pageMetas
+  );
+  useEffect(() => {
+    const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
+      setPageMetas(blockSuiteWorkspace.meta.pageMetas);
+    });
+    return () => {
+      dispose.dispose();
+    };
+  }, [blockSuiteWorkspace]);
+  return pageMetas;
+}
+
 function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
   if (!workspace.firstBinarySynced) {
     return <div>loading...</div>;
   }
   const [, setId] = useCurrentPage();
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
+  const pageMetas = useBlockSuiteWorkspacePageMetas(blockSuiteWorkspace);
   return (
     <div>
       <div>page list</div>
@@ -208,7 +237,7 @@ function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
           border: '1px solid black',
         }}
       >
-        {blockSuiteWorkspace.meta.pageMetas.map(pageMeta => {
+        {pageMetas.map(pageMeta => {
           return (
             <div
               onClick={() => {

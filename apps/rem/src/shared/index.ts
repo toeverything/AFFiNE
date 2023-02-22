@@ -2,6 +2,8 @@ import { Workspace } from '@affine/datacenter';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 
+export { BlockSuiteWorkspace };
+
 export interface WorkspaceHandler {
   syncBinary: () => Promise<void>;
   connect: () => void;
