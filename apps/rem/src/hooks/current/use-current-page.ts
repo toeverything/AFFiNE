@@ -1,10 +1,10 @@
 import { useAtom } from 'jotai/index';
 
-import { currentPageId } from '../../atoms';
+import { currentPageIdAtom } from '../../atoms';
 import { useCurrentWorkspace } from './use-current-workspace';
 
 export function useCurrentPage() {
-  const [id, setId] = useAtom(currentPageId);
+  const [id, setId] = useAtom(currentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   return [
     currentWorkspace?.firstBinarySynced && id

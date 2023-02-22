@@ -1,8 +1,10 @@
+import { useAtom } from 'jotai/index';
 import { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
+import { openWorkspacesModalAtom } from '../atoms';
 import { useCurrentPage } from '../hooks/current/use-current-page';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -109,12 +111,20 @@ const IndexPage: NextPage = () => {
   const user = useCurrentUser();
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPage] = useCurrentPage();
+  const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   useEffect(() => {
     prefetchNecessaryData();
   }, []);
   const router = useRouter();
   return (
     <div>
+      <button
+        onClick={() => {
+          setOpenWorkspacesModal(true);
+        }}
+      >
+        show all
+      </button>
       {user ? (
         <button
           onClick={async () => {

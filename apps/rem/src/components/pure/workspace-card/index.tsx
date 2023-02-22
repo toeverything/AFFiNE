@@ -1,0 +1,95 @@
+import { PermissionType } from '@affine/datacenter';
+import { useTranslation } from '@affine/i18n';
+import React, { useCallback } from 'react';
+
+import { RemWorkspace } from '../../../shared';
+import {
+  CloudWorkspaceIcon,
+  JoinedWorkspaceIcon,
+  LocalDataIcon,
+  LocalWorkspaceIcon,
+  PublishIcon,
+} from '../icons';
+import { WorkspaceAvatar } from '../workspace-avatar';
+import { StyledCard, StyleWorkspaceInfo, StyleWorkspaceTitle } from './styles';
+
+export type WorkspaceTypeProps = {
+  workspace: RemWorkspace;
+};
+
+const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
+  const { t } = useTranslation();
+  let isOwner = true;
+  if (workspace.flavour === 'affine') {
+    isOwner = workspace.permission_type === PermissionType.Owner;
+  } else if (workspace.flavour === 'local') {
+    isOwner = true;
+  }
+
+  if (workspace.flavour === 'local') {
+    return (
+      <p title={t('Local Workspace')}>
+        <LocalWorkspaceIcon />
+        <span>{t('Local Workspace')}</span>
+      </p>
+    );
+  }
+
+  return isOwner ? (
+    <p title={t('Cloud Workspace')}>
+      <CloudWorkspaceIcon />
+      <span>{t('Cloud Workspace')}</span>
+    </p>
+  ) : (
+    <p title={t('Joined Workspace')}>
+      <JoinedWorkspaceIcon />
+      <span>{t('Joined Workspace')}</span>
+    </p>
+  );
+};
+
+export type WorkspaceCardProps = {
+  currentWorkspaceId: string | null;
+  workspace: RemWorkspace;
+  onClick: (workspace: RemWorkspace) => void;
+};
+
+export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
+  workspace,
+  onClick,
+  currentWorkspaceId,
+}) => {
+  const { t } = useTranslation();
+  let name = 'UNKNOWN';
+  if (workspace.flavour === 'local') {
+    name = workspace.blockSuiteWorkspace.meta.name;
+  }
+  return (
+    <StyledCard
+      data-testid="workspace-card"
+      onClick={useCallback(() => {
+        onClick(workspace);
+      }, [workspace])}
+      active={workspace.id === currentWorkspaceId}
+    >
+      <WorkspaceAvatar size={58} workspace={workspace} />
+
+      <StyleWorkspaceInfo>
+        <StyleWorkspaceTitle>{name}</StyleWorkspaceTitle>
+        <WorkspaceType workspace={workspace} />
+        {workspace.flavour === 'local' && (
+          <p title={t('Available Offline')}>
+            <LocalDataIcon />
+            <span>{t('Available Offline')}</span>
+          </p>
+        )}
+        {workspace.flavour === 'affine' && workspace.public && (
+          <p title={t('Published to Web')}>
+            <PublishIcon />
+            <span>{t('Published to Web')}</span>
+          </p>
+        )}
+      </StyleWorkspaceInfo>
+    </StyledCard>
+  );
+};

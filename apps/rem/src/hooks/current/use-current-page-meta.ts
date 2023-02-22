@@ -1,7 +1,7 @@
 import { useAtom } from 'jotai';
 
-import { currentPageId } from '../../atoms';
+import { currentPageIdAtom } from '../../atoms';
 
 export function useCurrentPageMeta() {
-  useAtom(currentPageId);
+  useAtom(currentPageIdAtom);
 }
