@@ -10,18 +10,21 @@ import {
 } from '../shared';
 import { apis } from '../shared/apis';
 
-let localWorkspaces: RemWorkspace[] = [];
-export const callback = new Set<() => void>();
+export const dataCenter = {
+  workspaces: [] as RemWorkspace[],
+  callbacks: new Set<() => void>(),
+};
+
 const kWorkspaces = 'affine-workspaces';
 
 if (typeof window !== 'undefined') {
-  localWorkspaces = [
-    ...localWorkspaces,
+  dataCenter.workspaces = [
+    ...dataCenter.workspaces,
     ...(JSON.parse(
       localStorage.getItem(kWorkspaces) ?? '[]'
     ) as RemWorkspace[]),
   ];
-  callback.forEach(cb => cb());
+  dataCenter.callbacks.forEach(cb => cb());
 }
 
 const emptyWorkspaces: RemWorkspace[] = [];
@@ -34,7 +37,7 @@ export function prefetchNecessaryData() {
   promise
     .then(workspaces => {
       workspaces.forEach(workspace => {
-        const exist = localWorkspaces.find(
+        const exist = dataCenter.workspaces.find(
           localWorkspace => localWorkspace.id === workspace.id
         );
         if (!exist) {
@@ -53,18 +56,18 @@ export function prefetchNecessaryData() {
                 remWorkspace,
                 binary
               );
-              const index = localWorkspaces.findIndex(
+              const index = dataCenter.workspaces.findIndex(
                 ws => ws.id === syncedWorkspace.id
               );
               if (index > -1) {
-                localWorkspaces.splice(index, 1, syncedWorkspace);
-                localWorkspaces = [...localWorkspaces];
-                callback.forEach(cb => cb());
+                dataCenter.workspaces.splice(index, 1, syncedWorkspace);
+                dataCenter.workspaces = [...dataCenter.workspaces];
+                dataCenter.callbacks.forEach(cb => cb());
               }
             },
           };
-          localWorkspaces = [...localWorkspaces, remWorkspace];
-          callback.forEach(cb => cb());
+          dataCenter.workspaces = [...dataCenter.workspaces, remWorkspace];
+          dataCenter.callbacks.forEach(cb => cb());
         }
       });
     })
@@ -76,12 +79,12 @@ export function prefetchNecessaryData() {
 export function useWorkspaces(): RemWorkspace[] {
   return useSyncExternalStore(
     useCallback(onStoreChange => {
-      callback.add(onStoreChange);
+      dataCenter.callbacks.add(onStoreChange);
       return () => {
-        callback.delete(onStoreChange);
+        dataCenter.callbacks.delete(onStoreChange);
       };
     }, []),
-    useCallback(() => localWorkspaces, []),
+    useCallback(() => dataCenter.workspaces, []),
     useCallback(() => emptyWorkspaces, [])
   );
 }

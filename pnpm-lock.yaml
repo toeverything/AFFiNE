@@ -145,11 +145,14 @@ importers:
     specifiers:
       '@affine/component': workspace:*
       '@affine/datacenter': workspace:*
+      '@affine/i18n': workspace:*
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/editor': 0.4.1
       '@blocksuite/react': 0.4.1
       '@blocksuite/store': 0.4.1
+      '@emotion/css': ^11.10.6
       '@emotion/react': ^11.10.6
+      '@emotion/server': ^11.10.0
       '@mui/material': ^5.11.9
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
@@ -166,11 +169,14 @@ importers:
     dependencies:
       '@affine/component': link:../../packages/component
       '@affine/datacenter': link:../../packages/data-center
+      '@affine/i18n': link:../../packages/i18n
       '@blocksuite/blocks': 0.4.1_atn5tmcwtxn4phcfq72w467xbe
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
       '@blocksuite/react': 0.4.1_v4k7r3722g7d6aoxzctkttv45y
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.47
+      '@emotion/css': 11.10.6
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
+      '@emotion/server': 11.10.0_@emotion+css@11.10.6
       '@mui/material': 5.11.10_dl5meo57oqikomakll4aynjcye
       jotai: 2.0.2_react@18.2.0
       lit: 2.6.1

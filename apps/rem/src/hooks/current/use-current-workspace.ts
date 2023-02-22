@@ -1,4 +1,4 @@
-import { useAtom } from 'jotai/index';
+import { useAtom } from 'jotai';
 
 import { currentWorkspaceIdAtom } from '../../atoms';
 import { useWorkspace } from '../use-workspace';

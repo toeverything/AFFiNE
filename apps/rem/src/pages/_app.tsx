@@ -3,6 +3,7 @@ import { Suspense, useMemo } from 'react';
 import { SWRConfig } from 'swr';
 
 import { ProviderComposer } from '../components/ProviderComposer';
+import { PageLoading } from '../components/pure/loading';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { fetcher } from '../shared';
 
@@ -14,7 +15,7 @@ function App({ Component }: AppProps) {
         fetcher,
       }}
     >
-      <Suspense fallback="loading">
+      <Suspense fallback={<PageLoading />}>
         <ProviderComposer
           contexts={useMemo(() => [<ThemeProvider key="ThemeProvider" />], [])}
         >

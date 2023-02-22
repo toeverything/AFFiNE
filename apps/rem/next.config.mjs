@@ -33,7 +33,11 @@ const nextConfig = {
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
   swcMinify: false,
-  transpilePackages: ['@affine/component', '@affine/datacenter'],
+  transpilePackages: [
+    '@affine/component',
+    '@affine/datacenter',
+    '@affine/i18n',
+  ],
   webpack: config => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
     config.module.rules.push({
