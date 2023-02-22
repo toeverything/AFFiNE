@@ -42,6 +42,7 @@ export const WorkspaceDelete = ({
     onClose();
     router.push(`/workspace`);
   };
+  console.log('workspace', workspace);
 
   return (
     <Modal open={open} onClose={onClose}>

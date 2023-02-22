@@ -3,7 +3,7 @@ import { Button } from '@affine/component';
 import { Menu, MenuItem } from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
-import { ArrowDownIcon } from '@blocksuite/icons';
+import { ArrowDownSmallIcon } from '@blocksuite/icons';
 
 const LanguageMenuContent = () => {
   const { i18n } = useTranslation();
@@ -41,7 +41,7 @@ export const LanguageMenu = () => {
       disablePortal={true}
     >
       <Button
-        icon={<ArrowDownIcon />}
+        icon={<ArrowDownSmallIcon />}
         iconPosition="end"
         noBorder={true}
         style={{ textTransform: 'capitalize' }}

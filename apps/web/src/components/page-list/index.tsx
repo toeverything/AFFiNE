@@ -5,15 +5,12 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
-import { Content } from '@affine/component';
-import { IconButton } from '@affine/component';
-import { Tooltip } from '@affine/component';
-import { toast } from '@affine/component';
+import { Content, IconButton, toast, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
   EdgelessIcon,
-  FavouritedIcon,
-  FavouritesIcon,
+  FavoritedIcon,
+  FavoriteIcon,
   PaperIcon,
 } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
@@ -62,9 +59,9 @@ const FavoriteTag = ({
         className={favorite ? '' : 'favorite-button'}
       >
         {favorite ? (
-          <FavouritedIcon data-testid="favorited-icon" />
+          <FavoritedIcon data-testid="favorited-icon" />
         ) : (
-          <FavouritesIcon />
+          <FavoriteIcon />
         )}
       </IconButton>
     </Tooltip>
@@ -108,23 +105,24 @@ export const PageList = ({
         </TableHead>
         <TableBody>
           {pageList.map((pageMeta, index) => {
+            // On click event must be set on the table cell, since the last operation cell is not clickable, and if set on the row, the menu will have bug on close.
+            const onClick = () => {
+              if (isPublic) {
+                router.push(
+                  `/public-workspace/${router.query.workspaceId}/${pageMeta.id}`
+                );
+              } else {
+                router.push(
+                  `/workspace/${currentWorkspace?.id}/${pageMeta.id}`
+                );
+              }
+            };
             return (
               <StyledTableRow
                 data-testid="page-list-item"
                 key={`${pageMeta.id}-${index}`}
-                onClick={() => {
-                  if (isPublic) {
-                    router.push(
-                      `/public-workspace/${router.query.workspaceId}/${pageMeta.id}`
-                    );
-                  } else {
-                    router.push(
-                      `/workspace/${currentWorkspace?.id}/${pageMeta.id}`
-                    );
-                  }
-                }}
               >
-                <TableCell>
+                <TableCell onClick={onClick}>
                   <StyledTitleWrapper>
                     <StyledTitleLink>
                       {pageMeta.mode === 'edgeless' ? (
@@ -139,19 +137,21 @@ export const PageList = ({
                     {showFavoriteTag && <FavoriteTag pageMeta={pageMeta} />}
                   </StyledTitleWrapper>
                 </TableCell>
-                <DateCell pageMeta={pageMeta} dateKey="createDate" />
+                <DateCell
+                  pageMeta={pageMeta}
+                  dateKey="createDate"
+                  onClick={onClick}
+                />
                 <DateCell
                   pageMeta={pageMeta}
                   dateKey={isTrash ? 'trashDate' : 'updatedDate'}
                   backupKey={isTrash ? 'trashDate' : 'createDate'}
+                  onClick={onClick}
                 />
-                {!isPublic ? (
+                {!isPublic && (
                   <TableCell
                     style={{ padding: 0 }}
                     data-testid={`more-actions-${pageMeta.id}`}
-                    onClick={e => {
-                      e.stopPropagation();
-                    }}
                   >
                     {isTrash ? (
                       <TrashOperationCell pageMeta={pageMeta} />
@@ -159,7 +159,7 @@ export const PageList = ({
                       <OperationCell pageMeta={pageMeta} />
                     )}
                   </TableCell>
-                ) : null}
+                )}
               </StyledTableRow>
             );
           })}

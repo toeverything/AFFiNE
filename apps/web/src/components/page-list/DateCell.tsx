@@ -1,4 +1,4 @@
-import { TableCell } from '@affine/component';
+import { TableCell, TableCellProps } from '@affine/component';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import React from 'react';
@@ -11,15 +11,15 @@ export const DateCell = ({
   pageMeta,
   dateKey,
   backupKey = '',
+  ...props
 }: {
   pageMeta: PageMeta;
   dateKey: keyof PageMeta;
   backupKey?: keyof PageMeta;
-}) => {
-  // dayjs().format('L LT');
+} & Omit<TableCellProps, 'children'>) => {
   const value = pageMeta[dateKey] ?? pageMeta[backupKey];
   return (
-    <TableCell ellipsis={true}>
+    <TableCell ellipsis={true} {...props}>
       {value ? dayjs(value as string).format('YYYY-MM-DD HH:mm') : '--'}
     </TableCell>
   );

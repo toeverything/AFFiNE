@@ -3,15 +3,15 @@ import { IconButton } from '@affine/component';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
+  DeleteTemporarilyIcon,
   EdgelessIcon,
   ExportIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
-  FavouritedIcon,
-  FavouritesIcon,
+  FavoritedIcon,
+  FavoriteIcon,
   MoreVerticalIcon,
   PaperIcon,
-  TrashIcon,
 } from '@blocksuite/icons';
 
 import useCurrentPageMeta from '@/hooks/use-current-page-meta';
@@ -41,9 +41,9 @@ const PopoverContent = () => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
+        icon={favorite ? <FavoritedIcon /> : <FavoriteIcon />}
       >
-        {favorite ? t('Remove from favorites') : t('Add to favorites')}
+        {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
@@ -97,7 +97,7 @@ const PopoverContent = () => {
             confirm && toast(t('Moved to Trash'));
           });
         }}
-        icon={<TrashIcon />}
+        icon={<DeleteTemporarilyIcon />}
       >
         {t('Delete')}
       </MenuItem>
@@ -107,7 +107,7 @@ const PopoverContent = () => {
 
 export const EditorOptionMenu = () => {
   return (
-    <Menu content={<PopoverContent />} placement="bottom-end">
+    <Menu content={<PopoverContent />} placement="bottom-end" trigger="click">
       <IconButton>
         <MoreVerticalIcon />
       </IconButton>

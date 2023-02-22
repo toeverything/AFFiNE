@@ -5,7 +5,11 @@ import { toast } from '@affine/component';
 import { FlexWrapper } from '@affine/component';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
-import { EmailIcon, MoreVerticalIcon, TrashIcon } from '@blocksuite/icons';
+import {
+  DeleteTemporarilyIcon,
+  EmailIcon,
+  MoreVerticalIcon,
+} from '@blocksuite/icons';
 import { useState } from 'react';
 
 import Loading from '@/components/loading';
@@ -111,7 +115,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                                       })
                                     );
                                   }}
-                                  icon={<TrashIcon />}
+                                  icon={<DeleteTemporarilyIcon />}
                                 >
                                   {t('Remove from workspace')}
                                 </MenuItem>
@@ -119,6 +123,7 @@ export const MembersPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
                             }
                             placement="bottom-end"
                             disablePortal={true}
+                            trigger="click"
                           >
                             <IconButton>
                               <MoreVerticalIcon />
