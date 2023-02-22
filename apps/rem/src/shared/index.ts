@@ -119,3 +119,15 @@ export const fromJSON = (json: PersistenceWorkspace): RemWorkspace => {
 };
 
 export type RemWorkspace = UnSyncedWorkspace | SyncedWorkspace;
+
+export const fetcher = (query: string) => {
+  if (query === 'getUser') {
+    return apis.auth.user ?? null;
+  }
+  return (apis as any)[query]();
+};
+
+export const QueryKey = {
+  getUser: 'getUser',
+  getWorkspaces: 'getWorkspaces',
+} as const;

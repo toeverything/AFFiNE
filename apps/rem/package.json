@@ -15,6 +15,8 @@
     "@blocksuite/editor": "0.4.1",
     "@blocksuite/react": "0.4.1",
     "@blocksuite/store": "0.4.1",
+    "@emotion/react": "^11.10.6",
+    "@mui/material": "^5.11.9",
     "jotai": "^2.0.2",
     "lit": "^2.6.1",
     "react": "^18.2.0",
