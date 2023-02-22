@@ -1,14 +1,14 @@
-import { PageMeta } from '@blocksuite/store';
 import { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { useCurrentPage } from '../hooks/current/use-current-page';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
+import { usePageMetas } from '../hooks/use-page-metas';
 import { prefetchNecessaryData, useWorkspaces } from '../hooks/use-workspaces';
-import { BlockSuiteWorkspace, RemWorkspace } from '../shared';
+import { RemWorkspace } from '../shared';
 import { apis } from '../shared/apis';
 
 const Editor = dynamic(
@@ -54,35 +54,13 @@ function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
   );
 }
 
-function useBlockSuiteWorkspacePageMetas(
-  blockSuiteWorkspace: BlockSuiteWorkspace
-): PageMeta[] {
-  const [pageMetas, setPageMetas] = useState(
-    () => blockSuiteWorkspace.meta.pageMetas
-  );
-  const [prev, setPrev] = useState(() => blockSuiteWorkspace);
-  if (prev !== blockSuiteWorkspace) {
-    setPrev(blockSuiteWorkspace);
-    setPageMetas(blockSuiteWorkspace.meta.pageMetas);
-  }
-  useEffect(() => {
-    const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
-      setPageMetas(blockSuiteWorkspace.meta.pageMetas);
-    });
-    return () => {
-      dispose.dispose();
-    };
-  }, [blockSuiteWorkspace]);
-  return pageMetas;
-}
-
 function WorkspacePagePreview({ workspace }: { workspace: RemWorkspace }) {
   if (!workspace.firstBinarySynced) {
     return <div>loading...</div>;
   }
   const [, setId] = useCurrentPage();
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMetas = useBlockSuiteWorkspacePageMetas(blockSuiteWorkspace);
+  const pageMetas = usePageMetas(blockSuiteWorkspace);
   return (
     <div>
       <div>page list</div>

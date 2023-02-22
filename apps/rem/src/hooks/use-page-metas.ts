@@ -9,7 +9,7 @@ declare module '@blocksuite/store' {
   }
 }
 
-function useCurrentPageMetas(
+export function usePageMetas(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): PageMeta[] {
   const [pageMetas, setPageMetas] = useState(
