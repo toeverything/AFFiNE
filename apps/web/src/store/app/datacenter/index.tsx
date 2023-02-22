@@ -26,9 +26,8 @@ export type DataCenterActions = {
 };
 
 export const createDataCenterState = (): DataCenterState => ({
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   dataCenter: null!,
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
   dataCenterPromise: null!,
   currentDataCenterWorkspace: null,
   dataCenterPageList: [],
@@ -57,7 +56,7 @@ export const createDataCenterActions: GlobalActionsCreator<
       isOwner = true;
     } else {
       const userInfo = get().user; // We must ensure workspace.owner exists, then ensure id same.
-      isOwner = isOwner = userInfo?.id === workspace?.owner?.id;
+      isOwner = userInfo?.id === workspace?.owner?.id;
     }
 
     const pageList =
