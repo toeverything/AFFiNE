@@ -145,20 +145,30 @@ importers:
     specifiers:
       '@affine/component': workspace:*
       '@affine/datacenter': workspace:*
+      '@blocksuite/blocks': 0.4.1
+      '@blocksuite/editor': 0.4.1
+      '@blocksuite/store': 0.4.1
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
+      lit: ^2.6.1
       next: ^13.1.6
       next-debug-local: ^0.1.5
       react: ^18.2.0
       react-dom: ^18.2.0
       swr: ^2.0.3
       typescript: ^4.9.5
+      yjs: ^13.5.46
     dependencies:
       '@affine/component': link:../../packages/component
       '@affine/datacenter': link:../../packages/data-center
+      '@blocksuite/blocks': 0.4.1_atn5tmcwtxn4phcfq72w467xbe
+      '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
+      '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.47
+      lit: 2.6.1
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       swr: 2.0.3_react@18.2.0
+      yjs: 13.5.47
     devDependencies:
       '@types/react': 18.0.28
       '@types/react-dom': 18.0.11
