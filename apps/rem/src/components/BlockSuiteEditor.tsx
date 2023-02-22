@@ -50,14 +50,5 @@ export const Editor = (props: EditorProps) => {
       container.removeChild(editor);
     };
   }, [page]);
-
-  useEffect(() => {
-    if (page && !page.workspace.connected) {
-      page.workspace.connect();
-    }
-    return () => {
-      page?.workspace.disconnect();
-    };
-  }, [page]);
   return <div className="editor-wrapper" ref={ref} />;
 };
