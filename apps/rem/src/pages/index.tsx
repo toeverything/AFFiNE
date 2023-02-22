@@ -6,14 +6,14 @@ import {
   GoogleAuth,
   Workspace,
 } from '@affine/datacenter';
-import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { atom, useAtom } from 'jotai';
 import { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import useSWR, { preload } from 'swr';
+
+import { RemWorkspace, transformToSyncedWorkspace } from '../shared';
 
 const Editor = dynamic(
   async () => (await import('@blocksuite/react/editor')).Editor,
@@ -26,23 +26,6 @@ const bareAuth = createBareClient('/');
 const googleAuth = new GoogleAuth(bareAuth);
 const clientAuth = createAuthClient(bareAuth, googleAuth);
 const apis = getApis(bareAuth, clientAuth, googleAuth);
-
-interface WorkspaceHandler {
-  syncBinary: () => Promise<void>;
-  connect: () => void;
-  disconnect: () => void;
-}
-
-interface SyncedWorkspace extends Workspace, WorkspaceHandler {
-  firstBinarySynced: true;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-}
-
-interface UnSyncedWorkspace extends Workspace, WorkspaceHandler {
-  firstBinarySynced: false;
-}
-
-type RemWorkspace = UnSyncedWorkspace | SyncedWorkspace;
 
 let localWorkspaces: RemWorkspace[] = [];
 const callback = new Set<() => void>();
@@ -127,19 +110,10 @@ function prefetchNecessaryData() {
               if (remWorkspace.firstBinarySynced) {
                 return;
               }
-              const blockSuiteWorkspace = new BlockSuiteWorkspace({
-                room: workspace.id,
-              })
-                .register(builtInSchemas)
-                .register(__unstableSchemas);
-              BlockSuiteWorkspace.Y.applyUpdate(
-                blockSuiteWorkspace.doc,
-                new Uint8Array(binary)
+              const syncedWorkspace = transformToSyncedWorkspace(
+                remWorkspace,
+                binary
               );
-              // force type cast
-              const syncedWorkspace = remWorkspace as any as SyncedWorkspace;
-              syncedWorkspace.firstBinarySynced = true;
-              syncedWorkspace.blockSuiteWorkspace = blockSuiteWorkspace;
               const index = localWorkspaces.findIndex(
                 ws => ws.id === syncedWorkspace.id
               );
