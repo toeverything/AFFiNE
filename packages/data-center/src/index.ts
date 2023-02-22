@@ -34,6 +34,7 @@ export {
   createAuthClient,
   createBareClient,
 } from './provider/affine/apis/request';
+export * from './provider/affine/apis/workspace';
 export { WebsocketProvider } from './provider/affine/sync';
 export { IndexedDBProvider } from './provider/local/indexeddb/indexeddb';
 export * from './types';

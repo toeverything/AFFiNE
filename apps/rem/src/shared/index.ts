@@ -1,4 +1,4 @@
-import { Workspace } from '@affine/datacenter';
+import { Workspace as RemoteWorkspace } from '@affine/datacenter';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 
@@ -11,20 +11,33 @@ export interface WorkspaceHandler {
   syncBinary: () => Promise<void>;
 }
 
-export interface SyncedWorkspace extends Workspace, WorkspaceHandler {
+export interface AffineRemoteSyncedWorkspace
+  extends RemoteWorkspace,
+    WorkspaceHandler {
+  flavour: 'affine';
   firstBinarySynced: true;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   providers: Provider[];
 }
 
-export interface UnSyncedWorkspace extends Workspace, WorkspaceHandler {
+export interface AffineRemoteUnSyncedWorkspace
+  extends RemoteWorkspace,
+    WorkspaceHandler {
+  flavour: 'affine';
   firstBinarySynced: false;
 }
 
-export const transformToSyncedWorkspace = (
-  unSyncedWorkspace: UnSyncedWorkspace,
+export interface LocalWorkspace extends WorkspaceHandler {
+  flavour: 'local';
+  id: string;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+  providers: Provider[];
+}
+
+export const transformToAffineSyncedWorkspace = (
+  unSyncedWorkspace: AffineRemoteUnSyncedWorkspace,
   binary: ArrayBuffer
-): SyncedWorkspace => {
+): AffineRemoteSyncedWorkspace => {
   const blockSuiteWorkspace = new BlockSuiteWorkspace({
     room: unSyncedWorkspace.id,
   })
@@ -58,38 +71,27 @@ export interface AffineProvider extends BaseProvider {
 
 export type Provider = LocalProvider | AffineProvider;
 
-export interface PersistenceWorkspace extends Workspace {
+export interface PersistenceWorkspace extends RemoteWorkspace {
+  flavour: 'affine' | 'local';
   providers: Provider['flavour'][];
 }
 
 export const transformToJSON = (
   workspace: RemWorkspace
 ): PersistenceWorkspace => {
-  return {
-    create_at: workspace.create_at,
-    permission_type: workspace.permission_type,
-    public: false,
-    type: workspace.type,
-    id: workspace.id,
-    providers: workspace.firstBinarySynced
-      ? workspace.providers.map(p => p.flavour)
-      : [],
-  };
+  // fixme
+  return null!;
 };
 
 export const fromJSON = (json: PersistenceWorkspace): RemWorkspace => {
-  return {
-    create_at: json.create_at,
-    permission_type: json.permission_type,
-    public: json.public,
-    type: json.type,
-    id: json.id,
-    firstBinarySynced: false,
-    syncBinary: () => Promise.resolve(),
-  };
+  // fixme
+  return null!;
 };
 
-export type RemWorkspace = UnSyncedWorkspace | SyncedWorkspace;
+export type RemWorkspace =
+  | LocalWorkspace
+  | AffineRemoteUnSyncedWorkspace
+  | AffineRemoteSyncedWorkspace;
 
 export const fetcher = (query: string) => {
   if (query === 'getUser') {

@@ -1,12 +1,17 @@
 import { Workspace } from '@affine/datacenter';
-import { useCallback, useSyncExternalStore } from 'react';
+import { uuidv4 } from '@blocksuite/store';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { preload } from 'swr';
+import { IndexeddbPersistence } from 'y-indexeddb';
 
 import {
+  AffineRemoteUnSyncedWorkspace,
+  BlockSuiteWorkspace,
   fetcher,
+  LocalWorkspace,
   QueryKey,
   RemWorkspace,
-  transformToSyncedWorkspace,
+  transformToAffineSyncedWorkspace,
 } from '../shared';
 import { apis } from '../shared/apis';
 
@@ -41,8 +46,10 @@ export function prefetchNecessaryData() {
           localWorkspace => localWorkspace.id === workspace.id
         );
         if (!exist) {
-          const remWorkspace: RemWorkspace = {
+          // todo: make this `RemWorkspace`
+          const remWorkspace: AffineRemoteUnSyncedWorkspace = {
             ...workspace,
+            flavour: 'affine',
             firstBinarySynced: false,
             syncBinary: async () => {
               const binary = await apis.downloadWorkspace(
@@ -52,7 +59,7 @@ export function prefetchNecessaryData() {
               if (remWorkspace.firstBinarySynced) {
                 return;
               }
-              const syncedWorkspace = transformToSyncedWorkspace(
+              const syncedWorkspace = transformToAffineSyncedWorkspace(
                 remWorkspace,
                 binary
               );
@@ -86,5 +93,35 @@ export function useWorkspaces(): RemWorkspace[] {
     }, []),
     useCallback(() => dataCenter.workspaces, []),
     useCallback(() => emptyWorkspaces, [])
+  );
+}
+
+export function useWorkspacesMutation() {
+  return useMemo(
+    () => ({
+      createRemLocalWorkspace: (name: string) => {
+        const id = uuidv4();
+        const blockSuiteWorkspace = new BlockSuiteWorkspace({
+          room: id,
+        });
+        const workspace: LocalWorkspace = {
+          flavour: 'local',
+          blockSuiteWorkspace: blockSuiteWorkspace,
+          providers: [],
+          syncBinary: async () => {
+            const persistence = new IndexeddbPersistence(
+              blockSuiteWorkspace.room as string,
+              blockSuiteWorkspace.doc
+            );
+            return persistence.whenSynced.then(() => {
+              persistence.destroy();
+            });
+          },
+          id,
+        };
+        dataCenter.workspaces = [...dataCenter.workspaces, workspace];
+      },
+    }),
+    []
   );
 }
