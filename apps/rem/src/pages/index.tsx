@@ -92,27 +92,31 @@ const IndexPage: NextPage = () => {
       QueryKey.getWorkspaces,
       fetcher
     );
-    promise.then(workspaces => {
-      workspaces.forEach(workspace => {
-        const exist = localWorkspaces.find(
-          localWorkspace => localWorkspace.id === workspace.id
-        );
-        if (!exist) {
-          localWorkspaces.push({
-            ...workspace,
-            synced: false,
-            connect: () => {
-              // todo
-            },
-            disconnect: () => {
-              // todo
-            },
-          });
-          localWorkspaces = [...localWorkspaces];
-          callback.forEach(cb => cb());
-        }
+    promise
+      .then(workspaces => {
+        workspaces.forEach(workspace => {
+          const exist = localWorkspaces.find(
+            localWorkspace => localWorkspace.id === workspace.id
+          );
+          if (!exist) {
+            localWorkspaces.push({
+              ...workspace,
+              synced: false,
+              connect: () => {
+                // todo
+              },
+              disconnect: () => {
+                // todo
+              },
+            });
+            localWorkspaces = [...localWorkspaces];
+            callback.forEach(cb => cb());
+          }
+        });
+      })
+      .catch(error => {
+        console.error(error);
       });
-    });
   }, []);
   return (
     <div>
@@ -121,6 +125,7 @@ const IndexPage: NextPage = () => {
           onClick={async () => {
             apis.auth.clear();
             await apis.signOutFirebase();
+            console.log(apis.auth);
             Object.values(QueryKey).forEach(query => {
               mutate(query);
             });
