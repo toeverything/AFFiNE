@@ -9,7 +9,6 @@
     "url": "git+https://github.com/toeverything/AFFiNE.git"
   },
   "devDependencies": {
-    "@types/debug": "^4.1.7",
     "fake-indexeddb": "4.0.1",
     "typescript": "^4.9.5"
   },
@@ -17,7 +16,7 @@
     "@blocksuite/blocks": "0.4.1",
     "@blocksuite/store": "0.4.1",
     "@tauri-apps/api": "^1.2.0",
-    "debug": "^4.3.4",
+    "@affine/debug": "workspace:*",
     "encoding": "^0.1.13",
     "firebase": "^9.17.1",
     "idb-keyval": "^6.2.0",

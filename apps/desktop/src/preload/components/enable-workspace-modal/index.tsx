@@ -2,11 +2,11 @@ import { Modal, ModalWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { useDataCenter } from '@affine/store';
-import { useGlobalState } from '@affine/store';
 import { CloseIcon } from '@blocksuite/icons';
 import router from 'next/router';
 import { useCallback, useState } from 'react';
+
+import { useGlobalState } from '@/store/app';
 
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 interface EnableWorkspaceModalProps {
@@ -21,7 +21,7 @@ export const EnableWorkspaceModal = ({
   const { t } = useTranslation();
   const login = useGlobalState(store => store.login);
   const user = useGlobalState(store => store.user);
-  const dataCenter = useDataCenter();
+  const dataCenter = useGlobalState(store => store.dataCenter);
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );

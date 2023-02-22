@@ -6,8 +6,6 @@ import '../utils/print-build-info';
 import '@affine/i18n';
 
 import { useTranslation } from '@affine/i18n';
-import { DataCenterPreloader } from '@affine/store';
-import { NoSsr } from '@mui/material';
 import { Logger } from '@toeverything/pathfinder-logger';
 import type { NextPage } from 'next';
 import type { AppProps } from 'next/app';
@@ -21,9 +19,11 @@ import React from 'react';
 import { PageLoading } from '@/components/loading';
 import { MessageCenterHandler } from '@/components/message-center-handler';
 import ProviderComposer from '@/components/provider-composer';
+import { AppStateProvider } from '@/providers/app-state-provider';
 import ConfirmProvider from '@/providers/ConfirmProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { GlobalAppProvider } from '@/store/app';
+import { DataCenterPreloader } from '@/store/app/datacenter';
 import { ModalProvider } from '@/store/globalModal';
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
@@ -65,15 +65,15 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>AFFiNE</title>
       </Head>
       <Logger />
-      <ProviderComposer
-        contexts={[
-          <GlobalAppProvider key="GlobalAppProvider" />,
-          <ThemeProvider key="ThemeProvider" />,
-          <ModalProvider key="ModalProvider" />,
-          <ConfirmProvider key="ConfirmProvider" />,
-        ]}
-      >
-        <NoSsr>
+      <GlobalAppProvider key="BlockSuiteProvider">
+        <ProviderComposer
+          contexts={[
+            <ThemeProvider key="ThemeProvider" />,
+            <AppStateProvider key="appStateProvider" />,
+            <ModalProvider key="ModalProvider" />,
+            <ConfirmProvider key="ConfirmProvider" />,
+          ]}
+        >
           {NoNeedAppStatePageList.includes(router.route) ? (
             getLayout(<Component {...pageProps} />)
           ) : (
@@ -87,8 +87,8 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
               </DataCenterPreloader>
             </Suspense>
           )}
-        </NoSsr>
-      </ProviderComposer>
+        </ProviderComposer>
+      </GlobalAppProvider>
     </>
   );
 };

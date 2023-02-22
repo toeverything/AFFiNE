@@ -135,9 +135,11 @@ const WorkspaceSetting = () => {
   return (
     <>
       <Head>
-        <title>{t('Settings')} - AFFiNE</title>
+        <title>{t('Workspace Settings')} - AFFiNE</title>
       </Head>
-      <PageListHeader icon={<SettingsIcon />}>{t('Settings')}</PageListHeader>
+      <PageListHeader icon={<SettingsIcon />}>
+        {t('Workspace Settings')}
+      </PageListHeader>
 
       <StyledSettingContainer>
         <StyledTabButtonWrapper>

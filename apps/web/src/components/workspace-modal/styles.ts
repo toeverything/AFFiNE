@@ -90,7 +90,7 @@ export const StyleUserInfo = styled.div(({ theme }) => {
       lineHeight: '24px',
       color: theme.colors.iconColor,
     },
-    'p:nth-child(1)': {
+    'p:first-child': {
       color: theme.colors.textColor,
       fontWeight: 600,
     },

@@ -26,6 +26,7 @@
     "url": "git+https://github.com/toeverything/AFFiNE.git"
   },
   "dependencies": {
+    "@affine/debug": "workspace:*",
     "react": "^18.2.0",
     "i18next": "^22.4.10",
     "react-i18next": "^12.1.5"

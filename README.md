@@ -22,7 +22,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-[![affine.pro-logo]](https://pathfinder.affine.pro)
+[![affine-app-logo]](https://app.affine.pro)
 [![stars-icon]](https://github.com/toeverything/AFFiNE)
 [![All Contributors][all-contributors-badge]](#contributors)
 ![codecov]
@@ -105,15 +105,14 @@ We would also like to give thanks to open-source projects that make AFFiNE possi
 
 - [BlockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
 - [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
-- [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) -- Fundamental support of CRDTs for our implementation on state management and data sync.
-- [React](https://github.com/facebook/react) -- View layer support and web GUI framework.
-- [Rust](https://github.com/rust-lang/rust) -- High performance language that extends the ability and availability of our real-time backend, OctoBase.
-- [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) -- Source code management tool made with CRDTs which inspired our design on block data structure.
-- [slatejs](https://github.com/ianstormtaylor/slate) -- Customizable rich-text editor.
-- [Jotai](https://github.com/pmndrs/jotai) -- Minimal state management tool for frontend.
-- [Tldraw](https://github.com/tldraw/tldraw) -- Excellent drawing board.
-- [MUI](https://github.com/mui/material-ui) -- Our most used graphic UI component library.
-- Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies)
+- [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) - Fundamental support of CRDTs for our implementation on state management and data sync.
+- [React](https://github.com/facebook/react) - View layer support and web GUI framework.
+- [Rust](https://github.com/rust-lang/rust) - High performance language that extends the ability and availability of our real-time backend, OctoBase.
+- [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) - Source code management tool made with CRDTs which inspired our design on block data structure.
+- [Zustand](https://github.com/pmndrs/zustand) - Minimal state management tool for frontend.
+- [Tldraw](https://github.com/tldraw/tldraw) - Excellent drawing board.
+- [MUI](https://github.com/mui/material-ui) - Our most used graphic UI component library.
+- Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
 
 We use the following open source projects to help us build a better development experience:
 
@@ -232,7 +231,7 @@ See [LICENSE] for details.
 [jobs available]: ./docs/jobs/summary.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/master/.github/CLA.md
-[affine.pro-logo]: https://img.shields.io/static/v1?label=abbey%20wood%20version&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAhpJREFUWEdjZEACtnl3MxgY/0YzMjAaMzAwcCLLUYH9/T/D/7MM/5mXHp6kPANmHiOI4Zx9Xfg3C+tKBob/zlSwiAgjGPey/vkdvneq5luwA+zy7+yhn+Vwv+89NFHFhREU7IyM/6YT4WyqK/n/nymT0Tb/1mFGBkYbqptOhIH/Gf4fYbTLv/2NBgmOCOvBSr6DHPCfWNW0UEe2A2x1uRlakiXBbtpx6jND+7KXZLmPbAdURokzeJjxwi31rrzH8OX7P5IdQbYDtnUoMXBzMMEt7Fj2imH7qU/0cQBy8MNsPHL5K0P13Of0cQB68MNsJScaSI4CHk4mhq3tSnCf3n36k0FZmh3Mn7L+DcPqgx9ICgWSHeBpxsdQESUGtgRk+eqDH+H8O09/MiR3P6atA1qTJRlsdLnhPgYlPOQQCW96wPDi3R+iHUFSCKAHP8wydEeREg0kOQA9+JOgwR1qL8CQEygC9jWp0UCSA+aVysIT3JqDHxgmr38DtlRCiIVhZZ0CPNhB6QDkEGIA0Q4gZAkuxxFyBNEOQA7ml+/+MIQ1PUAxG1kelAhB6YMYQLQDCPmQUAjhcgxRDiDWcEKOxOYIohyQGyjCEGIvANaPLfhhBiNHA6hmBBXNhABRDgCV/aBQAAFQpYMrn4PUgNTCACiXEMoNRDmAkC8okR8UDhjYRumAN8sHvGMCSkAD2jUDOWDAO6ewbDQQ3XMAy/oxKownQR0AAAAASUVORK5CYII=&color=orange&message=→
+[affine-app-logo]: https://img.shields.io/static/v1?label=Try%20Online&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAhpJREFUWEdjZEACtnl3MxgY/0YzMjAaMzAwcCLLUYH9/T/D/7MM/5mXHp6kPANmHiOI4Zx9Xfg3C+tKBob/zlSwiAgjGPey/vkdvneq5luwA+zy7+yhn+Vwv+89NFHFhREU7IyM/6YT4WyqK/n/nymT0Tb/1mFGBkYbqptOhIH/Gf4fYbTLv/2NBgmOCOvBSr6DHPCfWNW0UEe2A2x1uRlakiXBbtpx6jND+7KXZLmPbAdURokzeJjxwi31rrzH8OX7P5IdQbYDtnUoMXBzMMEt7Fj2imH7qU/0cQBy8MNsPHL5K0P13Of0cQB68MNsJScaSI4CHk4mhq3tSnCf3n36k0FZmh3Mn7L+DcPqgx9ICgWSHeBpxsdQESUGtgRk+eqDH+H8O09/MiR3P6atA1qTJRlsdLnhPgYlPOQQCW96wPDi3R+iHUFSCKAHP8wydEeREg0kOQA9+JOgwR1qL8CQEygC9jWp0UCSA+aVysIT3JqDHxgmr38DtlRCiIVhZZ0CPNhB6QDkEGIA0Q4gZAkuxxFyBNEOQA7ml+/+MIQ1PUAxG1kelAhB6YMYQLQDCPmQUAjhcgxRDiDWcEKOxOYIohyQGyjCEGIvANaPLfhhBiNHA6hmBBXNhABRDgCV/aBQAAFQpYMrn4PUgNTCACiXEMoNRDmAkC8okR8UDhjYRumAN8sHvGMCSkAD2jUDOWDAO6ewbDQQ3XMAy/oxKownQR0AAAAASUVORK5CYII=&color=orange&message=%E2%86%92
 [rust-version-icon]: https://img.shields.io/badge/Rust-1.67-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master

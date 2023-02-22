@@ -43,11 +43,18 @@ const printBuildInfo = () => {
 };
 
 function setWindowEditorVersion() {
-  // when it is not SSR
-  if (typeof window !== 'undefined') {
-    window.__editoVersion = publicRuntimeConfig.EDITOR_VERSION;
-  }
+  globalThis.__editoVersion = publicRuntimeConfig.EDITOR_VERSION;
 }
-printBuildInfo();
-setWindowEditorVersion();
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __affineSetupEnv: boolean | undefined;
+}
+
+if (!globalThis.__affineSetupEnv) {
+  printBuildInfo();
+  setWindowEditorVersion();
+  globalThis.__affineSetupEnv = true;
+}
+
 export {};

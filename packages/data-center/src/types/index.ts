@@ -1,5 +1,3 @@
-import { getLogger } from '../logger';
-
 // export type WorkspaceInfo = {
 //   name: string;
 //   id: string;
@@ -27,7 +25,7 @@ export type User = {
 
 // export type WorkspaceMeta = Pick<WorkspaceInfo, 'name' | 'avatar'>;
 
-export type Logger = ReturnType<typeof getLogger>;
+export type Logger = typeof import('@affine/debug').DebugLogger;
 
 export type Message = {
   code: number;

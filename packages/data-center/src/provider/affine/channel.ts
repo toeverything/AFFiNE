@@ -1,7 +1,7 @@
+import { DebugLogger } from '@affine/debug';
 import * as url from 'lib0/url';
 import * as websocket from 'lib0/websocket';
 
-import { Logger } from '../../types';
 import { GoogleAuth } from './apis/google';
 
 const RECONNECT_INTERVAL_TIME = 500;
@@ -9,12 +9,11 @@ const MAX_RECONNECT_TIMES = 50;
 
 export class WebsocketClient extends websocket.WebsocketClient {
   public shouldReconnect = false;
-  private _logger: Logger;
   private _retryTimes = 0;
   private _auth: GoogleAuth;
+  private _logger = new DebugLogger('affine:channel');
   constructor(
     serverUrl: string,
-    logger: Logger,
     auth: GoogleAuth,
     options?: ConstructorParameters<typeof websocket.WebsocketClient>[1] & {
       params: Record<string, string>;
@@ -30,13 +29,12 @@ export class WebsocketClient extends websocket.WebsocketClient {
       serverUrl + '/' + (encodedParams.length === 0 ? '' : '?' + encodedParams);
     super(newUrl, options);
     this._auth = auth;
-    this._logger = logger;
     this._setupChannel();
   }
 
   private _setupChannel() {
     this.on('connect', () => {
-      this._logger('Affine channel connected');
+      this._logger.debug('Affine channel connected');
       this.shouldReconnect = true;
       this._retryTimes = 0;
     });
@@ -49,15 +47,17 @@ export class WebsocketClient extends websocket.WebsocketClient {
             setTimeout(() => {
               if (this._retryTimes <= MAX_RECONNECT_TIMES) {
                 this.connect();
-                this._logger(
+                this._logger.info(
                   `try reconnect channel ${++this._retryTimes} times`
                 );
               } else {
-                this._logger('reconnect failed, max reconnect times reached');
+                this._logger.error(
+                  'reconnect failed, max reconnect times reached'
+                );
               }
             }, RECONNECT_INTERVAL_TIME);
           } catch (e) {
-            this._logger('reconnect failed', e);
+            this._logger.error('reconnect failed', e);
           }
         }
       }
