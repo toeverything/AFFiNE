@@ -1,48 +1,44 @@
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { PageLoading } from '@/components/loading';
+import useEnsureWorkspace from '@/hooks/use-ensure-workspace';
 import usePageHelper from '@/hooks/use-page-helper';
-import { useRouterTargetWorkspace } from '@/hooks/use-router-target-workspace';
+import { useGlobalState } from '@/store/app';
 
 const WorkspaceIndex = () => {
   const router = useRouter();
-  const { targetWorkspace, exist } = useRouterTargetWorkspace();
+  const currentWorkspace = useGlobalState(
+    useCallback(store => store.currentDataCenterWorkspace, [])
+  );
   const { createPage } = usePageHelper();
+  const { workspaceLoaded, activeWorkspaceId } = useEnsureWorkspace();
 
   useEffect(() => {
-    if (!exist) {
-      router.push('/404');
-      return;
-    }
-    const abortController = new AbortController();
     const initPage = async () => {
-      if (abortController.signal.aborted) {
-        return;
-      }
-      if (!targetWorkspace) {
+      if (!workspaceLoaded) {
         return;
       }
       const savedPageId =
-        targetWorkspace.blocksuiteWorkspace?.meta.pageMetas.find(
+        currentWorkspace?.blocksuiteWorkspace?.meta.pageMetas.find(
           meta => !meta.trash
         )?.id;
       if (savedPageId) {
-        router.replace(`/workspace/${targetWorkspace.id}/${savedPageId}`);
+        router.replace(`/workspace/${activeWorkspaceId}/${savedPageId}`);
         return;
-      } else {
-        const pageId = await createPage();
-        if (abortController.signal.aborted) {
-          return;
-        }
-        router.replace(`/workspace/${targetWorkspace.id}/${pageId}`);
       }
+
+      const pageId = await createPage();
+      router.replace(`/workspace/${activeWorkspaceId}/${pageId}`);
     };
     initPage();
-    return () => {
-      abortController.abort();
-    };
-  }, [targetWorkspace, createPage, router, exist]);
+  }, [
+    currentWorkspace,
+    createPage,
+    router,
+    workspaceLoaded,
+    activeWorkspaceId,
+  ]);
 
   return <PageLoading />;
 };

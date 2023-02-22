@@ -8,3 +8,4 @@ if [ "$1" == "--latest" ]; then
 else
   pnpm up "@blocksuite/*@${1}" "!@blocksuite/icons" -r
 fi
+

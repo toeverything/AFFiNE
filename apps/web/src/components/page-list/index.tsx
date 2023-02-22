@@ -10,7 +10,6 @@ import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { PageMeta } from '@affine/store';
 import {
   EdgelessIcon,
   FavouritedIcon,
@@ -22,6 +21,7 @@ import React, { useCallback } from 'react';
 
 import DateCell from '@/components/page-list/DateCell';
 import { usePageHelper } from '@/hooks/use-page-helper';
+import { PageMeta } from '@/providers/app-state-provider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalState } from '@/store/app';
 

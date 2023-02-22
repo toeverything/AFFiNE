@@ -1,9 +1,9 @@
 import { Member } from '@affine/datacenter';
 import { useCallback, useEffect, useState } from 'react';
 
-import { useDataCenter, useGlobalState } from '@/store/app';
+import { useGlobalState } from '@/store/app';
 export const useMembers = () => {
-  const dataCenter = useDataCenter();
+  const dataCenter = useGlobalState(store => store.dataCenter);
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );

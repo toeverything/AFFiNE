@@ -5,7 +5,7 @@ import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
-import { useDataCenter, useGlobalState } from '@/store/app';
+import { useGlobalState } from '@/store/app';
 
 import { CreateWorkspaceModal } from '../create-workspace';
 import { LoginModal } from '../login-modal';
@@ -34,7 +34,7 @@ interface WorkspaceModalProps {
 export const WorkspaceModal = ({ open, onClose }: WorkspaceModalProps) => {
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const logout = useGlobalState(store => store.logout);
-  const dataCenter = useDataCenter();
+  const dataCenter = useGlobalState(store => store.dataCenter);
   const router = useRouter();
   const { t } = useTranslation();
   const [loginOpen, setLoginOpen] = useState(false);
