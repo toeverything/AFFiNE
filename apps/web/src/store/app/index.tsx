@@ -77,7 +77,6 @@ export const useGlobalState: UseBoundStore<Store> = ((
 ) => {
   const api = useGlobalStateApi();
   return useStore(api, selector, equals);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
 export const GlobalAppProvider: React.FC<React.PropsWithChildren> =
