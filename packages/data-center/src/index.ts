@@ -26,7 +26,6 @@ const _initializeDataCenter = () => {
 export const getDataCenter = _initializeDataCenter();
 
 export type { DataCenter };
-export { getLogger } from './logger';
 export * from './message';
 export { AffineProvider } from './provider/affine';
 export * from './provider/affine/apis';
