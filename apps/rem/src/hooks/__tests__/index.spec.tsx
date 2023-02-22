@@ -4,13 +4,14 @@
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Page } from '@blocksuite/store';
 import { render } from '@testing-library/react';
-import { expect, test } from 'vitest';
+import { beforeEach, expect, test } from 'vitest';
 
 import { BlockSuiteWorkspace } from '../../shared';
 import { usePageMetas } from '../use-page-metas';
 
-test('usePageMetas', async () => {
-  const blockSuiteWorkspace = new BlockSuiteWorkspace({
+let blockSuiteWorkspace: BlockSuiteWorkspace;
+beforeEach(() => {
+  blockSuiteWorkspace = new BlockSuiteWorkspace({
     room: 'test',
   })
     .register(builtInSchemas)
@@ -24,6 +25,9 @@ test('usePageMetas', async () => {
   blockSuiteWorkspace.createPage('page0');
   blockSuiteWorkspace.createPage('page1');
   blockSuiteWorkspace.createPage('page2');
+});
+
+test('usePageMetas', async () => {
   const Component = () => {
     const pageMetas = usePageMetas(blockSuiteWorkspace);
     return (
