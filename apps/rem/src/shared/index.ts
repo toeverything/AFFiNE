@@ -39,4 +39,10 @@ export const transformToSyncedWorkspace = (
   };
 };
 
+export interface PersistenceWorkspace extends Workspace {
+  blockSuiteWorkspaceRoom: BlockSuiteWorkspace['room'];
+}
+
+export const transformToJSON = (workspace: RemWorkspace) => {};
+
 export type RemWorkspace = UnSyncedWorkspace | SyncedWorkspace;

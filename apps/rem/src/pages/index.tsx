@@ -16,7 +16,7 @@ import useSWR, { preload } from 'swr';
 import { RemWorkspace, transformToSyncedWorkspace } from '../shared';
 
 const Editor = dynamic(
-  async () => (await import('@blocksuite/react/editor')).Editor,
+  async () => (await import('../components/BlockSuiteEditor')).Editor,
   {
     ssr: false,
   }
@@ -40,6 +40,12 @@ if (typeof window !== 'undefined') {
   ];
   callback.forEach(cb => cb());
 }
+
+// callback.add(() => {
+//   if (typeof window === 'undefined') {
+//
+//   }
+// })
 
 const emptyWorkspaces: RemWorkspace[] = [];
 
@@ -118,9 +124,7 @@ function prefetchNecessaryData() {
                 ws => ws.id === syncedWorkspace.id
               );
               if (index > -1) {
-                localWorkspaces.splice(index, 1, {
-                  ...syncedWorkspace,
-                });
+                localWorkspaces.splice(index, 1, syncedWorkspace);
                 localWorkspaces = [...localWorkspaces];
                 callback.forEach(cb => cb());
               }
@@ -166,7 +170,9 @@ function useCurrentPage() {
 function Workspace({ workspace }: { workspace: RemWorkspace }) {
   const [, set] = useCurrentWorkspace();
   useEffect(() => {
-    workspace.syncBinary();
+    if (!workspace.firstBinarySynced) {
+      workspace.syncBinary();
+    }
   }, [workspace]);
   useEffect(() => {
     workspace.connect();
@@ -272,11 +278,7 @@ const IndexPage: NextPage = () => {
       ) : (
         <div>no current workspace</div>
       )}
-      {currentPage ? (
-        <Editor page={() => currentPage} />
-      ) : (
-        <div>no current page</div>
-      )}
+      {currentPage ? <Editor page={currentPage} /> : <div>no current page</div>}
     </div>
   );
 };
