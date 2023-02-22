@@ -7,8 +7,8 @@ import {
   Workspace,
 } from '@affine/datacenter';
 import { NextPage } from 'next';
-import { useMemo, useSyncExternalStore } from 'react';
-import useSWR, { mutate } from 'swr';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import useSWR, { mutate, preload } from 'swr';
 
 const bareAuth = createBareClient('/');
 const googleAuth = new GoogleAuth(bareAuth);
@@ -24,19 +24,32 @@ interface RemWorkspace extends Workspace {
   //# endregion
 }
 
-const localWorkspaces: RemWorkspace[] = [];
+let localWorkspaces: RemWorkspace[] = [];
 const callback = new Set<() => void>();
+const kWorkspaces = 'affine-workspaces';
 
-function useLocalWorkspaces(): RemWorkspace[] {
+if (typeof window !== 'undefined') {
+  localWorkspaces = [
+    ...localWorkspaces,
+    ...(JSON.parse(
+      localStorage.getItem(kWorkspaces) ?? '[]'
+    ) as RemWorkspace[]),
+  ];
+  callback.forEach(cb => cb());
+}
+
+const emptyWorkspaces: RemWorkspace[] = [];
+
+function useWorkspaces(): RemWorkspace[] {
   return useSyncExternalStore(
-    onStoreChange => {
+    useCallback(onStoreChange => {
       callback.add(onStoreChange);
       return () => {
         callback.delete(onStoreChange);
       };
-    },
-    () => localWorkspaces,
-    () => []
+    }, []),
+    useCallback(() => localWorkspaces, []),
+    useCallback(() => emptyWorkspaces, [])
   );
 }
 
@@ -63,38 +76,44 @@ function useCurrentUser(): AccessTokenMessage | null {
   return data ?? null;
 }
 
-function useRemoteWorkspace(): RemWorkspace[] {
-  // apis.getWorkspaces();
-  const { data } = useSWR<RemWorkspace[]>(QueryKey.getWorkspaces, fetcher, {
-    fallbackData: [],
-  });
-  return data ?? [];
-}
-
-function useWorkspaces(): RemWorkspace[] {
-  const remoteWorkspace = useRemoteWorkspace();
-  const localWorkspaces = useLocalWorkspaces();
-  return useMemo(
-    () => [...localWorkspaces, ...remoteWorkspace],
-    [remoteWorkspace, localWorkspaces]
-  );
-}
-
 function useWorkspace(workspaceId: string | null): RemWorkspace | null {
-  const remoteWorkspace = useRemoteWorkspace();
-  const localWorkspace = useLocalWorkspaces();
+  const workspaces = useWorkspaces();
   return useMemo(
-    () =>
-      [...localWorkspace, ...remoteWorkspace].find(
-        ws => ws.id === workspaceId
-      ) ?? null,
-    [remoteWorkspace, localWorkspace, workspaceId]
+    () => [...workspaces].find(ws => ws.id === workspaceId) ?? null,
+    [workspaces, workspaceId]
   );
 }
 
 const IndexPage: NextPage = () => {
   const remoteWorkspaces = useWorkspaces();
   const user = useCurrentUser();
+  useEffect(() => {
+    const promise: Promise<Workspace[]> = preload(
+      QueryKey.getWorkspaces,
+      fetcher
+    );
+    promise.then(workspaces => {
+      workspaces.forEach(workspace => {
+        const exist = localWorkspaces.find(
+          localWorkspace => localWorkspace.id === workspace.id
+        );
+        if (!exist) {
+          localWorkspaces.push({
+            ...workspace,
+            synced: false,
+            connect: () => {
+              // todo
+            },
+            disconnect: () => {
+              // todo
+            },
+          });
+          localWorkspaces = [...localWorkspaces];
+          callback.forEach(cb => cb());
+        }
+      });
+    });
+  }, []);
   return (
     <div>
       {user ? (
