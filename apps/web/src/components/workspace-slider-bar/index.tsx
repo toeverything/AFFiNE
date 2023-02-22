@@ -3,13 +3,13 @@ import { Tooltip } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
-  AllPagesIcon,
-  ArrowDownIcon,
-  FavouritesIcon,
+  ArrowDownSmallIcon,
+  DeleteTemporarilyIcon,
+  FavoriteIcon,
+  FolderIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
-  TrashIcon,
 } from '@blocksuite/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -127,13 +127,13 @@ export const WorkSpaceSliderBar = () => {
           </StyledListItem>
           <Link href={{ pathname: paths.all }}>
             <StyledListItem active={router.asPath === paths.all}>
-              <AllPagesIcon />
+              <FolderIcon />
               <span data-testid="all-pages">{t('All pages')}</span>
             </StyledListItem>
           </Link>
           <StyledListItem active={router.asPath === paths.favorite}>
             <StyledLink href={{ pathname: paths.favorite }}>
-              <FavouritesIcon />
+              <FavoriteIcon />
               {t('Favorites')}
             </StyledLink>
             <IconButton
@@ -142,7 +142,7 @@ export const WorkSpaceSliderBar = () => {
                 setShowSubFavorite(!showSubFavorite);
               }}
             >
-              <ArrowDownIcon
+              <ArrowDownSmallIcon
                 style={{
                   transform: `rotate(${showSubFavorite ? '180' : '0'}deg)`,
                 }}
@@ -174,7 +174,7 @@ export const WorkSpaceSliderBar = () => {
 
           <Link href={{ pathname: paths.trash }}>
             <StyledListItem active={router.asPath === paths.trash}>
-              <TrashIcon /> {t('Trash')}
+              <DeleteTemporarilyIcon /> {t('Trash')}
             </StyledListItem>
           </Link>
           <StyledNewPageButton

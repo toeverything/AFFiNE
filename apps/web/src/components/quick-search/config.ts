@@ -1,9 +1,9 @@
 import { useTranslation } from '@affine/i18n';
 import {
-  AllPagesIcon,
-  FavouritesIcon,
+  DeleteTemporarilyIcon,
+  FavoriteIcon,
+  FolderIcon,
   SettingsIcon,
-  TrashIcon,
 } from '@blocksuite/icons';
 import { FC, SVGProps } from 'react';
 
@@ -19,14 +19,14 @@ export const useSwitchToConfig = (
     {
       title: t('All pages'),
       href: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/all` : '',
-      icon: AllPagesIcon,
+      icon: FolderIcon,
     },
     {
       title: t('Favorites'),
       href: currentWorkspaceId
         ? `/workspace/${currentWorkspaceId}/favorite`
         : '',
-      icon: FavouritesIcon,
+      icon: FavoriteIcon,
     },
     {
       title: t('Workspace Settings'),
@@ -38,7 +38,7 @@ export const useSwitchToConfig = (
     {
       title: t('Trash'),
       href: currentWorkspaceId ? `/workspace/${currentWorkspaceId}/trash` : '',
-      icon: TrashIcon,
+      icon: DeleteTemporarilyIcon,
     },
   ];
 };

@@ -1,6 +1,6 @@
 import { IconButton, IconButtonProps } from '@affine/component';
 import { styled } from '@affine/component';
-import { ArrowDownIcon } from '@blocksuite/icons';
+import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import React from 'react';
 
 import { useModal } from '@/store/globalModal';
@@ -34,7 +34,7 @@ export const QuickSearchButton = ({
         triggerQuickSearchModal();
       }}
     >
-      <ArrowDownIcon />
+      <ArrowDownSmallIcon />
     </StyledIconButtonWithAnimate>
   );
 };

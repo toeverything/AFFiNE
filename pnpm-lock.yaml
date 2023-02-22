@@ -78,7 +78,7 @@ importers:
     specifiers:
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/editor': 0.4.1
-      '@blocksuite/icons': 2.0.12
+      '@blocksuite/icons': 2.0.17
       '@blocksuite/store': 0.4.1
       '@emotion/react': ^11.10.6
       '@emotion/styled': ^11.10.6
@@ -110,7 +110,7 @@ importers:
     dependencies:
       '@blocksuite/blocks': 0.4.1_atn5tmcwtxn4phcfq72w467xbe
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
-      '@blocksuite/icons': 2.0.12_pmekkgnqduwlme35zpnqhenc34
+      '@blocksuite/icons': 2.0.17_pmekkgnqduwlme35zpnqhenc34
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.47
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
       '@emotion/styled': 11.10.6_oouaibmszuch5k64ms7uxp2aia
@@ -150,7 +150,7 @@ importers:
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/editor': 0.4.1
       '@blocksuite/global': 0.4.1
-      '@blocksuite/icons': 2.0.12
+      '@blocksuite/icons': 2.0.17
       '@blocksuite/store': 0.4.1
       '@emotion/css': ^11.10.6
       '@emotion/react': ^11.10.6
@@ -193,7 +193,7 @@ importers:
       '@blocksuite/blocks': 0.4.1_atn5tmcwtxn4phcfq72w467xbe
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
       '@blocksuite/global': 0.4.1_lit@2.6.1
-      '@blocksuite/icons': 2.0.12_pmekkgnqduwlme35zpnqhenc34
+      '@blocksuite/icons': 2.0.17_pmekkgnqduwlme35zpnqhenc34
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.47
       '@emotion/css': 11.10.6
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
@@ -1745,6 +1745,16 @@ packages:
 
   /@blocksuite/icons/2.0.12_pmekkgnqduwlme35zpnqhenc34:
     resolution: {integrity: sha512-mUmSXoFvHAGLPmykea5EHnVZf7QKBtj1bvCIfhRuQBopt2z3yVtEr7zD/4Cqus2oYNS3HrjwvCDiTqeE7fsjJQ==}
+    peerDependencies:
+      '@types/react': ^18.0.25
+      react: ^18.2.0
+    dependencies:
+      '@types/react': 18.0.28
+      react: 18.2.0
+    dev: false
+
+  /@blocksuite/icons/2.0.17_pmekkgnqduwlme35zpnqhenc34:
+    resolution: {integrity: sha512-nFhgnmfYvy/Pk+KBON5M+veZaz/IoQ+rAugzx2nPy+YPkgXvOxa5ml4rhzZYE2qgx7/FdsKQ5qkBWPjJoYRlbw==}
     peerDependencies:
       '@types/react': ^18.0.25
       react: ^18.2.0

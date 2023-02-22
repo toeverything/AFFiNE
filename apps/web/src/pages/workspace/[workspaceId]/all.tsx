@@ -1,5 +1,5 @@
 import { useTranslation } from '@affine/i18n';
-import { AllPagesIcon } from '@blocksuite/icons';
+import { FolderIcon } from '@blocksuite/icons';
 import Head from 'next/head';
 import { ReactElement, useCallback } from 'react';
 
@@ -18,7 +18,7 @@ const All = () => {
       <Head>
         <title>{t('All pages')} - AFFiNE</title>
       </Head>
-      <PageListHeader icon={<AllPagesIcon />}>{t('All pages')}</PageListHeader>
+      <PageListHeader icon={<FolderIcon />}>{t('All pages')}</PageListHeader>
       <PageList
         pageList={pageList.filter(p => !p.trash)}
         showFavoriteTag={true}

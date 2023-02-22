@@ -50,7 +50,7 @@ export const InviteMemberModal = ({
   onInviteSuccess,
 }: LoginModalProps) => {
   const [email, setEmail] = useState<string>('');
-  const [showMember, setShowMember] = useState<boolean>(false);
+  const [showMember, setShowMember] = useState<boolean>(true);
   const [showTip, setShowTip] = useState<boolean>(false);
   const [userData, setUserData] = useState<User | null>(null);
   const { inviteMember, getUserByEmail } = useMembers();
@@ -90,7 +90,7 @@ export const InviteMemberModal = ({
                 value={email}
                 onChange={inputChange}
                 onBlur={() => {
-                  setShowMember(false);
+                  // setShowMember(false);
                 }}
                 placeholder={t('Invite placeholder')}
               ></Input>
@@ -211,7 +211,6 @@ const MemberIcon = styled('div')(({ theme }) => {
     borderRadius: '50%',
     color: theme.colors.primaryColor,
     background: '#F5F5F5',
-    marginRight: '8px',
     textAlign: 'center',
     lineHeight: '45px',
     // icon size
@@ -231,5 +230,6 @@ const Email = styled('div')(({ theme }) => {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    marginLeft: '8px',
   };
 });

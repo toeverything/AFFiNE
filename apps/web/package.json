@@ -16,7 +16,7 @@
     "@blocksuite/blocks": "0.4.1",
     "@blocksuite/editor": "0.4.1",
     "@blocksuite/global": "0.4.1",
-    "@blocksuite/icons": "2.0.12",
+    "@blocksuite/icons": "2.0.17",
     "@blocksuite/store": "0.4.1",
     "@emotion/css": "^11.10.6",
     "@emotion/react": "^11.10.6",
