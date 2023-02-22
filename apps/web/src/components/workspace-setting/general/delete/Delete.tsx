@@ -56,8 +56,8 @@ export const WorkspaceDelete = ({
               <StyledWorkspaceName>
                 {{ workspace: workspace.name } as any}
               </StyledWorkspaceName>
-              ) cannot be undone, please proceed with caution. along with all
-              its content.
+              ) cannot be undone, please proceed with caution. All contents will
+              be lost.
             </Trans>
           </StyledTextContent>
         ) : (
