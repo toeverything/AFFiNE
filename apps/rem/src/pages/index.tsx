@@ -8,10 +8,19 @@ import {
 } from '@affine/datacenter';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { atom, useAtom } from 'jotai';
 import { NextPage } from 'next';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import useSWR, { preload } from 'swr';
+
+const Editor = dynamic(
+  async () => (await import('@blocksuite/react/editor')).Editor,
+  {
+    ssr: false,
+  }
+);
 
 const bareAuth = createBareClient('/');
 const googleAuth = new GoogleAuth(bareAuth);
@@ -159,7 +168,29 @@ function prefetchNecessaryData() {
     });
 }
 
+prefetchNecessaryData();
+
+const currentWorkspaceIdAtom = atom<string | null>(null);
+const currentPageId = atom<string | null>(null);
+
+function useCurrentWorkspace() {
+  const [id, setId] = useAtom(currentWorkspaceIdAtom);
+  return [useWorkspace(id), setId] as const;
+}
+
+function useCurrentPage() {
+  const [id, setId] = useAtom(currentPageId);
+  const [currentWorkspace] = useCurrentWorkspace();
+  return [
+    currentWorkspace?.firstBinarySynced && id
+      ? currentWorkspace.blockSuiteWorkspace.getPage(id)
+      : null,
+    setId,
+  ] as const;
+}
+
 function Workspace({ workspace }: { workspace: RemWorkspace }) {
+  const [, set] = useCurrentWorkspace();
   useEffect(() => {
     workspace.syncBinary();
   }, [workspace]);
@@ -172,22 +203,67 @@ function Workspace({ workspace }: { workspace: RemWorkspace }) {
   if (!workspace.firstBinarySynced) {
     return <div>loading...</div>;
   }
-  return <div>{workspace.blockSuiteWorkspace.meta.name}</div>;
+  return (
+    <div
+      onClick={() => {
+        set(workspace.id);
+      }}
+    >
+      {workspace.blockSuiteWorkspace.meta.name}
+    </div>
+  );
+}
+
+function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
+  if (!workspace.firstBinarySynced) {
+    return <div>loading...</div>;
+  }
+  const [, setId] = useCurrentPage();
+  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
+  return (
+    <div>
+      <div>page list</div>
+      <div
+        style={{
+          border: '1px solid black',
+        }}
+      >
+        {blockSuiteWorkspace.meta.pageMetas.map(pageMeta => {
+          return (
+            <div
+              onClick={() => {
+                setId(pageMeta.id);
+              }}
+              key={pageMeta.id}
+            >
+              {pageMeta.title}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function WorkspaceList({ workspace }: { workspace: RemWorkspace[] }) {
   return (
-    <>
+    <div
+      style={{
+        border: '1px solid black',
+      }}
+    >
       {workspace.map(ws => (
         <Workspace key={ws.id} workspace={ws} />
       ))}
-    </>
+    </div>
   );
 }
 
 const IndexPage: NextPage = () => {
   const workspaces = useWorkspaces();
   const user = useCurrentUser();
+  const [currentWorkspace] = useCurrentWorkspace();
+  const [currentPage] = useCurrentPage();
   useEffect(() => {
     prefetchNecessaryData();
   }, []);
@@ -217,6 +293,16 @@ const IndexPage: NextPage = () => {
       )}
       <div>all workspaces</div>
       <WorkspaceList workspace={workspaces} />
+      {currentWorkspace ? (
+        <WorkspacePreview workspace={currentWorkspace} />
+      ) : (
+        <div>no current workspace</div>
+      )}
+      {currentPage ? (
+        <Editor page={() => currentPage} />
+      ) : (
+        <div>no current page</div>
+      )}
     </div>
   );
 };

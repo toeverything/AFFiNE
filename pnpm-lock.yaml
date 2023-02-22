@@ -147,9 +147,11 @@ importers:
       '@affine/datacenter': workspace:*
       '@blocksuite/blocks': 0.4.1
       '@blocksuite/editor': 0.4.1
+      '@blocksuite/react': 0.4.1
       '@blocksuite/store': 0.4.1
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
+      jotai: ^2.0.2
       lit: ^2.6.1
       next: ^13.1.6
       next-debug-local: ^0.1.5
@@ -163,7 +165,9 @@ importers:
       '@affine/datacenter': link:../../packages/data-center
       '@blocksuite/blocks': 0.4.1_atn5tmcwtxn4phcfq72w467xbe
       '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
+      '@blocksuite/react': 0.4.1_v4k7r3722g7d6aoxzctkttv45y
       '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.47
+      jotai: 2.0.2_react@18.2.0
       lit: 2.6.1
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
@@ -9698,6 +9702,18 @@ packages:
       merge-stream: 2.0.0
       supports-color: 8.1.1
     dev: true
+
+  /jotai/2.0.2_react@18.2.0:
+    resolution: {integrity: sha512-0yOked08Swa84LUbBjtj7ZLZrE05n3u50rHeZ+bsT86thUjcy0kFgQz9GmEWhYbQDFoT1G8Ww6edSj/MBJHO4A==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      react: '>=17.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+    dependencies:
+      react: 18.2.0
+    dev: false
 
   /js-base64/3.7.5:
     resolution: {integrity: sha512-3MEt5DTINKqfScXKfJFrRbxkrnk2AxPWGBL/ycjz4dK8iqiSJ06UxD8jh8xuh6p10TX4t2+7FsBYVxxQbMg+qA==}
