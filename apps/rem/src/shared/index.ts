@@ -55,12 +55,15 @@ export const transformToSyncedWorkspace = (
               awareness: blockSuiteWorkspace.awarenessStore.awareness,
             }
           );
+          console.log('connect', webSocketProvider.roomname);
           webSocketProvider.connect();
         },
         disconnect: () => {
-          if (webSocketProvider) {
-            console.log('disconnect', webSocketProvider.roomname);
+          if (!webSocketProvider) {
+            console.error('cannot find websocket provider');
+            return;
           }
+          console.log('disconnect', webSocketProvider.roomname);
           webSocketProvider?.disconnect();
         },
       },
@@ -92,7 +95,7 @@ export const transformToJSON = (
   workspace: RemWorkspace
 ): PersistenceWorkspace => {
   return {
-    create_at: 0,
+    create_at: workspace.create_at,
     permission_type: workspace.permission_type,
     public: false,
     type: workspace.type,
@@ -100,6 +103,18 @@ export const transformToJSON = (
     providers: workspace.firstBinarySynced
       ? workspace.providers.map(p => p.flavour)
       : [],
+  };
+};
+
+export const fromJSON = (json: PersistenceWorkspace): RemWorkspace => {
+  return {
+    create_at: json.create_at,
+    permission_type: json.permission_type,
+    public: json.public,
+    type: json.type,
+    id: json.id,
+    firstBinarySynced: false,
+    syncBinary: () => Promise.resolve(),
   };
 };
 
