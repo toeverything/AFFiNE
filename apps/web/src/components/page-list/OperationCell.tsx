@@ -9,13 +9,13 @@ import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { PageMeta } from '@affine/store';
 import {
-  DeleteForeverIcon,
-  FavouritedIcon,
-  FavouritesIcon,
+  DeletePermanentlyIcon,
+  DeleteTemporarilyIcon,
+  FavoritedIcon,
+  FavoriteIcon,
   MoreVerticalIcon,
   OpenInNewIcon,
-  RestoreIcon,
-  TrashIcon,
+  ResetIcon,
 } from '@blocksuite/icons';
 
 import { usePageHelper } from '@/hooks/use-page-helper';
@@ -36,7 +36,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavouritedIcon /> : <FavouritesIcon />}
+        icon={favorite ? <FavoritedIcon /> : <FavoriteIcon />}
       >
         {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>
@@ -62,7 +62,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
             confirm && toast(t('Moved to Trash'));
           });
         }}
-        icon={<TrashIcon />}
+        icon={<DeleteTemporarilyIcon />}
       >
         {t('Delete')}
       </MenuItem>
@@ -104,7 +104,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
             openPage(id);
           }}
         >
-          <RestoreIcon />
+          <ResetIcon />
         </IconButton>
       </Tooltip>
       <Tooltip content={t('Delete permanently')} placement="top-start">
@@ -122,7 +122,7 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
             });
           }}
         >
-          <DeleteForeverIcon />
+          <DeletePermanentlyIcon />
         </IconButton>
       </Tooltip>
     </FlexWrapper>

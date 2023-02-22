@@ -5,13 +5,13 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
-import { Content, IconButton, toast,Tooltip } from '@affine/component';
+import { Content, IconButton, toast, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { PageMeta } from '@affine/store';
 import {
   EdgelessIcon,
-  FavouritedIcon,
-  FavouritesIcon,
+  FavoritedIcon,
+  FavoriteIcon,
   PaperIcon,
 } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
@@ -59,9 +59,9 @@ const FavoriteTag = ({
         className={favorite ? '' : 'favorite-button'}
       >
         {favorite ? (
-          <FavouritedIcon data-testid="favorited-icon" />
+          <FavoritedIcon data-testid="favorited-icon" />
         ) : (
-          <FavouritesIcon />
+          <FavoriteIcon />
         )}
       </IconButton>
     </Tooltip>

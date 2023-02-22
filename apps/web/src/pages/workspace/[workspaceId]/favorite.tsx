@@ -1,5 +1,5 @@
 import { useTranslation } from '@affine/i18n';
-import { FavouritesIcon } from '@blocksuite/icons';
+import { FavoriteIcon } from '@blocksuite/icons';
 import Head from 'next/head';
 import { ReactElement } from 'react';
 
@@ -16,9 +16,7 @@ export const Favorite = () => {
       <Head>
         <title>{t('Favorites')} - AFFiNE</title>
       </Head>
-      <PageListHeader icon={<FavouritesIcon />}>
-        {t('Favorites')}
-      </PageListHeader>
+      <PageListHeader icon={<FavoriteIcon />}>{t('Favorites')}</PageListHeader>
       <PageList
         pageList={pageList.filter(p => p.favorite && !p.trash)}
         showFavoriteTag={true}

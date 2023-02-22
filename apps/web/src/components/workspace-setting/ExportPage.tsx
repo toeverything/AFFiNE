@@ -3,8 +3,9 @@ import { Button } from '@affine/component';
 import { WorkspaceUnit } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 export const ExportPage = ({ workspace }: { workspace: WorkspaceUnit }) => {
+  console.log('workspace', workspace);
+
   const { t } = useTranslation();
-  console.log(workspace);
   return (
     <>
       <Wrapper marginBottom="42px"> {t('Export Description')}</Wrapper>
