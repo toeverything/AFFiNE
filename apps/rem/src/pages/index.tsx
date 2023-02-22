@@ -226,6 +226,7 @@ function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
   const [, setId] = useCurrentPage();
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const pageMetas = useBlockSuiteWorkspacePageMetas(blockSuiteWorkspace);
+  console.log('pageMetas', pageMetas);
   return (
     <div>
       <div>page list</div>
@@ -242,7 +243,7 @@ function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
               }}
               key={pageMeta.id}
             >
-              {pageMeta.title}
+              {pageMeta.title || 'Untitled'}
             </div>
           );
         })}
