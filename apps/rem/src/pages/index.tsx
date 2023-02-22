@@ -161,7 +161,7 @@ function useCurrentPage() {
   ] as const;
 }
 
-function Workspace({ workspace }: { workspace: RemWorkspace }) {
+function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
   const [, setCurrentPageId] = useCurrentPage();
   useEffect(() => {
@@ -219,7 +219,7 @@ function useBlockSuiteWorkspacePageMetas(
   return pageMetas;
 }
 
-function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
+function WorkspacePagePreview({ workspace }: { workspace: RemWorkspace }) {
   if (!workspace.firstBinarySynced) {
     return <div>loading...</div>;
   }
@@ -260,7 +260,7 @@ function WorkspaceList({ workspace }: { workspace: RemWorkspace[] }) {
       }}
     >
       {workspace.map(ws => (
-        <Workspace key={ws.id} workspace={ws} />
+        <WorkspacePreview key={ws.id} workspace={ws} />
       ))}
     </div>
   );
@@ -301,7 +301,7 @@ const IndexPage: NextPage = () => {
       <div>all workspaces</div>
       <WorkspaceList workspace={workspaces} />
       {currentWorkspace ? (
-        <WorkspacePreview workspace={currentWorkspace} />
+        <WorkspacePagePreview workspace={currentWorkspace} />
       ) : (
         <div>no current workspace</div>
       )}
