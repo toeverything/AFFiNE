@@ -1,3 +1,4 @@
+import { assertExists } from '@blocksuite/store';
 import { useAtom } from 'jotai/index';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -48,9 +49,19 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
         onClickWorkspaceListModal={useCallback(() => {
           setOpenWorkspacesModal(true);
         }, [setOpenWorkspacesModal])}
-        openPage={function (pageId: string): void {
-          throw new Error('Function not implemented.');
-        }}
+        openPage={useCallback(
+          pageId => {
+            assertExists(currentWorkspace);
+            router.push({
+              pathname: '/workspaces/[workspaceId]/[pageId]',
+              query: {
+                workspaceId: currentWorkspace.id,
+                pageId,
+              },
+            });
+          },
+          [currentWorkspace, router]
+        )}
         createPage={function (): Promise<string | null> {
           throw new Error('Function not implemented.');
         }}
