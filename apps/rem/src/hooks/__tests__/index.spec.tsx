@@ -14,10 +14,15 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { usePageMeta, usePageMetaMutation } from '../use-page-meta';
 import { useSyncRouterWithCurrentWorkspace } from '../use-sync-router-with-current-workspace';
-import { useWorkspaces, useWorkspacesMutation } from '../use-workspaces';
+import {
+  useWorkspaces,
+  useWorkspacesMutation,
+  vitestRefreshWorkspaces,
+} from '../use-workspaces';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 beforeEach(() => {
+  vitestRefreshWorkspaces();
   blockSuiteWorkspace = new BlockSuiteWorkspace({
     room: 'test',
   })
@@ -101,16 +106,14 @@ describe('useSyncRouterWithCurrentWorkspace', () => {
     mutationHook.result.current.createWorkspacePage(id, 'page0');
     const routerHook = renderHook(() => useRouter());
     await routerHook.result.current.push('/');
-    const syncHook = renderHook(
-      ({ router }) => useSyncRouterWithCurrentWorkspace(router),
-      {
-        initialProps: {
-          router: routerHook.result.current,
-        },
-      }
-    );
     routerHook.rerender();
-    syncHook.rerender({ router: routerHook.result.current });
+    expect(routerHook.result.current.asPath).toBe('/');
+    renderHook(({ router }) => useSyncRouterWithCurrentWorkspace(router), {
+      initialProps: {
+        router: routerHook.result.current,
+      },
+    });
+
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });
 });

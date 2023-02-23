@@ -21,6 +21,11 @@ export const dataCenter = {
   callbacks: new Set<() => void>(),
 };
 
+export function vitestRefreshWorkspaces() {
+  dataCenter.workspaces = [];
+  dataCenter.callbacks.clear();
+}
+
 globalThis.dataCenter = dataCenter;
 
 declare global {
