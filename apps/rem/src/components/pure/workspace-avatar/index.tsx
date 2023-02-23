@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { RemWorkspace } from '../../../shared';
+import { RemWorkspace, RemWorkspaceFlavour } from '../../../shared';
 import { stringToColour } from '../../../utils';
 
 interface AvatarProps {
@@ -77,7 +77,7 @@ export const WorkspaceAvatar: React.FC<WorkspaceUnitAvatarProps> = ({
 }) => {
   let avatar = 'UNKNOWN';
   let name = 'UNKNOWN';
-  if (workspace?.flavour === 'affine') {
+  if (workspace?.flavour === RemWorkspaceFlavour.AFFINE) {
     if (workspace.firstBinarySynced) {
       avatar = workspace.blockSuiteWorkspace.meta.avatar;
       name = workspace.blockSuiteWorkspace.meta.name;
@@ -85,7 +85,7 @@ export const WorkspaceAvatar: React.FC<WorkspaceUnitAvatarProps> = ({
       avatar = 'loading...';
       name = 'loading...';
     }
-  } else if (workspace?.flavour === 'local') {
+  } else if (workspace?.flavour === RemWorkspaceFlavour.LOCAL) {
     avatar = workspace.blockSuiteWorkspace.meta.avatar;
     name = workspace.blockSuiteWorkspace.meta.name;
   }

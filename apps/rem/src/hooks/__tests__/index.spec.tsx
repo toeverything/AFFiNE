@@ -10,7 +10,7 @@ import { Page } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { BlockSuiteWorkspace } from '../../shared';
+import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { usePageMetas } from '../use-page-metas';
 import { useWorkspaces, useWorkspacesMutation } from '../use-workspaces';
 
@@ -63,7 +63,7 @@ describe('useWorkspaces', () => {
     expect(result2.current.length).toEqual(1);
     const firstWorkspace = result2.current[0];
     expect(firstWorkspace.flavour).toBe('local');
-    assert(firstWorkspace.flavour === 'local');
+    assert(firstWorkspace.flavour === RemWorkspaceFlavour.LOCAL);
     expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
   });
 });

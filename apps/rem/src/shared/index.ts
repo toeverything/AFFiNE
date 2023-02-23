@@ -7,6 +7,24 @@ import { apis } from './apis';
 
 export { BlockSuiteWorkspace };
 
+declare global {
+  interface Window {
+    CLIENT_APP?: boolean;
+  }
+}
+
+export const enum RemWorkspaceFlavour {
+  AFFINE = 'affine',
+  LOCAL = 'local',
+}
+
+export interface FlavourToWorkspace {
+  [RemWorkspaceFlavour.AFFINE]:
+    | AffineRemoteUnSyncedWorkspace
+    | AffineRemoteSyncedWorkspace;
+  [RemWorkspaceFlavour.LOCAL]: LocalWorkspace;
+}
+
 export interface WorkspaceHandler {
   syncBinary: () => Promise<void>;
 }
@@ -14,7 +32,7 @@ export interface WorkspaceHandler {
 export interface AffineRemoteSyncedWorkspace
   extends RemoteWorkspace,
     WorkspaceHandler {
-  flavour: 'affine';
+  flavour: RemWorkspaceFlavour.AFFINE;
   firstBinarySynced: true;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   providers: Provider[];
@@ -23,12 +41,12 @@ export interface AffineRemoteSyncedWorkspace
 export interface AffineRemoteUnSyncedWorkspace
   extends RemoteWorkspace,
     WorkspaceHandler {
-  flavour: 'affine';
+  flavour: RemWorkspaceFlavour.AFFINE;
   firstBinarySynced: false;
 }
 
 export interface LocalWorkspace extends WorkspaceHandler {
-  flavour: 'local';
+  flavour: RemWorkspaceFlavour.LOCAL;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   providers: Provider[];

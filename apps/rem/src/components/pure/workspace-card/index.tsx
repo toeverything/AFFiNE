@@ -2,7 +2,7 @@ import { PermissionType } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import React, { useCallback } from 'react';
 
-import { RemWorkspace } from '../../../shared';
+import { RemWorkspace, RemWorkspaceFlavour } from '../../../shared';
 import {
   CloudWorkspaceIcon,
   JoinedWorkspaceIcon,
@@ -20,13 +20,13 @@ export type WorkspaceTypeProps = {
 const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
   const { t } = useTranslation();
   let isOwner = true;
-  if (workspace.flavour === 'affine') {
+  if (workspace.flavour === RemWorkspaceFlavour.AFFINE) {
     isOwner = workspace.permission_type === PermissionType.Owner;
-  } else if (workspace.flavour === 'local') {
+  } else if (workspace.flavour === RemWorkspaceFlavour.LOCAL) {
     isOwner = true;
   }
 
-  if (workspace.flavour === 'local') {
+  if (workspace.flavour === RemWorkspaceFlavour.LOCAL) {
     return (
       <p title={t('Local Workspace')}>
         <LocalWorkspaceIcon />
@@ -61,9 +61,9 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
 }) => {
   const { t } = useTranslation();
   let name = 'UNKNOWN';
-  if (workspace.flavour === 'local') {
+  if (workspace.flavour === RemWorkspaceFlavour.LOCAL) {
     name = workspace.blockSuiteWorkspace.meta.name;
-  } else if (workspace.flavour === 'affine') {
+  } else if (workspace.flavour === RemWorkspaceFlavour.AFFINE) {
     if (workspace.firstBinarySynced) {
       name = workspace.blockSuiteWorkspace.meta.name;
     }
@@ -82,18 +82,19 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
       <StyleWorkspaceInfo>
         <StyleWorkspaceTitle>{name}</StyleWorkspaceTitle>
         <WorkspaceType workspace={workspace} />
-        {workspace.flavour === 'local' && (
+        {workspace.flavour === RemWorkspaceFlavour.LOCAL && (
           <p title={t('Available Offline')}>
             <LocalDataIcon />
             <span>{t('Available Offline')}</span>
           </p>
         )}
-        {workspace.flavour === 'affine' && workspace.public && (
-          <p title={t('Published to Web')}>
-            <PublishIcon />
-            <span>{t('Published to Web')}</span>
-          </p>
-        )}
+        {workspace.flavour === RemWorkspaceFlavour.AFFINE &&
+          workspace.public && (
+            <p title={t('Published to Web')}>
+              <PublishIcon />
+              <span>{t('Published to Web')}</span>
+            </p>
+          )}
       </StyleWorkspaceInfo>
     </StyledCard>
   );

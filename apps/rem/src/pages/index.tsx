@@ -21,44 +21,6 @@ const Editor = dynamic(
   }
 );
 
-function WorkspacePreview({ workspace }: { workspace: RemWorkspace }) {
-  const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
-  const [, setCurrentPageId] = useCurrentPage();
-  useEffect(() => {
-    if (workspace.flavour === 'affine' && !workspace.firstBinarySynced) {
-      workspace.syncBinary();
-    }
-  }, [workspace]);
-  useEffect(() => {
-    if (workspace.flavour === 'affine') {
-      if (workspace.firstBinarySynced && currentWorkspace === workspace) {
-        workspace.providers.forEach(provider => {
-          provider.connect();
-        });
-        return () => {
-          workspace.providers.forEach(provider => {
-            provider.disconnect();
-          });
-        };
-      }
-    }
-  }, [workspace, currentWorkspace]);
-  if (workspace.flavour === 'affine' && !workspace.firstBinarySynced) {
-    return <div>loading...</div>;
-  }
-  return (
-    <div
-      data-workspace-id={workspace.id}
-      onClick={() => {
-        setCurrentWorkspaceId(workspace.id);
-        setCurrentPageId(null);
-      }}
-    >
-      {workspace.blockSuiteWorkspace.meta.name}
-    </div>
-  );
-}
-
 function WorkspacePagePreview({ workspace }: { workspace: RemWorkspace }) {
   if (workspace.flavour === 'affine' && !workspace.firstBinarySynced) {
     return <div>loading...</div>;

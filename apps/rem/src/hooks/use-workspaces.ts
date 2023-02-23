@@ -11,6 +11,7 @@ import {
   LocalWorkspace,
   QueryKey,
   RemWorkspace,
+  RemWorkspaceFlavour,
   transformToAffineSyncedWorkspace,
 } from '../shared';
 import { apis } from '../shared/apis';
@@ -49,7 +50,7 @@ export function prefetchNecessaryData() {
           // todo: make this `RemWorkspace`
           const remWorkspace: AffineRemoteUnSyncedWorkspace = {
             ...workspace,
-            flavour: 'affine',
+            flavour: RemWorkspaceFlavour.AFFINE,
             firstBinarySynced: false,
             syncBinary: async () => {
               const binary = await apis.downloadWorkspace(
@@ -116,7 +117,7 @@ export function useWorkspacesMutation() {
         });
         blockSuiteWorkspace.meta.setName(name);
         const workspace: LocalWorkspace = {
-          flavour: 'local',
+          flavour: RemWorkspaceFlavour.LOCAL,
           blockSuiteWorkspace: blockSuiteWorkspace,
           providers: [],
           syncBinary: async () => {

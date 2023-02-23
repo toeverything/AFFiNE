@@ -6,6 +6,12 @@ export const createAffineProviders = (
 ): Provider[] => {
   return [
     createWebSocketProvider(blockSuiteWorkspace),
-    createIndexedDBProvider(blockSuiteWorkspace),
+    // createIndexedDBProvider(blockSuiteWorkspace),
   ];
+};
+
+export const createLocalProviders = (
+  blockSuiteWorkspace: BlockSuiteWorkspace
+): Provider[] => {
+  return [createIndexedDBProvider(blockSuiteWorkspace)];
 };
