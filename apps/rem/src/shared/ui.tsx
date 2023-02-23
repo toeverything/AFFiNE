@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { PageNotFoundError } from '../components/BlockSuiteErrorBoundary';
 import { FlavourToWorkspace, RemWorkspaceFlavour } from '.';
 
 type SettingPanelProps<Flavour extends RemWorkspaceFlavour> = {
@@ -8,6 +9,7 @@ type SettingPanelProps<Flavour extends RemWorkspaceFlavour> = {
 
 type PageDetailProps<Flavour extends RemWorkspaceFlavour> = {
   currentWorkspace: FlavourToWorkspace[Flavour];
+  currentPageId: string;
 };
 
 export interface UIPlugin<Flavour extends RemWorkspaceFlavour> {
@@ -18,9 +20,16 @@ export interface UIPlugin<Flavour extends RemWorkspaceFlavour> {
 
 const AffineUIPlugin: UIPlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
-  PageDetail: ({ currentWorkspace }) => {
+  PageDetail: ({ currentWorkspace, currentPageId }) => {
     if (!currentWorkspace.firstBinarySynced) {
       return <div>Loading</div>;
+    }
+    const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+    if (!page) {
+      throw new PageNotFoundError(
+        currentWorkspace.blockSuiteWorkspace,
+        currentPageId
+      );
     }
     return <div>WIP AFFINE UI</div>;
   },

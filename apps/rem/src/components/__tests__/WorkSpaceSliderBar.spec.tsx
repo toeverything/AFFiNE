@@ -8,7 +8,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
 
-import { useCurrentPage } from '../../hooks/current/use-current-page';
+import { useCurrentPageId } from '../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useWorkspacesMutation } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
@@ -37,14 +37,14 @@ describe('WorkSpaceSliderBar', () => {
     const Component = () => {
       const [show, setShow] = useState(false);
       const [currentWorkspace] = useCurrentWorkspace();
-      const [currentPage] = useCurrentPage();
+      const [currentPageId] = useCurrentPageId();
       return (
         <WorkSpaceSliderBar
           triggerQuickSearchModal={function (): void {
             throw new Error('Function not implemented.');
           }}
           currentWorkspace={currentWorkspace}
-          currentPageId={currentPage?.id ?? null}
+          currentPageId={currentPageId}
           onClickWorkspaceListModal={fn}
           openPage={useCallback(() => {}, [])}
           createPage={useCallback(async () => null, [])}

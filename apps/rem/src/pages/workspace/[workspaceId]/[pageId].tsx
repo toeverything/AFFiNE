@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import React from 'react';
 
 import { PageLoading } from '../../../components/pure/loading';
+import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
@@ -19,18 +20,24 @@ const Editor = dynamic(
 );
 
 const WorkspaceDetail: React.FC = () => {
-  const router = useRouter();
-  const { workspaceId, pageId } = router.query;
+  const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
   if (!currentWorkspace) {
-    return <div>No Current Workspace</div>;
+    return <div>No current workspace</div>;
+  }
+  if (!pageId) {
+    return <div>No current page</div>;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const PageDetail = UIPlugins[currentWorkspace.flavour].PageDetail;
-    return <PageDetail currentWorkspace={currentWorkspace}></PageDetail>;
+    return (
+      <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
+    );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
     const PageDetail = UIPlugins[currentWorkspace.flavour].PageDetail;
-    return <PageDetail currentWorkspace={currentWorkspace}></PageDetail>;
+    return (
+      <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
+    );
   }
   return <div>impossible</div>;
 };

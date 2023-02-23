@@ -3,9 +3,10 @@ import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { openWorkspacesModalAtom } from '../atoms';
+import { BlockSuiteErrorBoundary } from '../components/BlockSuiteErrorBoundary';
 import { HelpIsland } from '../components/pure/help-island';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
-import { useCurrentPage } from '../hooks/current/use-current-page';
+import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { prefetchNecessaryData } from '../hooks/use-workspaces';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
@@ -28,7 +29,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const [currentPage] = useCurrentPage();
+  const [currentPageId] = useCurrentPageId();
   useEffect(() => {
     prefetchNecessaryData();
   }, []);
@@ -56,7 +57,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
           throw new Error('Function not implemented.');
         }}
         currentWorkspace={currentWorkspace}
-        currentPageId={currentPage?.id ?? null}
+        currentPageId={currentPageId}
         onClickWorkspaceListModal={useCallback(() => {
           setOpenWorkspacesModal(true);
         }, [setOpenWorkspacesModal])}
@@ -72,7 +73,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
         paths={paths}
       />
       <StyledWrapper>
-        {children}
+        <BlockSuiteErrorBoundary>{children}</BlockSuiteErrorBoundary>
         <StyledToolWrapper>
           <div id="toolWrapper" style={{ marginBottom: '12px' }}>
             {/* Slot for block hub */}

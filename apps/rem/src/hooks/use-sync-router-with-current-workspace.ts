@@ -2,7 +2,7 @@ import { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
-import { useCurrentPage } from './current/use-current-page';
+import { useCurrentPageId } from './current/use-current-page-id';
 import { useCurrentWorkspace } from './current/use-current-workspace';
 import { useWorkspaces } from './use-workspaces';
 
@@ -39,15 +39,26 @@ export function findSuitablePageId(
 
 export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
-  const [currentPage, setCurrentPageId] = useCurrentPage();
+  const [currentPageId, setCurrentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
     const targetPageId = router.query.pageId;
-    const workspaceId = router.query.workspaceId;
-    if (typeof targetPageId !== 'string' || typeof workspaceId !== 'string') {
+    const targetWorkspaceId = router.query.workspaceId;
+    if (currentWorkspace && currentPageId) {
+      if (
+        currentWorkspace.id === targetWorkspaceId &&
+        currentPageId === targetPageId
+      ) {
+        return;
+      }
+    }
+    if (
+      typeof targetPageId !== 'string' ||
+      typeof targetWorkspaceId !== 'string'
+    ) {
       if (router.asPath === '/') {
         const first = workspaces.at(0);
         if (first && 'blockSuiteWorkspace' in first) {
@@ -55,8 +66,8 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
           const targetPageId =
             first.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
           if (targetPageId) {
-            setCurrentPageId(targetPageId);
             setCurrentWorkspaceId(targetWorkspaceId);
+            setCurrentPageId(targetPageId);
             router.replace(`/workspace/${targetWorkspaceId}/${targetPageId}`);
           }
         }
@@ -90,27 +101,30 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
         }
       }
     } else {
-      if (!currentPage && currentWorkspace) {
-        const targetId = findSuitablePageId(currentWorkspace, targetPageId);
-        if (targetId) {
-          setCurrentPageId(targetId);
-          router.replace({
-            query: {
-              ...router.query,
-              pageId: targetId,
-            },
-          });
-          return;
+      if (!currentPageId && currentWorkspace) {
+        if ('blockSuiteWorkspace' in currentWorkspace) {
+          const targetId = findSuitablePageId(currentWorkspace, targetPageId);
+          if (targetId) {
+            setCurrentPageId(targetId);
+            router.replace({
+              query: {
+                ...router.query,
+                pageId: targetId,
+              },
+            });
+            return;
+          }
         }
       }
     }
   }, [
-    currentPage,
+    currentPageId,
     currentWorkspace,
-    router,
     router.query.workspaceId,
+    router.query.pageId,
     setCurrentPageId,
     setCurrentWorkspaceId,
     workspaces,
+    router,
   ]);
 }

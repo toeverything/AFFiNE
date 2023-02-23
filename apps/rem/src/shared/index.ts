@@ -54,10 +54,10 @@ export interface LocalWorkspace extends WorkspaceHandler {
   providers: Provider[];
 }
 
-export const transformToAffineSyncedWorkspace = (
+export const transformToAffineSyncedWorkspace = async (
   unSyncedWorkspace: AffineRemoteUnSyncedWorkspace,
   binary: ArrayBuffer
-): AffineRemoteSyncedWorkspace => {
+): Promise<AffineRemoteSyncedWorkspace> => {
   const blockSuiteWorkspace = new BlockSuiteWorkspace({
     room: unSyncedWorkspace.id,
     blobOptionsGetter: (k: string) =>
@@ -70,12 +70,16 @@ export const transformToAffineSyncedWorkspace = (
     blockSuiteWorkspace.doc,
     new Uint8Array(binary)
   );
-  return {
-    ...unSyncedWorkspace,
-    blockSuiteWorkspace,
-    firstBinarySynced: true,
-    providers: [...createAffineProviders(blockSuiteWorkspace)],
-  };
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve({
+        ...unSyncedWorkspace,
+        blockSuiteWorkspace,
+        firstBinarySynced: true,
+        providers: [...createAffineProviders(blockSuiteWorkspace)],
+      });
+    }, 0);
+  });
 };
 
 export type BaseProvider = {

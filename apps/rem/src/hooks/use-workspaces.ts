@@ -72,7 +72,7 @@ export function prefetchNecessaryData() {
               if (remWorkspace.firstBinarySynced) {
                 return;
               }
-              const syncedWorkspace = transformToAffineSyncedWorkspace(
+              const syncedWorkspace = await transformToAffineSyncedWorkspace(
                 remWorkspace,
                 binary
               );
