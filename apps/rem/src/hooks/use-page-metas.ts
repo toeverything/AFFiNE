@@ -1,5 +1,3 @@
-import 'fake-indexeddb/auto';
-
 import { PageMeta } from '@blocksuite/store';
 import { useEffect, useState } from 'react';
 

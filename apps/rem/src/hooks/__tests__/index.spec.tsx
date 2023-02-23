@@ -1,6 +1,8 @@
 /**
  * @vitest-environment happy-dom
  */
+import 'fake-indexeddb/auto';
+
 import assert from 'node:assert';
 
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
