@@ -146,11 +146,11 @@ importers:
       '@affine/component': workspace:*
       '@affine/datacenter': workspace:*
       '@affine/i18n': workspace:*
-      '@blocksuite/blocks': 0.4.1
-      '@blocksuite/editor': 0.4.1
+      '@blocksuite/blocks': 0.4.1-20230220214107-0a354de
+      '@blocksuite/editor': 0.4.1-20230220214107-0a354de
       '@blocksuite/icons': ^2.0.17
-      '@blocksuite/react': 0.4.1
-      '@blocksuite/store': 0.4.1
+      '@blocksuite/react': 0.4.1-20230220214107-0a354de
+      '@blocksuite/store': 0.4.1-20230220214107-0a354de
       '@emotion/css': ^11.10.6
       '@emotion/react': ^11.10.6
       '@emotion/server': ^11.10.0
@@ -171,11 +171,11 @@ importers:
       '@affine/component': link:../../packages/component
       '@affine/datacenter': link:../../packages/data-center
       '@affine/i18n': link:../../packages/i18n
-      '@blocksuite/blocks': 0.4.1_atn5tmcwtxn4phcfq72w467xbe
-      '@blocksuite/editor': 0.4.1_e5cdg6aldwc4hxgrfphufwkeea
+      '@blocksuite/blocks': 0.4.1-20230220214107-0a354de_txcevohh7lsyxi5mbohonudlma
+      '@blocksuite/editor': 0.4.1-20230220214107-0a354de_bsvfvsbxn3zjndsi6ntxj3sapa
       '@blocksuite/icons': 2.0.17_pmekkgnqduwlme35zpnqhenc34
-      '@blocksuite/react': 0.4.1_v4k7r3722g7d6aoxzctkttv45y
-      '@blocksuite/store': 0.4.1_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/react': 0.4.1-20230220214107-0a354de_6bikze5nmk67qwgrvmg7puxlji
+      '@blocksuite/store': 0.4.1-20230220214107-0a354de_lit@2.6.1+yjs@13.5.47
       '@emotion/css': 11.10.6
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
       '@emotion/server': 11.10.0_@emotion+css@11.10.6
