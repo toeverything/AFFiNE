@@ -5,28 +5,34 @@ import { BlockSuiteWorkspace } from '../shared';
 
 declare module '@blocksuite/store' {
   interface PageMeta {
-    mode: 'page' | 'edgeless';
+    mode?: 'page' | 'edgeless';
+    favourite?: boolean;
+    trash?: boolean;
   }
 }
 
 export function usePageMeta(
-  blockSuiteWorkspace: BlockSuiteWorkspace
+  blockSuiteWorkspace?: BlockSuiteWorkspace
 ): PageMeta[] {
-  const [pageMeta, setPageMeta] = useState(
-    () => blockSuiteWorkspace.meta.pageMetas
+  const [pageMeta, setPageMeta] = useState<PageMeta[]>(
+    () => blockSuiteWorkspace?.meta.pageMetas ?? []
   );
   const [prev, setPrev] = useState(() => blockSuiteWorkspace);
   if (prev !== blockSuiteWorkspace) {
     setPrev(blockSuiteWorkspace);
-    setPageMeta(blockSuiteWorkspace.meta.pageMetas);
+    if (blockSuiteWorkspace) {
+      setPageMeta(blockSuiteWorkspace?.meta.pageMetas);
+    }
   }
   useEffect(() => {
-    const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
-      setPageMeta(blockSuiteWorkspace.meta.pageMetas);
-    });
-    return () => {
-      dispose.dispose();
-    };
+    if (blockSuiteWorkspace) {
+      const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
+        setPageMeta(blockSuiteWorkspace.meta.pageMetas);
+      });
+      return () => {
+        dispose.dispose();
+      };
+    }
   }, [blockSuiteWorkspace]);
   return pageMeta;
 }

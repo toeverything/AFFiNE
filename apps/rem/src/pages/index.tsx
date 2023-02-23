@@ -3,14 +3,16 @@ import { useAtom } from 'jotai/index';
 import { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { openWorkspacesModalAtom } from '../atoms';
+import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPage } from '../hooks/current/use-current-page';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { usePageMeta } from '../hooks/use-page-meta';
 import { prefetchNecessaryData } from '../hooks/use-workspaces';
+import { StyledPage } from '../layouts';
 import { RemWorkspace } from '../shared';
 import { apis } from '../shared/apis';
 
@@ -22,12 +24,15 @@ const Editor = dynamic(
 );
 
 function WorkspacePagePreview({ workspace }: { workspace: RemWorkspace }) {
+  const [, setId] = useCurrentPage();
+  const pageMetas = usePageMeta(
+    'blockSuiteWorkspace' in workspace
+      ? workspace.blockSuiteWorkspace
+      : undefined
+  );
   if (workspace.flavour === 'affine' && !workspace.firstBinarySynced) {
     return <div>loading...</div>;
   }
-  const [, setId] = useCurrentPage();
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMetas = usePageMeta(blockSuiteWorkspace);
   return (
     <div>
       <div>page list</div>
@@ -55,11 +60,24 @@ function WorkspacePagePreview({ workspace }: { workspace: RemWorkspace }) {
 
 prefetchNecessaryData();
 
+const paths = {
+  all: workspaceId => (workspaceId ? `/workspace/${workspaceId}/all` : ''),
+  favorite: workspaceId =>
+    workspaceId ? `/workspace/${workspaceId}/favorite` : '',
+  trash: workspaceId => (workspaceId ? `/workspace/${workspaceId}/trash` : ''),
+  setting: workspaceId =>
+    workspaceId ? `/workspace/${workspaceId}/setting` : '',
+} satisfies {
+  all: (workspaceId: string | null) => string;
+  favorite: (workspaceId: string | null) => string;
+  trash: (workspaceId: string | null) => string;
+  setting: (workspaceId: string | null) => string;
+};
+
 const IndexPage: NextPage = () => {
   const user = useCurrentUser();
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPage] = useCurrentPage();
-  const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   useEffect(() => {
     prefetchNecessaryData();
   }, []);
@@ -78,15 +96,30 @@ const IndexPage: NextPage = () => {
     }
   }, [currentWorkspace]);
   const router = useRouter();
+  const [show, setShow] = useState(false);
+  const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   return (
-    <div>
-      <Button
-        onClick={() => {
-          setOpenWorkspacesModal(true);
+    <StyledPage>
+      <WorkSpaceSliderBar
+        triggerQuickSearchModal={function (): void {
+          throw new Error('Function not implemented.');
         }}
-      >
-        show all
-      </Button>
+        currentWorkspace={currentWorkspace}
+        currentPageId={currentPage?.id ?? null}
+        onClickWorkspaceListModal={useCallback(() => {
+          setOpenWorkspacesModal(true);
+        }, [setOpenWorkspacesModal])}
+        openPage={function (pageId: string): void {
+          throw new Error('Function not implemented.');
+        }}
+        createPage={function (): Promise<string | null> {
+          throw new Error('Function not implemented.');
+        }}
+        show={show}
+        setShow={setShow}
+        currentPath={''}
+        paths={paths}
+      />
       {user ? (
         <Button
           onClick={async () => {
@@ -118,7 +151,7 @@ const IndexPage: NextPage = () => {
       ) : (
         <div>no current page</div>
       )}
-    </div>
+    </StyledPage>
   );
 };
 

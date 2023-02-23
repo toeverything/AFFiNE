@@ -23,11 +23,14 @@ export function Modals() {
         open={openWorkspacesModal}
         onClose={useCallback(() => {
           setOpenWorkspacesModal(false);
-        }, [])}
-        onClickWorkspace={useCallback(workspace => {
-          setCurrentWorkspace(workspace.id);
-          setOpenWorkspacesModal(false);
-        }, [])}
+        }, [setOpenWorkspacesModal])}
+        onClickWorkspace={useCallback(
+          workspace => {
+            setCurrentWorkspace(workspace.id);
+            setOpenWorkspacesModal(false);
+          },
+          [setCurrentWorkspace, setOpenWorkspacesModal]
+        )}
         onClickLogin={function (): void {
           throw new Error('Function not implemented.');
         }}
