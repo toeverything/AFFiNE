@@ -1,10 +1,10 @@
 import { Workspace as RemoteWorkspace } from '@affine/datacenter';
-import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { NextPage } from 'next';
 import { ReactElement, ReactNode } from 'react';
 
 import { createAffineProviders } from '../blocksuite';
+import { createEmptyBlockSuiteWorkspace } from '../utils';
 import { apis } from './apis';
 
 export { BlockSuiteWorkspace };
@@ -45,6 +45,8 @@ export interface AffineRemoteUnSyncedWorkspace
     WorkspaceHandler {
   flavour: RemWorkspaceFlavour.AFFINE;
   firstBinarySynced: false;
+  // empty
+  blockSuiteWorkspace: BlockSuiteWorkspace;
 }
 
 export interface LocalWorkspace extends WorkspaceHandler {
@@ -58,14 +60,9 @@ export const transformToAffineSyncedWorkspace = async (
   unSyncedWorkspace: AffineRemoteUnSyncedWorkspace,
   binary: ArrayBuffer
 ): Promise<AffineRemoteSyncedWorkspace> => {
-  const blockSuiteWorkspace = new BlockSuiteWorkspace({
-    room: unSyncedWorkspace.id,
-    blobOptionsGetter: (k: string) =>
-      // fixme: token could be expired
-      ({ api: '/api/workspace', token: apis.auth.token }[k]),
-  })
-    .register(builtInSchemas)
-    .register(__unstableSchemas);
+  const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+    unSyncedWorkspace.id
+  );
   BlockSuiteWorkspace.Y.applyUpdate(
     blockSuiteWorkspace.doc,
     new Uint8Array(binary)
@@ -89,15 +86,15 @@ export type BaseProvider = {
   disconnect: () => void;
 };
 
-export interface LocalProvider extends BaseProvider {
+export interface LocalIndexedDBProvider extends BaseProvider {
   flavour: 'local';
 }
 
-export interface AffineProvider extends BaseProvider {
+export interface AffineWebSocketProvider extends BaseProvider {
   flavour: 'affine';
 }
 
-export type Provider = LocalProvider | AffineProvider;
+export type Provider = LocalIndexedDBProvider | AffineWebSocketProvider;
 
 export interface PersistenceWorkspace extends RemoteWorkspace {
   flavour: 'affine' | 'local';

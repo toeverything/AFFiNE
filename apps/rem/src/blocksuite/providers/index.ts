@@ -2,15 +2,15 @@ import { WebsocketProvider } from '@affine/datacenter';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
 import {
-  AffineProvider,
+  AffineWebSocketProvider,
   BlockSuiteWorkspace,
-  LocalProvider,
+  LocalIndexedDBProvider,
 } from '../../shared';
 import { apis } from '../../shared/apis';
 
 export const createWebSocketProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
-): AffineProvider => {
+): AffineWebSocketProvider => {
   let webSocketProvider: WebsocketProvider | null = null;
   return {
     flavour: 'affine',
@@ -44,7 +44,7 @@ export const createWebSocketProvider = (
 
 export const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
-): LocalProvider => {
+): LocalIndexedDBProvider => {
   let indexdbProvider: IndexeddbPersistence | null = null;
   return {
     flavour: 'local',

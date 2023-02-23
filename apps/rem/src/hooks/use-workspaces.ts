@@ -15,6 +15,7 @@ import {
   transformToAffineSyncedWorkspace,
 } from '../shared';
 import { apis } from '../shared/apis';
+import { createEmptyBlockSuiteWorkspace } from '../utils';
 
 export const dataCenter = {
   workspaces: [] as RemWorkspace[],
@@ -64,6 +65,7 @@ export function prefetchNecessaryData() {
             ...workspace,
             flavour: RemWorkspaceFlavour.AFFINE,
             firstBinarySynced: false,
+            blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(workspace.id),
             syncBinary: async () => {
               const binary = await apis.downloadWorkspace(
                 workspace.id,

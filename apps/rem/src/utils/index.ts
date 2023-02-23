@@ -1,3 +1,8 @@
+import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
+
+import { BlockSuiteWorkspace } from '../shared';
+import { apis } from '../shared/apis';
+
 export function stringToColour(str: string) {
   str = str || 'affine';
   let colour = '#';
@@ -18,3 +23,14 @@ export function stringToColour(str: string) {
 
   return colour;
 }
+
+export const createEmptyBlockSuiteWorkspace = (room: string) => {
+  return new BlockSuiteWorkspace({
+    room,
+    blobOptionsGetter: (k: string) =>
+      // fixme: token could be expired
+      ({ api: '/api/workspace', token: apis.auth.token }[k]),
+  })
+    .register(builtInSchemas)
+    .register(__unstableSchemas);
+};
