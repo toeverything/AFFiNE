@@ -30,9 +30,7 @@ const getRedirectConfig = profile => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  swcMinify: false,
   transpilePackages: [
     '@affine/component',
     '@affine/datacenter',
@@ -46,9 +44,6 @@ const nextConfig = {
     });
 
     return config;
-  },
-  images: {
-    unoptimized: true,
   },
   rewrites: async () => {
     const [profile, target, desc] = getRedirectConfig(
