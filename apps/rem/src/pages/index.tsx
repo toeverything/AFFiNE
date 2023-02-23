@@ -117,7 +117,7 @@ const IndexPage: NextPage = () => {
         }}
         show={show}
         setShow={setShow}
-        currentPath={''}
+        currentPath={useRouter().asPath}
         paths={paths}
       />
       {user ? (
