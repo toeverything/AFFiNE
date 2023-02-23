@@ -70,7 +70,6 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
       if (targetWorkspace) {
         setCurrentWorkspaceId(targetWorkspace.id);
         router.replace({
-          pathname: '/workspace',
           query: {
             ...router.query,
             workspaceId: targetWorkspace.id,
@@ -82,7 +81,6 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
         if (first) {
           setCurrentWorkspaceId(first.id);
           router.replace({
-            pathname: '/workspace',
             query: {
               ...router.query,
               workspaceId: first.id,
@@ -98,7 +96,6 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
           setCurrentPageId(targetId);
           router.replace({
             query: {
-              pathname: '/workspace',
               ...router.query,
               pageId: targetId,
             },
