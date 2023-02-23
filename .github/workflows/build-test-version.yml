@@ -62,7 +62,7 @@ jobs:
       #   run: pnpm test
 
       - name: Build
-        run: pnpm build
+        run: pnpm build:rem
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -78,7 +78,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: ./apps/web/out
+          path: ./apps/rem/out
 
   push_to_registry:
     # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
