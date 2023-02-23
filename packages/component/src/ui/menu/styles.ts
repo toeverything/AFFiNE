@@ -1,4 +1,4 @@
-import { ArrowRightIcon } from '@blocksuite/icons';
+import { ArrowRightSmallIcon } from '@blocksuite/icons';
 
 import { displayFlex, styled } from '../../styles';
 import StyledPopperContainer from '../shared/Container';
@@ -14,7 +14,7 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)(({ theme }) => {
   };
 });
 
-export const StyledArrow = styled(ArrowRightIcon)({
+export const StyledArrow = styled(ArrowRightSmallIcon)({
   position: 'absolute',
   right: 0,
   top: 0,

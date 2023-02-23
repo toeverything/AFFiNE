@@ -1,22 +1,24 @@
 import { displayFlex, styled, textEllipsis } from '@affine/component';
 import Link from 'next/link';
+import { CSSProperties } from 'react';
 
-export const StyledSliderBar = styled.div<{ show: boolean }>(
-  ({ theme, show }) => {
-    return {
-      width: show ? '256px' : '0',
-      height: '100vh',
-      minHeight: '450px',
-      background: theme.colors.hubBackground,
-      boxShadow: theme.shadow.modal,
-      transition: 'width .15s, padding .15s',
-      position: 'relative',
-      zIndex: theme.zIndex.modal,
-      padding: show ? '24px 12px' : '24px 0',
-      flexShrink: 0,
-    };
-  }
-);
+export const StyledSliderBar = styled.div<{
+  show: boolean;
+  width: CSSProperties['width'];
+}>(({ theme, show, width }) => {
+  return {
+    width: show ? width : '0',
+    height: '100vh',
+    minHeight: '450px',
+    background: theme.colors.hubBackground,
+    boxShadow: theme.shadow.modal,
+    transition: 'width .15s, padding .15s',
+    position: 'relative',
+    zIndex: theme.zIndex.modal,
+    padding: show ? '24px 12px' : '24px 0',
+    flexShrink: 0,
+  };
+});
 export const StyledSliderBarWrapper = styled.div(() => {
   return {
     height: '100%',
