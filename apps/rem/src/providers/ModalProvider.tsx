@@ -1,4 +1,5 @@
 import { useAtom } from 'jotai';
+import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
 import { openWorkspacesModalAtom } from '../atoms';
@@ -11,6 +12,7 @@ export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
     openWorkspacesModalAtom
   );
+  const router = useRouter();
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const [currentWorkspace, setCurrentWorkspace] = useCurrentWorkspace();
@@ -27,9 +29,16 @@ export function Modals() {
         onClickWorkspace={useCallback(
           workspace => {
             setCurrentWorkspace(workspace.id);
+            router.push({
+              pathname: `/workspace/[workspaceId]/[pageId]`,
+              query: {
+                workspaceId: workspace.id,
+                pageId: 'i_dont_know',
+              },
+            });
             setOpenWorkspacesModal(false);
           },
-          [setCurrentWorkspace, setOpenWorkspacesModal]
+          [router, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
         onClickLogin={function (): void {
           throw new Error('Function not implemented.');

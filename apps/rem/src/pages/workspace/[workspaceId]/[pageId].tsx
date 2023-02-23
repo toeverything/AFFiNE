@@ -1,4 +1,3 @@
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import React from 'react';
 
@@ -11,13 +10,6 @@ import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
 import { UIPlugins } from '../../../shared/ui';
-
-const Editor = dynamic(
-  async () => (await import('../../../components/BlockSuiteEditor')).Editor,
-  {
-    ssr: false,
-  }
-);
 
 const WorkspaceDetail: React.FC = () => {
   const [pageId] = useCurrentPageId();

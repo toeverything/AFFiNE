@@ -1,8 +1,11 @@
+import { NextRouter } from 'next/router';
 import React, { Component, ErrorInfo } from 'react';
 
 import { BlockSuiteWorkspace } from '../shared';
 
-export type BlockSuiteErrorBoundaryProps = React.PropsWithChildren;
+export type BlockSuiteErrorBoundaryProps = React.PropsWithChildren<{
+  router: NextRouter;
+}>;
 
 export class PageNotFoundError extends TypeError {
   readonly workspace: BlockSuiteWorkspace;
@@ -52,6 +55,24 @@ export class BlockSuiteErrorBoundary extends Component<
                 Cannot find page {error.pageId} in workspace{' '}
                 {error.workspace.meta.name}
               </span>
+              <button
+                onClick={() => {
+                  this.props.router
+                    .replace({
+                      pathname: '/workspace/[workspaceId]/[pageId]',
+                      query: {
+                        workspaceId: error.workspace.room,
+                        pageId: error.workspace.meta.pageMetas[0].id,
+                      },
+                    })
+                    .then(() => {
+                      this.setState({ error: null });
+                    });
+                }}
+              >
+                {' '}
+                refresh{' '}
+              </button>
             </>
           </>
         );

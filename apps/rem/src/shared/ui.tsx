@@ -1,5 +1,7 @@
+import dynamic from 'next/dynamic';
 import React from 'react';
 
+import { BlockSuiteEditorHeader } from '../components/blocksuite/header';
 import { PageNotFoundError } from '../components/BlockSuiteErrorBoundary';
 import { FlavourToWorkspace, RemWorkspaceFlavour } from '.';
 
@@ -18,6 +20,15 @@ export interface UIPlugin<Flavour extends RemWorkspaceFlavour> {
   SettingPanel: React.FC<SettingPanelProps<Flavour>>;
 }
 
+const Editor = dynamic(
+  async () =>
+    (await import('../components/blocksuite/block-suite-editor'))
+      .BlockSuiteEditor,
+  {
+    ssr: false,
+  }
+);
+
 const AffineUIPlugin: UIPlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
   PageDetail: ({ currentWorkspace, currentPageId }) => {
@@ -31,7 +42,15 @@ const AffineUIPlugin: UIPlugin<RemWorkspaceFlavour.AFFINE> = {
         currentPageId
       );
     }
-    return <div>WIP AFFINE UI</div>;
+    return (
+      <>
+        <BlockSuiteEditorHeader
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          pageId={currentPageId}
+        />
+        <Editor page={page} />
+      </>
+    );
   },
   SettingPanel: ({ currentWorkspace }) => {
     if (!currentWorkspace.firstBinarySynced) {

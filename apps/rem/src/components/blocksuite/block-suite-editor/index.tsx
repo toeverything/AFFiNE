@@ -9,7 +9,7 @@ export type EditorProps = {
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
 };
 
-export const Editor = (props: EditorProps) => {
+export const BlockSuiteEditor = (props: EditorProps) => {
   const page = props.page;
   const editorRef = useRef<EditorContainer | null>(null);
   if (editorRef.current === null) {

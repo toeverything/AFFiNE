@@ -1,5 +1,5 @@
 import { NextRouter } from 'next/router';
-import { useEffect } from 'react';
+import { startTransition, useEffect } from 'react';
 
 import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
@@ -66,8 +66,10 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
           const targetPageId =
             first.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
           if (targetPageId) {
-            setCurrentWorkspaceId(targetWorkspaceId);
-            setCurrentPageId(targetPageId);
+            startTransition(() => {
+              setCurrentWorkspaceId(targetWorkspaceId);
+              setCurrentPageId(targetPageId);
+            });
             router.replace(`/workspace/${targetWorkspaceId}/${targetPageId}`);
           }
         }
@@ -79,7 +81,9 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
         workspace => workspace.id === router.query.workspaceId
       );
       if (targetWorkspace) {
-        setCurrentWorkspaceId(targetWorkspace.id);
+        startTransition(() => {
+          setCurrentWorkspaceId(targetWorkspace.id);
+        });
         router.replace({
           query: {
             ...router.query,
@@ -90,7 +94,9 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
       } else {
         const first = workspaces.at(0);
         if (first) {
-          setCurrentWorkspaceId(first.id);
+          startTransition(() => {
+            setCurrentWorkspaceId(first.id);
+          });
           router.replace({
             query: {
               ...router.query,
@@ -105,7 +111,9 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
         if ('blockSuiteWorkspace' in currentWorkspace) {
           const targetId = findSuitablePageId(currentWorkspace, targetPageId);
           if (targetId) {
-            setCurrentPageId(targetId);
+            startTransition(() => {
+              setCurrentPageId(targetId);
+            });
             router.replace({
               query: {
                 ...router.query,
