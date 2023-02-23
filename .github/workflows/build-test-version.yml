@@ -104,7 +104,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: apps/web/out/
+          path: apps/rem/out/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
