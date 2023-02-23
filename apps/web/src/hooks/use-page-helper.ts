@@ -62,6 +62,7 @@ export const usePageHelper = (): EditorHandlers => {
           addedPageId => {
             currentWorkspace.blocksuiteWorkspace?.setPageMeta(addedPageId, {
               title,
+              mode: 'page',
             });
             resolve(addedPageId);
           }

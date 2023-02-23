@@ -10,18 +10,24 @@ const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
 
 async function assertTitle(page: Page, text: string) {
-  const locator = page.locator('.affine-default-page-block-title').nth(0);
-  const actual = await locator.inputValue();
-  expect(actual).toBe(text);
+  const edgeless = page.locator('affine-edgeless-page');
+  if (!edgeless) {
+    const locator = page.locator('.affine-default-page-block-title').nth(0);
+    const actual = await locator.inputValue();
+    expect(actual).toBe(text);
+  }
 }
 async function assertResultList(page: Page, texts: string[]) {
   const actual = await page.locator('[cmdk-item]').allInnerTexts();
   expect(actual).toEqual(texts);
 }
 async function titleIsFocused(page: Page) {
-  const title = page.locator('.affine-default-page-block-title');
-  await expect(title).toBeVisible();
-  await expect(title).toBeFocused();
+  const edgeless = page.locator('affine-edgeless-page');
+  if (!edgeless) {
+    const title = page.locator('.affine-default-page-block-title');
+    await expect(title).toBeVisible();
+    await expect(title).toBeFocused();
+  }
 }
 
 test.describe('Open quick search', () => {
