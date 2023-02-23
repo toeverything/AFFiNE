@@ -71,6 +71,7 @@ export const transformToAffineSyncedWorkspace = async (
     new Uint8Array(binary)
   );
   return new Promise(resolve => {
+    // Fixme: https://github.com/toeverything/blocksuite/issues/1350
     setTimeout(() => {
       resolve({
         ...unSyncedWorkspace,
