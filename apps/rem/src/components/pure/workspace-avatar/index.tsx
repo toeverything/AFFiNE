@@ -1,12 +1,13 @@
 import React from 'react';
 
-import { RemWorkspace, RemWorkspaceFlavour } from '../../../shared';
+import { useWorkspaceBlobImage } from '../../../hooks/use-workspace-blob';
+import { BlockSuiteWorkspace, RemWorkspace } from '../../../shared';
 import { stringToColour } from '../../../utils';
 
 interface AvatarProps {
   size: number;
   name: string;
-  avatar: string;
+  avatar_url: string;
   style?: React.CSSProperties;
 }
 
@@ -17,7 +18,7 @@ export const Avatar: React.FC<AvatarProps> = React.memo<AvatarProps>(
 
     return (
       <>
-        {props.avatar ? (
+        {props.avatar_url ? (
           <div
             style={{
               ...props.style,
@@ -33,7 +34,7 @@ export const Avatar: React.FC<AvatarProps> = React.memo<AvatarProps>(
             <picture>
               <img
                 style={{ width: sizeStr, height: sizeStr }}
-                src={props.avatar}
+                src={props.avatar_url}
                 alt=""
                 referrerPolicy="no-referrer"
               />
@@ -70,24 +71,42 @@ export type WorkspaceUnitAvatarProps = {
   style?: React.CSSProperties;
 };
 
+export type BlockSuiteWorkspaceAvatar = Omit<
+  WorkspaceUnitAvatarProps,
+  'workspace'
+> & {
+  workspace: BlockSuiteWorkspace;
+};
+
+export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
+  size = 20,
+  workspace,
+  style,
+}) => {
+  const avatarURL = useWorkspaceBlobImage(workspace.meta.avatar, workspace);
+  return (
+    <Avatar
+      size={size}
+      name={workspace.meta.name}
+      avatar_url={avatarURL ?? ''}
+      style={style}
+    />
+  );
+};
+
 export const WorkspaceAvatar: React.FC<WorkspaceUnitAvatarProps> = ({
   size = 20,
   workspace,
   style,
 }) => {
-  let avatar = 'UNKNOWN';
-  let name = 'UNKNOWN';
-  if (workspace?.flavour === RemWorkspaceFlavour.AFFINE) {
-    if (workspace.firstBinarySynced) {
-      avatar = workspace.blockSuiteWorkspace.meta.avatar;
-      name = workspace.blockSuiteWorkspace.meta.name;
-    } else {
-      avatar = 'loading...';
-      name = 'loading...';
-    }
-  } else if (workspace?.flavour === RemWorkspaceFlavour.LOCAL) {
-    avatar = workspace.blockSuiteWorkspace.meta.avatar;
-    name = workspace.blockSuiteWorkspace.meta.name;
+  if (workspace && 'blockSuiteWorkspace' in workspace) {
+    return (
+      <BlockSuiteWorkspaceAvatar
+        size={size}
+        workspace={workspace.blockSuiteWorkspace}
+        style={style}
+      />
+    );
   }
-  return <Avatar size={size} name={name} avatar={avatar} style={style} />;
+  return <Avatar size={size} name="UNKNOWN" avatar_url="" style={style} />;
 };
