@@ -29,6 +29,11 @@ type PageListProps<Flavour extends RemWorkspaceFlavour> = {
   onClickPage: (pageId: string) => void;
 };
 
+type SideBarMenuProps<Flavour extends RemWorkspaceFlavour> =
+  UIBaseProps<Flavour> & {
+    setSideBarOpen: (open: boolean) => void;
+  };
+
 export interface UIPlugin<Flavour extends RemWorkspaceFlavour> {
   flavour: Flavour;
   PageDetail: React.FC<PageDetailProps<Flavour>>;

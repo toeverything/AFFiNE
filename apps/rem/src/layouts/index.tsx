@@ -1,4 +1,4 @@
-import { assertExists } from '@blocksuite/store';
+import { assertExists, uuidv4 } from '@blocksuite/store';
 import { useAtom } from 'jotai/index';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import { HelpIsland } from '../components/pure/help-island';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
+import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { prefetchNecessaryData } from '../hooks/use-workspaces';
 import { paths } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
@@ -38,6 +39,9 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   const router = useRouter();
   const [show, setShow] = useState(false);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
+  const helper = useBlockSuiteWorkspaceHelper(
+    currentWorkspace?.blockSuiteWorkspace ?? null
+  );
   return (
     <StyledPage>
       <WorkSpaceSliderBar
@@ -62,9 +66,9 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
           },
           [currentWorkspace, router]
         )}
-        createPage={function (): Promise<string | null> {
-          throw new Error('Function not implemented.');
-        }}
+        createPage={useCallback(async () => {
+          return helper.createPage(uuidv4());
+        }, [helper])}
         show={show}
         setShow={setShow}
         currentPath={useRouter().asPath}

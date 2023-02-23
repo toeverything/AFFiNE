@@ -12,7 +12,7 @@ declare module '@blocksuite/store' {
 }
 
 export function usePageMeta(
-  blockSuiteWorkspace?: BlockSuiteWorkspace
+  blockSuiteWorkspace: BlockSuiteWorkspace | null
 ): PageMeta[] {
   const [pageMeta, setPageMeta] = useState<PageMeta[]>(
     () => blockSuiteWorkspace?.meta.pageMetas ?? []

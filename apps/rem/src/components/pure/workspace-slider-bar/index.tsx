@@ -81,7 +81,7 @@ export type WorkSpaceSliderBarProps = {
   onClickWorkspaceListModal: () => void;
   currentPageId: string | null;
   openPage: (pageId: string) => void;
-  createPage: () => Promise<string | null>;
+  createPage: () => Promise<string>;
   show: boolean;
   setShow: (show: boolean) => void;
   currentPath: string;
@@ -109,11 +109,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [showSubFavorite, setShowSubFavorite] = useState(true);
   const [showTip, setShowTip] = useState(false);
   const { t } = useTranslation();
-  const pageMeta = usePageMeta(
-    currentWorkspace && 'blockSuiteWorkspace' in currentWorkspace
-      ? currentWorkspace.blockSuiteWorkspace
-      : undefined
-  );
+  const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
   return (
     <>
       <StyledSliderBar show={show}>
