@@ -6,7 +6,7 @@ export const createAffineProviders = (
 ): Provider[] => {
   return [
     createWebSocketProvider(blockSuiteWorkspace),
-    // createIndexedDBProvider(blockSuiteWorkspace),
+    createIndexedDBProvider(blockSuiteWorkspace),
   ];
 };
 
