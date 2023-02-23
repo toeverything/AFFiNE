@@ -6,13 +6,14 @@ import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 
 import { openWorkspacesModalAtom } from '../atoms';
+import { HelpIsland } from '../components/pure/help-island';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPage } from '../hooks/current/use-current-page';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { usePageMeta } from '../hooks/use-page-meta';
 import { prefetchNecessaryData } from '../hooks/use-workspaces';
-import { StyledPage } from '../layouts';
+import { StyledPage, StyledToolWrapper, StyledWrapper } from '../layouts';
 import { RemWorkspace } from '../shared';
 import { apis } from '../shared/apis';
 
@@ -120,37 +121,48 @@ const IndexPage: NextPage = () => {
         currentPath={useRouter().asPath}
         paths={paths}
       />
-      {user ? (
-        <Button
-          onClick={async () => {
-            apis.auth.clear();
-            await apis.signOutFirebase();
-            router.reload();
-          }}
-        >
-          sign out
-        </Button>
-      ) : (
-        <Button
-          onClick={async () => {
-            await apis.signInWithGoogle();
-            router.reload();
-          }}
-        >
-          {' '}
-          sign in with google
-        </Button>
-      )}
-      {currentWorkspace ? (
-        <WorkspacePagePreview workspace={currentWorkspace} />
-      ) : (
-        <div>no current workspace</div>
-      )}
-      {currentPage ? (
-        <Editor page={currentPage} key={currentPage.id} />
-      ) : (
-        <div>no current page</div>
-      )}
+      <StyledWrapper>
+        {user ? (
+          <Button
+            onClick={async () => {
+              apis.auth.clear();
+              await apis.signOutFirebase();
+              router.reload();
+            }}
+          >
+            sign out
+          </Button>
+        ) : (
+          <Button
+            onClick={async () => {
+              await apis.signInWithGoogle();
+              router.reload();
+            }}
+          >
+            {' '}
+            sign in with google
+          </Button>
+        )}
+        {currentWorkspace ? (
+          <WorkspacePagePreview workspace={currentWorkspace} />
+        ) : (
+          <div>no current workspace</div>
+        )}
+        {currentPage ? (
+          <Editor page={currentPage} key={currentPage.id} />
+        ) : (
+          <div>no current page</div>
+        )}
+
+        <StyledToolWrapper>
+          <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+            {/* Slot for block hub */}
+          </div>
+          <HelpIsland
+            showList={router.query.pageId ? undefined : ['contact']}
+          />
+        </StyledToolWrapper>
+      </StyledWrapper>
     </StyledPage>
   );
 };
