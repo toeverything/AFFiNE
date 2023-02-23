@@ -166,6 +166,8 @@ export const StyledSignInButton = styled(Button)(({ theme }) => {
       backgroundColor: theme.colors.innerHoverBackground,
       flexShrink: 0,
       marginRight: '16px',
+      fontSize: '24px',
+      color: theme.colors.primaryColor,
       ...displayInlineFlex('center', 'center'),
     },
   };
