@@ -20,7 +20,7 @@
     "@emotion/css": "^11.10.6",
     "@emotion/react": "^11.10.6",
     "@emotion/server": "^11.10.0",
-    "@mui/material": "^5.11.9",
+    "@mui/material": "^5.11.10",
     "jotai": "^2.0.2",
     "lit": "^2.6.1",
     "react": "^18.2.0",

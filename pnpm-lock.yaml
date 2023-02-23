@@ -154,7 +154,7 @@ importers:
       '@emotion/css': ^11.10.6
       '@emotion/react': ^11.10.6
       '@emotion/server': ^11.10.0
-      '@mui/material': ^5.11.9
+      '@mui/material': ^5.11.10
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
       jotai: ^2.0.2
