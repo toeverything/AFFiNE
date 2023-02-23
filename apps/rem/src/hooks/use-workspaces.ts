@@ -104,6 +104,7 @@ export function useWorkspacesMutation() {
         const blockSuiteWorkspace = new BlockSuiteWorkspace({
           room: id,
         });
+        blockSuiteWorkspace.meta.setName(name);
         const workspace: LocalWorkspace = {
           flavour: 'local',
           blockSuiteWorkspace: blockSuiteWorkspace,
