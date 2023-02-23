@@ -2,7 +2,6 @@
  * @vitest-environment happy-dom
  */
 import 'fake-indexeddb/auto';
-import 'next/jest';
 
 import assert from 'node:assert';
 
