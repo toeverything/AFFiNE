@@ -9,7 +9,9 @@ import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Page } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { useRouter } from 'next/router';
-import { beforeEach, describe, expect, test } from 'vitest';
+import routerMock from 'next-router-mock';
+import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
+import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { usePageMeta, usePageMetaMutation } from '../use-page-meta';
@@ -21,6 +23,12 @@ import {
 } from '../use-workspaces';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
+beforeAll(() => {
+  routerMock.useParser(
+    createDynamicRouteParser(['/workspace/[workspaceId]/[pageId]'])
+  );
+});
+
 beforeEach(() => {
   vitestRefreshWorkspaces();
   blockSuiteWorkspace = new BlockSuiteWorkspace({
@@ -100,7 +108,7 @@ describe('useWorkspaces', () => {
 });
 
 describe('useSyncRouterWithCurrentWorkspace', () => {
-  test('basic', async () => {
+  test('from "/"', async () => {
     const mutationHook = renderHook(() => useWorkspacesMutation());
     const id = mutationHook.result.current.createRemLocalWorkspace('test0');
     mutationHook.result.current.createWorkspacePage(id, 'page0');
@@ -108,6 +116,23 @@ describe('useSyncRouterWithCurrentWorkspace', () => {
     await routerHook.result.current.push('/');
     routerHook.rerender();
     expect(routerHook.result.current.asPath).toBe('/');
+    renderHook(({ router }) => useSyncRouterWithCurrentWorkspace(router), {
+      initialProps: {
+        router: routerHook.result.current,
+      },
+    });
+
+    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
+  });
+
+  test('from incorrect "/workspace/[workspaceId]/[pageId]"', async () => {
+    const mutationHook = renderHook(() => useWorkspacesMutation());
+    const id = mutationHook.result.current.createRemLocalWorkspace('test0');
+    mutationHook.result.current.createWorkspacePage(id, 'page0');
+    const routerHook = renderHook(() => useRouter());
+    await routerHook.result.current.push(`/workspace/${id}/not_exist`);
+    routerHook.rerender();
+    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/not_exist`);
     renderHook(({ router }) => useSyncRouterWithCurrentWorkspace(router), {
       initialProps: {
         router: routerHook.result.current,
