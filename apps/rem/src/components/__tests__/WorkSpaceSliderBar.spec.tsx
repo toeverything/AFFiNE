@@ -12,21 +12,8 @@ import { useCurrentPageId } from '../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useWorkspacesMutation } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
+import { paths } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
-
-const paths = {
-  all: workspaceId => (workspaceId ? `/workspace/${workspaceId}/all` : ''),
-  favorite: workspaceId =>
-    workspaceId ? `/workspace/${workspaceId}/favorite` : '',
-  trash: workspaceId => (workspaceId ? `/workspace/${workspaceId}/trash` : ''),
-  setting: workspaceId =>
-    workspaceId ? `/workspace/${workspaceId}/setting` : '',
-} satisfies {
-  all: (workspaceId: string | null) => string;
-  favorite: (workspaceId: string | null) => string;
-  trash: (workspaceId: string | null) => string;
-  setting: (workspaceId: string | null) => string;
-};
 
 describe('WorkSpaceSliderBar', () => {
   test('basic', async () => {

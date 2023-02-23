@@ -9,21 +9,8 @@ import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { prefetchNecessaryData } from '../hooks/use-workspaces';
+import { paths } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
-
-const paths = {
-  all: workspaceId => (workspaceId ? `/workspace/${workspaceId}/all` : ''),
-  favorite: workspaceId =>
-    workspaceId ? `/workspace/${workspaceId}/favorite` : '',
-  trash: workspaceId => (workspaceId ? `/workspace/${workspaceId}/trash` : ''),
-  setting: workspaceId =>
-    workspaceId ? `/workspace/${workspaceId}/setting` : '',
-} satisfies {
-  all: (workspaceId: string | null) => string;
-  favorite: (workspaceId: string | null) => string;
-  trash: (workspaceId: string | null) => string;
-  setting: (workspaceId: string | null) => string;
-};
 
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   children,

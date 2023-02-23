@@ -63,7 +63,7 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
     return () => {
       router.events.off('routeChangeStart', listener);
     };
-  }, [router, setCurrentPageId, setCurrentWorkspaceId]);
+  }, [currentWorkspace, router, setCurrentPageId, setCurrentWorkspaceId]);
   useEffect(() => {
     if (!router.isReady) {
       return;
