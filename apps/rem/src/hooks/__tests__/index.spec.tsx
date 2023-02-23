@@ -11,7 +11,7 @@ import { render, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
-import { usePageMetas } from '../use-page-metas';
+import { usePageMeta, usePageMetaMutation } from '../use-page-meta';
 import { useWorkspaces, useWorkspacesMutation } from '../use-workspaces';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -32,22 +32,46 @@ beforeEach(() => {
   blockSuiteWorkspace.createPage('page2');
 });
 
-test('usePageMetas', async () => {
-  const Component = () => {
-    const pageMetas = usePageMetas(blockSuiteWorkspace);
-    return (
-      <div>
-        {pageMetas.map(meta => (
-          <div key={meta.id}>{meta.id}</div>
-        ))}
-      </div>
+describe('usePageMetas', async () => {
+  test('basic', async () => {
+    const Component = () => {
+      const pageMetas = usePageMeta(blockSuiteWorkspace);
+      return (
+        <div>
+          {pageMetas.map(meta => (
+            <div key={meta.id}>{meta.id}</div>
+          ))}
+        </div>
+      );
+    };
+    const result = render(<Component />);
+    await result.findByText('page0');
+    await result.findByText('page1');
+    await result.findByText('page2');
+    expect(result.asFragment()).toMatchSnapshot();
+  });
+
+  test('mutation', () => {
+    const { result, rerender } = renderHook(() =>
+      usePageMeta(blockSuiteWorkspace)
     );
-  };
-  const result = render(<Component />);
-  await result.findByText('page0');
-  await result.findByText('page1');
-  await result.findByText('page2');
-  expect(result.asFragment()).toMatchSnapshot();
+    expect(result.current.length).toBe(3);
+    expect(result.current[0].mode).not.exist;
+    const { result: result2 } = renderHook(() =>
+      usePageMetaMutation(blockSuiteWorkspace)
+    );
+    result2.current.setPageMeta('page0', {
+      mode: 'edgeless',
+    });
+    rerender();
+    expect(result.current[0].mode).exist;
+    expect(result.current[0].mode).toBe('edgeless');
+    result2.current.setPageMeta('page0', {
+      mode: 'page',
+    });
+    rerender();
+    expect(result.current[0].mode).toBe('page');
+  });
 });
 
 describe('useWorkspaces', () => {

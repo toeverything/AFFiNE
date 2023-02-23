@@ -9,7 +9,7 @@ import { openWorkspacesModalAtom } from '../atoms';
 import { useCurrentPage } from '../hooks/current/use-current-page';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { usePageMetas } from '../hooks/use-page-metas';
+import { usePageMeta } from '../hooks/use-page-meta';
 import { prefetchNecessaryData } from '../hooks/use-workspaces';
 import { RemWorkspace } from '../shared';
 import { apis } from '../shared/apis';
@@ -27,7 +27,7 @@ function WorkspacePagePreview({ workspace }: { workspace: RemWorkspace }) {
   }
   const [, setId] = useCurrentPage();
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
-  const pageMetas = usePageMetas(blockSuiteWorkspace);
+  const pageMetas = usePageMeta(blockSuiteWorkspace);
   return (
     <div>
       <div>page list</div>

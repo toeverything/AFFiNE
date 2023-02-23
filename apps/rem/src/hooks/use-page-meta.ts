@@ -1,5 +1,5 @@
 import { PageMeta } from '@blocksuite/store';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { BlockSuiteWorkspace } from '../shared';
 
@@ -9,24 +9,35 @@ declare module '@blocksuite/store' {
   }
 }
 
-export function usePageMetas(
+export function usePageMeta(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): PageMeta[] {
-  const [pageMetas, setPageMetas] = useState(
+  const [pageMeta, setPageMeta] = useState(
     () => blockSuiteWorkspace.meta.pageMetas
   );
   const [prev, setPrev] = useState(() => blockSuiteWorkspace);
   if (prev !== blockSuiteWorkspace) {
     setPrev(blockSuiteWorkspace);
-    setPageMetas(blockSuiteWorkspace.meta.pageMetas);
+    setPageMeta(blockSuiteWorkspace.meta.pageMetas);
   }
   useEffect(() => {
     const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
-      setPageMetas(blockSuiteWorkspace.meta.pageMetas);
+      setPageMeta(blockSuiteWorkspace.meta.pageMetas);
     });
     return () => {
       dispose.dispose();
     };
   }, [blockSuiteWorkspace]);
-  return pageMetas;
+  return pageMeta;
+}
+
+export function usePageMetaMutation(blockSuiteWorkspace: BlockSuiteWorkspace) {
+  return useMemo(
+    () => ({
+      setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
+        blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);
+      },
+    }),
+    [blockSuiteWorkspace]
+  );
 }
