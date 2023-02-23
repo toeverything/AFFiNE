@@ -2,20 +2,28 @@ import { useAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
-import { openWorkspacesModalAtom } from '../atoms';
+import {
+  openCreateWorkspaceModalAtom,
+  openWorkspacesModalAtom,
+} from '../atoms';
+import { CreateWorkspaceModal } from '../components/pure/create-workspace-modal';
 import { WorkspaceListModal } from '../components/pure/workspace-list-modal';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useWorkspaces } from '../hooks/use-workspaces';
+import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
 
 export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
     openWorkspacesModalAtom
   );
+  const [openCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
+    openCreateWorkspaceModalAtom
+  );
   const router = useRouter();
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const [currentWorkspace, setCurrentWorkspace] = useCurrentWorkspace();
+  const { createRemLocalWorkspace } = useWorkspacesHelper();
   return (
     <>
       <WorkspaceListModal
@@ -30,10 +38,9 @@ export function Modals() {
           workspace => {
             setCurrentWorkspace(workspace.id);
             router.push({
-              pathname: `/workspace/[workspaceId]/[pageId]`,
+              pathname: `/workspace/[workspaceId]/all`,
               query: {
                 workspaceId: workspace.id,
-                pageId: 'i_dont_know',
               },
             });
             setOpenWorkspacesModal(false);
@@ -46,9 +53,28 @@ export function Modals() {
         onClickLogout={function (): void {
           throw new Error('Function not implemented.');
         }}
-        onCreateWorkspace={function (): void {
-          throw new Error('Function not implemented.');
-        }}
+        onCreateWorkspace={useCallback(() => {
+          setOpenCreateWorkspaceModal(true);
+        }, [setOpenCreateWorkspaceModal])}
+      />
+      <CreateWorkspaceModal
+        open={openCreateWorkspaceModal}
+        onClose={useCallback(() => {
+          setOpenCreateWorkspaceModal(false);
+        }, [setOpenCreateWorkspaceModal])}
+        onCreate={useCallback(
+          name => {
+            const id = createRemLocalWorkspace(name);
+            setOpenCreateWorkspaceModal(false);
+            router.push({
+              pathname: '/workspace/[workspaceId]/all',
+              query: {
+                workspaceId: id,
+              },
+            });
+          },
+          [createRemLocalWorkspace, router, setOpenCreateWorkspaceModal]
+        )}
       />
     </>
   );

@@ -21,6 +21,21 @@ const AllPage: NextPageWithLayout = () => {
   useLoadWorkspace(currentWorkspace);
   const workspaces = useWorkspaces();
   useEffect(() => {
+    const listener: Parameters<typeof router.events.on>[1] = (url: string) => {
+      if (url.startsWith('/')) {
+        const path = url.split('/');
+        if (path.length === 4 && path[1] === 'workspace') {
+          setCurrentWorkspaceId(path[2]);
+        }
+      }
+    };
+
+    router.events.on('routeChangeStart', listener);
+    return () => {
+      router.events.off('routeChangeStart', listener);
+    };
+  }, [currentWorkspace, router, setCurrentWorkspaceId]);
+  useEffect(() => {
     if (!router.isReady) {
       return;
     }
@@ -38,6 +53,12 @@ const AllPage: NextPageWithLayout = () => {
         const targetWorkspace = workspaces.at(0);
         if (targetWorkspace) {
           setCurrentWorkspaceId(targetWorkspace.id);
+          router.push({
+            pathname: '/workspace/[workspaceId]/all',
+            query: {
+              workspaceId: targetWorkspace.id,
+            },
+          });
         }
       }
     }

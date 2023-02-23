@@ -10,7 +10,7 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { useCurrentPageId } from '../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
-import { useWorkspacesMutation } from '../../hooks/use-workspaces';
+import { useWorkspacesHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
 import { paths } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
@@ -18,7 +18,7 @@ import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
 describe('WorkSpaceSliderBar', () => {
   test('basic', async () => {
     const fn = vi.fn();
-    const mutationHook = renderHook(() => useWorkspacesMutation());
+    const mutationHook = renderHook(() => useWorkspacesHelper());
     const id = mutationHook.result.current.createRemLocalWorkspace('test0');
     mutationHook.result.current.createWorkspacePage(id, 'test1');
     const Component = () => {

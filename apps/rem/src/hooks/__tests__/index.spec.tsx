@@ -18,7 +18,7 @@ import { usePageMeta, usePageMetaMutation } from '../use-page-meta';
 import { useSyncRouterWithCurrentWorkspace } from '../use-sync-router-with-current-workspace';
 import {
   useWorkspaces,
-  useWorkspacesMutation,
+  useWorkspacesHelper,
   vitestRefreshWorkspaces,
 } from '../use-workspaces';
 
@@ -96,7 +96,7 @@ describe('useWorkspaces', () => {
   });
 
   test('mutation', () => {
-    const { result } = renderHook(() => useWorkspacesMutation());
+    const { result } = renderHook(() => useWorkspacesHelper());
     result.current.createRemLocalWorkspace('test');
     const { result: result2 } = renderHook(() => useWorkspaces());
     expect(result2.current.length).toEqual(1);
@@ -109,7 +109,7 @@ describe('useWorkspaces', () => {
 
 describe('useSyncRouterWithCurrentWorkspace', () => {
   test('from "/"', async () => {
-    const mutationHook = renderHook(() => useWorkspacesMutation());
+    const mutationHook = renderHook(() => useWorkspacesHelper());
     const id = mutationHook.result.current.createRemLocalWorkspace('test0');
     mutationHook.result.current.createWorkspacePage(id, 'page0');
     const routerHook = renderHook(() => useRouter());
@@ -126,7 +126,7 @@ describe('useSyncRouterWithCurrentWorkspace', () => {
   });
 
   test('from incorrect "/workspace/[workspaceId]/[pageId]"', async () => {
-    const mutationHook = renderHook(() => useWorkspacesMutation());
+    const mutationHook = renderHook(() => useWorkspacesHelper());
     const id = mutationHook.result.current.createRemLocalWorkspace('test0');
     mutationHook.result.current.createWorkspacePage(id, 'page0');
     const routerHook = renderHook(() => useRouter());

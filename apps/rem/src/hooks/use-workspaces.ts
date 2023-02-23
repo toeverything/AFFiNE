@@ -121,7 +121,7 @@ export function useWorkspaces(): RemWorkspace[] {
   );
 }
 
-export function useWorkspacesMutation() {
+export function useWorkspacesHelper() {
   return useMemo(
     () => ({
       createWorkspacePage: (workspaceId: string, pageId: string) => {
@@ -156,6 +156,7 @@ export function useWorkspacesMutation() {
           id,
         };
         dataCenter.workspaces = [...dataCenter.workspaces, workspace];
+        dataCenter.callbacks.forEach(cb => cb());
         return id;
       },
     }),

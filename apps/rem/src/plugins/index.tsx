@@ -1,14 +1,12 @@
-import dynamic from 'next/dynamic';
 import React from 'react';
 
-import { BlockSuitePageList } from '../components/blocksuite/block-suite-page-list';
-import { BlockSuiteEditorHeader } from '../components/blocksuite/header';
-import { PageNotFoundError } from '../components/BlockSuiteErrorBoundary';
 import {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
   RemWorkspaceFlavour,
 } from '../shared';
+import { AffineUIPlugin } from './affine';
+import { LocalUIPlugin } from './local';
 
 const WIP = () => <div>WIP</div>;
 
@@ -40,57 +38,6 @@ export interface UIPlugin<Flavour extends RemWorkspaceFlavour> {
   PageList: React.FC<PageListProps<Flavour>>;
   SettingPanel: React.FC<SettingPanelProps<Flavour>>;
 }
-
-const Editor = dynamic(
-  async () =>
-    (await import('../components/blocksuite/block-suite-editor'))
-      .BlockSuiteEditor,
-  {
-    ssr: false,
-  }
-);
-
-const AffineUIPlugin: UIPlugin<RemWorkspaceFlavour.AFFINE> = {
-  flavour: RemWorkspaceFlavour.AFFINE,
-  PageDetail: ({ currentWorkspace, currentPageId }) => {
-    if (!currentWorkspace.firstBinarySynced) {
-      return <div>Loading</div>;
-    }
-    const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-    if (!page) {
-      throw new PageNotFoundError(
-        currentWorkspace.blockSuiteWorkspace,
-        currentPageId
-      );
-    }
-    return (
-      <>
-        <BlockSuiteEditorHeader
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          pageId={currentPageId}
-        />
-        <Editor page={page} />
-      </>
-    );
-  },
-  PageList: ({ blockSuiteWorkspace, onClickPage }) => {
-    return (
-      <BlockSuitePageList
-        onClickPage={onClickPage}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-      />
-    );
-  },
-  SettingPanel: WIP,
-};
-
-const LocalUIPlugin: UIPlugin<RemWorkspaceFlavour.LOCAL> = {
-  flavour: RemWorkspaceFlavour.LOCAL,
-  PageDetail: WIP,
-  SettingPanel: WIP,
-  PageList: WIP,
-};
-
 export const UIPlugins = {
   [RemWorkspaceFlavour.AFFINE]: AffineUIPlugin,
   [RemWorkspaceFlavour.LOCAL]: LocalUIPlugin,
