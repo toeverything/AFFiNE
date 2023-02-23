@@ -51,7 +51,7 @@ export const Footer = ({
           bold
           icon={
             <div className="circle">
-              <CloudWorkspaceIcon fontSize={16} />
+              <CloudWorkspaceIcon />
             </div>
           }
           onClick={async () => {
