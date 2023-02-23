@@ -1,16 +1,23 @@
 import '../styles/globals.css';
 
 import { AppProps } from 'next/app';
-import { Suspense, useMemo } from 'react';
+import { ReactElement, Suspense, useMemo } from 'react';
 import { SWRConfig } from 'swr';
 
 import { ProviderComposer } from '../components/ProviderComposer';
 import { PageLoading } from '../components/pure/loading';
 import { ModalProvider } from '../providers/ModalProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
-import { fetcher } from '../shared';
+import { fetcher, NextPageWithLayout } from '../shared';
 
-function App({ Component }: AppProps) {
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
+
+const EmptyLayout = (page: ReactElement) => page;
+
+function App({ Component }: AppPropsWithLayout) {
+  const getLayout = Component.getLayout || EmptyLayout;
   return (
     <SWRConfig
       value={{
@@ -28,7 +35,7 @@ function App({ Component }: AppProps) {
             []
           )}
         >
-          <Component />
+          {getLayout(<Component />)}
         </ProviderComposer>
       </Suspense>
     </SWRConfig>

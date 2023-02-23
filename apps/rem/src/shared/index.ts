@@ -1,6 +1,8 @@
 import { Workspace as RemoteWorkspace } from '@affine/datacenter';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { NextPage } from 'next';
+import { ReactElement, ReactNode } from 'react';
 
 import { createAffineProviders } from '../blocksuite';
 import { apis } from './apis';
@@ -125,3 +127,10 @@ export const QueryKey = {
   getUser: 'getUser',
   getWorkspaces: 'getWorkspaces',
 } as const;
+
+export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
+  P,
+  IP
+> & {
+  getLayout?: (page: ReactElement) => ReactNode;
+};

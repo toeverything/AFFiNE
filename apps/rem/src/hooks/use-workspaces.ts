@@ -21,6 +21,13 @@ export const dataCenter = {
   callbacks: new Set<() => void>(),
 };
 
+globalThis.dataCenter = dataCenter;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var dataCenter: unknown;
+}
+
 const kWorkspaces = 'affine-workspaces';
 
 if (typeof window !== 'undefined') {
