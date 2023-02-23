@@ -2,16 +2,19 @@
  * @vitest-environment happy-dom
  */
 import 'fake-indexeddb/auto';
+import 'next/jest';
 
 import assert from 'node:assert';
 
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { Page } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
+import { useRouter } from 'next/router';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { usePageMeta, usePageMetaMutation } from '../use-page-meta';
+import { useSyncRouterWithCurrentWorkspace } from '../use-sync-router-with-current-workspace';
 import { useWorkspaces, useWorkspacesMutation } from '../use-workspaces';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -89,5 +92,26 @@ describe('useWorkspaces', () => {
     expect(firstWorkspace.flavour).toBe('local');
     assert(firstWorkspace.flavour === RemWorkspaceFlavour.LOCAL);
     expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
+  });
+});
+
+describe('useSyncRouterWithCurrentWorkspace', () => {
+  test('basic', async () => {
+    const mutationHook = renderHook(() => useWorkspacesMutation());
+    const id = mutationHook.result.current.createRemLocalWorkspace('test0');
+    mutationHook.result.current.createWorkspacePage(id, 'page0');
+    const routerHook = renderHook(() => useRouter());
+    await routerHook.result.current.push('/');
+    const syncHook = renderHook(
+      ({ router }) => useSyncRouterWithCurrentWorkspace(router),
+      {
+        initialProps: {
+          router: routerHook.result.current,
+        },
+      }
+    );
+    routerHook.rerender();
+    syncHook.rerender({ router: routerHook.result.current });
+    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });
 });

@@ -3,6 +3,11 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      'next/router': 'next-router-mock',
+    },
+  },
   test: {
     include: [
       'packages/**/*.spec.ts',

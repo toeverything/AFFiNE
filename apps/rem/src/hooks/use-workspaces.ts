@@ -117,7 +117,17 @@ export function useWorkspaces(): RemWorkspace[] {
 export function useWorkspacesMutation() {
   return useMemo(
     () => ({
-      createRemLocalWorkspace: (name: string) => {
+      createWorkspacePage: (workspaceId: string, pageId: string) => {
+        const workspace = dataCenter.workspaces.find(
+          ws => ws.id === workspaceId
+        ) as LocalWorkspace;
+        if (workspace && 'blockSuiteWorkspace' in workspace) {
+          workspace.blockSuiteWorkspace.createPage(pageId);
+        } else {
+          throw new Error('cannot create page. blockSuiteWorkspace not found');
+        }
+      },
+      createRemLocalWorkspace: (name: string): string => {
         const id = uuidv4();
         const blockSuiteWorkspace = new BlockSuiteWorkspace({
           room: id,
@@ -139,6 +149,7 @@ export function useWorkspacesMutation() {
           id,
         };
         dataCenter.workspaces = [...dataCenter.workspaces, workspace];
+        return id;
       },
     }),
     []
