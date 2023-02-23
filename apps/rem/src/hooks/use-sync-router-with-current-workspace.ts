@@ -68,7 +68,10 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
     if (!router.isReady) {
       return;
     }
-    if (router.pathname === '/workspace/[workspaceId]/[pageId]') {
+    if (
+      router.pathname === '/workspace/[workspaceId]/[pageId]' ||
+      router.pathname === '/'
+    ) {
       const targetPageId = router.query.pageId;
       const targetWorkspaceId = router.query.workspaceId;
       if (currentWorkspace && currentPageId) {
