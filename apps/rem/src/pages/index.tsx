@@ -10,7 +10,7 @@ import { useCurrentPage } from '../hooks/current/use-current-page';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { usePageMetas } from '../hooks/use-page-metas';
-import { prefetchNecessaryData, useWorkspaces } from '../hooks/use-workspaces';
+import { prefetchNecessaryData } from '../hooks/use-workspaces';
 import { RemWorkspace } from '../shared';
 import { apis } from '../shared/apis';
 
@@ -91,24 +91,9 @@ function WorkspacePagePreview({ workspace }: { workspace: RemWorkspace }) {
   );
 }
 
-function WorkspaceList({ workspace }: { workspace: RemWorkspace[] }) {
-  return (
-    <div
-      style={{
-        border: '1px solid black',
-      }}
-    >
-      {workspace.map(ws => (
-        <WorkspacePreview key={ws.id} workspace={ws} />
-      ))}
-    </div>
-  );
-}
-
 prefetchNecessaryData();
 
 const IndexPage: NextPage = () => {
-  const workspaces = useWorkspaces();
   const user = useCurrentUser();
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPage] = useCurrentPage();
