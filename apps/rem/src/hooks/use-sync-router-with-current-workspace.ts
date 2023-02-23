@@ -42,6 +42,22 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
   const [currentPageId, setCurrentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
   useEffect(() => {
+    const listener: Parameters<typeof router.events.on>[1] = (url: string) => {
+      if (url.startsWith('/')) {
+        const path = url.split('/');
+        if (path.length === 4 && path[1] === 'workspace') {
+          setCurrentWorkspaceId(path[2]);
+          setCurrentPageId(path[3]);
+        }
+      }
+    };
+
+    router.events.on('routeChangeStart', listener);
+    return () => {
+      router.events.off('routeChangeStart', listener);
+    };
+  }, [router, setCurrentPageId, setCurrentWorkspaceId]);
+  useEffect(() => {
     if (!router.isReady) {
       return;
     }
@@ -117,6 +133,7 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
             router.replace({
               query: {
                 ...router.query,
+                workspaceId: currentWorkspace.id,
                 pageId: targetId,
               },
             });

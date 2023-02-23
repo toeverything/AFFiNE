@@ -74,7 +74,7 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
       data-testid="workspace-card"
       onClick={useCallback(() => {
         onClick(workspace);
-      }, [workspace])}
+      }, [onClick, workspace])}
       active={workspace.id === currentWorkspaceId}
     >
       <WorkspaceAvatar size={58} workspace={workspace} />
