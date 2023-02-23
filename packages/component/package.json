@@ -13,7 +13,7 @@
     "@blocksuite/blocks": "0.4.1-20230220214107-0a354de",
     "@blocksuite/editor": "0.4.1-20230220214107-0a354de",
     "@blocksuite/global": "0.4.1-20230220214107-0a354de",
-    "@blocksuite/icons": "2.0.12",
+    "@blocksuite/icons": "2.0.17",
     "@blocksuite/react": "0.4.1-20230220214107-0a354de",
     "@blocksuite/store": "0.4.1-20230220214107-0a354de",
     "@emotion/react": "^11.10.6",

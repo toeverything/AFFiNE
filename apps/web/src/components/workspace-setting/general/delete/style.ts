@@ -7,7 +7,7 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
     width: '560px',
     background: theme.colors.popoverBackground,
     borderRadius: '12px',
-    height: '312px',
+    // height: '312px',
   };
 });
 
@@ -42,17 +42,14 @@ export const StyledInputContent = styled('div')(({ theme }) => {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
-    margin: '42px 0',
+    margin: '24px 0',
     fontSize: theme.font.base,
   };
 });
 
 export const StyledButtonContent = styled('div')(() => {
   return {
-    position: 'absolute',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    bottom: '42px',
+    marginBottom: '42px',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
