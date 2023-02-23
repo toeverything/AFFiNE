@@ -73,7 +73,9 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
         paths={paths}
       />
       <StyledWrapper>
-        <BlockSuiteErrorBoundary>{children}</BlockSuiteErrorBoundary>
+        <BlockSuiteErrorBoundary router={router}>
+          {children}
+        </BlockSuiteErrorBoundary>
         <StyledToolWrapper>
           <div id="toolWrapper" style={{ marginBottom: '12px' }}>
             {/* Slot for block hub */}

@@ -46,6 +46,9 @@ export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
       if (url.startsWith('/')) {
         const path = url.split('/');
         if (path.length === 4 && path[1] === 'workspace') {
+          if (path[3] === 'all') {
+            return;
+          }
           setCurrentWorkspaceId(path[2]);
           if (currentWorkspace && 'blockSuiteWorkspace' in currentWorkspace) {
             if (currentWorkspace.blockSuiteWorkspace.getPage(path[3])) {

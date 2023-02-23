@@ -1,13 +1,26 @@
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
-import { useSyncRouterWithCurrentWorkspace } from '../hooks/use-sync-router-with-current-workspace';
-import { prefetchNecessaryData } from '../hooks/use-workspaces';
+import { prefetchNecessaryData, useWorkspaces } from '../hooks/use-workspaces';
 
 prefetchNecessaryData();
 const IndexPage: NextPage = () => {
   const router = useRouter();
-  useSyncRouterWithCurrentWorkspace(router);
+  const workspaces = useWorkspaces();
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+    if (workspaces.at(0)) {
+      router.push({
+        pathname: '/workspace/[workspaceId]/all',
+        query: {
+          workspaceId: workspaces[0].id,
+        },
+      });
+    }
+  }, [router, workspaces]);
   return <div>Redirecting...</div>;
 };
 
