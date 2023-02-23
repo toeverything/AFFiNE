@@ -40,6 +40,9 @@ export const transformToAffineSyncedWorkspace = (
 ): AffineRemoteSyncedWorkspace => {
   const blockSuiteWorkspace = new BlockSuiteWorkspace({
     room: unSyncedWorkspace.id,
+    blobOptionsGetter: (k: string) =>
+      // fixme: token could be expired
+      ({ api: '/api/workspace', token: apis.auth.token }[k]),
   })
     .register(builtInSchemas)
     .register(__unstableSchemas);

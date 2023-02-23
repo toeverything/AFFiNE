@@ -74,6 +74,16 @@ export function prefetchNecessaryData() {
             },
           };
           dataCenter.workspaces = [...dataCenter.workspaces, remWorkspace];
+          Promise.all(
+            dataCenter.workspaces.map(workspace => {
+              if (workspace.flavour === 'affine') {
+                if (!workspace.firstBinarySynced) {
+                  return workspace.syncBinary();
+                }
+              }
+              return Promise.resolve();
+            })
+          );
           dataCenter.callbacks.forEach(cb => cb());
         }
       });

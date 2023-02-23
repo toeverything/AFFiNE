@@ -101,6 +101,20 @@ const IndexPage: NextPage = () => {
   useEffect(() => {
     prefetchNecessaryData();
   }, []);
+  useEffect(() => {
+    if (currentWorkspace?.flavour === 'affine') {
+      if (currentWorkspace.firstBinarySynced) {
+        currentWorkspace.providers.forEach(provider => {
+          provider.connect();
+        });
+        return () => {
+          currentWorkspace.providers.forEach(provider => {
+            provider.disconnect();
+          });
+        };
+      }
+    }
+  }, [currentWorkspace]);
   const router = useRouter();
   return (
     <div>
