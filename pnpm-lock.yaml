@@ -169,6 +169,7 @@ importers:
       typescript: ^4.9.5
       y-indexeddb: ^9.0.9
       yjs: ^13.5.46
+      zod: ^3.20.6
     dependencies:
       '@affine/component': link:../../packages/component
       '@affine/datacenter': link:../../packages/data-center
@@ -190,6 +191,7 @@ importers:
       swr: 2.0.3_react@18.2.0
       y-indexeddb: 9.0.9_yjs@13.5.47
       yjs: 13.5.47
+      zod: 3.20.6
     devDependencies:
       '@types/react': 18.0.28
       '@types/react-dom': 18.0.11

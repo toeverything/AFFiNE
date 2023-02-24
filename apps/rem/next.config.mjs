@@ -36,6 +36,10 @@ const nextConfig = {
     '@affine/datacenter',
     '@affine/i18n',
   ],
+  publicRuntimeConfig: {
+    serverAPI:
+      profileTarget[process.env.NODE_API_SERVER || 'dev'] ?? profileTarget.dev,
+  },
   webpack: config => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
     config.module.rules.push({
