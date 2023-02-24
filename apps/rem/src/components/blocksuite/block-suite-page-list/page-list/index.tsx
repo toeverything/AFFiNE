@@ -14,6 +14,7 @@ import {
   PaperIcon,
 } from '@blocksuite/icons';
 import { PageMeta } from '@blocksuite/store';
+import { useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
 import React from 'react';
 
 import { usePageMeta } from '../../../../hooks/use-page-meta';
@@ -84,6 +85,8 @@ export const PageList: React.FC<PageListProps> = ({
 }) => {
   const pageList = usePageMeta(blockSuiteWorkspace);
   const { t } = useTranslation();
+  const theme = useMuiTheme();
+  const matches = useMediaQuery(theme.breakpoints.up('sm'));
   if (pageList.length === 0) {
     return <Empty listType={listType} />;
   }
@@ -93,12 +96,16 @@ export const PageList: React.FC<PageListProps> = ({
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell proportion={0.5}>{t('Title')}</TableCell>
-            <TableCell proportion={0.2}>{t('Created')}</TableCell>
-            <TableCell proportion={0.2}>
-              {isTrash ? t('Moved to Trash') : t('Updated')}
-            </TableCell>
-            <TableCell proportion={0.1}></TableCell>
+            {matches && (
+              <>
+                <TableCell proportion={0.5}>{t('Title')}</TableCell>
+                <TableCell proportion={0.2}>{t('Created')}</TableCell>
+                <TableCell proportion={0.2}>
+                  {isTrash ? t('Moved to Trash') : t('Updated')}
+                </TableCell>
+                <TableCell proportion={0.1}></TableCell>
+              </>
+            )}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -127,32 +134,36 @@ export const PageList: React.FC<PageListProps> = ({
                     {showFavoriteTag && <FavoriteTag pageMeta={pageMeta} />}
                   </StyledTitleWrapper>
                 </TableCell>
-                <DateCell
-                  pageMeta={pageMeta}
-                  dateKey="createDate"
-                  onClick={() => {
-                    onClickPage(pageMeta.id);
-                  }}
-                />
-                <DateCell
-                  pageMeta={pageMeta}
-                  dateKey={isTrash ? 'trashDate' : 'updatedDate'}
-                  backupKey={isTrash ? 'trashDate' : 'createDate'}
-                  onClick={() => {
-                    onClickPage(pageMeta.id);
-                  }}
-                />
-                {!isPublic && (
-                  <TableCell
-                    style={{ padding: 0 }}
-                    data-testid={`more-actions-${pageMeta.id}`}
-                  >
-                    {isTrash ? (
-                      <TrashOperationCell pageMeta={pageMeta} />
-                    ) : (
-                      <OperationCell pageMeta={pageMeta} />
+                {matches && (
+                  <>
+                    <DateCell
+                      pageMeta={pageMeta}
+                      dateKey="createDate"
+                      onClick={() => {
+                        onClickPage(pageMeta.id);
+                      }}
+                    />
+                    <DateCell
+                      pageMeta={pageMeta}
+                      dateKey={isTrash ? 'trashDate' : 'updatedDate'}
+                      backupKey={isTrash ? 'trashDate' : 'createDate'}
+                      onClick={() => {
+                        onClickPage(pageMeta.id);
+                      }}
+                    />
+                    {!isPublic && (
+                      <TableCell
+                        style={{ padding: 0 }}
+                        data-testid={`more-actions-${pageMeta.id}`}
+                      >
+                        {isTrash ? (
+                          <TrashOperationCell pageMeta={pageMeta} />
+                        ) : (
+                          <OperationCell pageMeta={pageMeta} />
+                        )}
+                      </TableCell>
                     )}
-                  </TableCell>
+                  </>
                 )}
               </StyledTableRow>
             );
