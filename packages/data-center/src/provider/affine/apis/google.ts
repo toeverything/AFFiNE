@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { initializeApp } from 'firebase/app';
-import type { User } from 'firebase/auth';
+import { connectAuthEmulator, User } from 'firebase/auth';
 import {
   type Auth as FirebaseAuth,
   getAuth as getFirebaseAuth,
@@ -203,6 +203,9 @@ export function createGoogleAuth(bareAuth: KyInstance): GoogleAuth {
   return new GoogleAuth(bareAuth);
 }
 
+// Connect emulators based on env vars
+const envConnectEmulators = process.env.REACT_APP_FIREBASE_EMULATORS === 'true';
+
 export const getAuthorizer = (googleAuth: GoogleAuth) => {
   let _firebaseAuth: FirebaseAuth | null = null;
   const logger = new DebugLogger('authorizer');
@@ -222,6 +225,12 @@ export const getAuthorizer = (googleAuth: GoogleAuth) => {
           measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
         });
         _firebaseAuth = getFirebaseAuth(app);
+      }
+      if (envConnectEmulators && !(window as any).firebaseAuthEmulatorStarted) {
+        connectAuthEmulator(_firebaseAuth, 'http://localhost:9099', {
+          disableWarnings: true,
+        });
+        (window as any).firebaseAuthEmulatorStarted = true;
       }
       return _firebaseAuth;
     } catch (error) {
