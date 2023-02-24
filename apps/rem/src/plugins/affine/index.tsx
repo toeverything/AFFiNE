@@ -48,5 +48,5 @@ export const AffineUIPlugin: UIPlugin<RemWorkspaceFlavour.AFFINE> = {
       />
     );
   },
-  SettingPanel: WIP,
+  Setting: WIP,
 };

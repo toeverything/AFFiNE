@@ -27,7 +27,7 @@ export const LocalUIPlugin: UIPlugin<RemWorkspaceFlavour.LOCAL> = {
       </>
     );
   },
-  SettingPanel: WIP,
+  Setting: WIP,
   PageList: ({ blockSuiteWorkspace, onClickPage }) => {
     return (
       <BlockSuitePageList

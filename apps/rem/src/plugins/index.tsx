@@ -14,8 +14,7 @@ type UIBaseProps<Flavour extends RemWorkspaceFlavour> = {
   currentWorkspace: FlavourToWorkspace[Flavour];
 };
 
-type SettingPanelProps<Flavour extends RemWorkspaceFlavour> =
-  UIBaseProps<Flavour>;
+type SettingProps<Flavour extends RemWorkspaceFlavour> = UIBaseProps<Flavour>;
 
 type PageDetailProps<Flavour extends RemWorkspaceFlavour> =
   UIBaseProps<Flavour> & {
@@ -36,7 +35,7 @@ export interface UIPlugin<Flavour extends RemWorkspaceFlavour> {
   flavour: Flavour;
   PageDetail: React.FC<PageDetailProps<Flavour>>;
   PageList: React.FC<PageListProps<Flavour>>;
-  SettingPanel: React.FC<SettingPanelProps<Flavour>>;
+  Setting: React.FC<SettingProps<Flavour>>;
 }
 export const UIPlugins = {
   [RemWorkspaceFlavour.AFFINE]: AffineUIPlugin,
