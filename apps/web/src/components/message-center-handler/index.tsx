@@ -1,17 +1,20 @@
 import { toast } from '@affine/component';
 import { DataCenter, MessageCenter } from '@affine/datacenter';
 import { AffineProvider } from '@affine/datacenter';
+import { DebugLogger } from '@affine/debug';
 import { useRouter } from 'next/router';
 import { ReactNode, useCallback, useEffect } from 'react';
 
 import { useGlobalState } from '@/store/app';
+
+const logger = new DebugLogger('messageCenter');
 
 const clearAuth = (dataCenter: DataCenter, providerName: string) => {
   const affineProvider = dataCenter.providers.find(p => p.id === providerName);
   if (affineProvider && affineProvider instanceof AffineProvider) {
     affineProvider.apis.auth.clear();
   } else {
-    console.error('cannot find affine provider, please fix this ASAP');
+    logger.error('cannot find affine provider, please fix this ASAP');
   }
 };
 export function MessageCenterHandler({ children }: { children?: ReactNode }) {
