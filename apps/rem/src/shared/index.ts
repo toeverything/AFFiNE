@@ -137,16 +137,18 @@ export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
   getLayout?: (page: ReactElement) => ReactNode;
 };
 
-export const paths = {
-  all: workspaceId => (workspaceId ? `/workspace/${workspaceId}/all` : ''),
-  favorite: workspaceId =>
-    workspaceId ? `/workspace/${workspaceId}/favorite` : '',
-  trash: workspaceId => (workspaceId ? `/workspace/${workspaceId}/trash` : ''),
-  setting: workspaceId =>
-    workspaceId ? `/workspace/${workspaceId}/setting` : '',
+export const enum WorkspaceSubPath {
+  ALL = 'all',
+  FAVORITE = 'favorite',
+  SETTING = 'setting',
+  TRASH = 'trash',
+}
+
+export const pathGenerator = {
+  all: workspaceId => `/workspace/${workspaceId}/all`,
+  favorite: workspaceId => `/workspace/${workspaceId}/favorite`,
+  trash: workspaceId => `/workspace/${workspaceId}/trash`,
+  setting: workspaceId => `/workspace/${workspaceId}/setting`,
 } satisfies {
-  all: (workspaceId: string | null) => string;
-  favorite: (workspaceId: string | null) => string;
-  trash: (workspaceId: string | null) => string;
-  setting: (workspaceId: string | null) => string;
+  [Path in WorkspaceSubPath]: (workspaceId: string) => string;
 };

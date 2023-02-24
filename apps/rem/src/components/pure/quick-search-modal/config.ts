@@ -7,7 +7,7 @@ import {
 } from '@blocksuite/icons';
 import { FC, SVGProps, useMemo } from 'react';
 
-import { paths } from '../../../shared';
+import { pathGenerator } from '../../../shared';
 export const useSwitchToConfig = (
   workspaceId: string
 ): {
@@ -20,22 +20,22 @@ export const useSwitchToConfig = (
     () => [
       {
         title: t('All pages'),
-        href: paths.all(workspaceId),
+        href: pathGenerator.all(workspaceId),
         icon: FolderIcon,
       },
       {
         title: t('Favorites'),
-        href: paths.favorite(workspaceId),
+        href: pathGenerator.favorite(workspaceId),
         icon: FavoriteIcon,
       },
       {
         title: t('Workspace Settings'),
-        href: paths.setting(workspaceId),
+        href: pathGenerator.setting(workspaceId),
         icon: SettingsIcon,
       },
       {
         title: t('Trash'),
-        href: paths.trash(workspaceId),
+        href: pathGenerator.trash(workspaceId),
         icon: DeleteTemporarilyIcon,
       },
     ],

@@ -11,7 +11,7 @@ import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { prefetchNecessaryData } from '../hooks/use-workspaces';
-import { paths } from '../shared';
+import { pathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
@@ -72,7 +72,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
         show={show}
         setShow={setShow}
         currentPath={useRouter().asPath}
-        paths={paths}
+        paths={pathGenerator}
       />
       <StyledWrapper>
         <BlockSuiteErrorBoundary router={router}>

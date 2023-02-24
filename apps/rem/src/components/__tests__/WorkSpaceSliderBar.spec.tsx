@@ -14,7 +14,7 @@ import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../../hooks/use-blocksuite-workspace-helper';
 import { useWorkspacesHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
-import { paths } from '../../shared';
+import { pathGenerator } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
 
 describe('WorkSpaceSliderBar', () => {
@@ -49,7 +49,7 @@ describe('WorkSpaceSliderBar', () => {
           show={show}
           setShow={setShow}
           currentPath={useRouter().asPath}
-          paths={paths}
+          paths={pathGenerator}
         />
       );
     };
