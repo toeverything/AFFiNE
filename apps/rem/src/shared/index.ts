@@ -118,8 +118,8 @@ export type RemWorkspace =
   | AffineRemoteUnSyncedWorkspace
   | AffineRemoteSyncedWorkspace;
 
-export const fetcher = (query: string) => {
-  if (query === 'getUser') {
+export const fetcher = async (query: string) => {
+  if (query === QueryKey.getUser) {
     return apis.auth.user ?? null;
   }
   return (apis as any)[query]();
