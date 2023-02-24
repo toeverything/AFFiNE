@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageNotFoundError } from '../../components/BlockSuiteErrorBoundary';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { RemWorkspaceFlavour } from '../../shared';
@@ -27,5 +28,12 @@ export const LocalUIPlugin: UIPlugin<RemWorkspaceFlavour.LOCAL> = {
     );
   },
   SettingPanel: WIP,
-  PageList: WIP,
+  PageList: ({ blockSuiteWorkspace, onClickPage }) => {
+    return (
+      <BlockSuitePageList
+        onClickPage={onClickPage}
+        blockSuiteWorkspace={blockSuiteWorkspace}
+      />
+    );
+  },
 };

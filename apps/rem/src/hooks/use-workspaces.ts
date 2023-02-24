@@ -6,7 +6,6 @@ import { IndexeddbPersistence } from 'y-indexeddb';
 
 import {
   AffineRemoteUnSyncedWorkspace,
-  BlockSuiteWorkspace,
   fetcher,
   LocalWorkspace,
   QueryKey,
@@ -136,9 +135,7 @@ export function useWorkspacesHelper() {
       },
       createRemLocalWorkspace: (name: string): string => {
         const id = uuidv4();
-        const blockSuiteWorkspace = new BlockSuiteWorkspace({
-          room: id,
-        });
+        const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(id);
         blockSuiteWorkspace.meta.setName(name);
         const workspace: LocalWorkspace = {
           flavour: RemWorkspaceFlavour.LOCAL,
