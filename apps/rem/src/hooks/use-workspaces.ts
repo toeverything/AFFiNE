@@ -74,7 +74,7 @@ if (typeof window !== 'undefined') {
 const emptyWorkspaces: RemWorkspace[] = [];
 
 export function prefetchNecessaryData() {
-  if (!config.prefetchAffineRemoteWorkspace) {
+  if (!config.prefetchWorkspace) {
     console.info('prefetchNecessaryData: skip prefetching');
     return;
   }
