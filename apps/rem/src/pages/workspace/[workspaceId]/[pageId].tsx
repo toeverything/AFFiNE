@@ -5,7 +5,7 @@ import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
-import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
+import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
 import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { UIPlugins } from '../../../plugins';
@@ -39,7 +39,7 @@ prefetchNecessaryData();
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   useLoadWorkspace(useCurrentWorkspace()[0]);
-  useSyncRouterWithCurrentWorkspace(router);
+  useSyncRouterWithCurrentWorkspaceAndPage(router);
   if (!router.isReady) {
     return <PageLoading />;
   } else if (

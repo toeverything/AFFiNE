@@ -17,7 +17,7 @@ import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { useCurrentWorkspace } from '../current/use-current-workspace';
 import { useLastOpenedWorkspace } from '../use-last-opened-workspace';
 import { usePageMeta, usePageMetaMutation } from '../use-page-meta';
-import { useSyncRouterWithCurrentWorkspace } from '../use-sync-router-with-current-workspace';
+import { useSyncRouterWithCurrentWorkspaceAndPage } from '../use-sync-router-with-current-workspace-and-page';
 import {
   useWorkspaces,
   useWorkspacesHelper,
@@ -109,7 +109,7 @@ describe('useWorkspaces', () => {
   });
 });
 
-describe('useSyncRouterWithCurrentWorkspace', () => {
+describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
   test('from "/"', async () => {
     const mutationHook = renderHook(() => useWorkspacesHelper());
     const id = mutationHook.result.current.createRemLocalWorkspace('test0');
@@ -118,11 +118,14 @@ describe('useSyncRouterWithCurrentWorkspace', () => {
     await routerHook.result.current.push('/');
     routerHook.rerender();
     expect(routerHook.result.current.asPath).toBe('/');
-    renderHook(({ router }) => useSyncRouterWithCurrentWorkspace(router), {
-      initialProps: {
-        router: routerHook.result.current,
-      },
-    });
+    renderHook(
+      ({ router }) => useSyncRouterWithCurrentWorkspaceAndPage(router),
+      {
+        initialProps: {
+          router: routerHook.result.current,
+        },
+      }
+    );
 
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });
@@ -135,11 +138,14 @@ describe('useSyncRouterWithCurrentWorkspace', () => {
     await routerHook.result.current.push(`/workspace/${id}/not_exist`);
     routerHook.rerender();
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/not_exist`);
-    renderHook(({ router }) => useSyncRouterWithCurrentWorkspace(router), {
-      initialProps: {
-        router: routerHook.result.current,
-      },
-    });
+    renderHook(
+      ({ router }) => useSyncRouterWithCurrentWorkspaceAndPage(router),
+      {
+        initialProps: {
+          router: routerHook.result.current,
+        },
+      }
+    );
 
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });

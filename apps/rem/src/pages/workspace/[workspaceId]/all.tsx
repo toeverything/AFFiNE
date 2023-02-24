@@ -1,14 +1,12 @@
 import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 
 import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
-import {
-  prefetchNecessaryData,
-  useWorkspaces,
-} from '../../../hooks/use-workspaces';
+import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
+import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { UIPlugins } from '../../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
@@ -17,52 +15,9 @@ prefetchNecessaryData();
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
-  const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
+  const [currentWorkspace] = useCurrentWorkspace();
   useLoadWorkspace(currentWorkspace);
-  const workspaces = useWorkspaces();
-  useEffect(() => {
-    const listener: Parameters<typeof router.events.on>[1] = (url: string) => {
-      if (url.startsWith('/')) {
-        const path = url.split('/');
-        if (path.length === 4 && path[1] === 'workspace') {
-          setCurrentWorkspaceId(path[2]);
-        }
-      }
-    };
-
-    router.events.on('routeChangeStart', listener);
-    return () => {
-      router.events.off('routeChangeStart', listener);
-    };
-  }, [currentWorkspace, router, setCurrentWorkspaceId]);
-  useEffect(() => {
-    if (!router.isReady) {
-      return;
-    }
-    const workspaceId = router.query.workspaceId;
-    if (typeof workspaceId !== 'string') {
-      return;
-    }
-    if (!currentWorkspace) {
-      const targetWorkspace = workspaces.find(
-        workspace => workspace.id === workspaceId
-      );
-      if (targetWorkspace) {
-        setCurrentWorkspaceId(targetWorkspace.id);
-      } else {
-        const targetWorkspace = workspaces.at(0);
-        if (targetWorkspace) {
-          setCurrentWorkspaceId(targetWorkspace.id);
-          router.push({
-            pathname: '/workspace/[workspaceId]/all',
-            query: {
-              workspaceId: targetWorkspace.id,
-            },
-          });
-        }
-      }
-    }
-  }, [currentWorkspace, router, setCurrentWorkspaceId, workspaces]);
+  useSyncRouterWithCurrentWorkspace(router);
   const openPage = useCallback(
     (id: string) => {
       assertExists(currentWorkspace);
