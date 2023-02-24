@@ -4,15 +4,9 @@ import {
   getApis,
   GoogleAuth,
 } from '@affine/datacenter';
-import getConfig from 'next/config';
 
-import { PublicRuntimeConfig, publicRuntimeConfigSchema } from '../types';
+import { config } from './env';
 
-const { publicRuntimeConfig: config } = getConfig() as {
-  publicRuntimeConfig: PublicRuntimeConfig;
-};
-
-publicRuntimeConfigSchema.parse(config);
 let prefixUrl = '/';
 if (typeof window === 'undefined') {
   // SSR
