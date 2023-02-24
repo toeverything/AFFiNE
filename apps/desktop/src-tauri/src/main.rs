@@ -5,6 +5,7 @@
 
 mod commands;
 mod state;
+mod menu;
 use dotenvy::dotenv;
 use state::AppState;
 use std::env;
@@ -47,6 +48,9 @@ async fn main() {
       Ok(())
     })
     .invoke_handler(commands::invoke_handler())
+    .plugin(tauri_plugin_positioner::init())
+    .menu(menu::init())
+    .on_menu_event(menu::menu_handler)
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
