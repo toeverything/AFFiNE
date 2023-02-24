@@ -1,11 +1,19 @@
 import { toast } from '@affine/component';
-import { MessageCenter } from '@affine/datacenter';
+import { DataCenter, MessageCenter } from '@affine/datacenter';
 import { AffineProvider } from '@affine/datacenter';
 import { useRouter } from 'next/router';
 import { ReactNode, useCallback, useEffect } from 'react';
 
 import { useGlobalState } from '@/store/app';
 
+const clearAuth = (dataCenter: DataCenter, providerName: string) => {
+  const affineProvider = dataCenter.providers.find(p => p.id === providerName);
+  if (affineProvider && affineProvider instanceof AffineProvider) {
+    affineProvider.apis.auth.clear();
+  } else {
+    console.error('cannot find affine provider, please fix this ASAP');
+  }
+};
 export function MessageCenterHandler({ children }: { children?: ReactNode }) {
   const router = useRouter();
   const dataCenter = useGlobalState(useCallback(store => store.dataCenter, []));
@@ -19,14 +27,7 @@ export function MessageCenterHandler({ children }: { children?: ReactNode }) {
           // todo: error toast style
           toast('You have no permission to access this workspace');
           // todo(himself65): remove dynamic lookup
-          const affineProvider = dataCenter.providers.find(
-            p => p.id === 'affine'
-          );
-          if (affineProvider && affineProvider instanceof AffineProvider) {
-            affineProvider.apis.auth.clear();
-          } else {
-            console.error('cannot find affine provider, please fix this ASAP');
-          }
+          clearAuth(dataCenter, 'affine');
           // the status of the app right now is unknown, and it won't help if we let
           // the app continue and let the user auth the app.
           // that's why so we need to reload the page for now.
@@ -36,9 +37,16 @@ export function MessageCenterHandler({ children }: { children?: ReactNode }) {
           await router.push('/');
           router.reload();
         }
+
+        if (message.code === MessageCenter.messageCode.refreshTokenError) {
+          toast('Automatic login fail, please login self later');
+          clearAuth(dataCenter, 'affine');
+          await router.push('/');
+          router.reload();
+        }
       });
     }
-  }, [dataCenter?.providers, router]);
+  }, [dataCenter, router]);
 
   return <>{children}</>;
 }
