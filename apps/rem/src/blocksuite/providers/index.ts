@@ -13,7 +13,7 @@ export const createWebSocketProvider = (
 ): AffineWebSocketProvider => {
   let webSocketProvider: WebsocketProvider | null = null;
   return {
-    flavour: 'affine',
+    flavour: 'affine-websocket',
     connect: () => {
       const wsUrl = `${
         window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -47,7 +47,7 @@ export const createIndexedDBProvider = (
 ): LocalIndexedDBProvider => {
   let indexdbProvider: IndexeddbPersistence | null = null;
   return {
-    flavour: 'local',
+    flavour: 'local-indexeddb',
     connect: () => {
       indexdbProvider = new IndexeddbPersistence(
         blockSuiteWorkspace.room as string,

@@ -4,6 +4,7 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { preload } from 'swr';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
+import { createLocalProviders } from '../blocksuite';
 import {
   AffineRemoteUnSyncedWorkspace,
   fetcher,
@@ -140,7 +141,7 @@ export function useWorkspacesHelper() {
         const workspace: LocalWorkspace = {
           flavour: RemWorkspaceFlavour.LOCAL,
           blockSuiteWorkspace: blockSuiteWorkspace,
-          providers: [],
+          providers: [...createLocalProviders(blockSuiteWorkspace)],
           syncBinary: async () => {
             const persistence = new IndexeddbPersistence(
               blockSuiteWorkspace.room as string,

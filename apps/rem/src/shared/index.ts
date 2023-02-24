@@ -87,11 +87,11 @@ export type BaseProvider = {
 };
 
 export interface LocalIndexedDBProvider extends BaseProvider {
-  flavour: 'local';
+  flavour: 'local-indexeddb';
 }
 
 export interface AffineWebSocketProvider extends BaseProvider {
-  flavour: 'affine';
+  flavour: 'affine-websocket';
 }
 
 export type Provider = LocalIndexedDBProvider | AffineWebSocketProvider;
