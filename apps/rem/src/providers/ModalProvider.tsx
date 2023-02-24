@@ -11,6 +11,7 @@ import { WorkspaceListModal } from '../components/pure/workspace-list-modal';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
+import { apis } from '../shared/apis';
 
 export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
@@ -47,12 +48,15 @@ export function Modals() {
           },
           [router, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
-        onClickLogin={function (): void {
-          throw new Error('Function not implemented.');
-        }}
-        onClickLogout={function (): void {
-          throw new Error('Function not implemented.');
-        }}
+        onClickLogin={useCallback(() => {
+          apis.signInWithGoogle().then(() => {
+            router.reload();
+          });
+        }, [router])}
+        onClickLogout={useCallback(() => {
+          apis.auth.clear();
+          router.reload();
+        }, [router])}
         onCreateWorkspace={useCallback(() => {
           setOpenCreateWorkspaceModal(true);
         }, [setOpenCreateWorkspaceModal])}
