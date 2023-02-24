@@ -57,7 +57,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
           pageId => {
             assertExists(currentWorkspace);
             router.push({
-              pathname: '/workspaces/[workspaceId]/[pageId]',
+              pathname: '/workspace/[workspaceId]/[pageId]',
               query: {
                 workspaceId: currentWorkspace.id,
                 pageId,
