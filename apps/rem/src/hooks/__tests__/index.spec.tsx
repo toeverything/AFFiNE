@@ -14,6 +14,8 @@ import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
+import { useCurrentWorkspace } from '../current/use-current-workspace';
+import { useLastOpenedWorkspace } from '../use-last-opened-workspace';
 import { usePageMeta, usePageMetaMutation } from '../use-page-meta';
 import { useSyncRouterWithCurrentWorkspace } from '../use-sync-router-with-current-workspace';
 import {
@@ -140,5 +142,21 @@ describe('useSyncRouterWithCurrentWorkspace', () => {
     });
 
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
+  });
+});
+
+describe('useLastOpenedWorkspace', () => {
+  test('basic', async () => {
+    const workspaceHelperHook = renderHook(() => useWorkspacesHelper());
+    workspaceHelperHook.result.current.createRemLocalWorkspace('test');
+    const workspacesHook = renderHook(() => useWorkspaces());
+    const currentWorkspaceHook = renderHook(() => useCurrentWorkspace());
+    currentWorkspaceHook.result.current[1](workspacesHook.result.current[0].id);
+    const lastOpenedWorkspace = renderHook(() => useLastOpenedWorkspace());
+    expect(lastOpenedWorkspace.result.current[0]).toBe(null);
+    const lastOpenedWorkspace2 = renderHook(() => useLastOpenedWorkspace());
+    expect(lastOpenedWorkspace2.result.current[0]).toBe(
+      workspacesHook.result.current[0].id
+    );
   });
 });
