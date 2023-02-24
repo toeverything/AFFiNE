@@ -4,12 +4,13 @@ import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page
 import { PageNotFoundError } from '../../components/BlockSuiteErrorBoundary';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { RemWorkspaceFlavour } from '../../shared';
-import { UIPlugin } from '../index';
+import { WorkspacePlugin } from '../index';
 
 const WIP = () => <div>WIP</div>;
 
-export const LocalUIPlugin: UIPlugin<RemWorkspaceFlavour.LOCAL> = {
+export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
   flavour: RemWorkspaceFlavour.LOCAL,
+  prefetchData: async () => {},
   PageDetail: ({ currentWorkspace, currentPageId }) => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
     if (!page) {

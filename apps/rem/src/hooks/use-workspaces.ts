@@ -1,20 +1,10 @@
-import { Workspace } from '@affine/datacenter';
 import { assertEquals, uuidv4 } from '@blocksuite/store';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { preload } from 'swr';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
 import { createLocalProviders } from '../blocksuite';
-import {
-  AffineRemoteUnSyncedWorkspace,
-  fetcher,
-  LocalWorkspace,
-  QueryKey,
-  RemWorkspace,
-  RemWorkspaceFlavour,
-  transformToAffineSyncedWorkspace,
-} from '../shared';
-import { apis } from '../shared/apis';
+import { UIPlugins } from '../plugins';
+import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
 import { config } from '../shared/env';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 
@@ -88,63 +78,12 @@ export function prefetchNecessaryData() {
     console.info('prefetchNecessaryData: skip prefetching');
     return;
   }
-  const promise: Promise<Workspace[]> = preload(
-    QueryKey.getWorkspaces,
-    fetcher
-  );
-  promise
-    .then(workspaces => {
-      workspaces.forEach(workspace => {
-        const exist = dataCenter.workspaces.find(
-          localWorkspace => localWorkspace.id === workspace.id
-        );
-        if (!exist) {
-          // todo: make this `RemWorkspace`
-          const remWorkspace: AffineRemoteUnSyncedWorkspace = {
-            ...workspace,
-            flavour: RemWorkspaceFlavour.AFFINE,
-            firstBinarySynced: false,
-            blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(workspace.id),
-            syncBinary: async () => {
-              const binary = await apis.downloadWorkspace(
-                workspace.id,
-                workspace.public
-              );
-              if (remWorkspace.firstBinarySynced) {
-                return;
-              }
-              const syncedWorkspace = await transformToAffineSyncedWorkspace(
-                remWorkspace,
-                binary
-              );
-              const index = dataCenter.workspaces.findIndex(
-                ws => ws.id === syncedWorkspace.id
-              );
-              if (index > -1) {
-                dataCenter.workspaces.splice(index, 1, syncedWorkspace);
-                dataCenter.workspaces = [...dataCenter.workspaces];
-                dataCenter.callbacks.forEach(cb => cb());
-              }
-            },
-          };
-          dataCenter.workspaces = [...dataCenter.workspaces, remWorkspace];
-          Promise.all(
-            dataCenter.workspaces.map(workspace => {
-              if (workspace.flavour === 'affine') {
-                if (!workspace.firstBinarySynced) {
-                  return workspace.syncBinary();
-                }
-              }
-              return Promise.resolve();
-            })
-          );
-          dataCenter.callbacks.forEach(cb => cb());
-        }
-      });
-    })
-    .catch(error => {
-      console.error(error);
+  Object.entries(UIPlugins).map(([pluginName, plugin]) => {
+    console.info('prefetchNecessaryData: plugin', pluginName);
+    return plugin.prefetchData(dataCenter).catch(e => {
+      console.error('error prefetch data', pluginName, e);
     });
+  });
 }
 
 export function useWorkspaces(): RemWorkspace[] {

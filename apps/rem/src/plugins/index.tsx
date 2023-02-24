@@ -3,10 +3,11 @@ import React from 'react';
 import {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
+  RemWorkspace,
   RemWorkspaceFlavour,
 } from '../shared';
-import { AffineUIPlugin } from './affine';
-import { LocalUIPlugin } from './local';
+import { AffinePlugin } from './affine';
+import { LocalPlugin } from './local';
 
 const WIP = () => <div>WIP</div>;
 
@@ -31,15 +32,21 @@ type SideBarMenuProps<Flavour extends RemWorkspaceFlavour> =
     setSideBarOpen: (open: boolean) => void;
   };
 
-export interface UIPlugin<Flavour extends RemWorkspaceFlavour> {
+export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   flavour: Flavour;
+  // Fetch necessary data for the first render
+  prefetchData: (dataCenter: {
+    workspaces: RemWorkspace[];
+    callbacks: Set<() => void>;
+  }) => Promise<unknown>;
   PageDetail: React.FC<PageDetailProps<Flavour>>;
   PageList: React.FC<PageListProps<Flavour>>;
   Setting: React.FC<SettingProps<Flavour>>;
 }
+
 export const UIPlugins = {
-  [RemWorkspaceFlavour.AFFINE]: AffineUIPlugin,
-  [RemWorkspaceFlavour.LOCAL]: LocalUIPlugin,
+  [RemWorkspaceFlavour.AFFINE]: AffinePlugin,
+  [RemWorkspaceFlavour.LOCAL]: LocalPlugin,
 } satisfies {
-  [Key in RemWorkspaceFlavour]: UIPlugin<Key>;
+  [Key in RemWorkspaceFlavour]: WorkspacePlugin<Key>;
 };
