@@ -1,6 +1,9 @@
 import path from 'node:path';
 import debugLocal from 'next-debug-local';
 import preset from './preset.config.mjs';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 console.info('Runtime Preset', preset);
 
@@ -42,6 +45,7 @@ const nextConfig = {
   publicRuntimeConfig: {
     serverAPI:
       profileTarget[process.env.NODE_API_SERVER || 'dev'] ?? profileTarget.dev,
+    editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
     ...preset,
   },
   webpack: config => {

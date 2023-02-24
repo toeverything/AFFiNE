@@ -3,6 +3,7 @@ export default function getConfig() {
     publicRuntimeConfig: {
       serverAPI: 'http://localhost:3000/api',
       enableIndexedDBProvider: true,
+      editorVersion: 'UNKNOWN',
     },
   };
 }
