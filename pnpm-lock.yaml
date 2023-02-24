@@ -157,6 +157,7 @@ importers:
       '@mui/material': ^5.11.10
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
+      cmdk: ^0.1.22
       dayjs: ^1.11.7
       dotenv: ^16.0.3
       jotai: ^2.0.2
@@ -184,6 +185,7 @@ importers:
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
       '@emotion/server': 11.10.0_@emotion+css@11.10.6
       '@mui/material': 5.11.10_dl5meo57oqikomakll4aynjcye
+      cmdk: 0.1.22_zula6vjvt3wdocc4mwcxqa6nzi
       dayjs: 1.11.7
       jotai: 2.0.2_react@18.2.0
       lit: 2.6.1

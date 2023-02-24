@@ -21,6 +21,7 @@
     "@emotion/react": "^11.10.6",
     "@emotion/server": "^11.10.0",
     "@mui/material": "^5.11.10",
+    "cmdk": "^0.1.22",
     "dayjs": "^1.11.7",
     "jotai": "^2.0.2",
     "lit": "^2.6.1",

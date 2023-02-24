@@ -4,9 +4,11 @@ import React, { useCallback } from 'react';
 
 import {
   openCreateWorkspaceModalAtom,
+  openQuickSearchModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { CreateWorkspaceModal } from '../components/pure/create-workspace-modal';
+import QuickSearchModal from '../components/pure/quick-search-modal';
 import { WorkspaceListModal } from '../components/pure/workspace-list-modal';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -20,11 +22,17 @@ export function Modals() {
   const [openCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
     openCreateWorkspaceModalAtom
   );
+
+  const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
+    openQuickSearchModalAtom
+  );
   const router = useRouter();
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const [currentWorkspace, setCurrentWorkspace] = useCurrentWorkspace();
   const { createRemLocalWorkspace } = useWorkspacesHelper();
+
+  const disableShortCut = router.pathname.startsWith('/404');
   return (
     <>
       <WorkspaceListModal
@@ -80,6 +88,15 @@ export function Modals() {
           [createRemLocalWorkspace, router, setOpenCreateWorkspaceModal]
         )}
       />
+      {currentWorkspace?.blockSuiteWorkspace && (
+        <QuickSearchModal
+          enableShortCut={!disableShortCut}
+          blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
+          open={openQuickSearchModal}
+          setOpen={setOpenQuickSearchModalAtom}
+          router={router}
+        />
+      )}
     </>
   );
 }
