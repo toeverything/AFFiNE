@@ -218,6 +218,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             </StyledListItem>
           </Link>
           <StyledNewPageButton
+            data-testid="new-page-button"
             onClick={async () => {
               const pageId = await createPage();
               if (pageId) {
