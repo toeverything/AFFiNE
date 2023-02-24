@@ -11,6 +11,7 @@ import { PageLoading } from '../components/pure/loading';
 import { ModalProvider } from '../providers/ModalProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { fetcher, NextPageWithLayout } from '../shared';
+import { config } from '../shared/env';
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
@@ -25,6 +26,14 @@ function App({ Component }: AppPropsWithLayout) {
   useEffect(() => {
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
+
+  if (process.env.NODE_ENV === 'development') {
+    // I know what I'm doing
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      console.log('Runtime Preset', config);
+    }, []);
+  }
 
   return (
     <>

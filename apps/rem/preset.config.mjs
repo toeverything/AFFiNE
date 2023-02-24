@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 export default {
-  enableIndexedDBProvider: true,
+  enableIndexedDBProvider: Boolean(process.env.ENABLE_IDB_PROVIDER ?? '1'),
 };

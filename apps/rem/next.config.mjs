@@ -2,6 +2,8 @@ import path from 'node:path';
 import debugLocal from 'next-debug-local';
 import preset from './preset.config.mjs';
 
+console.info('Runtime Preset', preset);
+
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
 
 const profileTarget = {
