@@ -4,7 +4,7 @@ export default function getConfig() {
       serverAPI: 'http://localhost:3000/api',
       enableIndexedDBProvider: true,
       editorVersion: 'UNKNOWN',
-      prefetchAffineRemoteWorkspace: false,
+      prefetchWorkspace: false,
     },
   };
 }
