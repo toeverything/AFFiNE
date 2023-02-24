@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { initializeApp } from 'firebase/app';
-import type { User } from 'firebase/auth';
+import { connectAuthEmulator, User } from 'firebase/auth';
 import {
   type Auth as FirebaseAuth,
   getAuth as getFirebaseAuth,
@@ -11,7 +11,9 @@ import {
 import { decode } from 'js-base64';
 import { KyInstance } from 'ky/distribution/types/ky';
 
+import { MessageCenter } from '../../../message';
 import { storage } from '../storage';
+import { RequestError } from './request-error';
 
 export interface AccessTokenMessage {
   created_at: number;
@@ -38,6 +40,9 @@ type LoginResponse = {
 
 // TODO: organize storage keys in a better way
 const AFFINE_LOGIN_STORAGE_KEY = 'affine:login';
+const messageCenter = MessageCenter.getInstance();
+const sendMessage = messageCenter.getMessageSender('affine');
+const { messageCode } = MessageCenter;
 
 /**
  * Use refresh token to get a new access token (JWT)
@@ -98,9 +103,17 @@ export class GoogleAuth {
   }
 
   async initToken(token: string) {
-    const res = await this._doLogin({ token, type: 'Google' });
-    this.setLogin(res);
-    return this._user;
+    try {
+      const res = await this._doLogin({
+        token,
+        type: 'Google',
+      });
+      this.setLogin(res);
+      return this._user;
+    } catch (error) {
+      sendMessage(messageCode.loginError);
+      throw new RequestError('Login failed', error);
+    }
   }
 
   async refreshToken(refreshToken?: string) {
@@ -117,8 +130,9 @@ export class GoogleAuth {
         this.setLogin(res);
       }
       return true;
-    } catch {
-      this._logger.warn('Failed to refresh token');
+    } catch (error) {
+      sendMessage(messageCode.refreshTokenError);
+      throw new RequestError('Refresh token failed', error);
     } finally {
       // clear on settled
       this._padding = undefined;
@@ -189,6 +203,9 @@ export function createGoogleAuth(bareAuth: KyInstance): GoogleAuth {
   return new GoogleAuth(bareAuth);
 }
 
+// Connect emulators based on env vars
+const envConnectEmulators = process.env.REACT_APP_FIREBASE_EMULATORS === 'true';
+
 export const getAuthorizer = (googleAuth: GoogleAuth) => {
   let _firebaseAuth: FirebaseAuth | null = null;
   const logger = new DebugLogger('authorizer');
@@ -208,6 +225,12 @@ export const getAuthorizer = (googleAuth: GoogleAuth) => {
           measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
         });
         _firebaseAuth = getFirebaseAuth(app);
+      }
+      if (envConnectEmulators && !(window as any).firebaseAuthEmulatorStarted) {
+        connectAuthEmulator(_firebaseAuth, 'http://localhost:9099', {
+          disableWarnings: true,
+        });
+        (window as any).firebaseAuthEmulatorStarted = true;
       }
       return _firebaseAuth;
     } catch (error) {
