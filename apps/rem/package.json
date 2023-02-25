@@ -24,6 +24,7 @@
     "cmdk": "^0.1.22",
     "dayjs": "^1.11.7",
     "jotai": "^2.0.2",
+    "jotai-devtools": "^0.2.0",
     "lit": "^2.6.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -33,6 +34,8 @@
     "zod": "^3.20.6"
   },
   "devDependencies": {
+    "@swc-jotai/debug-label": "^0.0.6",
+    "@swc-jotai/react-refresh": "^0.0.4",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "dotenv": "^16.0.3",

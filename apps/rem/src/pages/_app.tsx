@@ -1,6 +1,7 @@
 import '../styles/globals.css';
 
 import { useTranslation } from '@affine/i18n';
+import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
 import React, { ReactElement, Suspense, useEffect, useMemo } from 'react';
@@ -18,6 +19,11 @@ type AppPropsWithLayout = AppProps & {
 };
 
 const EmptyLayout = (page: ReactElement) => page;
+
+const DebugAtoms = () => {
+  useAtomsDebugValue();
+  return null;
+};
 
 function App({ Component }: AppPropsWithLayout) {
   const getLayout = Component.getLayout || EmptyLayout;
@@ -47,6 +53,7 @@ function App({ Component }: AppPropsWithLayout) {
         />
         <title>AFFiNE</title>
       </Head>
+      <DebugAtoms />
       <SWRConfig
         value={{
           suspense: true,
