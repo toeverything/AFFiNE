@@ -129,6 +129,9 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
           <StyledArrowButton
             data-testid="sliderBar-arrowButton"
             isShow={show}
+            style={{
+              visibility: isPublicWorkspace ? 'hidden' : 'visible',
+            }}
             onClick={useCallback(() => {
               setShow(!show);
               setShowTip(false);
@@ -255,14 +258,12 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <DeleteTemporarilyIcon /> {t('Trash')}
             </StyledListItem>
           </Link>
-          {!isPublicWorkspace && (
-            <StyledNewPageButton
-              data-testid="new-page-button"
-              onClick={onClickNewPage}
-            >
-              <PlusIcon /> {t('New Page')}
-            </StyledNewPageButton>
-          )}
+          <StyledNewPageButton
+            data-testid="new-page-button"
+            onClick={onClickNewPage}
+          >
+            <PlusIcon /> {t('New Page')}
+          </StyledNewPageButton>
         </StyledSliderBarWrapper>
       </StyledSliderBar>
     </>
