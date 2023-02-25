@@ -58,15 +58,16 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
               () => [
                 <ThemeProvider key="ThemeProvider" />,
                 <ModalProvider key="ModalProvider" />,
-                <HelmetProvider key="HelmetProvider" context={helmetContext} />,
               ],
               []
             )}
           >
-            <Helmet>
-              <title>AFFiNE</title>
-            </Helmet>
-            {getLayout(<Component {...pageProps} />)}
+            <HelmetProvider key="HelmetProvider" context={helmetContext}>
+              <Helmet>
+                <title>AFFiNE</title>
+              </Helmet>
+              {getLayout(<Component {...pageProps} />)}
+            </HelmetProvider>
           </ProviderComposer>
         </Suspense>
       </SWRConfig>
