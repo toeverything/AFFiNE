@@ -3,8 +3,8 @@ import '../styles/globals.css';
 import { useTranslation } from '@affine/i18n';
 import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
-import Head from 'next/head';
 import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { SWRConfig } from 'swr';
 
 import { ProviderComposer } from '../components/provider-composer';
@@ -43,9 +43,6 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
 
   return (
     <>
-      <Head>
-        <title>AFFiNE</title>
-      </Head>
       <DebugAtoms />
       <SWRConfig
         value={{
@@ -59,10 +56,14 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
               () => [
                 <ThemeProvider key="ThemeProvider" />,
                 <ModalProvider key="ModalProvider" />,
+                <HelmetProvider key="HelmetProvider" />,
               ],
               []
             )}
           >
+            <Helmet>
+              <title>AFFiNE</title>
+            </Helmet>
             {getLayout(<Component {...pageProps} />)}
           </ProviderComposer>
         </Suspense>

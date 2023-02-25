@@ -8,6 +8,7 @@ import { render, renderHook } from '@testing-library/react';
 import { useRouter } from 'next/router';
 import { useCallback, useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
+import createFetchMock from 'vitest-fetch-mock';
 
 import { useCurrentPageId } from '../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
@@ -17,8 +18,14 @@ import { ThemeProvider } from '../../providers/ThemeProvider';
 import { pathGenerator } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
 
+const fetchMocker = createFetchMock(vi);
+
+// fetchMocker.enableMocks();
+
 describe('WorkSpaceSliderBar', () => {
   test('basic', async () => {
+    // fetchMocker.mock
+
     const onOpenWorkspaceListModalFn = vi.fn();
     const onOpenQuickSearchModalFn = vi.fn();
     const mutationHook = renderHook(() => useWorkspacesHelper());
