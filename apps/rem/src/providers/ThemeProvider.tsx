@@ -17,14 +17,7 @@ import {
   ThemeProvider as MuiThemeProvider,
 } from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { createContext, useContext, useMemo, useRef, useState } from 'react';
 
 import { useSystemTheme } from '../hooks/use-system-theme';
 
@@ -67,9 +60,9 @@ export const ThemeProvider = ({
     onceRef.current = false;
   }
 
-  useEffect(() => {
-    setTheme(systemTheme);
-  }, [systemTheme]);
+  // useEffect(() => {
+  //   setTheme(systemTheme);
+  // }, [systemTheme]);
 
   // todo: save user theme in localStorage
 
