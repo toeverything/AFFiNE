@@ -79,7 +79,7 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
             dataCenter.workspaces = [...dataCenter.workspaces, workspace];
           } else {
             dataCenter.workspaces[exist] = workspace;
-            dataCenter.workspaces = [...dataCenter.workspaces, workspace];
+            dataCenter.workspaces = [...dataCenter.workspaces];
           }
         }
       });
