@@ -22,6 +22,7 @@
     "@emotion/server": "^11.10.0",
     "@mui/material": "^5.11.10",
     "cmdk": "^0.1.22",
+    "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
     "jotai": "^2.0.2",
     "jotai-devtools": "^0.2.0",

@@ -160,6 +160,7 @@ importers:
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
       cmdk: ^0.1.22
+      css-spring: ^4.1.0
       dayjs: ^1.11.7
       dotenv: ^16.0.3
       jotai: ^2.0.2
@@ -189,6 +190,7 @@ importers:
       '@emotion/server': 11.10.0_@emotion+css@11.10.6
       '@mui/material': 5.11.10_dl5meo57oqikomakll4aynjcye
       cmdk: 0.1.22_zula6vjvt3wdocc4mwcxqa6nzi
+      css-spring: 4.1.0
       dayjs: 1.11.7
       jotai: 2.0.2_react@18.2.0
       jotai-devtools: 0.2.0_jotai@2.0.2+react@18.2.0
