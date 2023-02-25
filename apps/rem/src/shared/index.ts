@@ -144,6 +144,15 @@ export const enum WorkspaceSubPath {
   TRASH = 'trash',
 }
 
+export const WorkspaceSubPathName = {
+  [WorkspaceSubPath.ALL]: 'All Pages',
+  [WorkspaceSubPath.FAVORITE]: 'Favorites',
+  [WorkspaceSubPath.SETTING]: 'Settings',
+  [WorkspaceSubPath.TRASH]: 'Trash',
+} satisfies {
+  [Path in WorkspaceSubPath]: string;
+};
+
 export const pathGenerator = {
   all: workspaceId => `/workspace/${workspaceId}/all`,
   favorite: workspaceId => `/workspace/${workspaceId}/favorite`,

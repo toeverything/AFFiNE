@@ -25,6 +25,8 @@ const DebugAtoms = memo(function DebugAtoms() {
   return null;
 });
 
+const helmetContext = {};
+
 function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout = Component.getLayout || EmptyLayout;
   const { i18n } = useTranslation();
@@ -56,7 +58,7 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
               () => [
                 <ThemeProvider key="ThemeProvider" />,
                 <ModalProvider key="ModalProvider" />,
-                <HelmetProvider key="HelmetProvider" />,
+                <HelmetProvider key="HelmetProvider" context={helmetContext} />,
               ],
               []
             )}
