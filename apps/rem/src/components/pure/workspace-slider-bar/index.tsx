@@ -86,10 +86,10 @@ export type WorkSpaceSliderBarProps = {
   setShow: (show: boolean) => void;
   currentPath: string;
   paths: {
-    all: (workspaceId: string | null) => string;
-    favorite: (workspaceId: string | null) => string;
-    trash: (workspaceId: string | null) => string;
-    setting: (workspaceId: string | null) => string;
+    all: (workspaceId: string) => string;
+    favorite: (workspaceId: string) => string;
+    trash: (workspaceId: string) => string;
+    setting: (workspaceId: string) => string;
   };
 };
 
@@ -152,18 +152,33 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             <SearchIcon />
             {t('Quick search')}
           </StyledListItem>
-          <Link href={{ pathname: paths.all(currentWorkspaceId) }}>
+          <Link
+            href={{
+              pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
+            }}
+          >
             <StyledListItem
-              active={currentPath === paths.all(currentWorkspaceId)}
+              active={
+                currentPath ===
+                (currentWorkspaceId && paths.all(currentWorkspaceId))
+              }
             >
               <FolderIcon />
               <span data-testid="all-pages">{t('All pages')}</span>
             </StyledListItem>
           </Link>
           <StyledListItem
-            active={currentPath === paths.favorite(currentWorkspaceId)}
+            active={
+              currentPath ===
+              (currentWorkspaceId && paths.favorite(currentWorkspaceId))
+            }
           >
-            <StyledLink href={{ pathname: paths.favorite(currentWorkspaceId) }}>
+            <StyledLink
+              href={{
+                pathname:
+                  currentWorkspaceId && paths.favorite(currentWorkspaceId),
+              }}
+            >
               <FavoriteIcon />
               {t('Favorites')}
             </StyledLink>
@@ -187,9 +202,17 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             pageMeta={pageMeta}
           />
           <StyledListItem
-            active={currentPath === paths.setting(currentWorkspaceId)}
+            active={
+              currentPath ===
+              (currentWorkspaceId && paths.setting(currentWorkspaceId))
+            }
           >
-            <StyledLink href={{ pathname: paths.setting(currentWorkspaceId) }}>
+            <StyledLink
+              href={{
+                pathname:
+                  currentWorkspaceId && paths.setting(currentWorkspaceId),
+              }}
+            >
               <SettingsIcon />
               {t('Workspace Settings')}
             </StyledLink>
@@ -210,9 +233,16 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             <ImportIcon /> {t('Import')}
           </StyledListItem> */}
 
-          <Link href={{ pathname: paths.trash(currentWorkspaceId) }}>
+          <Link
+            href={{
+              pathname: currentWorkspaceId && paths.trash(currentWorkspaceId),
+            }}
+          >
             <StyledListItem
-              active={currentPath === paths.trash(currentWorkspaceId)}
+              active={
+                currentPath ===
+                (currentWorkspaceId && paths.trash(currentWorkspaceId))
+              }
             >
               <DeleteTemporarilyIcon /> {t('Trash')}
             </StyledListItem>
