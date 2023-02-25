@@ -45,12 +45,12 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   return (
     <StyledPage>
       <WorkSpaceSliderBar
-        triggerQuickSearchModal={function (): void {
+        onOpenQuickSearchModal={function (): void {
           throw new Error('Function not implemented.');
         }}
         currentWorkspace={currentWorkspace}
         currentPageId={currentPageId}
-        onClickWorkspaceListModal={useCallback(() => {
+        onOpenWorkspaceListModal={useCallback(() => {
           setOpenWorkspacesModal(true);
         }, [setOpenWorkspacesModal])}
         openPage={useCallback(

@@ -14,7 +14,7 @@ import {
 import { PageMeta } from '@blocksuite/store';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { RemWorkspace } from '../../../shared';
@@ -76,9 +76,9 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
 };
 
 export type WorkSpaceSliderBarProps = {
-  triggerQuickSearchModal: () => void;
+  onOpenQuickSearchModal: () => void;
+  onOpenWorkspaceListModal: () => void;
   currentWorkspace: RemWorkspace | null;
-  onClickWorkspaceListModal: () => void;
   currentPageId: string | null;
   openPage: (pageId: string) => void;
   createPage: () => Promise<string>;
@@ -94,7 +94,6 @@ export type WorkSpaceSliderBarProps = {
 };
 
 export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
-  triggerQuickSearchModal,
   currentWorkspace,
   currentPageId,
   openPage,
@@ -103,7 +102,8 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   setShow,
   currentPath,
   paths,
-  onClickWorkspaceListModal,
+  onOpenQuickSearchModal,
+  onOpenWorkspaceListModal,
 }) => {
   const currentWorkspaceId = currentWorkspace?.id || null;
   const [showSubFavorite, setShowSubFavorite] = useState(true);
@@ -121,16 +121,16 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
           <StyledArrowButton
             data-testid="sliderBar-arrowButton"
             isShow={show}
-            onClick={() => {
+            onClick={useCallback(() => {
               setShow(!show);
               setShowTip(false);
-            }}
-            onMouseEnter={() => {
+            }, [setShow, show])}
+            onMouseEnter={useCallback(() => {
               setShowTip(true);
-            }}
-            onMouseLeave={() => {
+            }, [])}
+            onMouseLeave={useCallback(() => {
               setShowTip(false);
-            }}
+            }, [])}
           >
             <Arrow />
           </StyledArrowButton>
@@ -139,15 +139,15 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         <StyledSliderBarWrapper data-testid="sliderBar">
           <WorkspaceSelector
             currentWorkspace={currentWorkspace}
-            onClick={onClickWorkspaceListModal}
+            onClick={onOpenWorkspaceListModal}
           />
 
           <StyledListItem
-            data-testid="sliderBar-quickSearchButton"
+            data-testid="slider-bar-quick-search-button"
             style={{ cursor: 'pointer' }}
-            onClick={() => {
-              triggerQuickSearchModal();
-            }}
+            onClick={useCallback(() => {
+              onOpenQuickSearchModal();
+            }, [onOpenQuickSearchModal])}
           >
             <SearchIcon />
             {t('Quick search')}
@@ -184,9 +184,9 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             </StyledLink>
             <IconButton
               darker={true}
-              onClick={() => {
+              onClick={useCallback(() => {
                 setShowSubFavorite(!showSubFavorite);
-              }}
+              }, [showSubFavorite])}
             >
               <ArrowDownSmallIcon
                 style={{
@@ -249,12 +249,12 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
           </Link>
           <StyledNewPageButton
             data-testid="new-page-button"
-            onClick={async () => {
+            onClick={useCallback(async () => {
               const pageId = await createPage();
               if (pageId) {
                 openPage(pageId);
               }
-            }}
+            }, [createPage, openPage])}
           >
             <PlusIcon /> {t('New Page')}
           </StyledNewPageButton>

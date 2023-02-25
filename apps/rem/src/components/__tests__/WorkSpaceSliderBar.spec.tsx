@@ -19,7 +19,8 @@ import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
 
 describe('WorkSpaceSliderBar', () => {
   test('basic', async () => {
-    const fn = vi.fn();
+    const onOpenWorkspaceListModalFn = vi.fn();
+    const onOpenQuickSearchModalFn = vi.fn();
     const mutationHook = renderHook(() => useWorkspacesHelper());
     const id = mutationHook.result.current.createRemLocalWorkspace('test0');
     mutationHook.result.current.createWorkspacePage(id, 'test1');
@@ -35,12 +36,10 @@ describe('WorkSpaceSliderBar', () => {
       );
       return (
         <WorkSpaceSliderBar
-          triggerQuickSearchModal={function (): void {
-            throw new Error('Function not implemented.');
-          }}
           currentWorkspace={currentWorkspace}
           currentPageId={currentPageId}
-          onClickWorkspaceListModal={fn}
+          onOpenQuickSearchModal={onOpenQuickSearchModalFn}
+          onOpenWorkspaceListModal={onOpenWorkspaceListModalFn}
           openPage={useCallback(() => {}, [])}
           createPage={() => {
             i++;
@@ -63,13 +62,20 @@ describe('WorkSpaceSliderBar', () => {
     currentWorkspaceHook.result.current[1](id);
     const app = render(<App />);
     const card = await app.findByTestId('current-workspace');
+    expect(onOpenWorkspaceListModalFn).toBeCalledTimes(0);
     card.click();
-    expect(fn).toBeCalledTimes(1);
+    expect(onOpenWorkspaceListModalFn).toBeCalledTimes(1);
     const newPageButton = await app.findByTestId('new-page-button');
     newPageButton.click();
     expect(
       currentWorkspaceHook.result.current[0]?.blockSuiteWorkspace.meta
         .pageMetas[1].id
     ).toBe('page-test-1');
+    expect(onOpenQuickSearchModalFn).toBeCalledTimes(0);
+    const quickSearchButton = await app.findByTestId(
+      'slider-bar-quick-search-button'
+    );
+    quickSearchButton.click();
+    expect(onOpenQuickSearchModalFn).toBeCalledTimes(1);
   });
 });
