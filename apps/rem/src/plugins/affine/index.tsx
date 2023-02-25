@@ -9,13 +9,14 @@ import { PageDetailEditor } from '../../components/page-detail-editor';
 import {
   AffineRemoteUnSyncedWorkspace,
   fetcher,
+  LoadPriority,
   QueryKey,
   RemWorkspaceFlavour,
   transformToAffineSyncedWorkspace,
 } from '../../shared';
 import { apis } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
-import { WorkspacePlugin } from '../index';
+import { WorkspacePlugin } from '..';
 
 const WIP = () => <div>WIP</div>;
 
@@ -30,6 +31,7 @@ const Editor = dynamic(
 
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
+  loadPriority: LoadPriority.HIGH,
   prefetchData: async dataCenter => {
     const promise: Promise<Workspace[]> = preload(
       QueryKey.getWorkspaces,

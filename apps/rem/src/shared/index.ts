@@ -152,3 +152,9 @@ export const pathGenerator = {
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
 };
+
+export const enum LoadPriority {
+  HIGH = 1,
+  MEDIUM = 2,
+  LOW = 3,
+}

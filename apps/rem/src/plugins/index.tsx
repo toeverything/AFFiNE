@@ -3,6 +3,7 @@ import React from 'react';
 import {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
+  LoadPriority,
   RemWorkspace,
   RemWorkspaceFlavour,
 } from '../shared';
@@ -34,6 +35,7 @@ type SideBarMenuProps<Flavour extends RemWorkspaceFlavour> =
 
 export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   flavour: Flavour;
+  loadPriority: LoadPriority;
   // Fetch necessary data for the first render
   prefetchData: (dataCenter: {
     workspaces: RemWorkspace[];

@@ -3,13 +3,14 @@ import React from 'react';
 import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import { RemWorkspaceFlavour } from '../../shared';
-import { WorkspacePlugin } from '../index';
+import { LoadPriority, RemWorkspaceFlavour } from '../../shared';
+import { WorkspacePlugin } from '..';
 
 const WIP = () => <div>WIP</div>;
 
 export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
   flavour: RemWorkspaceFlavour.LOCAL,
+  loadPriority: LoadPriority.LOW,
   prefetchData: async () => {},
   PageDetail: ({ currentWorkspace, currentPageId }) => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);

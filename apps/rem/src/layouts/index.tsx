@@ -20,7 +20,11 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
   useEffect(() => {
-    prefetchNecessaryData();
+    const abortController = new AbortController();
+    prefetchNecessaryData(abortController.signal);
+    return () => {
+      abortController.abort();
+    };
   }, []);
   useEffect(() => {
     if (currentWorkspace?.flavour === 'affine') {

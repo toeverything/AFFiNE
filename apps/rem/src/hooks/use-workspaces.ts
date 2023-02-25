@@ -73,17 +73,26 @@ if (typeof window !== 'undefined') {
 
 const emptyWorkspaces: RemWorkspace[] = [];
 
-export function prefetchNecessaryData() {
+export async function prefetchNecessaryData(signal?: AbortSignal) {
   if (!config.prefetchWorkspace) {
     console.info('prefetchNecessaryData: skip prefetching');
     return;
   }
-  Object.entries(UIPlugins).map(([pluginName, plugin]) => {
-    console.info('prefetchNecessaryData: plugin', pluginName);
-    return plugin.prefetchData(dataCenter).catch(e => {
-      console.error('error prefetch data', pluginName, e);
-    });
-  });
+  const plugins = Object.values(UIPlugins).sort(
+    (a, b) => a.loadPriority - b.loadPriority
+  );
+  // prefetch data in order
+  for (const plugin of plugins) {
+    console.info('prefetchNecessaryData: plugin', plugin.flavour);
+    try {
+      if (signal?.aborted) {
+        return;
+      }
+      await plugin.prefetchData(dataCenter);
+    } catch (e) {
+      console.error('error prefetch data', plugin.flavour, e);
+    }
+  }
 }
 
 export function useWorkspaces(): RemWorkspace[] {
