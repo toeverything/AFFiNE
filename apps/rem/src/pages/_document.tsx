@@ -41,7 +41,18 @@ export default class AppDocument extends Document {
   render() {
     return (
       <Html>
-        <Head />
+        <Head>
+          <meta name="theme-color" content="#fafafa" />
+          <link rel="manifest" href="/manifest.json" />
+          <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/apple-touch-icon.png"
+          />
+          <link rel="icon" sizes="192x192" href="/chrome-192x192.png" />
+          {/* eslint-disable-next-line @next/next/no-title-in-document-head */}
+          <title>AFFiNE</title>
+        </Head>
         <body>
           <Main />
           <NextScript />

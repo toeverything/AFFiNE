@@ -3,8 +3,7 @@ import '../styles/globals.css';
 import { useTranslation } from '@affine/i18n';
 import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
-import Head from 'next/head';
-import React, { ReactElement, Suspense, useEffect, useMemo } from 'react';
+import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { SWRConfig } from 'swr';
 
 import { ProviderComposer } from '../components/provider-composer';
@@ -20,10 +19,10 @@ type AppPropsWithLayout = AppProps & {
 
 const EmptyLayout = (page: ReactElement) => page;
 
-const DebugAtoms = () => {
+const DebugAtoms = memo(function DebugAtoms() {
   useAtomsDebugValue();
   return null;
-};
+});
 
 function App({ Component }: AppPropsWithLayout) {
   const getLayout = Component.getLayout || EmptyLayout;
@@ -43,16 +42,6 @@ function App({ Component }: AppPropsWithLayout) {
 
   return (
     <>
-      <Head>
-        <meta name="theme-color" content="#fafafa" />
-        <link rel="manifest" href="/manifest.json" />
-        <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          href="/icons/apple-touch-icon.png"
-        />
-        <title>AFFiNE</title>
-      </Head>
       <DebugAtoms />
       <SWRConfig
         value={{
@@ -60,7 +49,7 @@ function App({ Component }: AppPropsWithLayout) {
           fetcher,
         }}
       >
-        <Suspense fallback={<PageLoading />}>
+        <Suspense fallback={<PageLoading key="RootPageLoading" />}>
           <ProviderComposer
             contexts={useMemo(
               () => [
