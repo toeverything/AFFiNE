@@ -29,7 +29,11 @@ export function vitestRefreshWorkspaces() {
 
 declare global {
   // eslint-disable-next-line no-var
-  var dataCenter: unknown;
+  var dataCenter: {
+    workspaces: RemWorkspace[];
+    isLoaded: boolean;
+    callbacks: Set<() => void>;
+  };
 }
 
 globalThis.dataCenter = dataCenter;

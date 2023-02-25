@@ -33,6 +33,7 @@ beforeAll(() => {
 
 beforeEach(async () => {
   vitestRefreshWorkspaces();
+  dataCenter.isLoaded = true;
   return new Promise<void>(resolve => {
     blockSuiteWorkspace = new BlockSuiteWorkspace({
       room: 'test',
