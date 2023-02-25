@@ -4,6 +4,7 @@ import {
   InferGetStaticPropsType,
   NextPage,
 } from 'next';
+import Head from 'next/head';
 import { useEffect, useState } from 'react';
 
 import { PageDetailEditor } from '../../components/page-detail-editor';
@@ -40,29 +41,34 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
     return <>loading...</>;
   }
   return (
-    <StyledPage>
-      <StyledWrapper>
-        <PageDetailEditor
-          blockSuiteWorkspace={blockSuiteWorkspace}
-          pageId="preview"
-          onInit={(page, editor) => {
-            blockSuiteWorkspace.setPageMeta(page.id, { title });
-            const pageBlockId = page.addBlockByFlavour('affine:page', {
-              title,
-            });
-            page.addBlockByFlavour('affine:surface', {}, null);
-            const frameId = page.addBlockByFlavour(
-              'affine:frame',
-              {},
-              pageBlockId
-            );
-            editor.clipboard.importMarkdown(text, frameId).then(() => {
-              page.resetHistory();
-            });
-          }}
-        />
-      </StyledWrapper>
-    </StyledPage>
+    <>
+      <Head>
+        <title>{title}</title>
+      </Head>
+      <StyledPage>
+        <StyledWrapper>
+          <PageDetailEditor
+            blockSuiteWorkspace={blockSuiteWorkspace}
+            pageId="preview"
+            onInit={(page, editor) => {
+              blockSuiteWorkspace.setPageMeta(page.id, { title });
+              const pageBlockId = page.addBlockByFlavour('affine:page', {
+                title,
+              });
+              page.addBlockByFlavour('affine:surface', {}, null);
+              const frameId = page.addBlockByFlavour(
+                'affine:frame',
+                {},
+                pageBlockId
+              );
+              editor.clipboard.importMarkdown(text, frameId).then(() => {
+                page.resetHistory();
+              });
+            }}
+          />
+        </StyledWrapper>
+      </StyledPage>
+    </>
   );
 };
 
