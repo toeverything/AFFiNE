@@ -8,6 +8,7 @@ import Head from 'next/head';
 import { useEffect, useState } from 'react';
 
 import { PageDetailEditor } from '../../components/page-detail-editor';
+import { PageLoading } from '../../components/pure/loading';
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import { BlockSuiteWorkspace } from '../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
@@ -38,7 +39,7 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
     };
   }, []);
   if (!blockSuiteWorkspace || !blockSuiteWorkspace.getPage('preview')) {
-    return <>loading...</>;
+    return <PageLoading />;
   }
   return (
     <>
