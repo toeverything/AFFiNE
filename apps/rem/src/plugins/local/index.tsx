@@ -21,7 +21,14 @@ export const kStoreKey = 'affine-local-workspace';
 export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
   flavour: RemWorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
-  prefetchData: async dataCenter => {
+  prefetchData: async (dataCenter, signal) => {
+    if (typeof window === 'undefined') {
+      // SSR mode, no local data
+      return;
+    }
+    if (signal?.aborted) {
+      return;
+    }
     let ids: string[];
     try {
       ids = JSON.parse(localStorage.getItem(kStoreKey) ?? '[]');
@@ -78,6 +85,9 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       });
     }
     if (dataCenter.workspaces.length === 0) {
+      if (signal?.aborted) {
+        return;
+      }
       console.info('no local workspace found, create a new one');
       const workspaceId = uuidv4();
       const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
@@ -108,6 +118,14 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
         },
       };
       await workspace.syncBinary();
+      if (signal?.aborted) {
+        const persistence = new IndexeddbPersistence(
+          blockSuiteWorkspace.room as string,
+          blockSuiteWorkspace.doc
+        );
+        await persistence.clearData();
+        return;
+      }
       dataCenter.workspaces = [workspace];
     }
   },

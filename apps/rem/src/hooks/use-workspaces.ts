@@ -103,7 +103,7 @@ export async function prefetchNecessaryData(signal?: AbortSignal) {
         break;
       }
       const oldData = dataCenter.workspaces;
-      await plugin.prefetchData(dataCenter);
+      await plugin.prefetchData(dataCenter, signal);
       const newData = dataCenter.workspaces;
       if (Object.is(oldData, newData)) {
         console.info('prefetchNecessaryData: data changed');

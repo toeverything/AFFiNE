@@ -37,10 +37,13 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   flavour: Flavour;
   loadPriority: LoadPriority;
   // Fetch necessary data for the first render
-  prefetchData: (dataCenter: {
-    workspaces: RemWorkspace[];
-    callbacks: Set<() => void>;
-  }) => Promise<void>;
+  prefetchData: (
+    dataCenter: {
+      workspaces: RemWorkspace[];
+      callbacks: Set<() => void>;
+    },
+    signal?: AbortSignal
+  ) => Promise<void>;
   PageDetail: React.FC<PageDetailProps<Flavour>>;
   PageList: React.FC<PageListProps<Flavour>>;
   Setting: React.FC<SettingProps<Flavour>>;
