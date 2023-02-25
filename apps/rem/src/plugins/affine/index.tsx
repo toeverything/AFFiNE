@@ -72,7 +72,9 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
                 }
                 return Promise.resolve();
               })
-            );
+            ).then(() => {
+              console.log('all affine workspaces synced');
+            });
             dataCenter.callbacks.forEach(cb => cb());
           }
         });
