@@ -40,7 +40,7 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   prefetchData: (dataCenter: {
     workspaces: RemWorkspace[];
     callbacks: Set<() => void>;
-  }) => Promise<unknown>;
+  }) => Promise<void>;
   PageDetail: React.FC<PageDetailProps<Flavour>>;
   PageList: React.FC<PageListProps<Flavour>>;
   Setting: React.FC<SettingProps<Flavour>>;

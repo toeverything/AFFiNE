@@ -12,34 +12,26 @@ import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { prefetchNecessaryData } from '../hooks/use-workspaces';
+import { useSyncWorkspaces } from '../hooks/use-workspaces';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
+  useSyncWorkspaces();
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
   useEffect(() => {
-    const abortController = new AbortController();
-    prefetchNecessaryData(abortController.signal);
-    return () => {
-      abortController.abort();
-    };
-  }, []);
-  useEffect(() => {
-    if (currentWorkspace?.flavour === 'affine') {
-      if (currentWorkspace.firstBinarySynced) {
+    if (currentWorkspace && 'providers' in currentWorkspace) {
+      currentWorkspace.providers.forEach(provider => {
+        provider.connect();
+      });
+      return () => {
         currentWorkspace.providers.forEach(provider => {
-          provider.connect();
+          provider.disconnect();
         });
-        return () => {
-          currentWorkspace.providers.forEach(provider => {
-            provider.disconnect();
-          });
-        };
-      }
+      };
     }
   }, [currentWorkspace]);
   const router = useRouter();

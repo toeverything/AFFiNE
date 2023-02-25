@@ -49,6 +49,7 @@ export const createIndexedDBProvider = (
   return {
     flavour: 'local-indexeddb',
     connect: () => {
+      console.info('connect indexeddb provider', blockSuiteWorkspace.room);
       indexdbProvider = new IndexeddbPersistence(
         blockSuiteWorkspace.room as string,
         blockSuiteWorkspace.doc
@@ -59,6 +60,7 @@ export const createIndexedDBProvider = (
         console.error('cannot find indexdb provider');
         return;
       }
+      console.info('disconnect indexeddb provider', blockSuiteWorkspace.room);
       indexdbProvider.destroy();
       indexdbProvider = null;
     },

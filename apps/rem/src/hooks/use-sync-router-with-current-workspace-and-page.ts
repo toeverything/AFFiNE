@@ -4,7 +4,7 @@ import { startTransition, useEffect } from 'react';
 import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
 import { useCurrentWorkspace } from './current/use-current-workspace';
-import { useWorkspaces } from './use-workspaces';
+import { useWorkspaces, useWorkspacesIsLoaded } from './use-workspaces';
 
 export function findSuitablePageId(
   workspace: RemWorkspace,
@@ -41,6 +41,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
   const [currentPageId, setCurrentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
+  const isLoaded = useWorkspacesIsLoaded();
   useEffect(() => {
     const listener: Parameters<typeof router.events.on>[1] = (url: string) => {
       if (url.startsWith('/')) {
@@ -65,7 +66,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
     };
   }, [currentWorkspace, router, setCurrentPageId, setCurrentWorkspaceId]);
   useEffect(() => {
-    if (!router.isReady) {
+    if (!router.isReady || !isLoaded) {
       return;
     }
     if (
@@ -163,5 +164,6 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
     setCurrentWorkspaceId,
     workspaces,
     router,
+    isLoaded,
   ]);
 }

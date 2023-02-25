@@ -1,17 +1,116 @@
+import { uuidv4 } from '@blocksuite/store';
 import React from 'react';
+import { IndexeddbPersistence } from 'y-indexeddb';
 
+import { createLocalProviders } from '../../blocksuite';
 import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import { LoadPriority, RemWorkspaceFlavour } from '../../shared';
+import {
+  LoadPriority,
+  LocalWorkspace,
+  RemWorkspaceFlavour,
+} from '../../shared';
+import { config } from '../../shared/env';
+import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 
 const WIP = () => <div>WIP</div>;
+export const kStoreKey = 'affine-local-workspace';
 
 export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
   flavour: RemWorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
-  prefetchData: async () => {},
+  prefetchData: async dataCenter => {
+    let ids: string[];
+    try {
+      ids = JSON.parse(localStorage.getItem(kStoreKey) ?? '[]');
+      if (!Array.isArray(ids)) {
+        localStorage.setItem(kStoreKey, '[]');
+        ids = [];
+      }
+    } catch (e) {
+      localStorage.setItem(kStoreKey, '[]');
+      ids = [];
+    }
+    if (config.enableIndexedDBProvider) {
+      const workspaces = await Promise.all(
+        ids.map(id => {
+          const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(id);
+          const workspace: LocalWorkspace = {
+            id,
+            flavour: RemWorkspaceFlavour.LOCAL,
+            blockSuiteWorkspace: blockSuiteWorkspace,
+            providers: [...createLocalProviders(blockSuiteWorkspace)],
+            syncBinary: async () => {
+              if (!config.enableIndexedDBProvider) {
+                return {
+                  ...workspace,
+                };
+              }
+              const persistence = new IndexeddbPersistence(
+                blockSuiteWorkspace.room as string,
+                blockSuiteWorkspace.doc
+              );
+              return persistence.whenSynced.then(() => {
+                persistence.destroy();
+                return {
+                  ...workspace,
+                };
+              });
+            },
+          };
+          return workspace.syncBinary();
+        })
+      );
+      workspaces.forEach(workspace => {
+        if (workspace) {
+          const exist = dataCenter.workspaces.findIndex(
+            w => w.id === workspace.id
+          );
+          if (exist === -1) {
+            dataCenter.workspaces = [...dataCenter.workspaces, workspace];
+          } else {
+            dataCenter.workspaces[exist] = workspace;
+            dataCenter.workspaces = [...dataCenter.workspaces, workspace];
+          }
+        }
+      });
+    }
+    if (dataCenter.workspaces.length === 0) {
+      console.info('no local workspace found, create a new one');
+      const workspaceId = uuidv4();
+      const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
+      blockSuiteWorkspace.meta.setName('Untitled Workspace');
+      localStorage.setItem(kStoreKey, JSON.stringify([workspaceId]));
+      blockSuiteWorkspace.createPage(uuidv4());
+      const workspace: LocalWorkspace = {
+        id: workspaceId,
+        flavour: RemWorkspaceFlavour.LOCAL,
+        blockSuiteWorkspace: blockSuiteWorkspace,
+        providers: [...createLocalProviders(blockSuiteWorkspace)],
+        syncBinary: async () => {
+          if (!config.enableIndexedDBProvider) {
+            return {
+              ...workspace,
+            };
+          }
+          const persistence = new IndexeddbPersistence(
+            blockSuiteWorkspace.room as string,
+            blockSuiteWorkspace.doc
+          );
+          return persistence.whenSynced.then(() => {
+            persistence.destroy();
+            return {
+              ...workspace,
+            };
+          });
+        },
+      };
+      await workspace.syncBinary();
+      dataCenter.workspaces = [workspace];
+    }
+  },
   PageDetail: ({ currentWorkspace, currentPageId }) => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
     if (!page) {

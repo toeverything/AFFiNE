@@ -1,4 +1,4 @@
-import { Workspace } from '@affine/datacenter';
+import { assertEquals } from '@blocksuite/store';
 import React from 'react';
 import { preload } from 'swr';
 
@@ -11,10 +11,7 @@ import {
   LoadPriority,
   QueryKey,
   RemWorkspaceFlavour,
-  transformToAffineSyncedWorkspace,
 } from '../../shared';
-import { apis } from '../../shared/apis';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 
 const WIP = () => <div>WIP</div>;
@@ -23,60 +20,34 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
   prefetchData: async dataCenter => {
-    const promise: Promise<Workspace[]> = preload(
+    const promise: Promise<AffineRemoteUnSyncedWorkspace[]> = preload(
       QueryKey.getWorkspaces,
       fetcher
     );
     return promise
-      .then(workspaces => {
-        workspaces.forEach(workspace => {
-          const exist = dataCenter.workspaces.find(
-            localWorkspace => localWorkspace.id === workspace.id
-          );
-          if (!exist) {
-            // todo: make this `RemWorkspace`
-            const remWorkspace: AffineRemoteUnSyncedWorkspace = {
-              ...workspace,
-              flavour: RemWorkspaceFlavour.AFFINE,
-              firstBinarySynced: false,
-              blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(workspace.id),
-              syncBinary: async () => {
-                const binary = await apis.downloadWorkspace(
-                  workspace.id,
-                  workspace.public
-                );
-                if (remWorkspace.firstBinarySynced) {
-                  return;
-                }
-                const syncedWorkspace = await transformToAffineSyncedWorkspace(
-                  remWorkspace,
-                  binary
-                );
-                const index = dataCenter.workspaces.findIndex(
-                  ws => ws.id === syncedWorkspace.id
-                );
-                if (index > -1) {
-                  dataCenter.workspaces.splice(index, 1, syncedWorkspace);
-                  dataCenter.workspaces = [...dataCenter.workspaces];
-                  dataCenter.callbacks.forEach(cb => cb());
-                }
-              },
-            };
-            dataCenter.workspaces = [...dataCenter.workspaces, remWorkspace];
-            Promise.all(
-              dataCenter.workspaces.map(workspace => {
-                if (workspace.flavour === 'affine') {
-                  if (!workspace.firstBinarySynced) {
-                    return workspace.syncBinary();
-                  }
-                }
-                return Promise.resolve();
-              })
-            ).then(() => {
-              console.log('all affine workspaces synced');
-            });
-            dataCenter.callbacks.forEach(cb => cb());
+      .then(async workspaces => {
+        const promises = workspaces.map(workspace => {
+          assertEquals(workspace.flavour, RemWorkspaceFlavour.AFFINE);
+          if (!workspace.firstBinarySynced) {
+            return workspace.syncBinary();
           }
+          return workspace;
+        });
+        return Promise.all(promises).then(workspaces => {
+          workspaces.forEach(workspace => {
+            if (workspace === null) {
+              return;
+            }
+            const exist = dataCenter.workspaces.findIndex(
+              ws => ws.id === workspace.id
+            );
+            if (exist !== -1) {
+              dataCenter.workspaces.splice(exist, 1, workspace);
+              dataCenter.workspaces = [...dataCenter.workspaces];
+            } else {
+              dataCenter.workspaces = [...dataCenter.workspaces, workspace];
+            }
+          });
         });
       })
       .catch(error => {

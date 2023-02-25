@@ -28,7 +28,7 @@ export interface FlavourToWorkspace {
 }
 
 export interface WorkspaceHandler {
-  syncBinary: () => Promise<void>;
+  syncBinary: () => Promise<RemWorkspace | null>;
 }
 
 export interface AffineRemoteSyncedWorkspace
@@ -96,29 +96,12 @@ export interface AffineWebSocketProvider extends BaseProvider {
 
 export type Provider = LocalIndexedDBProvider | AffineWebSocketProvider;
 
-export interface PersistenceWorkspace extends RemoteWorkspace {
-  flavour: 'affine' | 'local';
-  providers: Provider['flavour'][];
-}
-
-export const transformToJSON = (
-  workspace: RemWorkspace
-): PersistenceWorkspace => {
-  // fixme
-  return null!;
-};
-
-export const fromJSON = (json: PersistenceWorkspace): RemWorkspace => {
-  // fixme
-  return null!;
-};
-
 export type RemWorkspace =
   | LocalWorkspace
   | AffineRemoteUnSyncedWorkspace
   | AffineRemoteSyncedWorkspace;
 
-export const fetcher = async (query: string | [string, string, boolean]) => {
+export const fetcher = async (query: Query | [Query, string, boolean]) => {
   if (query === QueryKey.getUser) {
     return apis.auth.user ?? null;
   }
@@ -127,6 +110,29 @@ export const fetcher = async (query: string | [string, string, boolean]) => {
       return apis.downloadWorkspace(query[1], query[2]);
     }
   } else {
+    if (query === QueryKey.getWorkspaces) {
+      return apis.getWorkspaces().then(workspaces => {
+        return workspaces.map(workspace => {
+          const remWorkspace: AffineRemoteUnSyncedWorkspace = {
+            ...workspace,
+            flavour: RemWorkspaceFlavour.AFFINE,
+            firstBinarySynced: false,
+            blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(workspace.id),
+            syncBinary: async () => {
+              const binary = await apis.downloadWorkspace(
+                workspace.id,
+                workspace.public
+              );
+              if (remWorkspace.firstBinarySynced) {
+                return null;
+              }
+              return transformToAffineSyncedWorkspace(remWorkspace, binary);
+            },
+          };
+          return remWorkspace;
+        });
+      });
+    }
     return (apis as any)[query]();
   }
 };
@@ -136,6 +142,8 @@ export const QueryKey = {
   getWorkspaces: 'getWorkspaces',
   downloadWorkspace: 'downloadWorkspace',
 } as const;
+
+type Query = (typeof QueryKey)[keyof typeof QueryKey];
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
   P,
