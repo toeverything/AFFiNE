@@ -13,6 +13,7 @@ import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
 export type PreviewPageProps = {
   text: string;
+  title: string;
 };
 
 export type PreviewPageParams = {
@@ -21,6 +22,7 @@ export type PreviewPageParams = {
 
 const PreviewPage: NextPage<PreviewPageProps> = ({
   text,
+  title,
 }: InferGetStaticPropsType<typeof getStaticProps>) => {
   const [blockSuiteWorkspace, setBlockSuiteWorkspace] =
     useState<BlockSuiteWorkspace | null>(null);
@@ -44,10 +46,9 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
           blockSuiteWorkspace={blockSuiteWorkspace}
           pageId="preview"
           onInit={(page, editor) => {
-            const { title: metaTitle } = page.meta;
-            blockSuiteWorkspace.setPageMeta(page.id, { title: metaTitle });
+            blockSuiteWorkspace.setPageMeta(page.id, { title });
             const pageBlockId = page.addBlockByFlavour('affine:page', {
-              title: metaTitle,
+              title,
             });
             page.addBlockByFlavour('affine:surface', {}, null);
             const frameId = page.addBlockByFlavour(
@@ -78,6 +79,12 @@ export const getStaticProps: GetStaticProps<
     path.resolve(process.cwd(), 'src', 'templates', `${name}.md`),
     'utf8'
   );
+  const title = markdown
+    .split('\n')
+    .splice(0, 1)
+    .join('')
+    .replaceAll('#', '')
+    .trim();
   if (!name) {
     return {
       redirect: {
@@ -85,12 +92,14 @@ export const getStaticProps: GetStaticProps<
       },
       props: {
         text: '',
+        title: '',
       },
     };
   }
   return {
     props: {
-      text: markdown,
+      text: markdown.split('\n').slice(1).join('\n'),
+      title,
     },
   };
 };
