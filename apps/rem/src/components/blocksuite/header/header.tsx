@@ -1,5 +1,11 @@
 import { CloseIcon } from '@blocksuite/icons';
-import React, { PropsWithChildren, ReactNode, useState } from 'react';
+import React, {
+  PropsWithChildren,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import EditorOptionMenu from './header-right-items/EditorOptionMenu';
 import SyncUser from './header-right-items/SyncUser';
@@ -48,7 +54,10 @@ export const Header = ({
   rightItems = ['syncUser', 'themeModeSwitch'],
   children,
 }: PropsWithChildren<{ rightItems?: HeaderRightItemNames[] }>) => {
-  const [showWarning, setShowWarning] = useState(shouldShowWarning());
+  const [showWarning, setShowWarning] = useState(false);
+  useEffect(() => {
+    setShowWarning(shouldShowWarning());
+  }, []);
   return (
     <StyledHeaderContainer hasWarning={showWarning}>
       <BrowserWarning
@@ -64,9 +73,13 @@ export const Header = ({
       >
         {children}
         <StyledHeaderRightSide>
-          {rightItems.map(itemName => {
-            return HeaderRightItems[itemName];
-          })}
+          {useMemo(
+            () =>
+              rightItems.map(itemName => {
+                return HeaderRightItems[itemName];
+              }),
+            [rightItems]
+          )}
         </StyledHeaderRightSide>
       </StyledHeader>
     </StyledHeaderContainer>

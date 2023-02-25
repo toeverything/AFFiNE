@@ -8,12 +8,12 @@ export const StyledHeaderContainer = styled.div<{ hasWarning: boolean }>(
     };
   }
 );
-export const StyledHeader = styled.div<{ hasWarning: boolean }>(() => {
+export const StyledHeader = styled.div<{ hasWarning: boolean }>(({ theme }) => {
   return {
     height: '60px',
     width: '100%',
     ...displayFlex('flex-end', 'center'),
-    background: 'var(--affine-page-background)',
+    background: theme.colors.pageBackground,
     transition: 'background-color 0.5s',
     zIndex: 99,
   };
