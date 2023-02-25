@@ -93,7 +93,9 @@ export const ThemeProvider = ({
   return (
     // Use MuiThemeProvider is just because some Transitions in Mui components need it
     <MuiThemeProvider theme={muiTheme}>
-      <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
+      <ThemeContext.Provider
+        value={{ mode: theme, changeMode, theme: themeStyle }}
+      >
         <Global
           styles={css`
             :root {
