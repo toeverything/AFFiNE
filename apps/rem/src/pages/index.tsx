@@ -13,7 +13,7 @@ const IndexPage: NextPage = () => {
       return;
     }
     if (workspaces.at(0)) {
-      router.push({
+      router.replace({
         pathname: '/workspace/[workspaceId]/all',
         query: {
           workspaceId: workspaces[0].id,
