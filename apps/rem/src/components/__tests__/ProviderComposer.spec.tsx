@@ -5,7 +5,7 @@ import { render } from '@testing-library/react';
 import React, { createContext, useContext } from 'react';
 import { expect, test } from 'vitest';
 
-import { ProviderComposer } from '../ProviderComposer';
+import { ProviderComposer } from '../provider-composer';
 
 test('ProviderComposer', async () => {
   const Context = createContext('null');

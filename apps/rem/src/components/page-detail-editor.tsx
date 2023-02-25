@@ -2,8 +2,8 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 
 import { BlockSuiteWorkspace } from '../shared';
+import { PageNotFoundError } from './blocksuite/block-suite-error-eoundary';
 import { BlockSuiteEditorHeader } from './blocksuite/header';
-import { PageNotFoundError } from './BlockSuiteErrorBoundary';
 
 export type PageDetailEditorProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;

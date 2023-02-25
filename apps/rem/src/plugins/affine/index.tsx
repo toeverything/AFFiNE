@@ -3,8 +3,8 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 import { preload } from 'swr';
 
+import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
-import { PageNotFoundError } from '../../components/BlockSuiteErrorBoundary';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import {
   AffineRemoteUnSyncedWorkspace,

@@ -7,7 +7,7 @@ import Head from 'next/head';
 import React, { ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { SWRConfig } from 'swr';
 
-import { ProviderComposer } from '../components/ProviderComposer';
+import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
 import { ModalProvider } from '../providers/ModalProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';

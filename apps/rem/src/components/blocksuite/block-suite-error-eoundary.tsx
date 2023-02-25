@@ -1,7 +1,7 @@
 import { NextRouter } from 'next/router';
 import React, { Component, ErrorInfo } from 'react';
 
-import { BlockSuiteWorkspace } from '../shared';
+import { BlockSuiteWorkspace } from '../../shared';
 
 export type BlockSuiteErrorBoundaryProps = React.PropsWithChildren<{
   router: NextRouter;

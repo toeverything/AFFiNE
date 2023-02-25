@@ -45,8 +45,8 @@ export const PublishedResults: React.FC<PublishedResultsProps> = ({
   useEffect(() => {
     setResults(blockSuiteWorkspace.search(query));
     //Save the Map<BlockId, PageId> obtained from the search as state
-  }, [query, setResults]);
-  const pageIds = [...results.values()];
+  }, [blockSuiteWorkspace, query, setResults]);
+  const pageIds = useMemo(() => [...results.values()], [results]);
   const resultsPageMeta = useMemo(
     () => pageList.filter(page => pageIds.indexOf(page.id) > -1 && !page.trash),
     [pageIds, pageList]

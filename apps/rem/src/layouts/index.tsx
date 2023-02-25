@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { openWorkspacesModalAtom } from '../atoms';
-import { BlockSuiteErrorBoundary } from '../components/BlockSuiteErrorBoundary';
+import { BlockSuiteErrorBoundary } from '../components/blocksuite/block-suite-error-eoundary';
 import { HelpIsland } from '../components/pure/help-island';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
