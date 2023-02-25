@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
-import { openWorkspacesModalAtom } from '../atoms';
+import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { BlockSuiteErrorBoundary } from '../components/blocksuite/block-suite-error-eoundary';
 import { HelpIsland } from '../components/pure/help-island';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
@@ -51,6 +51,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   const isPublicWorkspace =
     router.pathname.split('/')[1] === 'public-workspace';
   const title = useRouterTitle(router);
+  const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
   return (
     <>
       <Helmet>
@@ -58,9 +59,10 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
       </Helmet>
       <StyledPage>
         <WorkSpaceSliderBar
-          onOpenQuickSearchModal={function (): void {
-            throw new Error('Function not implemented.');
-          }}
+          isPublicWorkspace={isPublicWorkspace}
+          onOpenQuickSearchModal={useCallback(() => {
+            setOpenQuickSearchModalAtom(true);
+          }, [setOpenQuickSearchModalAtom])}
           currentWorkspace={currentWorkspace}
           currentPageId={currentPageId}
           onOpenWorkspaceListModal={useCallback(() => {

@@ -76,6 +76,7 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
 };
 
 export type WorkSpaceSliderBarProps = {
+  isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
   onOpenWorkspaceListModal: () => void;
   currentWorkspace: RemWorkspace | null;
@@ -94,6 +95,7 @@ export type WorkSpaceSliderBarProps = {
 };
 
 export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
+  isPublicWorkspace,
   currentWorkspace,
   currentPageId,
   openPage,
@@ -110,9 +112,15 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [showTip, setShowTip] = useState(false);
   const { t } = useTranslation();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
+  const onClickNewPage = useCallback(async () => {
+    const pageId = await createPage();
+    if (pageId) {
+      openPage(pageId);
+    }
+  }, [createPage, openPage]);
   return (
     <>
-      <StyledSliderBar show={show}>
+      <StyledSliderBar show={isPublicWorkspace ? false : show}>
         <Tooltip
           content={show ? t('Collapse sidebar') : t('Expand sidebar')}
           placement="right"
@@ -247,17 +255,14 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <DeleteTemporarilyIcon /> {t('Trash')}
             </StyledListItem>
           </Link>
-          <StyledNewPageButton
-            data-testid="new-page-button"
-            onClick={useCallback(async () => {
-              const pageId = await createPage();
-              if (pageId) {
-                openPage(pageId);
-              }
-            }, [createPage, openPage])}
-          >
-            <PlusIcon /> {t('New Page')}
-          </StyledNewPageButton>
+          {!isPublicWorkspace && (
+            <StyledNewPageButton
+              data-testid="new-page-button"
+              onClick={onClickNewPage}
+            >
+              <PlusIcon /> {t('New Page')}
+            </StyledNewPageButton>
+          )}
         </StyledSliderBarWrapper>
       </StyledSliderBar>
     </>
