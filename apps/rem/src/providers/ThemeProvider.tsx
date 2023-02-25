@@ -1,6 +1,5 @@
 import {
   Theme,
-  ThemeMode,
   ThemeProviderProps,
   ThemeProviderValue,
 } from '@affine/component';
@@ -17,7 +16,7 @@ import {
   ThemeProvider as MuiThemeProvider,
 } from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
-import { createContext, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 
 import { useSystemTheme } from '../hooks/use-system-theme';
 
@@ -37,7 +36,6 @@ export const ThemeProvider = ({
 }: PropsWithChildren<ThemeProviderProps>) => {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
   const systemTheme = useSystemTheme();
-  const [mode, setMode] = useState<ThemeMode>('auto');
   // fixme: use mode detect
   const editorMode = 'page';
   const themeStyle = useMemo(
@@ -45,20 +43,11 @@ export const ThemeProvider = ({
       theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode),
     [theme]
   );
-  const changeMode = (themeMode: ThemeMode) => {
-    themeMode !== mode && setMode(themeMode);
+  const changeMode = (themeMode: Theme) => {
+    console.log('1', themeMode);
+    setTheme(themeMode);
     localStorageThemeHelper.set(themeMode);
   };
-
-  const onceRef = useRef(true);
-  if (onceRef.current) {
-    if (mode !== 'auto') {
-      setTheme(mode);
-    } else {
-      setTheme(theme);
-    }
-    onceRef.current = false;
-  }
 
   // useEffect(() => {
   //   setTheme(systemTheme);
@@ -69,11 +58,13 @@ export const ThemeProvider = ({
   return (
     // Use MuiThemeProvider is just because some Transitions in Mui components need it
     <MuiThemeProvider theme={muiTheme}>
-      <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
+      <ThemeContext.Provider
+        value={{ mode: theme, changeMode, theme: themeStyle }}
+      >
         <Global
           styles={css`
             :root {
-              ${globalThemeVariables(mode, themeStyle) as any}
+              ${globalThemeVariables(theme, themeStyle) as any}
             }
           `}
         />

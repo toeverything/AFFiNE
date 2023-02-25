@@ -9,8 +9,8 @@ export type ThemeProviderProps = {
 
 export type ThemeProviderValue = {
   theme: AffineTheme;
-  mode: ThemeMode;
-  changeMode: (newMode: ThemeMode) => void;
+  mode: Theme;
+  changeMode: (newMode: Theme) => void;
 };
 
 export interface AffineTheme {
