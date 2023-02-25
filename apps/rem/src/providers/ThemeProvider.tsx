@@ -17,7 +17,16 @@ import {
   ThemeProvider as MuiThemeProvider,
 } from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
-import { createContext, useContext, useMemo, useRef, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+
+import { useSystemTheme } from '../hooks/use-system-theme';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
@@ -34,6 +43,7 @@ export const ThemeProvider = ({
   children,
 }: PropsWithChildren<ThemeProviderProps>) => {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const systemTheme = useSystemTheme();
   const [mode, setMode] = useState<ThemeMode>('auto');
   // fixme: use mode detect
   const editorMode = 'page';
@@ -57,7 +67,11 @@ export const ThemeProvider = ({
     onceRef.current = false;
   }
 
-  // todo: theme detect
+  useEffect(() => {
+    setTheme(systemTheme);
+  }, [systemTheme]);
+
+  // todo: save user theme in localStorage
 
   return (
     // Use MuiThemeProvider is just because some Transitions in Mui components need it
