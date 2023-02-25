@@ -18,6 +18,15 @@ export class PageNotFoundError extends TypeError {
   }
 }
 
+export class WorkspaceNotFoundError extends TypeError {
+  readonly workspaceId: string;
+
+  constructor(workspaceId: string) {
+    super();
+    this.workspaceId = workspaceId;
+  }
+}
+
 type BlockSuiteError = PageNotFoundError | Error;
 
 interface BlockSuiteErrorBoundaryState {

@@ -9,7 +9,10 @@ export function useRouterTitle(router: NextRouter) {
       return 'Loading...';
     } else {
       if (router) {
-        if (router.pathname.startsWith('/workspace/[workspaceId]/')) {
+        if (
+          !router.query.pageId &&
+          router.pathname.startsWith('/workspace/[workspaceId]/')
+        ) {
           const subPath = router.pathname.split('/').at(-1);
           if (subPath && subPath in WorkspaceSubPathName) {
             return (

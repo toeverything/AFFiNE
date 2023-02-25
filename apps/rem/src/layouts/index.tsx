@@ -13,7 +13,7 @@ import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { prefetchNecessaryData } from '../hooks/use-workspaces';
-import { pathGenerator } from '../shared';
+import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
@@ -48,6 +48,8 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   const helper = useBlockSuiteWorkspaceHelper(
     currentWorkspace?.blockSuiteWorkspace ?? null
   );
+  const isPublicWorkspace =
+    router.pathname.split('/')[1] === 'public-workspace';
   const title = useRouterTitle(router);
   return (
     <>
@@ -68,14 +70,16 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
             pageId => {
               assertExists(currentWorkspace);
               router.push({
-                pathname: '/workspace/[workspaceId]/[pageId]',
+                pathname: `/${
+                  isPublicWorkspace ? 'public-workspace' : 'workspace'
+                }/[workspaceId]/[pageId]`,
                 query: {
                   workspaceId: currentWorkspace.id,
                   pageId,
                 },
               });
             },
-            [currentWorkspace, router]
+            [currentWorkspace, isPublicWorkspace, router]
           )}
           createPage={useCallback(async () => {
             return helper.createPage(uuidv4());
@@ -83,7 +87,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
           show={show}
           setShow={setShow}
           currentPath={useRouter().asPath}
-          paths={pathGenerator}
+          paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
         <StyledWrapper>
           <BlockSuiteErrorBoundary router={router}>

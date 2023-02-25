@@ -118,16 +118,23 @@ export type RemWorkspace =
   | AffineRemoteUnSyncedWorkspace
   | AffineRemoteSyncedWorkspace;
 
-export const fetcher = async (query: string) => {
+export const fetcher = async (query: string | [string, string, boolean]) => {
   if (query === QueryKey.getUser) {
     return apis.auth.user ?? null;
   }
-  return (apis as any)[query]();
+  if (Array.isArray(query)) {
+    if (query[0] === QueryKey.downloadWorkspace) {
+      return apis.downloadWorkspace(query[1], query[2]);
+    }
+  } else {
+    return (apis as any)[query]();
+  }
 };
 
 export const QueryKey = {
   getUser: 'getUser',
   getWorkspaces: 'getWorkspaces',
+  downloadWorkspace: 'downloadWorkspace',
 } as const;
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
@@ -158,6 +165,15 @@ export const pathGenerator = {
   favorite: workspaceId => `/workspace/${workspaceId}/favorite`,
   trash: workspaceId => `/workspace/${workspaceId}/trash`,
   setting: workspaceId => `/workspace/${workspaceId}/setting`,
+} satisfies {
+  [Path in WorkspaceSubPath]: (workspaceId: string) => string;
+};
+
+export const publicPathGenerator = {
+  all: workspaceId => `/public-workspace/${workspaceId}/all`,
+  favorite: workspaceId => `/public-workspace/${workspaceId}/favorite`,
+  trash: workspaceId => `/public-workspace/${workspaceId}/trash`,
+  setting: workspaceId => `/public-workspace/${workspaceId}/setting`,
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
 };

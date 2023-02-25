@@ -13,6 +13,7 @@ export type PageDetailEditorProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => void;
 };
 
 const Editor = dynamic(
@@ -27,6 +28,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   blockSuiteWorkspace,
   pageId,
   onInit,
+  onLoad,
 }) => {
   const page = blockSuiteWorkspace.getPage(pageId);
   if (!page) {
@@ -42,7 +44,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         blockSuiteWorkspace={blockSuiteWorkspace}
         pageId={pageId}
       />
-      <Editor page={page} onInit={onInit} />
+      <Editor page={page} onInit={onInit} onLoad={onLoad} />
     </>
   );
 };

@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 export type EditorProps = {
   page: Page;
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onLoad?: (page: Page, editor: EditorContainer) => void;
 };
 
 export const BlockSuiteEditor = (props: EditorProps) => {
@@ -34,6 +35,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
         page.resetHistory();
       }
     }
+    props.onLoad?.(page, editor);
     return;
   }, [page, props]);
 
