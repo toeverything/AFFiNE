@@ -8,7 +8,7 @@ export function useBlockSuiteWorkspaceHelper(
 ) {
   return useMemo(
     () => ({
-      createPage: (pageId: string): Promise<string> => {
+      createPage: (pageId: string, title?: string): Promise<string> => {
         return new Promise(resolve => {
           assertExists(blockSuiteWorkspace);
           const dispose = blockSuiteWorkspace.signals.pageAdded.on(id => {
