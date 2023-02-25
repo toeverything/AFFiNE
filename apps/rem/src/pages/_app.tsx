@@ -3,6 +3,7 @@ import '../styles/globals.css';
 import { useTranslation } from '@affine/i18n';
 import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
+import Head from 'next/head';
 import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { SWRConfig } from 'swr';
 
@@ -24,7 +25,7 @@ const DebugAtoms = memo(function DebugAtoms() {
   return null;
 });
 
-function App({ Component }: AppPropsWithLayout) {
+function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout = Component.getLayout || EmptyLayout;
   const { i18n } = useTranslation();
 
@@ -42,6 +43,9 @@ function App({ Component }: AppPropsWithLayout) {
 
   return (
     <>
+      <Head>
+        <title>AFFiNE</title>
+      </Head>
       <DebugAtoms />
       <SWRConfig
         value={{
@@ -59,7 +63,7 @@ function App({ Component }: AppPropsWithLayout) {
               []
             )}
           >
-            {getLayout(<Component />)}
+            {getLayout(<Component {...pageProps} />)}
           </ProviderComposer>
         </Suspense>
       </SWRConfig>

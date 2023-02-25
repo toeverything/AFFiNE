@@ -50,8 +50,6 @@ export default class AppDocument extends Document {
             href="/apple-touch-icon.png"
           />
           <link rel="icon" sizes="192x192" href="/chrome-192x192.png" />
-          {/* eslint-disable-next-line @next/next/no-title-in-document-head */}
-          <title>AFFiNE</title>
         </Head>
         <body>
           <Main />

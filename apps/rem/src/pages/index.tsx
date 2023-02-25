@@ -1,6 +1,6 @@
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 import { prefetchNecessaryData, useWorkspaces } from '../hooks/use-workspaces';
 

@@ -1,3 +1,5 @@
+import type { EditorContainer } from '@blocksuite/editor';
+import { Page } from '@blocksuite/store';
 import dynamic from 'next/dynamic';
 import React from 'react';
 
@@ -8,6 +10,7 @@ import { BlockSuiteEditorHeader } from './blocksuite/header';
 export type PageDetailEditorProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
+  onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
 };
 
 const Editor = dynamic(
@@ -21,6 +24,7 @@ const Editor = dynamic(
 export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   blockSuiteWorkspace,
   pageId,
+  onInit,
 }) => {
   const page = blockSuiteWorkspace.getPage(pageId);
   if (!page) {
@@ -32,7 +36,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         blockSuiteWorkspace={blockSuiteWorkspace}
         pageId={pageId}
       />
-      <Editor page={page} />
+      <Editor page={page} onInit={onInit} />
     </>
   );
 };

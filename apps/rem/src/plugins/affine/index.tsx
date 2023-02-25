@@ -1,5 +1,4 @@
 import { Workspace } from '@affine/datacenter';
-import dynamic from 'next/dynamic';
 import React from 'react';
 import { preload } from 'swr';
 
@@ -19,15 +18,6 @@ import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 
 const WIP = () => <div>WIP</div>;
-
-const Editor = dynamic(
-  async () =>
-    (await import('../../components/blocksuite/block-suite-editor'))
-      .BlockSuiteEditor,
-  {
-    ssr: false,
-  }
-);
 
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
