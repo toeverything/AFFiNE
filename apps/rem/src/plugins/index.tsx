@@ -35,6 +35,7 @@ type SideBarMenuProps<Flavour extends RemWorkspaceFlavour> =
 
 export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   flavour: Flavour;
+  // Plugin will be loaded according to the priority
   loadPriority: LoadPriority;
   // Fetch necessary data for the first render
   prefetchData: (
@@ -44,9 +45,12 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
     },
     signal?: AbortSignal
   ) => Promise<void>;
+
+  //#region UI
   PageDetail: React.FC<PageDetailProps<Flavour>>;
   PageList: React.FC<PageListProps<Flavour>>;
   Setting: React.FC<SettingProps<Flavour>>;
+  //#endregion
 }
 
 export const UIPlugins = {
