@@ -5,6 +5,7 @@ import { preload } from 'swr';
 import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
+import { WorkspaceSettingDetail } from '../../components/pure/workspace-setting-detail';
 import {
   AffineRemoteUnSyncedWorkspace,
   fetcher,
@@ -82,5 +83,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       />
     );
   },
-  Setting: WIP,
+  SettingsDetail: ({ currentWorkspace }) => {
+    return <WorkspaceSettingDetail workspace={currentWorkspace} />;
+  },
 };

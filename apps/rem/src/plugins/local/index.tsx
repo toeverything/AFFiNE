@@ -6,6 +6,7 @@ import { createLocalProviders } from '../../blocksuite';
 import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
+import { WorkspaceSettingDetail } from '../../components/pure/workspace-setting-detail';
 import {
   LoadPriority,
   LocalWorkspace,
@@ -146,7 +147,9 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       </>
     );
   },
-  Setting: WIP,
+  SettingsDetail: ({ currentWorkspace }) => {
+    return <WorkspaceSettingDetail workspace={currentWorkspace} />;
+  },
   PageList: ({ blockSuiteWorkspace, onClickPage }) => {
     return (
       <BlockSuitePageList

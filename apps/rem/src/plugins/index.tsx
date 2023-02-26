@@ -49,7 +49,7 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   //#region UI
   PageDetail: React.FC<PageDetailProps<Flavour>>;
   PageList: React.FC<PageListProps<Flavour>>;
-  Setting: React.FC<SettingProps<Flavour>>;
+  SettingsDetail: React.FC<SettingProps<Flavour>>;
   //#endregion
 }
 

@@ -27,6 +27,17 @@ export class WorkspaceNotFoundError extends TypeError {
   }
 }
 
+export class QueryParamError extends TypeError {
+  readonly targetKey: string;
+  readonly query: unknown;
+
+  constructor(targetKey: string, query: unknown) {
+    super();
+    this.targetKey = targetKey;
+    this.query = query;
+  }
+}
+
 type BlockSuiteError = PageNotFoundError | Error;
 
 interface BlockSuiteErrorBoundaryState {

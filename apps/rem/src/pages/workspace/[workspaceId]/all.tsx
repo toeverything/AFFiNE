@@ -2,6 +2,7 @@ import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
+import { QueryParamError } from '../../../components/blocksuite/block-suite-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
@@ -33,11 +34,12 @@ const AllPage: NextPageWithLayout = () => {
   );
   if (!router.isReady) {
     return <PageLoading />;
-  } else if (typeof router.query.workspaceId !== 'string') {
-    return <>not found router</>;
+  }
+  if (typeof router.query.workspaceId !== 'string') {
+    throw new QueryParamError('workspaceId', router.query.workspaceId);
   }
   if (!currentWorkspace) {
-    return <>loading workspace</>;
+    return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const PageList = UIPlugins[currentWorkspace.flavour].PageList;

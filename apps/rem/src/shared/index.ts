@@ -96,10 +96,12 @@ export interface AffineWebSocketProvider extends BaseProvider {
 
 export type Provider = LocalIndexedDBProvider | AffineWebSocketProvider;
 
-export type RemWorkspace =
-  | LocalWorkspace
-  | AffineRemoteUnSyncedWorkspace
-  | AffineRemoteSyncedWorkspace;
+export type AffineRemoteWorkspace =
+  | AffineRemoteSyncedWorkspace
+  | AffineRemoteUnSyncedWorkspace;
+export type AffineOfficialWorkspace = AffineRemoteWorkspace | LocalWorkspace;
+
+export type RemWorkspace = AffineOfficialWorkspace;
 
 export const fetcher = async (query: Query | [Query, string, boolean]) => {
   if (query === QueryKey.getUser) {
