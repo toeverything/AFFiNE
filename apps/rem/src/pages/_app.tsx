@@ -1,6 +1,8 @@
 import '../styles/globals.css';
 
 import { useTranslation } from '@affine/i18n';
+import createCache from '@emotion/cache';
+import { CacheProvider } from '@emotion/react';
 import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
 import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
@@ -36,6 +38,8 @@ const defaultSWRConfig: SWRConfiguration = {
   },
 };
 
+const cache = createCache({ key: 'affine' });
+
 function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout = Component.getLayout || EmptyLayout;
   const { i18n } = useTranslation();
@@ -53,7 +57,7 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
   }
 
   return (
-    <>
+    <CacheProvider value={cache}>
       <DebugAtoms />
       <SWRConfig value={defaultSWRConfig}>
         <Suspense fallback={<PageLoading key="RootPageLoading" />}>
@@ -75,7 +79,7 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
           </ProviderComposer>
         </Suspense>
       </SWRConfig>
-    </>
+    </CacheProvider>
   );
 }
 

@@ -153,9 +153,9 @@ importers:
       '@blocksuite/icons': ^2.0.17
       '@blocksuite/react': 0.4.1-20230220214107-0a354de
       '@blocksuite/store': 0.4.1-20230220214107-0a354de
+      '@emotion/cache': ^11.10.5
       '@emotion/css': ^11.10.6
       '@emotion/react': ^11.10.6
-      '@emotion/server': ^11.10.0
       '@mui/material': ^5.11.10
       '@swc-jotai/debug-label': ^0.0.6
       '@swc-jotai/react-refresh': ^0.0.4
@@ -188,9 +188,9 @@ importers:
       '@blocksuite/icons': 2.0.17_pmekkgnqduwlme35zpnqhenc34
       '@blocksuite/react': 0.4.1-20230220214107-0a354de_6bikze5nmk67qwgrvmg7puxlji
       '@blocksuite/store': 0.4.1-20230220214107-0a354de_lit@2.6.1+yjs@13.5.47
+      '@emotion/cache': 11.10.5
       '@emotion/css': 11.10.6
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
-      '@emotion/server': 11.10.0_@emotion+css@11.10.6
       '@mui/material': 5.11.10_dl5meo57oqikomakll4aynjcye
       cmdk: 0.1.22_zula6vjvt3wdocc4mwcxqa6nzi
       css-spring: 4.1.0
