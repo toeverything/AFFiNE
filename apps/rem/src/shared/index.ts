@@ -103,13 +103,20 @@ export type AffineOfficialWorkspace = AffineRemoteWorkspace | LocalWorkspace;
 
 export type RemWorkspace = AffineOfficialWorkspace;
 
-export const fetcher = async (query: Query | [Query, string, boolean]) => {
+type Query = (typeof QueryKey)[keyof typeof QueryKey];
+export const fetcher = async (
+  query: Query | [Query, string, boolean] | [Query, string]
+) => {
   if (query === QueryKey.getUser) {
     return apis.auth.user ?? null;
   }
   if (Array.isArray(query)) {
     if (query[0] === QueryKey.downloadWorkspace) {
       return apis.downloadWorkspace(query[1], query[2]);
+    } else if (query[0] === QueryKey.getMembers) {
+      return apis.getWorkspaceMembers({
+        id: query[1],
+      });
     }
   } else {
     if (query === QueryKey.getWorkspaces) {
@@ -143,9 +150,8 @@ export const QueryKey = {
   getUser: 'getUser',
   getWorkspaces: 'getWorkspaces',
   downloadWorkspace: 'downloadWorkspace',
+  getMembers: 'getMembers',
 } as const;
-
-type Query = (typeof QueryKey)[keyof typeof QueryKey];
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
   P,
