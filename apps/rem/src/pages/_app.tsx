@@ -36,9 +36,11 @@ const helmetContext = {};
 const defaultSWRConfig: SWRConfiguration = {
   suspense: true,
   fetcher: () => {
-    throw new Error(
+    const error = new Error(
       'you might forget to warp your page with AffineSWRConfigProvider'
     );
+    console.log(error);
+    throw error;
   },
 };
 
