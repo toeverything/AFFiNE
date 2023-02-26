@@ -112,7 +112,7 @@ export const PageList: React.FC<PageListProps> = ({
           {pageList.map((pageMeta, index) => {
             return (
               <StyledTableRow
-                data-testid="page-list-item"
+                data-testid={`page-list-item-${pageMeta.id}}`}
                 key={`${pageMeta.id}-${index}`}
               >
                 <TableCell
