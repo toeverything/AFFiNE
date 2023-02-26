@@ -19,7 +19,7 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
   const { t } = useTranslation();
 
   return (
-    <StyledFooter>
+    <StyledFooter data-testid="workspace-list-modal-footer">
       {user && (
         <>
           <FlexWrapper>

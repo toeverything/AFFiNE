@@ -6,7 +6,6 @@ import React, { useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
-import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { HelpIsland } from '../components/pure/help-island';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
@@ -14,7 +13,6 @@ import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useSyncWorkspaces } from '../hooks/use-workspaces';
-import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
@@ -88,11 +86,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
         <StyledWrapper>
-          <AffineSWRConfigProvider>
-            <AffineErrorBoundary router={router}>
-              {children}
-            </AffineErrorBoundary>
-          </AffineSWRConfigProvider>
+          {children}
           <StyledToolWrapper>
             <div id="toolWrapper" style={{ marginBottom: '12px' }}>
               {/* Slot for block hub */}

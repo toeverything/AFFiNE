@@ -6,12 +6,15 @@ import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
 import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
+import { useRouter } from 'next/router';
 import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { SWRConfig, SWRConfiguration } from 'swr';
 
+import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
+import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { ModalProvider } from '../providers/ModalProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { NextPageWithLayout } from '../shared';
@@ -61,25 +64,28 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
     <CacheProvider value={cache}>
       <DebugAtoms />
       <SWRConfig value={defaultSWRConfig}>
-        <Suspense fallback={<PageLoading key="RootPageLoading" />}>
-          <ProviderComposer
-            contexts={useMemo(
-              () => [
-                <Provider key="JotaiProvider" />,
-                <ThemeProvider key="ThemeProvider" />,
-                <ModalProvider key="ModalProvider" />,
-              ],
-              []
-            )}
-          >
-            <HelmetProvider key="HelmetProvider" context={helmetContext}>
-              <Helmet>
-                <title>AFFiNE</title>
-              </Helmet>
-              {getLayout(<Component {...pageProps} />)}
-            </HelmetProvider>
-          </ProviderComposer>
-        </Suspense>
+        <AffineErrorBoundary router={useRouter()}>
+          <Suspense fallback={<PageLoading key="RootPageLoading" />}>
+            <ProviderComposer
+              contexts={useMemo(
+                () => [
+                  <AffineSWRConfigProvider key="AffineSWRConfigProvider" />,
+                  <Provider key="JotaiProvider" />,
+                  <ThemeProvider key="ThemeProvider" />,
+                  <ModalProvider key="ModalProvider" />,
+                ],
+                []
+              )}
+            >
+              <HelmetProvider key="HelmetProvider" context={helmetContext}>
+                <Helmet>
+                  <title>AFFiNE</title>
+                </Helmet>
+                {getLayout(<Component {...pageProps} />)}
+              </HelmetProvider>
+            </ProviderComposer>
+          </Suspense>
+        </AffineErrorBoundary>
       </SWRConfig>
     </CacheProvider>
   );
