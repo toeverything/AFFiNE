@@ -11,6 +11,7 @@ import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 import { RemWorkspace } from '../../../shared';
 import { Footer } from '../footer';
 import { WorkspaceCard } from '../workspace-card';
+import { LanguageMenu } from './language-menu';
 import {
   StyledCard,
   StyledHelperContainer,
@@ -75,7 +76,7 @@ export const WorkspaceListModal = ({
           </StyledModalHeaderLeft>
 
           <StyledOperationWrapper>
-            {/*<LanguageMenu />*/}
+            <LanguageMenu />
             <StyledSplitLine />
             <ModalCloseButton
               data-testid="close-workspace-modal"
