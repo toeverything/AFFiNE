@@ -1,16 +1,28 @@
+import { useAtom } from 'jotai';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import React, { useEffect } from 'react';
 
+import { currentWorkspaceIdAtom } from '../atoms';
 import { PageLoading } from '../components/pure/loading';
 import { prefetchNecessaryData, useWorkspaces } from '../hooks/use-workspaces';
 
 prefetchNecessaryData();
 const IndexPage: NextPage = () => {
   const router = useRouter();
+  const [workspaceId] = useAtom(currentWorkspaceIdAtom);
   const workspaces = useWorkspaces();
   useEffect(() => {
     if (!router.isReady) {
+      return;
+    }
+    if (workspaceId && workspaces.find(w => w.id === workspaceId)) {
+      router.replace({
+        pathname: '/workspace/[workspaceId]/all',
+        query: {
+          workspaceId,
+        },
+      });
       return;
     }
     if (workspaces.at(0)) {
@@ -20,8 +32,9 @@ const IndexPage: NextPage = () => {
           workspaceId: workspaces[0].id,
         },
       });
+      return;
     }
-  }, [router, workspaces]);
+  }, [router, workspaceId, workspaces]);
   return <PageLoading />;
 };
 
