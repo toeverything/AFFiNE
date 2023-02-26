@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../../../shared';
-import { PageNotFoundError } from '../block-suite-error-eoundary';
+import { PageNotFoundError } from '../../affine/affine-error-eoundary';
 import Header from './header';
 import {
   StyledSearchArrowWrapper,

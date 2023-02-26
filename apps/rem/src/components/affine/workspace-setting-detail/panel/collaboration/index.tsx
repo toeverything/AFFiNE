@@ -21,7 +21,7 @@ import {
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../../shared';
-import { Unreachable } from '../../../../blocksuite/block-suite-error-eoundary';
+import { Unreachable } from '../../../affine-error-eoundary';
 import { PanelProps } from '../../index';
 import { InviteMemberModal } from './invite-member-modal';
 import {

@@ -1,7 +1,7 @@
 import { AccessTokenMessage } from '@affine/datacenter';
 import useSWR from 'swr';
 
-import { QueryKey } from '../../shared';
+import { QueryKey } from '../../plugins/affine/fetcher';
 
 export function useCurrentUser(): AccessTokenMessage | null {
   const { data } = useSWR<AccessTokenMessage | null>(QueryKey.getUser, {

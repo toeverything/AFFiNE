@@ -2,18 +2,17 @@ import { assertEquals } from '@blocksuite/store';
 import React from 'react';
 import { preload } from 'swr';
 
+import { PageNotFoundError } from '../../components/affine/affine-error-eoundary';
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
-import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import {
   AffineRemoteUnSyncedWorkspace,
-  fetcher,
   LoadPriority,
-  QueryKey,
   RemWorkspaceFlavour,
 } from '../../shared';
 import { WorkspacePlugin } from '..';
+import { fetcher, QueryKey } from './fetcher';
 
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,

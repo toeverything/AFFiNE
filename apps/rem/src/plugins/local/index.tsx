@@ -3,8 +3,8 @@ import React from 'react';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
 import { createLocalProviders } from '../../blocksuite';
+import { PageNotFoundError } from '../../components/affine/affine-error-eoundary';
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
-import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import {

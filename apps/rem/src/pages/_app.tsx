@@ -5,13 +5,13 @@ import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
 import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
-import { SWRConfig } from 'swr';
+import { SWRConfig, SWRConfiguration } from 'swr';
 
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
 import { ModalProvider } from '../providers/ModalProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
-import { fetcher, NextPageWithLayout } from '../shared';
+import { NextPageWithLayout } from '../shared';
 import { config } from '../shared/env';
 
 type AppPropsWithLayout = AppProps & {
@@ -26,6 +26,15 @@ const DebugAtoms = memo(function DebugAtoms() {
 });
 
 const helmetContext = {};
+
+const defaultSWRConfig: SWRConfiguration = {
+  suspense: true,
+  fetcher: () => {
+    throw new Error(
+      'you might forget to warp your page with AffineSWRConfigProvider'
+    );
+  },
+};
 
 function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout = Component.getLayout || EmptyLayout;
@@ -46,12 +55,7 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
   return (
     <>
       <DebugAtoms />
-      <SWRConfig
-        value={{
-          suspense: true,
-          fetcher,
-        }}
-      >
+      <SWRConfig value={defaultSWRConfig}>
         <Suspense fallback={<PageLoading key="RootPageLoading" />}>
           <ProviderComposer
             contexts={useMemo(

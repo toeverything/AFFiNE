@@ -5,7 +5,7 @@ import React, { useCallback } from 'react';
 import {
   QueryParamError,
   Unreachable,
-} from '../../../components/blocksuite/block-suite-error-eoundary';
+} from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';

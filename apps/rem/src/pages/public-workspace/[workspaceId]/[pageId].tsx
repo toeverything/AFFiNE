@@ -6,11 +6,8 @@ import useSWR from 'swr';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceLayout } from '../../../layouts';
-import {
-  BlockSuiteWorkspace,
-  NextPageWithLayout,
-  QueryKey,
-} from '../../../shared';
+import { QueryKey } from '../../../plugins/affine/fetcher';
+import { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../../utils';
 
 declare global {

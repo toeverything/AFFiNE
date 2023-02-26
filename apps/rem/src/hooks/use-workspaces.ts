@@ -6,13 +6,9 @@ import { IndexeddbPersistence } from 'y-indexeddb';
 
 import { createLocalProviders } from '../blocksuite';
 import { UIPlugins } from '../plugins';
+import { QueryKey } from '../plugins/affine/fetcher';
 import { kStoreKey } from '../plugins/local';
-import {
-  LocalWorkspace,
-  QueryKey,
-  RemWorkspace,
-  RemWorkspaceFlavour,
-} from '../shared';
+import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
 import { config } from '../shared/env';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 

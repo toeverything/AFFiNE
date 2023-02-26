@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet-async';
 
 import { useBlockSuiteWorkspacePageTitle } from '../hooks/use-blocksuite-workspace-page-title';
 import { BlockSuiteWorkspace } from '../shared';
-import { PageNotFoundError } from './blocksuite/block-suite-error-eoundary';
+import { PageNotFoundError } from './affine/affine-error-eoundary';
 import { BlockSuiteEditorHeader } from './blocksuite/header';
 
 export type PageDetailEditorProps = {

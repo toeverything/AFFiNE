@@ -2,7 +2,7 @@ import { Member } from '@affine/datacenter';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 
-import { QueryKey } from '../../shared';
+import { QueryKey } from '../../plugins/affine/fetcher';
 import { apis } from '../../shared/apis';
 
 export function useMembers(workspaceId: string) {

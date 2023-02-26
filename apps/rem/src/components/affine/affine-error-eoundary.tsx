@@ -3,7 +3,7 @@ import React, { Component, ErrorInfo } from 'react';
 
 import { BlockSuiteWorkspace } from '../../shared';
 
-export type BlockSuiteErrorBoundaryProps = React.PropsWithChildren<{
+export type AffineErrorBoundaryProps = React.PropsWithChildren<{
   router: NextRouter;
 }>;
 
@@ -44,27 +44,32 @@ export class Unreachable extends Error {
   }
 }
 
-type BlockSuiteError = PageNotFoundError | Error;
+type AffineError =
+  | QueryParamError
+  | Unreachable
+  | WorkspaceNotFoundError
+  | PageNotFoundError
+  | Error;
 
-interface BlockSuiteErrorBoundaryState {
-  error: BlockSuiteError | null;
+interface AffineErrorBoundaryState {
+  error: AffineError | null;
 }
 
-export class BlockSuiteErrorBoundary extends Component<
-  BlockSuiteErrorBoundaryProps,
-  BlockSuiteErrorBoundaryState
+export class AffineErrorBoundary extends Component<
+  AffineErrorBoundaryProps,
+  AffineErrorBoundaryState
 > {
-  public state: BlockSuiteErrorBoundaryState = {
+  public state: AffineErrorBoundaryState = {
     error: null,
   };
 
   public static getDerivedStateFromError(
-    error: BlockSuiteError
-  ): BlockSuiteErrorBoundaryState {
+    error: AffineError
+  ): AffineErrorBoundaryState {
     return { error };
   }
 
-  public componentDidCatch(error: BlockSuiteError, errorInfo: ErrorInfo) {
+  public componentDidCatch(error: AffineError, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
   }
 
