@@ -3,6 +3,7 @@ import '../styles/globals.css';
 import { useTranslation } from '@affine/i18n';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
+import { Provider } from 'jotai';
 import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
 import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
@@ -64,6 +65,7 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
           <ProviderComposer
             contexts={useMemo(
               () => [
+                <Provider key="JotaiProvider" />,
                 <ThemeProvider key="ThemeProvider" />,
                 <ModalProvider key="ModalProvider" />,
               ],
