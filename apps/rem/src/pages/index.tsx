@@ -2,6 +2,7 @@ import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import React, { useEffect } from 'react';
 
+import { PageLoading } from '../components/pure/loading';
 import { prefetchNecessaryData, useWorkspaces } from '../hooks/use-workspaces';
 
 prefetchNecessaryData();
@@ -21,7 +22,7 @@ const IndexPage: NextPage = () => {
       });
     }
   }, [router, workspaces]);
-  return <div>Redirecting...</div>;
+  return <PageLoading />;
 };
 
 export default IndexPage;
