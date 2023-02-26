@@ -1,7 +1,8 @@
 import { assertExists, uuidv4 } from '@blocksuite/store';
 import { useAtom } from 'jotai/index';
+import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
@@ -17,9 +18,12 @@ import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
+const sideBarOpenAtom = atomWithStorage('sideBarOpen', false);
+
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
+  const [show, setShow] = useAtom(sideBarOpenAtom);
   useSyncWorkspaces();
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
@@ -36,7 +40,6 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
     }
   }, [currentWorkspace]);
   const router = useRouter();
-  const [show, setShow] = useState(false);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(
     currentWorkspace?.blockSuiteWorkspace ?? null
