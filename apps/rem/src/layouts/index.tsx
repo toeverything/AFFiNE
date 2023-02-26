@@ -1,13 +1,12 @@
 import { assertExists, uuidv4 } from '@blocksuite/store';
 import { useAtom } from 'jotai/index';
 import { useRouter } from 'next/router';
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { HelpIsland } from '../components/pure/help-island';
-import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -87,11 +86,9 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
         />
         <StyledWrapper>
           <AffineSWRConfigProvider>
-            <Suspense fallback={<PageLoading key="WorkspacePageLoading" />}>
-              <AffineErrorBoundary router={router}>
-                {children}
-              </AffineErrorBoundary>
-            </Suspense>
+            <AffineErrorBoundary router={router}>
+              {children}
+            </AffineErrorBoundary>
           </AffineSWRConfigProvider>
           <StyledToolWrapper>
             <div id="toolWrapper" style={{ marginBottom: '12px' }}>
