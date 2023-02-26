@@ -37,6 +37,11 @@ const getRedirectConfig = profile => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compiler: {
+    emotion: {
+      sourceMap: true,
+    },
+  },
   experimental: {
     swcPlugins: [
       ['@swc-jotai/debug-label', {}],
