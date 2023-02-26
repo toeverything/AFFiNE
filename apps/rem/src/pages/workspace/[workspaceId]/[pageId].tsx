@@ -16,10 +16,10 @@ const WorkspaceDetail: React.FC = () => {
   const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
   if (!currentWorkspace) {
-    return <div>No current workspace</div>;
+    return <PageLoading />;
   }
   if (!pageId) {
-    return <div>No current page</div>;
+    return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const PageDetail = UIPlugins[currentWorkspace.flavour].PageDetail;
@@ -47,7 +47,7 @@ const WorkspaceDetailPage: NextPageWithLayout = () => {
     typeof router.query.pageId !== 'string' ||
     typeof router.query.workspaceId !== 'string'
   ) {
-    return <>not found router</>;
+    throw new Error('Invalid router query');
   }
   return <WorkspaceDetail />;
 };
