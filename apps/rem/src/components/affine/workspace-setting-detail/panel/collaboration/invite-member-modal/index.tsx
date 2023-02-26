@@ -3,10 +3,12 @@ import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
 import { Input } from '@affine/component';
 import { MuiAvatar } from '@affine/component';
-import { User } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { EmailIcon } from '@blocksuite/icons';
-import { useState } from 'react';
+import React, { Suspense, useCallback, useState } from 'react';
+
+import { useMembers } from '../../../../../../hooks/affine/use-members';
+import { useUsersByEmail } from '../../../../../../hooks/affine/use-users-by-email';
 
 interface LoginModalProps {
   open: boolean;
@@ -16,32 +18,46 @@ interface LoginModalProps {
 }
 
 const gmailReg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/;
+
+const Result: React.FC<{
+  workspaceId: string;
+  queryEmail: string;
+}> = ({ workspaceId, queryEmail }) => {
+  const users = useUsersByEmail(workspaceId, queryEmail);
+  const firstUser = users?.at(0) ?? null;
+  if (!firstUser || !firstUser.email) {
+    return null;
+  }
+  return (
+    <Members>
+      <Member>
+        {firstUser?.avatar_url ? (
+          <MuiAvatar src={firstUser?.avatar_url}></MuiAvatar>
+        ) : (
+          <MemberIcon>
+            <EmailIcon></EmailIcon>
+          </MemberIcon>
+        )}
+        <Email>{firstUser?.email}</Email>
+        {/* <div>invited</div> */}
+      </Member>
+    </Members>
+  );
+};
+
 export const InviteMemberModal = ({
   open,
   onClose,
   onInviteSuccess,
+  workspaceId,
 }: LoginModalProps) => {
+  const { inviteMember } = useMembers(workspaceId);
   const [email, setEmail] = useState<string>('');
-  const [showMember, setShowMember] = useState<boolean>(true);
-  const [showTip, setShowTip] = useState<boolean>(false);
-  const [userData, setUserData] = useState<User | null>(null);
-  // const { inviteMember, getUserByEmail } = useMembers();
+  const [showMemberPreview, setShowMemberPreview] = useState(false);
   const { t } = useTranslation();
-  const inputChange = (value: string) => {
-    setShowMember(true);
-    if (gmailReg.test(value)) {
-      setEmail(value);
-      setShowTip(false);
-      // getUserByEmail(value).then(data => {
-      //   if (data?.name) {
-      //     setUserData(data);
-      //     setShowTip(false);
-      //   }
-      // });
-    } else {
-      setShowTip(true);
-    }
-  };
+  const inputChange = useCallback((value: string) => {
+    setEmail(value);
+  }, []);
   return (
     <div>
       <Modal open={open} onClose={onClose}>
@@ -61,41 +77,29 @@ export const InviteMemberModal = ({
                 width={360}
                 value={email}
                 onChange={inputChange}
-                onBlur={() => {
-                  // setShowMember(false);
-                }}
+                onFocus={useCallback(() => {
+                  setShowMemberPreview(true);
+                }, [])}
+                onBlur={useCallback(() => {
+                  setShowMemberPreview(false);
+                }, [])}
                 placeholder={t('Invite placeholder')}
               ></Input>
-              {showMember ? (
-                <Members>
-                  {showTip ? (
-                    <NoFind>{t('Non-Gmail')}</NoFind>
-                  ) : (
-                    <Member>
-                      {userData?.avatar ? (
-                        <MuiAvatar src={userData?.avatar}></MuiAvatar>
-                      ) : (
-                        <MemberIcon>
-                          <EmailIcon></EmailIcon>
-                        </MemberIcon>
-                      )}
-                      <Email>{email}</Email>
-                      {/* <div>invited</div> */}
-                    </Member>
-                  )}
-                </Members>
-              ) : (
-                <></>
+              {showMemberPreview && gmailReg.test(email) && (
+                <Suspense fallback="loading...">
+                  <Result workspaceId={workspaceId} queryEmail={email} />
+                </Suspense>
               )}
             </InviteBox>
           </Content>
           <Footer>
             <Button
+              disabled={!gmailReg.test(email)}
               shape="circle"
               type="primary"
               style={{ width: '364px', height: '38px', borderRadius: '40px' }}
               onClick={async () => {
-                // await inviteMember(email);
+                await inviteMember(email);
                 setEmail('');
                 onInviteSuccess();
               }}

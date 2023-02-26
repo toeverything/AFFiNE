@@ -86,7 +86,7 @@ export const StyledMemberButtonContainer = styled('div')(() => {
   };
 });
 
-export const StyledMoreVerticalButton = styled('button')(() => {
+export const StyledMoreVerticalDiv = styled('div')(() => {
   return {
     display: 'flex',
     justifyContent: 'center',
@@ -97,3 +97,5 @@ export const StyledMoreVerticalButton = styled('button')(() => {
     paddingRight: '48px',
   };
 });
+
+export const StyledMoreVerticalButton = styled(StyledMoreVerticalDiv)();

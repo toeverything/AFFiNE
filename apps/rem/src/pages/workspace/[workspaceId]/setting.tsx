@@ -28,8 +28,13 @@ const SettingPage: NextPageWithLayout = () => {
     typeof router.query.currentTab === 'string' ? router.query.currentTab : '';
   const onChangeTab = useCallback(
     (tab: string) => {
-      router.query.currentTab = tab;
-      router.push(router);
+      router.push({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: tab,
+        },
+      });
     },
     [router]
   );
@@ -38,8 +43,13 @@ const SettingPage: NextPageWithLayout = () => {
       return;
     }
     if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
-      router.query.currentTab = settingPanel.General;
-      router.replace(router);
+      router.replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: settingPanel.General,
+        },
+      });
     }
   }, [currentTab, router]);
   if (!router.isReady) {
