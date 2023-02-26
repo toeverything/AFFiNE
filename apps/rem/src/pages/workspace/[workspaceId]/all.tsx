@@ -2,7 +2,10 @@ import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
-import { QueryParamError } from '../../../components/blocksuite/block-suite-error-eoundary';
+import {
+  QueryParamError,
+  Unreachable,
+} from '../../../components/blocksuite/block-suite-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
@@ -62,7 +65,7 @@ const AllPage: NextPageWithLayout = () => {
       />
     );
   }
-  return <div>impossible</div>;
+  throw new Unreachable();
 };
 
 export default AllPage;

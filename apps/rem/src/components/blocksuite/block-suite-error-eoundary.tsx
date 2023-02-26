@@ -38,6 +38,12 @@ export class QueryParamError extends TypeError {
   }
 }
 
+export class Unreachable extends Error {
+  constructor(message?: string) {
+    super(message);
+  }
+}
+
 type BlockSuiteError = PageNotFoundError | Error;
 
 interface BlockSuiteErrorBoundaryState {

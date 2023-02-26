@@ -6,8 +6,8 @@ import { EmailIcon } from '@blocksuite/icons';
 import React, { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
-import { Upload } from '../../../file-upload';
-import { WorkspaceAvatar } from '../../../workspace-avatar';
+import { Upload } from '../../../../pure/file-upload';
+import { WorkspaceAvatar } from '../../../../pure/workspace-avatar';
 import { PanelProps } from '../../index';
 import { StyledRow, StyledSettingKey } from '../../style';
 import { WorkspaceDelete } from './delete';

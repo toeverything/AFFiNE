@@ -2,10 +2,10 @@ import { assertEquals } from '@blocksuite/store';
 import React from 'react';
 import { preload } from 'swr';
 
+import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import { WorkspaceSettingDetail } from '../../components/pure/workspace-setting-detail';
 import {
   AffineRemoteUnSyncedWorkspace,
   fetcher,
@@ -14,8 +14,6 @@ import {
   RemWorkspaceFlavour,
 } from '../../shared';
 import { WorkspacePlugin } from '..';
-
-const WIP = () => <div>WIP</div>;
 
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
@@ -83,7 +81,13 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       />
     );
   },
-  SettingsDetail: ({ currentWorkspace }) => {
-    return <WorkspaceSettingDetail workspace={currentWorkspace} />;
+  SettingsDetail: ({ currentWorkspace, onChangeTab, currentTab }) => {
+    return (
+      <WorkspaceSettingDetail
+        onChangeTab={onChangeTab}
+        currentTab={currentTab}
+        workspace={currentWorkspace}
+      />
+    );
   },
 };

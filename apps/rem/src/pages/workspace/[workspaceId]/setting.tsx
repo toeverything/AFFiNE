@@ -1,5 +1,7 @@
 import { useRouter } from 'next/router';
+import { useCallback, useEffect } from 'react';
 
+import { Unreachable } from '../../../components/blocksuite/block-suite-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
@@ -7,7 +9,13 @@ import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-route
 import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { UIPlugins } from '../../../plugins';
-import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
+import {
+  NextPageWithLayout,
+  RemWorkspaceFlavour,
+  SettingPanel,
+  settingPanel,
+  settingPanelValues,
+} from '../../../shared';
 
 prefetchNecessaryData();
 
@@ -16,20 +24,50 @@ const SettingPage: NextPageWithLayout = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
+  const currentTab =
+    typeof router.query.currentTab === 'string' ? router.query.currentTab : '';
+  const onChangeTab = useCallback(
+    (tab: string) => {
+      router.query.currentTab = tab;
+      router.push(router);
+    },
+    [router]
+  );
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+    if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
+      router.query.currentTab = settingPanel.General;
+      router.replace(router);
+    }
+  }, [currentTab, router]);
   if (!router.isReady) {
     return <PageLoading />;
-  }
-  if (!currentWorkspace) {
+  } else if (!currentWorkspace) {
     return <PageLoading />;
-  }
-  if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
+    return <PageLoading />;
+  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const Setting = UIPlugins[currentWorkspace.flavour].SettingsDetail;
-    return <Setting currentWorkspace={currentWorkspace} />;
+    return (
+      <Setting
+        currentWorkspace={currentWorkspace}
+        currentTab={currentTab as SettingPanel}
+        onChangeTab={onChangeTab}
+      />
+    );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
     const Setting = UIPlugins[currentWorkspace.flavour].SettingsDetail;
-    return <Setting currentWorkspace={currentWorkspace} />;
+    return (
+      <Setting
+        currentWorkspace={currentWorkspace}
+        currentTab={currentTab as SettingPanel}
+        onChangeTab={onChangeTab}
+      />
+    );
   }
-  return <div>impossible</div>;
+  throw new Unreachable();
 };
 
 export default SettingPage;

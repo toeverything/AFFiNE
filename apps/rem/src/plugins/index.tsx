@@ -6,6 +6,7 @@ import {
   LoadPriority,
   RemWorkspace,
   RemWorkspaceFlavour,
+  SettingPanel,
 } from '../shared';
 import { AffinePlugin } from './affine';
 import { LocalPlugin } from './local';
@@ -16,7 +17,11 @@ type UIBaseProps<Flavour extends RemWorkspaceFlavour> = {
   currentWorkspace: FlavourToWorkspace[Flavour];
 };
 
-type SettingProps<Flavour extends RemWorkspaceFlavour> = UIBaseProps<Flavour>;
+type SettingProps<Flavour extends RemWorkspaceFlavour> =
+  UIBaseProps<Flavour> & {
+    currentTab: SettingPanel;
+    onChangeTab: (tab: SettingPanel) => void;
+  };
 
 type PageDetailProps<Flavour extends RemWorkspaceFlavour> =
   UIBaseProps<Flavour> & {

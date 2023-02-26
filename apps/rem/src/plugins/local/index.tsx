@@ -3,10 +3,10 @@ import React from 'react';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
 import { createLocalProviders } from '../../blocksuite';
+import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { PageNotFoundError } from '../../components/blocksuite/block-suite-error-eoundary';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import { WorkspaceSettingDetail } from '../../components/pure/workspace-setting-detail';
 import {
   LoadPriority,
   LocalWorkspace,
@@ -16,7 +16,6 @@ import { config } from '../../shared/env';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 
-const WIP = () => <div>WIP</div>;
 export const kStoreKey = 'affine-local-workspace';
 
 export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
@@ -147,14 +146,20 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       </>
     );
   },
-  SettingsDetail: ({ currentWorkspace }) => {
-    return <WorkspaceSettingDetail workspace={currentWorkspace} />;
-  },
   PageList: ({ blockSuiteWorkspace, onClickPage }) => {
     return (
       <BlockSuitePageList
         onClickPage={onClickPage}
         blockSuiteWorkspace={blockSuiteWorkspace}
+      />
+    );
+  },
+  SettingsDetail: ({ currentWorkspace, onChangeTab, currentTab }) => {
+    return (
+      <WorkspaceSettingDetail
+        onChangeTab={onChangeTab}
+        currentTab={currentTab}
+        workspace={currentWorkspace}
       />
     );
   },

@@ -1,13 +1,11 @@
 import { useTranslation } from '@affine/i18n';
-import React, {
-  MouseEvent,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { MouseEvent, useCallback, useMemo, useRef } from 'react';
 
-import { AffineOfficialWorkspace } from '../../../shared';
+import {
+  AffineOfficialWorkspace,
+  SettingPanel,
+  settingPanel,
+} from '../../../shared';
 import { CollaborationPanel } from './panel/collaboration';
 import { GeneralPanel } from './panel/general';
 import {
@@ -20,40 +18,33 @@ import {
 
 export type WorkspaceSettingDetailProps = {
   workspace: AffineOfficialWorkspace;
+  currentTab: SettingPanel;
+  onChangeTab: (tab: SettingPanel) => void;
 };
-
-export const enum Panel {
-  General = 'general',
-  Collaboration = 'collaboration',
-  Publish = 'publish',
-  Export = 'export',
-  // TODO: add it back for desktop version
-  // Sync = 'sync'
-}
 
 export type PanelProps = {
   workspace: AffineOfficialWorkspace;
 };
 
 const panelMap = {
-  [Panel.General]: {
+  [settingPanel.General]: {
     name: 'General',
     ui: GeneralPanel,
   },
-  [Panel.Collaboration]: {
+  [settingPanel.Collaboration]: {
     name: 'Collaboration',
     ui: CollaborationPanel,
   },
-  [Panel.Publish]: {
+  [settingPanel.Publish]: {
     name: 'Publish',
     ui: () => <>Publish</>,
   },
-  [Panel.Export]: {
+  [settingPanel.Export]: {
     name: 'Export',
     ui: () => <>Export</>,
   },
 } satisfies {
-  [Key in Panel]: {
+  [Key in SettingPanel]: {
     name: string;
     ui: React.FC<PanelProps>;
   };
@@ -70,14 +61,15 @@ function assertInstanceOf<T, U extends T>(
 
 export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
   workspace,
+  currentTab,
+  onChangeTab,
 }) => {
   const isAffine = workspace.flavour === 'affine';
   if (!(workspace.flavour === 'affine' || workspace.flavour === 'local')) {
     throw new Error('Unsupported workspace flavour');
   }
-  const [activeTab, setActiveTab] = useState<Panel>(Panel.General);
-  if (!(activeTab in panelMap)) {
-    throw new Error('Invalid activeTab: ' + activeTab);
+  if (!(currentTab in panelMap)) {
+    throw new Error('Invalid activeTab: ' + currentTab);
   }
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -86,7 +78,7 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
     if (indicatorRef.current && containerRef.current) {
       const indicator = indicatorRef.current;
       const activeTabElement = containerRef.current.querySelector(
-        `[data-tab-key="${activeTab}"]`
+        `[data-tab-key="${currentTab}"]`
       );
       assertInstanceOf(activeTabElement, HTMLElement);
       requestAnimationFrame(() => {
@@ -94,7 +86,7 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
         indicator.style.width = `${activeTabElement.offsetWidth}px`;
       });
     }
-  }, [activeTab]);
+  }, [currentTab]);
   const handleTabClick = useCallback(
     (event: MouseEvent<HTMLElement>) => {
       assertInstanceOf(event.target, HTMLElement);
@@ -102,12 +94,12 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
       if (!key || !(key in panelMap)) {
         throw new Error('data-tab-key is invalid: ' + key);
       }
-      setActiveTab(key as Panel);
+      onChangeTab(key as SettingPanel);
       startTransaction();
     },
-    [startTransaction]
+    [onChangeTab, startTransaction]
   );
-  const Component = useMemo(() => panelMap[activeTab].ui, [activeTab]);
+  const Component = useMemo(() => panelMap[currentTab].ui, [currentTab]);
   return (
     <StyledSettingContainer
       aria-label="workspace-setting-detail"
@@ -121,7 +113,7 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
           return (
             <WorkspaceSettingTagItem
               key={key}
-              isActive={activeTab === key}
+              isActive={currentTab === key}
               data-tab-key={key}
               onClick={handleTabClick}
             >
@@ -138,8 +130,8 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
       </StyledTabButtonWrapper>
       <StyledSettingContent>
         <Component
-          key={activeTab}
-          data-tab-ui={activeTab}
+          key={currentTab}
+          data-tab-ui={currentTab}
           workspace={workspace}
         />
       </StyledSettingContent>
