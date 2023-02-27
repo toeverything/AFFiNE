@@ -21,7 +21,7 @@ const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
   const { t } = useTranslation();
   let isOwner = true;
   if (workspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    isOwner = workspace.permission_type === PermissionType.Owner;
+    isOwner = workspace.permission === PermissionType.Owner;
   } else if (workspace.flavour === RemWorkspaceFlavour.LOCAL) {
     isOwner = true;
   }

@@ -4,5 +4,5 @@ import { AffineOfficialWorkspace } from '../../shared';
 
 export function useIsWorkspaceOwner(workspace: AffineOfficialWorkspace) {
   if (workspace.flavour === 'local') return true;
-  return workspace.permission_type === PermissionType.Owner;
+  return workspace.permission === PermissionType.Owner;
 }
