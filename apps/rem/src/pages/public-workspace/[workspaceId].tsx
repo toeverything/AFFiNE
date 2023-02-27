@@ -53,7 +53,8 @@ const ListPage: NextPageWithLayout = () => {
       setWorkspaceId(workspaceId);
     }
   }, [router.isReady, setWorkspaceId, workspaceId]);
-  if (!router.isReady) {
+  const value = useAtomValue(publicWorkspaceIdAtom);
+  if (!router.isReady || !value) {
     return <PageLoading />;
   }
   if (typeof workspaceId !== 'string') {

@@ -5,11 +5,11 @@ import { apis } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
 export const publicWorkspaceIdAtom = atom<string | null>(null);
-export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace | null>>(
+export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
   async get => {
     const workspaceId = get(publicWorkspaceIdAtom);
     if (!workspaceId) {
-      return Promise.resolve(null);
+      throw new Error('No workspace id');
     }
     const binary = await apis.downloadWorkspace(workspaceId, true);
     const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
