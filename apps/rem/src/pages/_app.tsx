@@ -1,3 +1,4 @@
+import '@blocksuite/editor/themes/affine.css';
 import '../styles/globals.css';
 
 import { useTranslation } from '@affine/i18n';
