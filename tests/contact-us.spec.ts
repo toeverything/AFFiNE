@@ -17,6 +17,6 @@ test.describe('Open contact us', () => {
     const contactUsModal = page.locator(
       '[data-testid=contact-us-modal-content]'
     );
-    await expect(contactUsModal).toContainText('AFFiNE Community');
+    await expect(contactUsModal).toContainText('Check Our Docs');
   });
 });
