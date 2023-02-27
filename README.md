@@ -67,8 +67,6 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 
 [AFFiNE Community](https://community.affine.pro) - Our wonderful community, where you can meet and engage with the team, developers and other like-minded enthusiastic user of AFFiNE.
 
-[Our official communities](https://community.affine.pro/c/start-here/) - Join our friendly communities for more support and discussions.
-
 ## Features
 
 **Privacy focussed** — AFFiNE is built with your privacy in mind and is one of our key concerns. We want you to keep control of your data, allowing you to store it as you like, where you like while still being able to freely edit and view your data on-demand.
