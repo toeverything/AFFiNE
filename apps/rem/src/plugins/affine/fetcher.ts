@@ -46,7 +46,12 @@ export const fetcher = async (
             ...workspace,
             flavour: RemWorkspaceFlavour.AFFINE,
             firstBinarySynced: false,
-            blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(workspace.id),
+            blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
+              workspace.id,
+              (k: string) =>
+                // fixme: token could be expired
+                ({ api: '/api/workspace', token: apis.auth.token }[k])
+            ),
             syncBinary: async () => {
               const binary = await apis.downloadWorkspace(
                 workspace.id,
