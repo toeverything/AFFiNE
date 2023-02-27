@@ -1,5 +1,3 @@
-import '@blocksuite/editor/themes/affine.css';
-
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { useEffect, useRef } from 'react';
