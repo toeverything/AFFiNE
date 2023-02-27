@@ -82,8 +82,10 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
   const { t } = useTranslation();
   const workspaceId = workspace.id;
   useEffect(() => {
-    preload([QueryKey.getMembers, workspaceId], fetcher);
-  }, [workspaceId]);
+    if (isAffine) {
+      preload([QueryKey.getMembers, workspaceId], fetcher);
+    }
+  }, [isAffine, workspaceId]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const startTransaction = useCallback(() => {
