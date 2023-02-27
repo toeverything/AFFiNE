@@ -1,6 +1,7 @@
 import {
   AffineTheme,
   Theme,
+  ThemeMode,
   ThemeProviderProps,
   ThemeProviderValue,
 } from '@affine/component';
@@ -10,19 +11,20 @@ import {
   globalThemeVariables,
   ThemeProvider as ComponentThemeProvider,
 } from '@affine/component';
-import { localStorageThemeHelper } from '@affine/component';
 import { GlobalStyles } from '@mui/material';
 import {
   createTheme as MuiCreateTheme,
   ThemeProvider as MuiThemeProvider,
 } from '@mui/material/styles';
+import { useAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import type { PropsWithChildren } from 'react';
 import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useState,
 } from 'react';
 
 import { useSystemTheme } from '../hooks/use-system-theme';
@@ -50,11 +52,12 @@ const ThemeInjector = React.memo<{
   );
 });
 
+const themeAtom = atomWithStorage<ThemeMode>('affine-theme', 'auto');
+
 export const ThemeProvider = ({
-  defaultTheme = 'light',
   children,
 }: PropsWithChildren<ThemeProviderProps>) => {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [theme, setTheme] = useAtom(themeAtom);
   const systemTheme = useSystemTheme();
   // fixme: use mode detect
   const editorMode = 'page';
@@ -63,24 +66,28 @@ export const ThemeProvider = ({
       theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode),
     [theme]
   );
-  const changeMode = useCallback((themeMode: Theme) => {
-    setTheme(themeMode);
-    localStorageThemeHelper.set(themeMode);
-  }, []);
+  const changeMode = useCallback(
+    (themeMode: Theme) => {
+      setTheme(themeMode);
+    },
+    [setTheme]
+  );
 
-  // useEffect(() => {
-  //   setTheme(systemTheme);
-  // }, [systemTheme]);
+  useEffect(() => {
+    if (theme !== 'auto') {
+      setTheme(systemTheme);
+    }
+  }, [setTheme, systemTheme, theme]);
 
-  // todo: save user theme in localStorage
+  const realTheme: ThemeMode = theme === 'auto' ? systemTheme : theme;
 
   return (
     // Use MuiThemeProvider is just because some Transitions in Mui components need it
     <MuiThemeProvider theme={muiTheme}>
       <ThemeContext.Provider
-        value={{ mode: theme, changeMode, theme: themeStyle }}
+        value={{ mode: realTheme, changeMode, theme: themeStyle }}
       >
-        <ThemeInjector theme={theme} themeStyle={themeStyle} />
+        <ThemeInjector theme={realTheme} themeStyle={themeStyle} />
         <ComponentThemeProvider theme={themeStyle}>
           {children}
         </ComponentThemeProvider>
