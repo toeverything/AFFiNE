@@ -70,6 +70,8 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     const keydown = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
         const selection = window.getSelection();
+        // prevent search bar focus in firefox
+        e.preventDefault();
         setQuery('');
         if (selection?.toString()) {
           setOpen(false);
