@@ -1,4 +1,5 @@
 import {
+  AffineTheme,
   Theme,
   ThemeProviderProps,
   ThemeProviderValue,
@@ -10,13 +11,14 @@ import {
   ThemeProvider as ComponentThemeProvider,
 } from '@affine/component';
 import { localStorageThemeHelper } from '@affine/component';
-import { css, Global } from '@emotion/react';
+import { css } from '@emotion/react';
+import { GlobalStyles } from '@mui/material';
 import {
   createTheme as MuiCreateTheme,
   ThemeProvider as MuiThemeProvider,
 } from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
-import {
+import React, {
   createContext,
   useCallback,
   useContext,
@@ -35,6 +37,24 @@ export const ThemeContext = createContext<ThemeProviderValue>({
 
 export const useTheme = () => useContext(ThemeContext);
 const muiTheme = MuiCreateTheme();
+
+const ThemeInjector = React.memo<{
+  theme: Theme;
+  themeStyle: AffineTheme;
+}>(function ThemeInjector({ theme, themeStyle }) {
+  return (
+    <GlobalStyles
+      styles={useMemo(
+        () => css`
+          :root {
+            ${globalThemeVariables(theme, themeStyle) as any}
+          }
+        `,
+        [theme, themeStyle]
+      )}
+    />
+  );
+});
 
 export const ThemeProvider = ({
   defaultTheme = 'light',
@@ -66,13 +86,7 @@ export const ThemeProvider = ({
       <ThemeContext.Provider
         value={{ mode: theme, changeMode, theme: themeStyle }}
       >
-        <Global
-          styles={css`
-            :root {
-              ${globalThemeVariables(theme, themeStyle) as any}
-            }
-          `}
-        />
+        <ThemeInjector theme={theme} themeStyle={themeStyle} />
         <ComponentThemeProvider theme={themeStyle}>
           {children}
         </ComponentThemeProvider>
