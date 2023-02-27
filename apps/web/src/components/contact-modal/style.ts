@@ -100,31 +100,14 @@ export const StyledSubTitle = styled('div')(({ theme }) => {
 export const StyledLogo = styled('img')({
   height: '18px',
   width: 'auto',
+  marginTop: '24px',
 });
 
 export const StyledModalHeader = styled('div')(() => {
   return {
     height: '72px',
-    padding: '0 48px',
-    marginBottom: '36px',
-    ...displayFlex('space-between', 'center'),
-  };
-});
-
-export const StyledModalHeaderLeft = styled('div')(({ theme }) => {
-  return {
-    color: theme.colors.primaryColor,
-    ...displayFlex('flex-end', 'flex-end'),
-    span: {
-      height: '20px',
-      border: `1px solid ${theme.colors.primaryColor}`,
-      borderRadius: '10px',
-      padding: '0 8px',
-      lineHeight: '26px',
-      fontSize: '14px',
-      marginLeft: '12px',
-      ...displayFlex('center', 'center'),
-    },
+    padding: '0 40px',
+    marginBottom: '24px',
   };
 });
 
@@ -134,7 +117,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     lineHeight: '20px',
     textAlign: 'center',
     color: theme.colors.textColor,
-    marginTop: '46px',
+    marginTop: '40px',
   };
 });
 

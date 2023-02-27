@@ -22,7 +22,6 @@ import {
   StyledLogo,
   StyledModalFooter,
   StyledModalHeader,
-  StyledModalHeaderLeft,
   StyledPrivacyContainer,
   StyledSmallLink,
   StyledSubTitle,
@@ -83,13 +82,11 @@ export const ContactModal = ({
   const year = date.getFullYear();
   return (
     <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
-      <ModalWrapper width={720} height={460} style={{ letterSpacing: '1px' }}>
+      <ModalWrapper width={720} height={436} style={{ letterSpacing: '1px' }}>
         <StyledModalHeader>
-          <StyledModalHeaderLeft>
-            <StyledLogo src={logo.src} alt="" />
-          </StyledModalHeaderLeft>
+          <StyledLogo src={logo.src} alt="" />
+
           <ModalCloseButton
-            absolute={false}
             onClick={() => {
               onClose();
             }}
