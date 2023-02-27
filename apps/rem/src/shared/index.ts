@@ -83,6 +83,8 @@ export type BaseProvider = {
   flavour: string;
   connect: () => void;
   disconnect: () => void;
+  // cleanup data when workspace is removed
+  cleanup: () => void;
 };
 
 export interface LocalIndexedDBProvider extends BaseProvider {

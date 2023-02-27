@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import { createStore } from 'jotai/index';
 import { atomWithStorage } from 'jotai/utils';
 
 // workspace necessary atoms
@@ -18,3 +19,5 @@ export const workspaceLockAtom = atom(false);
 export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom(false);
 export const openQuickSearchModalAtom = atom(false);
+
+export const jotaiStore = createStore();

@@ -10,12 +10,15 @@ import { Upload } from '../../../../pure/file-upload';
 import { WorkspaceAvatar } from '../../../../pure/workspace-avatar';
 import { PanelProps } from '../../index';
 import { StyledRow, StyledSettingKey } from '../../style';
-import { WorkspaceDelete } from './delete';
+import { WorkspaceDeleteModal } from './delete';
 import { CameraIcon } from './icons';
 import { WorkspaceLeave } from './leave';
 import { StyledAvatar, StyledEditButton, StyledInput } from './style';
 
-export const GeneralPanel: React.FC<PanelProps> = ({ workspace }) => {
+export const GeneralPanel: React.FC<PanelProps> = ({
+  workspace,
+  onDeleteWorkspace,
+}) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
   const [workspaceName, setWorkspaceName] = useState<string>(
@@ -186,7 +189,8 @@ export const GeneralPanel: React.FC<PanelProps> = ({ workspace }) => {
             >
               {t('Delete Workspace')}
             </Button>
-            <WorkspaceDelete
+            <WorkspaceDeleteModal
+              onDeleteWorkspace={onDeleteWorkspace}
               open={showDelete}
               onClose={() => {
                 setShowDelete(false);

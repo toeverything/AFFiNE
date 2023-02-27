@@ -1,4 +1,5 @@
 import { WebsocketProvider } from '@affine/datacenter';
+import { assertExists } from '@blocksuite/store';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
 import {
@@ -14,6 +15,10 @@ export const createWebSocketProvider = (
   let webSocketProvider: WebsocketProvider | null = null;
   return {
     flavour: 'affine-websocket',
+    cleanup: () => {
+      assertExists(webSocketProvider);
+      webSocketProvider?.destroy();
+    },
     connect: () => {
       const wsUrl = `${
         window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -32,10 +37,7 @@ export const createWebSocketProvider = (
       webSocketProvider.connect();
     },
     disconnect: () => {
-      if (!webSocketProvider) {
-        console.error('cannot find websocket provider');
-        return;
-      }
+      assertExists(webSocketProvider);
       console.log('disconnect', webSocketProvider.roomname);
       webSocketProvider?.disconnect();
     },
@@ -48,6 +50,10 @@ export const createIndexedDBProvider = (
   let indexdbProvider: IndexeddbPersistence | null = null;
   return {
     flavour: 'local-indexeddb',
+    cleanup: () => {
+      assertExists(indexdbProvider);
+      indexdbProvider.destroy();
+    },
     connect: () => {
       console.info('connect indexeddb provider', blockSuiteWorkspace.room);
       indexdbProvider = new IndexeddbPersistence(
@@ -56,10 +62,7 @@ export const createIndexedDBProvider = (
       );
     },
     disconnect: () => {
-      if (!indexdbProvider) {
-        console.error('cannot find indexdb provider');
-        return;
-      }
+      assertExists(indexdbProvider);
       console.info('disconnect indexeddb provider', blockSuiteWorkspace.room);
       indexdbProvider.destroy();
       indexdbProvider = null;

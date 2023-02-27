@@ -1,13 +1,18 @@
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { assertExists, uuidv4 } from '@blocksuite/store';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
-import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
+import {
+  openQuickSearchModalAtom,
+  openWorkspacesModalAtom,
+  workspaceLockAtom,
+} from '../atoms';
 import { HelpIsland } from '../components/pure/help-island';
+import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -78,6 +83,10 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   const handleOpenQuickSearchModal = useCallback(() => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
+  const lock = useAtomValue(workspaceLockAtom);
+  if (lock) {
+    return <PageLoading />;
+  }
 
   return (
     <>

@@ -11,12 +11,21 @@ import {
   LoadPriority,
   RemWorkspaceFlavour,
 } from '../../shared';
+import { apis } from '../../shared/apis';
 import { WorkspacePlugin } from '..';
 import { fetcher, QueryKey } from './fetcher';
 
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
+  deleteWorkspace: async workspace => {
+    await apis.deleteWorkspace({
+      id: workspace.id,
+    });
+    if (workspace.firstBinarySynced) {
+      workspace.providers.forEach(p => p.cleanup());
+    }
+  },
   prefetchData: async dataCenter => {
     const promise: Promise<AffineRemoteUnSyncedWorkspace[]> = preload(
       QueryKey.getWorkspaces,
@@ -80,9 +89,15 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       />
     );
   },
-  SettingsDetail: ({ currentWorkspace, onChangeTab, currentTab }) => {
+  SettingsDetail: ({
+    currentWorkspace,
+    onChangeTab,
+    currentTab,
+    onDeleteWorkspace,
+  }) => {
     return (
       <WorkspaceSettingDetail
+        onDeleteWorkspace={onDeleteWorkspace}
         onChangeTab={onChangeTab}
         currentTab={currentTab}
         workspace={currentWorkspace}

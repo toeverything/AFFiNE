@@ -1,5 +1,6 @@
 import { useTranslation } from '@affine/i18n';
 import { SettingsIcon } from '@blocksuite/icons';
+import { assertExists } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
@@ -12,7 +13,10 @@ import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
-import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
+import {
+  prefetchNecessaryData,
+  useWorkspacesHelper,
+} from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { UIPlugins } from '../../../plugins';
 import {
@@ -93,6 +97,14 @@ const SettingPage: NextPageWithLayout = () => {
       return;
     }
   }, [currentTab, router, setCurrentTab]);
+
+  const helper = useWorkspacesHelper();
+
+  const onDeleteWorkspace = useCallback(() => {
+    assertExists(currentWorkspace);
+    const workspaceId = currentWorkspace.id;
+    helper.deleteWorkspace(workspaceId);
+  }, [currentWorkspace, helper]);
   if (!router.isReady) {
     return <PageLoading />;
   } else if (currentWorkspace === null) {
@@ -110,6 +122,7 @@ const SettingPage: NextPageWithLayout = () => {
           {t('Workspace Settings')}
         </WorkspaceTitle>
         <Setting
+          onDeleteWorkspace={onDeleteWorkspace}
           currentWorkspace={currentWorkspace}
           currentTab={currentTab as SettingPanel}
           onChangeTab={onChangeTab}
@@ -124,6 +137,7 @@ const SettingPage: NextPageWithLayout = () => {
           {t('Workspace Settings')}
         </WorkspaceTitle>
         <Setting
+          onDeleteWorkspace={onDeleteWorkspace}
           currentWorkspace={currentWorkspace}
           currentTab={currentTab as SettingPanel}
           onChangeTab={onChangeTab}

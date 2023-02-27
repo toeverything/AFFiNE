@@ -19,19 +19,22 @@ interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
   workspace: AffineOfficialWorkspace;
+  onDeleteWorkspace: () => void;
 }
 
-export const WorkspaceDelete = ({
+export const WorkspaceDeleteModal = ({
   open,
   onClose,
   workspace,
+  onDeleteWorkspace,
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
   const allowDelete = deleteStr.toLowerCase() === 'delete';
   const { t } = useTranslation();
-  // const router = useRouter();
 
-  const handleDelete = useCallback(() => {}, []);
+  const handleDelete = useCallback(() => {
+    onDeleteWorkspace();
+  }, [onDeleteWorkspace]);
 
   return (
     <Modal open={open} onClose={onClose}>

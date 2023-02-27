@@ -1,9 +1,11 @@
 import { Workspace } from '@affine/datacenter';
 import { uuidv4 } from '@blocksuite/store';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { unstable_batchedUpdates } from 'react-dom';
 import useSWR from 'swr';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
+import { jotaiStore, workspaceLockAtom } from '../atoms';
 import { createLocalProviders } from '../blocksuite';
 import { UIPlugins } from '../plugins';
 import { QueryKey } from '../plugins/affine/fetcher';
@@ -149,6 +151,31 @@ export function useSyncWorkspaces() {
   });
 }
 
+async function deleteWorkspace(workspaceId: string) {
+  console.warn('deleting workspace');
+  unstable_batchedUpdates(() => {
+    jotaiStore.set(workspaceLockAtom, true);
+  });
+  const idx = dataCenter.workspaces.findIndex(
+    workspace => workspace.id === workspaceId
+  );
+  if (idx === -1) {
+    throw new Error('workspace not found');
+  }
+  try {
+    const [workspace] = dataCenter.workspaces.splice(idx, 1);
+    // @ts-expect-error
+    await UIPlugins[workspace.flavour].deleteWorkspace(workspace);
+    // todo(himself65): move this to plugin
+    dataCenter.callbacks.forEach(cb => cb());
+  } catch (e) {
+    console.error('error deleting workspace', e);
+  }
+  unstable_batchedUpdates(() => {
+    jotaiStore.set(workspaceLockAtom, false);
+  });
+}
+
 export function useWorkspacesHelper() {
   return useMemo(
     () => ({
@@ -163,6 +190,7 @@ export function useWorkspacesHelper() {
         }
       },
       createRemLocalWorkspace,
+      deleteWorkspace,
     }),
     []
   );

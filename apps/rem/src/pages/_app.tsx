@@ -12,6 +12,7 @@ import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { SWRConfig, SWRConfiguration } from 'swr';
 
+import { jotaiStore } from '../atoms';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
@@ -70,7 +71,7 @@ const App = function App({ Component, pageProps }: AppPropsWithLayout) {
                 contexts={useMemo(
                   () => [
                     <AffineSWRConfigProvider key="AffineSWRConfigProvider" />,
-                    <Provider key="JotaiProvider" />,
+                    <Provider key="JotaiProvider" store={jotaiStore} />,
                     <ThemeProvider key="ThemeProvider" />,
                     <ModalProvider key="ModalProvider" />,
                   ],

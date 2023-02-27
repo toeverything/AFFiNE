@@ -1,4 +1,4 @@
-import { uuidv4 } from '@blocksuite/store';
+import { assertEquals, uuidv4 } from '@blocksuite/store';
 import React from 'react';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
@@ -21,6 +21,31 @@ export const kStoreKey = 'affine-local-workspace';
 export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
   flavour: RemWorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
+  deleteWorkspace: async workspace => {
+    const id = workspace.id;
+    let ids: string[];
+    try {
+      ids = JSON.parse(localStorage.getItem(kStoreKey) ?? '[]');
+      if (!Array.isArray(ids)) {
+        localStorage.setItem(kStoreKey, '[]');
+        ids = [];
+      }
+    } catch (e) {
+      localStorage.setItem(kStoreKey, '[]');
+      ids = [];
+    }
+    const idx = ids.findIndex(x => x === id);
+    if (idx === -1) {
+      throw new Error('cannot find local workspace from localStorage');
+    }
+    workspace.providers.forEach(p => p.cleanup());
+    ids.splice(idx, 1);
+    assertEquals(
+      ids.every(id => typeof id === 'string'),
+      true
+    );
+    localStorage.setItem(kStoreKey, JSON.stringify(ids));
+  },
   prefetchData: async (dataCenter, signal) => {
     if (typeof window === 'undefined') {
       // SSR mode, no local data
@@ -154,9 +179,15 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       />
     );
   },
-  SettingsDetail: ({ currentWorkspace, onChangeTab, currentTab }) => {
+  SettingsDetail: ({
+    currentWorkspace,
+    onChangeTab,
+    currentTab,
+    onDeleteWorkspace,
+  }) => {
     return (
       <WorkspaceSettingDetail
+        onDeleteWorkspace={onDeleteWorkspace}
         onChangeTab={onChangeTab}
         currentTab={currentTab}
         workspace={currentWorkspace}

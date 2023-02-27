@@ -21,6 +21,7 @@ type SettingProps<Flavour extends RemWorkspaceFlavour> =
   UIBaseProps<Flavour> & {
     currentTab: SettingPanel;
     onChangeTab: (tab: SettingPanel) => void;
+    onDeleteWorkspace: () => void;
   };
 
 type PageDetailProps<Flavour extends RemWorkspaceFlavour> =
@@ -50,6 +51,7 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
     },
     signal?: AbortSignal
   ) => Promise<void>;
+  deleteWorkspace: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
 
   //#region UI
   PageDetail: React.FC<PageDetailProps<Flavour>>;

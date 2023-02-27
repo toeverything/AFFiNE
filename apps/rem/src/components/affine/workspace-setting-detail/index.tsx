@@ -28,10 +28,12 @@ export type WorkspaceSettingDetailProps = {
   workspace: AffineOfficialWorkspace;
   currentTab: SettingPanel;
   onChangeTab: (tab: SettingPanel) => void;
+  onDeleteWorkspace: () => void;
 };
 
 export type PanelProps = {
   workspace: AffineOfficialWorkspace;
+  onDeleteWorkspace: () => void;
 };
 
 const panelMap = {
@@ -71,6 +73,7 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
   workspace,
   currentTab,
   onChangeTab,
+  onDeleteWorkspace,
 }) => {
   const isAffine = workspace.flavour === 'affine';
   if (!(workspace.flavour === 'affine' || workspace.flavour === 'local')) {
@@ -144,6 +147,7 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
       </StyledTabButtonWrapper>
       <StyledSettingContent>
         <Component
+          onDeleteWorkspace={onDeleteWorkspace}
           key={currentTab}
           data-tab-ui={currentTab}
           workspace={workspace}
