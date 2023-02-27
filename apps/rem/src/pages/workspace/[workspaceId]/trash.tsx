@@ -1,9 +1,9 @@
 import { useTranslation } from '@affine/i18n';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
-import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
@@ -23,8 +23,8 @@ const TrashPage: NextPageWithLayout = () => {
   useSyncRouterWithCurrentWorkspace(router);
   if (!router.isReady) {
     return <PageLoading />;
-  } else if (!currentWorkspace) {
-    throw new Unreachable();
+  } else if (currentWorkspace === null) {
+    return <PageLoading />;
   }
   return (
     <>

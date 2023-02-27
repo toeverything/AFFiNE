@@ -1,5 +1,5 @@
 import { NextRouter } from 'next/router';
-import { startTransition, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
@@ -99,10 +99,8 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
             const targetPageId =
               first.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
             if (targetPageId) {
-              startTransition(() => {
-                setCurrentWorkspaceId(targetWorkspaceId);
-                setCurrentPageId(targetPageId);
-              });
+              setCurrentWorkspaceId(targetWorkspaceId);
+              setCurrentPageId(targetPageId);
               router.push(`/workspace/${targetWorkspaceId}/${targetPageId}`);
             }
           }
@@ -111,12 +109,10 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
       }
       if (!currentWorkspace) {
         const targetWorkspace = workspaces.find(
-          workspace => workspace.id === router.query.workspaceId
+          workspace => workspace.id === targetPageId
         );
         if (targetWorkspace) {
-          startTransition(() => {
-            setCurrentWorkspaceId(targetWorkspace.id);
-          });
+          setCurrentWorkspaceId(targetWorkspace.id);
           router.push({
             query: {
               ...router.query,
@@ -127,9 +123,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
         } else {
           const first = workspaces.at(0);
           if (first) {
-            startTransition(() => {
-              setCurrentWorkspaceId(first.id);
-            });
+            setCurrentWorkspaceId(first.id);
             router.push({
               query: {
                 ...router.query,
@@ -144,9 +138,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
           if ('blockSuiteWorkspace' in currentWorkspace) {
             const targetId = findSuitablePageId(currentWorkspace, targetPageId);
             if (targetId) {
-              startTransition(() => {
-                setCurrentPageId(targetId);
-              });
+              setCurrentPageId(targetId);
               router.push({
                 query: {
                   ...router.query,

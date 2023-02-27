@@ -7,7 +7,6 @@ import { Helmet } from 'react-helmet-async';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { HelpIsland } from '../components/pure/help-island';
-import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -72,10 +71,6 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
 
-  // fixme(himself65): use suspense mode
-  if (!currentWorkspace && !isPublicWorkspace) {
-    return <PageLoading />;
-  }
   return (
     <>
       <Helmet>

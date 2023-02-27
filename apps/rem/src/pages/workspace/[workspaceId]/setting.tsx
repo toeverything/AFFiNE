@@ -3,7 +3,7 @@ import { SettingsIcon } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
@@ -95,8 +95,8 @@ const SettingPage: NextPageWithLayout = () => {
   }, [currentTab, router, setCurrentTab]);
   if (!router.isReady) {
     return <PageLoading />;
-  } else if (!currentWorkspace) {
-    throw new Unreachable();
+  } else if (currentWorkspace === null) {
+    return <PageLoading />;
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     return <PageLoading />;
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {

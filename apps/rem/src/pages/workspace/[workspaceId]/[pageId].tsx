@@ -15,8 +15,8 @@ import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
 const WorkspaceDetail: React.FC = () => {
   const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
-  if (!currentWorkspace) {
-    throw new Unreachable();
+  if (currentWorkspace === null) {
+    return <PageLoading />;
   }
   if (!pageId) {
     return <PageLoading />;

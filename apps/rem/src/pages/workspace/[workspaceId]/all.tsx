@@ -12,7 +12,6 @@ import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
-import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { UIPlugins } from '../../../plugins';
@@ -25,7 +24,6 @@ const AllPage: NextPageWithLayout = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
-  useSyncRouterWithCurrentWorkspace(router);
   const openPage = useCallback(
     (id: string) => {
       assertExists(currentWorkspace);
@@ -46,7 +44,7 @@ const AllPage: NextPageWithLayout = () => {
     throw new QueryParamError('workspaceId', router.query.workspaceId);
   }
   if (currentWorkspace === null) {
-    throw new Unreachable();
+    return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const PageList = UIPlugins[currentWorkspace.flavour].PageList;
