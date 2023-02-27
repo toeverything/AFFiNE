@@ -10,7 +10,7 @@ import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { BlockSuitePublicPageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageLoading } from '../../components/pure/loading';
 import { WorkspaceLayout } from '../../layouts';
-import { UIPlugins } from '../../plugins';
+import { WorkspacePlugins } from '../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../shared';
 
 const ListPageInner: React.FC<{
@@ -30,7 +30,7 @@ const ListPageInner: React.FC<{
     },
     [router, workspaceId]
   );
-  const PageList = UIPlugins[RemWorkspaceFlavour.AFFINE].PageList;
+  const PageList = WorkspacePlugins[RemWorkspaceFlavour.AFFINE].PageList;
   if (!blockSuiteWorkspace) {
     return <PageLoading />;
   }

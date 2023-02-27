@@ -18,7 +18,7 @@ import {
   useWorkspacesHelper,
 } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
-import { UIPlugins } from '../../../plugins';
+import { WorkspacePlugins } from '../../../plugins';
 import {
   NextPageWithLayout,
   RemWorkspaceFlavour,
@@ -112,7 +112,7 @@ const SettingPage: NextPageWithLayout = () => {
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     return <PageLoading />;
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    const Setting = UIPlugins[currentWorkspace.flavour].SettingsDetail;
+    const Setting = WorkspacePlugins[currentWorkspace.flavour].SettingsDetail;
     return (
       <>
         <Helmet>
@@ -130,7 +130,7 @@ const SettingPage: NextPageWithLayout = () => {
       </>
     );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
-    const Setting = UIPlugins[currentWorkspace.flavour].SettingsDetail;
+    const Setting = WorkspacePlugins[currentWorkspace.flavour].SettingsDetail;
     return (
       <>
         <WorkspaceTitle icon={<SettingsIcon />}>

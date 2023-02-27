@@ -9,7 +9,7 @@ import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
 import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
-import { UIPlugins } from '../../../plugins';
+import { WorkspacePlugins } from '../../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
 
 const WorkspaceDetail: React.FC = () => {
@@ -22,12 +22,12 @@ const WorkspaceDetail: React.FC = () => {
     return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    const PageDetail = UIPlugins[currentWorkspace.flavour].PageDetail;
+    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].PageDetail;
     return (
       <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
     );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
-    const PageDetail = UIPlugins[currentWorkspace.flavour].PageDetail;
+    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].PageDetail;
     return (
       <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
     );

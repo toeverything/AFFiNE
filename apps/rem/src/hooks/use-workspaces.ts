@@ -7,7 +7,7 @@ import { IndexeddbPersistence } from 'y-indexeddb';
 
 import { jotaiStore, workspaceLockAtom } from '../atoms';
 import { createLocalProviders } from '../blocksuite';
-import { UIPlugins } from '../plugins';
+import { WorkspacePlugins } from '../plugins';
 import { QueryKey } from '../plugins/affine/fetcher';
 import { kStoreKey } from '../plugins/local';
 import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
@@ -91,7 +91,7 @@ export async function prefetchNecessaryData(signal?: AbortSignal) {
     console.info('prefetchNecessaryData: skip prefetching');
     return;
   }
-  const plugins = Object.values(UIPlugins).sort(
+  const plugins = Object.values(WorkspacePlugins).sort(
     (a, b) => a.loadPriority - b.loadPriority
   );
   // prefetch data in order
@@ -165,7 +165,7 @@ async function deleteWorkspace(workspaceId: string) {
   try {
     const [workspace] = dataCenter.workspaces.splice(idx, 1);
     // @ts-expect-error
-    await UIPlugins[workspace.flavour].deleteWorkspace(workspace);
+    await WorkspacePlugins[workspace.flavour].deleteWorkspace(workspace);
     // todo(himself65): move this to plugin
     dataCenter.callbacks.forEach(cb => cb());
   } catch (e) {

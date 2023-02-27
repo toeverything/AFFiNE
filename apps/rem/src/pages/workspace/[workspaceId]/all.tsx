@@ -15,7 +15,7 @@ import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
-import { UIPlugins } from '../../../plugins';
+import { WorkspacePlugins } from '../../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
 
 prefetchNecessaryData();
@@ -53,7 +53,7 @@ const AllPage: NextPageWithLayout = () => {
     return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    const PageList = UIPlugins[currentWorkspace.flavour].PageList;
+    const PageList = WorkspacePlugins[currentWorkspace.flavour].PageList;
     if (currentWorkspace.firstBinarySynced) {
       return (
         <>
@@ -70,7 +70,7 @@ const AllPage: NextPageWithLayout = () => {
       return <div>loading</div>;
     }
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
-    const PageList = UIPlugins[currentWorkspace.flavour].PageList;
+    const PageList = WorkspacePlugins[currentWorkspace.flavour].PageList;
     return (
       <>
         <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>

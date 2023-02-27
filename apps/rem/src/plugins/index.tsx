@@ -11,8 +11,6 @@ import {
 import { AffinePlugin } from './affine';
 import { LocalPlugin } from './local';
 
-const WIP = () => <div>WIP</div>;
-
 type UIBaseProps<Flavour extends RemWorkspaceFlavour> = {
   currentWorkspace: FlavourToWorkspace[Flavour];
 };
@@ -60,7 +58,7 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   //#endregion
 }
 
-export const UIPlugins = {
+export const WorkspacePlugins = {
   [RemWorkspaceFlavour.AFFINE]: AffinePlugin,
   [RemWorkspaceFlavour.LOCAL]: LocalPlugin,
 } satisfies {
