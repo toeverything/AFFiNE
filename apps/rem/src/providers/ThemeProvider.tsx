@@ -16,7 +16,13 @@ import {
   ThemeProvider as MuiThemeProvider,
 } from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
-import { createContext, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 
 import { useSystemTheme } from '../hooks/use-system-theme';
 
@@ -43,11 +49,10 @@ export const ThemeProvider = ({
       theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode),
     [theme]
   );
-  const changeMode = (themeMode: Theme) => {
-    console.log('1', themeMode);
+  const changeMode = useCallback((themeMode: Theme) => {
     setTheme(themeMode);
     localStorageThemeHelper.set(themeMode);
-  };
+  }, []);
 
   // useEffect(() => {
   //   setTheme(systemTheme);
