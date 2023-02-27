@@ -1,33 +1,31 @@
 import { Modal, ModalWrapper } from '@affine/component';
+import { useTranslation } from '@affine/i18n';
 import { Command } from 'cmdk';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useModal } from '@/store/globalModal';
-import { getUaHelper } from '@/utils';
 
 import { Footer } from './Footer';
-import { Input } from './Input';
 import { PublishedResults } from './PublishedResults';
 import { Results } from './Results';
+import { SearchInput } from './SearchInput';
 import {
   StyledContent,
   StyledModalDivider,
   StyledModalFooter,
   StyledModalHeader,
-  StyledShortcut,
 } from './style';
 type TransitionsModalProps = {
   open: boolean;
   onClose: () => void;
 };
-const isMac = () => {
-  return getUaHelper().isMacOs;
-};
 
 // fixme(himself65): support ssr
 export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   const router = useRouter();
+  const { t } = useTranslation();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [isPublic, setIsPublic] = useState(false);
@@ -38,7 +36,6 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
     return isPublic && query.length === 0;
   };
   const handleClose = () => {
-    setQuery('');
     onClose();
   };
   // Add  ‘⌘+K’ shortcut keys as switches
@@ -73,10 +70,19 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
   }, [router]);
   useEffect(() => {
     if (router.pathname.startsWith('/404')) {
-      return onClose();
+      onClose();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    if (open) {
+      // Waiting for DOM rendering
+      requestAnimationFrame(() => {
+        const inputElement = inputRef.current;
+        inputElement?.focus();
+      });
+    }
+  }, [open]);
 
   return (
     <Modal
@@ -108,15 +114,26 @@ export const QuickSearch = ({ open, onClose }: TransitionsModalProps) => {
           }}
         >
           <StyledModalHeader>
-            <Input
-              open={open}
-              query={query}
-              setQuery={setQuery}
-              setLoading={setLoading}
-              isPublic={isPublic}
-              publishWorkspaceName={publishWorkspaceName}
+            <SearchInput
+              ref={inputRef}
+              onValueChange={value => {
+                setQuery(value);
+              }}
+              onKeyDown={e => {
+                // Avoid triggering the cmdk onSelect event when the input method is in use
+                if (e.key === 'Enter' && e.nativeEvent.isComposing) {
+                  e.stopPropagation();
+                  return;
+                }
+              }}
+              placeholder={
+                isPublic
+                  ? t('Quick search placeholder2', {
+                      workspace: publishWorkspaceName,
+                    })
+                  : t('Quick search placeholder')
+              }
             />
-            <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
           <StyledModalDivider
             style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
