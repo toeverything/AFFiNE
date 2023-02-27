@@ -56,6 +56,7 @@ describe('WorkSpaceSliderBar', () => {
           setShow={setShow}
           currentPath={useRouter().asPath}
           paths={pathGenerator}
+          isPublicWorkspace={false}
         />
       );
     };

@@ -62,6 +62,7 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
                 {},
                 pageBlockId
               );
+              page.addBlockByFlavour('affine:paragraph', {}, frameId);
               editor.clipboard.importMarkdown(text, frameId).then(() => {
                 page.resetHistory();
               });

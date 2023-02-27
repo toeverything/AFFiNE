@@ -27,7 +27,10 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       if (props.onInit) {
         props.onInit(page, editor);
       } else {
+        console.debug('Initializing page with default content');
+        // Add page block and surface block at root level
         const pageBlockId = page.addBlockByFlavour('affine:page');
+        page.addBlockByFlavour('affine:surface', {}, null);
         const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
         page.addBlockByFlavour('affine:paragraph', {}, frameId);
         page.resetHistory();
