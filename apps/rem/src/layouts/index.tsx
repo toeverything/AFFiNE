@@ -1,3 +1,4 @@
+import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { assertExists, uuidv4 } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
@@ -21,6 +22,13 @@ const sideBarOpenAtom = atomWithStorage('sideBarOpen', false);
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
+  const { i18n } = useTranslation();
+  useEffect(() => {
+    document.documentElement.lang = i18n.language;
+    // todo(himself65): this is a hack, we should use a better way to set the language
+    setUpLanguage(i18n);
+  }, [i18n]);
+
   const [show, setShow] = useAtom(sideBarOpenAtom);
   useSyncWorkspaces();
   const [currentWorkspace] = useCurrentWorkspace();

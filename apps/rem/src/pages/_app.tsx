@@ -1,7 +1,7 @@
 import '@blocksuite/editor/themes/affine.css';
 import '../styles/globals.css';
 
-import { useTranslation } from '@affine/i18n';
+import { appWithTranslation, createI18n, I18nextProvider } from '@affine/i18n';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
@@ -47,13 +47,9 @@ const defaultSWRConfig: SWRConfiguration = {
 
 const cache = createCache({ key: 'affine' });
 
-function App({ Component, pageProps }: AppPropsWithLayout) {
+const App = function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout = Component.getLayout || EmptyLayout;
-  const { i18n } = useTranslation();
-
-  useEffect(() => {
-    document.documentElement.lang = i18n.language;
-  }, [i18n.language]);
+  const i18n = useMemo(() => createI18n(), []);
 
   if (process.env.NODE_ENV === 'development') {
     // I know what I'm doing
@@ -64,34 +60,36 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
   }
 
   return (
-    <CacheProvider value={cache}>
-      <DebugAtoms />
-      <SWRConfig value={defaultSWRConfig}>
-        <AffineErrorBoundary router={useRouter()}>
-          <Suspense fallback={<PageLoading key="RootPageLoading" />}>
-            <ProviderComposer
-              contexts={useMemo(
-                () => [
-                  <AffineSWRConfigProvider key="AffineSWRConfigProvider" />,
-                  <Provider key="JotaiProvider" />,
-                  <ThemeProvider key="ThemeProvider" />,
-                  <ModalProvider key="ModalProvider" />,
-                ],
-                []
-              )}
-            >
-              <HelmetProvider key="HelmetProvider" context={helmetContext}>
-                <Helmet>
-                  <title>AFFiNE</title>
-                </Helmet>
-                {getLayout(<Component {...pageProps} />)}
-              </HelmetProvider>
-            </ProviderComposer>
-          </Suspense>
-        </AffineErrorBoundary>
-      </SWRConfig>
-    </CacheProvider>
+    <I18nextProvider i18n={i18n}>
+      <CacheProvider value={cache}>
+        <DebugAtoms />
+        <SWRConfig value={defaultSWRConfig}>
+          <AffineErrorBoundary router={useRouter()}>
+            <Suspense fallback={<PageLoading key="RootPageLoading" />}>
+              <ProviderComposer
+                contexts={useMemo(
+                  () => [
+                    <AffineSWRConfigProvider key="AffineSWRConfigProvider" />,
+                    <Provider key="JotaiProvider" />,
+                    <ThemeProvider key="ThemeProvider" />,
+                    <ModalProvider key="ModalProvider" />,
+                  ],
+                  []
+                )}
+              >
+                <HelmetProvider key="HelmetProvider" context={helmetContext}>
+                  <Helmet>
+                    <title>AFFiNE</title>
+                  </Helmet>
+                  {getLayout(<Component {...pageProps} />)}
+                </HelmetProvider>
+              </ProviderComposer>
+            </Suspense>
+          </AffineErrorBoundary>
+        </SWRConfig>
+      </CacheProvider>
+    </I18nextProvider>
   );
-}
+};
 
-export default App;
+export default appWithTranslation(App as any);
