@@ -31,7 +31,7 @@ const ListPageInner: React.FC<{
   );
   const PageList = UIPlugins[RemWorkspaceFlavour.AFFINE].PageList;
   if (!blockSuiteWorkspace) {
-    throw new Error('blockSuiteWorkspace is null');
+    return <PageLoading />;
   }
   return (
     <PageList

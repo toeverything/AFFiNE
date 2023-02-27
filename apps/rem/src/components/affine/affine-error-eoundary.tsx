@@ -1,3 +1,4 @@
+import { RequestError } from '@affine/datacenter';
 import { NextRouter } from 'next/router';
 import React, { Component, ErrorInfo } from 'react';
 
@@ -49,6 +50,7 @@ type AffineError =
   | Unreachable
   | WorkspaceNotFoundError
   | PageNotFoundError
+  | RequestError
   | Error;
 
 interface AffineErrorBoundaryState {
@@ -105,6 +107,13 @@ export class AffineErrorBoundary extends Component<
                 refresh{' '}
               </button>
             </>
+          </>
+        );
+      } else if (error instanceof RequestError) {
+        return (
+          <>
+            <h1>Sorry.. there was an error</h1>
+            {error.message}
           </>
         );
       }

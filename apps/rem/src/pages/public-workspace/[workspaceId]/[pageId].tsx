@@ -17,7 +17,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
 }> = ({ pageId }) => {
   const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
   if (!blockSuiteWorkspace) {
-    throw new Error('blockSuiteWorkspace is null');
+    return <PageLoading />;
   }
   return (
     <PageDetailEditor
@@ -42,7 +42,7 @@ export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
     if (typeof workspaceId === 'string') {
       setWorkspaceId(workspaceId);
     }
-  }, [setWorkspaceId, workspaceId]);
+  }, [router.isReady, setWorkspaceId, workspaceId]);
   if (!router.isReady) {
     return <PageLoading />;
   }
