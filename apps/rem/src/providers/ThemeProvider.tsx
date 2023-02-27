@@ -11,7 +11,6 @@ import {
   ThemeProvider as ComponentThemeProvider,
 } from '@affine/component';
 import { localStorageThemeHelper } from '@affine/component';
-import { css } from '@emotion/react';
 import { GlobalStyles } from '@mui/material';
 import {
   createTheme as MuiCreateTheme,
@@ -44,14 +43,9 @@ const ThemeInjector = React.memo<{
 }>(function ThemeInjector({ theme, themeStyle }) {
   return (
     <GlobalStyles
-      styles={useMemo(
-        () => css`
-          :root {
-            ${globalThemeVariables(theme, themeStyle) as any}
-          }
-        `,
-        [theme, themeStyle]
-      )}
+      styles={{
+        ':root': globalThemeVariables(theme, themeStyle) as any,
+      }}
     />
   );
 });
