@@ -1,9 +1,11 @@
 import { useTranslation } from '@affine/i18n';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
+import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 
+import PageList from '../../../components/blocksuite/block-suite-page-list/page-list';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
@@ -21,11 +23,15 @@ const TrashPage: NextPageWithLayout = () => {
   const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
+  const onClickPage = useCallback(() => {}, []);
   if (!router.isReady) {
     return <PageLoading />;
   } else if (currentWorkspace === null) {
     return <PageLoading />;
   }
+  // todo(himself65): refactor to plugin
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
+  assertExists(blockSuiteWorkspace);
   return (
     <>
       <Helmet>
@@ -34,7 +40,11 @@ const TrashPage: NextPageWithLayout = () => {
       <WorkspaceTitle icon={<DeleteTemporarilyIcon />}>
         {t('Trash')}
       </WorkspaceTitle>
-      Trash Page
+      <PageList
+        blockSuiteWorkspace={blockSuiteWorkspace}
+        onClickPage={onClickPage}
+        listType="trash"
+      />
     </>
   );
 };

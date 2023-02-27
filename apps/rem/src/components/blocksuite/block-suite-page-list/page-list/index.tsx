@@ -15,7 +15,7 @@ import {
 } from '@blocksuite/icons';
 import { PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { usePageMeta } from '../../../../hooks/use-page-meta';
 import { useTheme } from '../../../../providers/ThemeProvider';
@@ -75,6 +75,12 @@ type PageListProps = {
   onClickPage: (pageId: string) => void;
 };
 
+const filter = {
+  all: (_: PageMeta) => true,
+  trash: (pageMeta: PageMeta) => pageMeta.trash,
+  favorite: (pageMeta: PageMeta) => pageMeta.favorite,
+};
+
 export const PageList: React.FC<PageListProps> = ({
   blockSuiteWorkspace,
   showFavoriteTag = false,
@@ -87,7 +93,11 @@ export const PageList: React.FC<PageListProps> = ({
   const { t } = useTranslation();
   const theme = useMuiTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
-  if (pageList.length === 0) {
+  const list = useMemo(
+    () => pageList.filter(filter[listType]),
+    [pageList, listType]
+  );
+  if (list.length === 0) {
     return <Empty listType={listType} />;
   }
 
@@ -109,7 +119,7 @@ export const PageList: React.FC<PageListProps> = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {pageList.map((pageMeta, index) => {
+          {list.map((pageMeta, index) => {
             return (
               <StyledTableRow
                 data-testid={`page-list-item-${pageMeta.id}}`}
