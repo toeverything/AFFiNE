@@ -1,5 +1,7 @@
 import { useTranslation } from '@affine/i18n';
 import { SettingsIcon } from '@blocksuite/icons';
+import { useAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -23,16 +25,22 @@ import {
 
 prefetchNecessaryData();
 
+const settingPanelAtom = atomWithStorage<SettingPanel>(
+  'workspaceId',
+  settingPanel.General
+);
+
 const SettingPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
-  const currentTab =
-    typeof router.query.currentTab === 'string' ? router.query.currentTab : '';
+  const [currentTab, setCurrentTab] = useAtom(settingPanelAtom);
+  useEffect(() => {});
   const onChangeTab = useCallback(
-    (tab: string) => {
+    (tab: SettingPanel) => {
+      setCurrentTab(tab as SettingPanel);
       router.push({
         pathname: router.pathname,
         query: {
@@ -41,13 +49,21 @@ const SettingPage: NextPageWithLayout = () => {
         },
       });
     },
-    [router]
+    [router, setCurrentTab]
   );
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
-    if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
+    const queryCurrentTab =
+      typeof router.query.currentTab === 'string'
+        ? router.query.currentTab
+        : null;
+    if (
+      queryCurrentTab !== null &&
+      settingPanelValues.indexOf(queryCurrentTab as SettingPanel) === -1
+    ) {
+      setCurrentTab(settingPanel.General);
       router.replace({
         pathname: router.pathname,
         query: {
@@ -55,8 +71,28 @@ const SettingPage: NextPageWithLayout = () => {
           currentTab: settingPanel.General,
         },
       });
+      return;
+    } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
+      setCurrentTab(settingPanel.General);
+      router.replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: settingPanel.General,
+        },
+      });
+      return;
+    } else if (queryCurrentTab !== currentTab) {
+      router.replace({
+        pathname: router.pathname,
+        query: {
+          ...router.query,
+          currentTab: currentTab,
+        },
+      });
+      return;
     }
-  }, [currentTab, router]);
+  }, [currentTab, router, setCurrentTab]);
   if (!router.isReady) {
     return <PageLoading />;
   } else if (!currentWorkspace) {
