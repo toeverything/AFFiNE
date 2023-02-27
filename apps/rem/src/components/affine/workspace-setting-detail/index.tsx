@@ -1,6 +1,14 @@
 import { useTranslation } from '@affine/i18n';
-import React, { MouseEvent, useCallback, useMemo, useRef } from 'react';
+import React, {
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
+import { preload } from 'swr';
 
+import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
 import {
   AffineOfficialWorkspace,
   SettingPanel,
@@ -72,6 +80,10 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
     throw new Error('Invalid activeTab: ' + currentTab);
   }
   const { t } = useTranslation();
+  const workspaceId = workspace.id;
+  useEffect(() => {
+    preload([QueryKey.getMembers, workspaceId], fetcher);
+  }, [workspaceId]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const startTransaction = useCallback(() => {
