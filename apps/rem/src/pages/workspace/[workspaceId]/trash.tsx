@@ -23,7 +23,23 @@ const TrashPage: NextPageWithLayout = () => {
   const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
-  const onClickPage = useCallback(() => {}, []);
+  const onClickPage = useCallback(
+    (pageId: string, newTab?: boolean) => {
+      assertExists(currentWorkspace);
+      if (newTab) {
+        window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
+      } else {
+        router.push({
+          pathname: '/workspace/[workspaceId]/[pageId]',
+          query: {
+            workspaceId: currentWorkspace.id,
+            pageId,
+          },
+        });
+      }
+    },
+    [currentWorkspace, router]
+  );
   if (!router.isReady) {
     return <PageLoading />;
   } else if (currentWorkspace === null) {

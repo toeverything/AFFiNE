@@ -1,4 +1,5 @@
 import {
+  Confirm,
   FlexWrapper,
   IconButton,
   Menu,
@@ -17,18 +18,28 @@ import {
   ResetIcon,
 } from '@blocksuite/icons';
 import { PageMeta } from '@blocksuite/store';
+import React, { useState } from 'react';
 
-export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
+export type OperationCellProps = {
+  pageMeta: PageMeta;
+  onOpenPageInNewTab: (pageId: string) => void;
+  onToggleFavoritePage: (pageId: string) => void;
+  onToggleTrashPage: (pageId: string) => void;
+};
+export const OperationCell: React.FC<OperationCellProps> = ({
+  pageMeta,
+  onOpenPageInNewTab,
+  onToggleFavoritePage,
+  onToggleTrashPage,
+}) => {
   const { id, favorite } = pageMeta;
-  // const { openPage } = usePageHelper();
-  // const { toggleFavoritePage, toggleDeletePage } = usePageHelper();
-  // const confirm = useConfirm(store => store.confirm);
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const OperationMenu = (
     <>
       <MenuItem
         onClick={() => {
-          // toggleFavoritePage(id);
+          onToggleFavoritePage(id);
           toast(
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
@@ -39,7 +50,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
       </MenuItem>
       <MenuItem
         onClick={() => {
-          // openPage(id, {}, true);
+          onOpenPageInNewTab(id);
         }}
         icon={<OpenInNewIcon />}
       >
@@ -47,17 +58,7 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
       </MenuItem>
       <MenuItem
         onClick={() => {
-          // confirm({
-          //   title: t('Delete page?'),
-          //   content: t('will be moved to Trash', {
-          //     title: pageMeta.title || 'Untitled',
-          //   }),
-          //   confirmText: t('Delete'),
-          //   confirmType: 'danger',
-          // }).then(confirm => {
-          //   confirm && toggleDeletePage(id);
-          //   confirm && toast(t('Moved to Trash'));
-          // });
+          setOpen(true);
         }}
         icon={<DeleteTemporarilyIcon />}
       >
@@ -66,27 +67,62 @@ export const OperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
     </>
   );
   return (
-    <FlexWrapper alignItems="center" justifyContent="center">
-      <Menu
-        content={OperationMenu}
-        placement="bottom-end"
-        disablePortal={true}
-        trigger="click"
-      >
-        <IconButton darker={true}>
-          <MoreVerticalIcon />
-        </IconButton>
-      </Menu>
-    </FlexWrapper>
+    <>
+      <FlexWrapper alignItems="center" justifyContent="center">
+        <Menu
+          content={OperationMenu}
+          placement="bottom-end"
+          disablePortal={true}
+          trigger="click"
+        >
+          <IconButton darker={true}>
+            <MoreVerticalIcon />
+          </IconButton>
+        </Menu>
+      </FlexWrapper>
+      <Confirm
+        open={open}
+        title={t('Delete page?')}
+        content={t('will be permanently deleted', {
+          title: pageMeta.title || 'Untitled',
+        })}
+        confirmText={t('Delete')}
+        confirmType="danger"
+        onConfirm={() => {
+          onToggleTrashPage(id);
+          toast(t('Deleted'));
+          setOpen(false);
+        }}
+        onClose={() => {
+          setOpen(false);
+        }}
+        onCancel={() => {
+          setOpen(false);
+        }}
+      />
+    </>
   );
 };
 
-export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
-  const { id } = pageMeta;
+export type TrashOperationCellProps = {
+  pageMeta: PageMeta;
+  onPermanentlyDeletePage: (pageId: string) => void;
+  onRestorePage: (pageId: string) => void;
+  onOpenPage: (pageId: string) => void;
+};
+
+export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
+  pageMeta,
+  onPermanentlyDeletePage,
+  onRestorePage,
+  onOpenPage,
+}) => {
+  const { id, title } = pageMeta;
   // const { openPage, getPageMeta } = usePageHelper();
   // const { toggleDeletePage, permanentlyDeletePage } = usePageHelper();
   // const confirm = useConfirm(store => store.confirm);
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   return (
     <FlexWrapper>
       <Tooltip content={t('Restore it')} placement="top-start">
@@ -94,11 +130,9 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
           darker={true}
           style={{ marginRight: '12px' }}
           onClick={() => {
-            // toggleDeletePage(id);
-            // toast(
-            //   t('restored', { title: getPageMeta(id)?.title || 'Untitled' })
-            // );
-            // openPage(id);
+            onRestorePage(id);
+            toast(t('restored', { title: title || 'Untitled' }));
+            onOpenPage(id);
           }}
         >
           <ResetIcon />
@@ -108,20 +142,30 @@ export const TrashOperationCell = ({ pageMeta }: { pageMeta: PageMeta }) => {
         <IconButton
           darker={true}
           onClick={() => {
-            // confirm({
-            //   title: t('Delete permanently?'),
-            //   content: t("Once deleted, you can't undo this action."),
-            //   confirmText: t('Delete'),
-            //   confirmType: 'danger',
-            // }).then(confirm => {
-            //   confirm && permanentlyDeletePage(id);
-            //   toast(t('Permanently deleted'));
-            // });
+            setOpen(true);
           }}
         >
           <DeletePermanentlyIcon />
         </IconButton>
       </Tooltip>
+      <Confirm
+        title={t('Delete permanently?')}
+        content={t("Once deleted, you can't undo this action.")}
+        confirmText={t('Delete')}
+        confirmType="danger"
+        open={open}
+        onConfirm={() => {
+          onPermanentlyDeletePage(id);
+          toast(t('Permanently deleted'));
+          setOpen(false);
+        }}
+        onClose={() => {
+          setOpen(false);
+        }}
+        onCancel={() => {
+          setOpen(false);
+        }}
+      />
     </FlexWrapper>
   );
 };

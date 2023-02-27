@@ -72,10 +72,10 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       </>
     );
   },
-  PageList: ({ blockSuiteWorkspace, onClickPage }) => {
+  PageList: ({ blockSuiteWorkspace, onOpenPage }) => {
     return (
       <BlockSuitePageList
-        onClickPage={onClickPage}
+        onOpenPage={onOpenPage}
         blockSuiteWorkspace={blockSuiteWorkspace}
       />
     );

@@ -6,7 +6,7 @@ import { BlockSuiteWorkspace } from '../shared';
 declare module '@blocksuite/store' {
   interface PageMeta {
     mode?: 'page' | 'edgeless';
-    favourite?: boolean;
+    favorite?: boolean;
     trash?: boolean;
   }
 }
@@ -37,7 +37,7 @@ export function usePageMeta(
   return pageMeta;
 }
 
-export function usePageMetaMutation(blockSuiteWorkspace: BlockSuiteWorkspace) {
+export function usePageMetaHelper(blockSuiteWorkspace: BlockSuiteWorkspace) {
   return useMemo(
     () => ({
       setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {

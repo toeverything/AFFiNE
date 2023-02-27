@@ -17,7 +17,10 @@ import { PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
 import React, { useMemo } from 'react';
 
-import { usePageMeta } from '../../../../hooks/use-page-meta';
+import {
+  usePageMeta,
+  usePageMetaHelper,
+} from '../../../../hooks/use-page-meta';
 import { useTheme } from '../../../../providers/ThemeProvider';
 import { BlockSuiteWorkspace } from '../../../../shared';
 import DateCell from './DateCell';
@@ -68,33 +71,32 @@ const FavoriteTag = ({
 
 type PageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  showFavoriteTag?: boolean;
-  isTrash?: boolean;
   isPublic?: boolean;
   listType?: 'all' | 'trash' | 'favorite';
-  onClickPage: (pageId: string) => void;
+  onClickPage: (pageId: string, newTab?: boolean) => void;
 };
 
 const filter = {
-  all: (_: PageMeta) => true,
+  all: (pageMeta: PageMeta) => !pageMeta.trash,
   trash: (pageMeta: PageMeta) => pageMeta.trash,
   favorite: (pageMeta: PageMeta) => pageMeta.favorite,
 };
 
 export const PageList: React.FC<PageListProps> = ({
   blockSuiteWorkspace,
-  showFavoriteTag = false,
-  isTrash = false,
   isPublic = false,
   listType,
   onClickPage,
 }) => {
   const pageList = usePageMeta(blockSuiteWorkspace);
+  const helper = usePageMetaHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
   const theme = useMuiTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
+  const isTrash = listType === 'trash';
+  const isFavorite = listType === 'favorite';
   const list = useMemo(
-    () => pageList.filter(filter[listType]),
+    () => pageList.filter(filter[listType ?? 'all']),
     [pageList, listType]
   );
   if (list.length === 0) {
@@ -141,7 +143,7 @@ export const PageList: React.FC<PageListProps> = ({
                         {pageMeta.title || t('Untitled')}
                       </Content>
                     </StyledTitleLink>
-                    {showFavoriteTag && <FavoriteTag pageMeta={pageMeta} />}
+                    {isFavorite && <FavoriteTag pageMeta={pageMeta} />}
                   </StyledTitleWrapper>
                 </TableCell>
                 {matches && (
@@ -167,9 +169,37 @@ export const PageList: React.FC<PageListProps> = ({
                         data-testid={`more-actions-${pageMeta.id}`}
                       >
                         {isTrash ? (
-                          <TrashOperationCell pageMeta={pageMeta} />
+                          <TrashOperationCell
+                            pageMeta={pageMeta}
+                            onPermanentlyDeletePage={pageId => {
+                              blockSuiteWorkspace.removePage(pageId);
+                            }}
+                            onRestorePage={() => {
+                              helper.setPageMeta(pageMeta.id, {
+                                trash: false,
+                              });
+                            }}
+                            onOpenPage={pageId => {
+                              onClickPage(pageId, false);
+                            }}
+                          />
                         ) : (
-                          <OperationCell pageMeta={pageMeta} />
+                          <OperationCell
+                            pageMeta={pageMeta}
+                            onOpenPageInNewTab={pageId => {
+                              onClickPage(pageId, true);
+                            }}
+                            onToggleFavoritePage={(pageId: string) => {
+                              helper.setPageMeta(pageId, {
+                                favorite: !pageMeta.favorite,
+                              });
+                            }}
+                            onToggleTrashPage={() => {
+                              helper.setPageMeta(pageMeta.id, {
+                                trash: !pageMeta.trash,
+                              });
+                            }}
+                          />
                         )}
                       </TableCell>
                     )}

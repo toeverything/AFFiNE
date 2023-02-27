@@ -7,6 +7,7 @@ import {
   publicWorkspaceIdAtom,
 } from '../../atoms/public-workspace';
 import { QueryParamError } from '../../components/affine/affine-error-eoundary';
+import { BlockSuitePublicPageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageLoading } from '../../components/pure/loading';
 import { WorkspaceLayout } from '../../layouts';
 import { UIPlugins } from '../../plugins';
@@ -34,8 +35,8 @@ const ListPageInner: React.FC<{
     return <PageLoading />;
   }
   return (
-    <PageList
-      onClickPage={handleClickPage}
+    <BlockSuitePublicPageList
+      onOpenPage={handleClickPage}
       blockSuiteWorkspace={blockSuiteWorkspace}
     />
   );

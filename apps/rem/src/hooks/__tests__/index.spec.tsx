@@ -16,7 +16,7 @@ import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { useCurrentWorkspace } from '../current/use-current-workspace';
 import { useLastOpenedWorkspace } from '../use-last-opened-workspace';
-import { usePageMeta, usePageMetaMutation } from '../use-page-meta';
+import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../use-sync-router-with-current-workspace-and-page';
 import {
   useWorkspaces,
@@ -87,7 +87,7 @@ describe('usePageMetas', async () => {
     expect(result.current.length).toBe(3);
     expect(result.current[0].mode).not.exist;
     const { result: result2 } = renderHook(() =>
-      usePageMetaMutation(blockSuiteWorkspace)
+      usePageMetaHelper(blockSuiteWorkspace)
     );
     result2.current.setPageMeta('page0', {
       mode: 'edgeless',

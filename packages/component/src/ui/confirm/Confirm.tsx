@@ -1,5 +1,4 @@
 import { useTranslation } from '@affine/i18n';
-import { useState } from 'react';
 
 import { Button } from '../button';
 import { Modal, ModalCloseButton, ModalProps } from '../modal';
@@ -20,7 +19,7 @@ export type ConfirmProps = {
   buttonDirection?: 'row' | 'column';
   onConfirm?: () => void;
   onCancel?: () => void;
-} & Omit<ModalProps, 'open' | 'children'>;
+} & Omit<ModalProps, 'children'>;
 
 export const Confirm = ({
   title,
@@ -31,15 +30,14 @@ export const Confirm = ({
   onCancel,
   buttonDirection = 'row',
   cancelText = 'Cancel',
+  open,
 }: ConfirmProps) => {
-  const [open, setOpen] = useState(true);
   const { t } = useTranslation();
   return (
     <Modal open={open}>
       <StyledModalWrapper>
         <ModalCloseButton
           onClick={() => {
-            setOpen(false);
             onCancel?.();
           }}
         />
@@ -51,7 +49,6 @@ export const Confirm = ({
               shape="round"
               bold={true}
               onClick={() => {
-                setOpen(false);
                 onCancel?.();
               }}
               style={{ marginRight: '24px' }}
@@ -63,7 +60,6 @@ export const Confirm = ({
               shape="round"
               bold={true}
               onClick={() => {
-                setOpen(false);
                 onConfirm?.();
               }}
             >
@@ -77,7 +73,6 @@ export const Confirm = ({
               shape="round"
               bold={true}
               onClick={() => {
-                setOpen(false);
                 onConfirm?.();
               }}
               style={{ width: '284px', height: '38px', textAlign: 'center' }}
@@ -88,7 +83,6 @@ export const Confirm = ({
               shape="round"
               bold={true}
               onClick={() => {
-                setOpen(false);
                 onCancel?.();
               }}
               style={{

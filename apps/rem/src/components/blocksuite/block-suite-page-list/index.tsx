@@ -5,19 +5,31 @@ import PageList from './page-list';
 
 export type BlockSuitePageListProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  onClickPage: (pageId: string) => void;
+  onOpenPage: (pageId: string, newTab?: boolean) => void;
 };
 
 export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
   blockSuiteWorkspace,
-  onClickPage,
+  onOpenPage,
 }) => {
   return (
     <PageList
       blockSuiteWorkspace={blockSuiteWorkspace}
-      onClickPage={onClickPage}
-      isPublic={false}
-      isTrash={false}
+      onClickPage={onOpenPage}
+      listType="all"
+    />
+  );
+};
+
+export const BlockSuitePublicPageList: React.FC<BlockSuitePageListProps> = ({
+  blockSuiteWorkspace,
+  onOpenPage,
+}) => {
+  return (
+    <PageList
+      isPublic={true}
+      blockSuiteWorkspace={blockSuiteWorkspace}
+      onClickPage={onOpenPage}
       listType="all"
     />
   );

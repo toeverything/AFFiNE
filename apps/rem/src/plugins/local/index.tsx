@@ -146,10 +146,10 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       </>
     );
   },
-  PageList: ({ blockSuiteWorkspace, onClickPage }) => {
+  PageList: ({ blockSuiteWorkspace, onOpenPage }) => {
     return (
       <BlockSuitePageList
-        onClickPage={onClickPage}
+        onOpenPage={onOpenPage}
         blockSuiteWorkspace={blockSuiteWorkspace}
       />
     );

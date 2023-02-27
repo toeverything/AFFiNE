@@ -26,16 +26,20 @@ const AllPage: NextPageWithLayout = () => {
   const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
-  const openPage = useCallback(
-    (id: string) => {
+  const onClickPage = useCallback(
+    (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
-      router.push({
-        pathname: '/workspace/[workspaceId]/[pageId]',
-        query: {
-          workspaceId: currentWorkspace.id,
-          pageId: id,
-        },
-      });
+      if (newTab) {
+        window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
+      } else {
+        router.push({
+          pathname: '/workspace/[workspaceId]/[pageId]',
+          query: {
+            workspaceId: currentWorkspace.id,
+            pageId,
+          },
+        });
+      }
     },
     [currentWorkspace, router]
   );
@@ -57,7 +61,7 @@ const AllPage: NextPageWithLayout = () => {
             {t('All pages')}
           </WorkspaceTitle>
           <PageList
-            onClickPage={openPage}
+            onOpenPage={onClickPage}
             blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
           />
         </>
@@ -71,7 +75,7 @@ const AllPage: NextPageWithLayout = () => {
       <>
         <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
         <PageList
-          onClickPage={openPage}
+          onOpenPage={onClickPage}
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
         />
       </>

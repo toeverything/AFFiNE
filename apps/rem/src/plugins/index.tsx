@@ -30,7 +30,7 @@ type PageDetailProps<Flavour extends RemWorkspaceFlavour> =
 
 type PageListProps<Flavour extends RemWorkspaceFlavour> = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  onClickPage: (pageId: string) => void;
+  onOpenPage: (pageId: string, newTab?: boolean) => void;
 };
 
 type SideBarMenuProps<Flavour extends RemWorkspaceFlavour> =
