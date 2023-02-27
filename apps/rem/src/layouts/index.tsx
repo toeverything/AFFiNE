@@ -73,7 +73,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   }, [setOpenQuickSearchModalAtom]);
 
   // fixme(himself65): use suspense mode
-  if (!currentWorkspace) {
+  if (!currentWorkspace && !isPublicWorkspace) {
     return <PageLoading />;
   }
   return (

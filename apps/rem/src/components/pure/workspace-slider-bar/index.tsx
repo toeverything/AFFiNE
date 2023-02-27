@@ -79,7 +79,7 @@ export type WorkSpaceSliderBarProps = {
   isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
   onOpenWorkspaceListModal: () => void;
-  currentWorkspace: RemWorkspace;
+  currentWorkspace: RemWorkspace | null;
   currentPageId: string | null;
   openPage: (pageId: string) => void;
   createPage: () => Promise<string>;
@@ -107,11 +107,11 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   onOpenQuickSearchModal,
   onOpenWorkspaceListModal,
 }) => {
-  const currentWorkspaceId = currentWorkspace.id;
+  const currentWorkspaceId = currentWorkspace?.id || null;
   const [showSubFavorite, setShowSubFavorite] = useState(true);
   const [showTip, setShowTip] = useState(false);
   const { t } = useTranslation();
-  const pageMeta = usePageMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
     const pageId = await createPage();
     if (pageId) {

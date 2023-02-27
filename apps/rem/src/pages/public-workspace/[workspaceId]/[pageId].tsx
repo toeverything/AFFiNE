@@ -1,86 +1,23 @@
-import { assertExists } from '@blocksuite/store';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
-import React, { useEffect, useState } from 'react';
-import useSWR from 'swr';
+import React, { Suspense, useEffect } from 'react';
 
+import {
+  publicBlockSuiteAtom,
+  publicWorkspaceIdAtom,
+} from '../../../atoms/public-workspace';
+import { QueryParamError } from '../../../components/affine/affine-error-eoundary';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceLayout } from '../../../layouts';
-import { QueryKey } from '../../../plugins/affine/fetcher';
-import { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
-import { createEmptyBlockSuiteWorkspace } from '../../../utils';
+import { NextPageWithLayout } from '../../../shared';
 
-declare global {
-  // eslint-disable-next-line no-var
-  var blockSuiteWorkspace: BlockSuiteWorkspace;
-}
-
-export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
-  const router = useRouter();
-  const workspaceId = router.query.workspaceId;
-  const pageId = router.query.pageId;
-  const binary = useSWR([QueryKey.downloadWorkspace, workspaceId, true], {
-    fallbackData: null,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
-  const [ready, setReady] = useState(false);
-  const [blockSuiteWorkspace, setBlockSuiteWorkspace] =
-    useState<BlockSuiteWorkspace | null>(null);
-  useEffect(() => {
-    if (typeof workspaceId === 'string') {
-      const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
-      globalThis.blockSuiteWorkspace = blockSuiteWorkspace;
-      blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
-      blockSuiteWorkspace.awarenessStore.setFlag(
-        'enable_set_remote_flag',
-        false
-      );
-      blockSuiteWorkspace.awarenessStore.setFlag('enable_database', false);
-      blockSuiteWorkspace.awarenessStore.setFlag(
-        'enable_edgeless_toolbar',
-        false
-      );
-      blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', false);
-      blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', false);
-      setBlockSuiteWorkspace(blockSuiteWorkspace);
-    }
-  }, [workspaceId]);
-  useEffect(() => {
-    if (!blockSuiteWorkspace) {
-      return;
-    }
-    if (!binary.isLoading) {
-      if (binary.data instanceof ArrayBuffer) {
-        BlockSuiteWorkspace.Y.applyUpdate(
-          blockSuiteWorkspace.doc,
-          new Uint8Array(binary.data)
-        );
-        const dispose = blockSuiteWorkspace.signals.pageAdded.on(id => {
-          if (id === pageId) {
-            setTimeout(() => {
-              setReady(true);
-            });
-          } else {
-            setTimeout(() => {
-              const page = blockSuiteWorkspace.getPage(id);
-              assertExists(page);
-              blockSuiteWorkspace.meta.awarenessStore.setReadonly(page, true);
-            });
-          }
-        });
-        return () => {
-          dispose.dispose();
-        };
-      }
-    }
-  }, [binary.data, binary.isLoading, blockSuiteWorkspace, pageId]);
-  if (!router.isReady || !blockSuiteWorkspace || !ready) {
-    return <PageLoading />;
-  }
-  if (typeof workspaceId !== 'string' || typeof pageId !== 'string') {
-    // todo: throw error
-    return <div>not found router</div>;
+const PublicWorkspaceDetailPageInner: React.FC<{
+  pageId: string;
+}> = ({ pageId }) => {
+  const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
+  if (!blockSuiteWorkspace) {
+    throw new Error('blockSuiteWorkspace is null');
   }
   return (
     <PageDetailEditor
@@ -90,6 +27,32 @@ export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
         editor.readonly = true;
       }}
     />
+  );
+};
+
+export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
+  const router = useRouter();
+  const workspaceId = router.query.workspaceId;
+  const pageId = router.query.pageId;
+  const setWorkspaceId = useSetAtom(publicWorkspaceIdAtom);
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+    if (typeof workspaceId === 'string') {
+      setWorkspaceId(workspaceId);
+    }
+  }, [setWorkspaceId, workspaceId]);
+  if (!router.isReady) {
+    return <PageLoading />;
+  }
+  if (typeof workspaceId !== 'string' || typeof pageId !== 'string') {
+    throw new QueryParamError('workspaceId, pageId', workspaceId);
+  }
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <PublicWorkspaceDetailPageInner pageId={pageId} />
+    </Suspense>
   );
 };
 

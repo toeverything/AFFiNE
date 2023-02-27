@@ -1,0 +1,35 @@
+import { atom } from 'jotai/index';
+
+import { BlockSuiteWorkspace } from '../../shared';
+import { apis } from '../../shared/apis';
+import { createEmptyBlockSuiteWorkspace } from '../../utils';
+
+export const publicWorkspaceIdAtom = atom<string | null>(null);
+export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace | null>>(
+  async get => {
+    const workspaceId = get(publicWorkspaceIdAtom);
+    if (!workspaceId) {
+      return Promise.resolve(null);
+    }
+    const binary = await apis.downloadWorkspace(workspaceId, true);
+    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
+    BlockSuiteWorkspace.Y.applyUpdate(
+      blockSuiteWorkspace.doc,
+      new Uint8Array(binary)
+    );
+    blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
+    blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);
+    blockSuiteWorkspace.awarenessStore.setFlag('enable_database', false);
+    blockSuiteWorkspace.awarenessStore.setFlag(
+      'enable_edgeless_toolbar',
+      false
+    );
+    blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', false);
+    blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', false);
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve(blockSuiteWorkspace);
+      }, 0);
+    });
+  }
+);
