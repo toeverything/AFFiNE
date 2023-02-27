@@ -96,7 +96,7 @@ const SettingPage: NextPageWithLayout = () => {
   if (!router.isReady) {
     return <PageLoading />;
   } else if (!currentWorkspace) {
-    return <PageLoading />;
+    throw new Unreachable();
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     return <PageLoading />;
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {

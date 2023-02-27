@@ -12,6 +12,7 @@ import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
 import { config } from '../shared/env';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 
+// fixme(himself65): refactor with jotai atom using async
 export const dataCenter = {
   workspaces: [] as RemWorkspace[],
   isLoaded: false,
@@ -103,7 +104,6 @@ export async function prefetchNecessaryData(signal?: AbortSignal) {
       const newData = dataCenter.workspaces;
       if (!Object.is(oldData, newData)) {
         console.info('prefetchNecessaryData: data changed');
-        dataCenter.callbacks.forEach(cb => cb());
       }
     } catch (e) {
       console.error('error prefetch data', plugin.flavour, e);

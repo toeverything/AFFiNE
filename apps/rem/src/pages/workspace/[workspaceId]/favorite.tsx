@@ -3,6 +3,7 @@ import { FavoriteIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
 import { Helmet } from 'react-helmet-async';
 
+import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
@@ -19,6 +20,9 @@ const FavouritePage: NextPageWithLayout = () => {
   const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
+  if (!currentWorkspace) {
+    throw new Unreachable();
+  }
   return (
     <>
       <Helmet>

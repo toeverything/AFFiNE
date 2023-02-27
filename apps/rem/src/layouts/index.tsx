@@ -7,6 +7,7 @@ import { Helmet } from 'react-helmet-async';
 
 import { openQuickSearchModalAtom, openWorkspacesModalAtom } from '../atoms';
 import { HelpIsland } from '../components/pure/help-island';
+import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -46,6 +47,35 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
     router.pathname.split('/')[1] === 'public-workspace';
   const title = useRouterTitle(router);
   const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
+  const handleOpenPage = useCallback(
+    (pageId: string) => {
+      assertExists(currentWorkspace);
+      router.push({
+        pathname: `/${
+          isPublicWorkspace ? 'public-workspace' : 'workspace'
+        }/[workspaceId]/[pageId]`,
+        query: {
+          workspaceId: currentWorkspace.id,
+          pageId,
+        },
+      });
+    },
+    [currentWorkspace, isPublicWorkspace, router]
+  );
+  const handleCreatePage = useCallback(async () => {
+    return helper.createPage(uuidv4());
+  }, [helper]);
+  const handleOpenWorkspaceListModal = useCallback(() => {
+    setOpenWorkspacesModal(true);
+  }, [setOpenWorkspacesModal]);
+  const handleOpenQuickSearchModal = useCallback(() => {
+    setOpenQuickSearchModalAtom(true);
+  }, [setOpenQuickSearchModalAtom]);
+
+  // fixme(himself65): use suspense mode
+  if (!currentWorkspace) {
+    return <PageLoading />;
+  }
   return (
     <>
       <Helmet>
@@ -54,35 +84,15 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
       <StyledPage>
         <WorkSpaceSliderBar
           isPublicWorkspace={isPublicWorkspace}
-          onOpenQuickSearchModal={useCallback(() => {
-            setOpenQuickSearchModalAtom(true);
-          }, [setOpenQuickSearchModalAtom])}
+          onOpenQuickSearchModal={handleOpenQuickSearchModal}
           currentWorkspace={currentWorkspace}
           currentPageId={currentPageId}
-          onOpenWorkspaceListModal={useCallback(() => {
-            setOpenWorkspacesModal(true);
-          }, [setOpenWorkspacesModal])}
-          openPage={useCallback(
-            pageId => {
-              assertExists(currentWorkspace);
-              router.push({
-                pathname: `/${
-                  isPublicWorkspace ? 'public-workspace' : 'workspace'
-                }/[workspaceId]/[pageId]`,
-                query: {
-                  workspaceId: currentWorkspace.id,
-                  pageId,
-                },
-              });
-            },
-            [currentWorkspace, isPublicWorkspace, router]
-          )}
-          createPage={useCallback(async () => {
-            return helper.createPage(uuidv4());
-          }, [helper])}
+          onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
+          openPage={handleOpenPage}
+          createPage={handleCreatePage}
           show={show}
           setShow={setShow}
-          currentPath={useRouter().asPath}
+          currentPath={router.asPath}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
         <StyledWrapper>

@@ -45,8 +45,8 @@ const AllPage: NextPageWithLayout = () => {
   if (typeof router.query.workspaceId !== 'string') {
     throw new QueryParamError('workspaceId', router.query.workspaceId);
   }
-  if (!currentWorkspace) {
-    return <PageLoading />;
+  if (currentWorkspace === null) {
+    throw new Unreachable();
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const PageList = UIPlugins[currentWorkspace.flavour].PageList;

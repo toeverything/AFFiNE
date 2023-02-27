@@ -16,7 +16,7 @@ const WorkspaceDetail: React.FC = () => {
   const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
   if (!currentWorkspace) {
-    return <PageLoading />;
+    throw new Unreachable();
   }
   if (!pageId) {
     return <PageLoading />;
