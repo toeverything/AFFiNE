@@ -38,6 +38,9 @@ const getRedirectConfig = profile => {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compiler: {
+    removeConsole: {
+      exclude: ['error', 'log', 'warn', 'info'],
+    },
     emotion: {
       sourceMap: true,
     },
