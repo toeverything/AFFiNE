@@ -1,5 +1,5 @@
 import { assertExists, uuidv4 } from '@blocksuite/store';
-import { useAtom } from 'jotai/index';
+import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';

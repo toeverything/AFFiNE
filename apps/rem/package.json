@@ -41,6 +41,7 @@
     "@swc-jotai/react-refresh": "^0.0.4",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
+    "@types/webpack-env": "^1.18.0",
     "dotenv": "^16.0.3",
     "next": "^13.2.1",
     "next-debug-local": "^0.1.5",

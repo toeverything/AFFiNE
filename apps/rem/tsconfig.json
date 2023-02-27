@@ -19,6 +19,6 @@
     "experimentalDecorators": true,
     "baseUrl": "."
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "src/types/types.d.ts"],
   "exclude": ["node_modules"]
 }

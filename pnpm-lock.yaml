@@ -162,6 +162,7 @@ importers:
       '@swc-jotai/react-refresh': ^0.0.4
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
+      '@types/webpack-env': ^1.18.0
       cmdk: ^0.1.22
       css-spring: ^4.1.0
       dayjs: ^1.11.7
@@ -213,6 +214,7 @@ importers:
       '@swc-jotai/react-refresh': 0.0.4
       '@types/react': 18.0.28
       '@types/react-dom': 18.0.11
+      '@types/webpack-env': 1.18.0
       dotenv: 16.0.3
       next: 13.2.1_biqbaboplfbrettd7655fr4n2y
       next-debug-local: 0.1.5
@@ -5785,6 +5787,10 @@ packages:
     resolution: {integrity: sha512-PBjIUxZHOuj0R15/xuwJYjFi+KZdNFrehocChv4g5hu6aFroHue8m0lBP0POdK2nKzbw0cgV1mws8+V/JAcEkQ==}
     dev: true
 
+  /@types/webpack-env/1.18.0:
+    resolution: {integrity: sha512-56/MAlX5WMsPVbOg7tAxnYvNYMMWr/QJiIp6BxVSW3JJXUVzzOn64qW8TzQyMSqSUFM2+PVI4aUHcHOzIz/1tg==}
+    dev: true
+
   /@types/which/2.0.1:
     resolution: {integrity: sha512-Jjakcv8Roqtio6w1gr0D7y6twbhx6gGgFGF5BLwajPpnOIOxFkakFhCq+LmyyeAz7BX6ULrjBOxdKaCDy+4+dQ==}
     dev: true
@@ -6150,6 +6156,14 @@ packages:
       acorn: ^8
     dependencies:
       acorn: 8.8.0
+    dev: true
+
+  /acorn-import-assertions/1.8.0_acorn@8.8.2:
+    resolution: {integrity: sha512-m7VZ3jwz4eK6A4Vtt8Ew1/mNbP24u0FhdyfA7fSvnJR6LMdfOYnmuIrrJAgrYfYJ10F/otaHTtrtrtmHdMNzEw==}
+    peerDependencies:
+      acorn: ^8
+    dependencies:
+      acorn: 8.8.2
     dev: true
 
   /acorn-jsx/5.3.2_acorn@7.4.1:
@@ -13894,8 +13908,8 @@ packages:
       '@webassemblyjs/ast': 1.11.1
       '@webassemblyjs/wasm-edit': 1.11.1
       '@webassemblyjs/wasm-parser': 1.11.1
-      acorn: 8.8.0
-      acorn-import-assertions: 1.8.0_acorn@8.8.0
+      acorn: 8.8.2
+      acorn-import-assertions: 1.8.0_acorn@8.8.2
       browserslist: 4.21.4
       chrome-trace-event: 1.0.3
       enhanced-resolve: 5.12.0
