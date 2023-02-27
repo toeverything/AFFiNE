@@ -1,4 +1,5 @@
 import { Trans, useTranslation } from '@affine/i18n';
+import React, { useEffect, useState } from 'react';
 
 import { getIsMobile } from '../../../utils/get-is-mobile';
 
@@ -22,9 +23,15 @@ export const shouldShowWarning = () => {
   );
 };
 
-export const useWarningMessage = () => {
+export const OSWarningMessage: React.FC = () => {
   const { t } = useTranslation();
-  if (!getIsChrome()) {
+  const [notChrome, setNotChrome] = useState(false);
+  const [notGoodVersion, setNotGoodVersion] = useState(false);
+  useEffect(() => {
+    setNotChrome(getIsChrome());
+    setNotGoodVersion(getChromeVersion() < minimumChromeVersion);
+  }, []);
+  if (notChrome) {
     return (
       <span>
         <Trans i18nKey="recommendBrowser">
@@ -33,9 +40,8 @@ export const useWarningMessage = () => {
         </Trans>
       </span>
     );
-  }
-  if (getChromeVersion() < minimumChromeVersion) {
+  } else if (notGoodVersion) {
     return <span>{t('upgradeBrowser')}</span>;
   }
-  return '';
+  return null;
 };

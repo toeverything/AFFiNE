@@ -1,3 +1,5 @@
+import { useTranslation } from '@affine/i18n';
+import { FolderIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
@@ -7,6 +9,7 @@ import {
   Unreachable,
 } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
+import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
@@ -20,6 +23,7 @@ prefetchNecessaryData();
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
+  const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
   const openPage = useCallback(
@@ -48,10 +52,15 @@ const AllPage: NextPageWithLayout = () => {
     const PageList = UIPlugins[currentWorkspace.flavour].PageList;
     if (currentWorkspace.firstBinarySynced) {
       return (
-        <PageList
-          onClickPage={openPage}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        />
+        <>
+          <WorkspaceTitle icon={<FolderIcon />}>
+            {t('All pages')}
+          </WorkspaceTitle>
+          <PageList
+            onClickPage={openPage}
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        </>
       );
     } else {
       return <div>loading</div>;
@@ -59,10 +68,13 @@ const AllPage: NextPageWithLayout = () => {
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
     const PageList = UIPlugins[currentWorkspace.flavour].PageList;
     return (
-      <PageList
-        onClickPage={openPage}
-        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-      />
+      <>
+        <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
+        <PageList
+          onClickPage={openPage}
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        />
+      </>
     );
   }
   throw new Unreachable();

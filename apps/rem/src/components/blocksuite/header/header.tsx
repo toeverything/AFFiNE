@@ -18,7 +18,7 @@ import {
   StyledHeaderContainer,
   StyledHeaderRightSide,
 } from './styles';
-import { shouldShowWarning, useWarningMessage } from './utils';
+import { OSWarningMessage, shouldShowWarning } from './utils';
 
 const BrowserWarning = ({
   show,
@@ -29,7 +29,7 @@ const BrowserWarning = ({
 }) => {
   return (
     <StyledBrowserWarning show={show}>
-      {useWarningMessage()}
+      <OSWarningMessage />
       <StyledCloseButton onClick={onClose}>
         <CloseIcon />
       </StyledCloseButton>

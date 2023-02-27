@@ -1,8 +1,12 @@
+import { useTranslation } from '@affine/i18n';
+import { SettingsIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
+import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
@@ -22,6 +26,7 @@ prefetchNecessaryData();
 const SettingPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
+  const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
   const currentTab =
@@ -61,20 +66,33 @@ const SettingPage: NextPageWithLayout = () => {
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const Setting = UIPlugins[currentWorkspace.flavour].SettingsDetail;
     return (
-      <Setting
-        currentWorkspace={currentWorkspace}
-        currentTab={currentTab as SettingPanel}
-        onChangeTab={onChangeTab}
-      />
+      <>
+        <Helmet>
+          <title>{t('Workspace Settings')} - AFFiNE</title>
+        </Helmet>
+        <WorkspaceTitle icon={<SettingsIcon />}>
+          {t('Workspace Settings')}
+        </WorkspaceTitle>
+        <Setting
+          currentWorkspace={currentWorkspace}
+          currentTab={currentTab as SettingPanel}
+          onChangeTab={onChangeTab}
+        />
+      </>
     );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
     const Setting = UIPlugins[currentWorkspace.flavour].SettingsDetail;
     return (
-      <Setting
-        currentWorkspace={currentWorkspace}
-        currentTab={currentTab as SettingPanel}
-        onChangeTab={onChangeTab}
-      />
+      <>
+        <WorkspaceTitle icon={<SettingsIcon />}>
+          {t('Workspace Settings')}
+        </WorkspaceTitle>
+        <Setting
+          currentWorkspace={currentWorkspace}
+          currentTab={currentTab as SettingPanel}
+          onChangeTab={onChangeTab}
+        />
+      </>
     );
   }
   throw new Unreachable();

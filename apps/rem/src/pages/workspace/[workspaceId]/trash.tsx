@@ -1,5 +1,9 @@
+import { useTranslation } from '@affine/i18n';
+import { DeleteTemporarilyIcon } from '@blocksuite/icons';
 import { useRouter } from 'next/router';
+import { Helmet } from 'react-helmet-async';
 
+import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
@@ -9,9 +13,20 @@ import { NextPageWithLayout } from '../../../shared';
 const TrashPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
+  const { t } = useTranslation();
   useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
-  return <div>Trash Page</div>;
+  return (
+    <>
+      <Helmet>
+        <title>{t('Trash')} - AFFiNE</title>
+      </Helmet>
+      <WorkspaceTitle icon={<DeleteTemporarilyIcon />}>
+        {t('Trash')}
+      </WorkspaceTitle>
+      Trash Page
+    </>
+  );
 };
 
 export default TrashPage;
