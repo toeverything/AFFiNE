@@ -42,7 +42,7 @@ export function MessageCenterHandler({ children }: { children?: ReactNode }) {
         }
 
         if (message.code === MessageCenter.messageCode.refreshTokenError) {
-          toast('Automatic login fail, please login self later');
+          toast('Session expired, please log in again');
           clearAuth(dataCenter, 'affine');
           await router.push('/');
           router.reload();
