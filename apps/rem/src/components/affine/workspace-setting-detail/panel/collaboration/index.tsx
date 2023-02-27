@@ -188,12 +188,25 @@ const LocalCollaborationPanel: React.FC<
   );
 };
 
-export const CollaborationPanel: React.FC<PanelProps> = ({ workspace }) => {
+export const CollaborationPanel: React.FC<PanelProps> = ({
+  workspace,
+  onDeleteWorkspace,
+}) => {
   switch (workspace.flavour) {
     case RemWorkspaceFlavour.AFFINE:
-      return <AffineRemoteCollaborationPanel workspace={workspace} />;
+      return (
+        <AffineRemoteCollaborationPanel
+          workspace={workspace}
+          onDeleteWorkspace={onDeleteWorkspace}
+        />
+      );
     case RemWorkspaceFlavour.LOCAL:
-      return <LocalCollaborationPanel workspace={workspace} />;
+      return (
+        <LocalCollaborationPanel
+          workspace={workspace}
+          onDeleteWorkspace={onDeleteWorkspace}
+        />
+      );
   }
   throw new Unreachable();
 };
