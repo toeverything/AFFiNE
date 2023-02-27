@@ -55,7 +55,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 
 ## Join our community
 
-Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities across [official social platforms](https://docs.affine.pro/affine/community-links/official-communities)! Once you’re familiar with using the software, maybe you will share your wisdom with others and even consider joining the [AFFiNE Ambassador program](https://docs.affine.pro/affine/affine-ambassadors/welcome) to help spread AFFiNE to the world.
+Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug our awesome user and developer communities across official social platforms](https://community.affine.pro/c/start-here/)! Once you’re familiar with using the software, maybe you will share your wisdom with others and even consider joining the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador) to help spread AFFiNE to the world.
 
 ## Features
 
