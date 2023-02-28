@@ -1,5 +1,4 @@
 use tauri::{CustomMenuItem, Manager, Menu, MenuItem, Submenu, WindowMenuEvent};
-use tauri_plugin_positioner::{on_tray_event, Position, WindowExt};
 
 #[cfg(target_os = "macos")]
 use tauri::AboutMetadata;
