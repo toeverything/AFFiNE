@@ -44,7 +44,7 @@ jobs:
       - name: Get old version
         id: old-version
         run: |
-          PACKAGE_VERSION=$(cat apps/web/package.json | jq '.version.dependencies.@blocksuite/editor' | tr -d '"')
+          PACKAGE_VERSION=$(cat apps/web/package.json | jq '.dependencies["@blocksuite/editor"]' | tr -d '"')
           echo "old-version=${PACKAGE_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Update block-suite version
@@ -53,7 +53,7 @@ jobs:
       - name: Get new version
         id: new-version
         run: |
-          PACKAGE_VERSION=$(cat apps/web/package.json | jq '.version.dependencies.@blocksuite/editor' | tr -d '"')
+          PACKAGE_VERSION=$(cat apps/web/package.json | jq '.dependencies["@blocksuite/editor"]' | tr -d '"')
           echo "new-version=${PACKAGE_VERSION}" >> $GITHUB_OUTPUT
 
       # https://github.com/devops-infra/action-commit-push
