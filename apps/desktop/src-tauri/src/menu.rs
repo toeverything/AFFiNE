@@ -1,6 +1,4 @@
-use tauri::{
-  CustomMenuItem, Menu, MenuItem, Submenu, WindowMenuEvent, Manager,
-};
+use tauri::{CustomMenuItem, Manager, Menu, MenuItem, Submenu, WindowMenuEvent};
 use tauri_plugin_positioner::{on_tray_event, Position, WindowExt};
 
 #[cfg(target_os = "macos")]
@@ -85,7 +83,6 @@ pub fn init() -> Menu {
     .add_submenu(help_menu)
 }
 
-
 // --- Menu Event
 pub fn menu_handler(event: WindowMenuEvent<tauri::Wry>) {
   let win = Some(event.window()).unwrap();
@@ -107,6 +104,6 @@ pub fn menu_handler(event: WindowMenuEvent<tauri::Wry>) {
       win.open_devtools();
       win.close_devtools();
     }
-    _ => (),
+    _ => {}
   }
 }
