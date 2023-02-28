@@ -1,11 +1,10 @@
 import { Workspace } from '@affine/datacenter';
 import { uuidv4 } from '@blocksuite/store';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { unstable_batchedUpdates } from 'react-dom';
 import useSWR from 'swr';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
-import { jotaiStore, workspaceLockAtom } from '../atoms';
+import { lockMutex } from '../atoms';
 import { createLocalProviders } from '../blocksuite';
 import { WorkspacePlugins } from '../plugins';
 import { QueryKey } from '../plugins/affine/fetcher';
@@ -86,11 +85,15 @@ function createRemLocalWorkspace(name: string) {
 
 const emptyWorkspaces: RemWorkspace[] = [];
 
-export async function prefetchNecessaryData(signal?: AbortSignal) {
-  if (!config.prefetchWorkspace) {
-    console.info('prefetchNecessaryData: skip prefetching');
-    return;
-  }
+export async function refreshDataCenter(signal?: AbortSignal) {
+  dataCenter.isLoaded = false;
+  dataCenter.callbacks.forEach(cb => cb());
+  // fixme(himself65): `prefetchWorkspace` is not used
+  //  use `config.enablePlugin = ['affine', 'local']` instead
+  // if (!config.prefetchWorkspace) {
+  //   console.info('prefetchNecessaryData: skip prefetching');
+  //   return;
+  // }
   const plugins = Object.values(WorkspacePlugins).sort(
     (a, b) => a.loadPriority - b.loadPriority
   );
@@ -152,27 +155,22 @@ export function useSyncWorkspaces() {
 }
 
 async function deleteWorkspace(workspaceId: string) {
-  console.warn('deleting workspace');
-  unstable_batchedUpdates(() => {
-    jotaiStore.set(workspaceLockAtom, true);
-  });
-  const idx = dataCenter.workspaces.findIndex(
-    workspace => workspace.id === workspaceId
-  );
-  if (idx === -1) {
-    throw new Error('workspace not found');
-  }
-  try {
-    const [workspace] = dataCenter.workspaces.splice(idx, 1);
-    // @ts-expect-error
-    await WorkspacePlugins[workspace.flavour].deleteWorkspace(workspace);
-    // todo(himself65): move this to plugin
-    dataCenter.callbacks.forEach(cb => cb());
-  } catch (e) {
-    console.error('error deleting workspace', e);
-  }
-  unstable_batchedUpdates(() => {
-    jotaiStore.set(workspaceLockAtom, false);
+  return lockMutex(async () => {
+    console.warn('deleting workspace');
+    const idx = dataCenter.workspaces.findIndex(
+      workspace => workspace.id === workspaceId
+    );
+    if (idx === -1) {
+      throw new Error('workspace not found');
+    }
+    try {
+      const [workspace] = dataCenter.workspaces.splice(idx, 1);
+      // @ts-expect-error
+      await WorkspacePlugins[workspace.flavour].deleteWorkspace(workspace);
+      dataCenter.callbacks.forEach(cb => cb());
+    } catch (e) {
+      console.error('error deleting workspace', e);
+    }
   });
 }
 

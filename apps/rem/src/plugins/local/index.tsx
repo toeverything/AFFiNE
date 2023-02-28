@@ -21,6 +21,27 @@ export const kStoreKey = 'affine-local-workspace';
 export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
   flavour: RemWorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
+  createWorkspace: async blockSuiteWorkspace => {
+    let ids: string[] = [];
+    try {
+      ids = JSON.parse(localStorage.getItem(kStoreKey) ?? '[]');
+      if (!Array.isArray(ids)) {
+        localStorage.setItem(kStoreKey, '[]');
+        ids = [];
+      }
+    } catch (e) {
+      localStorage.setItem(kStoreKey, '[]');
+      ids = [];
+    }
+    const id = uuidv4();
+    const persistence = new IndexeddbPersistence(id, blockSuiteWorkspace.doc);
+    await persistence.whenSynced.then(() => {
+      persistence.destroy();
+    });
+    ids.push(id);
+    localStorage.setItem(kStoreKey, JSON.stringify(ids));
+    return id;
+  },
   deleteWorkspace: async workspace => {
     const id = workspace.id;
     let ids: string[];
@@ -184,6 +205,7 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
     onChangeTab,
     currentTab,
     onDeleteWorkspace,
+    onTransformWorkspace,
   }) => {
     return (
       <WorkspaceSettingDetail
@@ -191,6 +213,7 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
         onChangeTab={onChangeTab}
         currentTab={currentTab}
         workspace={currentWorkspace}
+        onTransferWorkspace={onTransformWorkspace}
       />
     );
   },

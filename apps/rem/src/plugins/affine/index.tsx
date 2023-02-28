@@ -8,6 +8,7 @@ import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import {
   AffineRemoteUnSyncedWorkspace,
+  BlockSuiteWorkspace,
   LoadPriority,
   RemWorkspaceFlavour,
 } from '../../shared';
@@ -18,6 +19,13 @@ import { fetcher, QueryKey } from './fetcher';
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
+  createWorkspace: async (blockSuiteWorkspace: BlockSuiteWorkspace) => {
+    const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(
+      blockSuiteWorkspace.doc
+    );
+    const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
+    return id;
+  },
   deleteWorkspace: async workspace => {
     await apis.deleteWorkspace({
       id: workspace.id,
@@ -94,6 +102,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
     onChangeTab,
     currentTab,
     onDeleteWorkspace,
+    onTransformWorkspace,
   }) => {
     return (
       <WorkspaceSettingDetail
@@ -101,6 +110,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
         onChangeTab={onChangeTab}
         currentTab={currentTab}
         workspace={currentWorkspace}
+        onTransferWorkspace={onTransformWorkspace}
       />
     );
   },

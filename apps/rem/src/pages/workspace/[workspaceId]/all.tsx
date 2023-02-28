@@ -13,13 +13,9 @@ import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
-import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
-
-prefetchNecessaryData();
-
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();

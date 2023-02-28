@@ -2,6 +2,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import React, { Suspense, useCallback, useEffect } from 'react';
 
+import { currentWorkspaceIdAtom } from '../../atoms';
 import {
   publicBlockSuiteAtom,
   publicWorkspaceIdAtom,
@@ -10,8 +11,7 @@ import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { BlockSuitePublicPageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageLoading } from '../../components/pure/loading';
 import { WorkspaceLayout } from '../../layouts';
-import { WorkspacePlugins } from '../../plugins';
-import { NextPageWithLayout, RemWorkspaceFlavour } from '../../shared';
+import { NextPageWithLayout } from '../../shared';
 
 const ListPageInner: React.FC<{
   workspaceId: string;
@@ -30,7 +30,6 @@ const ListPageInner: React.FC<{
     },
     [router, workspaceId]
   );
-  const PageList = WorkspacePlugins[RemWorkspaceFlavour.AFFINE].PageList;
   if (!blockSuiteWorkspace) {
     return <PageLoading />;
   }
@@ -42,18 +41,21 @@ const ListPageInner: React.FC<{
   );
 };
 
+// This is affine only page, so we don't need to dynamic use WorkspacePlugin
 const ListPage: NextPageWithLayout = () => {
   const router = useRouter();
   const workspaceId = router.query.workspaceId;
   const setWorkspaceId = useSetAtom(publicWorkspaceIdAtom);
+  const setCurrentWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
     if (typeof workspaceId === 'string') {
       setWorkspaceId(workspaceId);
+      setCurrentWorkspaceId(workspaceId);
     }
-  }, [router.isReady, setWorkspaceId, workspaceId]);
+  }, [router.isReady, setCurrentWorkspaceId, setWorkspaceId, workspaceId]);
   const value = useAtomValue(publicWorkspaceIdAtom);
   if (!router.isReady || !value) {
     return <PageLoading />;

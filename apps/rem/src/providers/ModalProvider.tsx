@@ -22,7 +22,6 @@ export function Modals() {
   const [openCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
     openCreateWorkspaceModalAtom
   );
-
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom
   );

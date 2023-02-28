@@ -52,7 +52,7 @@ export const createIndexedDBProvider = (
     flavour: 'local-indexeddb',
     cleanup: () => {
       assertExists(indexdbProvider);
-      indexdbProvider.destroy();
+      indexdbProvider.clearData();
     },
     connect: () => {
       console.info('connect indexeddb provider', blockSuiteWorkspace.room);

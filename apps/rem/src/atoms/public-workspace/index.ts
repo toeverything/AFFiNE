@@ -1,6 +1,10 @@
 import { atom } from 'jotai/index';
 
-import { BlockSuiteWorkspace } from '../../shared';
+import {
+  BlockSuiteWorkspace,
+  LocalWorkspace,
+  RemWorkspaceFlavour,
+} from '../../shared';
 import { apis } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
@@ -28,6 +32,15 @@ export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
     blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', false);
     return new Promise(resolve => {
       setTimeout(() => {
+        const workspace: LocalWorkspace = {
+          id: workspaceId,
+          blockSuiteWorkspace,
+          flavour: RemWorkspaceFlavour.LOCAL,
+          syncBinary: () => Promise.resolve(workspace),
+          providers: [],
+        };
+        dataCenter.workspaces.push(workspace);
+        dataCenter.callbacks.forEach(cb => cb());
         resolve(blockSuiteWorkspace);
       }, 0);
     });

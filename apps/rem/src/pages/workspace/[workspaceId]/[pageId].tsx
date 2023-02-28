@@ -7,7 +7,6 @@ import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
-import { prefetchNecessaryData } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
@@ -34,8 +33,6 @@ const WorkspaceDetail: React.FC = () => {
   }
   throw new Unreachable();
 };
-
-prefetchNecessaryData();
 
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();

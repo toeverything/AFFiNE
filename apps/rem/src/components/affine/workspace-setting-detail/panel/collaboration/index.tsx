@@ -15,13 +15,16 @@ import {
 } from '@blocksuite/icons';
 import React, { useCallback, useState } from 'react';
 
+import { lockMutex } from '../../../../../atoms';
 import { useMembers } from '../../../../../hooks/affine/use-members';
+import { transformWorkspace } from '../../../../../plugins';
 import {
   AffineRemoteWorkspace,
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../../shared';
 import { Unreachable } from '../../../affine-error-eoundary';
+import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';
 import { PanelProps } from '../../index';
 import { InviteMemberModal } from './invite-member-modal';
 import {
@@ -170,43 +173,55 @@ const LocalCollaborationPanel: React.FC<
   Omit<PanelProps, 'workspace'> & {
     workspace: LocalWorkspace;
   }
-> = ({ workspace }) => {
+> = ({ workspace, onTransferWorkspace }) => {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   return (
     <>
       <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
       <Button
         type="light"
         shape="circle"
-        onClick={async () => {
-          // triggerEnableWorkspaceModal();
+        onClick={() => {
+          setOpen(true);
         }}
       >
         {t('Enable AFFiNE Cloud')}
       </Button>
+      <TransformWorkspaceToAffineModal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+        }}
+        onConform={() => {
+          // todo(himself65): move this function out of affine component
+          lockMutex(async () => {
+            const id = await transformWorkspace(
+              RemWorkspaceFlavour.LOCAL,
+              RemWorkspaceFlavour.AFFINE,
+              workspace
+            );
+            onTransferWorkspace(id);
+            setOpen(false);
+          });
+        }}
+      />
     </>
   );
 };
 
-export const CollaborationPanel: React.FC<PanelProps> = ({
-  workspace,
-  onDeleteWorkspace,
-}) => {
-  switch (workspace.flavour) {
-    case RemWorkspaceFlavour.AFFINE:
+export const CollaborationPanel: React.FC<PanelProps> = props => {
+  switch (props.workspace.flavour) {
+    case RemWorkspaceFlavour.AFFINE: {
+      const workspace = props.workspace as AffineRemoteWorkspace;
       return (
-        <AffineRemoteCollaborationPanel
-          workspace={workspace}
-          onDeleteWorkspace={onDeleteWorkspace}
-        />
+        <AffineRemoteCollaborationPanel {...props} workspace={workspace} />
       );
-    case RemWorkspaceFlavour.LOCAL:
-      return (
-        <LocalCollaborationPanel
-          workspace={workspace}
-          onDeleteWorkspace={onDeleteWorkspace}
-        />
-      );
+    }
+    case RemWorkspaceFlavour.LOCAL: {
+      const workspace = props.workspace as LocalWorkspace;
+      return <LocalCollaborationPanel {...props} workspace={workspace} />;
+    }
   }
   throw new Unreachable();
 };

@@ -5,11 +5,17 @@ import React, { useEffect } from 'react';
 
 import { currentWorkspaceIdAtom } from '../atoms';
 import { PageLoading } from '../components/pure/loading';
-import { prefetchNecessaryData, useWorkspaces } from '../hooks/use-workspaces';
+import { refreshDataCenter, useWorkspaces } from '../hooks/use-workspaces';
 
-prefetchNecessaryData();
 const IndexPage: NextPage = () => {
   const router = useRouter();
+  useEffect(() => {
+    const controller = new AbortController();
+    refreshDataCenter(controller.signal);
+    return () => {
+      controller.abort();
+    };
+  }, []);
   const [workspaceId] = useAtom(currentWorkspaceIdAtom);
   const workspaces = useWorkspaces();
   useEffect(() => {

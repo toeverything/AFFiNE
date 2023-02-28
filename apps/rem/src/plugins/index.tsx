@@ -1,5 +1,7 @@
+import { assertExists } from '@blocksuite/store';
 import React from 'react';
 
+import { refreshDataCenter } from '../hooks/use-workspaces';
 import {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
@@ -20,6 +22,7 @@ type SettingProps<Flavour extends RemWorkspaceFlavour> =
     currentTab: SettingPanel;
     onChangeTab: (tab: SettingPanel) => void;
     onDeleteWorkspace: () => void;
+    onTransformWorkspace: (targetWorkspaceId: string) => void;
   };
 
 type PageDetailProps<Flavour extends RemWorkspaceFlavour> =
@@ -49,6 +52,11 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
     },
     signal?: AbortSignal
   ) => Promise<void>;
+
+  createWorkspace: (
+    blockSuiteWorkspace: BlockSuiteWorkspace
+  ) => Promise<string>;
+
   deleteWorkspace: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
 
   //#region UI
@@ -64,3 +72,19 @@ export const WorkspacePlugins = {
 } satisfies {
   [Key in RemWorkspaceFlavour]: WorkspacePlugin<Key>;
 };
+
+export async function transformWorkspace<
+  From extends RemWorkspaceFlavour,
+  To extends RemWorkspaceFlavour
+>(from: From, to: To, workspace: FlavourToWorkspace[From]): Promise<string> {
+  // fixme: type cast
+  await WorkspacePlugins[from].deleteWorkspace(workspace as any);
+  const newId = await WorkspacePlugins[to].createWorkspace(
+    workspace.blockSuiteWorkspace
+  );
+  // refresh the data center
+  dataCenter.workspaces = [];
+  await refreshDataCenter();
+  assertExists(dataCenter.workspaces.some(w => w.id === newId));
+  return newId;
+}

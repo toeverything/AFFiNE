@@ -5,6 +5,7 @@ import { ReactElement, ReactNode } from 'react';
 
 import { createAffineProviders } from '../blocksuite';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
+import { apis } from './apis';
 
 export { BlockSuiteWorkspace };
 
@@ -60,7 +61,10 @@ export const transformToAffineSyncedWorkspace = async (
   binary: ArrayBuffer
 ): Promise<AffineRemoteSyncedWorkspace> => {
   const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-    unSyncedWorkspace.id
+    unSyncedWorkspace.id,
+    (k: string) =>
+      // fixme: token could be expired
+      ({ api: '/api/workspace', token: apis.auth.token }[k])
   );
   BlockSuiteWorkspace.Y.applyUpdate(
     blockSuiteWorkspace.doc,

@@ -13,10 +13,7 @@ import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
-import {
-  prefetchNecessaryData,
-  useWorkspacesHelper,
-} from '../../../hooks/use-workspaces';
+import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import {
@@ -26,8 +23,6 @@ import {
   settingPanel,
   settingPanelValues,
 } from '../../../shared';
-
-prefetchNecessaryData();
 
 const settingPanelAtom = atomWithStorage<SettingPanel>(
   'workspaceId',
@@ -105,6 +100,21 @@ const SettingPage: NextPageWithLayout = () => {
     const workspaceId = currentWorkspace.id;
     helper.deleteWorkspace(workspaceId);
   }, [currentWorkspace, helper]);
+  const onTransformWorkspace = useCallback(
+    (targetWorkspaceId: string) => {
+      router
+        .replace({
+          pathname: `/workspace/[workspaceId]/all`,
+          query: {
+            workspaceId: targetWorkspaceId,
+          },
+        })
+        .then(() => {
+          router.reload();
+        });
+    },
+    [router]
+  );
   if (!router.isReady) {
     return <PageLoading />;
   } else if (currentWorkspace === null) {
@@ -122,6 +132,7 @@ const SettingPage: NextPageWithLayout = () => {
           {t('Workspace Settings')}
         </WorkspaceTitle>
         <Setting
+          onTransformWorkspace={onTransformWorkspace}
           onDeleteWorkspace={onDeleteWorkspace}
           currentWorkspace={currentWorkspace}
           currentTab={currentTab as SettingPanel}
@@ -137,6 +148,7 @@ const SettingPage: NextPageWithLayout = () => {
           {t('Workspace Settings')}
         </WorkspaceTitle>
         <Setting
+          onTransformWorkspace={onTransformWorkspace}
           onDeleteWorkspace={onDeleteWorkspace}
           currentWorkspace={currentWorkspace}
           currentTab={currentTab as SettingPanel}

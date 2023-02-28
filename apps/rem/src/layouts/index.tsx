@@ -18,11 +18,13 @@ import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { useSyncWorkspaces } from '../hooks/use-workspaces';
+import { refreshDataCenter, useSyncWorkspaces } from '../hooks/use-workspaces';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 const sideBarOpenAtom = atomWithStorage('sideBarOpen', false);
+
+refreshDataCenter();
 
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   children,
@@ -33,6 +35,13 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
     // todo(himself65): this is a hack, we should use a better way to set the language
     setUpLanguage(i18n);
   }, [i18n]);
+  useEffect(() => {
+    const controller = new AbortController();
+    refreshDataCenter(controller.signal);
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   const [show, setShow] = useAtom(sideBarOpenAtom);
   useSyncWorkspaces();

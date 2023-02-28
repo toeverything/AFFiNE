@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import { preload } from 'swr';
 
+import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
 import {
   AffineOfficialWorkspace,
@@ -29,12 +30,10 @@ export type WorkspaceSettingDetailProps = {
   currentTab: SettingPanel;
   onChangeTab: (tab: SettingPanel) => void;
   onDeleteWorkspace: () => void;
+  onTransferWorkspace: (targetWorkspaceId: string) => void;
 };
 
-export type PanelProps = {
-  workspace: AffineOfficialWorkspace;
-  onDeleteWorkspace: () => void;
-};
+export type PanelProps = WorkspaceSettingDetailProps;
 
 const panelMap = {
   [settingPanel.General]: {
@@ -69,13 +68,18 @@ function assertInstanceOf<T, U extends T>(
   }
 }
 
-export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
-  workspace,
-  currentTab,
-  onChangeTab,
-  onDeleteWorkspace,
-}) => {
+export const WorkspaceSettingDetail: React.FC<
+  WorkspaceSettingDetailProps
+> = props => {
+  const {
+    workspace,
+    currentTab,
+    onChangeTab,
+    onDeleteWorkspace,
+    onTransferWorkspace,
+  } = props;
   const isAffine = workspace.flavour === 'affine';
+  const isOwner = useIsWorkspaceOwner(workspace);
   if (!(workspace.flavour === 'affine' || workspace.flavour === 'local')) {
     throw new Error('Unsupported workspace flavour');
   }
@@ -85,10 +89,10 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
   const { t } = useTranslation();
   const workspaceId = workspace.id;
   useEffect(() => {
-    if (isAffine) {
+    if (isAffine && isOwner) {
       preload([QueryKey.getMembers, workspaceId], fetcher);
     }
-  }, [isAffine, workspaceId]);
+  }, [isAffine, isOwner, workspaceId]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const startTransaction = useCallback(() => {
@@ -146,12 +150,7 @@ export const WorkspaceSettingDetail: React.FC<WorkspaceSettingDetailProps> = ({
         />
       </StyledTabButtonWrapper>
       <StyledSettingContent>
-        <Component
-          onDeleteWorkspace={onDeleteWorkspace}
-          key={currentTab}
-          data-tab-ui={currentTab}
-          workspace={workspace}
-        />
+        <Component {...props} key={currentTab} data-tab-ui={currentTab} />
       </StyledSettingContent>
     </StyledSettingContainer>
   );
