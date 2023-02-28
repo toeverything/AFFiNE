@@ -73,3 +73,12 @@ jobs:
           title: 'Bump blocksuite from ${{ steps.old-version.outputs.old-version }} to ${{ steps.new-version.outputs.new-version }}'
           body: 'Please carefully check the editor functionality before merging the PR.'
           source_branch: bot/bump-core
+
+      # see https://github.com/repo-sync/pull-request
+      - name: Create Pull Request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: bot/bump-core
+          pr_title: 'Bump blocksuite from ${{ steps.old-version.outputs.old-version }} to ${{ steps.new-version.outputs.new-version }}'
+          pr_body: 'Please carefully check the editor functionality before merging the PR.'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
