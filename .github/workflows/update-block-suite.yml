@@ -52,14 +52,14 @@ jobs:
           PACKAGE_VERSION=$(cat apps/web/package.json | jq '.dependencies["@blocksuite/editor"]' | tr -d '"')
           echo "new-version=${PACKAGE_VERSION}" >> $GITHUB_OUTPUT
 
-      # https://github.com/devops-infra/action-commit-push
+      # https://github.com/actions-js/push
       - name: Commit push
-        uses: devops-infra/action-commit-push@master
+        uses: actions-js/push@master
         with:
           github_token: '${{ secrets.GITHUB_TOKEN }}'
-          commit_message: 'chore: bump blocksuite from ${{ steps.old-version.outputs.old-version }} to ${{ steps.new-version.outputs.new-version }}'
+          message: 'chore: bump blocksuite from ${{ steps.old-version.outputs.old-version }} to ${{ steps.new-version.outputs.new-version }}'
           force: true
-          target_branch: bot/bump-core
+          branch: bot/bump-core
 
       # https://github.com/devops-infra/action-pull-request
       - name: Create pull request
@@ -68,3 +68,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           title: 'Bump blocksuite from ${{ steps.old-version.outputs.old-version }} to ${{ steps.new-version.outputs.new-version }}'
           body: 'Please carefully check the editor functionality before merging the PR.'
+          source_branch: bot/bump-core
