@@ -1,7 +1,10 @@
-import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
+import {
+  FlexWrapper,
+  Modal,
+  ModalCloseButton,
+  ModalWrapper,
+} from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-
-import bg from '@/components/contact-modal/bg.png';
 
 import logo from './affine-text-logo.png';
 import {
@@ -16,13 +19,10 @@ import {
 } from './Icons';
 import {
   StyledBigLink,
-  StyledContent,
-  StyledLeftContainer,
   StyledLogo,
   StyledModalFooter,
   StyledModalHeader,
-  StyledModalHeaderLeft,
-  StyledRightContainer,
+  StyledPrivacyContainer,
   StyledSmallLink,
   StyledSubTitle,
 } from './style';
@@ -64,7 +64,7 @@ export const ContactModal = ({
   onClose,
 }: TransitionsModalProps): JSX.Element => {
   const { t } = useTranslation();
-  const rightLinkList = [
+  const topLinkList = [
     {
       icon: <LogoIcon />,
       title: t('Official Website'),
@@ -73,25 +73,19 @@ export const ContactModal = ({
     },
     {
       icon: <DocIcon />,
-      title: t('AFFiNE Community'),
-      subTitle: 'community.affine.pro',
-      link: 'https://community.affine.pro',
+      title: t('Check Our Docs'),
+      subTitle: 'Open Source',
+      link: 'https://github.com/toeverything/AFFiNE',
     },
   ];
   const date = new Date();
   const year = date.getFullYear();
   return (
     <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
-      <ModalWrapper
-        width={860}
-        height={540}
-        style={{ backgroundImage: `url(${bg.src})` }}
-      >
+      <ModalWrapper width={720} height={436} style={{ letterSpacing: '1px' }}>
         <StyledModalHeader>
-          <StyledModalHeaderLeft>
-            <StyledLogo src={logo.src} alt="" />
-            <span>Alpha</span>
-          </StyledModalHeaderLeft>
+          <StyledLogo src={logo.src} alt="" />
+
           <ModalCloseButton
             onClick={() => {
               onClose();
@@ -99,45 +93,40 @@ export const ContactModal = ({
           />
         </StyledModalHeader>
 
-        <StyledContent>
-          <StyledLeftContainer>
-            {rightLinkList.map(({ icon, title, subTitle, link }) => {
-              return (
-                <StyledBigLink key={title} href={link} target="_blank">
-                  {icon}
-                  <p>{title}</p>
-                  <p>
-                    {subTitle}
-                    <LinkIcon />
-                  </p>
-                </StyledBigLink>
-              );
-            })}
-          </StyledLeftContainer>
-          <StyledRightContainer>
-            <StyledSubTitle>{t('Get in touch!')}</StyledSubTitle>
-            {linkList.map(({ icon, title, link }) => {
-              return (
-                <StyledSmallLink key={title} href={link} target="_blank">
-                  {icon}
-                  {title}
-                </StyledSmallLink>
-              );
-            })}
-          </StyledRightContainer>
-        </StyledContent>
+        <FlexWrapper alignItems="center" justifyContent="center">
+          {topLinkList.map(({ icon, title, subTitle, link }) => {
+            return (
+              <StyledBigLink key={title} href={link} target="_blank">
+                {icon}
+                <p>{title}</p>
+                <p>
+                  {subTitle}
+                  <LinkIcon />
+                </p>
+              </StyledBigLink>
+            );
+          })}
+        </FlexWrapper>
+        <StyledSubTitle>
+          {t('Get in touch! Join our communities.')}
+        </StyledSubTitle>
+        <FlexWrapper justifyContent="center">
+          {linkList.map(({ icon, title, link }) => {
+            return (
+              <StyledSmallLink key={title} href={link} target="_blank">
+                {icon}
+                <p>{title}</p>
+              </StyledSmallLink>
+            );
+          })}
+        </FlexWrapper>
 
         <StyledModalFooter>
-          <p>
-            <a
-              href="https://affine.pro/content/blog/affine-alpha-is-coming/index"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t('How is AFFiNE Alpha different?')}
-            </a>
-          </p>
           <p>Copyright &copy; {year} Toeverything</p>
+          <StyledPrivacyContainer>
+            <a href="https://affine.pro/terms">Terms</a>
+            <a href="https://affine.pro/privacy">Privacy</a>
+          </StyledPrivacyContainer>
         </StyledModalFooter>
       </ModalWrapper>
     </Modal>

@@ -6,10 +6,22 @@ import React from 'react';
 import { usePageHelper } from '@/hooks/use-page-helper';
 
 import { StyledModalFooterContent } from './style';
-export const Footer = (props: { query: string; onClose: () => void }) => {
+
+const MAX_QUERY_SHOW_LENGTH = 20;
+
+export const Footer = ({
+  query,
+  onClose,
+}: {
+  query: string;
+  onClose: () => void;
+}) => {
   const { openPage, createPage } = usePageHelper();
   const { t } = useTranslation();
-  const { query, onClose } = props;
+  const normalizedQuery =
+    query.length > MAX_QUERY_SHOW_LENGTH
+      ? query.slice(0, MAX_QUERY_SHOW_LENGTH) + '...'
+      : query;
 
   return (
     <Command.Item
@@ -25,7 +37,7 @@ export const Footer = (props: { query: string; onClose: () => void }) => {
       <StyledModalFooterContent>
         <PlusIcon />
         {query ? (
-          <span>{t('New Keyword Page', { query: query })}</span>
+          <span>{t('New Keyword Page', { query: normalizedQuery })}</span>
         ) : (
           <span>{t('New Page')}</span>
         )}

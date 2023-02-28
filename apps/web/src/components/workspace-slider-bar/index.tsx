@@ -20,6 +20,7 @@ import { usePageHelper } from '@/hooks/use-page-helper';
 import { useGlobalState } from '@/store/app';
 import { useModal } from '@/store/globalModal';
 
+import StyledDragLine from './DragLine';
 import { Arrow } from './icons';
 import {
   StyledArrowButton,
@@ -32,6 +33,8 @@ import {
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector/WorkspaceSelector';
 
+const MAX_WIDTH = 534;
+const MIN_WIDTH = 256;
 const FavoriteList = ({ showList }: { showList: boolean }) => {
   const { openPage } = usePageHelper();
   const pageList = useGlobalState(store => store.dataCenterPageList);
@@ -67,6 +70,7 @@ const FavoriteList = ({ showList }: { showList: boolean }) => {
 export const WorkSpaceSliderBar = () => {
   const { triggerQuickSearchModal } = useModal();
   const [showSubFavorite, setShowSubFavorite] = useState(true);
+  const [sideBarWidth, setSideBarWidth] = useState(256);
   const currentWorkspace = useGlobalState(
     useCallback(store => store.currentDataCenterWorkspace, [])
   );
@@ -88,7 +92,17 @@ export const WorkSpaceSliderBar = () => {
   };
   return (
     <>
-      <StyledSliderBar show={show}>
+      <StyledSliderBar show={show} width={sideBarWidth}>
+        {show && (
+          <StyledDragLine
+            initialPosition={{ x: MIN_WIDTH, y: 0 }}
+            rightOffset={MAX_WIDTH - MIN_WIDTH}
+            leftOffset={0}
+            onDrag={({ movementX }) => {
+              setSideBarWidth(sideBarWidth + movementX);
+            }}
+          />
+        )}
         <Tooltip
           content={show ? t('Collapse sidebar') : t('Expand sidebar')}
           placement="right"

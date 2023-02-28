@@ -13,6 +13,7 @@ export enum MessageCode {
   getBlobFailed,
   leaveWorkspaceFailed,
   downloadWorkspaceFailed,
+  refreshTokenError,
 }
 
 export const messages = {
@@ -57,5 +58,8 @@ export const messages = {
   },
   [MessageCode.downloadWorkspaceFailed]: {
     message: 'Download workspace failed',
+  },
+  [MessageCode.refreshTokenError]: {
+    message: 'Refresh token failed',
   },
 };

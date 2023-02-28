@@ -3,21 +3,13 @@ import { KyInstance } from 'ky/distribution/types/ky';
 import { MessageCenter } from '../../../message';
 import { createBlocksuiteWorkspace as _createBlocksuiteWorkspace } from '../../../utils';
 import { GoogleAuth } from './google';
+import RequestError from './request-error';
 import type { User } from './user';
-
 const messageCenter = MessageCenter.getInstance();
 
 const sendMessage = messageCenter.getMessageSender('affine');
 
 const { messageCode } = MessageCenter;
-
-class RequestError extends Error {
-  constructor(message: string, cause: unknown | null = null) {
-    super(message);
-    this.name = 'RequestError';
-    this.cause = cause;
-  }
-}
 
 export interface GetWorkspaceDetailParams {
   id: string;
