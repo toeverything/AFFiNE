@@ -50,7 +50,7 @@ export const InviteMemberModal = ({
   onInviteSuccess,
 }: LoginModalProps) => {
   const [email, setEmail] = useState<string>('');
-  const [showMember, setShowMember] = useState<boolean>(true);
+  const [showMember, setShowMember] = useState<boolean>(false);
   const [showTip, setShowTip] = useState<boolean>(false);
   const [userData, setUserData] = useState<User | null>(null);
   const { inviteMember, getUserByEmail } = useMembers();
@@ -90,7 +90,7 @@ export const InviteMemberModal = ({
                 value={email}
                 onChange={inputChange}
                 onBlur={() => {
-                  // setShowMember(false);
+                  setShowMember(false);
                 }}
                 placeholder={t('Invite placeholder')}
               ></Input>
