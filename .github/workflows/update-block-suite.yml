@@ -63,7 +63,7 @@ jobs:
           github_token: '${{ secrets.GITHUB_TOKEN }}'
           message: 'chore: bump blocksuite from ${{ steps.old-version.outputs.old-version }} to ${{ steps.new-version.outputs.new-version }}'
           force: true
-          branch: bot/bump-core
+          branch: refs/heads/bot/bump-core
 
       # https://github.com/devops-infra/action-pull-request
       - name: Create pull request
