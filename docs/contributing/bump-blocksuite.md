@@ -1,7 +1,7 @@
 # Bump Blocksuite
 
 ```shell
-./scripts/upgrade-blocksuite.sh
+pnpm update:core
 ```
 
 ## Understand the version number
