@@ -90,7 +90,7 @@ export const InviteMemberModal = ({
                 value={email}
                 onChange={inputChange}
                 onBlur={() => {
-                  // setShowMember(false);
+                  setShowMember(false);
                 }}
                 placeholder={t('Invite placeholder')}
               ></Input>
