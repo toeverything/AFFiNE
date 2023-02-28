@@ -1,6 +1,10 @@
 name: Update block-suite version
 
 on:
+  # TEST
+  pull_request:
+    branches: [master]
+  # TEST END
   schedule:
     # At 02:00 UTC
     - cron: '0 2 * * *'
