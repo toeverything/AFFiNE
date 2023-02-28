@@ -61,20 +61,11 @@ jobs:
           force: true
           branch: refs/heads/bot/bump-core
 
-      # https://github.com/devops-infra/action-pull-request
-      - name: Create pull request
-        uses: devops-infra/action-pull-request@v0.5.3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          title: 'Bump blocksuite from ${{ steps.old-version.outputs.old-version }} to ${{ steps.new-version.outputs.new-version }}'
-          body: 'Please carefully check the editor functionality before merging the PR.'
-          source_branch: bot/bump-core
-
       # see https://github.com/repo-sync/pull-request
       - name: Create Pull Request
         uses: repo-sync/pull-request@v2
         with:
           source_branch: bot/bump-core
-          pr_title: 'Bump blocksuite from `${{ steps.new-version.outputs.new-version }}`'
+          pr_title: 'Bump blocksuite to ${{ steps.new-version.outputs.new-version }}'
           pr_body: 'Please carefully check the editor functionality before merging the PR.'
           github_token: ${{ secrets.GITHUB_TOKEN }}
