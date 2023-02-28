@@ -194,3 +194,9 @@ input[type='number']::-webkit-outer-spin-button {
 ::-webkit-scrollbar {
   display: none; /* Chrome Safari */
 }
+
+.editor-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}

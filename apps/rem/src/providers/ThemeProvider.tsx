@@ -27,6 +27,9 @@ import React, {
   useMemo,
 } from 'react';
 
+import { useCurrentPageId } from '../hooks/current/use-current-page-id';
+import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
+import { usePageMeta } from '../hooks/use-page-meta';
 import { useSystemTheme } from '../hooks/use-system-theme';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
@@ -60,11 +63,15 @@ export const ThemeProvider = ({
   const [theme, setTheme] = useAtom(themeAtom);
   const systemTheme = useSystemTheme();
   // fixme: use mode detect
-  const editorMode = 'page';
+  const [currentWorkspace] = useCurrentWorkspace();
+  const [currentPage] = useCurrentPageId();
+  const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
+  const editorMode =
+    pageMeta.find(page => page.id === currentPage)?.mode ?? 'page';
   const themeStyle = useMemo(
     () =>
       theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode),
-    [theme]
+    [editorMode, theme]
   );
   const changeMode = useCallback(
     (themeMode: Theme) => {
