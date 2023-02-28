@@ -1,10 +1,11 @@
 import type { EditorContainer } from '@blocksuite/editor';
-import { Page } from '@blocksuite/store';
+import { assertExists, Page } from '@blocksuite/store';
 import dynamic from 'next/dynamic';
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { useBlockSuiteWorkspacePageTitle } from '../hooks/use-blocksuite-workspace-page-title';
+import { usePageMeta } from '../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../shared';
 import { PageNotFoundError } from './affine/affine-error-eoundary';
 import { BlockSuiteEditorHeader } from './blocksuite/header';
@@ -35,6 +36,10 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
     throw new PageNotFoundError(blockSuiteWorkspace, pageId);
   }
   const title = useBlockSuiteWorkspacePageTitle(blockSuiteWorkspace, pageId);
+  const meta = usePageMeta(blockSuiteWorkspace).find(
+    meta => meta.id === pageId
+  );
+  assertExists(meta);
   return (
     <>
       <Helmet defaultTitle={title}>
@@ -44,7 +49,12 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         blockSuiteWorkspace={blockSuiteWorkspace}
         pageId={pageId}
       />
-      <Editor page={page} onInit={onInit} onLoad={onLoad} />
+      <Editor
+        mode={meta.mode ?? 'page'}
+        page={page}
+        onInit={onInit}
+        onLoad={onLoad}
+      />
     </>
   );
 };

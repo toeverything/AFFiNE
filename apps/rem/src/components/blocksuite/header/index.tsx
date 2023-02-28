@@ -1,10 +1,13 @@
 import { Content } from '@affine/component';
+import { assertExists } from '@blocksuite/store';
 import React, { useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { PageNotFoundError } from '../../affine/affine-error-eoundary';
+import { EditorModeSwitch } from './editor-mode-switch';
 import Header from './header';
+import { QuickSearchButton } from './quick-search-button';
 import {
   StyledSearchArrowWrapper,
   StyledSwitchWrapper,
@@ -27,10 +30,9 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   }
   const pageMeta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
-  ) ?? {
-    trash: false,
-  };
-  const [title, setTitle] = useState('');
+  );
+  assertExists(pageMeta);
+  const title = pageMeta.title;
   const [isHover, setIsHover] = useState(false);
   const { trash: isTrash } = pageMeta;
   return (
@@ -57,16 +59,18 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
         >
           <StyledTitleWrapper>
             <StyledSwitchWrapper>
-              {/*<EditorModeSwitch*/}
-              {/*  isHover={isHover}*/}
-              {/*  style={{*/}
-              {/*    marginRight: '12px',*/}
-              {/*  }}*/}
-              {/*/>*/}
+              <EditorModeSwitch
+                blockSuiteWorkspace={blockSuiteWorkspace}
+                pageId={pageId}
+                isHover={isHover}
+                style={{
+                  marginRight: '12px',
+                }}
+              />
             </StyledSwitchWrapper>
             <Content ellipsis={true}>{title}</Content>
             <StyledSearchArrowWrapper>
-              {/*<QuickSearchButton />*/}
+              <QuickSearchButton onClick={() => {}} />
             </StyledSearchArrowWrapper>
           </StyledTitleWrapper>
         </StyledTitle>

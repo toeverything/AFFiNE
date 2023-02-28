@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 
 export type EditorProps = {
   page: Page;
+  mode: 'page' | 'edgeless';
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
 };
@@ -15,6 +16,11 @@ export const BlockSuiteEditor = (props: EditorProps) => {
     editorRef.current = new EditorContainer();
   }
   const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.mode = props.mode;
+    }
+  }, [props.mode]);
 
   useEffect(() => {
     const editor = editorRef.current;
