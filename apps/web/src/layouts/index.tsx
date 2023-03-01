@@ -1,5 +1,5 @@
 import { setUpLanguage, useTranslation } from '@affine/i18n';
-import { assertExists, uuidv4 } from '@blocksuite/store';
+import { assertExists, nanoid } from '@blocksuite/store';
 import { useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
@@ -84,7 +84,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
     [currentWorkspace, isPublicWorkspace, router]
   );
   const handleCreatePage = useCallback(async () => {
-    return helper.createPage(uuidv4());
+    return helper.createPage(nanoid());
   }, [helper]);
   const handleOpenWorkspaceListModal = useCallback(() => {
     setOpenWorkspacesModal(true);
