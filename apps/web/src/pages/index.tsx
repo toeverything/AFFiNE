@@ -24,7 +24,8 @@ const IndexPage: NextPage = () => {
     }
     const targetWorkspace = workspaces.find(w => w.id === workspaceId);
     if (workspaceId && targetWorkspace) {
-      const pageId = targetWorkspace.blockSuiteWorkspace.meta.pageMetas[0].id;
+      const pageId =
+        targetWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
       if (pageId) {
         router.replace({
           pathname: '/workspace/[workspaceId]/[pageId]',
