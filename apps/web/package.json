@@ -2,7 +2,7 @@
   "name": "@affine/app",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 8000",
+    "dev": "next dev -p 8080",
     "build": "next build",
     "export": "next export",
     "start": "next start",
