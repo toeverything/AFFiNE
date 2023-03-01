@@ -6,7 +6,8 @@ import { test } from './libs/playwright';
 loadPage();
 
 test.describe('Change Theme', () => {
-  test('default white', async ({ page }) => {
+  // default could be anything according to the system
+  test.skip('default white', async ({ page }) => {
     await page.waitForSelector('html');
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>

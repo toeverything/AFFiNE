@@ -34,7 +34,7 @@ const PopoverContent = () => {
     meta => meta.id === pageId
   );
   assertExists(pageMeta);
-  const { mode, favorite, trash } = pageMeta;
+  const { mode = 'page', favorite, trash } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   //
 
@@ -111,7 +111,7 @@ const PopoverContent = () => {
 export const EditorOptionMenu = () => {
   return (
     <Menu content={<PopoverContent />} placement="bottom-end" trigger="click">
-      <IconButton>
+      <IconButton data-testid="editor-option-menu">
         <MoreVerticalIcon />
       </IconButton>
     </Menu>

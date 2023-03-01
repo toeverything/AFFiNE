@@ -98,10 +98,12 @@ export const WorkspaceAvatar: React.FC<WorkspaceUnitAvatarProps> = ({
   size = 20,
   workspace,
   style,
+  ...props
 }) => {
   if (workspace && 'blockSuiteWorkspace' in workspace) {
     return (
       <BlockSuiteWorkspaceAvatar
+        {...props}
         size={size}
         workspace={workspace.blockSuiteWorkspace}
         style={style}

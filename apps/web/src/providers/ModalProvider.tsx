@@ -77,6 +77,7 @@ export function Modals() {
           name => {
             const id = createRemLocalWorkspace(name);
             setOpenCreateWorkspaceModal(false);
+            setOpenWorkspacesModal(false);
             router.push({
               pathname: '/workspace/[workspaceId]/all',
               query: {

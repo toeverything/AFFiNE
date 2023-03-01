@@ -22,7 +22,7 @@ import { refreshDataCenter, useSyncWorkspaces } from '../hooks/use-workspaces';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
-const sideBarOpenAtom = atomWithStorage('sideBarOpen', false);
+const sideBarOpenAtom = atomWithStorage('sideBarOpen', true);
 
 refreshDataCenter();
 

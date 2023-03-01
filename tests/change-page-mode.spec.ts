@@ -40,7 +40,7 @@ test.describe('Change page mode(Paper or Edgeless)', () => {
   test('Convert to edgeless by editor header items', async ({ page }) => {
     await clickPageMoreActions(page);
     const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
-    await menusEdgelessItem.click();
+    await menusEdgelessItem.click({ delay: 100 });
 
     const edgeless = page.locator('affine-edgeless-page');
     expect(await edgeless.isVisible()).toBe(true);

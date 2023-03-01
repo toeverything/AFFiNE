@@ -37,12 +37,12 @@ test.describe('Local first workspace list', () => {
     await page.waitForTimeout(1000);
     const pageList = page.locator('[data-testid=page-list-item]');
     const result = await pageList.count();
-    expect(result).toBe(1);
+    expect(result).toBe(0);
     await page.reload();
     await page.waitForTimeout(1000);
     const pageList1 = page.locator('[data-testid=page-list-item]');
     const result1 = await pageList1.count();
-    expect(result1).toBe(1);
+    expect(result1).toBe(0);
   });
 
   test('create multi workspace in the workspace list', async ({ page }) => {

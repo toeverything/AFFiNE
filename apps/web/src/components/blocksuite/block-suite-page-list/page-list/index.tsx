@@ -94,7 +94,6 @@ export const PageList: React.FC<PageListProps> = ({
   const theme = useMuiTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
   const isTrash = listType === 'trash';
-  const isFavorite = listType === 'favorite';
   const list = useMemo(
     () => pageList.filter(filter[listType ?? 'all']),
     [pageList, listType]
@@ -143,7 +142,7 @@ export const PageList: React.FC<PageListProps> = ({
                         {pageMeta.title || t('Untitled')}
                       </Content>
                     </StyledTitleLink>
-                    {isFavorite && <FavoriteTag pageMeta={pageMeta} />}
+                    {!isTrash && <FavoriteTag pageMeta={pageMeta} />}
                   </StyledTitleWrapper>
                 </TableCell>
                 {matches && (
