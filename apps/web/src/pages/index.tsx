@@ -46,7 +46,8 @@ const IndexPage: NextPage = () => {
     }
     const firstWorkspace = workspaces.at(0);
     if (firstWorkspace) {
-      const pageId = firstWorkspace.blockSuiteWorkspace.meta.pageMetas[0].id;
+      const pageId =
+        firstWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
       if (pageId) {
         router.replace({
           pathname: '/workspace/[workspaceId]/[pageId]',

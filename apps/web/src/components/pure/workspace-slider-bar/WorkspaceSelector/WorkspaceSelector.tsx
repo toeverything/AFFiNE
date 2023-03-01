@@ -13,7 +13,7 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
   currentWorkspace,
   onClick,
 }) => {
-  let name = 'Demo Workspace';
+  let name = 'Untitled Workspace';
   if (currentWorkspace) {
     if (currentWorkspace.flavour === 'affine') {
       if (currentWorkspace.firstBinarySynced) {
