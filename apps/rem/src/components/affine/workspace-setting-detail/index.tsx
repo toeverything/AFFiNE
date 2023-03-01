@@ -16,7 +16,9 @@ import {
   settingPanel,
 } from '../../../shared';
 import { CollaborationPanel } from './panel/collaboration';
+import { ExportPanel } from './panel/export';
 import { GeneralPanel } from './panel/general';
+import { PublishPanel } from './panel/publish';
 import {
   StyledIndicator,
   StyledSettingContainer,
@@ -46,11 +48,11 @@ const panelMap = {
   },
   [settingPanel.Publish]: {
     name: 'Publish',
-    ui: () => <>Publish</>,
+    ui: PublishPanel,
   },
   [settingPanel.Export]: {
     name: 'Export',
-    ui: () => <>Export</>,
+    ui: ExportPanel,
   },
 } satisfies {
   [Key in SettingPanel]: {
