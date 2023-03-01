@@ -1,6 +1,7 @@
 import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
+import { Text } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useEffect, useRef } from 'react';
 
@@ -25,6 +26,13 @@ const exampleTitle = markdown
 const exampleText = markdown.split('\n').slice(1).join('\n');
 
 const kFirstPage = 'affine-first-page';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var currentBlockSuiteWorkspace: BlockSuiteWorkspace | undefined;
+  // eslint-disable-next-line no-var
+  var currentPage: Page | undefined;
+}
 
 export const BlockSuiteEditor = (props: EditorProps) => {
   const page = props.page;
@@ -59,7 +67,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
         const title =
           localStorage.getItem(kFirstPage) === null ? exampleTitle : undefined;
         const pageBlockId = page.addBlockByFlavour('affine:page', {
-          title,
+          title: new Text(title),
         });
         page.addBlockByFlavour('affine:surface', {}, null);
         const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
@@ -72,6 +80,11 @@ export const BlockSuiteEditor = (props: EditorProps) => {
         }
         page.resetHistory();
       }
+    }
+    // todo(himself65): use build flag
+    if (process.env.NODE_ENV === 'development') {
+      globalThis.currentBlockSuiteWorkspace = props.blockSuiteWorkspace;
+      globalThis.currentPage = page;
     }
     props.onLoad?.(page, editor);
     return;
