@@ -1,117 +1,27 @@
-import { displayFlex, styled } from '@affine/component';
-import { Breadcrumbs } from '@affine/component';
-import { IconButton } from '@affine/component';
+import {
+  Breadcrumbs,
+  displayFlex,
+  IconButton,
+  styled,
+} from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { PaperIcon, SearchIcon } from '@blocksuite/icons';
-import dynamic from 'next/dynamic';
-import NextLink from 'next/link';
+import { PaperIcon } from '@blocksuite/icons';
+import { useAtomValue, useSetAtom } from 'jotai';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ReactElement, useEffect, useMemo } from 'react';
+import React, { Suspense, useEffect } from 'react';
 
-import { PageLoading } from '@/components/loading';
-import { WorkspaceUnitAvatar } from '@/components/workspace-avatar';
-import { useLoadPublicWorkspace } from '@/hooks/use-load-public-workspace';
-import { useModal } from '@/store/globalModal';
+import {
+  publicBlockSuiteAtom,
+  publicWorkspaceIdAtom,
+} from '../../../atoms/public-workspace';
+import { QueryParamError } from '../../../components/affine/affine-error-eoundary';
+import { PageDetailEditor } from '../../../components/page-detail-editor';
+import { WorkspaceAvatar } from '../../../components/pure/footer';
+import { PageLoading } from '../../../components/pure/loading';
+import { WorkspaceLayout } from '../../../layouts';
+import { NextPageWithLayout } from '../../../shared';
 
-import type { NextPageWithLayout } from '../..//_app';
-
-const DynamicBlocksuite = dynamic(() => import('@/components/editor'), {
-  ssr: false,
-});
-
-const Page: NextPageWithLayout = () => {
-  const router = useRouter();
-  const { workspaceId, pageId } = router.query as Record<string, string>;
-  const { status, workspace: workspaceUnit } =
-    useLoadPublicWorkspace(workspaceId);
-  const { triggerQuickSearchModal } = useModal();
-  const { t } = useTranslation();
-
-  const page = useMemo(() => {
-    if (workspaceUnit?.blocksuiteWorkspace) {
-      return workspaceUnit.blocksuiteWorkspace.getPage(pageId);
-    }
-    return null;
-  }, [workspaceUnit, pageId]);
-
-  const workspace = workspaceUnit?.blocksuiteWorkspace;
-  const pageTitle = page?.meta.title;
-  const workspaceName = workspace?.meta.name;
-
-  useEffect(() => {
-    const pageNotFound = workspace?.meta.pageMetas.every(p => p.id !== pageId);
-    if (workspace && pageNotFound) {
-      router.push('/404');
-    }
-  }, [workspace, router, pageId]);
-
-  useEffect(() => {
-    if (status === 'error') {
-      router.push('/404');
-    }
-  }, [router, status]);
-
-  if (status === 'loading') {
-    return <PageLoading />;
-  }
-
-  if (status === 'error') {
-    return null;
-  }
-  return (
-    <PageContainer>
-      <NavContainer>
-        <Breadcrumbs>
-          <StyledBreadcrumbs href={`/public-workspace/${workspaceId}`}>
-            <WorkspaceUnitAvatar
-              size={24}
-              name={workspaceName}
-              workspaceUnit={workspaceUnit}
-            />
-            <span>{workspaceName}</span>
-          </StyledBreadcrumbs>
-          <StyledBreadcrumbs
-            href={`/public-workspace/${workspaceId}/${pageId}`}
-          >
-            <PaperIcon fontSize={24} />
-            <span>{pageTitle ? pageTitle : t('Untitled')}</span>
-          </StyledBreadcrumbs>
-        </Breadcrumbs>
-        <SearchButton
-          onClick={() => {
-            triggerQuickSearchModal();
-          }}
-        >
-          <SearchIcon />
-        </SearchButton>
-      </NavContainer>
-
-      {workspace && page && (
-        <DynamicBlocksuite
-          page={page}
-          workspace={workspace}
-          setEditor={editor => {
-            editor.readonly = true;
-          }}
-        />
-      )}
-    </PageContainer>
-  );
-};
-
-Page.getLayout = function getLayout(page: ReactElement) {
-  return <div>{page}</div>;
-};
-
-export default Page;
-
-export const PageContainer = styled.div(({ theme }) => {
-  return {
-    height: '100vh',
-    overflowY: 'auto',
-    backgroundColor: theme.colors.pageBackground,
-  };
-});
 export const NavContainer = styled.div(({ theme }) => {
   return {
     width: '100vw',
@@ -121,7 +31,8 @@ export const NavContainer = styled.div(({ theme }) => {
     backgroundColor: theme.colors.pageBackground,
   };
 });
-export const StyledBreadcrumbs = styled(NextLink)(({ theme }) => {
+
+export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
   return {
     flex: 1,
     ...displayFlex('center', 'center'),
@@ -139,6 +50,7 @@ export const StyledBreadcrumbs = styled(NextLink)(({ theme }) => {
     },
   };
 });
+
 export const SearchButton = styled(IconButton)(({ theme }) => {
   return {
     color: theme.colors.iconColor,
@@ -147,3 +59,89 @@ export const SearchButton = styled(IconButton)(({ theme }) => {
     padding: '0 24px',
   };
 });
+
+const PublicWorkspaceDetailPageInner: React.FC<{
+  pageId: string;
+}> = ({ pageId }) => {
+  const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
+  if (!blockSuiteWorkspace) {
+    throw new Error('cannot find workspace');
+  }
+  const { t } = useTranslation();
+  const name = blockSuiteWorkspace.meta.name;
+  const pageTitle = blockSuiteWorkspace.meta.getPageMeta(pageId)?.title;
+  return (
+    <>
+      <PageDetailEditor
+        pageId={pageId}
+        blockSuiteWorkspace={blockSuiteWorkspace}
+        onLoad={(_, editor) => {
+          editor.readonly = true;
+        }}
+        header={
+          <NavContainer
+            // fixme(himself65): this is a hack to make the breadcrumbs work
+            style={{
+              position: 'absolute',
+              left: '0',
+            }}
+          >
+            <Breadcrumbs>
+              <StyledBreadcrumbs
+                href={`/public-workspace/${blockSuiteWorkspace.room}`}
+              >
+                <WorkspaceAvatar
+                  size={24}
+                  name={name}
+                  avatar={blockSuiteWorkspace.meta.avatar}
+                />
+                <span>{name}</span>
+              </StyledBreadcrumbs>
+              <StyledBreadcrumbs
+                href={`/public-workspace/${
+                  blockSuiteWorkspace.room as string
+                }/${pageId}`}
+              >
+                <PaperIcon fontSize={24} />
+                <span>{pageTitle ? pageTitle : t('Untitled')}</span>
+              </StyledBreadcrumbs>
+            </Breadcrumbs>
+          </NavContainer>
+        }
+      />
+    </>
+  );
+};
+
+export const PublicWorkspaceDetailPage: NextPageWithLayout = () => {
+  const router = useRouter();
+  const workspaceId = router.query.workspaceId;
+  const pageId = router.query.pageId;
+  const setWorkspaceId = useSetAtom(publicWorkspaceIdAtom);
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+    if (typeof workspaceId === 'string') {
+      setWorkspaceId(workspaceId);
+    }
+  }, [router.isReady, setWorkspaceId, workspaceId]);
+  const value = useAtomValue(publicWorkspaceIdAtom);
+  if (!router.isReady || !value) {
+    return <PageLoading />;
+  }
+  if (typeof workspaceId !== 'string' || typeof pageId !== 'string') {
+    throw new QueryParamError('workspaceId, pageId', workspaceId);
+  }
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <PublicWorkspaceDetailPageInner pageId={pageId} />
+    </Suspense>
+  );
+};
+
+export default PublicWorkspaceDetailPage;
+
+PublicWorkspaceDetailPage.getLayout = page => {
+  return <WorkspaceLayout>{page}</WorkspaceLayout>;
+};

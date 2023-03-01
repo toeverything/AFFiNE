@@ -1,17 +1,14 @@
-import { getGitVersion, getCommitHash } from './scripts/gitInfo.mjs';
-import fs from 'node:fs';
 import path from 'node:path';
-import { printer } from './scripts/printer.mjs';
 import debugLocal from 'next-debug-local';
+import preset from './preset.config.mjs';
+import { createRequire } from 'node:module';
+import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
 
-const dependencies = JSON.parse(fs.readFileSync('./package.json', 'utf8'))[
-  'dependencies'
-];
+const require = createRequire(import.meta.url);
+
+console.info('Runtime Preset', preset);
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
-const EDITOR_VERSION = enableDebugLocal
-  ? 'local-version'
-  : dependencies['@blocksuite/editor'];
 
 const profileTarget = {
   ac: '100.85.73.88:12001',
@@ -20,6 +17,7 @@ const profileTarget = {
   stage: '',
   pro: 'http://pathfinder.affine.pro',
   local: '127.0.0.1:3000',
+  rem: 'stage.affine.pro',
 };
 
 const getRedirectConfig = profile => {
@@ -41,23 +39,39 @@ const getRedirectConfig = profile => {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   productionBrowserSourceMaps: true,
-  reactStrictMode: true,
-  swcMinify: false,
-  publicRuntimeConfig: {
-    NODE_ENV: process.env.NODE_ENV,
-    PROJECT_NAME: process.env.npm_package_name,
-    BUILD_DATE: new Date().toISOString(),
-    CI: process.env.CI || null,
-    VERSION: getGitVersion(),
-    COMMIT_HASH: getCommitHash(),
-    EDITOR_VERSION,
+  compiler: {
+    removeConsole: {
+      exclude: ['error', 'log', 'warn', 'info'],
+    },
+    emotion: {
+      sourceMap: true,
+    },
   },
+  images: {
+    unoptimized: true,
+  },
+  experimental: {
+    swcPlugins: [
+      ['@swc-jotai/debug-label', {}],
+      // ['@swc-jotai/react-refresh', {}],
+    ],
+  },
+  reactStrictMode: true,
   transpilePackages: [
     '@affine/component',
-    '@affine/i18n',
     '@affine/datacenter',
-    '@toeverything/pathfinder-logger',
+    '@affine/i18n',
   ],
+  publicRuntimeConfig: {
+    PROJECT_NAME: process.env.npm_package_name,
+    BUILD_DATE: new Date().toISOString(),
+    gitVersion: getGitVersion(),
+    hash: getCommitHash(),
+    serverAPI:
+      profileTarget[process.env.NODE_API_SERVER || 'dev'] ?? profileTarget.dev,
+    editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
+    ...preset,
+  },
   webpack: config => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
     config.module.rules.push({
@@ -67,20 +81,14 @@ const nextConfig = {
 
     return config;
   },
-  images: {
-    unoptimized: true,
-  },
   rewrites: async () => {
     const [profile, target, desc] = getRedirectConfig(
       process.env.NODE_API_SERVER
     );
-    printer.info(`API request proxy to [${desc} Server]: ` + target);
+    console.info(`API request proxy to [${desc} Server]: ` + target);
     return profile;
   },
   basePath: process.env.NEXT_BASE_PATH,
-  experimental: {
-    forceSwcTransforms: true,
-  },
 };
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';
@@ -111,9 +119,9 @@ const withDebugLocal = debugLocal(
 
 const detectFirebaseConfig = () => {
   if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-    printer.warn('NEXT_PUBLIC_FIREBASE_API_KEY not found, please check it');
+    console.warn('NEXT_PUBLIC_FIREBASE_API_KEY not found, please check it');
   } else {
-    printer.info('NEXT_PUBLIC_FIREBASE_API_KEY found');
+    console.info('NEXT_PUBLIC_FIREBASE_API_KEY found');
   }
 };
 detectFirebaseConfig();

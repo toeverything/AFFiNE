@@ -9,9 +9,11 @@
     "dev:ac": "cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
     "dev:local": "cross-env NODE_API_SERVER=local pnpm --filter @affine/app dev",
     "build": "pnpm --filter @affine/app build",
+    "build:rem": "pnpm --filter @affine/rem build",
     "build:client": " pnpm --filter=@affine/client-app build:app",
     "build:storybook": " pnpm -r build-storybook",
     "export": "pnpm --filter @affine/app export",
+    "export:rem": "pnpm --filter @affine/rem export",
     "start": "pnpm --filter @affine/app start",
     "lint": "eslint . --ext .js,.ts,.mts,.tsx",
     "lint:fix": "eslint . --ext .js,.ts,.mts,.tsx --fix",
@@ -48,7 +50,7 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "fake-indexeddb": "4.0.1",
     "got": "^12.5.3",
-    "happy-dom": "^8.5.0",
+    "happy-dom": "^8.7.1",
     "husky": "^8.0.3",
     "lint-staged": "^13.1.2",
     "nyc": "^15.1.0",
@@ -57,7 +59,8 @@
     "react-dom": "^18.2.0",
     "typescript": "^4.9.5",
     "vite": "^4.1.2",
-    "vitest": "^0.28.5"
+    "vitest": "^0.28.5",
+    "vitest-fetch-mock": "^0.2.2"
   },
   "pnpm": {
     "patchedDependencies": {

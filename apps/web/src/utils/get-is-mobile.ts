@@ -16,5 +16,3 @@ export const getIsMobile = function () {
     navigator?.userAgent || navigator?.vendor || (window as any)?.opera
   );
 };
-
-export default getIsMobile;

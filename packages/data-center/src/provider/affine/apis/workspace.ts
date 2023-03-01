@@ -31,7 +31,7 @@ export interface Workspace {
   id: string;
   type: WorkspaceType;
   public: boolean;
-  permission_type: PermissionType;
+  permission: PermissionType;
   create_at: number;
 }
 

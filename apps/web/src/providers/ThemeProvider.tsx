@@ -1,4 +1,5 @@
 import {
+  AffineTheme,
   Theme,
   ThemeMode,
   ThemeProviderProps,
@@ -10,16 +11,27 @@ import {
   globalThemeVariables,
   ThemeProvider as ComponentThemeProvider,
 } from '@affine/component';
-import { localStorageThemeHelper, SystemThemeHelper } from '@affine/component';
-import { css, Global } from '@emotion/react';
+import { GlobalStyles } from '@mui/material';
 import {
   createTheme as MuiCreateTheme,
   ThemeProvider as MuiThemeProvider,
 } from '@mui/material/styles';
+import { useAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import type { PropsWithChildren } from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 
-import useCurrentPageMeta from '@/hooks/use-current-page-meta';
+import { useCurrentPageId } from '../hooks/current/use-current-page-id';
+import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
+import { usePageMeta } from '../hooks/use-page-meta';
+import { useSystemTheme } from '../hooks/use-system-theme';
 
 export const ThemeContext = createContext<ThemeProviderValue>({
   mode: 'light',
@@ -31,76 +43,65 @@ export const ThemeContext = createContext<ThemeProviderValue>({
 export const useTheme = () => useContext(ThemeContext);
 const muiTheme = MuiCreateTheme();
 
+const ThemeInjector = React.memo<{
+  theme: Theme;
+  themeStyle: AffineTheme;
+}>(function ThemeInjector({ theme, themeStyle }) {
+  return (
+    <GlobalStyles
+      styles={{
+        ':root': globalThemeVariables(theme, themeStyle) as any,
+      }}
+    />
+  );
+});
+
+const themeAtom = atomWithStorage<ThemeMode>('affine-theme', 'auto');
+
 export const ThemeProvider = ({
-  defaultTheme = 'light',
   children,
 }: PropsWithChildren<ThemeProviderProps>) => {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
-  const [mode, setMode] = useState<ThemeMode>('auto');
-  const { mode: editorMode = 'page' } = useCurrentPageMeta() || {};
-  const themeStyle =
-    theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode);
-  const changeMode = (themeMode: ThemeMode) => {
-    themeMode !== mode && setMode(themeMode);
-    // Remember the theme mode which user selected for next time
-    localStorageThemeHelper.set(themeMode);
-  };
+  const [theme, setTheme] = useAtom(themeAtom);
+  const systemTheme = useSystemTheme();
+  // fixme: use mode detect
+  const [currentWorkspace] = useCurrentWorkspace();
+  const [currentPage] = useCurrentPageId();
+  const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
+  const editorMode =
+    pageMeta.find(page => page.id === currentPage)?.mode ?? 'page';
+  const themeStyle = useMemo(
+    () =>
+      theme === 'light' ? getLightTheme(editorMode) : getDarkTheme(editorMode),
+    [editorMode, theme]
+  );
+  const changeMode = useCallback(
+    (themeMode: Theme) => {
+      setTheme(themeMode);
+    },
+    [setTheme]
+  );
 
-  // ===================== A temporary solution, just use system theme and not remember the user selected ====================
+  const onceRef = useRef(false);
+
   useEffect(() => {
-    const systemThemeHelper = new SystemThemeHelper();
-    const systemTheme = systemThemeHelper.get();
-    setMode(systemTheme);
+    if (onceRef.current) {
+      return;
+    }
+    if (theme !== 'auto') {
+      setTheme(systemTheme);
+    }
+    onceRef.current = true;
+  }, [setTheme, systemTheme, theme]);
 
-    systemThemeHelper.onChange(() => {
-      setMode(systemThemeHelper.get());
-    });
-  }, []);
-
-  useEffect(() => {
-    setTheme(mode === 'auto' ? theme : mode);
-  }, [mode, setTheme, theme]);
-  // =====================  ====================
-
-  // useEffect(() => {
-  //   setMode(localStorageThemeHelper.get() || 'auto');
-  // }, []);
-  //
-  // useEffect(() => {
-  //   const systemThemeHelper = new SystemThemeHelper();
-  //   const selectedThemeMode = localStorageThemeHelper.get();
-  //
-  //   const themeMode = selectedThemeMode || mode;
-  //   if (themeMode === 'auto') {
-  //     setTheme(systemThemeHelper.get());
-  //   } else {
-  //     setTheme(themeMode);
-  //   }
-  //
-  //   // When system theme changed, change the theme mode
-  //   systemThemeHelper.onChange(() => {
-  //     // TODO: There may be should be provided a way to let user choose whether to
-  //     if (mode === 'auto') {
-  //       setTheme(systemThemeHelper.get());
-  //     }
-  //   });
-  //
-  //   return () => {
-  //     systemThemeHelper.dispose();
-  //   };
-  // }, [mode]);
+  const realTheme: ThemeMode = theme === 'auto' ? systemTheme : theme;
 
   return (
     // Use MuiThemeProvider is just because some Transitions in Mui components need it
     <MuiThemeProvider theme={muiTheme}>
-      <ThemeContext.Provider value={{ mode, changeMode, theme: themeStyle }}>
-        <Global
-          styles={css`
-            :root {
-              ${globalThemeVariables(mode, themeStyle) as any}
-            }
-          `}
-        />
+      <ThemeContext.Provider
+        value={{ mode: realTheme, changeMode, theme: themeStyle }}
+      >
+        <ThemeInjector theme={realTheme} themeStyle={themeStyle} />
         <ComponentThemeProvider theme={themeStyle}>
           {children}
         </ComponentThemeProvider>
@@ -108,5 +109,3 @@ export const ThemeProvider = ({
     </MuiThemeProvider>
   );
 };
-
-export default ThemeProvider;

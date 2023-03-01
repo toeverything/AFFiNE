@@ -27,8 +27,9 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "react": "^18.2.0",
     "i18next": "^22.4.10",
+    "next-i18next": "^13.1.5",
+    "react": "^18.2.0",
     "react-i18next": "^12.1.5"
   },
   "devDependencies": {
@@ -36,6 +37,7 @@
     "@types/prettier": "^2.7.2",
     "prettier": "^2.8.4",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "next": "^13.2.2"
   }
 }

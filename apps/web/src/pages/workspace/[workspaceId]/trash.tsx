@@ -1,37 +1,69 @@
 import { useTranslation } from '@affine/i18n';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
-import Head from 'next/head';
-import { ReactElement, useCallback } from 'react';
+import { assertExists } from '@blocksuite/store';
+import { useRouter } from 'next/router';
+import React, { useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 
-import { PageListHeader } from '@/components/header';
-import { PageList } from '@/components/page-list';
-import WorkspaceLayout from '@/components/workspace-layout';
-import { useGlobalState } from '@/store/app';
+import PageList from '../../../components/blocksuite/block-suite-page-list/page-list';
+import { PageLoading } from '../../../components/pure/loading';
+import { WorkspaceTitle } from '../../../components/pure/workspace-title';
+import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
+import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
+import { WorkspaceLayout } from '../../../layouts';
+import { NextPageWithLayout } from '../../../shared';
 
-export const Trash = () => {
-  const pageList = useGlobalState(
-    useCallback(store => store.dataCenterPageList, [])
-  );
+const TrashPage: NextPageWithLayout = () => {
+  const router = useRouter();
+  const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
+  useLoadWorkspace(currentWorkspace);
+  useSyncRouterWithCurrentWorkspace(router);
+  const onClickPage = useCallback(
+    (pageId: string, newTab?: boolean) => {
+      assertExists(currentWorkspace);
+      if (newTab) {
+        window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
+      } else {
+        router.push({
+          pathname: '/workspace/[workspaceId]/[pageId]',
+          query: {
+            workspaceId: currentWorkspace.id,
+            pageId,
+          },
+        });
+      }
+    },
+    [currentWorkspace, router]
+  );
+  if (!router.isReady) {
+    return <PageLoading />;
+  } else if (currentWorkspace === null) {
+    return <PageLoading />;
+  }
+  // todo(himself65): refactor to plugin
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
+  assertExists(blockSuiteWorkspace);
   return (
     <>
-      <Head>
+      <Helmet>
         <title>{t('Trash')} - AFFiNE</title>
-      </Head>
-      <PageListHeader icon={<DeleteTemporarilyIcon />}>
+      </Helmet>
+      <WorkspaceTitle icon={<DeleteTemporarilyIcon />}>
         {t('Trash')}
-      </PageListHeader>
+      </WorkspaceTitle>
       <PageList
-        pageList={pageList.filter(p => p.trash)}
-        isTrash={true}
+        blockSuiteWorkspace={blockSuiteWorkspace}
+        onClickPage={onClickPage}
         listType="trash"
       />
     </>
   );
 };
 
-Trash.getLayout = function getLayout(page: ReactElement) {
+export default TrashPage;
+
+TrashPage.getLayout = page => {
   return <WorkspaceLayout>{page}</WorkspaceLayout>;
 };
-
-export default Trash;

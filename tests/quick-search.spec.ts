@@ -34,7 +34,7 @@ test.describe('Open quick search', () => {
   test('Click slider bar button', async ({ page }) => {
     await newPage(page);
     const quickSearchButton = page.locator(
-      '[data-testid=sliderBar-quickSearchButton]'
+      '[data-testid=slider-bar-quick-search-button]'
     );
     await quickSearchButton.click();
     const quickSearch = page.locator('[data-testid=quickSearch]');
@@ -44,7 +44,7 @@ test.describe('Open quick search', () => {
   test('Click arrowDown icon after title', async ({ page }) => {
     await newPage(page);
     const quickSearchButton = page.locator(
-      '[data-testid=header-quickSearchButton]'
+      '[data-testid=slider-bar-quick-search-button]'
     );
     await quickSearchButton.click();
     const quickSearch = page.locator('[data-testid=quickSearch]');
@@ -63,7 +63,7 @@ test.describe('Add new page in quick search', () => {
   test('Create a new page without keyword', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
-    const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
+    const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
     await addNewPage.click();
     await page.waitForTimeout(300);
     await assertTitle(page, '');
@@ -73,7 +73,7 @@ test.describe('Add new page in quick search', () => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
-    const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
+    const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
     await addNewPage.click();
     await page.waitForTimeout(300);
     await assertTitle(page, 'test123456');
@@ -92,13 +92,14 @@ test.describe('Search and select', () => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
-    const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
+    const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
     await addNewPage.click();
     await page.waitForTimeout(300);
     await assertTitle(page, 'test123456');
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
-    await assertResultList(page, ['test123456']);
+    await page.waitForTimeout(50);
+    await assertResultList(page, ["New 'test123456' page"]);
     await page.keyboard.press('Enter');
     await page.waitForTimeout(300);
     await assertTitle(page, 'test123456');
@@ -144,7 +145,7 @@ test.describe('Focus event for quick search', () => {
   test('Focus title after creating a new page', async ({ page }) => {
     await newPage(page);
     await openQuickSearchByShortcut(page);
-    const addNewPage = page.locator('[data-testid=quickSearch-addNewPage]');
+    const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
     await addNewPage.click();
     await titleIsFocused(page);
   });

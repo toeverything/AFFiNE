@@ -1,1 +1,0 @@
-export { WorkspaceDelete } from './Delete';

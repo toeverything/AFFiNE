@@ -1,0 +1,17 @@
+// Vitest Snapshot v1
+
+exports[`usePageMetas > basic 1`] = `
+<DocumentFragment>
+  <div>
+    <div>
+      page0
+    </div>
+    <div>
+      page1
+    </div>
+    <div>
+      page2
+    </div>
+  </div>
+</DocumentFragment>
+`;

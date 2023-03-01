@@ -1,8 +1,22 @@
+import path from 'node:path';
+
+import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      'next/router': 'next-router-mock',
+      'next/config': path.resolve('./scripts/vitest/next-config-mock.ts'),
+    },
+  },
   test: {
-    include: ['packages/**/*.spec.ts'],
+    include: [
+      'packages/**/*.spec.ts',
+      'apps/rem/**/*.spec.ts',
+      'apps/rem/**/*.spec.tsx',
+    ],
     testTimeout: 5000,
     coverage: {
       provider: 'istanbul', // or 'c8'

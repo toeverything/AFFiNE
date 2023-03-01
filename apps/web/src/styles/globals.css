@@ -1,0 +1,218 @@
+* {
+  -webkit-overflow-scrolling: touch;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+  box-sizing: border-box;
+  /*transition: all 0.1s;*/
+}
+html,
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+div,
+dl,
+dt,
+dd,
+ul,
+ol,
+li,
+p,
+blockquote,
+pre,
+hr,
+figure,
+table,
+caption,
+th,
+td,
+form,
+fieldset,
+legend,
+input,
+button,
+textarea,
+menu {
+  margin: 0;
+  padding: 0;
+}
+header,
+footer,
+section,
+article,
+aside,
+nav,
+hgroup,
+address,
+figure,
+figcaption,
+menu,
+details {
+  display: block;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+caption,
+th {
+  text-align: left;
+  font-weight: normal;
+}
+html,
+body,
+fieldset,
+img,
+iframe,
+abbr {
+  border: 0;
+}
+i,
+cite,
+em,
+var,
+address,
+dfn {
+  font-style: normal;
+}
+[hidefocus],
+summary {
+  outline: 0;
+}
+li {
+  list-style: none;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+small {
+  font-size: 100%;
+}
+sup,
+sub {
+  font-size: 83%;
+}
+pre,
+code,
+kbd,
+samp {
+  font-family: inherit;
+}
+q:before,
+q:after {
+  content: none;
+}
+textarea {
+  overflow: auto;
+  resize: none;
+}
+label,
+summary {
+  cursor: default;
+}
+a,
+button {
+  cursor: pointer;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+strong,
+b {
+  font-weight: bold;
+}
+del,
+ins,
+u,
+s,
+a,
+a:hover {
+  text-decoration: none;
+}
+body,
+textarea,
+input,
+button,
+select,
+keygen,
+legend {
+  background-color: unset;
+  outline: 0;
+  border: 0;
+  font-size: var(--affine-font-base);
+  line-height: var(--affine-line-height);
+  color: var(--affine-text-color);
+  font-family: var(--affine-font-family);
+}
+body {
+  background: #fff;
+  overflow: hidden;
+}
+a,
+a:hover {
+  color: var(--affine-link-color);
+}
+a:visited {
+  color: var(--affine-link-visited-color);
+}
+
+input {
+  border: none;
+  -moz-appearance: none;
+  -webkit-appearance: none; /*Solve the rounded corners of buttons on ios*/
+  border-radius: 0; /*Solve the problem of rounded corners of the input box on ios*/
+  outline: medium; /*Remove the default yellow border on mouse click*/
+  background-color: transparent;
+}
+
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+::-webkit-scrollbar {
+  display: none; /* Chrome Safari */
+}
+
+.editor-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.affine-default-page-block-title-container {
+  margin-top: 78px;
+  margin-bottom: 40px;
+}
+
+.affine-default-page-block-container {
+  max-width: 686px;
+}
+
+affine-block-hub {
+  position: unset !important;
+}
+.block-hub-menu-container {
+  position: unset !important;
+}
