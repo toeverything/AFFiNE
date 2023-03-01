@@ -32,6 +32,7 @@
     "react-helmet-async": "^1.3.0",
     "swr": "^2.0.4",
     "y-indexeddb": "^9.0.9",
+    "y-protocols": "^1.0.5",
     "yjs": "^13.5.47",
     "zod": "^3.20.6"
   },
