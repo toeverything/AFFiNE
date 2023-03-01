@@ -91,6 +91,10 @@ export type BaseProvider = {
   cleanup: () => void;
 };
 
+export interface BroadCastChannelProvider extends BaseProvider {
+  flavour: 'broadcast-channel';
+}
+
 export interface LocalIndexedDBProvider extends BaseProvider {
   flavour: 'local-indexeddb';
 }
@@ -99,7 +103,10 @@ export interface AffineWebSocketProvider extends BaseProvider {
   flavour: 'affine-websocket';
 }
 
-export type Provider = LocalIndexedDBProvider | AffineWebSocketProvider;
+export type Provider =
+  | LocalIndexedDBProvider
+  | AffineWebSocketProvider
+  | BroadCastChannelProvider;
 
 export type AffineRemoteWorkspace =
   | AffineRemoteSyncedWorkspace

@@ -1,5 +1,5 @@
 import { Workspace } from '@affine/datacenter';
-import { uuidv4 } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import useSWR from 'swr';
 import { IndexeddbPersistence } from 'y-indexeddb';
@@ -37,7 +37,7 @@ declare global {
 globalThis.dataCenter = dataCenter;
 
 function createRemLocalWorkspace(name: string) {
-  const id = uuidv4();
+  const id = nanoid();
   const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(id);
   blockSuiteWorkspace.meta.setName(name);
   const workspace: LocalWorkspace = {
