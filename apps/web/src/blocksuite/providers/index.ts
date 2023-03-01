@@ -8,8 +8,9 @@ import {
   LocalIndexedDBProvider,
 } from '../../shared';
 import { apis } from '../../shared/apis';
+import { createBroadCastChannelProvider } from './broad-cast-channel';
 
-export const createWebSocketProvider = (
+const createWebSocketProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): AffineWebSocketProvider => {
   let webSocketProvider: WebsocketProvider | null = null;
@@ -31,6 +32,8 @@ export const createWebSocketProvider = (
           params: { token: apis.auth.refresh },
           // @ts-expect-error ignore the type
           awareness: blockSuiteWorkspace.awarenessStore.awareness,
+          // we maintain broadcast channel by ourselves
+          disableBc: true,
         }
       );
       console.log('connect', webSocketProvider.roomname);
@@ -44,7 +47,7 @@ export const createWebSocketProvider = (
   };
 };
 
-export const createIndexedDBProvider = (
+const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBProvider => {
   let indexdbProvider: IndexeddbPersistence | null = null;
@@ -68,4 +71,10 @@ export const createIndexedDBProvider = (
       indexdbProvider = null;
     },
   };
+};
+
+export {
+  createBroadCastChannelProvider,
+  createIndexedDBProvider,
+  createWebSocketProvider,
 };

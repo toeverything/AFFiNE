@@ -106,18 +106,12 @@ We would also like to give thanks to open-source projects that make AFFiNE possi
 - [BlockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
 - [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
 - [Yjs](https://github.com/yjs/yjs) & [Yrs](https://github.com/y-crdt/y-crdt) - Fundamental support of CRDTs for our implementation on state management and data sync.
+- [Next.js](https://github.com/vercel/next.js) - The React Framework.
 - [React](https://github.com/facebook/react) - View layer support and web GUI framework.
 - [Rust](https://github.com/rust-lang/rust) - High performance language that extends the ability and availability of our real-time backend, OctoBase.
-- [Fossil](https://www2.fossil-scm.org/home/doc/trunk/www/index.wiki) - Source code management tool made with CRDTs which inspired our design on block data structure.
-- [Zustand](https://github.com/pmndrs/zustand) - Minimal state management tool for frontend.
-- [Tldraw](https://github.com/tldraw/tldraw) - Excellent drawing board.
+- [Jotai](https://github.com/pmndrs/jotai) - Primitive and flexible state management for React.
 - [MUI](https://github.com/mui/material-ui) - Our most used graphic UI component library.
 - Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
-
-We use the following open source projects to help us build a better development experience:
-
-- [nx](https://github.com/nrwl/nx) -- Awesome monorepo manager & build system
-- [tolgee](https://github.com/tolgee/tolgee-platform) -- Elegant i18n collaborative editing platform
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 

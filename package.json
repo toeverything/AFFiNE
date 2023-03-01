@@ -9,7 +9,6 @@
     "dev:ac": "cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
     "dev:local": "cross-env NODE_API_SERVER=local pnpm --filter @affine/app dev",
     "build": "pnpm --filter @affine/app build",
-    "build:rem": "pnpm --filter @affine/rem build",
     "build:client": " pnpm --filter=@affine/client-app build:app",
     "build:storybook": " pnpm -r build-storybook",
     "export": "pnpm --filter @affine/app export",
@@ -64,8 +63,7 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch",
-      "next@13.1.6": "patches/next@13.1.0.patch"
+      "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch"
     }
   }
 }

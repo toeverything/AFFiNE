@@ -8,6 +8,7 @@ export const publicRuntimeConfigSchema = z.object({
   serverAPI: z.string(),
   editorVersion: z.string(),
   enableIndexedDBProvider: z.boolean(),
+  enableBroadCastChannelProvider: z.boolean(),
   prefetchWorkspace: z.boolean(),
 });
 
