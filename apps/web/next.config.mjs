@@ -2,6 +2,7 @@ import path from 'node:path';
 import debugLocal from 'next-debug-local';
 import preset from './preset.config.mjs';
 import { createRequire } from 'node:module';
+import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -61,6 +62,10 @@ const nextConfig = {
     '@affine/i18n',
   ],
   publicRuntimeConfig: {
+    PROJECT_NAME: process.env.npm_package_name,
+    BUILD_DATE: new Date().toISOString(),
+    gitVersion: getGitVersion(),
+    hash: getCommitHash(),
     serverAPI:
       profileTarget[process.env.NODE_API_SERVER || 'dev'] ?? profileTarget.dev,
     editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
