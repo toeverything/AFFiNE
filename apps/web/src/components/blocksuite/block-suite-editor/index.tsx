@@ -1,3 +1,4 @@
+import { config } from '@affine/env';
 import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -5,7 +6,6 @@ import { assertExists } from '@blocksuite/store';
 import { useEffect, useRef } from 'react';
 
 import { BlockSuiteWorkspace } from '../../../shared';
-import { config } from '../../../shared/env';
 
 export type EditorProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
