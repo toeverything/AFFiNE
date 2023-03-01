@@ -72,34 +72,42 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   const pageTitle = blockSuiteWorkspace.meta.getPageMeta(pageId)?.title;
   return (
     <>
-      <NavContainer>
-        <Breadcrumbs>
-          <StyledBreadcrumbs
-            href={`/public-workspace/${blockSuiteWorkspace.room}`}
-          >
-            <WorkspaceAvatar
-              size={24}
-              name={name}
-              avatar={blockSuiteWorkspace.meta.avatar}
-            />
-            <span>{name}</span>
-          </StyledBreadcrumbs>
-          <StyledBreadcrumbs
-            href={`/public-workspace/${
-              blockSuiteWorkspace.room as string
-            }/${pageId}`}
-          >
-            <PaperIcon fontSize={24} />
-            <span>{pageTitle ? pageTitle : t('Untitled')}</span>
-          </StyledBreadcrumbs>
-        </Breadcrumbs>
-      </NavContainer>
       <PageDetailEditor
         pageId={pageId}
         blockSuiteWorkspace={blockSuiteWorkspace}
         onLoad={(_, editor) => {
           editor.readonly = true;
         }}
+        header={
+          <NavContainer
+            // fixme(himself65): this is a hack to make the breadcrumbs work
+            style={{
+              position: 'absolute',
+              left: '0',
+            }}
+          >
+            <Breadcrumbs>
+              <StyledBreadcrumbs
+                href={`/public-workspace/${blockSuiteWorkspace.room}`}
+              >
+                <WorkspaceAvatar
+                  size={24}
+                  name={name}
+                  avatar={blockSuiteWorkspace.meta.avatar}
+                />
+                <span>{name}</span>
+              </StyledBreadcrumbs>
+              <StyledBreadcrumbs
+                href={`/public-workspace/${
+                  blockSuiteWorkspace.room as string
+                }/${pageId}`}
+              >
+                <PaperIcon fontSize={24} />
+                <span>{pageTitle ? pageTitle : t('Untitled')}</span>
+              </StyledBreadcrumbs>
+            </Breadcrumbs>
+          </NavContainer>
+        }
       />
     </>
   );

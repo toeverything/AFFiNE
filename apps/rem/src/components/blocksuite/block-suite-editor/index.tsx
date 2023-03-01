@@ -14,6 +14,9 @@ export const BlockSuiteEditor = (props: EditorProps) => {
   const editorRef = useRef<EditorContainer | null>(null);
   if (editorRef.current === null) {
     editorRef.current = new EditorContainer();
+    // fixme(himself65): remove `globalThis.editor`
+    // @ts-expect-error
+    globalThis.editor = editorRef.current;
   }
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {

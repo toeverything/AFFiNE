@@ -1,13 +1,7 @@
 import { CloseIcon } from '@blocksuite/icons';
-import React, {
-  PropsWithChildren,
-  ReactNode,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 
-import EditorOptionMenu from './header-right-items/EditorOptionMenu';
+import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import SyncUser from './header-right-items/SyncUser';
 import ThemeModeSwitch from './header-right-items/theme-mode-switch';
 import TrashButtonGroup from './header-right-items/TrashButtonGroup';
@@ -43,17 +37,21 @@ type HeaderRightItemNames =
   | 'themeModeSwitch'
   | 'syncUser';
 
-const HeaderRightItems: Record<HeaderRightItemNames, ReactNode> = {
-  editorOptionMenu: <EditorOptionMenu key="editorOptionMenu" />,
-  trashButtonGroup: <TrashButtonGroup key="trashButtonGroup" />,
-  themeModeSwitch: <ThemeModeSwitch key="themeModeSwitch" />,
-  syncUser: <SyncUser key="syncUser" />,
+const HeaderRightItems: Record<HeaderRightItemNames, React.FC> = {
+  editorOptionMenu: EditorOptionMenu,
+  trashButtonGroup: TrashButtonGroup,
+  themeModeSwitch: ThemeModeSwitch,
+  syncUser: SyncUser,
 };
 
-export const Header = ({
+export type HeaderProps = PropsWithChildren<{
+  rightItems?: HeaderRightItemNames[];
+}>;
+
+export const Header: React.FC<HeaderProps> = ({
   rightItems = ['syncUser', 'themeModeSwitch'],
   children,
-}: PropsWithChildren<{ rightItems?: HeaderRightItemNames[] }>) => {
+}) => {
   const [showWarning, setShowWarning] = useState(false);
   useEffect(() => {
     setShowWarning(shouldShowWarning());
@@ -76,7 +74,8 @@ export const Header = ({
           {useMemo(
             () =>
               rightItems.map(itemName => {
-                return HeaderRightItems[itemName];
+                const Item = HeaderRightItems[itemName];
+                return <Item key={itemName} />;
               }),
             [rightItems]
           )}

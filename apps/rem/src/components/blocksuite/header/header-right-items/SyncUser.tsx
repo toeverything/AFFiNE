@@ -1,7 +1,20 @@
-import { displayFlex, styled, Tooltip } from '@affine/component';
-import { WorkspaceUnit } from '@affine/datacenter';
+import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
+import { assertEquals, assertExists } from '@blocksuite/store';
+import { useRouter } from 'next/router';
+import React, { useEffect, useState } from 'react';
+
+import { lockMutex } from '../../../../atoms';
+import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
+import { transformWorkspace } from '../../../../plugins';
+import {
+  AffineOfficialWorkspace,
+  LocalWorkspace,
+  RemWorkspaceFlavour,
+} from '../../../../shared';
+import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
+import { LocalWorkspaceIcon } from '../../../pure/icons';
 
 const NoNetWorkIcon = () => {
   return (
@@ -30,73 +43,113 @@ const IconWrapper = styled.div(() => {
   };
 });
 
-const getStatus = (workspace: WorkspaceUnit | null) => {
+const getStatus = (workspace: AffineOfficialWorkspace) => {
   if (!navigator.onLine) {
     return 'offline';
   }
-  if (workspace?.provider === 'local') {
+  if (workspace.flavour === 'local') {
     return 'local';
   }
   return 'cloud';
 };
-export const SyncUser = () => {
-  // const currentWorkspace = useGlobalState(
-  //   useCallback(store => store.currentDataCenterWorkspace, [])
-  // );
-  // const { triggerEnableWorkspaceModal } = useModal();
 
-  // const [status, setStatus] = useState<'offline' | 'local' | 'cloud'>(
-  //   getStatus(currentWorkspace)
-  // );
-  //
-  // useEffect(() => {
-  //   const online = () => {
-  //     setStatus(getStatus(currentWorkspace));
-  //   };
-  //
-  //   const offline = () => {
-  //     setStatus('offline');
-  //   };
-  //   window.addEventListener('online', online);
-  //   window.addEventListener('offline', offline);
-  //   return () => {
-  //     window.removeEventListener('online', online);
-  //     window.removeEventListener('offline', offline);
-  //   };
-  // }, [currentWorkspace]);
+export const SyncUser = () => {
+  //#region fixme(himself65): remove these hooks ASAP
+  const [workspace] = useCurrentWorkspace();
+  assertExists(workspace);
+  const router = useRouter();
+
+  const [status, setStatus] = useState<'offline' | 'local' | 'cloud'>(
+    getStatus(workspace)
+  );
+  const [prevWorkspace, setPrevWorkspace] = useState(workspace);
+  if (prevWorkspace !== workspace) {
+    setPrevWorkspace(workspace);
+    setStatus(getStatus(workspace));
+  }
+
+  useEffect(() => {
+    const online = () => {
+      setStatus(getStatus(workspace));
+    };
+
+    const offline = () => {
+      setStatus('offline');
+    };
+    window.addEventListener('online', online);
+    window.addEventListener('offline', offline);
+    return () => {
+      window.removeEventListener('online', online);
+      window.removeEventListener('offline', offline);
+    };
+  }, [workspace]);
+  //#endregion
+
+  const [open, setOpen] = useState(false);
 
   const { t } = useTranslation();
 
-  // if (status === 'offline') {
-  //   return (
-  //     <Tooltip
-  //       content={t('Please make sure you are online')}
-  //       placement="bottom-end"
-  //     >
-  //       <IconWrapper>
-  //         <NoNetWorkIcon />
-  //       </IconWrapper>
-  //     </Tooltip>
-  //   );
-  // }
-  //
-  // if (status === 'local') {
-  //   return (
-  //     <Tooltip
-  //       content={t('Saved then enable AFFiNE Cloud')}
-  //       placement="bottom-end"
-  //     >
-  //       <IconButton
-  //         onClick={() => {
-  //           triggerEnableWorkspaceModal();
-  //         }}
-  //         style={{ marginRight: '12px' }}
-  //       >
-  //         <LocalWorkspaceIcon />
-  //       </IconButton>
-  //     </Tooltip>
-  //   );
-  // }
+  if (status === 'offline') {
+    return (
+      <Tooltip
+        content={t('Please make sure you are online')}
+        placement="bottom-end"
+      >
+        <IconWrapper>
+          <NoNetWorkIcon />
+        </IconWrapper>
+      </Tooltip>
+    );
+  }
+
+  if (status === 'local') {
+    return (
+      <>
+        <Tooltip
+          content={t('Saved then enable AFFiNE Cloud')}
+          placement="bottom-end"
+        >
+          <IconButton
+            onClick={() => {
+              setOpen(true);
+            }}
+            style={{ marginRight: '12px' }}
+          >
+            <LocalWorkspaceIcon />
+          </IconButton>
+        </Tooltip>
+        <TransformWorkspaceToAffineModal
+          open={open}
+          onClose={() => {
+            setOpen(false);
+          }}
+          onConform={() => {
+            // todo(himself65): move this function out of affine component
+            lockMutex(async () => {
+              assertEquals(workspace.flavour, RemWorkspaceFlavour.LOCAL);
+              const id = await transformWorkspace(
+                RemWorkspaceFlavour.LOCAL,
+                RemWorkspaceFlavour.AFFINE,
+                workspace as LocalWorkspace
+              );
+              // fixme(himself65): refactor this
+              router
+                .replace({
+                  pathname: `/workspace/[workspaceId]/all`,
+                  query: {
+                    workspaceId: id,
+                  },
+                })
+                .then(() => {
+                  router.reload();
+                });
+              setOpen(false);
+            });
+          }}
+        />
+      </>
+    );
+  }
 
   return (
     <Tooltip content={t('AFFiNE Cloud')} placement="bottom-end">

@@ -1,7 +1,9 @@
 import { Content } from '@affine/component';
 import { assertExists } from '@blocksuite/store';
+import { useSetAtom } from 'jotai';
 import React, { useState } from 'react';
 
+import { openQuickSearchModalAtom } from '../../../atoms';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { PageNotFoundError } from '../../affine/affine-error-eoundary';
@@ -15,16 +17,19 @@ import {
   StyledTitleWrapper,
 } from './styles';
 
-export type BlockSuiteEditorHeaderProps = {
+export type BlockSuiteEditorHeaderProps = React.PropsWithChildren<{
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
-};
+}>;
 
 export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   blockSuiteWorkspace,
   pageId,
+  children,
 }) => {
   const page = blockSuiteWorkspace.getPage(pageId);
+  // fixme(himself65): remove this atom and move it to props
+  const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
   if (!page) {
     throw new PageNotFoundError(blockSuiteWorkspace, pageId);
   }
@@ -43,6 +48,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
           : ['syncUser', 'themeModeSwitch', 'editorOptionMenu']
       }
     >
+      {children}
       {title && (
         <StyledTitle
           data-tauri-drag-region
@@ -70,7 +76,11 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
             </StyledSwitchWrapper>
             <Content ellipsis={true}>{title}</Content>
             <StyledSearchArrowWrapper>
-              <QuickSearchButton onClick={() => {}} />
+              <QuickSearchButton
+                onClick={() => {
+                  setOpenQuickSearch(true);
+                }}
+              />
             </StyledSearchArrowWrapper>
           </StyledTitleWrapper>
         </StyledTitle>

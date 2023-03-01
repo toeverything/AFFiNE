@@ -1,19 +1,29 @@
-import { FlexWrapper, MuiAvatar } from '@affine/component';
-import { Button } from '@affine/component';
-import { MuiFade } from '@affine/component';
+import { Button, FlexWrapper, MuiFade } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { EmailIcon } from '@blocksuite/icons';
+import { assertExists } from '@blocksuite/store';
 import React, { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
+import { refreshDataCenter } from '../../../../../hooks/use-workspaces';
+import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Upload } from '../../../../pure/file-upload';
+import {
+  CloudWorkspaceIcon,
+  JoinedWorkspaceIcon,
+  LocalWorkspaceIcon,
+} from '../../../../pure/icons';
 import { WorkspaceAvatar } from '../../../../pure/workspace-avatar';
 import { PanelProps } from '../../index';
 import { StyledRow, StyledSettingKey } from '../../style';
 import { WorkspaceDeleteModal } from './delete';
 import { CameraIcon } from './icons';
 import { WorkspaceLeave } from './leave';
-import { StyledAvatar, StyledEditButton, StyledInput } from './style';
+import {
+  StyledAvatar,
+  StyledEditButton,
+  StyledInput,
+  StyledWorkspaceInfo,
+} from './style';
 
 export const GeneralPanel: React.FC<PanelProps> = ({
   workspace,
@@ -29,18 +39,20 @@ export const GeneralPanel: React.FC<PanelProps> = ({
   const { t } = useTranslation();
 
   const handleUpdateWorkspaceName = () => {
-    // currentWorkspace &&
-    // updateWorkspace({ name: workspaceName }, currentWorkspace);
+    workspace.blockSuiteWorkspace.meta.setName(workspaceName);
+    // fixme(himself65): don't refresh
+    refreshDataCenter();
   };
 
   const fileChange = async (file: File) => {
-    // const blob = new Blob([file], { type: file.type });
-    // currentWorkspace &&
-    // (await updateWorkspace({ avatarBlob: blob }, currentWorkspace));
+    const blob = new Blob([file], { type: file.type });
+    const blobs = await workspace.blockSuiteWorkspace.blobs;
+    assertExists(blobs);
+    const blobId = await blobs.set(blob);
+    workspace.blockSuiteWorkspace.meta.setAvatar(blobId);
+    // fixme(himself65): don't refresh
+    refreshDataCenter();
   };
-  if (!workspace) {
-    return null;
-  }
 
   return (
     <>
@@ -129,50 +141,51 @@ export const GeneralPanel: React.FC<PanelProps> = ({
         </div>
       </StyledRow>
 
-      {!isOwner && (
-        <StyledRow>
-          <StyledSettingKey>{t('Workspace Owner')}</StyledSettingKey>
-          <FlexWrapper alignItems="center">
-            <MuiAvatar
-              sx={{ width: 72, height: 72, marginRight: '12px' }}
-              alt="owner avatar"
-              // src={currentWorkspace?.owner?.avatar}
-            >
-              <EmailIcon />
-            </MuiAvatar>
-            {/*<span>{currentWorkspace?.owner?.name}</span>*/}
-          </FlexWrapper>
-        </StyledRow>
-      )}
-      {!isOwner && (
-        <StyledRow>
-          <StyledSettingKey>{t('Members')}</StyledSettingKey>
-          <FlexWrapper alignItems="center">
-            {/*<span>{currentWorkspace?.memberCount}</span>*/}
-          </FlexWrapper>
-        </StyledRow>
-      )}
+      {/* fixme(himself65): how to know a workspace owner by api? */}
+      {/*{!isOwner && (*/}
+      {/*  <StyledRow>*/}
+      {/*    <StyledSettingKey>{t('Workspace Owner')}</StyledSettingKey>*/}
+      {/*    <FlexWrapper alignItems="center">*/}
+      {/*      <MuiAvatar*/}
+      {/*        sx={{ width: 72, height: 72, marginRight: '12px' }}*/}
+      {/*        alt="owner avatar"*/}
+      {/*        // src={currentWorkspace?.owner?.avatar}*/}
+      {/*      >*/}
+      {/*        <EmailIcon />*/}
+      {/*      </MuiAvatar>*/}
+      {/*      /!*<span>{currentWorkspace?.owner?.name}</span>*!/*/}
+      {/*    </FlexWrapper>*/}
+      {/*  </StyledRow>*/}
+      {/*)}*/}
+      {/*{!isOwner && (*/}
+      {/*  <StyledRow>*/}
+      {/*    <StyledSettingKey>{t('Members')}</StyledSettingKey>*/}
+      {/*    <FlexWrapper alignItems="center">*/}
+      {/*      /!*<span>{currentWorkspace?.memberCount}</span>*!/*/}
+      {/*    </FlexWrapper>*/}
+      {/*  </StyledRow>*/}
+      {/*)}*/}
 
       <StyledRow>
         <StyledSettingKey>{t('Workspace Type')}</StyledSettingKey>
-        {/*{isOwner ? (*/}
-        {/*  currentWorkspace?.provider === 'local' ? (*/}
-        {/*    <StyledWorkspaceInfo>*/}
-        {/*      <LocalWorkspaceIcon />*/}
-        {/*      <span>{t('Local Workspace')}</span>*/}
-        {/*    </StyledWorkspaceInfo>*/}
-        {/*  ) : (*/}
-        {/*    <StyledWorkspaceInfo>*/}
-        {/*      <CloudWorkspaceIcon />*/}
-        {/*      <span>{t('Cloud Workspace')}</span>*/}
-        {/*    </StyledWorkspaceInfo>*/}
-        {/*  )*/}
-        {/*) : (*/}
-        {/*  <StyledWorkspaceInfo>*/}
-        {/*    <JoinedWorkspaceIcon />*/}
-        {/*    <span>{t('Joined Workspace')}</span>*/}
-        {/*  </StyledWorkspaceInfo>*/}
-        {/*)}*/}
+        {isOwner ? (
+          workspace.flavour === RemWorkspaceFlavour.LOCAL ? (
+            <StyledWorkspaceInfo>
+              <LocalWorkspaceIcon />
+              <span>{t('Local Workspace')}</span>
+            </StyledWorkspaceInfo>
+          ) : (
+            <StyledWorkspaceInfo>
+              <CloudWorkspaceIcon />
+              <span>{t('Cloud Workspace')}</span>
+            </StyledWorkspaceInfo>
+          )
+        ) : (
+          <StyledWorkspaceInfo>
+            <JoinedWorkspaceIcon />
+            <span>{t('Joined Workspace')}</span>
+          </StyledWorkspaceInfo>
+        )}
       </StyledRow>
 
       <StyledRow>
