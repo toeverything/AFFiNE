@@ -1,5 +1,6 @@
+import { config } from '@affine/env';
+
 import { BlockSuiteWorkspace, Provider } from '../shared';
-import { config } from '../shared/env';
 import {
   createBroadCastChannelProvider,
   createIndexedDBProvider,

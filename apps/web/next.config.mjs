@@ -61,6 +61,7 @@ const nextConfig = {
     '@affine/component',
     '@affine/datacenter',
     '@affine/i18n',
+    '@affine/env',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name,

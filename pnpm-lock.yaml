@@ -144,6 +144,7 @@ importers:
     specifiers:
       '@affine/component': workspace:*
       '@affine/datacenter': workspace:*
+      '@affine/env': workspace:*
       '@affine/i18n': workspace:*
       '@blocksuite/blocks': 0.4.1-20230220214107-0a354de
       '@blocksuite/editor': 0.4.1-20230220214107-0a354de
@@ -185,6 +186,7 @@ importers:
     dependencies:
       '@affine/component': link:../../packages/component
       '@affine/datacenter': link:../../packages/data-center
+      '@affine/env': link:../../packages/env
       '@affine/i18n': link:../../packages/i18n
       '@blocksuite/blocks': 0.4.1-20230220214107-0a354de_txcevohh7lsyxi5mbohonudlma
       '@blocksuite/editor': 0.4.1-20230220214107-0a354de_bsvfvsbxn3zjndsi6ntxj3sapa
@@ -343,8 +345,11 @@ importers:
 
   packages/env:
     specifiers:
+      '@blocksuite/global': 0.4.1-20230220214107-0a354de
       next: ^13.2.3
       zod: ^3.20.6
+    dependencies:
+      '@blocksuite/global': 0.4.1-20230220214107-0a354de
     devDependencies:
       next: 13.2.3
       zod: 3.20.6
@@ -1727,6 +1732,18 @@ packages:
       lit: 2.6.1
       marked: 4.2.12
       turndown: 7.1.1
+    dev: false
+
+  /@blocksuite/global/0.4.1-20230220214107-0a354de:
+    resolution: {integrity: sha512-wC+TXvoqj5Ypx6uDj2gE+o8fclvs+K0jVtG7FnlOVJ6AZnYup5kBGGWBx1SwfhbwoXmF/ZcHOcAVZmdNsupfVA==}
+    peerDependencies:
+      lit: ^2.6
+    peerDependenciesMeta:
+      lit:
+        optional: true
+    dependencies:
+      ansi-colors: 4.1.3
+      zod: 3.20.6
     dev: false
 
   /@blocksuite/global/0.4.1-20230220214107-0a354de_lit@2.6.1:
