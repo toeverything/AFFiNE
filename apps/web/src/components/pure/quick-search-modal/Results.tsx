@@ -48,7 +48,7 @@ export const Results: React.FC<ResultsProps> = ({
   useEffect(() => {
     setShowCreatePage(!resultsPageMeta.length);
     //Determine whether to display the  ‘+ New page’
-  }, [resultsPageMeta, setShowCreatePage]);
+  }, [resultsPageMeta.length, setShowCreatePage]);
   return loading ? null : (
     <>
       {query ? (

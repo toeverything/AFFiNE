@@ -21,7 +21,7 @@ export function usePageMeta(
   if (prev !== blockSuiteWorkspace) {
     setPrev(blockSuiteWorkspace);
     if (blockSuiteWorkspace) {
-      setPageMeta(blockSuiteWorkspace?.meta.pageMetas);
+      setPageMeta(blockSuiteWorkspace.meta.pageMetas);
     }
   }
   useEffect(() => {

@@ -31,14 +31,14 @@ const Result: React.FC<{
   return (
     <Members>
       <Member>
-        {firstUser?.avatar_url ? (
-          <MuiAvatar src={firstUser?.avatar_url}></MuiAvatar>
+        {firstUser.avatar_url ? (
+          <MuiAvatar src={firstUser.avatar_url}></MuiAvatar>
         ) : (
           <MemberIcon>
             <EmailIcon></EmailIcon>
           </MemberIcon>
         )}
-        <Email>{firstUser?.email}</Email>
+        <Email>{firstUser.email}</Email>
         {/* <div>invited</div> */}
       </Member>
     </Members>
@@ -160,15 +160,15 @@ const Members = styled('div')(({ theme }) => {
   };
 });
 
-const NoFind = styled('div')(({ theme }) => {
-  return {
-    color: theme.colors.iconColor,
-    fontSize: theme.font.sm,
-    lineHeight: '40px',
-    userSelect: 'none',
-    width: '100%',
-  };
-});
+// const NoFind = styled('div')(({ theme }) => {
+//   return {
+//     color: theme.colors.iconColor,
+//     fontSize: theme.font.sm,
+//     lineHeight: '40px',
+//     userSelect: 'none',
+//     width: '100%',
+//   };
+// });
 
 const Member = styled('div')(({ theme }) => {
   return {

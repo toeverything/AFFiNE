@@ -85,7 +85,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       return;
     }
 
-    editorRef.current?.createBlockHub().then(blockHub => {
+    editor.createBlockHub().then(blockHub => {
       if (blockHubRef.current) {
         blockHubRef.current.remove();
       }

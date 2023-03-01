@@ -8,22 +8,19 @@ export function useRouterTitle(router: NextRouter) {
     if (!router.isReady) {
       return 'Loading...';
     } else {
-      if (router) {
-        if (
-          !router.query.pageId &&
-          router.pathname.startsWith('/workspace/[workspaceId]/')
-        ) {
-          const subPath = router.pathname.split('/').at(-1);
-          if (subPath && subPath in WorkspaceSubPathName) {
-            return (
-              WorkspaceSubPathName[
-                subPath as keyof typeof WorkspaceSubPathName
-              ] + ' - AFFiNE'
-            );
-          }
+      if (
+        !router.query.pageId &&
+        router.pathname.startsWith('/workspace/[workspaceId]/')
+      ) {
+        const subPath = router.pathname.split('/').at(-1);
+        if (subPath && subPath in WorkspaceSubPathName) {
+          return (
+            WorkspaceSubPathName[subPath as keyof typeof WorkspaceSubPathName] +
+            ' - AFFiNE'
+          );
         }
-        return 'AFFiNE';
       }
+      return 'AFFiNE';
     }
   }, [router]);
 }

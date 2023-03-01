@@ -77,8 +77,8 @@ export const WorkspaceSettingDetail: React.FC<
     workspace,
     currentTab,
     onChangeTab,
-    onDeleteWorkspace,
-    onTransferWorkspace,
+    // onDeleteWorkspace,
+    // onTransferWorkspace,
   } = props;
   const isAffine = workspace.flavour === 'affine';
   const isOwner = useIsWorkspaceOwner(workspace);
