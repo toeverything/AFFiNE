@@ -1,7 +1,6 @@
 import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
-import { Text } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useEffect, useRef } from 'react';
 
@@ -68,7 +67,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
         const title =
           localStorage.getItem(kFirstPage) === null ? exampleTitle : undefined;
         const pageBlockId = page.addBlockByFlavour('affine:page', {
-          title: new Text(title),
+          title,
         });
         page.addBlockByFlavour('affine:surface', {}, null);
         const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
