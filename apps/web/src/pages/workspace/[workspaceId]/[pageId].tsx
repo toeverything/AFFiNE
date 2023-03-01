@@ -9,7 +9,21 @@ import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
+import {
+  BlockSuiteWorkspace,
+  NextPageWithLayout,
+  RemWorkspaceFlavour,
+} from '../../../shared';
+
+function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_database', false);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_slash_menu', true);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_edgeless_toolbar', true);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', true);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', true);
+  blockSuiteWorkspace.awarenessStore.setFlag('enable_surface', true);
+}
 
 const WorkspaceDetail: React.FC = () => {
   const [pageId] = useCurrentPageId();
@@ -28,6 +42,11 @@ const WorkspaceDetail: React.FC = () => {
       dispose?.dispose();
     };
   }, [currentWorkspace?.blockSuiteWorkspace.signals.pageAdded, pageId]);
+  useEffect(() => {
+    if (currentWorkspace) {
+      enableFullFlags(currentWorkspace.blockSuiteWorkspace);
+    }
+  }, [currentWorkspace]);
   if (currentWorkspace === null) {
     return <PageLoading />;
   }
