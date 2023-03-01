@@ -6,4 +6,5 @@ export default {
     process.env.ENABLE_BC_PROVIDER ?? '1'
   ),
   prefetchWorkspace: Boolean(process.env.PREFETCH_WORKSPACE ?? '1'),
+  exposeInternal: Boolean(process.env.EXPOSE_INTERNAL ?? '1'),
 };
