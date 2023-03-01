@@ -48,5 +48,12 @@ test.describe('Local first favorite items ui', () => {
     expect(
       page.getByRole('cell', { name: 'this is a new page to favorite' })
     ).not.toBeUndefined();
+
+    await page.getByRole('cell').getByRole('button').nth(0).click();
+    expect(
+      await page
+        .getByText('Click Add to Favorites and the page will appear here.')
+        .isVisible()
+    ).toBe(true);
   });
 });

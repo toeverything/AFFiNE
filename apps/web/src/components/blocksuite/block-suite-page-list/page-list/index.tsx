@@ -32,10 +32,14 @@ import {
   StyledTitleLink,
   StyledTitleWrapper,
 } from './styles';
-const FavoriteTag = ({
-  pageMeta: { favorite, id },
-}: {
+
+export type FavoriteTagProps = {
   pageMeta: PageMeta;
+  onClick: () => void;
+};
+const FavoriteTag: React.FC<FavoriteTagProps> = ({
+  pageMeta: { favorite },
+  onClick,
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -49,7 +53,7 @@ const FavoriteTag = ({
         iconSize={[20, 20]}
         onClick={e => {
           e.stopPropagation();
-          // toggleFavoritePage(id);
+          onClick();
           toast(
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
@@ -142,7 +146,16 @@ export const PageList: React.FC<PageListProps> = ({
                         {pageMeta.title || t('Untitled')}
                       </Content>
                     </StyledTitleLink>
-                    {!isTrash && <FavoriteTag pageMeta={pageMeta} />}
+                    {!isTrash && (
+                      <FavoriteTag
+                        onClick={() => {
+                          helper.setPageMeta(pageMeta.id, {
+                            favorite: !pageMeta.favorite,
+                          });
+                        }}
+                        pageMeta={pageMeta}
+                      />
+                    )}
                   </StyledTitleWrapper>
                 </TableCell>
                 {matches && (
