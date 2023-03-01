@@ -1,4 +1,4 @@
-### Job Title: Senior UI/UX Designer
+## Senior UI/UX Designer
 We are seeking a highly skilled and experienced Senior UI/UX Designer to join our team and lead the development and implementation of a UI design system for our product AFFiNE. The ideal candidate will have a proven track record in UI/UX design, as well as a deep understanding of the latest design trends and technologies.
 
 ### Position Requirements:
