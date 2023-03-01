@@ -85,7 +85,12 @@ export function Modals() {
               },
             });
           },
-          [createRemLocalWorkspace, router, setOpenCreateWorkspaceModal]
+          [
+            createRemLocalWorkspace,
+            router,
+            setOpenCreateWorkspaceModal,
+            setOpenWorkspacesModal,
+          ]
         )}
       />
       {currentWorkspace?.blockSuiteWorkspace && (
