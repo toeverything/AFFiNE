@@ -1,5 +1,0 @@
-{
-  "root": false,
-  "extends": "next/core-web-vitals",
-  "reportUnusedDisableDirectives": true
-}

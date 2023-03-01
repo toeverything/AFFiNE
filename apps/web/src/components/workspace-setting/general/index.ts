@@ -1,1 +1,0 @@
-export { GeneralPage } from './General';

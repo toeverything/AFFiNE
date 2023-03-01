@@ -1,3 +1,5 @@
+# Welcome to the AFFiNE Alpha
+
 The AFFiNE Alpha is here! You can also view our [Official Website](https://affine.pro/)!
 
 **What's different in AFFiNE Alpha?**

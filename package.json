@@ -6,7 +6,6 @@
   "license": "MPL-2.0",
   "scripts": {
     "dev": "pnpm --filter @affine/app dev",
-    "dev:rem": "pnpm --filter @affine/rem dev",
     "dev:ac": "cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
     "dev:local": "cross-env NODE_API_SERVER=local pnpm --filter @affine/app dev",
     "build": "pnpm --filter @affine/app build",

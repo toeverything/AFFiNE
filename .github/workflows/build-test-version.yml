@@ -62,7 +62,7 @@ jobs:
       #   run: pnpm test
 
       - name: Build
-        run: pnpm build:rem
+        run: pnpm build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -78,7 +78,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: ./apps/rem/out
+          path: ./apps/web/out
 
   push_to_registry:
     # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
@@ -104,7 +104,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifact
-          path: apps/rem/out/
+          path: apps/web/out/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2

@@ -1,4 +1,4 @@
-function getUaHelper() {
+export function getUaHelper() {
   let uaHelper = null;
   (function (navigator) {
     const getUa = () => {
@@ -78,5 +78,3 @@ function getUaHelper() {
 
   return uaHelper;
 }
-
-export { getUaHelper };
