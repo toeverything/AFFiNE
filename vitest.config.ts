@@ -14,8 +14,8 @@ export default defineConfig({
   test: {
     include: [
       'packages/**/*.spec.ts',
-      'apps/rem/**/*.spec.ts',
-      'apps/rem/**/*.spec.tsx',
+      'apps/web/**/*.spec.ts',
+      'apps/web/**/*.spec.tsx',
     ],
     testTimeout: 5000,
     coverage: {
