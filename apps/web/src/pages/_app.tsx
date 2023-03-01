@@ -1,7 +1,7 @@
 import '@blocksuite/editor/themes/affine.css';
 import '../styles/globals.css';
 
-import { appWithTranslation, createI18n, I18nextProvider } from '@affine/i18n';
+import { createI18n, I18nextProvider } from '@affine/i18n';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
@@ -93,4 +93,4 @@ const App = function App({ Component, pageProps }: AppPropsWithLayout) {
   );
 };
 
-export default appWithTranslation(App as any);
+export default App;
