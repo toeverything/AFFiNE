@@ -1,9 +1,6 @@
 lockfileVersion: 5.4
 
 patchedDependencies:
-  next@13.1.6:
-    hash: rdilrli7uexa22ralt77ekax24
-    path: patches/next@13.1.0.patch
   '@tauri-apps/api@1.2.0':
     hash: nb4isgkwd3sres4g7j7rgtldsu
     path: patches/@tauri-apps__api@1.2.0.patch
@@ -379,7 +376,7 @@ importers:
       react-dom: ^18.2.0
       typescript: ^4.9.5
     dependencies:
-      next: 13.1.6_rdilrli7uexa22ralt77ekax24_biqbaboplfbrettd7655fr4n2y
+      next: 13.1.6_biqbaboplfbrettd7655fr4n2y
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
     devDependencies:
@@ -10768,7 +10765,7 @@ packages:
       - babel-plugin-macros
     dev: false
 
-  /next/13.1.6_rdilrli7uexa22ralt77ekax24_biqbaboplfbrettd7655fr4n2y:
+  /next/13.1.6_biqbaboplfbrettd7655fr4n2y:
     resolution: {integrity: sha512-hHlbhKPj9pW+Cymvfzc15lvhaOZ54l+8sXDXJWm3OBNBzgrVj6hwGPmqqsXg40xO1Leq+kXpllzRPuncpC0Phw==}
     engines: {node: '>=14.6.0'}
     hasBin: true
@@ -10811,7 +10808,6 @@ packages:
       - '@babel/core'
       - babel-plugin-macros
     dev: false
-    patched: true
 
   /next/13.2.2_biqbaboplfbrettd7655fr4n2y:
     resolution: {integrity: sha512-dDKfGBqSxqmqx5WN9tDFg0uGUkD/LGUxR29tpe8AEmo2SwfbPWf04qyvDcKmpjt2fCzP4132BvFRZFlg+11kGw==}
