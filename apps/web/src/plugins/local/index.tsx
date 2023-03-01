@@ -1,4 +1,4 @@
-import { assertEquals, uuidv4 } from '@blocksuite/store';
+import { assertEquals, nanoid } from '@blocksuite/store';
 import React from 'react';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
@@ -33,7 +33,7 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       localStorage.setItem(kStoreKey, '[]');
       ids = [];
     }
-    const id = uuidv4();
+    const id = nanoid();
     const persistence = new IndexeddbPersistence(id, blockSuiteWorkspace.doc);
     await persistence.whenSynced.then(() => {
       persistence.destroy();
@@ -135,11 +135,11 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
         return;
       }
       console.info('no local workspace found, create a new one');
-      const workspaceId = uuidv4();
+      const workspaceId = nanoid();
       const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
       blockSuiteWorkspace.meta.setName('Untitled Workspace');
       localStorage.setItem(kStoreKey, JSON.stringify([workspaceId]));
-      blockSuiteWorkspace.createPage(uuidv4());
+      blockSuiteWorkspace.createPage(nanoid());
       const workspace: LocalWorkspace = {
         id: workspaceId,
         flavour: RemWorkspaceFlavour.LOCAL,
