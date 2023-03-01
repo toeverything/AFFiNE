@@ -5,6 +5,7 @@ import { assertExists } from '@blocksuite/store';
 import { useEffect, useRef } from 'react';
 
 import { BlockSuiteWorkspace } from '../../../shared';
+import { config } from '../../../shared/env';
 
 export type EditorProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -25,6 +26,13 @@ const exampleTitle = markdown
 const exampleText = markdown.split('\n').slice(1).join('\n');
 
 const kFirstPage = 'affine-first-page';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var currentBlockSuiteWorkspace: BlockSuiteWorkspace | undefined;
+  // eslint-disable-next-line no-var
+  var currentPage: Page | undefined;
+}
 
 export const BlockSuiteEditor = (props: EditorProps) => {
   const page = props.page;
@@ -72,6 +80,11 @@ export const BlockSuiteEditor = (props: EditorProps) => {
         }
         page.resetHistory();
       }
+    }
+
+    if (config.exposeInternal) {
+      globalThis.currentBlockSuiteWorkspace = props.blockSuiteWorkspace;
+      globalThis.currentPage = page;
     }
     props.onLoad?.(page, editor);
     return;
