@@ -5,7 +5,6 @@ import {
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { getUaHelper } from '../../../utils/useragent';
 import {
@@ -47,7 +46,7 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
     setIsMac(checkIsMac());
   }, []);
 
-  return createPortal(
+  return (
     <MuiSlide direction="left" in={open} mountOnEnter unmountOnExit>
       <StyledShortcutsModal data-testid="shortcuts-modal">
         <MuiClickAwayListener
@@ -95,7 +94,6 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
           </div>
         </MuiClickAwayListener>
       </StyledShortcutsModal>
-    </MuiSlide>,
-    document.body
+    </MuiSlide>
   );
 };
