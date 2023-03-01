@@ -38,6 +38,7 @@ const getRedirectConfig = profile => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  productionBrowserSourceMaps: true,
   compiler: {
     removeConsole: {
       exclude: ['error', 'log', 'warn', 'info'],
