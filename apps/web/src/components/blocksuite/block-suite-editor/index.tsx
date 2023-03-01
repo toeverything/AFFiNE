@@ -1,5 +1,7 @@
+import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/store';
 import { useEffect, useRef } from 'react';
 
 export type EditorProps = {
@@ -12,6 +14,7 @@ export type EditorProps = {
 export const BlockSuiteEditor = (props: EditorProps) => {
   const page = props.page;
   const editorRef = useRef<EditorContainer | null>(null);
+  const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
     editorRef.current = new EditorContainer();
     // fixme(himself65): remove `globalThis.editor`
@@ -57,8 +60,18 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       return;
     }
 
+    editorRef.current?.createBlockHub().then(blockHub => {
+      if (blockHubRef.current) {
+        blockHubRef.current.remove();
+      }
+      blockHubRef.current = blockHub;
+      const toolWrapper = document.querySelector('#toolWrapper');
+      assertExists(toolWrapper);
+      toolWrapper.appendChild(blockHub);
+    });
     container.appendChild(editor);
     return () => {
+      blockHubRef.current?.remove();
       container.removeChild(editor);
     };
   }, [page]);

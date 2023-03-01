@@ -119,6 +119,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
         <StyledWrapper>
           {children}
           <StyledToolWrapper>
+            {/* fixme(himself65): remove this */}
             <div id="toolWrapper" style={{ marginBottom: '12px' }}>
               {/* Slot for block hub */}
             </div>
