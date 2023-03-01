@@ -4,12 +4,27 @@ import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useEffect, useRef } from 'react';
 
+import { BlockSuiteWorkspace } from '../../../shared';
+
 export type EditorProps = {
+  blockSuiteWorkspace: BlockSuiteWorkspace;
   page: Page;
   mode: 'page' | 'edgeless';
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
 };
+
+import markdown from '../../../templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
+
+const exampleTitle = markdown
+  .split('\n')
+  .splice(0, 1)
+  .join('')
+  .replaceAll('#', '')
+  .trim();
+const exampleText = markdown.split('\n').slice(1).join('\n');
+
+const kFirstPage = 'affine-first-page';
 
 export const BlockSuiteEditor = (props: EditorProps) => {
   const page = props.page;
@@ -41,10 +56,20 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       } else {
         console.debug('Initializing page with default content');
         // Add page block and surface block at root level
-        const pageBlockId = page.addBlockByFlavour('affine:page');
+        const title =
+          localStorage.getItem(kFirstPage) === null ? exampleTitle : undefined;
+        const pageBlockId = page.addBlockByFlavour('affine:page', {
+          title,
+        });
         page.addBlockByFlavour('affine:surface', {}, null);
         const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
         page.addBlockByFlavour('affine:paragraph', {}, frameId);
+        if (localStorage.getItem(kFirstPage) === null) {
+          // fixme(himself65): remove
+          editor.clipboard.importMarkdown(exampleText, frameId);
+          props.blockSuiteWorkspace.setPageMeta(page.id, { title });
+          localStorage.setItem(kFirstPage, 'true');
+        }
         page.resetHistory();
       }
     }

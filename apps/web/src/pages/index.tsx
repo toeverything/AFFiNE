@@ -22,23 +22,49 @@ const IndexPage: NextPage = () => {
     if (!router.isReady) {
       return;
     }
-    if (workspaceId && workspaces.find(w => w.id === workspaceId)) {
-      router.replace({
-        pathname: '/workspace/[workspaceId]/all',
-        query: {
-          workspaceId,
-        },
-      });
-      return;
+    const targetWorkspace = workspaces.find(w => w.id === workspaceId);
+    if (workspaceId && targetWorkspace) {
+      const pageId = targetWorkspace.blockSuiteWorkspace.meta.pageMetas[0].id;
+      if (pageId) {
+        router.replace({
+          pathname: '/workspace/[workspaceId]/[pageId]',
+          query: {
+            workspaceId,
+            pageId,
+          },
+        });
+        return;
+      } else {
+        router.replace({
+          pathname: '/workspace/[workspaceId]/all',
+          query: {
+            workspaceId,
+          },
+        });
+        return;
+      }
     }
-    if (workspaces.at(0)) {
-      router.replace({
-        pathname: '/workspace/[workspaceId]/all',
-        query: {
-          workspaceId: workspaces[0].id,
-        },
-      });
-      return;
+    const firstWorkspace = workspaces.at(0);
+    if (firstWorkspace) {
+      const pageId = firstWorkspace.blockSuiteWorkspace.meta.pageMetas[0].id;
+      if (pageId) {
+        router.replace({
+          pathname: '/workspace/[workspaceId]/[pageId]',
+          query: {
+            workspaceId: firstWorkspace.id,
+            pageId,
+          },
+        });
+        return;
+      } else {
+        router.replace({
+          pathname: '/workspace/[workspaceId]/all',
+          query: {
+            workspaceId: firstWorkspace.id,
+          },
+        });
+        return;
+      }
     }
   }, [router, workspaceId, workspaces]);
   return <PageLoading />;
