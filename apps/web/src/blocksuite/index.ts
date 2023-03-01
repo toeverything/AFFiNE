@@ -1,6 +1,10 @@
 import { BlockSuiteWorkspace, Provider } from '../shared';
 import { config } from '../shared/env';
-import { createIndexedDBProvider, createWebSocketProvider } from './providers';
+import {
+  createBroadCastChannelProvider,
+  createIndexedDBProvider,
+  createWebSocketProvider,
+} from './providers';
 
 export const createAffineProviders = (
   blockSuiteWorkspace: BlockSuiteWorkspace
@@ -8,6 +12,8 @@ export const createAffineProviders = (
   return (
     [
       createWebSocketProvider(blockSuiteWorkspace),
+      config.enableBroadCastChannelProvider &&
+        createBroadCastChannelProvider(blockSuiteWorkspace),
       config.enableIndexedDBProvider &&
         createIndexedDBProvider(blockSuiteWorkspace),
     ] as any[]
@@ -19,6 +25,8 @@ export const createLocalProviders = (
 ): Provider[] => {
   return (
     [
+      config.enableBroadCastChannelProvider &&
+        createBroadCastChannelProvider(blockSuiteWorkspace),
       config.enableIndexedDBProvider &&
         createIndexedDBProvider(blockSuiteWorkspace),
     ] as any[]
