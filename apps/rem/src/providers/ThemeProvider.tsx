@@ -25,6 +25,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
 } from 'react';
 
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
@@ -80,10 +81,16 @@ export const ThemeProvider = ({
     [setTheme]
   );
 
+  const onceRef = useRef(false);
+
   useEffect(() => {
+    if (onceRef.current) {
+      return;
+    }
     if (theme !== 'auto') {
       setTheme(systemTheme);
     }
+    onceRef.current = true;
   }, [setTheme, systemTheme, theme]);
 
   const realTheme: ThemeMode = theme === 'auto' ? systemTheme : theme;

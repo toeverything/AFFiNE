@@ -128,7 +128,7 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({ workspace }) => {
         shape="circle"
         onClick={async () => {
           // fixme: regression
-          toast('You need to enable AFFiNE Cloud to publish your workspace');
+          toast('You need to enable AFFiNE Cloud to use this feature.');
         }}
       >
         {t('Enable AFFiNE Cloud')}
