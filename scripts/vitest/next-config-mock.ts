@@ -10,6 +10,7 @@ export default function getConfig() {
       enableBroadCastChannelProvider: true,
       enableIndexedDBProvider: true,
       prefetchWorkspace: false,
+      exposeInternal: true,
     },
   };
 }
