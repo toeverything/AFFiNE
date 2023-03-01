@@ -18,6 +18,11 @@
         "scope": ["$RESOURCE", "$RESOURCE/*", "$APP/*"]
       }
     },
+    "systemTray": {
+      "iconPath": "icons/128x128@2x.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
+    },
     "bundle": {
       "active": true,
       "category": "DeveloperTool",
