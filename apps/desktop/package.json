@@ -26,9 +26,6 @@
     "next": "13.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-is": "^18.2.0",
-    "react-router": "^6.8.2",
-    "react-router-dom": "^6.8.2",
     "y-protocols": "^1.0.5",
     "yjs": "^13.5.48"
   },
@@ -43,9 +40,9 @@
     "lit": "^2.6.1",
     "prettier": "2.8.4",
     "rimraf": "^4.1.3",
-    "typescript": "^4.9.4",
+    "typescript": "^4.9.5",
     "typesync": "^0.10.0",
-    "vite": "^4.1.2",
+    "vite": "^4.1.4",
     "zx": "^7.2.0"
   }
 }
