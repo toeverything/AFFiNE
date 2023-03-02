@@ -84,6 +84,7 @@ const nextConfig = {
       test: /\.md$/i,
       loader: 'raw-loader',
     });
+    config.resolve.alias['yjs'] = require.resolve('yjs');
 
     if (!isServer && !dev) {
       config.devtool = 'hidden-nosources-source-map';
