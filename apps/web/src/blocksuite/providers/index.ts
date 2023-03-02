@@ -18,7 +18,8 @@ const createWebSocketProvider = (
     flavour: 'affine-websocket',
     cleanup: () => {
       assertExists(webSocketProvider);
-      webSocketProvider?.destroy();
+      webSocketProvider.destroy();
+      webSocketProvider = null;
     },
     connect: () => {
       const wsUrl = `${
@@ -34,6 +35,8 @@ const createWebSocketProvider = (
           awareness: blockSuiteWorkspace.awarenessStore.awareness,
           // we maintain broadcast channel by ourselves
           disableBc: true,
+          // maintain connection by ourselves
+          connect: false,
         }
       );
       console.log('connect', webSocketProvider.roomname);
@@ -42,7 +45,8 @@ const createWebSocketProvider = (
     disconnect: () => {
       assertExists(webSocketProvider);
       console.log('disconnect', webSocketProvider.roomname);
-      webSocketProvider?.disconnect();
+      webSocketProvider.disconnect();
+      webSocketProvider = null;
     },
   };
 };
