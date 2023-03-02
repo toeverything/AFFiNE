@@ -13,6 +13,7 @@ export const Upload: React.FC<UploadProps> = ({
   fileChange,
   accept,
   children,
+  ...props
 }) => {
   const { t } = useTranslation();
   const input_ref = useRef<HTMLInputElement>(null);
@@ -41,6 +42,7 @@ export const Upload: React.FC<UploadProps> = ({
         style={{ display: 'none' }}
         onChange={_handleInputChange}
         accept={accept}
+        {...props}
       />
     </UploadStyle>
   );
