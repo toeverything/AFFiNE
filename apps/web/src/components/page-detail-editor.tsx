@@ -54,6 +54,9 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         {header}
       </BlockSuiteEditorHeader>
       <Editor
+        style={{
+          height: 'calc(100% - 60px)',
+        }}
         blockSuiteWorkspace={blockSuiteWorkspace}
         mode={meta.mode ?? 'page'}
         page={page}
