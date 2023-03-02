@@ -7,6 +7,7 @@ import {
 
 import { BlockSuiteWorkspace, BroadCastChannelProvider } from '../../../shared';
 import {
+  AwarenessChanges,
   BroadcastChannelMessageEvent,
   getClients,
   TypedBroadcastChannel,
@@ -33,6 +34,7 @@ export const createBroadCastChannelProvider = (
       }
       case 'doc:update': {
         const [, update, clientId] = event.data;
+        console.log('doc:update', clientId, awareness.clientID);
         if (!clientId || clientId === awareness.clientID) {
           Y.applyUpdate(doc, update, broadcastChannel);
         }
@@ -47,7 +49,9 @@ export const createBroadCastChannelProvider = (
       }
       case 'awareness:update': {
         const [, update, clientId] = event.data;
-        applyAwarenessUpdate(awareness, update, clientId);
+        if (!clientId || clientId === awareness.clientID) {
+          applyAwarenessUpdate(awareness, update, broadcastChannel);
+        }
         break;
       }
     }
@@ -57,7 +61,18 @@ export const createBroadCastChannelProvider = (
       // not self update, ignore
       return;
     }
-    broadcastChannel?.postMessage(['doc:update', updateV1, origin]);
+    broadcastChannel?.postMessage(['doc:update', updateV1]);
+  };
+  const handleAwarenessUpdate = (changes: AwarenessChanges, origin: any) => {
+    if (origin === broadcastChannel) {
+      return;
+    }
+    const changedClients = Object.values(changes).reduce((res, cur) => [
+      ...res,
+      ...cur,
+    ]);
+    const update = encodeAwarenessUpdate(awareness, changedClients);
+    broadcastChannel?.postMessage(['awareness:update', update]);
   };
   return {
     flavour: 'broadcast-channel',
@@ -80,16 +95,19 @@ export const createBroadCastChannelProvider = (
       ]);
       broadcastChannel.postMessage(['awareness:update', awarenessUpdate]);
       doc.on('update', handleDocUpdate);
+      awareness.on('update', handleAwarenessUpdate);
     },
     disconnect: () => {
       assertExists(broadcastChannel);
       console.log('disconnect broadcast channel', blockSuiteWorkspace.room);
       doc.off('update', handleDocUpdate);
+      awareness.off('update', handleAwarenessUpdate);
       broadcastChannel.close();
     },
     cleanup: () => {
       assertExists(broadcastChannel);
       doc.off('update', handleDocUpdate);
+      awareness.off('update', handleAwarenessUpdate);
       broadcastChannel.close();
     },
   };
