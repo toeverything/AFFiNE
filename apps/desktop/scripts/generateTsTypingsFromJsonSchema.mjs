@@ -1,7 +1,7 @@
 import fs from 'fs';
-import path from 'path';
 // TODO: use https://github.com/quicktype/quicktype#installation instead
 import { compileFromFile } from 'json-schema-to-typescript';
+import path from 'path';
 import { cd } from 'zx/core';
 
 const projectRoot = path.join(__dirname, '..', '..');
