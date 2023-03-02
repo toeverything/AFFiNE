@@ -3,10 +3,10 @@ import {
   MuiClickAwayListener,
   MuiSlide,
 } from '@affine/component';
+import { getEnvironment } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { useEffect, useState } from 'react';
 
-import { getUaHelper } from '../../../utils/useragent';
 import {
   useMacKeyboardShortcuts,
   useMacMarkdownShortcuts,
@@ -27,7 +27,8 @@ type ModalProps = {
 };
 
 const checkIsMac = () => {
-  return getUaHelper().isMacOs;
+  const env = getEnvironment();
+  return env.isBrowser && env.isMacOs;
 };
 
 export const ShortcutsModal = ({ open, onClose }: ModalProps) => {

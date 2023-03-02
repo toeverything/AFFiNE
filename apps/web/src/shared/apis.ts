@@ -4,8 +4,7 @@ import {
   getApis,
   GoogleAuth,
 } from '@affine/datacenter';
-
-import { config } from './env';
+import { config } from '@affine/env';
 
 let prefixUrl = '/';
 if (typeof window === 'undefined') {

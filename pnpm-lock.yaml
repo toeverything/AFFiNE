@@ -144,6 +144,7 @@ importers:
     specifiers:
       '@affine/component': workspace:*
       '@affine/datacenter': workspace:*
+      '@affine/env': workspace:*
       '@affine/i18n': workspace:*
       '@blocksuite/blocks': 0.4.1-20230220214107-0a354de
       '@blocksuite/editor': 0.4.1-20230220214107-0a354de
@@ -185,6 +186,7 @@ importers:
     dependencies:
       '@affine/component': link:../../packages/component
       '@affine/datacenter': link:../../packages/data-center
+      '@affine/env': link:../../packages/env
       '@affine/i18n': link:../../packages/i18n
       '@blocksuite/blocks': 0.4.1-20230220214107-0a354de_txcevohh7lsyxi5mbohonudlma
       '@blocksuite/editor': 0.4.1-20230220214107-0a354de_bsvfvsbxn3zjndsi6ntxj3sapa
@@ -340,6 +342,17 @@ importers:
     dependencies:
       '@types/debug': 4.1.7
       debug: 4.3.4
+
+  packages/env:
+    specifiers:
+      '@blocksuite/global': 0.4.1-20230220214107-0a354de
+      next: ^13.2.3
+      zod: ^3.20.6
+    dependencies:
+      '@blocksuite/global': 0.4.1-20230220214107-0a354de
+    devDependencies:
+      next: 13.2.3
+      zod: 3.20.6
 
   packages/i18n:
     specifiers:
@@ -1719,6 +1732,18 @@ packages:
       turndown: 7.1.1
     dev: false
 
+  /@blocksuite/global/0.4.1-20230220214107-0a354de:
+    resolution: {integrity: sha512-wC+TXvoqj5Ypx6uDj2gE+o8fclvs+K0jVtG7FnlOVJ6AZnYup5kBGGWBx1SwfhbwoXmF/ZcHOcAVZmdNsupfVA==}
+    peerDependencies:
+      lit: ^2.6
+    peerDependenciesMeta:
+      lit:
+        optional: true
+    dependencies:
+      ansi-colors: 4.1.3
+      zod: 3.20.6
+    dev: false
+
   /@blocksuite/global/0.4.1-20230220214107-0a354de_lit@2.6.1:
     resolution: {integrity: sha512-wC+TXvoqj5Ypx6uDj2gE+o8fclvs+K0jVtG7FnlOVJ6AZnYup5kBGGWBx1SwfhbwoXmF/ZcHOcAVZmdNsupfVA==}
     peerDependencies:
@@ -1771,7 +1796,7 @@ packages:
       '@blocksuite/store': 0.4.1-20230220214107-0a354de_lit@2.6.1+yjs@13.5.47
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
-      zustand: 4.3.3_react@18.2.0
+      zustand: 4.3.5_react@18.2.0
     transitivePeerDependencies:
       - immer
       - lit
@@ -1789,7 +1814,7 @@ packages:
       flexsearch: 0.7.21
       idb-keyval: 6.2.0
       ky: 0.33.2
-      lib0: 0.2.62
+      lib0: 0.2.63
       merge: 2.1.1
       nanoid: 4.0.1
       y-protocols: 1.0.5
@@ -6359,7 +6384,7 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       delegates: 1.0.0
-      readable-stream: 3.6.0
+      readable-stream: 3.6.1
     dev: true
 
   /arg/4.1.3:
@@ -6679,7 +6704,7 @@ packages:
     dependencies:
       buffer: 5.7.1
       inherits: 2.0.4
-      readable-stream: 3.6.0
+      readable-stream: 3.6.1
     dev: true
 
   /body-parser/1.20.1:
@@ -6875,7 +6900,7 @@ packages:
     resolution: {integrity: sha512-7O+FbCihrB5WGbFYesctwmTKae6rOiIzmz1icreWJ+0aA7LJfuqhEso2T9ncpcFtzMQtzXf2QGGueWJGTYsqrA==}
     dependencies:
       function-bind: 1.1.1
-      get-intrinsic: 1.1.3
+      get-intrinsic: 1.2.0
 
   /call-me-maybe/1.0.2:
     resolution: {integrity: sha512-HpX65o1Hnr9HH25ojC1YGs7HCQLq0GCOibSaWER0eNpgJ/Z1MZv2mTc7+xh6WOPxbRVcmgbv4hGU+uSQ/2xFZQ==}
@@ -7206,7 +7231,7 @@ packages:
     dependencies:
       buffer-from: 1.1.2
       inherits: 2.0.4
-      readable-stream: 2.3.7
+      readable-stream: 2.3.8
       typedarray: 0.0.6
     dev: true
 
@@ -7520,6 +7545,14 @@ packages:
 
   /define-properties/1.1.4:
     resolution: {integrity: sha512-uckOqKcfaVvtBdsVkdPv3XjveQJsNQqmhXgRi8uhvWWuPYZCNlzT8qAyblUgNoXdHdjMTzAqeGjAoli8f+bzPA==}
+    engines: {node: '>= 0.4'}
+    dependencies:
+      has-property-descriptors: 1.0.0
+      object-keys: 1.1.1
+    dev: true
+
+  /define-properties/1.2.0:
+    resolution: {integrity: sha512-xvqAVKGfT1+UAvPwKTVw/njhdQ8ZhXK4lI0bCIuCMrp2up9nPnaDftrLtmpTazqd1o+UY4zgzU+avtMbDP+ldA==}
     engines: {node: '>= 0.4'}
     dependencies:
       has-property-descriptors: 1.0.0
@@ -9032,6 +9065,14 @@ packages:
       function-bind: 1.1.1
       has: 1.0.3
       has-symbols: 1.0.3
+    dev: true
+
+  /get-intrinsic/1.2.0:
+    resolution: {integrity: sha512-L049y6nFOuom5wGyRc3/gdTLO94dySVKRACj1RmJZBQXlbTMhtNIgkWkUHq+jYmZvKf14EW1EoJnnjbmoHij0Q==}
+    dependencies:
+      function-bind: 1.1.1
+      has: 1.0.3
+      has-symbols: 1.0.3
 
   /get-nonce/1.0.1:
     resolution: {integrity: sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==}
@@ -9315,7 +9356,7 @@ packages:
   /has-property-descriptors/1.0.0:
     resolution: {integrity: sha512-62DVLZGoiEBDHQyqG4w9xCuZ7eJEwNmJRWw2VY84Oedb7WFcA27fiEVe8oUQx9hAUJ4ekurquucTGwsyO1XGdQ==}
     dependencies:
-      get-intrinsic: 1.1.3
+      get-intrinsic: 1.2.0
 
   /has-proto/1.0.1:
     resolution: {integrity: sha512-7qE+iP+O+bgF9clE5+UoBFzE65mlBiVj3tKCrlNQ0Ogwm0BjpT/gK4SlLYDMybDh5I3TCTKnPPa0oMG7JDYrhg==}
@@ -9672,7 +9713,7 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       call-bind: 1.0.2
-      define-properties: 1.1.4
+      define-properties: 1.2.0
     dev: true
 
   /is-negative-zero/2.0.2:
@@ -10250,6 +10291,13 @@ packages:
     engines: {node: '>=14'}
     dependencies:
       isomorphic.js: 0.2.5
+
+  /lib0/0.2.63:
+    resolution: {integrity: sha512-JhUd/JXR4rnWsSP1zup904ACbVFcdRieWoIGwGAtHww4zms0gNyi8EM30Rfftnk+6A10qQMSufjLM0/ncq06xw==}
+    engines: {node: '>=14'}
+    dependencies:
+      isomorphic.js: 0.2.5
+    dev: false
 
   /lilconfig/2.0.6:
     resolution: {integrity: sha512-9JROoBW7pobfsx+Sq2JsASvCo6Pfo6WWoUW79HuB1BCoBXD4PLWJPqDF6fNj67pqBYTbAHkE57M1kS/+L1neOg==}
@@ -10957,6 +11005,51 @@ packages:
       - babel-plugin-macros
     dev: true
 
+  /next/13.2.3:
+    resolution: {integrity: sha512-nKFJC6upCPN7DWRx4+0S/1PIOT7vNlCT157w9AzbXEgKy6zkiPKEt5YyRUsRZkmpEqBVrGgOqNfwecTociyg+w==}
+    engines: {node: '>=14.6.0'}
+    hasBin: true
+    peerDependencies:
+      '@opentelemetry/api': ^1.4.0
+      fibers: '>= 3.1.0'
+      node-sass: ^6.0.0 || ^7.0.0
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      sass: ^1.3.0
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+      fibers:
+        optional: true
+      node-sass:
+        optional: true
+      sass:
+        optional: true
+    dependencies:
+      '@next/env': 13.2.3
+      '@swc/helpers': 0.4.14
+      caniuse-lite: 1.0.30001419
+      postcss: 8.4.14
+      styled-jsx: 5.1.1
+    optionalDependencies:
+      '@next/swc-android-arm-eabi': 13.2.3
+      '@next/swc-android-arm64': 13.2.3
+      '@next/swc-darwin-arm64': 13.2.3
+      '@next/swc-darwin-x64': 13.2.3
+      '@next/swc-freebsd-x64': 13.2.3
+      '@next/swc-linux-arm-gnueabihf': 13.2.3
+      '@next/swc-linux-arm64-gnu': 13.2.3
+      '@next/swc-linux-arm64-musl': 13.2.3
+      '@next/swc-linux-x64-gnu': 13.2.3
+      '@next/swc-linux-x64-musl': 13.2.3
+      '@next/swc-win32-arm64-msvc': 13.2.3
+      '@next/swc-win32-ia32-msvc': 13.2.3
+      '@next/swc-win32-x64-msvc': 13.2.3
+    transitivePeerDependencies:
+      - '@babel/core'
+      - babel-plugin-macros
+    dev: true
+
   /next/13.2.3_react@18.2.0:
     resolution: {integrity: sha512-nKFJC6upCPN7DWRx4+0S/1PIOT7vNlCT157w9AzbXEgKy6zkiPKEt5YyRUsRZkmpEqBVrGgOqNfwecTociyg+w==}
     engines: {node: '>=14.6.0'}
@@ -11186,7 +11279,7 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       call-bind: 1.0.2
-      define-properties: 1.1.4
+      define-properties: 1.2.0
 
   /object-keys/1.1.1:
     resolution: {integrity: sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==}
@@ -11197,7 +11290,7 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       call-bind: 1.0.2
-      define-properties: 1.1.4
+      define-properties: 1.2.0
       has-symbols: 1.0.3
       object-keys: 1.1.1
     dev: true
@@ -12127,8 +12220,8 @@ packages:
       strip-bom: 3.0.0
     dev: true
 
-  /readable-stream/2.3.7:
-    resolution: {integrity: sha512-Ebho8K4jIbHAxnuxi7o42OrZgF/ZTNcsZj6nRKyUmkhLFq8CHItp/fy6hQZuZmP/n3yZ9VBUbp4zz/mX8hmYPw==}
+  /readable-stream/2.3.8:
+    resolution: {integrity: sha512-8p0AUk4XODgIewSi0l8Epjs+EVnWiK7NoDIEGU0HhE7+ZyY8D1IMY7odu5lRrFXGg71L15KG8QrPmum45RTtdA==}
     dependencies:
       core-util-is: 1.0.3
       inherits: 2.0.4
@@ -12139,8 +12232,8 @@ packages:
       util-deprecate: 1.0.2
     dev: true
 
-  /readable-stream/3.6.0:
-    resolution: {integrity: sha512-BViHy7LKeTz4oNnkcLJ+lVSL6vpiFeX6/d3oSH8zCW7UxP2onchk+vTGB143xuFjHS3deTgkKoXXymXqymiIdA==}
+  /readable-stream/3.6.1:
+    resolution: {integrity: sha512-+rQmrWMYGA90yenhTYsLWAsLsqVC8osOw6PKE1HDYiO0gdPeKe/xDHNzIAIn4C91YQ6oenEhfYqqc1883qHbjQ==}
     engines: {node: '>= 6'}
     dependencies:
       inherits: 2.0.4
@@ -12151,7 +12244,7 @@ packages:
     resolution: {integrity: sha512-ePeK6cc1EcKLEhJFt/AebMCLL+GgSKhuygrZ/GLaKZYEecIgIECf4UaUuaByiGtzckwR4ain9VzUh95T1exYGw==}
     engines: {node: '>=8'}
     dependencies:
-      readable-stream: 3.6.0
+      readable-stream: 3.6.1
     dev: true
 
   /readdirp/3.6.0:
@@ -12235,7 +12328,7 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       call-bind: 1.0.2
-      define-properties: 1.1.4
+      define-properties: 1.2.0
       functions-have-names: 1.2.3
 
   /regexpp/3.2.0:
@@ -12613,7 +12706,7 @@ packages:
       get-browser-rtc: 1.1.0
       queue-microtask: 1.2.3
       randombytes: 2.1.0
-      readable-stream: 3.6.0
+      readable-stream: 3.6.1
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -12954,6 +13047,22 @@ packages:
     dependencies:
       '@tokenizer/token': 0.3.0
       peek-readable: 5.0.0
+    dev: true
+
+  /styled-jsx/5.1.1:
+    resolution: {integrity: sha512-pW7uC1l4mBZ8ugbiZrcIsiIvVx1UmTfw7UkC3Um2tmfUq9Bhk8IiyEIPl6F8agHgjzku6j0xQEZbfA5uSgSaCw==}
+    engines: {node: '>= 12.0.0'}
+    peerDependencies:
+      '@babel/core': '*'
+      babel-plugin-macros: '*'
+      react: '>= 16.8.0 || 17.x.x || ^18.0.0-0'
+    peerDependenciesMeta:
+      '@babel/core':
+        optional: true
+      babel-plugin-macros:
+        optional: true
+    dependencies:
+      client-only: 0.0.1
     dev: true
 
   /styled-jsx/5.1.1_react@18.2.0:
@@ -14167,7 +14276,7 @@ packages:
     engines: {node: '>=12'}
     hasBin: true
     dependencies:
-      lib0: 0.2.62
+      lib0: 0.2.63
       simple-peer: 9.11.1
       y-protocols: 1.0.5
     optionalDependencies:
@@ -14296,10 +14405,9 @@ packages:
 
   /zod/3.20.6:
     resolution: {integrity: sha512-oyu0m54SGCtzh6EClBVqDDlAYRz4jrVtKwQ7ZnsEmMI9HnzuZFj8QFwAY1M5uniIYACdGvv0PBWPF2kO0aNofA==}
-    dev: false
 
-  /zustand/4.3.3_react@18.2.0:
-    resolution: {integrity: sha512-x2jXq8S0kfLGNwGh87nhRfEc2eZy37tSatpSoSIN+O6HIaBhgQHSONV/F9VNrNcBcKQu/E80K1DeHDYQC/zCrQ==}
+  /zustand/4.3.5_react@18.2.0:
+    resolution: {integrity: sha512-2iPUzfwx+g3f0PagOMz2vDO9mZzEp2puFpNe7vrAymVPOEIEUjCPkC4/zy84eAscxIWmTU4j9g6upXYkJdzEFQ==}
     engines: {node: '>=12.7.0'}
     peerDependencies:
       immer: '>=9.0'

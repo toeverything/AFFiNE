@@ -1,26 +1,20 @@
+import { getEnvironment } from '@affine/env';
 import { Trans, useTranslation } from '@affine/i18n';
 import React, { useEffect, useState } from 'react';
 
-import { getIsMobile } from '../../../utils/get-is-mobile';
-
-// Inspire by https://stackoverflow.com/a/4900484/8415727
-const getChromeVersion = () => {
-  const raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
-  return raw ? parseInt(raw[2], 10) : false;
-};
-const getIsChrome = () => {
-  return (
-    /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
-  );
-};
 const minimumChromeVersion = 102;
 
 export const shouldShowWarning = () => {
-  return (
-    !window.CLIENT_APP &&
-    !getIsMobile() &&
-    (!getIsChrome() || getChromeVersion() < minimumChromeVersion)
-  );
+  const env = getEnvironment();
+  if (!env.isBrowser) {
+    // disable in SSR
+    return false;
+  }
+  if (env.isChrome) {
+    return env.chromeVersion < minimumChromeVersion;
+  } else {
+    return !env.isMobile;
+  }
 };
 
 export const OSWarningMessage: React.FC = () => {
@@ -28,8 +22,11 @@ export const OSWarningMessage: React.FC = () => {
   const [notChrome, setNotChrome] = useState(false);
   const [notGoodVersion, setNotGoodVersion] = useState(false);
   useEffect(() => {
-    setNotChrome(getIsChrome());
-    setNotGoodVersion(getChromeVersion() < minimumChromeVersion);
+    const env = getEnvironment();
+    setNotChrome(env.isBrowser && !env.isChrome);
+    setNotGoodVersion(
+      env.isBrowser && env.isChrome && env.chromeVersion < minimumChromeVersion
+    );
   }, []);
   if (notChrome) {
     return (
