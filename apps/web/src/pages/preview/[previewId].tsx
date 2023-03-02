@@ -54,7 +54,7 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
             onInit={(page, editor) => {
               blockSuiteWorkspace.setPageMeta(page.id, { title });
               const pageBlockId = page.addBlockByFlavour('affine:page', {
-                title,
+                title: new page.Text(title),
               });
               page.addBlockByFlavour('affine:surface', {}, null);
               const frameId = page.addBlockByFlavour(
