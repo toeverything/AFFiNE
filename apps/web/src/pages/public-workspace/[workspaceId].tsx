@@ -1,4 +1,6 @@
+import { ListSkeleton } from '@affine/component';
 import { useAtomValue, useSetAtom } from 'jotai';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import React, { Suspense, useCallback, useEffect } from 'react';
 
@@ -8,10 +10,16 @@ import {
   publicWorkspaceIdAtom,
 } from '../../atoms/public-workspace';
 import { QueryParamError } from '../../components/affine/affine-error-eoundary';
-import { BlockSuitePublicPageList } from '../../components/blocksuite/block-suite-page-list';
+import { StyledTableContainer } from '../../components/blocksuite/block-suite-page-list/page-list/styles';
 import { PageLoading } from '../../components/pure/loading';
 import { WorkspaceLayout } from '../../layouts';
 import { NextPageWithLayout } from '../../shared';
+
+const BlockSuitePublicPageList = dynamic(
+  async () =>
+    (await import('../../components/blocksuite/block-suite-page-list'))
+      .BlockSuitePublicPageList
+);
 
 const ListPageInner: React.FC<{
   workspaceId: string;
@@ -64,7 +72,13 @@ const ListPage: NextPageWithLayout = () => {
     throw new QueryParamError('workspaceId', workspaceId);
   }
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense
+      fallback={
+        <StyledTableContainer>
+          <ListSkeleton />
+        </StyledTableContainer>
+      }
+    >
       <ListPageInner workspaceId={workspaceId} />
     </Suspense>
   );
