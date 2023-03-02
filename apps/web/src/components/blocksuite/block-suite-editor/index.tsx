@@ -68,7 +68,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
         const title =
           localStorage.getItem(kFirstPage) === null ? exampleTitle : undefined;
         const pageBlockId = page.addBlockByFlavour('affine:page', {
-          title,
+          title: new page.Text(title),
         });
         page.addBlockByFlavour('affine:surface', {}, null);
         const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
@@ -113,5 +113,12 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       container.removeChild(editor);
     };
   }, [page]);
-  return <div className="editor-wrapper" style={props.style} ref={ref} />;
+  return (
+    <div
+      data-testid={`editor-${props.blockSuiteWorkspace.room}-${props.page.id}`}
+      className="editor-wrapper"
+      style={props.style}
+      ref={ref}
+    />
+  );
 };

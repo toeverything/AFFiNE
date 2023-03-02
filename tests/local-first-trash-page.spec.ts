@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 
 import { loadPage } from './libs/load-page';
-import { newPage } from './libs/page-logic';
+import { getBlockSuiteEditorTitle, newPage } from './libs/page-logic';
 import { test } from './libs/playwright';
 loadPage();
 
@@ -10,8 +10,8 @@ test.describe('Local first trash page', () => {
     page,
   }) => {
     await newPage(page);
-    await page.getByPlaceholder('Title').click();
-    await page.getByPlaceholder('Title').fill('this is a new page to delete');
+    await getBlockSuiteEditorTitle(page).click();
+    await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
     const newPageId = page.url().split('/').reverse()[0];
     await page.getByRole('link', { name: 'All pages' }).click();
     const cell = page.getByRole('cell', {

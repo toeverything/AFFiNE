@@ -1,15 +1,19 @@
 import { expect } from '@playwright/test';
 
 import { loadPage } from './libs/load-page';
-import { clickPageMoreActions, newPage } from './libs/page-logic';
+import {
+  clickPageMoreActions,
+  getBlockSuiteEditorTitle,
+  newPage,
+} from './libs/page-logic';
 import { test } from './libs/playwright';
 loadPage();
 
 test.describe('Local first favorite and cancel favorite  page', () => {
   test('New a page and open it ,then favorite it', async ({ page }) => {
     await newPage(page);
-    await page.getByPlaceholder('Title').click();
-    await page.getByPlaceholder('Title').fill('this is a new page to favorite');
+    await getBlockSuiteEditorTitle(page).click();
+    await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
     await page.getByRole('link', { name: 'All pages' }).click();
     const cell = page.getByRole('cell', {
       name: 'this is a new page to favorite',
@@ -23,8 +27,8 @@ test.describe('Local first favorite and cancel favorite  page', () => {
   });
   test('Cancel favorite', async ({ page }) => {
     await newPage(page);
-    await page.getByPlaceholder('Title').click();
-    await page.getByPlaceholder('Title').fill('this is a new page to favorite');
+    await getBlockSuiteEditorTitle(page).click();
+    await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
     await page.getByRole('link', { name: 'All pages' }).click();
     const cell = page.getByRole('cell', {
       name: 'this is a new page to favorite',
