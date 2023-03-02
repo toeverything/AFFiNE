@@ -99,7 +99,7 @@ export const WorkspaceListModal = ({
               />
             );
           })}
-          <StyledCard onClick={onCreateWorkspace}>
+          <StyledCard data-testid="new-workspace" onClick={onCreateWorkspace}>
             <StyleWorkspaceAdd className="add-icon">
               <PlusIcon />
             </StyleWorkspaceAdd>
