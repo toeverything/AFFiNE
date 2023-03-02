@@ -18,7 +18,7 @@
     "@blocksuite/store": "0.5.0-20230302142916-8e090d3",
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
-    "@mui/base": "5.0.0-alpha.118",
+    "@mui/base": "5.0.0-alpha.119",
     "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.11",
     "lit": "^2.6.1",
