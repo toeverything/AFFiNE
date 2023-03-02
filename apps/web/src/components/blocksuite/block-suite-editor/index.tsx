@@ -3,7 +3,7 @@ import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import { useEffect, useRef } from 'react';
+import { CSSProperties, useEffect, useRef } from 'react';
 
 import { BlockSuiteWorkspace } from '../../../shared';
 
@@ -13,6 +13,7 @@ export type EditorProps = {
   mode: 'page' | 'edgeless';
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
+  style?: CSSProperties;
 };
 
 import markdown from '../../../templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
@@ -112,5 +113,5 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       container.removeChild(editor);
     };
   }, [page]);
-  return <div className="editor-wrapper" ref={ref} />;
+  return <div className="editor-wrapper" style={props.style} ref={ref} />;
 };
