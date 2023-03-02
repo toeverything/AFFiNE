@@ -22,9 +22,16 @@ export function useWorkspaceBlobImage(
   const blobStorage = useWorkspaceBlob(blockSuiteWorkspace);
   const [imageURL, setImageURL] = useState<string | null>(null);
   useEffect(() => {
+    const controller = new AbortController();
     blobStorage?.get(key).then(blob => {
+      if (controller.signal.aborted) {
+        return;
+      }
       setImageURL(blob);
     });
+    return () => {
+      controller.abort();
+    };
   }, [blobStorage, key]);
   return imageURL;
 }
