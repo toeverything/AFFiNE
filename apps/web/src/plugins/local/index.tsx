@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import { assertEquals, nanoid } from '@blocksuite/store';
 import React from 'react';
@@ -15,6 +16,8 @@ import {
 } from '../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
+
+const logger = new DebugLogger('local-plugin');
 
 export const kStoreKey = 'affine-local-workspace';
 
@@ -134,7 +137,7 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       if (signal?.aborted) {
         return;
       }
-      console.info('no local workspace found, create a new one');
+      logger.info('no local workspace found, create a new one');
       const workspaceId = nanoid();
       const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
       blockSuiteWorkspace.meta.setName('Untitled Workspace');

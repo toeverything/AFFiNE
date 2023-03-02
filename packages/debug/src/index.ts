@@ -1,11 +1,13 @@
+import { getEnvironment } from '@affine/env';
 import debug from 'debug';
-
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-const SESSION_KEY = 'affine:debug';
-const development = process.env.NODE_ENV === 'development';
+const env = getEnvironment();
 
-if (typeof window !== 'undefined') {
+const SESSION_KEY = 'affine:debug';
+const development = env.isDebug;
+
+if (env.isBrowser) {
   // enable debug logs if the URL search string contains `debug`
   // e.g. http://localhost:3000/?debug
   if (window.location.search.includes('debug')) {

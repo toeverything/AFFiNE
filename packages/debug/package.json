@@ -2,13 +2,11 @@
   "name": "@affine/debug",
   "private": true,
   "main": "./src/index.ts",
-  "keywords": [],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/toeverything/AFFiNE.git"
-  },
   "dependencies": {
-    "@types/debug": "^4.1.7",
+    "@affine/env": "workspace:*",
     "debug": "^4.3.4"
+  },
+  "devDependencies": {
+    "@types/debug": "^4.1.7"
   }
 }

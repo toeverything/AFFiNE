@@ -11,6 +11,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/datacenter": "workspace:*",
+    "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@blocksuite/blocks": "0.4.1-20230220214107-0a354de",
