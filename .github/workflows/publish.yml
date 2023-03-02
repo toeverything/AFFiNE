@@ -19,10 +19,8 @@ jobs:
     environment: development
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
-        with:
-          version: 'latest'
 
       - name: Use Node.js
         uses: actions/setup-node@v2
@@ -82,7 +80,7 @@ jobs:
 
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download artifact
         uses: actions/download-artifact@v3
