@@ -34,7 +34,6 @@ export const createBroadCastChannelProvider = (
       }
       case 'doc:update': {
         const [, update, clientId] = event.data;
-        console.log('doc:update', clientId, awareness.clientID);
         if (!clientId || clientId === awareness.clientID) {
           Y.applyUpdate(doc, update, broadcastChannel);
         }
