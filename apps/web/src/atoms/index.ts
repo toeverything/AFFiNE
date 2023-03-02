@@ -1,7 +1,6 @@
 import { atom } from 'jotai';
 import { createStore } from 'jotai/index';
 import { atomWithStorage } from 'jotai/utils';
-import { unstable_batchedUpdates } from 'react-dom';
 
 // workspace necessary atoms
 export const currentWorkspaceIdAtom = atomWithStorage<string | null>(
@@ -14,18 +13,34 @@ export const currentPageIdAtom = atomWithStorage<string | null>(
 );
 // If the workspace is locked, it means that the user maybe updating the workspace
 //  from local to remote or vice versa
-export const workspaceLockAtom = atom(false);
+const lockRef = {
+  value: false,
+  callbacks: new Set<() => void>(),
+};
+
+export const workspaceLockAtom = atom(async () => {
+  if (lockRef.value) {
+    return new Promise<void>(resolve => {
+      const callback = () => {
+        resolve();
+        lockRef.callbacks.delete(callback);
+      };
+      lockRef.callbacks.add(callback);
+    });
+  } else {
+    return Promise.resolve();
+  }
+});
+
 export async function lockMutex(fn: () => Promise<unknown>) {
-  if (jotaiStore.get(workspaceLockAtom)) {
+  if (lockRef.value) {
     throw new Error('Workspace is locked');
   }
-  unstable_batchedUpdates(() => {
-    jotaiStore.set(workspaceLockAtom, true);
-  });
+  lockRef.value = true;
+  lockRef.callbacks.forEach(cb => cb());
   await fn();
-  unstable_batchedUpdates(() => {
-    jotaiStore.set(workspaceLockAtom, false);
-  });
+  lockRef.value = false;
+  lockRef.callbacks.forEach(cb => cb());
 }
 
 // modal atoms

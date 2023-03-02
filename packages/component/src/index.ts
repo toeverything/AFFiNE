@@ -1,4 +1,5 @@
 // export * from './components/BlockSuiteEditor';
+export * from './components/EditorSkeleton';
 export * from './components/ListSkeleton';
 export * from './styles';
 export * from './ui/breadcrumbs';
