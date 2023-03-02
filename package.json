@@ -65,5 +65,6 @@
     "patchedDependencies": {
       "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch"
     }
-  }
+  },
+  "packageManager": "pnpm@7.28.0"
 }
