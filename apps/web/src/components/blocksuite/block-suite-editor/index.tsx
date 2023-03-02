@@ -68,7 +68,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
         const title =
           localStorage.getItem(kFirstPage) === null ? exampleTitle : undefined;
         const pageBlockId = page.addBlockByFlavour('affine:page', {
-          title,
+          title: new page.Text(title),
         });
         page.addBlockByFlavour('affine:surface', {}, null);
         const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
