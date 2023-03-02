@@ -9,6 +9,10 @@ export async function newPage(page: Page) {
   await page.waitForSelector('virgo-line');
 }
 
+export function getBlockSuiteEditorTitle(page: Page) {
+  return page.locator('virgo-line').nth(0);
+}
+
 export async function clickPageMoreActions(page: Page) {
   return page
     .getByTestId('editor-header-items')
