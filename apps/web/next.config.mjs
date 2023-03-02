@@ -1,3 +1,4 @@
+// @ts-check
 import path from 'node:path';
 import debugLocal from 'next-debug-local';
 import preset from './preset.config.mjs';
@@ -61,6 +62,7 @@ const nextConfig = {
     '@affine/component',
     '@affine/datacenter',
     '@affine/i18n',
+    '@affine/debug',
     '@affine/env',
   ],
   publicRuntimeConfig: {

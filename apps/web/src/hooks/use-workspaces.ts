@@ -1,5 +1,5 @@
 import { Workspace } from '@affine/datacenter';
-import { config } from '@affine/env';
+import { config, getEnvironment } from '@affine/env';
 import { nanoid } from '@blocksuite/store';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import useSWR from 'swr';
@@ -88,6 +88,9 @@ const emptyWorkspaces: RemWorkspace[] = [];
 export async function refreshDataCenter(signal?: AbortSignal) {
   dataCenter.isLoaded = false;
   dataCenter.callbacks.forEach(cb => cb());
+  if (getEnvironment().isServer) {
+    return;
+  }
   // fixme(himself65): `prefetchWorkspace` is not used
   //  use `config.enablePlugin = ['affine', 'local']` instead
   // if (!config.prefetchWorkspace) {
