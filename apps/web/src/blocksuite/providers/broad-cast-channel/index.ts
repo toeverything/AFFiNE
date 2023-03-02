@@ -50,6 +50,14 @@ export const createBroadCastChannelProvider = (
       }
     }
   };
+  const handleDocUpdate = (updateV1: Uint8Array, origin: any) => {
+    if (origin !== awareness.clientID) {
+      // not self update, ignore
+      return;
+    }
+    const updateV2 = Y.convertUpdateFormatV1ToV2(updateV1);
+    broadcastChannel?.postMessage(['doc:update', updateV2]);
+  };
   return {
     flavour: 'broadcast-channel',
     connect: () => {
@@ -69,22 +77,16 @@ export const createBroadCastChannelProvider = (
         awareness.clientID,
       ]);
       broadcastChannel.postMessage(['awareness:update', awarenessUpdate]);
-      const handleDocUpdate = (updateV1: Uint8Array, origin: any) => {
-        if (origin !== awareness.clientID) {
-          // not self update, ignore
-          return;
-        }
-        const updateV2 = Y.convertUpdateFormatV1ToV2(updateV1);
-        broadcastChannel?.postMessage(['doc:update', updateV2]);
-      };
       doc.on('update', handleDocUpdate);
     },
     disconnect: () => {
       assertExists(broadcastChannel);
+      doc.off('update', handleDocUpdate);
       broadcastChannel.close();
     },
     cleanup: () => {
       assertExists(broadcastChannel);
+      doc.off('update', handleDocUpdate);
       broadcastChannel.close();
     },
   };

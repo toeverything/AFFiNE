@@ -30,7 +30,7 @@
     "react-router": "^6.5.0",
     "react-router-dom": "^6.5.0",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.5.46"
+    "yjs": "^13.5.47"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.2.3",
