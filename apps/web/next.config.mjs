@@ -1,10 +1,12 @@
 // @ts-check
-import path from 'node:path';
-import debugLocal from 'next-debug-local';
-import preset from './preset.config.mjs';
 import { createRequire } from 'node:module';
-import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
+import path from 'node:path';
+
 import { PerfseePlugin } from '@perfsee/webpack';
+import debugLocal from 'next-debug-local';
+
+import preset from './preset.config.mjs';
+import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
 
 const require = createRequire(import.meta.url);
 
