@@ -6,6 +6,10 @@ const minimumChromeVersion = 102;
 
 export const shouldShowWarning = () => {
   const env = getEnvironment();
+  if (env.isDesktop) {
+    // even though desktop have compatibility issues, we don't want to show the warning
+    return false;
+  }
   if (!env.isBrowser) {
     // disable in SSR
     return false;
