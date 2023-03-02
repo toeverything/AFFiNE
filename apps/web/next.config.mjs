@@ -108,6 +108,7 @@ const nextConfig = {
     return profile;
   },
   basePath: process.env.NEXT_BASE_PATH,
+  pageExtensions: [...(preset.enableDebugPage ? ['tsx', 'dev.tsx'] : ['tsx'])],
 };
 
 const baseDir = process.env.LOCAL_BLOCK_SUITE ?? '/';

@@ -38,6 +38,7 @@ const config: PlaywrightTestConfig = {
     reuseExistingServer: !process.env.CI,
     env: {
       COVERAGE: process.env.COVERAGE || 'false',
+      ENABLE_DEBUG_PAGE: '1',
     },
   },
 

@@ -7,5 +7,6 @@ const config = {
   ),
   prefetchWorkspace: Boolean(process.env.PREFETCH_WORKSPACE ?? '1'),
   exposeInternal: Boolean(process.env.EXPOSE_INTERNAL ?? '1'),
+  enableDebugPage: Boolean(process.env.ENABLE_DEBUG_PAGE ?? false),
 };
 export default config;

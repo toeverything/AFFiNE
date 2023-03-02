@@ -30,6 +30,7 @@ export const createEmptyBlockSuiteWorkspace = (
 ) => {
   return new BlockSuiteWorkspace({
     room,
+    isSSR: typeof window === 'undefined',
     blobOptionsGetter,
   })
     .register(builtInSchemas)
