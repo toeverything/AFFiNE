@@ -254,6 +254,7 @@ importers:
       react: ^18.2.0
       react-dom: ^18.2.0
       storybook: 7.0.0-beta.60
+      storybook-dark-mode-v7: 3.0.0-alpha.0
       swc: ^1.0.11
       swc-loader: ^0.2.3
       typescript: ^4.9.5
@@ -288,6 +289,7 @@ importers:
       '@types/react-dom': 18.0.11
       '@vitejs/plugin-react': 3.1.0_vite@4.1.4
       storybook: 7.0.0-beta.60
+      storybook-dark-mode-v7: 3.0.0-alpha.0_biqbaboplfbrettd7655fr4n2y
       swc: 1.0.11
       swc-loader: 0.2.3_@swc+core@1.3.37
       typescript: 4.9.5
@@ -4534,6 +4536,36 @@ packages:
       '@storybook/theming': 7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y
       memoizerific: 1.11.3
       prop-types: 15.8.1
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+    dev: true
+
+  /@storybook/addons/7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-QsKjyh0Yt1gc34dAWTHcqOhM9zt7jZCjmjBod7xiIApzswpb+nCNPFablkcVWH3G8vHcqNlp5yUUbERiFyv0uQ==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@storybook/manager-api': 7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y
+      '@storybook/preview-api': 7.0.0-beta.60
+      '@storybook/types': 7.0.0-beta.60
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+    dev: true
+
+  /@storybook/api/7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-27pyW1asJhdVm3fn1Hn9xsAWcYflsEUt8nCXcCul/zw77dGFtT/IYrwOXO1KzE/+CM8uF7U9bfKthZetmS5NAw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+    dependencies:
+      '@storybook/client-logger': 7.0.0-beta.60
+      '@storybook/manager-api': 7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
     dev: true
@@ -12740,6 +12772,29 @@ packages:
 
   /store2/2.14.2:
     resolution: {integrity: sha512-siT1RiqlfQnGqgT/YzXVUNsom9S0H1OX+dpdGN1xkyYATo4I6sep5NmsRD/40s3IIOvlCq6akxkqG82urIZW1w==}
+    dev: true
+
+  /storybook-dark-mode-v7/3.0.0-alpha.0_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-zAxHayO9ufgtr7g+SaV6nJI73ubEtWC3Z4P0SY80QqVonLVSdLWNIIRMUK88ImCVB7VSG4QyZDTW16BgJ+86Ew==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+    dependencies:
+      '@storybook/addons': 7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y
+      '@storybook/api': 7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y
+      '@storybook/components': 7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y
+      '@storybook/core-events': 7.0.0-beta.60
+      '@storybook/global': 5.0.0
+      '@storybook/theming': 7.0.0-beta.60_biqbaboplfbrettd7655fr4n2y
+      fast-deep-equal: 3.1.3
+      memoizerific: 1.11.3
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
     dev: true
 
   /storybook/7.0.0-beta.60:
