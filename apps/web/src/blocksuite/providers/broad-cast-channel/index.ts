@@ -27,13 +27,15 @@ export const createBroadCastChannelProvider = (
     switch (eventName) {
       case 'doc:diff': {
         const [, diff, clientId] = event.data;
-        const updateV2 = Y.encodeStateAsUpdateV2(doc, diff);
-        broadcastChannel!.postMessage(['doc:update', updateV2, clientId]);
+        const update = Y.encodeStateAsUpdate(doc, diff);
+        broadcastChannel!.postMessage(['doc:update', update, clientId]);
         break;
       }
       case 'doc:update': {
-        const [, updateV2, clientId] = event.data;
-        Y.applyUpdateV2(doc, updateV2, clientId);
+        const [, update, clientId] = event.data;
+        if (!clientId || clientId === awareness.clientID) {
+          Y.applyUpdate(doc, update, broadcastChannel);
+        }
         break;
       }
       case 'awareness:query': {
@@ -51,12 +53,11 @@ export const createBroadCastChannelProvider = (
     }
   };
   const handleDocUpdate = (updateV1: Uint8Array, origin: any) => {
-    if (origin !== awareness.clientID) {
+    if (origin === broadcastChannel) {
       // not self update, ignore
       return;
     }
-    const updateV2 = Y.convertUpdateFormatV1ToV2(updateV1);
-    broadcastChannel?.postMessage(['doc:update', updateV2]);
+    broadcastChannel?.postMessage(['doc:update', updateV1, origin]);
   };
   return {
     flavour: 'broadcast-channel',
@@ -68,9 +69,10 @@ export const createBroadCastChannelProvider = (
           onmessage: handleBroadcastChannelMessage,
         }
       );
+      console.log('connect broadcast channel', blockSuiteWorkspace.room);
       const docDiff = Y.encodeStateVector(doc);
       broadcastChannel.postMessage(['doc:diff', docDiff, awareness.clientID]);
-      const docUpdateV2 = Y.encodeStateAsUpdateV2(doc);
+      const docUpdateV2 = Y.encodeStateAsUpdate(doc);
       broadcastChannel.postMessage(['doc:update', docUpdateV2]);
       broadcastChannel.postMessage(['awareness:query', awareness.clientID]);
       const awarenessUpdate = encodeAwarenessUpdate(awareness, [
@@ -81,6 +83,7 @@ export const createBroadCastChannelProvider = (
     },
     disconnect: () => {
       assertExists(broadcastChannel);
+      console.log('disconnect broadcast channel', blockSuiteWorkspace.room);
       doc.off('update', handleDocUpdate);
       broadcastChannel.close();
     },
