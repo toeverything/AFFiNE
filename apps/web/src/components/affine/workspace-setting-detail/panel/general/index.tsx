@@ -63,6 +63,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
             <Upload
               accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
               fileChange={fileChange}
+              data-testid="upload-avatar"
             >
               <>
                 <div className="camera-icon">

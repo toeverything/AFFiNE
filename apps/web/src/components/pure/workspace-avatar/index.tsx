@@ -12,16 +12,17 @@ interface AvatarProps {
 }
 
 export const Avatar: React.FC<AvatarProps> = React.memo<AvatarProps>(
-  function Avatar(props) {
-    const size = props.size || 20;
+  function Avatar({ size: _size, avatar_url, style, name, ...props }) {
+    const size = _size || 20;
     const sizeStr = size + 'px';
 
     return (
       <>
-        {props.avatar_url ? (
+        {avatar_url ? (
           <div
+            {...props}
             style={{
-              ...props.style,
+              ...style,
               width: sizeStr,
               height: sizeStr,
               color: '#fff',
@@ -34,7 +35,7 @@ export const Avatar: React.FC<AvatarProps> = React.memo<AvatarProps>(
             <picture>
               <img
                 style={{ width: sizeStr, height: sizeStr }}
-                src={props.avatar_url}
+                src={avatar_url}
                 alt=""
                 referrerPolicy="no-referrer"
               />
@@ -42,14 +43,15 @@ export const Avatar: React.FC<AvatarProps> = React.memo<AvatarProps>(
           </div>
         ) : (
           <div
+            {...props}
             style={{
-              ...props.style,
+              ...style,
               width: sizeStr,
               height: sizeStr,
               border: '1px solid #fff',
               color: '#fff',
               fontSize: Math.ceil(0.5 * size) + 'px',
-              background: stringToColour(props.name || 'AFFiNE'),
+              background: stringToColour(name || 'AFFiNE'),
               borderRadius: '50%',
               textAlign: 'center',
               lineHeight: size + 'px',
@@ -57,7 +59,7 @@ export const Avatar: React.FC<AvatarProps> = React.memo<AvatarProps>(
               verticalAlign: 'middle',
             }}
           >
-            {(props.name || 'AFFiNE').substring(0, 1)}
+            {(name || 'AFFiNE').substring(0, 1)}
           </div>
         )}
       </>
@@ -82,10 +84,12 @@ export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
   size = 20,
   workspace,
   style,
+  ...props
 }) => {
   const avatarURL = useWorkspaceBlobImage(workspace.meta.avatar, workspace);
   return (
     <Avatar
+      {...props}
       size={size}
       name={workspace.meta.name}
       avatar_url={avatarURL ?? ''}
@@ -110,5 +114,7 @@ export const WorkspaceAvatar: React.FC<WorkspaceUnitAvatarProps> = ({
       />
     );
   }
-  return <Avatar size={size} name="UNKNOWN" avatar_url="" style={style} />;
+  return (
+    <Avatar {...props} size={size} name="UNKNOWN" avatar_url="" style={style} />
+  );
 };

@@ -48,6 +48,7 @@ export const CreateWorkspaceModal = ({
             <ContentTitle>{t('New Workspace')}</ContentTitle>
             <p>{t('Workspace description')}</p>
             <Input
+              data-testid="create-workspace-input"
               onKeyDown={handleKeyDown}
               placeholder={t('Set a Workspace name')}
               maxLength={15}
@@ -63,6 +64,7 @@ export const CreateWorkspaceModal = ({
               }}
             />
             <Button
+              data-testid="create-workspace-button"
               disabled={!workspaceName}
               style={{
                 width: '260px',
