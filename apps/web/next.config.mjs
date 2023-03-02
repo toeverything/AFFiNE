@@ -4,6 +4,7 @@ import debugLocal from 'next-debug-local';
 import preset from './preset.config.mjs';
 import { createRequire } from 'node:module';
 import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
+import { PerfseePlugin } from '@perfsee/webpack';
 
 const require = createRequire(import.meta.url);
 
@@ -75,12 +76,24 @@ const nextConfig = {
     editorVersion: require('./package.json').dependencies['@blocksuite/editor'],
     ...preset,
   },
-  webpack: config => {
+  webpack: (config, { dev, isServer }) => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
     config.module.rules.push({
       test: /\.md$/i,
       loader: 'raw-loader',
     });
+
+    if (!isServer && !dev) {
+      config.devtool = 'hidden-nosources-source-map';
+      const perfsee = new PerfseePlugin({
+        project: 'affine-toeverything',
+      });
+      if (Array.isArray(config.plugins)) {
+        config.plugins.push(perfsee);
+      } else {
+        config.plugins = [perfsee];
+      }
+    }
 
     return config;
   },
