@@ -75,10 +75,10 @@ importers:
 
   apps/desktop:
     specifiers:
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/editor': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904
+      '@blocksuite/editor': 0.5.0-20230301172958-2384904
       '@blocksuite/icons': 2.0.17
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/store': 0.5.0-20230301172958-2384904
       '@emotion/react': ^11.10.6
       '@emotion/styled': ^11.10.6
       '@tauri-apps/api': ^1.2.0
@@ -107,10 +107,10 @@ importers:
       yjs: ^13.5.46
       zx: ^7.1.1
     dependencies:
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e_pku46365fsiysie5qvz3hr235y
-      '@blocksuite/editor': 0.5.0-20230228114851-7e82f3e_xh5fumbhlyig56qty5bexrro5u
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904_4pplnunaek7i4s2rcnufg2z3km
+      '@blocksuite/editor': 0.5.0-20230301172958-2384904_yxfrgk6jffeqknays3fo63pyuy
       '@blocksuite/icons': 2.0.17_pmekkgnqduwlme35zpnqhenc34
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/store': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
       '@emotion/styled': 11.10.6_oouaibmszuch5k64ms7uxp2aia
       '@tauri-apps/api': 1.2.0_nb4isgkwd3sres4g7j7rgtldsu
@@ -146,11 +146,11 @@ importers:
       '@affine/datacenter': workspace:*
       '@affine/env': workspace:*
       '@affine/i18n': workspace:*
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/editor': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904
+      '@blocksuite/editor': 0.5.0-20230301172958-2384904
       '@blocksuite/icons': ^2.0.17
-      '@blocksuite/react': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/react': 0.5.0-20230301172958-2384904
+      '@blocksuite/store': 0.5.0-20230301172958-2384904
       '@emotion/cache': ^11.10.5
       '@emotion/css': ^11.10.6
       '@emotion/react': ^11.10.6
@@ -188,11 +188,11 @@ importers:
       '@affine/datacenter': link:../../packages/data-center
       '@affine/env': link:../../packages/env
       '@affine/i18n': link:../../packages/i18n
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e_pku46365fsiysie5qvz3hr235y
-      '@blocksuite/editor': 0.5.0-20230228114851-7e82f3e_xh5fumbhlyig56qty5bexrro5u
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904_4pplnunaek7i4s2rcnufg2z3km
+      '@blocksuite/editor': 0.5.0-20230301172958-2384904_yxfrgk6jffeqknays3fo63pyuy
       '@blocksuite/icons': 2.0.17_pmekkgnqduwlme35zpnqhenc34
-      '@blocksuite/react': 0.5.0-20230228114851-7e82f3e_vofptqepqo3q53bilxzldvx3u4
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/react': 0.5.0-20230301172958-2384904_b4m2kuw3q4uw75nnzbjfprlfii
+      '@blocksuite/store': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
       '@emotion/cache': 11.10.5
       '@emotion/css': 11.10.6
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
@@ -231,12 +231,12 @@ importers:
     specifiers:
       '@affine/debug': workspace:*
       '@affine/i18n': workspace:*
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/editor': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/global': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904
+      '@blocksuite/editor': 0.5.0-20230301172958-2384904
+      '@blocksuite/global': 0.5.0-20230301172958-2384904
       '@blocksuite/icons': 2.0.17
-      '@blocksuite/react': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/react': 0.5.0-20230301172958-2384904
+      '@blocksuite/store': 0.5.0-20230301172958-2384904
       '@emotion/react': ^11.10.6
       '@emotion/styled': ^11.10.6
       '@mui/base': 5.0.0-alpha.118
@@ -265,12 +265,12 @@ importers:
     dependencies:
       '@affine/debug': link:../debug
       '@affine/i18n': link:../i18n
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e_pku46365fsiysie5qvz3hr235y
-      '@blocksuite/editor': 0.5.0-20230228114851-7e82f3e_xh5fumbhlyig56qty5bexrro5u
-      '@blocksuite/global': 0.5.0-20230228114851-7e82f3e_lit@2.6.1
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904_4pplnunaek7i4s2rcnufg2z3km
+      '@blocksuite/editor': 0.5.0-20230301172958-2384904_yxfrgk6jffeqknays3fo63pyuy
+      '@blocksuite/global': 0.5.0-20230301172958-2384904_lit@2.6.1
       '@blocksuite/icons': 2.0.17_pmekkgnqduwlme35zpnqhenc34
-      '@blocksuite/react': 0.5.0-20230228114851-7e82f3e_vofptqepqo3q53bilxzldvx3u4
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/react': 0.5.0-20230301172958-2384904_b4m2kuw3q4uw75nnzbjfprlfii
+      '@blocksuite/store': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
       '@emotion/styled': 11.10.6_oouaibmszuch5k64ms7uxp2aia
       '@mui/base': 5.0.0-alpha.118_zula6vjvt3wdocc4mwcxqa6nzi
@@ -301,8 +301,8 @@ importers:
   packages/data-center:
     specifiers:
       '@affine/debug': workspace:*
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904
+      '@blocksuite/store': 0.5.0-20230301172958-2384904
       '@tauri-apps/api': ^1.2.0
       encoding: ^0.1.13
       fake-indexeddb: 4.0.1
@@ -318,8 +318,8 @@ importers:
       yjs: ^13.5.46
     dependencies:
       '@affine/debug': link:../debug
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e_pku46365fsiysie5qvz3hr235y
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904_4pplnunaek7i4s2rcnufg2z3km
+      '@blocksuite/store': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
       '@tauri-apps/api': 1.2.0_nb4isgkwd3sres4g7j7rgtldsu
       encoding: 0.1.13
       firebase: 9.17.1_encoding@0.1.13
@@ -345,11 +345,11 @@ importers:
 
   packages/env:
     specifiers:
-      '@blocksuite/global': 0.4.1-20230220214107-0a354de
+      '@blocksuite/global': 0.5.0-20230301172958-2384904
       next: ^13.2.3
       zod: ^3.20.6
     dependencies:
-      '@blocksuite/global': 0.4.1-20230220214107-0a354de
+      '@blocksuite/global': 0.5.0-20230301172958-2384904
     devDependencies:
       next: 13.2.3
       zod: 3.20.6
@@ -1697,15 +1697,15 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@blocksuite/blocks/0.5.0-20230228114851-7e82f3e_pku46365fsiysie5qvz3hr235y:
-    resolution: {integrity: sha512-Qb5M85McniVkZdvxB5urcxsEATrAK96wuc9WfZZd8348BSP51hiFwOnVD7veBAc3kLEkk8X+/6xag9cK6Wt4xw==}
+  /@blocksuite/blocks/0.5.0-20230301172958-2384904_4pplnunaek7i4s2rcnufg2z3km:
+    resolution: {integrity: sha512-7FBfBW7jeHhhVGi4MPxdStKMGEZgYPbyPnvsVCF7y5iDzaOd0/vf93xL4wIXDvMtjzGAZbUWqAM4kQ4H7ywf1w==}
     peerDependencies:
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/store': 0.5.0-20230301172958-2384904
     dependencies:
-      '@blocksuite/global': 0.5.0-20230228114851-7e82f3e_lit@2.6.1
-      '@blocksuite/phasor': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
-      '@blocksuite/virgo': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/global': 0.5.0-20230301172958-2384904_lit@2.6.1
+      '@blocksuite/phasor': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/store': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/virgo': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
       '@popperjs/core': 2.11.6
       highlight.js: 11.7.0
       hotkeys-js: 3.10.1
@@ -1716,22 +1716,22 @@ packages:
       - yjs
     dev: false
 
-  /@blocksuite/editor/0.5.0-20230228114851-7e82f3e_xh5fumbhlyig56qty5bexrro5u:
-    resolution: {integrity: sha512-G5lCrDy/SH8MF2rZKW4bu/Ilh5CXOq0CVMHBpv8tZ5TyfBWk5J9kxVsoWMC9QJU1+p8s1Iw2LBwj/uetwm9Lnw==}
+  /@blocksuite/editor/0.5.0-20230301172958-2384904_yxfrgk6jffeqknays3fo63pyuy:
+    resolution: {integrity: sha512-ZtqSQQTa47by6UkrveDIbOqBufsvK5nB9COv/sLP1diQ5HZxucQ1W5ZIjM5HCGTroWmJJwYhZxkwUuw/Ye77aw==}
     peerDependencies:
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904
+      '@blocksuite/store': 0.5.0-20230301172958-2384904
     dependencies:
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e_pku46365fsiysie5qvz3hr235y
-      '@blocksuite/global': 0.5.0-20230228114851-7e82f3e_lit@2.6.1
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904_4pplnunaek7i4s2rcnufg2z3km
+      '@blocksuite/global': 0.5.0-20230301172958-2384904_lit@2.6.1
+      '@blocksuite/store': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
       lit: 2.6.1
       marked: 4.2.12
       turndown: 7.1.1
     dev: false
 
-  /@blocksuite/global/0.4.1-20230220214107-0a354de:
-    resolution: {integrity: sha512-wC+TXvoqj5Ypx6uDj2gE+o8fclvs+K0jVtG7FnlOVJ6AZnYup5kBGGWBx1SwfhbwoXmF/ZcHOcAVZmdNsupfVA==}
+  /@blocksuite/global/0.5.0-20230301172958-2384904:
+    resolution: {integrity: sha512-4ZPFM4IhQHFbG6+83GKRin9zD8smEK3p0BhmgePTbT9UYkhZza990Cb9gutmRHKQcj65l/pHjeTbJUjNXrUNyw==}
     peerDependencies:
       lit: ^2.6
     peerDependenciesMeta:
@@ -1742,8 +1742,8 @@ packages:
       zod: 3.20.6
     dev: false
 
-  /@blocksuite/global/0.5.0-20230228114851-7e82f3e_lit@2.6.1:
-    resolution: {integrity: sha512-4eEcCDDnfqbi3m9nxf9lR5uVKnQ9VXk9cn1KUta4ZKEwIMaFbqz278/eIvTcxsHZ2ARPv7XHilGGBx4dTFzCGA==}
+  /@blocksuite/global/0.5.0-20230301172958-2384904_lit@2.6.1:
+    resolution: {integrity: sha512-4ZPFM4IhQHFbG6+83GKRin9zD8smEK3p0BhmgePTbT9UYkhZza990Cb9gutmRHKQcj65l/pHjeTbJUjNXrUNyw==}
     peerDependencies:
       lit: ^2.6
     peerDependenciesMeta:
@@ -1765,12 +1765,12 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@blocksuite/phasor/0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47:
-    resolution: {integrity: sha512-4+bWUlZ63l5H8irOUJRbFIKv9N6WoCGkyIxVESAx5SKTAKnAatUv4lV5sol2xMk3ffrZTmD7f+PEzu8IMRgrAA==}
+  /@blocksuite/phasor/0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47:
+    resolution: {integrity: sha512-xaEkU4USGitTgPM8AbMs/NYW52y8xd0xxs4aheE86eWHuePuoEYiJpYPk846Ey86bHs+7/NseS69viy6CeFyzQ==}
     peerDependencies:
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.5.0-20230228114851-7e82f3e_lit@2.6.1
+      '@blocksuite/global': 0.5.0-20230301172958-2384904_lit@2.6.1
       fractional-indexing: 3.2.0
       nanoid: 4.0.1
       perfect-freehand: 1.2.0
@@ -1779,19 +1779,19 @@ packages:
       - lit
     dev: false
 
-  /@blocksuite/react/0.5.0-20230228114851-7e82f3e_vofptqepqo3q53bilxzldvx3u4:
-    resolution: {integrity: sha512-vvn/oJMTCGMvhTpY7MXvXbL5GE4JCbZRHmhj/kun5SKdrjPSs4LkPYroBEE2k4F4iV/NKgxc1WDgIVREUtxbOQ==}
+  /@blocksuite/react/0.5.0-20230301172958-2384904_b4m2kuw3q4uw75nnzbjfprlfii:
+    resolution: {integrity: sha512-cjh/ZYSRdw1pggXN+8DYf8XlyMoGqBmpedZrpCVEEIL8amgcP8d1zSrXESMnqE3mF8gMbv82P454jDDNy+kxfg==}
     peerDependencies:
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/editor': 0.5.0-20230228114851-7e82f3e
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904
+      '@blocksuite/editor': 0.5.0-20230301172958-2384904
+      '@blocksuite/store': 0.5.0-20230301172958-2384904
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
     dependencies:
-      '@blocksuite/blocks': 0.5.0-20230228114851-7e82f3e_pku46365fsiysie5qvz3hr235y
-      '@blocksuite/editor': 0.5.0-20230228114851-7e82f3e_xh5fumbhlyig56qty5bexrro5u
-      '@blocksuite/global': 0.5.0-20230228114851-7e82f3e_lit@2.6.1
-      '@blocksuite/store': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/blocks': 0.5.0-20230301172958-2384904_4pplnunaek7i4s2rcnufg2z3km
+      '@blocksuite/editor': 0.5.0-20230301172958-2384904_yxfrgk6jffeqknays3fo63pyuy
+      '@blocksuite/global': 0.5.0-20230301172958-2384904_lit@2.6.1
+      '@blocksuite/store': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       zustand: 4.3.5_react@18.2.0
@@ -1800,19 +1800,19 @@ packages:
       - lit
     dev: false
 
-  /@blocksuite/store/0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47:
-    resolution: {integrity: sha512-kMBd4fP9PzuHBqhuQHhmBdE3tEiXbcRynR9nFp1MvWIKLhLPQZ4+x6ZJYtPfMxDgmosV5LeHHY6j94y+jKUf0Q==}
+  /@blocksuite/store/0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47:
+    resolution: {integrity: sha512-sVeciDFIJqE5t73qCMGeIPRfw6828+RK8hM7iQuZBYKHKchydRCWL7Z/qG+bJiGB/GiBPMroA0Ae3Z+Ma0iw7Q==}
     peerDependencies:
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.5.0-20230228114851-7e82f3e_lit@2.6.1
-      '@blocksuite/virgo': 0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47
+      '@blocksuite/global': 0.5.0-20230301172958-2384904_lit@2.6.1
+      '@blocksuite/virgo': 0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47
       '@types/flexsearch': 0.7.3
       buffer: 6.0.3
       flexsearch: 0.7.21
       idb-keyval: 6.2.0
       ky: 0.33.2
-      lib0: 0.2.63
+      lib0: 0.2.62
       merge: 2.1.1
       nanoid: 4.0.1
       y-protocols: 1.0.5
@@ -1826,13 +1826,13 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@blocksuite/virgo/0.5.0-20230228114851-7e82f3e_lit@2.6.1+yjs@13.5.47:
-    resolution: {integrity: sha512-uICjl42cneOwXnf3QOegJXjsG8stKPfClUf11QQu3Kp4Esy8bJzQDWGgyqupWBzMJAXYtPSHZsk453/hrVD5dg==}
+  /@blocksuite/virgo/0.5.0-20230301172958-2384904_lit@2.6.1+yjs@13.5.47:
+    resolution: {integrity: sha512-f1ve17VsSV7VHt1yMMf4HDK42afyORDbDuwMoioT5u1fLxtBEB5ZNMrly5BJBg/DInDRZQxO32ARbJDLKGNvkg==}
     peerDependencies:
       lit: ^2
       yjs: ^13
     dependencies:
-      '@blocksuite/global': 0.5.0-20230228114851-7e82f3e_lit@2.6.1
+      '@blocksuite/global': 0.5.0-20230301172958-2384904_lit@2.6.1
       lit: 2.6.1
       yjs: 13.5.47
       zod: 3.20.6
@@ -5998,7 +5998,7 @@ packages:
       '@babel/plugin-transform-react-jsx-source': 7.19.6_@babel+core@7.20.12
       magic-string: 0.27.0
       react-refresh: 0.14.0
-      vite: 4.1.4_@types+node@18.14.0
+      vite: 4.1.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -10286,13 +10286,6 @@ packages:
     dependencies:
       isomorphic.js: 0.2.5
 
-  /lib0/0.2.63:
-    resolution: {integrity: sha512-JhUd/JXR4rnWsSP1zup904ACbVFcdRieWoIGwGAtHww4zms0gNyi8EM30Rfftnk+6A10qQMSufjLM0/ncq06xw==}
-    engines: {node: '>=14'}
-    dependencies:
-      isomorphic.js: 0.2.5
-    dev: false
-
   /lilconfig/2.0.6:
     resolution: {integrity: sha512-9JROoBW7pobfsx+Sq2JsASvCo6Pfo6WWoUW79HuB1BCoBXD4PLWJPqDF6fNj67pqBYTbAHkE57M1kS/+L1neOg==}
     engines: {node: '>=10'}
@@ -14266,7 +14259,7 @@ packages:
     engines: {node: '>=12'}
     hasBin: true
     dependencies:
-      lib0: 0.2.63
+      lib0: 0.2.62
       simple-peer: 9.11.1
       y-protocols: 1.0.5
     optionalDependencies:
