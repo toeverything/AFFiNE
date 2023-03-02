@@ -1,7 +1,8 @@
 import '@blocksuite/editor/themes/affine.css';
 import '../styles/globals.css';
 
-import { appWithTranslation, createI18n, I18nextProvider } from '@affine/i18n';
+import { config, setupGlobal } from '@affine/env';
+import { createI18n, I18nextProvider } from '@affine/i18n';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
@@ -20,7 +21,8 @@ import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { ModalProvider } from '../providers/ModalProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { NextPageWithLayout } from '../shared';
-import { config } from '../shared/env';
+
+setupGlobal();
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
@@ -93,4 +95,4 @@ const App = function App({ Component, pageProps }: AppPropsWithLayout) {
   );
 };
 
-export default appWithTranslation(App as any);
+export default App;

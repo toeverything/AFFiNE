@@ -1,4 +1,5 @@
 import { Modal, ModalWrapper } from '@affine/component';
+import { getEnvironment } from '@affine/env';
 import { Command } from 'cmdk';
 import { NextRouter } from 'next/router';
 import React, {
@@ -10,7 +11,6 @@ import React, {
 } from 'react';
 
 import { BlockSuiteWorkspace } from '../../../shared';
-import { getUaHelper } from '../../../utils/useragent';
 import { Footer } from './Footer';
 import { Input } from './Input';
 import { PublishedResults } from './PublishedResults';
@@ -24,7 +24,8 @@ import {
 } from './style';
 
 const isMac = () => {
-  return getUaHelper().isMacOs;
+  const env = getEnvironment();
+  return env.isBrowser && env.isMacOs;
 };
 
 export type QuickSearchModalProps = {

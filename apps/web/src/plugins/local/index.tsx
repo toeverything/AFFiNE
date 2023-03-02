@@ -1,3 +1,4 @@
+import { config } from '@affine/env';
 import { assertEquals, nanoid } from '@blocksuite/store';
 import React from 'react';
 import { IndexeddbPersistence } from 'y-indexeddb';
@@ -12,7 +13,6 @@ import {
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../shared';
-import { config } from '../../shared/env';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 

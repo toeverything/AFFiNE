@@ -1,5 +1,4 @@
 import i18next, { i18n, Resource } from 'i18next';
-import { appWithTranslation } from 'next-i18next';
 import {
   I18nextProvider,
   initReactI18next,
@@ -38,7 +37,7 @@ declare module 'react-i18next' {
 
 const STORAGE_KEY = 'i18n_lng';
 
-export { appWithTranslation, I18nextProvider, LOCALES, Trans, useTranslation };
+export { I18nextProvider, LOCALES, Trans, useTranslation };
 
 const resources = LOCALES.reduce<Resource>(
   (acc, { tag, res }) => ({ ...acc, [tag]: { translation: res } }),

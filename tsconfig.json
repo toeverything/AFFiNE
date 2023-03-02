@@ -21,7 +21,8 @@
       "@affine/datacenter": ["./packages/datacenter/src"],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/logger": ["./packages/logger/src"],
-      "@affine/debug": ["./packages/store/debug"],
+      "@affine/debug": ["./packages/debug"],
+      "@affine/env": ["./packages/env"],
       "@toeverything/pathfinder-logger": ["./packages/logger"]
     }
   },
@@ -46,6 +47,9 @@
     },
     {
       "path": "./packages/logger"
+    },
+    {
+      "path": "./packages/env"
     }
   ],
   "files": [],

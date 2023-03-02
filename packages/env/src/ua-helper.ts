@@ -1,14 +1,12 @@
+import { assertExists } from '@blocksuite/global/utils';
+
 export function getUaHelper() {
   let uaHelper = null;
   (function (navigator) {
     const getUa = () => {
       const ua = navigator.userAgent;
       const uas = ua.toLowerCase();
-      const mobile =
-        /mobile|tablet|ip(ad|hone|od)|android/i.test(ua) ||
-        (uas.indexOf('safari') > -1 &&
-          /Mac OS/i.test(ua) &&
-          /Macintosh/i.test(ua));
+      const mobile = /iPhone|iPad|iPod|Android/i.test(ua);
       const android =
         (mobile &&
           (uas.indexOf('android') > -1 || uas.indexOf('linux') > -1)) ||
@@ -55,6 +53,14 @@ export function getUaHelper() {
       public isSafari = false;
       public isWindows = false;
       public isFireFox = false;
+      public isMobile = false;
+      public isChrome = false;
+
+      getChromeVersion = (): number => {
+        const raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
+        assertExists(raw);
+        return parseInt(raw[2], 10);
+      };
 
       constructor() {
         this.uaMap = getUa();
@@ -71,6 +77,8 @@ export function getUaHelper() {
         this.isSafari = this.checkUseragent('safari');
         this.isWindows = this.checkUseragent('win');
         this.isFireFox = this.checkUseragent('firefox');
+        this.isMobile = this.checkUseragent('mobile');
+        this.isChrome = this.checkUseragent('chrome');
       }
     }
     uaHelper = new UaHelper();

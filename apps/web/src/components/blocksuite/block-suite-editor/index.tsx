@@ -1,3 +1,4 @@
+import { config } from '@affine/env';
 import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
@@ -81,8 +82,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
         page.resetHistory();
       }
     }
-    // todo(himself65): use build flag
-    if (process.env.NODE_ENV === 'development') {
+    if (config.exposeInternal) {
       globalThis.currentBlockSuiteWorkspace = props.blockSuiteWorkspace;
       globalThis.currentPage = page;
     }

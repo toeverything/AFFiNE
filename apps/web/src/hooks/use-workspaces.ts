@@ -1,4 +1,5 @@
 import { Workspace } from '@affine/datacenter';
+import { config } from '@affine/env';
 import { nanoid } from '@blocksuite/store';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import useSWR from 'swr';
@@ -10,7 +11,6 @@ import { WorkspacePlugins } from '../plugins';
 import { QueryKey } from '../plugins/affine/fetcher';
 import { kStoreKey } from '../plugins/local';
 import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
-import { config } from '../shared/env';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 
 // fixme(himself65): refactor with jotai atom using async
