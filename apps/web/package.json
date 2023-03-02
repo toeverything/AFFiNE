@@ -39,6 +39,7 @@
     "zod": "^3.20.6"
   },
   "devDependencies": {
+    "@perfsee/webpack": "^1.3.0",
     "@redux-devtools/extension": "^3.2.5",
     "@swc-jotai/debug-label": "^0.0.6",
     "@swc-jotai/react-refresh": "^0.0.4",
