@@ -71,6 +71,11 @@ export type BroadcastChannelMessageData<
 export type BroadcastChannelMessageEvent =
   MessageEvent<BroadcastChannelMessageData>;
 
+export type AwarenessChanges = Record<
+  'added' | 'updated' | 'removed',
+  ClientId[]
+>;
+
 export interface TypedBroadcastChannel extends BroadcastChannel {
   onmessage: ((event: BroadcastChannelMessageEvent) => void) | null;
   postMessage: (message: BroadcastChannelMessageData) => void;

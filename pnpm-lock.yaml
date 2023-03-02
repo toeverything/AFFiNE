@@ -104,7 +104,7 @@ importers:
       typesync: ^0.10.0
       vite: ^4.1.2
       y-protocols: ^1.0.5
-      yjs: ^13.5.46
+      yjs: ^13.5.47
       zx: ^7.1.1
     dependencies:
       '@blocksuite/blocks': 0.4.1-20230220214107-0a354de_txcevohh7lsyxi5mbohonudlma
@@ -263,7 +263,7 @@ importers:
       typescript: ^4.9.5
       vite: ^4.1.2
       webpack: ^5.75.0
-      yjs: ^13.5.46
+      yjs: ^13.5.47
     dependencies:
       '@affine/debug': link:../debug
       '@affine/i18n': link:../i18n
@@ -317,7 +317,7 @@ importers:
       lit: ^2.6.1
       typescript: ^4.9.5
       y-protocols: ^1.0.5
-      yjs: ^13.5.46
+      yjs: ^13.5.47
     dependencies:
       '@affine/debug': link:../debug
       '@blocksuite/blocks': 0.4.1-20230220214107-0a354de_txcevohh7lsyxi5mbohonudlma
@@ -10160,13 +10160,13 @@ packages:
     engines: {node: '>=14'}
     dependencies:
       isomorphic.js: 0.2.5
+    dev: false
 
   /lib0/0.2.63:
     resolution: {integrity: sha512-JhUd/JXR4rnWsSP1zup904ACbVFcdRieWoIGwGAtHww4zms0gNyi8EM30Rfftnk+6A10qQMSufjLM0/ncq06xw==}
     engines: {node: '>=14'}
     dependencies:
       isomorphic.js: 0.2.5
-    dev: false
 
   /lilconfig/2.0.6:
     resolution: {integrity: sha512-9JROoBW7pobfsx+Sq2JsASvCo6Pfo6WWoUW79HuB1BCoBXD4PLWJPqDF6fNj67pqBYTbAHkE57M1kS/+L1neOg==}
@@ -14211,7 +14211,7 @@ packages:
   /yjs/13.5.47:
     resolution: {integrity: sha512-F7BZ+Bt36OAt+bdSQS7TN43KSxsHjfXWfcLC526tJ3mctO1FYHGEtOrUqpLC7pSp4jPn4rKSYHv1PVQcdb/vIQ==}
     dependencies:
-      lib0: 0.2.62
+      lib0: 0.2.63
 
   /yn/3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
