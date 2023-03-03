@@ -19,9 +19,7 @@ export function useBlockSuiteWorkspaceName(
     if (blockSuiteWorkspace) {
       set(blockSuiteWorkspace.meta.name);
       const dispose = blockSuiteWorkspace.meta.commonFieldsUpdated.on(() => {
-        setTimeout(() => {
-          set(blockSuiteWorkspace.meta.name);
-        }, 0);
+        set(blockSuiteWorkspace.meta.name);
       });
       return () => {
         dispose.dispose();
