@@ -29,7 +29,10 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
   const [blockSuiteWorkspace, setBlockSuiteWorkspace] =
     useState<BlockSuiteWorkspace | null>(null);
   useEffect(() => {
-    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace('preview');
+    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+      'preview',
+      (_: string) => undefined
+    );
     blockSuiteWorkspace.signals.pageAdded.once(() => {
       setBlockSuiteWorkspace(blockSuiteWorkspace);
     });

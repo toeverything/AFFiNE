@@ -16,7 +16,10 @@ export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
       throw new Error('No workspace id');
     }
     const binary = await apis.downloadWorkspace(workspaceId, true);
-    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
+    const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+      workspaceId,
+      (_: string) => undefined
+    );
     BlockSuiteWorkspace.Y.applyUpdate(
       blockSuiteWorkspace.doc,
       new Uint8Array(binary)
