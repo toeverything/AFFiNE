@@ -38,7 +38,10 @@ globalThis.dataCenter = dataCenter;
 
 function createRemLocalWorkspace(name: string) {
   const id = nanoid();
-  const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(id);
+  const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+    id,
+    (_: string) => undefined
+  );
   blockSuiteWorkspace.meta.setName(name);
   const workspace: LocalWorkspace = {
     flavour: RemWorkspaceFlavour.LOCAL,
