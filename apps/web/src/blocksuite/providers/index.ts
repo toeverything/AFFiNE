@@ -8,6 +8,7 @@ import {
   LocalIndexedDBProvider,
 } from '../../shared';
 import { apis } from '../../shared/apis';
+import { providerLogger } from '../logger';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 
 const createWebSocketProvider = (
@@ -18,7 +19,8 @@ const createWebSocketProvider = (
     flavour: 'affine-websocket',
     cleanup: () => {
       assertExists(webSocketProvider);
-      webSocketProvider?.destroy();
+      webSocketProvider.destroy();
+      webSocketProvider = null;
     },
     connect: () => {
       const wsUrl = `${
@@ -34,15 +36,17 @@ const createWebSocketProvider = (
           awareness: blockSuiteWorkspace.awarenessStore.awareness,
           // we maintain broadcast channel by ourselves
           disableBc: true,
+          connect: false,
         }
       );
-      console.log('connect', webSocketProvider.roomname);
+      providerLogger.info('connect', webSocketProvider.roomname);
       webSocketProvider.connect();
     },
     disconnect: () => {
       assertExists(webSocketProvider);
-      console.log('disconnect', webSocketProvider.roomname);
-      webSocketProvider?.disconnect();
+      providerLogger.info('disconnect', webSocketProvider.roomname);
+      webSocketProvider.destroy();
+      webSocketProvider = null;
     },
   };
 };
@@ -58,7 +62,10 @@ const createIndexedDBProvider = (
       indexdbProvider.clearData();
     },
     connect: () => {
-      console.info('connect indexeddb provider', blockSuiteWorkspace.room);
+      providerLogger.info(
+        'connect indexeddb provider',
+        blockSuiteWorkspace.room
+      );
       indexdbProvider = new IndexeddbPersistence(
         blockSuiteWorkspace.room as string,
         blockSuiteWorkspace.doc
@@ -66,7 +73,10 @@ const createIndexedDBProvider = (
     },
     disconnect: () => {
       assertExists(indexdbProvider);
-      console.info('disconnect indexeddb provider', blockSuiteWorkspace.room);
+      providerLogger.info(
+        'disconnect indexeddb provider',
+        blockSuiteWorkspace.room
+      );
       indexdbProvider.destroy();
       indexdbProvider = null;
     },

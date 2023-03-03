@@ -6,6 +6,7 @@ import {
 } from 'y-protocols/awareness';
 
 import { BlockSuiteWorkspace, BroadCastChannelProvider } from '../../../shared';
+import { providerLogger } from '../../logger';
 import {
   AwarenessChanges,
   BroadcastChannelMessageEvent,
@@ -83,7 +84,10 @@ export const createBroadCastChannelProvider = (
           onmessage: handleBroadcastChannelMessage,
         }
       );
-      console.log('connect broadcast channel', blockSuiteWorkspace.room);
+      providerLogger.info(
+        'connect broadcast channel',
+        blockSuiteWorkspace.room
+      );
       const docDiff = Y.encodeStateVector(doc);
       broadcastChannel.postMessage(['doc:diff', docDiff, awareness.clientID]);
       const docUpdateV2 = Y.encodeStateAsUpdate(doc);
@@ -98,7 +102,10 @@ export const createBroadCastChannelProvider = (
     },
     disconnect: () => {
       assertExists(broadcastChannel);
-      console.log('disconnect broadcast channel', blockSuiteWorkspace.room);
+      providerLogger.info(
+        'disconnect broadcast channel',
+        blockSuiteWorkspace.room
+      );
       doc.off('update', handleDocUpdate);
       awareness.off('update', handleAwarenessUpdate);
       broadcastChannel.close();
