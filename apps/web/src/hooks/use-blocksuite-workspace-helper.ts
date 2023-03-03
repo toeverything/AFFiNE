@@ -11,7 +11,7 @@ export function useBlockSuiteWorkspaceHelper(
       createPage: (pageId: string, title?: string): Promise<string> => {
         return new Promise(resolve => {
           assertExists(blockSuiteWorkspace);
-          const dispose = blockSuiteWorkspace.signals.pageAdded.on(id => {
+          const dispose = blockSuiteWorkspace.slots.pageAdded.on(id => {
             if (id === pageId) {
               dispose.dispose();
               // Fixme: https://github.com/toeverything/blocksuite/issues/1350

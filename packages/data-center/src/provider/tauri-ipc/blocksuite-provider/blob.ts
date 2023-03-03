@@ -15,7 +15,7 @@ export class IPCBlobProvider implements BlobProvider {
 
   #workspace: string;
 
-  readonly signals = {
+  readonly slots = {
     onBlobSyncStateChange: new Signal<BlobSyncStateChangeEvent>(),
   };
 
@@ -43,7 +43,7 @@ export class IPCBlobProvider implements BlobProvider {
     });
     // Make a Blob from the bytes
     const blob = new Blob([new Uint8Array(blobArray)], { type: 'image/bmp' });
-    this.signals.onBlobSyncStateChange.emit({
+    this.slots.onBlobSyncStateChange.emit({
       id,
       state: BlobSyncState.Success,
     });
@@ -55,7 +55,7 @@ export class IPCBlobProvider implements BlobProvider {
     const blobID = await this.#ipc.putBlob({
       blob: Array.from(new Uint8Array(await blob.arrayBuffer())),
     });
-    this.signals.onBlobSyncStateChange.emit({
+    this.slots.onBlobSyncStateChange.emit({
       id: blobID,
       state: BlobSyncState.Success,
     });
