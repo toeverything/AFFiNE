@@ -9,6 +9,6 @@
     "zod": "^3.20.6"
   },
   "dependencies": {
-    "@blocksuite/global": "0.5.0-20230302205056-4385b7a"
+    "@blocksuite/global": "0.5.0-20230303192351-13b0dd7"
   }
 }

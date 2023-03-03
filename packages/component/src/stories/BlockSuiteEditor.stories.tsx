@@ -39,7 +39,7 @@ As a pro tip, you can combine multiple providers! For example, feel free to open
 For any feedback, please visit [BlockSuite issues](https://github.com/toeverything/blocksuite/issues) 📍`;
 
 const pagePromise = new Promise<Page>(resolve => {
-  workspace.signals.pageAdded.once(pageId => {
+  workspace.slots.pageAdded.once(pageId => {
     const page = workspace.getPage(pageId) as Page;
     pageOrPagePromise = page;
     resolve(page);

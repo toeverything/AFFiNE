@@ -10,6 +10,11 @@ export function useBlockSuiteWorkspaceName(
   const [name, set] = useState(
     () => blockSuiteWorkspace?.meta.name ?? DEFAULT_WORKSPACE_NAME
   );
+  if (blockSuiteWorkspace) {
+    if (blockSuiteWorkspace.meta.name !== name) {
+      set(blockSuiteWorkspace.meta.name);
+    }
+  }
   useEffect(() => {
     if (blockSuiteWorkspace) {
       set(blockSuiteWorkspace.meta.name);
@@ -24,8 +29,8 @@ export function useBlockSuiteWorkspaceName(
   const setName = useCallback(
     (name: string) => {
       assertExists(blockSuiteWorkspace);
-      set(name);
       blockSuiteWorkspace.meta.setName(name);
+      set(name);
     },
     [blockSuiteWorkspace]
   );

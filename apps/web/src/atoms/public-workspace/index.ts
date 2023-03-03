@@ -39,7 +39,6 @@ export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
           id: workspaceId,
           blockSuiteWorkspace,
           flavour: RemWorkspaceFlavour.LOCAL,
-          syncBinary: () => Promise.resolve(workspace),
           providers: [],
         };
         dataCenter.workspaces.push(workspace);

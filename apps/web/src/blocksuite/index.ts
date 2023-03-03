@@ -2,17 +2,19 @@ import { config } from '@affine/env';
 
 import { BlockSuiteWorkspace, Provider } from '../shared';
 import {
+  createAffineWebSocketProvider,
   createBroadCastChannelProvider,
   createIndexedDBProvider,
-  createWebSocketProvider,
 } from './providers';
+import { createAffineDownloadProvider } from './providers/affine';
 
 export const createAffineProviders = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): Provider[] => {
   return (
     [
-      createWebSocketProvider(blockSuiteWorkspace),
+      createAffineDownloadProvider(blockSuiteWorkspace),
+      createAffineWebSocketProvider(blockSuiteWorkspace),
       config.enableBroadCastChannelProvider &&
         createBroadCastChannelProvider(blockSuiteWorkspace),
       config.enableIndexedDBProvider &&

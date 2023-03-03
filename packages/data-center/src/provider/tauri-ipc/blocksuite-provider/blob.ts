@@ -1,5 +1,5 @@
 import { BlobSyncState } from '@blocksuite/store';
-import { Signal } from '@blocksuite/store';
+import { Slot } from '@blocksuite/store';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import type {
   BlobId,
@@ -15,8 +15,8 @@ export class IPCBlobProvider implements BlobProvider {
 
   #workspace: string;
 
-  readonly signals = {
-    onBlobSyncStateChange: new Signal<BlobSyncStateChangeEvent>(),
+  readonly slots = {
+    onBlobSyncStateChange: new Slot<BlobSyncStateChangeEvent>(),
   };
 
   private constructor(workspace: string) {
@@ -43,7 +43,7 @@ export class IPCBlobProvider implements BlobProvider {
     });
     // Make a Blob from the bytes
     const blob = new Blob([new Uint8Array(blobArray)], { type: 'image/bmp' });
-    this.signals.onBlobSyncStateChange.emit({
+    this.slots.onBlobSyncStateChange.emit({
       id,
       state: BlobSyncState.Success,
     });
@@ -55,7 +55,7 @@ export class IPCBlobProvider implements BlobProvider {
     const blobID = await this.#ipc.putBlob({
       blob: Array.from(new Uint8Array(await blob.arrayBuffer())),
     });
-    this.signals.onBlobSyncStateChange.emit({
+    this.slots.onBlobSyncStateChange.emit({
       id: blobID,
       state: BlobSyncState.Success,
     });

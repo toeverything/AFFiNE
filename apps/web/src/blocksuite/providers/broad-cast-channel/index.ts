@@ -76,6 +76,7 @@ export const createBroadCastChannelProvider = (
   };
   return {
     flavour: 'broadcast-channel',
+    background: false,
     connect: () => {
       assertExists(blockSuiteWorkspace.room);
       broadcastChannel = Object.assign(

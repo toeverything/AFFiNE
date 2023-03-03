@@ -41,7 +41,7 @@ beforeEach(async () => {
     })
       .register(builtInSchemas)
       .register(__unstableSchemas);
-    blockSuiteWorkspace.signals.pageAdded.on(pageId => {
+    blockSuiteWorkspace.slots.pageAdded.on(pageId => {
       setTimeout(() => {
         const page = blockSuiteWorkspace.getPage(pageId);
         expect(page).not.toBeNull();

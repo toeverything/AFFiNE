@@ -1,9 +1,6 @@
+import { createAffineProviders } from '../../blocksuite';
 import { Unreachable } from '../../components/affine/affine-error-eoundary';
-import {
-  AffineRemoteUnSyncedWorkspace,
-  RemWorkspaceFlavour,
-  transformToAffineSyncedWorkspace,
-} from '../../shared';
+import { AffineWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { apis } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
@@ -42,26 +39,17 @@ export const fetcher = async (
     if (query === QueryKey.getWorkspaces) {
       return apis.getWorkspaces().then(workspaces => {
         return workspaces.map(workspace => {
-          const remWorkspace: AffineRemoteUnSyncedWorkspace = {
+          const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+            workspace.id,
+            (k: string) =>
+              // fixme: token could be expired
+              ({ api: '/api/workspace', token: apis.auth.token }[k])
+          );
+          const remWorkspace: AffineWorkspace = {
             ...workspace,
             flavour: RemWorkspaceFlavour.AFFINE,
-            firstBinarySynced: false,
-            blockSuiteWorkspace: createEmptyBlockSuiteWorkspace(
-              workspace.id,
-              (k: string) =>
-                // fixme: token could be expired
-                ({ api: '/api/workspace', token: apis.auth.token }[k])
-            ),
-            syncBinary: async () => {
-              const binary = await apis.downloadWorkspace(
-                workspace.id,
-                workspace.public
-              );
-              if (remWorkspace.firstBinarySynced) {
-                return null;
-              }
-              return transformToAffineSyncedWorkspace(remWorkspace, binary);
-            },
+            blockSuiteWorkspace,
+            providers: [...createAffineProviders(blockSuiteWorkspace)],
           };
           return remWorkspace;
         });

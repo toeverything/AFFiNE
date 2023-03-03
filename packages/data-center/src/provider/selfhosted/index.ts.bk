@@ -40,7 +40,7 @@
 //           this._ws.once('lost-connection', () => resolve());
 //           this._ws.once('connection-error', () => reject());
 //         });
-//         this._signals.listAdd.emit({
+//         this._slots.listAdd.emit({
 //           workspace: workspace.room,
 //           provider: this.id,
 //           locally: true,

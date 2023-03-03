@@ -9,8 +9,7 @@ import { WorkspaceSettingDetail } from '../../components/affine/workspace-settin
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import {
-  AffineRemoteSyncedWorkspace,
-  AffineRemoteUnSyncedWorkspace,
+  AffineWorkspace,
   BlockSuiteWorkspace,
   LoadPriority,
   RemWorkspaceFlavour,
@@ -20,10 +19,9 @@ import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 import { fetcher, QueryKey } from './fetcher';
 
-const kAffineLocal = 'affine-local-storage';
+const kAffineLocal = 'affine-local-storage-v2';
 const schema = z.object({
   id: z.string(),
-  firstBinarySynced: z.boolean(),
   type: z.number(),
   public: z.boolean(),
   permission: z.number(),
@@ -44,9 +42,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
     await apis.deleteWorkspace({
       id: workspace.id,
     });
-    if (workspace.firstBinarySynced) {
-      workspace.providers.forEach(p => p.cleanup());
-    }
+    workspace.providers.forEach(p => p.cleanup());
   },
   prefetchData: async dataCenter => {
     if (localStorage.getItem(kAffineLocal)) {
@@ -68,15 +64,11 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
               // fixme: token could be expired
               ({ api: '/api/workspace', token: apis.auth.token }[k])
           );
-          const affineWorkspace: AffineRemoteSyncedWorkspace = {
+          const affineWorkspace: AffineWorkspace = {
             ...workspace,
-            firstBinarySynced: true,
             blockSuiteWorkspace,
             providers: [...createAffineProviders(blockSuiteWorkspace)],
             flavour: RemWorkspaceFlavour.AFFINE,
-            syncBinary: async () => {
-              return { ...affineWorkspace };
-            },
           };
           return affineWorkspace;
         });
@@ -98,7 +90,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
         localStorage.removeItem(kAffineLocal);
       }
     }
-    const promise: Promise<AffineRemoteUnSyncedWorkspace[]> = preload(
+    const promise: Promise<AffineWorkspace[]> = preload(
       QueryKey.getWorkspaces,
       fetcher
     );
@@ -106,9 +98,6 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       .then(async workspaces => {
         const promises = workspaces.map(workspace => {
           assertEquals(workspace.flavour, RemWorkspaceFlavour.AFFINE);
-          if (!workspace.firstBinarySynced) {
-            return workspace.syncBinary();
-          }
           return workspace;
         });
         return Promise.all(promises)
@@ -130,13 +119,10 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
             return workspaces;
           })
           .then(ws => {
-            const workspaces = ws.filter(
-              Boolean
-            ) as AffineRemoteSyncedWorkspace[];
+            const workspaces = ws.filter(Boolean) as AffineWorkspace[];
             const dump = workspaces.map(workspace => {
               return {
                 id: workspace.id,
-                firstBinarySynced: workspace.firstBinarySynced,
                 type: workspace.type,
                 public: workspace.public,
                 permission: workspace.permission,
@@ -151,9 +137,6 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       });
   },
   PageDetail: ({ currentWorkspace, currentPageId }) => {
-    if (!currentWorkspace.firstBinarySynced) {
-      return <div>Loading</div>;
-    }
     const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
     if (!page) {
       throw new PageNotFoundError(

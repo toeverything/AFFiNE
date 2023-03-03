@@ -19,7 +19,7 @@ import { lockMutex } from '../../../../../atoms';
 import { useMembers } from '../../../../../hooks/affine/use-members';
 import { transformWorkspace } from '../../../../../plugins';
 import {
-  AffineRemoteWorkspace,
+  AffineWorkspace,
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../../shared';
@@ -45,7 +45,7 @@ import {
 
 const AffineRemoteCollaborationPanel: React.FC<
   Omit<PanelProps, 'workspace'> & {
-    workspace: AffineRemoteWorkspace;
+    workspace: AffineWorkspace;
   }
 > = ({ workspace }) => {
   const [isInviteModalShow, setIsInviteModalShow] = useState(false);
@@ -213,7 +213,7 @@ const LocalCollaborationPanel: React.FC<
 export const CollaborationPanel: React.FC<PanelProps> = props => {
   switch (props.workspace.flavour) {
     case RemWorkspaceFlavour.AFFINE: {
-      const workspace = props.workspace as AffineRemoteWorkspace;
+      const workspace = props.workspace as AffineWorkspace;
       return (
         <AffineRemoteCollaborationPanel {...props} workspace={workspace} />
       );

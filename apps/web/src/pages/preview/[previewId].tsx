@@ -33,7 +33,7 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
       'preview',
       (_: string) => undefined
     );
-    blockSuiteWorkspace.signals.pageAdded.once(() => {
+    blockSuiteWorkspace.slots.pageAdded.once(() => {
       setBlockSuiteWorkspace(blockSuiteWorkspace);
     });
     blockSuiteWorkspace.createPage('preview');
