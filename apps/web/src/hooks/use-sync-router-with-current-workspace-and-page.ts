@@ -12,18 +12,13 @@ export function findSuitablePageId(
 ): string | null {
   switch (workspace.flavour) {
     case RemWorkspaceFlavour.AFFINE: {
-      if (workspace.firstBinarySynced) {
-        return (
-          workspace.blockSuiteWorkspace.meta.pageMetas.find(
-            page => page.id === targetId
-          )?.id ??
-          workspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id ??
-          null
-        );
-      } else {
-        return null;
-      }
-      break;
+      return (
+        workspace.blockSuiteWorkspace.meta.pageMetas.find(
+          page => page.id === targetId
+        )?.id ??
+        workspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id ??
+        null
+      );
     }
     case RemWorkspaceFlavour.LOCAL: {
       return (
