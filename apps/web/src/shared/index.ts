@@ -3,10 +3,6 @@ import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { NextPage } from 'next';
 import { ReactElement, ReactNode } from 'react';
 
-import { createAffineProviders } from '../blocksuite';
-import { createEmptyBlockSuiteWorkspace } from '../utils';
-import { apis } from './apis';
-
 export { BlockSuiteWorkspace };
 
 declare global {
@@ -21,20 +17,11 @@ export const enum RemWorkspaceFlavour {
 }
 
 export interface FlavourToWorkspace {
-  [RemWorkspaceFlavour.AFFINE]:
-    | AffineRemoteUnSyncedWorkspace
-    | AffineRemoteSyncedWorkspace;
+  [RemWorkspaceFlavour.AFFINE]: AffineWorkspace;
   [RemWorkspaceFlavour.LOCAL]: LocalWorkspace;
 }
 
-export interface AffineRemoteSyncedWorkspace extends RemoteWorkspace {
-  flavour: RemWorkspaceFlavour.AFFINE;
-  firstBinarySynced: true;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-  providers: Provider[];
-}
-
-export interface AffineRemoteUnSyncedWorkspace extends RemoteWorkspace {
+export interface AffineWorkspace extends RemoteWorkspace {
   flavour: RemWorkspaceFlavour.AFFINE;
   // empty
   blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -47,33 +34,6 @@ export interface LocalWorkspace {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   providers: Provider[];
 }
-
-export const transformToAffineSyncedWorkspace = async (
-  unSyncedWorkspace: AffineRemoteUnSyncedWorkspace,
-  binary: ArrayBuffer
-): Promise<AffineRemoteSyncedWorkspace> => {
-  const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-    unSyncedWorkspace.id,
-    (k: string) =>
-      // fixme: token could be expired
-      ({ api: '/api/workspace', token: apis.auth.token }[k])
-  );
-  BlockSuiteWorkspace.Y.applyUpdate(
-    blockSuiteWorkspace.doc,
-    new Uint8Array(binary)
-  );
-  return new Promise(resolve => {
-    // Fixme: https://github.com/toeverything/blocksuite/issues/1350
-    setTimeout(() => {
-      resolve({
-        ...unSyncedWorkspace,
-        blockSuiteWorkspace,
-        firstBinarySynced: true,
-        providers: [...createAffineProviders(blockSuiteWorkspace)],
-      });
-    }, 0);
-  });
-};
 
 export type BaseProvider = {
   flavour: string;
@@ -106,10 +66,7 @@ export type Provider =
   | AffineWebSocketProvider
   | BroadCastChannelProvider;
 
-export type AffineRemoteWorkspace =
-  | AffineRemoteSyncedWorkspace
-  | AffineRemoteUnSyncedWorkspace;
-export type AffineOfficialWorkspace = AffineRemoteWorkspace | LocalWorkspace;
+export type AffineOfficialWorkspace = AffineWorkspace | LocalWorkspace;
 
 export type RemWorkspace = AffineOfficialWorkspace;
 
