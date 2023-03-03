@@ -73,6 +73,7 @@
   "Copy Link": "Link kopieren",
   "Create Or Import": "Erstellen oder importieren",
   "Delete Workspace": "Workspace löschen",
+  "will be permanently deleted": "{{title}} werden dauerhaft gelöscht",
   "Delete Workspace Description2": "Das Löschen von (<1>{{workspace}}</1>) wird sowohl lokale als auch Daten in der Cloud löschen. Dies kann nicht rückgängig gemacht werden.",
   "Edgeless": "Edgeless",
   "Divider": "Trenner",

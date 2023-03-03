@@ -41,6 +41,7 @@
   "Open in new tab": "Open in new tab",
   "Delete page?": "Delete page?",
   "Delete permanently?": "Delete permanently?",
+  "will be permanently deleted": "{{title}} will be permanently deleted",
   "will be moved to Trash": "{{title}} will be moved to Trash",
   "Favorite": "Favorite",
   "Moved to Trash": "Moved to Trash",
