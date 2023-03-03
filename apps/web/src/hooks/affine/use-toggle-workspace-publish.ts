@@ -2,11 +2,11 @@ import { useCallback } from 'react';
 import { mutate } from 'swr';
 
 import { QueryKey } from '../../plugins/affine/fetcher';
-import { AffineRemoteWorkspace } from '../../shared';
+import { AffineWorkspace } from '../../shared';
 import { apis } from '../../shared/apis';
 import { refreshDataCenter } from '../use-workspaces';
 
-export function useToggleWorkspacePublish(workspace: AffineRemoteWorkspace) {
+export function useToggleWorkspacePublish(workspace: AffineWorkspace) {
   return useCallback(
     async (isPublish: boolean) => {
       await apis.updateWorkspace({

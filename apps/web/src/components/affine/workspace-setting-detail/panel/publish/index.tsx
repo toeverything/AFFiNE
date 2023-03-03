@@ -13,7 +13,7 @@ import { lockMutex } from '../../../../../atoms';
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
 import {
   AffineOfficialWorkspace,
-  AffineRemoteWorkspace,
+  AffineWorkspace,
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../../shared';
@@ -25,7 +25,7 @@ export type PublishPanelProps = {
 };
 
 export type PublishPanelAffineProps = {
-  workspace: AffineRemoteWorkspace;
+  workspace: AffineWorkspace;
 };
 
 const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
