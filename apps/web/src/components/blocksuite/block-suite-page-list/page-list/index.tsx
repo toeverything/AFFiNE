@@ -34,11 +34,14 @@ import {
 } from './styles';
 const FavoriteTag = ({
   pageMeta: { favorite, id },
+  onFavorite,
 }: {
   pageMeta: PageMeta;
+  onFavorite: (id: string, favorite: boolean) => void;
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+
   return (
     <Tooltip
       content={favorite ? t('Favorited') : t('Favorite')}
@@ -60,9 +63,12 @@ const FavoriteTag = ({
         className={favorite ? '' : 'favorite-button'}
       >
         {favorite ? (
-          <FavoritedIcon data-testid="favorited-icon" />
+          <FavoritedIcon
+            data-testid="favorited-icon"
+            onClick={() => onFavorite(id, false)}
+          />
         ) : (
-          <FavoriteIcon />
+          <FavoriteIcon onClick={() => onFavorite(id, true)} />
         )}
       </IconButton>
     </Tooltip>
@@ -101,6 +107,12 @@ export const PageList: React.FC<PageListProps> = ({
   if (list.length === 0) {
     return <Empty listType={listType} />;
   }
+
+  const onFavorite = (id: string, favorite: boolean) => {
+    helper.setPageMeta(id, {
+      favorite,
+    });
+  };
 
   return (
     <StyledTableContainer>
@@ -142,7 +154,12 @@ export const PageList: React.FC<PageListProps> = ({
                         {pageMeta.title || t('Untitled')}
                       </Content>
                     </StyledTitleLink>
-                    {!isTrash && <FavoriteTag pageMeta={pageMeta} />}
+                    {!isTrash && (
+                      <FavoriteTag
+                        pageMeta={pageMeta}
+                        onFavorite={onFavorite}
+                      />
+                    )}
                   </StyledTitleWrapper>
                 </TableCell>
                 {matches && (
