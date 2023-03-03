@@ -1,5 +1,5 @@
 import { BlobSyncState } from '@blocksuite/store';
-import { Signal } from '@blocksuite/store';
+import { Slot } from '@blocksuite/store';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import type {
   BlobId,
@@ -16,7 +16,7 @@ export class IPCBlobProvider implements BlobProvider {
   #workspace: string;
 
   readonly slots = {
-    onBlobSyncStateChange: new Signal<BlobSyncStateChangeEvent>(),
+    onBlobSyncStateChange: new Slot<BlobSyncStateChangeEvent>(),
   };
 
   private constructor(workspace: string) {
