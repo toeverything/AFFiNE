@@ -19,7 +19,11 @@ declare global {
 
 const BroadcastPage: React.FC = () => {
   const blockSuiteWorkspace = useMemo(
-    () => createEmptyBlockSuiteWorkspace('broadcast-test'),
+    () =>
+      createEmptyBlockSuiteWorkspace(
+        'broadcast-test',
+        (_: string) => undefined
+      ),
     []
   );
   const [provider, setProvider] = useState<BroadCastChannelProvider | null>(

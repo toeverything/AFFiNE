@@ -92,7 +92,10 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
     if (config.enableIndexedDBProvider) {
       const workspaces = await Promise.all(
         ids.map(id => {
-          const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(id);
+          const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+            id,
+            (_: string) => undefined
+          );
           const workspace: LocalWorkspace = {
             id,
             flavour: RemWorkspaceFlavour.LOCAL,
@@ -139,7 +142,10 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       }
       logger.info('no local workspace found, create a new one');
       const workspaceId = nanoid();
-      const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(workspaceId);
+      const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+        workspaceId,
+        (_: string) => undefined
+      );
       blockSuiteWorkspace.meta.setName('Untitled Workspace');
       localStorage.setItem(kStoreKey, JSON.stringify([workspaceId]));
       blockSuiteWorkspace.createPage(nanoid());
