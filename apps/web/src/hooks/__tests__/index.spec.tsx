@@ -15,6 +15,7 @@ import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { useCurrentWorkspace } from '../current/use-current-workspace';
+import { useBlockSuiteWorkspaceName } from '../use-blocksuite-workspace-name';
 import { useLastOpenedWorkspace } from '../use-last-opened-workspace';
 import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../use-sync-router-with-current-workspace-and-page';
@@ -176,5 +177,20 @@ describe('useLastOpenedWorkspace', () => {
     expect(lastOpenedWorkspace2.result.current[0]).toBe(
       workspacesHook.result.current[0].id
     );
+  });
+});
+
+describe('useBlockSuiteWorkspaceName', () => {
+  test('basic', async () => {
+    blockSuiteWorkspace.meta.setName('test 1');
+    const workspaceNameHook = renderHook(() =>
+      useBlockSuiteWorkspaceName(blockSuiteWorkspace)
+    );
+    expect(workspaceNameHook.result.current[0]).toBe('test 1');
+    blockSuiteWorkspace.meta.setName('test 2');
+    workspaceNameHook.rerender();
+    expect(workspaceNameHook.result.current[0]).toBe('test 2');
+    workspaceNameHook.result.current[1]('test 3');
+    expect(blockSuiteWorkspace.meta.name).toBe('test 3');
   });
 });

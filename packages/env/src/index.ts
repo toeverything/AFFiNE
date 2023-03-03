@@ -155,3 +155,4 @@ export function setupGlobal() {
 }
 
 export { config };
+export * from './constant';

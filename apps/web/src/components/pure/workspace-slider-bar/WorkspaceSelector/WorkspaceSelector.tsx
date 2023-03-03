@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { useBlockSuiteWorkspaceName } from '../../../../hooks/use-blocksuite-workspace-name';
 import { RemWorkspace } from '../../../../shared';
 import { WorkspaceAvatar } from '../../workspace-avatar';
 import { SelectorWrapper, WorkspaceName } from './styles';
@@ -13,16 +14,9 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
   currentWorkspace,
   onClick,
 }) => {
-  let name = 'Untitled Workspace';
-  if (currentWorkspace) {
-    if (currentWorkspace.flavour === 'affine') {
-      if (currentWorkspace.firstBinarySynced) {
-        name = currentWorkspace.blockSuiteWorkspace.meta.name;
-      }
-    } else if (currentWorkspace.flavour === 'local') {
-      name = currentWorkspace.blockSuiteWorkspace.meta.name;
-    }
-  }
+  const [name] = useBlockSuiteWorkspaceName(
+    currentWorkspace?.blockSuiteWorkspace ?? null
+  );
   return (
     <>
       <SelectorWrapper onClick={onClick} data-testid="current-workspace">
