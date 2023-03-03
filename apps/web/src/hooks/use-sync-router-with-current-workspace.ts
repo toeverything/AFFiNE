@@ -2,12 +2,10 @@ import { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import { useCurrentWorkspace } from './current/use-current-workspace';
-import { useLoadWorkspace } from './use-load-workspace';
 import { useWorkspaces } from './use-workspaces';
 
 export function useSyncRouterWithCurrentWorkspace(router: NextRouter) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
-  useLoadWorkspace(currentWorkspace);
   const workspaces = useWorkspaces();
   useEffect(() => {
     const listener: Parameters<typeof router.events.on>[1] = (url: string) => {

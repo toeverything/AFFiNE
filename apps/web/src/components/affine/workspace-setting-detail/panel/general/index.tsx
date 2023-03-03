@@ -4,7 +4,7 @@ import { assertExists } from '@blocksuite/store';
 import React, { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
-import { refreshDataCenter } from '../../../../../hooks/use-workspaces';
+import { useBlockSuiteWorkspaceName } from '../../../../../hooks/use-blocksuite-workspace-name';
 import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Upload } from '../../../../pure/file-upload';
 import {
@@ -31,17 +31,16 @@ export const GeneralPanel: React.FC<PanelProps> = ({
 }) => {
   const [showDelete, setShowDelete] = useState<boolean>(false);
   const [showLeave, setShowLeave] = useState<boolean>(false);
-  const [workspaceName, setWorkspaceName] = useState<string>(
-    workspace.blockSuiteWorkspace.meta.name
+  const [name, setName] = useBlockSuiteWorkspaceName(
+    workspace.blockSuiteWorkspace
   );
+  const [input, setInput] = useState<string>(name);
   const isOwner = useIsWorkspaceOwner(workspace);
   const [showEditInput, setShowEditInput] = useState(false);
   const { t } = useTranslation();
 
-  const handleUpdateWorkspaceName = () => {
-    workspace.blockSuiteWorkspace.meta.setName(workspaceName);
-    // fixme(himself65): don't refresh
-    refreshDataCenter();
+  const handleUpdateWorkspaceName = (name: string) => {
+    setName(name);
   };
 
   const fileChange = async (file: File) => {
@@ -50,8 +49,6 @@ export const GeneralPanel: React.FC<PanelProps> = ({
     assertExists(blobs);
     const blobId = await blobs.set(blob);
     workspace.blockSuiteWorkspace.meta.setAvatar(blobId);
-    // fixme(himself65): don't refresh
-    refreshDataCenter();
   };
 
   return (
@@ -84,7 +81,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
         <div style={{ position: 'relative' }}>
           <MuiFade in={!showEditInput}>
             <FlexWrapper>
-              {workspace.blockSuiteWorkspace.meta.name}
+              {name}
               {isOwner && (
                 <StyledEditButton
                   onClick={() => {
@@ -103,23 +100,21 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                 <StyledInput
                   width={284}
                   height={38}
-                  value={workspaceName}
+                  value={input}
                   placeholder={t('Workspace Name')}
                   maxLength={15}
                   minLength={0}
                   onChange={newName => {
-                    setWorkspaceName(newName);
+                    setInput(newName);
                   }}
                 ></StyledInput>
                 <Button
                   type="light"
                   shape="circle"
                   style={{ marginLeft: '24px' }}
-                  disabled={
-                    workspaceName === workspace.blockSuiteWorkspace.meta.name
-                  }
+                  disabled={input === workspace.blockSuiteWorkspace.meta.name}
                   onClick={() => {
-                    handleUpdateWorkspaceName();
+                    handleUpdateWorkspaceName(input);
                     setShowEditInput(false);
                   }}
                 >
@@ -130,7 +125,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   shape="circle"
                   style={{ marginLeft: '24px' }}
                   onClick={() => {
-                    setWorkspaceName(workspace.blockSuiteWorkspace.meta.name);
+                    setInput(workspace.blockSuiteWorkspace.meta.name);
                     setShowEditInput(false);
                   }}
                 >

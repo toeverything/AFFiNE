@@ -18,7 +18,11 @@ import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { refreshDataCenter, useSyncWorkspaces } from '../hooks/use-workspaces';
+import {
+  refreshDataCenter,
+  useSyncWorkspaces,
+  useWorkspaces,
+} from '../hooks/use-workspaces';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
@@ -47,13 +51,33 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
   useSyncWorkspaces();
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
+  const workspaces = useWorkspaces();
   useEffect(() => {
-    if (currentWorkspace && 'providers' in currentWorkspace) {
+    const providers = workspaces.flatMap(workspace =>
+      workspace.providers.filter(provider => provider.background)
+    );
+    providers.forEach(provider => {
+      provider.connect();
+    });
+    return () => {
+      providers.forEach(provider => {
+        provider.disconnect();
+      });
+    };
+  }, [workspaces]);
+  useEffect(() => {
+    if (currentWorkspace) {
       currentWorkspace.providers.forEach(provider => {
+        if (provider.background) {
+          return;
+        }
         provider.connect();
       });
       return () => {
         currentWorkspace.providers.forEach(provider => {
+          if (provider.background) {
+            return;
+          }
           provider.disconnect();
         });
       };

@@ -44,9 +44,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
     await apis.deleteWorkspace({
       id: workspace.id,
     });
-    if (workspace.firstBinarySynced) {
-      workspace.providers.forEach(p => p.cleanup());
-    }
+    workspace.providers.forEach(p => p.cleanup());
   },
   prefetchData: async dataCenter => {
     if (localStorage.getItem(kAffineLocal)) {
@@ -74,9 +72,6 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
             blockSuiteWorkspace,
             providers: [...createAffineProviders(blockSuiteWorkspace)],
             flavour: RemWorkspaceFlavour.AFFINE,
-            syncBinary: async () => {
-              return { ...affineWorkspace };
-            },
           };
           return affineWorkspace;
         });
@@ -106,9 +101,6 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       .then(async workspaces => {
         const promises = workspaces.map(workspace => {
           assertEquals(workspace.flavour, RemWorkspaceFlavour.AFFINE);
-          if (!workspace.firstBinarySynced) {
-            return workspace.syncBinary();
-          }
           return workspace;
         });
         return Promise.all(promises)
@@ -151,9 +143,6 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       });
   },
   PageDetail: ({ currentWorkspace, currentPageId }) => {
-    if (!currentWorkspace.firstBinarySynced) {
-      return <div>Loading</div>;
-    }
     const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
     if (!page) {
       throw new PageNotFoundError(

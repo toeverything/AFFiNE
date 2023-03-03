@@ -3,7 +3,6 @@ import { config, getEnvironment } from '@affine/env';
 import { nanoid } from '@blocksuite/store';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import useSWR from 'swr';
-import { IndexeddbPersistence } from 'y-indexeddb';
 
 import { lockMutex } from '../atoms';
 import { createLocalProviders } from '../blocksuite';
@@ -47,23 +46,6 @@ function createRemLocalWorkspace(name: string) {
     flavour: RemWorkspaceFlavour.LOCAL,
     blockSuiteWorkspace: blockSuiteWorkspace,
     providers: [...createLocalProviders(blockSuiteWorkspace)],
-    syncBinary: async () => {
-      if (!config.enableIndexedDBProvider) {
-        return {
-          ...workspace,
-        };
-      }
-      const persistence = new IndexeddbPersistence(
-        blockSuiteWorkspace.room as string,
-        blockSuiteWorkspace.doc
-      );
-      return persistence.whenSynced.then(() => {
-        persistence.destroy();
-        return {
-          ...workspace,
-        };
-      });
-    },
     id,
   };
   if (config.enableIndexedDBProvider) {
@@ -111,6 +93,7 @@ export async function refreshDataCenter(signal?: AbortSignal) {
         break;
       }
       const oldData = dataCenter.workspaces;
+      oldData.forEach(d => console.log(d.blockSuiteWorkspace.doc.toJSON()));
       await plugin.prefetchData(dataCenter, signal);
       const newData = dataCenter.workspaces;
       if (!Object.is(oldData, newData)) {
