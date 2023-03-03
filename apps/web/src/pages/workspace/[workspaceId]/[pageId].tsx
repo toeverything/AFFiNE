@@ -30,7 +30,7 @@ const WorkspaceDetail: React.FC = () => {
   const [, rerender] = useState(false);
   // fixme(himself65): this is a hack
   useEffect(() => {
-    const dispose = currentWorkspace?.blockSuiteWorkspace.signals.pageAdded.on(
+    const dispose = currentWorkspace?.blockSuiteWorkspace.slots.pageAdded.on(
       id => {
         if (pageId === id) {
           rerender(prev => !prev);
@@ -40,7 +40,7 @@ const WorkspaceDetail: React.FC = () => {
     return () => {
       dispose?.dispose();
     };
-  }, [currentWorkspace?.blockSuiteWorkspace.signals.pageAdded, pageId]);
+  }, [currentWorkspace?.blockSuiteWorkspace.slots.pageAdded, pageId]);
   useEffect(() => {
     if (currentWorkspace) {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);

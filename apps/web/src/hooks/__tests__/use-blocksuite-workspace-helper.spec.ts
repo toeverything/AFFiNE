@@ -22,7 +22,7 @@ beforeEach(() => {
   })
     .register(builtInSchemas)
     .register(__unstableSchemas);
-  blockSuiteWorkspace.signals.pageAdded.on(pageId => {
+  blockSuiteWorkspace.slots.pageAdded.on(pageId => {
     const page = blockSuiteWorkspace.getPage(pageId) as Page;
     const pageBlockId = page.addBlockByFlavour('affine:page', { title: '' });
     const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
