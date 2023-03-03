@@ -5,7 +5,6 @@ import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
@@ -72,7 +71,6 @@ const WorkspaceDetail: React.FC = () => {
 
 const WorkspaceDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
-  useLoadWorkspace(useCurrentWorkspace()[0]);
   useSyncRouterWithCurrentWorkspaceAndPage(router);
   if (!router.isReady) {
     return <PageLoading />;

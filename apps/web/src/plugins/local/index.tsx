@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { config } from '@affine/env';
+import { config, DEFAULT_WORKSPACE_NAME } from '@affine/env';
 import { assertEquals, nanoid } from '@blocksuite/store';
 import React from 'react';
 import { IndexeddbPersistence } from 'y-indexeddb';
@@ -10,6 +10,7 @@ import { WorkspaceSettingDetail } from '../../components/affine/workspace-settin
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import {
+  BlockSuiteWorkspace,
   LoadPriority,
   LocalWorkspace,
   RemWorkspaceFlavour,
@@ -20,6 +21,8 @@ import { WorkspacePlugin } from '..';
 const logger = new DebugLogger('local-plugin');
 
 export const kStoreKey = 'affine-local-workspace';
+// fixme(himself65): this is a hacking that first workspace will disappear somehow
+const hashMap = new Map<string, BlockSuiteWorkspace>();
 
 export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
   flavour: RemWorkspaceFlavour.LOCAL,
@@ -92,34 +95,17 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
     if (config.enableIndexedDBProvider) {
       const workspaces = await Promise.all(
         ids.map(id => {
-          const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-            id,
-            (_: string) => undefined
-          );
+          const blockSuiteWorkspace = hashMap.has(id)
+            ? (hashMap.get(id) as BlockSuiteWorkspace)
+            : createEmptyBlockSuiteWorkspace(id, (_: string) => undefined);
+          hashMap.set(id, blockSuiteWorkspace);
           const workspace: LocalWorkspace = {
             id,
             flavour: RemWorkspaceFlavour.LOCAL,
             blockSuiteWorkspace: blockSuiteWorkspace,
             providers: [...createLocalProviders(blockSuiteWorkspace)],
-            syncBinary: async () => {
-              if (!config.enableIndexedDBProvider) {
-                return {
-                  ...workspace,
-                };
-              }
-              const persistence = new IndexeddbPersistence(
-                blockSuiteWorkspace.room as string,
-                blockSuiteWorkspace.doc
-              );
-              return persistence.whenSynced.then(() => {
-                persistence.destroy();
-                return {
-                  ...workspace,
-                };
-              });
-            },
           };
-          return workspace.syncBinary();
+          return workspace;
         })
       );
       workspaces.forEach(workspace => {
@@ -146,7 +132,8 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
         workspaceId,
         (_: string) => undefined
       );
-      blockSuiteWorkspace.meta.setName('Untitled Workspace');
+      hashMap.set(workspaceId, blockSuiteWorkspace);
+      blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       localStorage.setItem(kStoreKey, JSON.stringify([workspaceId]));
       blockSuiteWorkspace.createPage(nanoid());
       const workspace: LocalWorkspace = {
@@ -154,33 +141,14 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
         flavour: RemWorkspaceFlavour.LOCAL,
         blockSuiteWorkspace: blockSuiteWorkspace,
         providers: [...createLocalProviders(blockSuiteWorkspace)],
-        syncBinary: async () => {
-          if (!config.enableIndexedDBProvider) {
-            return {
-              ...workspace,
-            };
-          }
-          const persistence = new IndexeddbPersistence(
-            blockSuiteWorkspace.room as string,
-            blockSuiteWorkspace.doc
-          );
-          return persistence.whenSynced.then(() => {
-            persistence.destroy();
-            return {
-              ...workspace,
-            };
-          });
-        },
       };
-      await workspace.syncBinary();
-      if (signal?.aborted) {
-        const persistence = new IndexeddbPersistence(
-          blockSuiteWorkspace.room as string,
-          blockSuiteWorkspace.doc
-        );
-        await persistence.clearData();
-        return;
-      }
+      const persistence = new IndexeddbPersistence(
+        blockSuiteWorkspace.room as string,
+        blockSuiteWorkspace.doc
+      );
+      await persistence.whenSynced.then(() => {
+        persistence.destroy();
+      });
       dataCenter.workspaces = [workspace];
     }
   },
