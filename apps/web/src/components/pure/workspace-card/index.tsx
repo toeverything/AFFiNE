@@ -2,6 +2,7 @@ import { PermissionType } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import React, { useCallback } from 'react';
 
+import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
 import { RemWorkspace, RemWorkspaceFlavour } from '../../../shared';
 import {
   CloudWorkspaceIcon,
@@ -60,14 +61,7 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
   currentWorkspaceId,
 }) => {
   const { t } = useTranslation();
-  let name = 'UNKNOWN';
-  if (workspace.flavour === RemWorkspaceFlavour.LOCAL) {
-    name = workspace.blockSuiteWorkspace.meta.name;
-  } else if (workspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    if (workspace.firstBinarySynced) {
-      name = workspace.blockSuiteWorkspace.meta.name;
-    }
-  }
+  const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
 
   return (
     <StyledCard

@@ -11,7 +11,6 @@ import {
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { useLoadWorkspace } from '../../../hooks/use-load-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
@@ -20,7 +19,6 @@ const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
-  useLoadWorkspace(currentWorkspace);
   useSyncRouterWithCurrentWorkspace(router);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
@@ -50,21 +48,15 @@ const AllPage: NextPageWithLayout = () => {
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].PageList;
-    if (currentWorkspace.firstBinarySynced) {
-      return (
-        <>
-          <WorkspaceTitle icon={<FolderIcon />}>
-            {t('All pages')}
-          </WorkspaceTitle>
-          <PageList
-            onOpenPage={onClickPage}
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          />
-        </>
-      );
-    } else {
-      return <div>loading</div>;
-    }
+    return (
+      <>
+        <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
+        <PageList
+          onOpenPage={onClickPage}
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        />
+      </>
+    );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].PageList;
     return (

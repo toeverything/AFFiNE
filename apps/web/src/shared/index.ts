@@ -27,29 +27,21 @@ export interface FlavourToWorkspace {
   [RemWorkspaceFlavour.LOCAL]: LocalWorkspace;
 }
 
-export interface WorkspaceHandler {
-  syncBinary: () => Promise<RemWorkspace | null>;
-}
-
-export interface AffineRemoteSyncedWorkspace
-  extends RemoteWorkspace,
-    WorkspaceHandler {
+export interface AffineRemoteSyncedWorkspace extends RemoteWorkspace {
   flavour: RemWorkspaceFlavour.AFFINE;
   firstBinarySynced: true;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   providers: Provider[];
 }
 
-export interface AffineRemoteUnSyncedWorkspace
-  extends RemoteWorkspace,
-    WorkspaceHandler {
+export interface AffineRemoteUnSyncedWorkspace extends RemoteWorkspace {
   flavour: RemWorkspaceFlavour.AFFINE;
-  firstBinarySynced: false;
   // empty
   blockSuiteWorkspace: BlockSuiteWorkspace;
+  providers: Provider[];
 }
 
-export interface LocalWorkspace extends WorkspaceHandler {
+export interface LocalWorkspace {
   flavour: RemWorkspaceFlavour.LOCAL;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -85,11 +77,17 @@ export const transformToAffineSyncedWorkspace = async (
 
 export type BaseProvider = {
   flavour: string;
+  // if this is true, we will connect the provider on the background
+  background: boolean;
   connect: () => void;
   disconnect: () => void;
   // cleanup data when workspace is removed
   cleanup: () => void;
 };
+
+export interface AffineDownloadProvider extends BaseProvider {
+  flavour: 'affine-download';
+}
 
 export interface BroadCastChannelProvider extends BaseProvider {
   flavour: 'broadcast-channel';

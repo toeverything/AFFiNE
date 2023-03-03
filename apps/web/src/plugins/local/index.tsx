@@ -101,25 +101,8 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
             flavour: RemWorkspaceFlavour.LOCAL,
             blockSuiteWorkspace: blockSuiteWorkspace,
             providers: [...createLocalProviders(blockSuiteWorkspace)],
-            syncBinary: async () => {
-              if (!config.enableIndexedDBProvider) {
-                return {
-                  ...workspace,
-                };
-              }
-              const persistence = new IndexeddbPersistence(
-                blockSuiteWorkspace.room as string,
-                blockSuiteWorkspace.doc
-              );
-              return persistence.whenSynced.then(() => {
-                persistence.destroy();
-                return {
-                  ...workspace,
-                };
-              });
-            },
           };
-          return workspace.syncBinary();
+          return workspace;
         })
       );
       workspaces.forEach(workspace => {
@@ -154,25 +137,7 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
         flavour: RemWorkspaceFlavour.LOCAL,
         blockSuiteWorkspace: blockSuiteWorkspace,
         providers: [...createLocalProviders(blockSuiteWorkspace)],
-        syncBinary: async () => {
-          if (!config.enableIndexedDBProvider) {
-            return {
-              ...workspace,
-            };
-          }
-          const persistence = new IndexeddbPersistence(
-            blockSuiteWorkspace.room as string,
-            blockSuiteWorkspace.doc
-          );
-          return persistence.whenSynced.then(() => {
-            persistence.destroy();
-            return {
-              ...workspace,
-            };
-          });
-        },
       };
-      await workspace.syncBinary();
       if (signal?.aborted) {
         const persistence = new IndexeddbPersistence(
           blockSuiteWorkspace.room as string,
