@@ -5,12 +5,16 @@ import { BlockSuiteWorkspace } from '../shared';
 
 export function useWorkspaceBlob(
   blockSuiteWorkspace: BlockSuiteWorkspace
-): BlobStorage | null {
-  const [blobStorage, setBlobStorage] = useState<BlobStorage | null>(null);
+): BlobStorage | null | undefined {
+  const [blobStorage, setBlobStorage] = useState<
+    BlobStorage | null | undefined
+  >();
   useEffect(() => {
-    blockSuiteWorkspace.blobs.then(blobStorage => {
-      setBlobStorage(blobStorage);
-    });
+    blockSuiteWorkspace.blobs
+      .then(blobStorage => {
+        setBlobStorage(blobStorage);
+      })
+      .catch(() => setBlobStorage(null));
   }, [blockSuiteWorkspace]);
   return blobStorage;
 }
@@ -20,15 +24,23 @@ export function useWorkspaceBlobImage(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ) {
   const blobStorage = useWorkspaceBlob(blockSuiteWorkspace);
-  const [imageURL, setImageURL] = useState<string | null>(null);
+  const [imageURL, setImageURL] = useState<string | undefined | null>();
   useEffect(() => {
+    if (blobStorage === null) return setImageURL(null);
+
     const controller = new AbortController();
-    blobStorage?.get(key).then(blob => {
-      if (controller.signal.aborted) {
-        return;
-      }
-      setImageURL(blob);
-    });
+    blobStorage
+      ?.get(key)
+      .then(blob => {
+        if (controller.signal.aborted) {
+          setImageURL(null);
+          return;
+        }
+        setImageURL(blob);
+      })
+      .catch(() => {
+        setImageURL(null);
+      });
     return () => {
       controller.abort();
     };

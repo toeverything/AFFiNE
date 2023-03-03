@@ -56,7 +56,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
 
   return (
     <>
-      <StyledRow>
+      <StyledRow height={72}>
         <StyledSettingKey>{t('Workspace Avatar')}</StyledSettingKey>
         <StyledAvatar disabled={!isOwner}>
           {isOwner ? (

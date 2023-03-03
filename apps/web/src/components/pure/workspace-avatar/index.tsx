@@ -86,7 +86,11 @@ export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
   style,
   ...props
 }) => {
-  const avatarURL = useWorkspaceBlobImage(workspace.meta.avatar, workspace);
+  const key = workspace.meta.avatar;
+  const avatarURL = useWorkspaceBlobImage(key, workspace);
+
+  if (typeof avatarURL === 'undefined') return null;
+
   return (
     <Avatar
       {...props}
