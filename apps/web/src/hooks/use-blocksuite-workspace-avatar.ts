@@ -1,33 +1,32 @@
-import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
 import { assertExists } from '@blocksuite/store';
 import { useCallback, useEffect, useState } from 'react';
 
 import { BlockSuiteWorkspace } from '../shared';
 
-export function useBlockSuiteWorkspaceName(
+export function useBlockSuiteWorkspaceAvatar(
   blockSuiteWorkspace: BlockSuiteWorkspace | null
 ) {
-  const [name, set] = useState(
-    () => blockSuiteWorkspace?.meta.name ?? DEFAULT_WORKSPACE_NAME
+  const [avatar, set] = useState<string | undefined>(
+    () => blockSuiteWorkspace?.meta.avatar
   );
   useEffect(() => {
     if (blockSuiteWorkspace) {
-      set(blockSuiteWorkspace.meta.name ?? '');
+      set(blockSuiteWorkspace.meta.avatar);
       const dispose = blockSuiteWorkspace.meta.commonFieldsUpdated.on(() => {
-        set(blockSuiteWorkspace.meta.name ?? '');
+        set(blockSuiteWorkspace.meta.avatar);
       });
       return () => {
         dispose.dispose();
       };
     }
   }, [blockSuiteWorkspace]);
-  const setName = useCallback(
-    (name: string) => {
+  const setAvatar = useCallback(
+    (avatar: string) => {
       assertExists(blockSuiteWorkspace);
-      blockSuiteWorkspace.meta.setName(name);
-      set(name);
+      blockSuiteWorkspace.meta.setAvatar(avatar);
+      set(avatar);
     },
     [blockSuiteWorkspace]
   );
-  return [name, setName] as const;
+  return [avatar, setAvatar] as const;
 }

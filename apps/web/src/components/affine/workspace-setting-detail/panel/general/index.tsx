@@ -125,7 +125,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
                   shape="circle"
                   style={{ marginLeft: '24px' }}
                   onClick={() => {
-                    setInput(workspace.blockSuiteWorkspace.meta.name);
+                    setInput(workspace.blockSuiteWorkspace.meta.name ?? '');
                     setShowEditInput(false);
                   }}
                 >

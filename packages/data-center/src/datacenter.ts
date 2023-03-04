@@ -201,8 +201,8 @@ export class DataCenter {
 
     const workspaceUnitForPublic = new WorkspaceUnit({
       id: workspaceId,
-      name: blocksuiteWorkspace.meta.name,
-      avatar: blocksuiteWorkspace.meta.avatar,
+      name: blocksuiteWorkspace.meta.name ?? '',
+      avatar: blocksuiteWorkspace.meta.avatar ?? '',
       owner: undefined,
       published: true,
       provider: 'affine',
