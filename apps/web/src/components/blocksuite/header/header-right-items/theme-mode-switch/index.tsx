@@ -21,8 +21,8 @@ export const ThemeModeSwitch = () => {
       }}
     >
       <StyledSwitchItem
-        data-testid="change-theme-dark"
-        active={resolvedTheme === 'light'}
+        data-testid="change-theme-light"
+        active={resolvedTheme === 'dark'}
         isHover={isHover}
         firstTrigger={firstTrigger}
         onClick={() => {
@@ -32,8 +32,8 @@ export const ThemeModeSwitch = () => {
         <SunIcon />
       </StyledSwitchItem>
       <StyledSwitchItem
-        data-testid="change-theme-light"
-        active={resolvedTheme === 'dark'}
+        data-testid="change-theme-dark"
+        active={resolvedTheme === 'light'}
         isHover={isHover}
         firstTrigger={firstTrigger}
         onClick={() => {

@@ -8,7 +8,7 @@ import {
 import { GlobalStyles } from '@mui/material';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
-import React, { memo, useMemo } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -39,12 +39,16 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
       () => getDarkTheme(editorMode),
       [editorMode]
     );
+    const [deferTheme, setDeferTheme] = useState('light');
+    useEffect(() => {
+      setDeferTheme(theme === 'dark' ? 'dark' : 'light');
+    }, [theme]);
     return (
       <AffineThemeProvider
-        theme={theme === 'dark' ? darkThemeStyle : themeStyle}
+        theme={deferTheme === 'dark' ? darkThemeStyle : themeStyle}
       >
         <ThemeInjector
-          themeStyle={theme === 'dark' ? darkThemeStyle : themeStyle}
+          themeStyle={deferTheme === 'dark' ? darkThemeStyle : themeStyle}
         />
         {children}
       </AffineThemeProvider>
