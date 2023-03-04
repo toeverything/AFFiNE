@@ -41,8 +41,9 @@ export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
           flavour: RemWorkspaceFlavour.LOCAL,
           providers: [],
         };
-        dataCenter.workspaces.push(workspace);
-        dataCenter.callbacks.forEach(cb => cb());
+        // fixme: quick search won't work
+        // dataCenter.workspaces.push(workspace);
+        // dataCenter.callbacks.forEach(cb => cb());
         resolve(blockSuiteWorkspace);
       }, 0);
     });
