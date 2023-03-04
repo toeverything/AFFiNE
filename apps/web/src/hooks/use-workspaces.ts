@@ -47,6 +47,8 @@ export function useWorkspacesHelper() {
       },
       [set]
     ),
-    deleteWorkspace: useCallback(() => {}, []),
+    deleteWorkspace: useCallback((workspaceId: string) => {
+      // todo
+    }, []),
   };
 }
