@@ -1,0 +1,19 @@
+name: Label Checker
+on:
+  pull_request:
+    types:
+      - opened
+      - labeled
+      - unlabeled
+    branches:
+      - master
+
+jobs:
+  check_labels:
+    name: PR should not have a blocked label
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker://agilepathway/pull-request-label-checker:latest
+        with:
+          none_of: blocked
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
