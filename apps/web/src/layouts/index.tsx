@@ -44,6 +44,10 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
     const [jotaiWorkspaces, set] = useAtom(jotaiWorkspacesAtom);
     useEffect(() => {
       const controller = new AbortController();
+
+      /**
+       * Create a first workspace, only just once for a browser
+       */
       async function createFirst() {
         const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
           nanoid(),
