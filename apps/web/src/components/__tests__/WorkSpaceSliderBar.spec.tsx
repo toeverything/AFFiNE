@@ -29,7 +29,7 @@ describe('WorkSpaceSliderBar', () => {
     const onOpenWorkspaceListModalFn = vi.fn();
     const onOpenQuickSearchModalFn = vi.fn();
     const mutationHook = renderHook(() => useWorkspacesHelper());
-    const id = mutationHook.result.current.createLocalWorkspace('test0');
+    const id = await mutationHook.result.current.createLocalWorkspace('test0');
     mutationHook.result.current.createWorkspacePage(id, 'test1');
     const currentWorkspaceHook = renderHook(() => useCurrentWorkspace());
     let i = 0;

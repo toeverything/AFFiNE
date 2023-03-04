@@ -1,13 +1,18 @@
+import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
+import { nanoid } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 
-import { currentWorkspaceIdAtom } from '../atoms';
+import { currentWorkspaceIdAtom, jotaiWorkspacesAtom } from '../atoms';
 import { PageLoading } from '../components/pure/loading';
 import { useWorkspaces } from '../hooks/use-workspaces';
+import { LocalPlugin } from '../plugins/local';
+import { RemWorkspaceFlavour } from '../shared';
+import { createEmptyBlockSuiteWorkspace } from '../utils';
 
-const IndexPage: NextPage = () => {
+const IndexPageInner = () => {
   const router = useRouter();
   const [workspaceId] = useAtom(currentWorkspaceIdAtom);
   const workspaces = useWorkspaces();
@@ -63,6 +68,47 @@ const IndexPage: NextPage = () => {
     }
   }, [router, workspaceId, workspaces]);
   return <PageLoading />;
+};
+
+const IndexPage: NextPage = () => {
+  const [jotaiWorkspaces, set] = useAtom(jotaiWorkspacesAtom);
+  useEffect(() => {
+    const controller = new AbortController();
+
+    /**
+     * Create a first workspace, only just once for a browser
+     */
+    async function createFirst() {
+      const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+        nanoid(),
+        (_: string) => undefined
+      );
+      blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
+      const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
+      set(workspaces => [
+        ...workspaces,
+        {
+          id,
+          flavour: RemWorkspaceFlavour.LOCAL,
+        },
+      ]);
+    }
+    if (
+      jotaiWorkspaces.length === 0 &&
+      sessionStorage.getItem('first') === null
+    ) {
+      sessionStorage.setItem('first', 'true');
+      createFirst();
+    }
+    return () => {
+      controller.abort();
+    };
+  }, [jotaiWorkspaces.length, set]);
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <IndexPageInner />
+    </Suspense>
+  );
 };
 
 export default IndexPage;
