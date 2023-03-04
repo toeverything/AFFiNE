@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
-import { useCurrentPage } from '../../../hooks/current/use-current-page-id';
+import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
 import { WorkspaceLayout } from '../../../layouts';
@@ -25,7 +25,7 @@ function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
 }
 
 const WorkspaceDetail: React.FC = () => {
-  const page = useCurrentPage();
+  const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
   useEffect(() => {
     if (currentWorkspace) {
@@ -35,18 +35,18 @@ const WorkspaceDetail: React.FC = () => {
   if (currentWorkspace === null) {
     return <PageLoading />;
   }
-  if (!page) {
+  if (!pageId) {
     return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].PageDetail;
     return (
-      <PageDetail currentWorkspace={currentWorkspace} currentPageId={page.id} />
+      <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
     );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].PageDetail;
     return (
-      <PageDetail currentWorkspace={currentWorkspace} currentPageId={page.id} />
+      <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
     );
   }
   throw new Unreachable();

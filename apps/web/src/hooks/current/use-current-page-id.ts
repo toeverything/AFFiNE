@@ -10,6 +10,7 @@ export const currentPageAtom = atom<Promise<Page | null>>(async get => {
   if (!workspace || !id) {
     return Promise.resolve(null);
   }
+
   const page = workspace.blockSuiteWorkspace.getPage(id);
   if (page) {
     return page;
