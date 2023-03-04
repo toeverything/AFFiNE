@@ -36,6 +36,12 @@ export type FavoriteListProps = {
   showList: boolean;
   pageMeta: PageMeta[];
 };
+export type PageListProps = {
+  currentPageId: string | null;
+  openPage: (pageId: string) => void;
+  showList: boolean;
+  pageMeta: PageMeta[];
+};
 
 const FavoriteList: React.FC<FavoriteListProps> = ({
   pageMeta,
@@ -69,6 +75,41 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
         );
       })}
       {favoriteList.length === 0 && (
+        <StyledSubListItem disable={true}>{t('No item')}</StyledSubListItem>
+      )}
+    </MuiCollapse>
+  );
+};
+
+const PageList: React.FC<PageListProps> = ({
+  pageMeta,
+  openPage,
+  showList,
+}) => {
+  const router = useRouter();
+  const { t } = useTranslation();
+  const pageList = useMemo(() => pageMeta.filter(p => !p.trash), [pageMeta]);
+  return (
+    <MuiCollapse in={showList}>
+      {pageList.map((pageMeta, index) => {
+        const active = router.query.pageId === pageMeta.id;
+        return (
+          <StyledSubListItem
+            data-testid={`page-list-item-${pageMeta.id}`}
+            active={active}
+            key={`${pageMeta}-${index}`}
+            onClick={() => {
+              if (active) {
+                return;
+              }
+              openPage(pageMeta.id);
+            }}
+          >
+            {pageMeta.title || 'Untitled'}
+          </StyledSubListItem>
+        );
+      })}
+      {pageList.length === 0 && (
         <StyledSubListItem disable={true}>{t('No item')}</StyledSubListItem>
       )}
     </MuiCollapse>
@@ -109,6 +150,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
 }) => {
   const currentWorkspaceId = currentWorkspace?.id || null;
   const [showSubFavorite, setShowSubFavorite] = useState(true);
+  const [showAllPages, setShowAllPages] = useState(true);
   const [showTip, setShowTip] = useState(false);
   const { t } = useTranslation();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
@@ -163,21 +205,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             <SearchIcon />
             {t('Quick search')}
           </StyledListItem>
-          <Link
-            href={{
-              pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
-            }}
-          >
-            <StyledListItem
-              active={
-                currentPath ===
-                (currentWorkspaceId && paths.all(currentWorkspaceId))
-              }
-            >
-              <FolderIcon />
-              <span data-testid="all-pages">{t('All pages')}</span>
-            </StyledListItem>
-          </Link>
           <StyledListItem
             active={
               currentPath ===
@@ -209,6 +236,39 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
           <FavoriteList
             currentPageId={currentPageId}
             showList={showSubFavorite}
+            openPage={openPage}
+            pageMeta={pageMeta}
+          />
+          <StyledListItem
+            active={
+              currentPath ===
+              (currentWorkspaceId && paths.all(currentWorkspaceId))
+            }
+          >
+            <StyledLink
+              href={{
+                pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
+              }}
+            >
+              <FolderIcon />
+              {t('All pages')}
+            </StyledLink>
+            <IconButton
+              darker={true}
+              onClick={useCallback(() => {
+                setShowAllPages(!showAllPages);
+              }, [showAllPages])}
+            >
+              <ArrowDownSmallIcon
+                style={{
+                  transform: `rotate(${showAllPages ? '180' : '0'}deg)`,
+                }}
+              />
+            </IconButton>
+          </StyledListItem>
+          <PageList
+            currentPageId={currentPageId}
+            showList={showAllPages}
             openPage={openPage}
             pageMeta={pageMeta}
           />
