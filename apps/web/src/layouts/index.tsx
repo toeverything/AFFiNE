@@ -55,13 +55,16 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
         );
         blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
         const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
-        set(workspaces => [
-          ...workspaces,
-          {
-            id,
-            flavour: RemWorkspaceFlavour.LOCAL,
-          },
-        ]);
+        blockSuiteWorkspace.slots.pageAdded.once(() => {
+          set(workspaces => [
+            ...workspaces,
+            {
+              id,
+              flavour: RemWorkspaceFlavour.LOCAL,
+            },
+          ]);
+        });
+        blockSuiteWorkspace.createPage(nanoid());
       }
       if (
         jotaiWorkspaces.length === 0 &&
