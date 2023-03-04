@@ -14,14 +14,17 @@ import {
   PaperIcon,
 } from '@blocksuite/icons';
 import { PageMeta } from '@blocksuite/store';
-import { useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
+import {
+  useMediaQuery,
+  useTheme as useMuiTheme,
+  useTheme,
+} from '@mui/material';
 import React, { useMemo } from 'react';
 
 import {
   usePageMeta,
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
-import { useTheme } from '../../../../providers/ThemeProvider';
 import { BlockSuiteWorkspace } from '../../../../shared';
 import DateCell from './DateCell';
 import Empty from './Empty';
@@ -41,7 +44,7 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
   pageMeta: { favorite },
   onClick,
 }) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const { t } = useTranslation();
   return (
     <Tooltip

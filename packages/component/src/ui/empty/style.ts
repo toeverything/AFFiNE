@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '../../styles';
 
-export const StyledEmptyContainer = styled.div(() => {
+export const StyledEmptyContainer = styled('div')(() => {
   return {
     height: '100%',
     ...displayFlex('center', 'center'),

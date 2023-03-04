@@ -44,6 +44,7 @@ const getRedirectConfig = profile => {
 const nextConfig = {
   productionBrowserSourceMaps: true,
   compiler: {
+    styledComponents: true,
     removeConsole: {
       exclude: ['error', 'log', 'warn', 'info'],
     },
@@ -85,6 +86,7 @@ const nextConfig = {
       loader: 'raw-loader',
     });
     config.resolve.alias['yjs'] = require.resolve('yjs');
+    config.resolve.alias['@mui/styled-engine'] = '@mui/styled-engine-sc';
 
     if (!isServer && !dev) {
       config.devtool = 'hidden-nosources-source-map';

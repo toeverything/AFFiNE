@@ -1,7 +1,7 @@
 import { displayFlex, styled, textEllipsis } from '@affine/component';
 import Link from 'next/link';
 
-export const StyledSliderBar = styled.div<{ show: boolean }>(
+export const StyledSliderBar = styled('div')<{ show: boolean }>(
   ({ theme, show }) => {
     return {
       width: show ? '256px' : '0',
@@ -17,7 +17,7 @@ export const StyledSliderBar = styled.div<{ show: boolean }>(
     };
   }
 );
-export const StyledSliderBarWrapper = styled.div(() => {
+export const StyledSliderBarWrapper = styled('div')(() => {
   return {
     height: '100%',
     overflowX: 'hidden',
@@ -26,7 +26,7 @@ export const StyledSliderBarWrapper = styled.div(() => {
   };
 });
 
-export const StyledArrowButton = styled.button<{ isShow: boolean }>(
+export const StyledArrowButton = styled('button')<{ isShow: boolean }>(
   ({ theme, isShow }) => {
     return {
       width: '32px',
@@ -51,7 +51,7 @@ export const StyledArrowButton = styled.button<{ isShow: boolean }>(
   }
 );
 
-export const StyledListItem = styled.div<{
+export const StyledListItem = styled('div')<{
   active?: boolean;
   disabled?: boolean;
 }>(({ theme, active, disabled }) => {
@@ -109,7 +109,7 @@ export const StyledNewPageButton = styled(StyledListItem)(() => {
   };
 });
 
-export const StyledSubListItem = styled.button<{
+export const StyledSubListItem = styled('button')<{
   disable?: boolean;
   active?: boolean;
 }>(({ theme, disable, active }) => {

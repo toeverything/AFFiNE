@@ -22,7 +22,7 @@ import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceLayout } from '../../../layouts';
 import { NextPageWithLayout } from '../../../shared';
 
-export const NavContainer = styled.div(({ theme }) => {
+export const NavContainer = styled('div')(({ theme }) => {
   return {
     width: '100vw',
     padding: '0 12px',

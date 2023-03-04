@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '@affine/component';
 
-export const StyledHeaderContainer = styled.div<{ hasWarning: boolean }>(
+export const StyledHeaderContainer = styled('div')<{ hasWarning: boolean }>(
   ({ hasWarning }) => {
     return {
       height: hasWarning ? '96px' : '60px',
@@ -8,16 +8,18 @@ export const StyledHeaderContainer = styled.div<{ hasWarning: boolean }>(
     };
   }
 );
-export const StyledHeader = styled.div<{ hasWarning: boolean }>(({ theme }) => {
-  return {
-    height: '60px',
-    width: '100%',
-    ...displayFlex('flex-end', 'center'),
-    background: theme.colors.pageBackground,
-    transition: 'background-color 0.5s',
-    zIndex: 99,
-  };
-});
+export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
+  ({ theme }) => {
+    return {
+      height: '60px',
+      width: '100%',
+      ...displayFlex('flex-end', 'center'),
+      background: theme.colors.pageBackground,
+      transition: 'background-color 0.5s',
+      zIndex: 99,
+    };
+  }
+);
 
 export const StyledTitle = styled('div')(({ theme }) => ({
   width: '720px',
@@ -45,7 +47,7 @@ export const StyledHeaderRightSide = styled('div')({
   },
 });
 
-export const StyledBrowserWarning = styled.div<{ show: boolean }>(
+export const StyledBrowserWarning = styled('div')<{ show: boolean }>(
   ({ theme, show }) => {
     return {
       backgroundColor: theme.colors.warningBackground,
@@ -63,7 +65,7 @@ export const StyledBrowserWarning = styled.div<{ show: boolean }>(
   }
 );
 
-export const StyledCloseButton = styled.div(({ theme }) => {
+export const StyledCloseButton = styled('div')(({ theme }) => {
   return {
     width: '36px',
     height: '36px',
@@ -83,7 +85,7 @@ export const StyledCloseButton = styled.div(({ theme }) => {
   };
 });
 
-export const StyledSwitchWrapper = styled.div(() => {
+export const StyledSwitchWrapper = styled('div')(() => {
   return {
     position: 'absolute',
     right: '100%',
@@ -94,7 +96,7 @@ export const StyledSwitchWrapper = styled.div(() => {
   };
 });
 
-export const StyledSearchArrowWrapper = styled.div(() => {
+export const StyledSearchArrowWrapper = styled('div')(() => {
   return {
     position: 'absolute',
     left: 'calc(100% + 4px)',

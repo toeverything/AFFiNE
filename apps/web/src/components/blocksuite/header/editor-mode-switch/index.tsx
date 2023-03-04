@@ -1,5 +1,6 @@
 import { useTranslation } from '@affine/i18n';
 import { assertExists } from '@blocksuite/store';
+import { useTheme } from '@mui/material';
 import React, { cloneElement, CSSProperties, useEffect, useState } from 'react';
 
 import {
@@ -7,7 +8,6 @@ import {
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
 // todo(himself65): remove `useTheme` hook
-import { useTheme } from '../../../../providers/ThemeProvider';
 import { BlockSuiteWorkspace } from '../../../../shared';
 import { EdgelessIcon, PaperIcon } from './Icons';
 import {
@@ -20,9 +20,7 @@ import {
 import type { AnimateRadioItemProps, RadioItemStatus } from './type';
 const PaperItem = ({ active }: { active?: boolean }) => {
   const {
-    theme: {
-      colors: { iconColor, primaryColor },
-    },
+    colors: { iconColor, primaryColor },
   } = useTheme();
 
   return <PaperIcon style={{ color: active ? primaryColor : iconColor }} />;
@@ -30,9 +28,7 @@ const PaperItem = ({ active }: { active?: boolean }) => {
 
 const EdgelessItem = ({ active }: { active?: boolean }) => {
   const {
-    theme: {
-      colors: { iconColor, primaryColor },
-    },
+    colors: { iconColor, primaryColor },
   } = useTheme();
 
   return <EdgelessIcon style={{ color: active ? primaryColor : iconColor }} />;
@@ -78,7 +74,7 @@ export const EditorModeSwitch: React.FC<EditorModeSwitchProps> = ({
   blockSuiteWorkspace,
   pageId,
 }) => {
-  const { mode: themeMode } = useTheme();
+  const theme = useTheme();
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const pageMeta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
@@ -139,7 +135,10 @@ export const EditorModeSwitch: React.FC<EditorModeSwitchProps> = ({
           setRadioItemStatus(modifyRadioItemStatus());
         }}
       />
-      <StyledMiddleLine hidden={!isHover} dark={themeMode === 'dark'} />
+      <StyledMiddleLine
+        hidden={!isHover}
+        dark={theme.palette.mode === 'dark'}
+      />
       <AnimateRadioItem
         isLeft={false}
         label={t('Edgeless')}

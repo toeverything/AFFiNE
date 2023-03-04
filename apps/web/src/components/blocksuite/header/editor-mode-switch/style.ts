@@ -1,7 +1,8 @@
-import { displayFlex, keyframes, styled } from '@affine/component';
+import { css, displayFlex, keyframes, styled } from '@affine/component';
 // @ts-ignore
 import spring, { toString } from 'css-spring';
 
+// @ts-ignore
 import type { ItemStatus } from './type';
 
 const ANIMATE_DURATION = 500;
@@ -10,37 +11,48 @@ export const StyledAnimateRadioContainer = styled('div')<{
   shrink: boolean;
   disabled: boolean;
 }>(({ shrink, theme, disabled }) => {
-  const animateScaleStretch = keyframes`${toString(
+  const animateScaleStretch = toString(
     spring({ width: '36px' }, { width: '160px' }, { preset: 'gentle' })
-  )}`;
-  const animateScaleShrink = keyframes(
-    `${toString(
-      spring({ width: '160px' }, { width: '36px' }, { preset: 'gentle' })
-    )}`
   );
-  const shrinkStyle = shrink
+  const animateScaleShrink = toString(
+    spring({ width: '160px' }, { width: '36px' }, { preset: 'gentle' })
+  );
+  const shrinkStyle: any = shrink
     ? {
-        animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
+        animation: css`
+          ${keyframes`${animateScaleShrink}`} ${ANIMATE_DURATION}ms forwards
+        `,
         background: 'transparent',
       }
     : {
-        animation: `${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
+        animation: css`
+          ${keyframes`${animateScaleStretch}`} ${ANIMATE_DURATION}ms forwards
+        `,
       };
+  return css`
+    height: 36px;
+    border-radius: 18px;
+    background: ${disabled ? 'transparent' : theme.colors.hoverBackground}
+    position: relative;
+    display: flex;
+    transition: background ${ANIMATE_DURATION}ms, border ${ANIMATE_DURATION}ms;
+    border: 1px solid transparent;
+    ${
+      disabled
+        ? css`
+            pointer-events: none;
+          `
+        : css`
+            animation: ${shrinkStyle.animation};
+            background: ${shrinkStyle.background};
+          `
+    }
 
-  return {
-    height: '36px',
-    borderRadius: '18px',
-    background: disabled ? 'transparent' : theme.colors.hoverBackground,
-    position: 'relative',
-    display: 'flex',
-    transition: `background ${ANIMATE_DURATION}ms, border ${ANIMATE_DURATION}ms`,
-    border: '1px solid transparent',
-
-    ...(disabled ? { pointerEvents: 'none' } : shrinkStyle),
-    ':hover': {
-      border: disabled ? '' : `1px solid ${theme.colors.primaryColor}`,
-    },
-  };
+    //...(disabled ? { pointerEvents: 'none' } : shrinkStyle),
+    :hover {
+      border: ${disabled ? '' : `1px solid ${theme.colors.primaryColor}`}
+    }
+  `;
 });
 
 export const StyledMiddleLine = styled('div')<{
@@ -62,83 +74,94 @@ export const StyledRadioItem = styled('div')<{
   status: ItemStatus;
   active: boolean;
 }>(({ status, active, theme }) => {
-  const animateScaleStretch = keyframes`${toString(
+  const animateScaleStretch = toString(
     spring({ width: '44px' }, { width: '112px' })
-  )}`;
-  const animateScaleOrigin = keyframes(
-    `${toString(spring({ width: '112px' }, { width: '44px' }))}`
   );
-  const animateScaleShrink = keyframes(
-    `${toString(spring({ width: '0px' }, { width: '36px' }))}`
+  const animateScaleOrigin = toString(
+    spring({ width: '112px' }, { width: '44px' })
+  );
+  const animateScaleShrink = toString(
+    spring({ width: '0px' }, { width: '36px' })
   );
   const dynamicStyle =
     status === 'stretch'
       ? {
-          animation: `${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
+          animation: css`
+            ${keyframes`${animateScaleStretch}`} ${ANIMATE_DURATION}ms forwards
+          `,
           flexShrink: '0',
         }
       : status === 'shrink'
       ? {
-          animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
+          animation: css`
+            ${keyframes`${animateScaleShrink}`} ${ANIMATE_DURATION}ms forwards
+          `,
         }
       : status === 'normal'
-      ? { animation: `${animateScaleOrigin} ${ANIMATE_DURATION}ms forwards` }
+      ? {
+          animation: css`
+            ${keyframes`${animateScaleOrigin}`} ${ANIMATE_DURATION}ms forwards
+          `,
+        }
       : {};
 
   const {
     colors: { iconColor, primaryColor },
   } = theme;
-  return {
-    width: '0',
-    height: '100%',
-    display: 'flex',
-    cursor: 'pointer',
-    overflow: 'hidden',
-    color: active ? primaryColor : iconColor,
-    ...dynamicStyle,
-  };
+  return css`
+    width: 0;
+    height: 100%;
+    display: flex;
+    cursor: pointer;
+    overflow: hidden;
+    color: ${active ? primaryColor : iconColor};
+    animation: ${dynamicStyle.animation};
+    flex-shrink: ${dynamicStyle.flexShrink};
+  `;
 });
 
 export const StyledLabel = styled('div')<{
   shrink: boolean;
   isLeft: boolean;
 }>(({ shrink, isLeft }) => {
-  const animateScaleStretch = keyframes`${toString(
+  const animateScaleStretch = toString(
     spring(
       { width: '0px' },
       { width: isLeft ? '65px' : '75px' },
       { preset: 'gentle' }
     )
-  )}`;
-  const animateScaleShrink = keyframes(
-    `${toString(
-      spring(
-        { width: isLeft ? '65px' : '75px' },
-        { width: '0px' },
-        { preset: 'gentle' }
-      )
-    )}`
+  );
+  const animateScaleShrink = toString(
+    spring(
+      { width: isLeft ? '65px' : '75px' },
+      { width: '0px' },
+      { preset: 'gentle' }
+    )
   );
   const shrinkStyle = shrink
     ? {
-        animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
+        animation: css`
+          ${keyframes`${animateScaleShrink}`} ${ANIMATE_DURATION}ms forwards
+        `,
       }
     : {
-        animation: `${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
+        animation: css`
+          ${keyframes`${animateScaleStretch}`} ${ANIMATE_DURATION}ms forwards
+        `,
       };
 
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: isLeft ? 'flex-start' : 'flex-end',
-    fontSize: '16px',
-    flexShrink: '0',
-    transition: `transform ${ANIMATE_DURATION}ms`,
-    fontWeight: 'normal',
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
-    ...shrinkStyle,
-  };
+  return css`
+    display: flex;
+    align-items: center;
+    justify-content: ${isLeft ? 'flex-start' : 'flex-end'};
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: transform ${ANIMATE_DURATION}ms;
+    font-weight: normal;
+    overflow: hidden;
+    white-space: nowrap;
+    animation: ${shrinkStyle.animation};
+  `;
 });
 
 export const StyledIcon = styled('div')<{

@@ -3,7 +3,7 @@ import '../styles/globals.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
-import createCache from '@emotion/cache';
+import { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
 import { useAtomsDebugValue } from 'jotai-devtools';
@@ -21,6 +21,7 @@ import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { ModalProvider } from '../providers/ModalProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { NextPageWithLayout } from '../shared';
+import createEmotionCache from '../utils/create-emotion-cache';
 
 setupGlobal();
 
@@ -35,6 +36,7 @@ const DebugAtoms = memo(function DebugAtoms() {
   return null;
 });
 
+const clientSideEmotionCache = createEmotionCache();
 const helmetContext = {};
 
 const defaultSWRConfig: SWRConfiguration = {
@@ -48,9 +50,13 @@ const defaultSWRConfig: SWRConfiguration = {
   },
 };
 
-const cache = createCache({ key: 'affine' });
-
-const App = function App({ Component, pageProps }: AppPropsWithLayout) {
+const App = function App({
+  Component,
+  pageProps,
+  emotionCache = clientSideEmotionCache,
+}: AppPropsWithLayout & {
+  emotionCache?: EmotionCache;
+}) {
   const getLayout = Component.getLayout || EmptyLayout;
   const i18n = useMemo(() => createI18n(), []);
 
@@ -63,8 +69,8 @@ const App = function App({ Component, pageProps }: AppPropsWithLayout) {
   }
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <CacheProvider value={cache}>
+    <CacheProvider value={emotionCache}>
+      <I18nextProvider i18n={i18n}>
         <DebugAtoms />
         <SWRConfig value={defaultSWRConfig}>
           <AffineErrorBoundary router={useRouter()}>
@@ -83,6 +89,10 @@ const App = function App({ Component, pageProps }: AppPropsWithLayout) {
                 <HelmetProvider key="HelmetProvider" context={helmetContext}>
                   <Helmet>
                     <title>AFFiNE</title>
+                    <meta
+                      name="viewport"
+                      content="initial-scale=1, width=device-width"
+                    />
                   </Helmet>
                   {getLayout(<Component {...pageProps} />)}
                 </HelmetProvider>
@@ -90,8 +100,8 @@ const App = function App({ Component, pageProps }: AppPropsWithLayout) {
             </Suspense>
           </AffineErrorBoundary>
         </SWRConfig>
-      </CacheProvider>
-    </I18nextProvider>
+      </I18nextProvider>
+    </CacheProvider>
   );
 };
 

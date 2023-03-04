@@ -10,7 +10,7 @@ export const StyledModalWrapper = styled(ModalWrapper)(() => {
   };
 });
 
-export const StyledConfirmTitle = styled.div(({ theme }) => {
+export const StyledConfirmTitle = styled('div')(({ theme }) => {
   return {
     fontSize: theme.font.h6,
     fontWeight: 600,
@@ -20,7 +20,7 @@ export const StyledConfirmTitle = styled.div(({ theme }) => {
   };
 });
 
-export const StyledConfirmContent = styled.div(({ theme }) => {
+export const StyledConfirmContent = styled('div')(({ theme }) => {
   return {
     fontSize: theme.font.base,
     textAlign: 'center',
@@ -30,14 +30,14 @@ export const StyledConfirmContent = styled.div(({ theme }) => {
   };
 });
 
-export const StyledColumnButtonWrapper = styled.div(() => {
+export const StyledColumnButtonWrapper = styled('div')(() => {
   return {
     ...displayFlex('center', 'center'),
     flexDirection: 'column',
     marginTop: '32px',
   };
 });
-export const StyledRowButtonWrapper = styled.div(() => {
+export const StyledRowButtonWrapper = styled('div')(() => {
   return {
     ...displayFlex('center', 'center'),
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import { styled, textEllipsis } from '../../styles';
 import { TableCellProps } from './interface';
 
-export const StyledTable = styled.table<{ tableLayout: 'auto' | 'fixed' }>(
+export const StyledTable = styled('table')<{ tableLayout: 'auto' | 'fixed' }>(
   ({ theme, tableLayout }) => {
     return {
       fontSize: theme.font.base,
@@ -14,13 +14,13 @@ export const StyledTable = styled.table<{ tableLayout: 'auto' | 'fixed' }>(
   }
 );
 
-export const StyledTableBody = styled.tbody(() => {
+export const StyledTableBody = styled('tbody')(() => {
   return {
     fontWeight: 400,
   };
 });
 
-export const StyledTableCell = styled.td<
+export const StyledTableCell = styled('td')<
   Pick<TableCellProps, 'ellipsis' | 'align' | 'proportion'>
 >(({ align = 'left', ellipsis = false, proportion }) => {
   const width = proportion ? `${proportion * 100}%` : 'auto';
@@ -37,7 +37,7 @@ export const StyledTableCell = styled.td<
   };
 });
 
-export const StyledTableHead = styled.thead(() => {
+export const StyledTableHead = styled('thead')(() => {
   return {
     fontWeight: 500,
     tr: {
@@ -50,7 +50,7 @@ export const StyledTableHead = styled.thead(() => {
   };
 });
 
-export const StyledTableRow = styled.tr(({ theme }) => {
+export const StyledTableRow = styled('tr')(({ theme }) => {
   return {
     td: {
       transition: 'background .15s',

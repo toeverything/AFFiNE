@@ -6,7 +6,7 @@ import {
 } from '@affine/component';
 import { Button } from '@affine/component';
 
-export const StyledSplitLine = styled.div(({ theme }) => {
+export const StyledSplitLine = styled('div')(({ theme }) => {
   return {
     width: '1px',
     height: '20px',
@@ -15,7 +15,7 @@ export const StyledSplitLine = styled.div(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceInfo = styled.div(({ theme }) => {
+export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   return {
     marginLeft: '15px',
     width: '202px',
@@ -37,7 +37,7 @@ export const StyleWorkspaceInfo = styled.div(({ theme }) => {
   };
 });
 
-export const StyleWorkspaceTitle = styled.div(({ theme }) => {
+export const StyleWorkspaceTitle = styled('div')(({ theme }) => {
   return {
     fontSize: theme.font.base,
     fontWeight: 600,
@@ -48,7 +48,7 @@ export const StyleWorkspaceTitle = styled.div(({ theme }) => {
   };
 });
 
-export const StyledCard = styled.div<{
+export const StyledCard = styled('div')<{
   active?: boolean;
 }>(({ theme, active }) => {
   const borderColor = active ? theme.colors.primaryColor : 'transparent';
@@ -63,7 +63,7 @@ export const StyledCard = styled.div<{
     ...displayFlex('flex-start', 'flex-start'),
     marginBottom: '24px',
     transition: 'background .2s',
-    background: theme.mode === 'light' ? '#FFF' : '#2C2C2C',
+    background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
     ':hover': {
       background: theme.colors.cardHoverBackground,
       '.add-icon': {
@@ -81,7 +81,7 @@ export const StyledFooter = styled('div')({
   ...displayFlex('space-between', 'center'),
 });
 
-export const StyleUserInfo = styled.div(({ theme }) => {
+export const StyleUserInfo = styled('div')(({ theme }) => {
   return {
     textAlign: 'left',
     marginLeft: '16px',
@@ -97,17 +97,17 @@ export const StyleUserInfo = styled.div(({ theme }) => {
   };
 });
 
-export const StyledModalHeaderLeft = styled.div(() => {
+export const StyledModalHeaderLeft = styled('div')(() => {
   return { ...displayFlex('flex-start', 'center') };
 });
-export const StyledModalTitle = styled.div(({ theme }) => {
+export const StyledModalTitle = styled('div')(({ theme }) => {
   return {
     fontWeight: 600,
     fontSize: theme.font.h6,
   };
 });
 
-export const StyledHelperContainer = styled.div(({ theme }) => {
+export const StyledHelperContainer = styled('div')(({ theme }) => {
   return {
     color: theme.colors.iconColor,
     marginLeft: '15px',
@@ -125,13 +125,13 @@ export const StyledModalContent = styled('div')({
   ...displayFlex('space-between', 'flex-start', 'flex-start'),
   flexWrap: 'wrap',
 });
-export const StyledOperationWrapper = styled.div(() => {
+export const StyledOperationWrapper = styled('div')(() => {
   return {
     ...displayFlex('flex-end', 'center'),
   };
 });
 
-export const StyleWorkspaceAdd = styled.div(() => {
+export const StyleWorkspaceAdd = styled('div')(() => {
   return {
     width: '58px',
     height: '58px',

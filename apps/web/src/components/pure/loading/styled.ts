@@ -3,7 +3,7 @@ import { styled } from '@affine/component';
 // Inspired by https://codepen.io/graphilla/pen/rNvBMYY
 export const StyledLoadingWrapper = styled('div', {
   shouldForwardProp: prop => {
-    return !['size'].includes(prop);
+    return !['size'].includes(prop as string);
   },
 })<{ size?: number }>(({ size = 40 }) => {
   return {
@@ -12,7 +12,7 @@ export const StyledLoadingWrapper = styled('div', {
     position: 'relative',
   };
 });
-export const StyledLoading = styled.div`
+export const StyledLoading = styled('div')`
   position: absolute;
   left: 25%;
   top: 50%;
@@ -31,7 +31,7 @@ export const StyledLoading = styled.div`
   }
 `;
 
-export const StyledLoadingItem = styled.div<{ size: number }>(
+export const StyledLoadingItem = styled('div')<{ size: number }>(
   ({ size = 40 }) => {
     return `
   position: absolute;

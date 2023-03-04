@@ -2,7 +2,7 @@ import '@emotion/react';
 
 import type { EditorContainer } from '@blocksuite/editor';
 
-import { AffineTheme, AffineThemeCSSVariables, ThemeMode } from './types';
+import { AffineTheme, AffineThemeCSSVariables } from './types';
 
 const basicFontFamily =
   'apple-system, BlinkMacSystemFont,Helvetica Neue, Tahoma, PingFang SC, Microsoft Yahei, Arial,Hiragino Sans GB, sans-serif, Apple Color Emoji, Segoe UI Emoji,Segoe UI Symbol, Noto Color Emoji';
@@ -11,7 +11,9 @@ export const getLightTheme = (
   editorMode: EditorContainer['mode']
 ): AffineTheme => {
   return {
-    mode: 'light',
+    palette: {
+      mode: 'light',
+    },
     editorMode,
     colors: {
       primaryColor: '#6880FF',
@@ -92,7 +94,9 @@ export const getDarkTheme = (
 
   return {
     ...lightTheme,
-    mode: 'dark',
+    palette: {
+      mode: 'dark',
+    },
     colors: {
       primaryColor: '#6880FF',
       pageBackground: '#2c2c2c',
@@ -143,11 +147,10 @@ export const getDarkTheme = (
 };
 
 export const globalThemeVariables: (
-  mode: ThemeMode,
   theme: AffineTheme
-) => AffineThemeCSSVariables = (mode, theme) => {
+) => AffineThemeCSSVariables = theme => {
   return {
-    '--affine-theme-mode': theme.mode,
+    '--affine-theme-mode': theme.palette.mode,
     '--affine-editor-mode': theme.editorMode,
 
     '--affine-primary-color': theme.colors.primaryColor,

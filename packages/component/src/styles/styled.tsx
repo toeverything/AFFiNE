@@ -1,10 +1,17 @@
-import { ThemeProvider as EmotionThemeProvider } from '@emotion/react';
-import emotionStyled from '@emotion/styled';
+import { CssBaseline } from '@mui/material';
+import {
+  createTheme as createMuiTheme,
+  css,
+  keyframes,
+  styled,
+  ThemeProvider as MuiThemeProvider,
+} from '@mui/material/styles';
 import type { PropsWithChildren } from 'react';
+import { useMemo } from 'react';
 
 import { AffineTheme } from './types';
-export { css, keyframes } from '@emotion/react';
-export const styled = emotionStyled;
+
+export { css, keyframes, styled };
 
 export const ThemeProvider = ({
   theme,
@@ -12,5 +19,11 @@ export const ThemeProvider = ({
 }: PropsWithChildren<{
   theme: AffineTheme;
 }>) => {
-  return <EmotionThemeProvider theme={theme}>{children}</EmotionThemeProvider>;
+  const muiTheme = useMemo(() => createMuiTheme(theme), [theme]);
+  return (
+    <MuiThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      {children}
+    </MuiThemeProvider>
+  );
 };

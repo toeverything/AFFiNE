@@ -16,14 +16,18 @@
     "@blocksuite/icons": "2.0.17",
     "@blocksuite/react": "0.5.0-20230303192351-13b0dd7",
     "@blocksuite/store": "0.5.0-20230303192351-13b0dd7",
+    "@emotion/cache": "^11.10.5",
     "@emotion/react": "^11.10.6",
+    "@emotion/server": "^11.10.0",
     "@emotion/styled": "^11.10.6",
     "@mui/base": "5.0.0-alpha.119",
     "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.11",
+    "@mui/styled-engine-sc": "^5.11.11",
     "lit": "^2.6.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "styled-components": "^5.3.8"
   },
   "devDependencies": {
     "@storybook/addon-actions": "7.0.0-beta.60",

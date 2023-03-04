@@ -98,4 +98,4 @@ export const StyledMoreVerticalDiv = styled('div')(() => {
   };
 });
 
-export const StyledMoreVerticalButton = styled(StyledMoreVerticalDiv)();
+export const StyledMoreVerticalButton = styled(StyledMoreVerticalDiv)``;

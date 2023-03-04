@@ -7,7 +7,7 @@ import { Helmet } from 'react-helmet-async';
 
 import ErrorImg from '../../public/imgs/invite-error.svg';
 
-export const StyledContainer = styled.div(() => {
+export const StyledContainer = styled('div')(() => {
   return {
     ...displayFlex('center', 'center'),
     flexDirection: 'column',
