@@ -23,28 +23,15 @@ concurrency:
 
 jobs:
   main:
-    strategy:
-      matrix:
-        node-version: [18]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Use pnpm
-        uses: pnpm/action-setup@v2
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        # https://github.com/actions/setup-node
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
-
-      - name: Install node modules
-        run: pnpm install
+      - run: pnpm i
 
       - name: Check Language Key
         if: github.ref != 'refs/heads/master'
