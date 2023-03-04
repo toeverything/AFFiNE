@@ -9,7 +9,7 @@ export const setDefaultAvatar = async (
   if (typeof document === 'undefined') {
     return;
   }
-  const blob = await getDefaultHeadImgBlob(blocksuiteWorkspace.meta.name);
+  const blob = await getDefaultHeadImgBlob(blocksuiteWorkspace.meta.name ?? '');
   if (!blob) {
     return;
   }
