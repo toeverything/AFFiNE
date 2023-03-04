@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import type { BlobOptionsGetter } from '@blocksuite/store';
 
@@ -24,15 +25,23 @@ export function stringToColour(str: string) {
   return colour;
 }
 
+const hashMap = new Map<string, BlockSuiteWorkspace>();
+const logger = new DebugLogger('blocks:utils');
 export const createEmptyBlockSuiteWorkspace = (
   room: string,
   blobOptionsGetter?: BlobOptionsGetter
-) => {
-  return new BlockSuiteWorkspace({
+): BlockSuiteWorkspace => {
+  logger.info('createEmptyBlockSuiteWorkspace', room);
+  if (hashMap.has(room)) {
+    return hashMap.get(room) as BlockSuiteWorkspace;
+  }
+  const workspace = new BlockSuiteWorkspace({
     room,
     isSSR: typeof window === 'undefined',
     blobOptionsGetter,
   })
     .register(builtInSchemas)
     .register(__unstableSchemas);
+  hashMap.set(room, workspace);
+  return workspace;
 };

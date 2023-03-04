@@ -140,6 +140,19 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
               },
             });
             return;
+          } else {
+            const dispose =
+              currentWorkspace.blockSuiteWorkspace.slots.pageAdded.on(
+                pageId => {
+                  if (pageId === targetPageId) {
+                    dispose.dispose();
+                    setCurrentPageId(pageId);
+                  }
+                }
+              );
+            return () => {
+              dispose.dispose();
+            };
           }
         }
       }
