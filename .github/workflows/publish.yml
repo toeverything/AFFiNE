@@ -21,11 +21,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
-
-      - name: Use Node.js
-        uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Restore cache
@@ -39,8 +37,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
-      - name: Install dependencies
-        run: pnpm install
+      - run: pnpm i
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
