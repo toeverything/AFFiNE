@@ -63,6 +63,7 @@ const createIndexedDBProvider = (
     cleanup: () => {
       assertExists(indexeddbProvider);
       indexeddbProvider.clearData();
+      indexeddbProvider = null;
     },
     connect: () => {
       providerLogger.info(

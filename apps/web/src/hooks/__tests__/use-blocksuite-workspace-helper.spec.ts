@@ -11,12 +11,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { BlockSuiteWorkspace } from '../../shared';
 import { useBlockSuiteWorkspaceHelper } from '../use-blocksuite-workspace-helper';
 import { usePageMeta } from '../use-page-meta';
-import { vitestRefreshWorkspaces } from '../use-workspaces';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 
 beforeEach(() => {
-  vitestRefreshWorkspaces();
   blockSuiteWorkspace = new BlockSuiteWorkspace({
     room: 'test',
   })

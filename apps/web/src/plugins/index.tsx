@@ -6,7 +6,6 @@ import {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
   LoadPriority,
-  RemWorkspace,
   RemWorkspaceFlavour,
   SettingPanel,
 } from '../shared';
@@ -45,19 +44,14 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   // Plugin will be loaded according to the priority
   loadPriority: LoadPriority;
   // Fetch necessary data for the first render
-  prefetchData: (
-    dataCenter: {
-      workspaces: RemWorkspace[];
-      callbacks: Set<() => void>;
-    },
-    signal?: AbortSignal
-  ) => Promise<void>;
-
-  createWorkspace: (
-    blockSuiteWorkspace: BlockSuiteWorkspace
-  ) => Promise<string>;
-
-  deleteWorkspace: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
+  CRUD: {
+    create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;
+    delete: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
+    get: (workspaceId: string) => Promise<FlavourToWorkspace[Flavour] | null>;
+    // not supported yet
+    // update: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
+    list: () => Promise<FlavourToWorkspace[Flavour][]>;
+  };
 
   //#region UI
   PageDetail: React.FC<PageDetailProps<Flavour>>;
@@ -78,8 +72,8 @@ export async function transformWorkspace<
   To extends RemWorkspaceFlavour
 >(from: From, to: To, workspace: FlavourToWorkspace[From]): Promise<string> {
   // fixme: type cast
-  await WorkspacePlugins[from].deleteWorkspace(workspace as any);
-  const newId = await WorkspacePlugins[to].createWorkspace(
+  await WorkspacePlugins[from].CRUD.delete(workspace as any);
+  const newId = await WorkspacePlugins[to].CRUD.create(
     workspace.blockSuiteWorkspace
   );
   // refresh the data center

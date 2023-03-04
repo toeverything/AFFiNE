@@ -1,12 +1,15 @@
+import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { assertExists, nanoid } from '@blocksuite/store';
+import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect } from 'react';
+import React, { Suspense, useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import {
+  jotaiWorkspacesAtom,
   openQuickSearchModalAtom,
   openWorkspacesModalAtom,
   workspaceLockAtom,
@@ -18,40 +21,76 @@ import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
+import { useWorkspaces } from '../hooks/use-workspaces';
+import { LocalPlugin } from '../plugins/local';
 import {
-  refreshDataCenter,
-  useSyncWorkspaces,
-  useWorkspaces,
-} from '../hooks/use-workspaces';
-import { pathGenerator, publicPathGenerator } from '../shared';
+  pathGenerator,
+  publicPathGenerator,
+  RemWorkspaceFlavour,
+} from '../shared';
+import { createEmptyBlockSuiteWorkspace } from '../utils';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 const sideBarOpenAtom = atomWithStorage('sideBarOpen', true);
 
-refreshDataCenter();
+export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
+  function WorkspacesSuspense({ children }) {
+    const { i18n } = useTranslation();
+    useEffect(() => {
+      document.documentElement.lang = i18n.language;
+      // todo(himself65): this is a hack, we should use a better way to set the language
+      setUpLanguage(i18n);
+    }, [i18n]);
+    const [jotaiWorkspaces, set] = useAtom(jotaiWorkspacesAtom);
+    useEffect(() => {
+      const controller = new AbortController();
+      async function createFirst() {
+        const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+          nanoid(),
+          (_: string) => undefined
+        );
+        blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
+        const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
+        set(workspaces => [
+          ...workspaces,
+          {
+            id,
+            flavour: RemWorkspaceFlavour.LOCAL,
+          },
+        ]);
+      }
+      if (
+        jotaiWorkspaces.length === 0 &&
+        sessionStorage.getItem('first') === null
+      ) {
+        sessionStorage.setItem('first', 'true');
+        createFirst();
+      }
+      return () => {
+        controller.abort();
+      };
+    }, [jotaiWorkspaces.length, set]);
+    return (
+      <NoSsr>
+        <Suspense fallback={<PageLoading />}>
+          <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+        </Suspense>
+      </NoSsr>
+    );
+  };
 
-export const WorkspaceLayout: React.FC<React.PropsWithChildren> = ({
+export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
-  const { i18n } = useTranslation();
-  useEffect(() => {
-    document.documentElement.lang = i18n.language;
-    // todo(himself65): this is a hack, we should use a better way to set the language
-    setUpLanguage(i18n);
-  }, [i18n]);
-  useEffect(() => {
-    const controller = new AbortController();
-    refreshDataCenter(controller.signal);
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
   const [show, setShow] = useAtom(sideBarOpenAtom);
-  useSyncWorkspaces();
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
+
+  useEffect(() => {
+    console.log(workspaces);
+  }, [workspaces]);
+
   useEffect(() => {
     const providers = workspaces.flatMap(workspace =>
       workspace.providers.filter(provider => provider.background)

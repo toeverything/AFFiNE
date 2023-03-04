@@ -29,7 +29,7 @@ export function Modals() {
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const [currentWorkspace, setCurrentWorkspace] = useCurrentWorkspace();
-  const { createRemLocalWorkspace } = useWorkspacesHelper();
+  const { createLocalWorkspace } = useWorkspacesHelper();
 
   const disableShortCut = router.pathname.startsWith('/404');
   return (
@@ -74,11 +74,11 @@ export function Modals() {
           setOpenCreateWorkspaceModal(false);
         }, [setOpenCreateWorkspaceModal])}
         onCreate={useCallback(
-          name => {
-            const id = createRemLocalWorkspace(name);
+          async name => {
+            const id = await createLocalWorkspace(name);
             setOpenCreateWorkspaceModal(false);
             setOpenWorkspacesModal(false);
-            router.push({
+            return router.push({
               pathname: '/workspace/[workspaceId]/all',
               query: {
                 workspaceId: id,
@@ -86,7 +86,7 @@ export function Modals() {
             });
           },
           [
-            createRemLocalWorkspace,
+            createLocalWorkspace,
             router,
             setOpenCreateWorkspaceModal,
             setOpenWorkspacesModal,

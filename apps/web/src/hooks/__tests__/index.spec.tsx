@@ -19,11 +19,7 @@ import { useBlockSuiteWorkspaceName } from '../use-blocksuite-workspace-name';
 import { useLastOpenedWorkspace } from '../use-last-opened-workspace';
 import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../use-sync-router-with-current-workspace-and-page';
-import {
-  useWorkspaces,
-  useWorkspacesHelper,
-  vitestRefreshWorkspaces,
-} from '../use-workspaces';
+import { useWorkspaces, useWorkspacesHelper } from '../use-workspaces';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 beforeAll(() => {
@@ -33,8 +29,6 @@ beforeAll(() => {
 });
 
 beforeEach(async () => {
-  vitestRefreshWorkspaces();
-  dataCenter.isLoaded = true;
   return new Promise<void>(resolve => {
     blockSuiteWorkspace = new BlockSuiteWorkspace({
       room: 'test',
@@ -112,7 +106,7 @@ describe('useWorkspaces', () => {
 
   test('mutation', () => {
     const { result } = renderHook(() => useWorkspacesHelper());
-    result.current.createRemLocalWorkspace('test');
+    result.current.createLocalWorkspace('test');
     const { result: result2 } = renderHook(() => useWorkspaces());
     expect(result2.current.length).toEqual(1);
     const firstWorkspace = result2.current[0];
@@ -125,7 +119,7 @@ describe('useWorkspaces', () => {
 describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
   test('from "/"', async () => {
     const mutationHook = renderHook(() => useWorkspacesHelper());
-    const id = mutationHook.result.current.createRemLocalWorkspace('test0');
+    const id = await mutationHook.result.current.createLocalWorkspace('test0');
     mutationHook.result.current.createWorkspacePage(id, 'page0');
     const routerHook = renderHook(() => useRouter());
     await routerHook.result.current.push('/');
@@ -145,7 +139,7 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
 
   test('from incorrect "/workspace/[workspaceId]/[pageId]"', async () => {
     const mutationHook = renderHook(() => useWorkspacesHelper());
-    const id = mutationHook.result.current.createRemLocalWorkspace('test0');
+    const id = await mutationHook.result.current.createLocalWorkspace('test0');
     mutationHook.result.current.createWorkspacePage(id, 'page0');
     const routerHook = renderHook(() => useRouter());
     await routerHook.result.current.push(`/workspace/${id}/not_exist`);
@@ -167,7 +161,7 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
 describe('useLastOpenedWorkspace', () => {
   test('basic', async () => {
     const workspaceHelperHook = renderHook(() => useWorkspacesHelper());
-    workspaceHelperHook.result.current.createRemLocalWorkspace('test');
+    workspaceHelperHook.result.current.createLocalWorkspace('test');
     const workspacesHook = renderHook(() => useWorkspaces());
     const currentWorkspaceHook = renderHook(() => useCurrentWorkspace());
     currentWorkspaceHook.result.current[1](workspacesHook.result.current[0].id);
