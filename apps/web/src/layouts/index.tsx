@@ -1,4 +1,3 @@
-import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
@@ -9,7 +8,6 @@ import React, { Suspense, useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import {
-  jotaiWorkspacesAtom,
   openQuickSearchModalAtom,
   openWorkspacesModalAtom,
   workspaceLockAtom,
@@ -20,15 +18,10 @@ import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
+import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
-import { LocalPlugin } from '../plugins/local';
-import {
-  pathGenerator,
-  publicPathGenerator,
-  RemWorkspaceFlavour,
-} from '../shared';
-import { createEmptyBlockSuiteWorkspace } from '../utils';
+import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 const sideBarOpenAtom = atomWithStorage('sideBarOpen', true);
@@ -41,42 +34,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
       // todo(himself65): this is a hack, we should use a better way to set the language
       setUpLanguage(i18n);
     }, [i18n]);
-    const [jotaiWorkspaces, set] = useAtom(jotaiWorkspacesAtom);
-    useEffect(() => {
-      const controller = new AbortController();
-
-      /**
-       * Create a first workspace, only just once for a browser
-       */
-      async function createFirst() {
-        const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-          nanoid(),
-          (_: string) => undefined
-        );
-        blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-        const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
-        blockSuiteWorkspace.slots.pageAdded.once(() => {
-          set(workspaces => [
-            ...workspaces,
-            {
-              id,
-              flavour: RemWorkspaceFlavour.LOCAL,
-            },
-          ]);
-        });
-        blockSuiteWorkspace.createPage(nanoid());
-      }
-      if (
-        jotaiWorkspaces.length === 0 &&
-        sessionStorage.getItem('first') === null
-      ) {
-        sessionStorage.setItem('first', 'true');
-        createFirst();
-      }
-      return () => {
-        controller.abort();
-      };
-    }, [jotaiWorkspaces.length, set]);
+    useCreateFirstWorkspace();
     return (
       <NoSsr>
         <Suspense fallback={<PageLoading />}>

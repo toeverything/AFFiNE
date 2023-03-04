@@ -158,7 +158,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
                   }
                 }
               );
-            setTimeout(() => {
+            const clearId = setTimeout(() => {
               if (jotaiStore.get(currentPageIdAtom) === null) {
                 const id =
                   currentWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
@@ -176,6 +176,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
               dispose.dispose();
             }, 1000);
             return () => {
+              clearTimeout(clearId);
               dispose.dispose();
             };
           }
