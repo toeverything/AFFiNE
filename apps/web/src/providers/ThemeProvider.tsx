@@ -39,6 +39,7 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
       () => getDarkTheme(editorMode),
       [editorMode]
     );
+    // SSR will always render the light theme, so we need to defer the theme if user selected dark mode
     const [deferTheme, setDeferTheme] = useState('light');
     useEffect(() => {
       setDeferTheme(theme === 'dark' ? 'dark' : 'light');
@@ -56,11 +57,13 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
   }
 );
 
+const themes = ['dark', 'light'];
+
 export const ThemeProvider = ({
   children,
 }: PropsWithChildren<ThemeProviderProps>) => {
   return (
-    <NextThemeProvider>
+    <NextThemeProvider themes={themes}>
       <ThemeProviderInner>{children}</ThemeProviderInner>
     </NextThemeProvider>
   );
