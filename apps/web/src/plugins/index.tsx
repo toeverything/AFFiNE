@@ -1,7 +1,6 @@
-import { assertExists } from '@blocksuite/store';
 import React from 'react';
 
-import { refreshDataCenter } from '../hooks/use-workspaces';
+import { jotaiStore, jotaiWorkspacesAtom } from '../atoms';
 import {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
@@ -76,9 +75,12 @@ export async function transformWorkspace<
   const newId = await WorkspacePlugins[to].CRUD.create(
     workspace.blockSuiteWorkspace
   );
-  // refresh the data center
-  dataCenter.workspaces = [];
-  await refreshDataCenter();
-  assertExists(dataCenter.workspaces.some(w => w.id === newId));
+  const workspaces = jotaiStore.get(jotaiWorkspacesAtom);
+  const idx = workspaces.findIndex(ws => ws.id === workspace.id);
+  workspaces.splice(idx, 1, {
+    id: newId,
+    flavour: to,
+  });
+  jotaiStore.set(jotaiWorkspacesAtom, [...workspaces]);
   return newId;
 }
