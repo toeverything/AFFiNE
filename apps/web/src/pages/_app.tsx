@@ -3,7 +3,7 @@ import '../styles/globals.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
-import { EmotionCache } from '@emotion/css';
+import { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
 import { useAtomsDebugValue } from 'jotai-devtools';
@@ -53,9 +53,9 @@ const defaultSWRConfig: SWRConfiguration = {
 const App = function App({
   Component,
   pageProps,
-  emotionCache,
+  emotionCache = clientSideEmotionCache,
 }: AppPropsWithLayout & {
-  emotionCache: EmotionCache;
+  emotionCache?: EmotionCache;
 }) {
   const getLayout = Component.getLayout || EmptyLayout;
   const i18n = useMemo(() => createI18n(), []);

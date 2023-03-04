@@ -28,7 +28,7 @@ const ThemeInjector = React.memo<{
 
 const ThemeProviderInner = memo<React.PropsWithChildren>(
   function ThemeProviderInner({ children }) {
-    const { resolvedTheme } = useTheme();
+    const { theme } = useTheme();
     const [currentWorkspace] = useCurrentWorkspace();
     const [currentPage] = useCurrentPageId();
     const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
@@ -41,10 +41,10 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
     );
     return (
       <AffineThemeProvider
-        theme={resolvedTheme === 'dark' ? darkThemeStyle : themeStyle}
+        theme={theme === 'dark' ? darkThemeStyle : themeStyle}
       >
         <ThemeInjector
-          themeStyle={resolvedTheme === 'dark' ? darkThemeStyle : themeStyle}
+          themeStyle={theme === 'dark' ? darkThemeStyle : themeStyle}
         />
         {children}
       </AffineThemeProvider>
