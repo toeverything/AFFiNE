@@ -27,7 +27,7 @@ export const Content = styled('div', {
       'width',
       'maxWidth',
       'align',
-    ].includes(prop);
+    ].includes(prop as string);
   },
 })<ContentProps>(
   ({

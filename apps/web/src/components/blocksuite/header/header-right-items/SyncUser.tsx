@@ -33,7 +33,7 @@ const NoNetWorkIcon = () => {
     </svg>
   );
 };
-const IconWrapper = styled.div(() => {
+const IconWrapper = styled('div')(() => {
   return {
     width: '32px',
     height: '32px',

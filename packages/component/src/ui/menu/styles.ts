@@ -22,7 +22,7 @@ export const StyledArrow = styled(ArrowRightSmallIcon)({
   margin: 'auto',
 });
 
-export const StyledMenuItem = styled.button<{
+export const StyledMenuItem = styled('button')<{
   isDir?: boolean;
 }>(({ theme, isDir = false }) => {
   return {

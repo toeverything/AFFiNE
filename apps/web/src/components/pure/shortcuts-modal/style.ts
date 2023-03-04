@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '@affine/component';
 
-export const StyledShortcutsModal = styled.div(({ theme }) => ({
+export const StyledShortcutsModal = styled('div')(({ theme }) => ({
   width: '288px',
   height: '74vh',
   paddingBottom: '28px',
@@ -17,7 +17,7 @@ export const StyledShortcutsModal = styled.div(({ theme }) => ({
   margin: 'auto',
   zIndex: theme.zIndex.modal,
 }));
-export const StyledTitle = styled.div(({ theme }) => ({
+export const StyledTitle = styled('div')(({ theme }) => ({
   color: theme.colors.textColor,
   fontWeight: '500',
   fontSize: theme.font.sm,
@@ -29,7 +29,7 @@ export const StyledTitle = styled.div(({ theme }) => ({
     color: theme.colors.primaryColor,
   },
 }));
-export const StyledSubTitle = styled.div(({ theme }) => ({
+export const StyledSubTitle = styled('div')(({ theme }) => ({
   color: theme.colors.popoverColor,
   fontWeight: '500',
   fontSize: theme.font.sm,
@@ -38,7 +38,7 @@ export const StyledSubTitle = styled.div(({ theme }) => ({
   marginTop: '28px',
   padding: '0 16px',
 }));
-export const StyledModalHeader = styled.div(() => ({
+export const StyledModalHeader = styled('div')(() => ({
   ...displayFlex('space-between', 'center'),
   paddingTop: '8px 4px 0 4px',
   width: '100%',
@@ -51,7 +51,7 @@ export const StyledModalHeader = styled.div(() => ({
   transition: 'background-color 0.5s',
 }));
 
-export const StyledListItem = styled.div(({ theme }) => ({
+export const StyledListItem = styled('div')(({ theme }) => ({
   height: '34px',
   ...displayFlex('space-between', 'center'),
   fontSize: theme.font.sm,

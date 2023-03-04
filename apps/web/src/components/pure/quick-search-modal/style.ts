@@ -123,7 +123,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     },
   };
 });
-export const StyledModalFooterContent = styled.button(({ theme }) => {
+export const StyledModalFooterContent = styled('button')(({ theme }) => {
   return {
     width: '612px',
     height: '32px',
@@ -140,7 +140,7 @@ export const StyledModalFooterContent = styled.button(({ theme }) => {
     },
   };
 });
-export const StyledListItem = styled.button(({ theme }) => {
+export const StyledListItem = styled('button')(({ theme }) => {
   return {
     width: '612px',
     height: '32px',

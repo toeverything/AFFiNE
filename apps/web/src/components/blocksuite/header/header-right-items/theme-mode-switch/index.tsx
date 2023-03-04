@@ -1,10 +1,10 @@
+import { useTheme } from 'next-themes';
 import { useState } from 'react';
 
-import { useTheme } from '../../../../../providers/ThemeProvider';
 import { MoonIcon, SunIcon } from './Icons';
 import { StyledSwitchItem, StyledThemeModeSwitch } from './style';
 export const ThemeModeSwitch = () => {
-  const { mode, changeMode } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [isHover, setIsHover] = useState(false);
   const [firstTrigger, setFirstTrigger] = useState(false);
   return (
@@ -21,23 +21,23 @@ export const ThemeModeSwitch = () => {
       }}
     >
       <StyledSwitchItem
-        data-testid="change-theme-light"
-        active={mode === 'light'}
+        data-testid="change-theme-dark"
+        active={resolvedTheme === 'light'}
         isHover={isHover}
         firstTrigger={firstTrigger}
         onClick={() => {
-          changeMode('light');
+          setTheme('dark');
         }}
       >
         <SunIcon />
       </StyledSwitchItem>
       <StyledSwitchItem
-        data-testid="change-theme-dark"
-        active={mode === 'dark'}
+        data-testid="change-theme-light"
+        active={resolvedTheme === 'dark'}
         isHover={isHover}
         firstTrigger={firstTrigger}
         onClick={() => {
-          changeMode('dark');
+          setTheme('light');
         }}
       >
         <MoonIcon />

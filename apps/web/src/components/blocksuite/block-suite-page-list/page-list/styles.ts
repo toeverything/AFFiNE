@@ -1,14 +1,14 @@
 import { displayFlex, styled } from '@affine/component';
 import { TableRow } from '@affine/component';
 
-export const StyledTableContainer = styled.div(() => {
+export const StyledTableContainer = styled('div')(() => {
   return {
     height: 'calc(100vh - 60px)',
     padding: '78px 72px',
     overflowY: 'auto',
   };
 });
-export const StyledTitleWrapper = styled.div(({ theme }) => {
+export const StyledTitleWrapper = styled('div')(({ theme }) => {
   return {
     ...displayFlex('flex-start', 'center'),
     a: {
@@ -22,7 +22,7 @@ export const StyledTitleWrapper = styled.div(({ theme }) => {
     },
   };
 });
-export const StyledTitleLink = styled.div(({ theme }) => {
+export const StyledTitleLink = styled('div')(({ theme }) => {
   return {
     maxWidth: '80%',
     marginRight: '18px',

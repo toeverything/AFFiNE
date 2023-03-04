@@ -43,7 +43,7 @@ export const WorkspaceSettingTagItem = styled('li')<{ isActive?: boolean }>(
   }
 );
 
-export const StyledSettingKey = styled.div(({ theme }) => {
+export const StyledSettingKey = styled('div')(({ theme }) => {
   return {
     width: '140px',
     fontSize: theme.font.base,
@@ -65,7 +65,7 @@ export const StyledWorkspaceName = styled('span')(({ theme }) => {
   };
 });
 
-export const StyledIndicator = styled.div(({ theme }) => {
+export const StyledIndicator = styled('div')(({ theme }) => {
   return {
     height: '2px',
     background: theme.colors.primaryColor,
@@ -76,14 +76,14 @@ export const StyledIndicator = styled.div(({ theme }) => {
   };
 });
 
-export const StyledTabButtonWrapper = styled.div(() => {
+export const StyledTabButtonWrapper = styled('div')(() => {
   return {
     display: 'flex',
     position: 'relative',
   };
 });
 
-// export const StyledDownloadCard = styled.div<{ active?: boolean }>(
+// export const StyledDownloadCard = styled('div')<{ active?: boolean }>(
 //   ({ theme, active }) => {
 //     return {
 //       width: '240px',
@@ -105,7 +105,7 @@ export const StyledTabButtonWrapper = styled.div(() => {
 //     };
 //   }
 // );
-// export const StyledDownloadCardDes = styled.div(({ theme }) => {
+// export const StyledDownloadCardDes = styled('div')(({ theme }) => {
 //   return {
 //     fontSize: theme.font.sm,
 //     color: theme.colors.iconColor,

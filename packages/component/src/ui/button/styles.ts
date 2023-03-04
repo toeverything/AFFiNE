@@ -16,7 +16,7 @@ export const StyledIconButton = styled('button', {
       'hoverColor',
       'hoverStyle',
       'darker',
-    ].includes(prop);
+    ].includes(prop as string);
   },
 })<{
   width: number;
@@ -90,7 +90,7 @@ export const StyledTextButton = styled('button', {
       'hoverColor',
       'hoverStyle',
       'bold',
-    ].includes(prop);
+    ].includes(prop as string);
   },
 })<
   Pick<
@@ -153,7 +153,7 @@ export const StyledButton = styled('button', {
       'type',
       'bold',
       'noBorder',
-    ].includes(prop);
+    ].includes(prop as string);
   },
 })<
   Pick<

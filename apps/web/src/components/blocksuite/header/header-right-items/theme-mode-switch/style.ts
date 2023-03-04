@@ -1,6 +1,5 @@
-import { displayFlex, keyframes, styled } from '@affine/component';
+import { displayFlex, styled } from '@affine/component';
 // @ts-ignore
-import spring, { toString } from 'css-spring';
 import { CSSProperties } from 'react';
 
 const ANIMATE_DURATION = 400;
@@ -18,25 +17,34 @@ export const StyledSwitchItem = styled('div')<{
   isHover: boolean;
   firstTrigger: boolean;
 }>(({ active, isHover, firstTrigger, theme }) => {
-  const activeRaiseAnimate = keyframes`${toString(
-    spring({ top: '0' }, { top: '-100%' }, { preset: 'gentle' })
-  )}`;
-  const raiseAnimate = keyframes`${toString(
-    spring({ top: '100%' }, { top: '0' }, { preset: 'gentle' })
-  )}`;
-  const activeDeclineAnimate = keyframes`${toString(
-    spring({ top: '-100%' }, { top: '0' }, { preset: 'gentle' })
-  )}`;
-  const declineAnimate = keyframes`${toString(
-    spring({ top: '0' }, { top: '100%' }, { preset: 'gentle' })
-  )}`;
+  // const activeRaiseAnimate = keyframes`${css`
+  //   ${(
+  //     spring({ top: '0' }, { top: '-100%' }, { preset: 'gentle' })
+  //   )}
+  // `}`;
+  // const raiseAnimate = keyframes`${css`
+  //   ${(
+  //     spring({ top: '100%' }, { top: '0' }, { preset: 'gentle' })
+  //   )}
+  // `}`;
+  // const activeDeclineAnimate = keyframes`${css`
+  //   ${(
+  //     spring({ top: '-100%' }, { top: '0' }, { preset: 'gentle' })
+  //   )}
+  // `}`;
+  // const declineAnimate = keyframes`${css`
+  //   ${(
+  //     spring({ top: '0' }, { top: '100%' }, { preset: 'gentle' })
+  //   )}
+  // `}`;
   const activeStyle = active
     ? {
         color: theme.colors.iconColor,
         top: '0',
         animation: firstTrigger
           ? `${
-              isHover ? activeRaiseAnimate : activeDeclineAnimate
+              ''
+              // isHover ? activeRaiseAnimate : activeDeclineAnimate
             } ${ANIMATE_DURATION}ms forwards`
           : 'unset',
         animationDirection: isHover ? 'normal' : 'alternate',
@@ -47,7 +55,8 @@ export const StyledSwitchItem = styled('div')<{
         backgroundColor: theme.colors.hoverBackground,
         animation: firstTrigger
           ? `${
-              isHover ? raiseAnimate : declineAnimate
+              ''
+              // isHover ? raiseAnimate : declineAnimate
             } ${ANIMATE_DURATION}ms forwards`
           : 'unset',
         animationDirection: isHover ? 'normal' : 'alternate',

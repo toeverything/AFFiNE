@@ -45,7 +45,7 @@ export const Wrapper = styled('div', {
       'marginLeft',
       'marginRight',
       'marginBottom',
-    ].includes(prop);
+    ].includes(prop as string);
   },
 })<WrapperProps>(
   ({
@@ -90,7 +90,7 @@ export const FlexWrapper = styled(Wrapper, {
       'flexDirection',
       'flexShrink',
       'flexGrow',
-    ].includes(prop);
+    ].includes(prop as string);
   },
 })<FlexWrapperProps>(
   ({
@@ -116,7 +116,7 @@ export const FlexWrapper = styled(Wrapper, {
 // TODO: Complete me
 export const GridWrapper = styled(Wrapper, {
   shouldForwardProp: prop => {
-    return ![''].includes(prop);
+    return ![''].includes(prop as string);
   },
 })<WrapperProps>(() => {
   return {

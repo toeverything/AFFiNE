@@ -121,7 +121,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledPrivacyContainer = styled.div(({ theme }) => {
+export const StyledPrivacyContainer = styled('div')(({ theme }) => {
   return {
     marginTop: '4px',
     position: 'relative',

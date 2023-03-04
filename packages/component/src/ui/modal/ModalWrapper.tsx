@@ -2,7 +2,7 @@ import { CSSProperties } from 'react';
 
 import { styled } from '../../styles';
 
-export const ModalWrapper = styled.div<{
+export const ModalWrapper = styled('div')<{
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
   minHeight?: CSSProperties['minHeight'];

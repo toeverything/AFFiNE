@@ -4,7 +4,7 @@ import { CSSProperties } from 'react';
 import { styled } from '../../styles';
 import { Wrapper } from '../layout';
 
-export const StyledBackdrop = styled.div(({ theme }) => {
+export const StyledBackdrop = styled('div')(({ theme }) => {
   return {
     zIndex: '-1',
     position: 'fixed',
@@ -13,7 +13,7 @@ export const StyledBackdrop = styled.div(({ theme }) => {
     top: '0',
     left: '0',
     backgroundColor:
-      theme.mode === 'light'
+      theme.palette.mode === 'light'
         ? 'rgba(58, 76, 92, 0.2)'
         : 'rgba(34, 34, 34, 0.6)',
   };
@@ -21,7 +21,7 @@ export const StyledBackdrop = styled.div(({ theme }) => {
 
 export const StyledModal = styled(ModalUnstyled, {
   shouldForwardProp: prop => {
-    return !['justifyContent', 'alignItems'].includes(prop);
+    return !['justifyContent', 'alignItems'].includes(prop as string);
   },
 })<{
   alignItems: CSSProperties['alignItems'];

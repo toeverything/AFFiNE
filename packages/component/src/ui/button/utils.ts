@@ -1,4 +1,5 @@
-import { AffineTheme } from '../../styles';
+import { Theme } from '@mui/material';
+
 import {
   ButtonProps,
   SIZE_DEFAULT,
@@ -38,7 +39,7 @@ export const getSize = (
 };
 
 export const getButtonColors = (
-  theme: AffineTheme,
+  theme: Theme,
   type: ButtonProps['type'],
   disabled: boolean,
   extend?: {

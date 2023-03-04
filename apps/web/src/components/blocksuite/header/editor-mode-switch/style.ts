@@ -1,7 +1,6 @@
-import { displayFlex, keyframes, styled } from '@affine/component';
-// @ts-ignore
-import spring, { toString } from 'css-spring';
+import { displayFlex, styled } from '@affine/component';
 
+// @ts-ignore
 import type { ItemStatus } from './type';
 
 const ANIMATE_DURATION = 500;
@@ -10,22 +9,22 @@ export const StyledAnimateRadioContainer = styled('div')<{
   shrink: boolean;
   disabled: boolean;
 }>(({ shrink, theme, disabled }) => {
-  const animateScaleStretch = keyframes`${toString(
-    spring({ width: '36px' }, { width: '160px' }, { preset: 'gentle' })
-  )}`;
-  const animateScaleShrink = keyframes(
-    `${toString(
-      spring({ width: '160px' }, { width: '36px' }, { preset: 'gentle' })
-    )}`
-  );
-  const shrinkStyle = shrink
-    ? {
-        animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
-        background: 'transparent',
-      }
-    : {
-        animation: `${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
-      };
+  // const animateScaleStretch = keyframes`${toString(
+  //   spring({ width: '36px' }, { width: '160px' }, { preset: 'gentle' })
+  // )}`;
+  // const animateScaleShrink = keyframes(
+  //   `${toString(
+  //     spring({ width: '160px' }, { width: '36px' }, { preset: 'gentle' })
+  //   )}`
+  // );
+  // const shrinkStyle = shrink
+  //   ? {
+  //       animation: css`${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
+  //       background: 'transparent',
+  //     }
+  //   : {
+  //       animation: css`${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
+  //     };
 
   return {
     height: '36px',
@@ -36,7 +35,7 @@ export const StyledAnimateRadioContainer = styled('div')<{
     transition: `background ${ANIMATE_DURATION}ms, border ${ANIMATE_DURATION}ms`,
     border: '1px solid transparent',
 
-    ...(disabled ? { pointerEvents: 'none' } : shrinkStyle),
+    // ...(disabled ? { pointerEvents: 'none' } : shrinkStyle),
     ':hover': {
       border: disabled ? '' : `1px solid ${theme.colors.primaryColor}`,
     },
@@ -62,28 +61,28 @@ export const StyledRadioItem = styled('div')<{
   status: ItemStatus;
   active: boolean;
 }>(({ status, active, theme }) => {
-  const animateScaleStretch = keyframes`${toString(
-    spring({ width: '44px' }, { width: '112px' })
-  )}`;
-  const animateScaleOrigin = keyframes(
-    `${toString(spring({ width: '112px' }, { width: '44px' }))}`
-  );
-  const animateScaleShrink = keyframes(
-    `${toString(spring({ width: '0px' }, { width: '36px' }))}`
-  );
-  const dynamicStyle =
-    status === 'stretch'
-      ? {
-          animation: `${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
-          flexShrink: '0',
-        }
-      : status === 'shrink'
-      ? {
-          animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
-        }
-      : status === 'normal'
-      ? { animation: `${animateScaleOrigin} ${ANIMATE_DURATION}ms forwards` }
-      : {};
+  // const animateScaleStretch = keyframes`${toString(
+  //   spring({ width: '44px' }, { width: '112px' })
+  // )}`;
+  // const animateScaleOrigin = keyframes(
+  //   `${toString(spring({ width: '112px' }, { width: '44px' }))}`
+  // );
+  // const animateScaleShrink = keyframes(
+  //   `${toString(spring({ width: '0px' }, { width: '36px' }))}`
+  // );
+  // const dynamicStyle =
+  //   status === 'stretch'
+  //     ? {
+  //         animation: css`${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
+  //         flexShrink: '0',
+  //       }
+  //     : status === 'shrink'
+  //     ? {
+  //         animation: css`${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
+  //       }
+  //     : status === 'normal'
+  //     ? { animation: css`${animateScaleOrigin} ${ANIMATE_DURATION}ms forwards` }
+  //     : {};
 
   const {
     colors: { iconColor, primaryColor },
@@ -95,7 +94,7 @@ export const StyledRadioItem = styled('div')<{
     cursor: 'pointer',
     overflow: 'hidden',
     color: active ? primaryColor : iconColor,
-    ...dynamicStyle,
+    // ...dynamicStyle,
   };
 });
 
@@ -103,29 +102,29 @@ export const StyledLabel = styled('div')<{
   shrink: boolean;
   isLeft: boolean;
 }>(({ shrink, isLeft }) => {
-  const animateScaleStretch = keyframes`${toString(
-    spring(
-      { width: '0px' },
-      { width: isLeft ? '65px' : '75px' },
-      { preset: 'gentle' }
-    )
-  )}`;
-  const animateScaleShrink = keyframes(
-    `${toString(
-      spring(
-        { width: isLeft ? '65px' : '75px' },
-        { width: '0px' },
-        { preset: 'gentle' }
-      )
-    )}`
-  );
-  const shrinkStyle = shrink
-    ? {
-        animation: `${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
-      }
-    : {
-        animation: `${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
-      };
+  // const animateScaleStretch = keyframes`${toString(
+  //   spring(
+  //     { width: '0px' },
+  //     { width: isLeft ? '65px' : '75px' },
+  //     { preset: 'gentle' }
+  //   )
+  // )}`;
+  // const animateScaleShrink = keyframes(
+  //   `${toString(
+  //     spring(
+  //       { width: isLeft ? '65px' : '75px' },
+  //       { width: '0px' },
+  //       { preset: 'gentle' }
+  //     )
+  //   )}`
+  // );
+  // const shrinkStyle = shrink
+  //   ? {
+  //       animation: css`${animateScaleShrink} ${ANIMATE_DURATION}ms forwards`,
+  //     }
+  //   : {
+  //       animation: css`${animateScaleStretch} ${ANIMATE_DURATION}ms forwards`,
+  //     };
 
   return {
     display: 'flex',
@@ -137,7 +136,7 @@ export const StyledLabel = styled('div')<{
     fontWeight: 'normal',
     overflow: 'hidden',
     whiteSpace: 'nowrap',
-    ...shrinkStyle,
+    // ...shrinkStyle,
   };
 });
 

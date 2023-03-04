@@ -9,7 +9,7 @@ export const StyledInput = styled(Input)(({ theme }) => {
   };
 });
 
-export const StyledWorkspaceInfo = styled.div(({ theme }) => {
+export const StyledWorkspaceInfo = styled('div')(({ theme }) => {
   return {
     ...displayFlex('flex-start', 'center'),
     fontSize: '20px',

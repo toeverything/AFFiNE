@@ -14,8 +14,10 @@ export type ThemeProviderValue = {
 };
 
 export interface AffineTheme {
-  mode: Theme;
   editorMode: EditorContainer['mode'];
+  palette: {
+    mode: 'light' | 'dark';
+  };
   colors: {
     primaryColor: string;
 
