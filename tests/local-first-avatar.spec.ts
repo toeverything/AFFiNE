@@ -16,8 +16,8 @@ test.describe('Local first create page', () => {
       .type('Test Workspace 1', { delay: 50 });
     await page.getByTestId('create-workspace-button').click();
     await page.getByTestId('workspace-name').click();
-    await page.getByTestId('workspace-card').nth(1).click({ delay: 50 });
-    await page.getByText('Workspace Setting').click();
+    await page.getByTestId('workspace-card').nth(1).click();
+    await page.getByTestId('slider-bar-workspace-setting-button').click();
     await page
       .getByTestId('upload-avatar')
       .setInputFiles('./tests/fixtures/smile.png');
