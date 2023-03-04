@@ -1,3 +1,4 @@
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
 import React from 'react';
 
 import { useWorkspaceBlobImage } from '../../../hooks/use-workspace-blob';
@@ -86,12 +87,15 @@ export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
   style,
   ...props
 }) => {
-  const avatarURL = useWorkspaceBlobImage(workspace.meta.avatar, workspace);
+  const avatarURL = useWorkspaceBlobImage(
+    workspace.meta.avatar ?? null,
+    workspace
+  );
   return (
     <Avatar
       {...props}
       size={size}
-      name={workspace.meta.name}
+      name={workspace.meta.name ?? UNTITLED_WORKSPACE_NAME}
       avatar_url={avatarURL ?? ''}
       style={style}
     />
