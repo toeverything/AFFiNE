@@ -93,7 +93,6 @@ export async function refreshDataCenter(signal?: AbortSignal) {
         break;
       }
       const oldData = dataCenter.workspaces;
-      oldData.forEach(d => console.log(d.blockSuiteWorkspace.doc.toJSON()));
       await plugin.prefetchData(dataCenter, signal);
       const newData = dataCenter.workspaces;
       if (!Object.is(oldData, newData)) {
