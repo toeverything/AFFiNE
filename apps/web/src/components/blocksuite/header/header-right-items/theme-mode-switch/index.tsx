@@ -22,22 +22,22 @@ export const ThemeModeSwitch = () => {
     >
       <StyledSwitchItem
         data-testid="change-theme-light"
-        active={theme === 'dark'}
+        active={theme === 'light'}
         isHover={isHover}
         firstTrigger={firstTrigger}
         onClick={() => {
-          setTheme('dark');
+          setTheme('light');
         }}
       >
         <SunIcon />
       </StyledSwitchItem>
       <StyledSwitchItem
         data-testid="change-theme-dark"
-        active={theme === 'light'}
+        active={theme === 'dark'}
         isHover={isHover}
         firstTrigger={firstTrigger}
         onClick={() => {
-          setTheme('light');
+          setTheme('dark');
         }}
       >
         <MoonIcon />
