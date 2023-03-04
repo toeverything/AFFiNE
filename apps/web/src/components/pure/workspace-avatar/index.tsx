@@ -1,5 +1,7 @@
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
 import React from 'react';
 
+import { useBlockSuiteWorkspaceAvatar } from '../../../hooks/use-blocksuite-workspace-avatar';
 import { useWorkspaceBlobImage } from '../../../hooks/use-workspace-blob';
 import { BlockSuiteWorkspace, RemWorkspace } from '../../../shared';
 import { stringToColour } from '../../../utils';
@@ -86,12 +88,13 @@ export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
   style,
   ...props
 }) => {
-  const avatarURL = useWorkspaceBlobImage(workspace.meta.avatar, workspace);
+  const [avatar] = useBlockSuiteWorkspaceAvatar(workspace);
+  const avatarURL = useWorkspaceBlobImage(avatar ?? null, workspace);
   return (
     <Avatar
       {...props}
       size={size}
-      name={workspace.meta.name}
+      name={workspace.meta.name ?? UNTITLED_WORKSPACE_NAME}
       avatar_url={avatarURL ?? ''}
       style={style}
     />

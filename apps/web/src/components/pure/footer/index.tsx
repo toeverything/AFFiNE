@@ -67,8 +67,8 @@ export const Footer: React.FC<FooterProps> = ({ user, onLogin, onLogout }) => {
 
 interface WorkspaceAvatarProps {
   size: number;
-  name: string;
-  avatar: string;
+  name: string | undefined;
+  avatar: string | undefined;
   style?: CSSProperties;
 }
 

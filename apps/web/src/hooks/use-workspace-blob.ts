@@ -16,13 +16,17 @@ export function useWorkspaceBlob(
 }
 
 export function useWorkspaceBlobImage(
-  key: string,
+  key: string | null,
   blockSuiteWorkspace: BlockSuiteWorkspace
 ) {
   const blobStorage = useWorkspaceBlob(blockSuiteWorkspace);
   const [imageURL, setImageURL] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
+    if (key === null) {
+      setImageURL(null);
+      return;
+    }
     blobStorage?.get(key).then(blob => {
       if (controller.signal.aborted) {
         return;
