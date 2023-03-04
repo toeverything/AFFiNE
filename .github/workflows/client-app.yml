@@ -62,23 +62,19 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
         with:
-          submodules: 'true'
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - run: pnpm i
 
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18.x
-          cache: 'pnpm'
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
@@ -88,9 +84,6 @@ jobs:
         with:
           workspaces: |
             apps/desktop/src-tauri
-
-      - name: Install dependencies
-        run: pnpm i -r
 
       - name: Make App Binary
         run: pnpm build:app
