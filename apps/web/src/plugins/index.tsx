@@ -66,6 +66,11 @@ export const WorkspacePlugins = {
   [Key in RemWorkspaceFlavour]: WorkspacePlugin<Key>;
 };
 
+/**
+ * Transform workspace from one flavour to another
+ *
+ * The logic here is to delete the old workspace and create a new one.
+ */
 export async function transformWorkspace<
   From extends RemWorkspaceFlavour,
   To extends RemWorkspaceFlavour

@@ -4,7 +4,7 @@ import { atomWithStorage } from 'jotai/utils';
 import { unstable_batchedUpdates } from 'react-dom';
 
 import { WorkspacePlugins } from '../plugins';
-import { RemWorkspace } from '../shared';
+import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
 
 // workspace necessary atoms
 export const currentWorkspaceIdAtom = atom<string | null>(null);
@@ -34,7 +34,7 @@ export const jotaiStore = createStore();
 
 type JotaiWorkspace = {
   id: string;
-  flavour: string;
+  flavour: RemWorkspaceFlavour;
 };
 
 export const jotaiWorkspacesAtom = atomWithStorage<JotaiWorkspace[]>(

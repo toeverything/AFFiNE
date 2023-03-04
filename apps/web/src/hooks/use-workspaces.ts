@@ -3,6 +3,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { jotaiWorkspacesAtom, workspacesAtom } from '../atoms';
+import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
 import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
@@ -13,6 +14,7 @@ export function useWorkspaces(): RemWorkspace[] {
 
 export function useWorkspacesHelper() {
   const workspaces = useWorkspaces();
+  const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
   const set = useSetAtom(jotaiWorkspacesAtom);
   return {
     createWorkspacePage: useCallback(
@@ -47,8 +49,25 @@ export function useWorkspacesHelper() {
       },
       [set]
     ),
-    deleteWorkspace: useCallback((workspaceId: string) => {
-      // todo
-    }, []),
+    deleteWorkspace: useCallback(
+      async (workspaceId: string) => {
+        const targetJotaiWorkspace = jotaiWorkspaces.find(
+          ws => ws.id === workspaceId
+        );
+        const targetWorkspace = workspaces.find(ws => ws.id === workspaceId);
+        if (!targetJotaiWorkspace || !targetWorkspace) {
+          throw new Error('page cannot be found');
+        }
+
+        // delete workspace from plugin
+        await WorkspacePlugins[targetWorkspace.flavour].CRUD.delete(
+          // fixme: type casting
+          targetWorkspace as any
+        );
+        // delete workspace from jotai storage
+        set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
+      },
+      [jotaiWorkspaces, set, workspaces]
+    ),
   };
 }
