@@ -253,6 +253,9 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <FolderIcon />
               {t('All pages')}
             </StyledLink>
+            <IconButton darker={true} onClick={onClickNewPage}>
+              <PlusIcon />
+            </IconButton>
             <IconButton
               darker={true}
               onClick={useCallback(() => {
