@@ -1,6 +1,7 @@
 import { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
+import { currentPageIdAtom, jotaiStore } from '../atoms';
 import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
 import { useCurrentWorkspace } from './current/use-current-workspace';
@@ -147,9 +148,33 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
                   if (pageId === targetPageId) {
                     dispose.dispose();
                     setCurrentPageId(pageId);
+                    router.push({
+                      query: {
+                        ...router.query,
+                        workspaceId: currentWorkspace.id,
+                        pageId: targetId,
+                      },
+                    });
                   }
                 }
               );
+            setTimeout(() => {
+              if (jotaiStore.get(currentPageIdAtom) === null) {
+                const id =
+                  currentWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
+                if (id) {
+                  router.push({
+                    query: {
+                      ...router.query,
+                      workspaceId: currentWorkspace.id,
+                      pageId: id,
+                    },
+                  });
+                  setCurrentPageId(id);
+                }
+              }
+              dispose.dispose();
+            }, 1000);
             return () => {
               dispose.dispose();
             };
