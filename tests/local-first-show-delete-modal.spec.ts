@@ -41,12 +41,11 @@ test.describe('Local first delete page', () => {
     });
     expect(cell).not.toBeUndefined();
 
-    await page
-      .getByTestId('more-actions-' + newPageId)
-      .getByRole('button')
-      .first()
-      .click();
-    const deleteBtn = page.getByRole('button', { name: 'Delete' });
+    const moreActions = page.getByTestId('more-actions-' + newPageId);
+
+    await moreActions.getByRole('button').first().click();
+
+    const deleteBtn = moreActions.getByRole('button', { name: 'Delete' });
     await deleteBtn.click();
     const confirmTip = page.getByText('Delete page?');
     expect(confirmTip).not.toBeUndefined();

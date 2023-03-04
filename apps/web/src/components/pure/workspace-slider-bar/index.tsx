@@ -95,7 +95,7 @@ const PageList: React.FC<PageListProps> = ({
         const active = router.query.pageId === pageMeta.id;
         return (
           <StyledSubListItem
-            data-testid={`page-list-item-${pageMeta.id}`}
+            data-testid={`sidebar-page-list-item-${pageMeta.id}`}
             active={active}
             key={`${pageMeta}-${index}`}
             onClick={() => {
