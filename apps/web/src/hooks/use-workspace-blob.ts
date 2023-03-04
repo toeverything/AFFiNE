@@ -24,6 +24,7 @@ export function useWorkspaceBlobImage(
   useEffect(() => {
     const controller = new AbortController();
     if (key === null) {
+      setImageURL(null);
       return;
     }
     blobStorage?.get(key).then(blob => {
