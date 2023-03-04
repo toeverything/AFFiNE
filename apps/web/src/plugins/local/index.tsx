@@ -1,5 +1,5 @@
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
-import { assertExists, nanoid } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
 import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
 import { IndexeddbPersistence } from 'y-indexeddb';
@@ -51,13 +51,18 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       };
       return workspace;
     },
-    create: async blockSuiteWorkspace => {
+    create: async ({ doc }) => {
       const storage = getStorage();
       !Array.isArray(storage.getItem(kStoreKey)) &&
         storage.setItem(kStoreKey, []);
       const data = storage.getItem(kStoreKey) as z.infer<typeof schema>;
-      assertExists(blockSuiteWorkspace.room);
+      const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdateV2(doc);
       const id = nanoid();
+      const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+        id,
+        (_: string) => undefined
+      );
+      BlockSuiteWorkspace.Y.applyUpdateV2(blockSuiteWorkspace.doc, binary);
       const persistence = new IndexeddbPersistence(id, blockSuiteWorkspace.doc);
       await persistence.whenSynced.then(() => {
         persistence.destroy();

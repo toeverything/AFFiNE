@@ -25,6 +25,7 @@ export function useCreateFirstWorkspace() {
       const id = await LocalPlugin.CRUD.create(blockSuiteWorkspace);
       const workspace = await LocalPlugin.CRUD.get(id);
       assertExists(workspace);
+      assertEquals(workspace.id, id);
       const newPageId = nanoid();
       workspace.blockSuiteWorkspace.slots.pageAdded.once(pageId => {
         assertEquals(pageId, newPageId);
