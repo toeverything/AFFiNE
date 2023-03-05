@@ -30,7 +30,6 @@ const isMac = () => {
 
 export type QuickSearchModalProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
-  enableShortCut: boolean;
   open: boolean;
   setOpen: (value: boolean) => void;
   router: NextRouter;
@@ -40,7 +39,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   open,
   setOpen,
   router,
-  enableShortCut,
   blockSuiteWorkspace,
 }) => {
   const [loading, startTransition] = useTransition();
@@ -65,9 +63,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   }, [setOpen, setQuery]);
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
-    if (!enableShortCut) {
-      return;
-    }
     const keydown = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
         const selection = window.getSelection();
@@ -86,7 +81,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     document.addEventListener('keydown', keydown, { capture: true });
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
-  }, [enableShortCut, open, router, setOpen, setQuery]);
+  }, [open, router, setOpen, setQuery]);
 
   return (
     <Modal

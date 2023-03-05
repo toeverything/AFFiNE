@@ -8,12 +8,14 @@ import React, { Suspense, useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import {
+  currentWorkspaceIdAtom,
   openQuickSearchModalAtom,
   openWorkspacesModalAtom,
   workspaceLockAtom,
 } from '../atoms';
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
+import QuickSearchModal from '../components/pure/quick-search-modal';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -21,6 +23,7 @@ import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
+import { ModalProvider } from '../providers/ModalProvider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
@@ -35,8 +38,11 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
       setUpLanguage(i18n);
     }, [i18n]);
     useCreateFirstWorkspace();
+    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
     return (
       <NoSsr>
+        {/* fixme(himself65): don't re-render whole modals */}
+        <ModalProvider key={currentWorkspaceId} />
         <Suspense fallback={<PageLoading />}>
           <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
         </Suspense>
@@ -95,7 +101,6 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const isPublicWorkspace =
     router.pathname.split('/')[1] === 'public-workspace';
   const title = useRouterTitle(router);
-  const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
   const handleOpenPage = useCallback(
     (pageId: string) => {
       assertExists(currentWorkspace);
@@ -117,6 +122,10 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const handleOpenWorkspaceListModal = useCallback(() => {
     setOpenWorkspacesModal(true);
   }, [setOpenWorkspacesModal]);
+
+  const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
+    openQuickSearchModalAtom
+  );
   const handleOpenQuickSearchModal = useCallback(() => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
@@ -157,6 +166,14 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           </StyledToolWrapper>
         </StyledWrapper>
       </StyledPage>
+      {currentWorkspace?.blockSuiteWorkspace && (
+        <QuickSearchModal
+          blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
+          open={openQuickSearchModal}
+          setOpen={setOpenQuickSearchModalAtom}
+          router={router}
+        />
+      )}
     </>
   );
 };
