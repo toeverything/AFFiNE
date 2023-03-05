@@ -1,7 +1,8 @@
+import { DebugLogger } from '@affine/debug';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useRouter } from 'next/router';
 import React, { Suspense, useCallback, useEffect } from 'react';
@@ -9,6 +10,7 @@ import { Helmet } from 'react-helmet-async';
 
 import {
   currentWorkspaceIdAtom,
+  jotaiWorkspacesAtom,
   openQuickSearchModalAtom,
   openWorkspacesModalAtom,
   workspaceLockAtom,
@@ -23,12 +25,14 @@ import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
+import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 const sideBarOpenAtom = atomWithStorage('sideBarOpen', true);
 
+const logger = new DebugLogger('workspace-layout');
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     const { i18n } = useTranslation();
@@ -38,6 +42,35 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
       setUpLanguage(i18n);
     }, [i18n]);
     useCreateFirstWorkspace();
+    const set = useSetAtom(jotaiWorkspacesAtom);
+    useEffect(() => {
+      logger.info('mount');
+      const controller = new AbortController();
+      const lists = Object.values(WorkspacePlugins)
+        .sort((a, b) => a.loadPriority - b.loadPriority)
+        .map(({ CRUD }) => CRUD.list);
+      async function fetch() {
+        const items = [];
+        for (const list of lists) {
+          try {
+            const item = await list();
+            items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
+          } catch (e) {
+            logger.error('list data error:', e);
+          }
+        }
+        if (controller.signal.aborted) {
+          return;
+        }
+        set([...items]);
+        logger.info('mount first data:', items);
+      }
+      fetch();
+      return () => {
+        controller.abort();
+        logger.info('unmount');
+      };
+    }, [set]);
     const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
     return (
       <NoSsr>

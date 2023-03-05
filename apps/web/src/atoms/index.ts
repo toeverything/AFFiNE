@@ -1,4 +1,3 @@
-import { DebugLogger } from '@affine/debug';
 import { assertExists } from '@blocksuite/store';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
@@ -38,41 +37,10 @@ type JotaiWorkspace = {
   flavour: RemWorkspaceFlavour;
 };
 
-const logger = new DebugLogger('jotai');
-
 export const jotaiWorkspacesAtom = atomWithStorage<JotaiWorkspace[]>(
   'jotai-workspaces',
   []
 );
-
-jotaiWorkspacesAtom.onMount = set => {
-  logger.info('mount');
-  const controller = new AbortController();
-  const lists = Object.values(WorkspacePlugins)
-    .sort((a, b) => a.loadPriority - b.loadPriority)
-    .map(({ CRUD }) => CRUD.list);
-  async function fetch() {
-    const items = [];
-    for (const list of lists) {
-      try {
-        const item = await list();
-        items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
-      } catch (e) {
-        logger.error('list data error:', e);
-      }
-    }
-    if (controller.signal.aborted) {
-      return;
-    }
-    set([...items]);
-    logger.info('mount first data:', items);
-  }
-  fetch();
-  return () => {
-    controller.abort();
-    logger.info('unmount');
-  };
-};
 
 export const workspacesAtom = atom<Promise<RemWorkspace[]>>(async get => {
   const flavours: string[] = Object.values(WorkspacePlugins).map(
