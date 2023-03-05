@@ -44,6 +44,9 @@ const ListPageInner: React.FC<{
     },
     [router, workspaceId]
   );
+  useEffect(() => {
+    blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
+  }, [blockSuiteWorkspace]);
   const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(blockSuiteWorkspace);
   const setSearchModalOpen = useSetAtom(openQuickSearchModalAtom);

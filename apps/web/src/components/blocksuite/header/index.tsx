@@ -20,12 +20,14 @@ import {
 export type BlockSuiteEditorHeaderProps = React.PropsWithChildren<{
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
+  isPublic?: boolean;
 }>;
 
 export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   blockSuiteWorkspace,
   pageId,
   children,
+  isPublic,
 }) => {
   const page = blockSuiteWorkspace.getPage(pageId);
   // fixme(himself65): remove this atom and move it to props
@@ -43,7 +45,10 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   return (
     <Header
       rightItems={
-        isTrash
+        // fixme(himself65): other right items not supported in public mode
+        isPublic
+          ? ['themeModeSwitch']
+          : isTrash
           ? ['trashButtonGroup']
           : ['syncUser', 'themeModeSwitch', 'editorOptionMenu']
       }
