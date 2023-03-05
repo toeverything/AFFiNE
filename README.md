@@ -80,7 +80,7 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 **Markdown support** — When you write in AFFiNE you can use Markdown syntax which helps create an easier editing experience, that can be experienced with just a keyboard. And this allows you to export your data cleanly into Markdown.
 
 <!--
-**Colloboration** — Whether you want to colloborate with yourself across multiple devices, or work together with others, support for colloboration and multiplayer is out-of-the-box, which makes it easy for teams to get started with AFFiNE.
+**Collaboration** — Whether you want to collaborate with yourself across multiple devices, or work together with others, support for collaboration and multiplayer is out-of-the-box, which makes it easy for teams to get started with AFFiNE.
 -->
 
 **Choice of multiple languages** — Thanks to community contributions AFFiNE offers support for multiple languages. If you don't find your language or would like to suggest some changes we welcome your contributions.
@@ -91,7 +91,7 @@ Calling all developers, testers, tech writers and more! Contributions of all typ
 
 **Before you start contributing, please make sure you have read and accepted our [Contributor License Agreement]. To indicate your agreement, simply edit this file and submit a pull request.**
 
-For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropiate template for your feedback.
+For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropriate template for your feedback.
 
 For **translation** and **language support** you can visit our [i18n General Space](https://community.affine.pro/c/i18n-general).
 
