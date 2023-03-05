@@ -24,6 +24,7 @@ jobs:
             ${{ runner.os }}-affine-${{ hashFiles('**/pnpm-lock.yaml') }}-
       - name: Build
         run: |
+          pnpm install --frozen-lockfile
           pnpm run build
       - uses: preactjs/compressed-size-action@v2
         env:
