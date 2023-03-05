@@ -187,6 +187,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
               type="danger"
               shape="circle"
               style={{ borderRadius: '40px' }}
+              data-testid="delete-workspace-button"
               onClick={() => {
                 setShowDelete(true);
               }}
