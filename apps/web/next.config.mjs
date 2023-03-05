@@ -8,6 +8,8 @@ import debugLocal from 'next-debug-local';
 import preset from './preset.config.mjs';
 import { getCommitHash, getGitVersion } from './scripts/gitInfo.mjs';
 
+import analyzer from '@next/bundle-analyzer';
+
 const require = createRequire(import.meta.url);
 
 console.info('Runtime Preset', preset);
@@ -148,4 +150,8 @@ const detectFirebaseConfig = () => {
 };
 detectFirebaseConfig();
 
-export default withDebugLocal(nextConfig);
+const withAnalyzer = analyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+export default withAnalyzer(withDebugLocal(nextConfig));

@@ -45,6 +45,7 @@
     "zod": "^3.20.6"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^13.2.3",
     "@perfsee/webpack": "^1.3.0",
     "@redux-devtools/extension": "^3.2.5",
     "@swc-jotai/debug-label": "^0.0.6",
