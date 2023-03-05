@@ -1,19 +1,25 @@
-import { ListSkeleton } from '@affine/component';
+import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
+import { SearchIcon } from '@blocksuite/icons';
+import { Box } from '@mui/material';
 import { useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import React, { Suspense, useCallback, useEffect } from 'react';
 
-import { currentWorkspaceIdAtom } from '../../atoms';
+import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../../atoms';
 import {
   publicBlockSuiteAtom,
   publicWorkspaceIdAtom,
 } from '../../atoms/public-workspace';
 import { QueryParamError } from '../../components/affine/affine-error-eoundary';
 import { StyledTableContainer } from '../../components/blocksuite/block-suite-page-list/page-list/styles';
+import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
+import { useBlockSuiteWorkspaceAvatarUrl } from '../../hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '../../hooks/use-blocksuite-workspace-name';
 import { WorkspaceLayout } from '../../layouts';
 import { NextPageWithLayout } from '../../shared';
+import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
 const BlockSuitePublicPageList = dynamic(
   async () =>
@@ -38,14 +44,43 @@ const ListPageInner: React.FC<{
     },
     [router, workspaceId]
   );
+  useEffect(() => {
+    blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
+  }, [blockSuiteWorkspace]);
+  const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
+  const [avatar] = useBlockSuiteWorkspaceAvatarUrl(blockSuiteWorkspace);
+  const setSearchModalOpen = useSetAtom(openQuickSearchModalAtom);
+  const handleOpen = useCallback(() => {
+    setSearchModalOpen(true);
+  }, [setSearchModalOpen]);
   if (!blockSuiteWorkspace) {
     return <PageLoading />;
   }
   return (
-    <BlockSuitePublicPageList
-      onOpenPage={handleClickPage}
-      blockSuiteWorkspace={blockSuiteWorkspace}
-    />
+    <>
+      <NavContainer>
+        <Breadcrumbs>
+          <StyledBreadcrumbs
+            href={`/public-workspace/${blockSuiteWorkspace.room}`}
+          >
+            <WorkspaceAvatar size={24} name={name} avatar={avatar} />
+            <span>{name}</span>
+          </StyledBreadcrumbs>
+        </Breadcrumbs>
+        <Box
+          sx={{
+            flex: 1,
+          }}
+        />
+        <IconButton onClick={handleOpen}>
+          <SearchIcon />
+        </IconButton>
+      </NavContainer>
+      <BlockSuitePublicPageList
+        onOpenPage={handleClickPage}
+        blockSuiteWorkspace={blockSuiteWorkspace}
+      />
+    </>
   );
 };
 

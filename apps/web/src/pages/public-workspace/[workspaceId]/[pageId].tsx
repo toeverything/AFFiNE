@@ -19,6 +19,8 @@ import { QueryParamError } from '../../../components/affine/affine-error-eoundar
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
+import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
 import { WorkspaceLayout } from '../../../layouts';
 import { NextPageWithLayout } from '../../../shared';
 
@@ -67,12 +69,17 @@ const PublicWorkspaceDetailPageInner: React.FC<{
   if (!blockSuiteWorkspace) {
     throw new Error('cannot find workspace');
   }
+  useEffect(() => {
+    blockSuiteWorkspace.awarenessStore.setFlag('enable_block_hub', false);
+  }, [blockSuiteWorkspace]);
   const { t } = useTranslation();
-  const name = blockSuiteWorkspace.meta.name;
+  const [name] = useBlockSuiteWorkspaceName(blockSuiteWorkspace);
+  const [avatar] = useBlockSuiteWorkspaceAvatarUrl(blockSuiteWorkspace);
   const pageTitle = blockSuiteWorkspace.meta.getPageMeta(pageId)?.title;
   return (
     <>
       <PageDetailEditor
+        isPublic={true}
         pageId={pageId}
         blockSuiteWorkspace={blockSuiteWorkspace}
         onLoad={(_, editor) => {
@@ -90,11 +97,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
               <StyledBreadcrumbs
                 href={`/public-workspace/${blockSuiteWorkspace.room}`}
               >
-                <WorkspaceAvatar
-                  size={24}
-                  name={name}
-                  avatar={blockSuiteWorkspace.meta.avatar}
-                />
+                <WorkspaceAvatar size={24} name={name} avatar={avatar} />
                 <span>{name}</span>
               </StyledBreadcrumbs>
               <StyledBreadcrumbs

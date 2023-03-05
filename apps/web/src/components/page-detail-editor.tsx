@@ -11,6 +11,7 @@ import { PageNotFoundError } from './affine/affine-error-eoundary';
 import { BlockSuiteEditorHeader } from './blocksuite/header';
 
 export type PageDetailEditorProps = {
+  isPublic?: boolean;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
@@ -32,6 +33,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   onInit,
   onLoad,
   header,
+  isPublic,
 }) => {
   const page = blockSuiteWorkspace.getPage(pageId);
   if (!page) {
@@ -48,6 +50,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         <title>{title}</title>
       </Helmet>
       <BlockSuiteEditorHeader
+        isPublic={isPublic}
         blockSuiteWorkspace={blockSuiteWorkspace}
         pageId={pageId}
       >

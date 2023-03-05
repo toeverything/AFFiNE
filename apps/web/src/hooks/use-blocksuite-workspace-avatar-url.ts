@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import { QueryKey } from '../plugins/affine/fetcher';
 import { BlockSuiteWorkspace } from '../shared';
 
-export function useBlockSuiteWorkspaceBlobUrl(
+export function useBlockSuiteWorkspaceAvatarUrl(
   // todo: remove `null` from type
   blockSuiteWorkspace: BlockSuiteWorkspace | null
 ) {

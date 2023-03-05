@@ -3,7 +3,7 @@ import { useTranslation } from '@affine/i18n';
 import React, { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
-import { useBlockSuiteWorkspaceBlobUrl } from '../../../../../hooks/use-blocksuite-workspace-blob-url';
+import { useBlockSuiteWorkspaceAvatarUrl } from '../../../../../hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '../../../../../hooks/use-blocksuite-workspace-name';
 import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Upload } from '../../../../pure/file-upload';
@@ -43,7 +43,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
     setName(name);
   };
 
-  const [, update] = useBlockSuiteWorkspaceBlobUrl(
+  const [, update] = useBlockSuiteWorkspaceAvatarUrl(
     workspace.blockSuiteWorkspace
   );
   return (

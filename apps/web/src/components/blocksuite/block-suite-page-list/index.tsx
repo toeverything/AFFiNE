@@ -30,7 +30,6 @@ export const BlockSuitePublicPageList: React.FC<BlockSuitePageListProps> = ({
       isPublic={true}
       blockSuiteWorkspace={blockSuiteWorkspace}
       onClickPage={onOpenPage}
-      listType="all"
     />
   );
 };

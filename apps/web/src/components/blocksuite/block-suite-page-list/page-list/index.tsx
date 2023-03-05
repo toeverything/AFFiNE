@@ -149,7 +149,7 @@ export const PageList: React.FC<PageListProps> = ({
                         {pageMeta.title || t('Untitled')}
                       </Content>
                     </StyledTitleLink>
-                    {!isTrash && (
+                    {listType && !isTrash && (
                       <FavoriteTag
                         onClick={() => {
                           helper.setPageMeta(pageMeta.id, {
