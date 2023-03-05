@@ -23,8 +23,6 @@ const getStorage = () => createJSONStorage(() => localStorage);
 
 export const kStoreKey = 'affine-local-workspace';
 const schema = z.array(z.string());
-// fixme(himself65): this is a hacking that first workspace will disappear somehow
-const hashMap = new Map<string, BlockSuiteWorkspace>();
 
 export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
   flavour: RemWorkspaceFlavour.LOCAL,

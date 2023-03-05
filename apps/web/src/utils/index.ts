@@ -1,4 +1,3 @@
-import { DebugLogger } from '@affine/debug';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import type { BlobOptionsGetter } from '@blocksuite/store';
 
@@ -26,7 +25,6 @@ export function stringToColour(str: string) {
 }
 
 const hashMap = new Map<string, BlockSuiteWorkspace>();
-const logger = new DebugLogger('blocks:utils');
 export const createEmptyBlockSuiteWorkspace = (
   room: string,
   blobOptionsGetter?: BlobOptionsGetter

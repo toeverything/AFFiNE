@@ -1,10 +1,6 @@
 import { atom } from 'jotai/index';
 
-import {
-  BlockSuiteWorkspace,
-  LocalWorkspace,
-  RemWorkspaceFlavour,
-} from '../../shared';
+import { BlockSuiteWorkspace } from '../../shared';
 import { apis } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
@@ -35,13 +31,13 @@ export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
     blockSuiteWorkspace.awarenessStore.setFlag('enable_drag_handle', false);
     return new Promise(resolve => {
       setTimeout(() => {
-        const workspace: LocalWorkspace = {
-          id: workspaceId,
-          blockSuiteWorkspace,
-          flavour: RemWorkspaceFlavour.LOCAL,
-          providers: [],
-        };
-        // fixme: quick search won't work
+        // const workspace: LocalWorkspace = {
+        //   id: workspaceId,
+        //   blockSuiteWorkspace,
+        //   flavour: RemWorkspaceFlavour.LOCAL,
+        //   providers: [],
+        // };
+        // fixme: quick search won't work, ASAP
         // dataCenter.workspaces.push(workspace);
         // dataCenter.callbacks.forEach(cb => cb());
         resolve(blockSuiteWorkspace);
