@@ -26,8 +26,35 @@ const schema = z.object({
   type: z.number(),
   public: z.boolean(),
   permission: z.number(),
-  create_at: z.number(),
 });
+
+const getPersistenceAllWorkspace = () => {
+  const items = storage.getItem(kAffineLocal);
+  const allWorkspaces: AffineWorkspace[] = [];
+  if (
+    Array.isArray(items) &&
+    items.every(item => schema.safeParse(item).success)
+  ) {
+    allWorkspaces.push(
+      ...items.map((item: z.infer<typeof schema>) => {
+        const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+          item.id,
+          (k: string) =>
+            // fixme: token could be expired
+            ({ api: '/api/workspace', token: apis.auth.token }[k])
+        );
+        const affineWorkspace: AffineWorkspace = {
+          ...item,
+          flavour: RemWorkspaceFlavour.AFFINE,
+          blockSuiteWorkspace,
+          providers: [...createAffineProviders(blockSuiteWorkspace)],
+        };
+        return affineWorkspace;
+      })
+    );
+  }
+  return allWorkspaces;
+};
 
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
@@ -38,57 +65,117 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
         blockSuiteWorkspace.doc
       );
       const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
+      // refresh the local storage
+      await AffinePlugin.CRUD.list();
       return id;
     },
     delete: async workspace => {
+      const items = storage.getItem(kAffineLocal);
+      if (
+        Array.isArray(items) &&
+        items.every(item => schema.safeParse(item).success)
+      ) {
+        storage.setItem(
+          kAffineLocal,
+          items.filter(item => item.id !== workspace.id)
+        );
+      }
       await apis.deleteWorkspace({
         id: workspace.id,
       });
     },
     get: async workspaceId => {
-      const workspaces: AffineWorkspace[] = await preload(
-        QueryKey.getWorkspaces,
-        fetcher
-      );
-
-      const workspace = workspaces.find(
-        workspace => workspace.id === workspaceId
-      );
-      const dump = workspaces.map(workspace => {
-        return {
-          id: workspace.id,
-          type: workspace.type,
-          public: workspace.public,
-          permission: workspace.permission,
-          create_at: workspace.create_at,
-        } satisfies z.infer<typeof schema>;
-      });
-      storage.setItem(kAffineLocal, dump);
-      if (!workspace) {
-        return null;
+      try {
+        if (!apis.auth.isLogin) {
+          const workspaces = getPersistenceAllWorkspace();
+          return (
+            workspaces.find(workspace => workspace.id === workspaceId) ?? null
+          );
+        }
+        const workspaces: AffineWorkspace[] = await preload(
+          QueryKey.getWorkspaces,
+          fetcher
+        );
+        return (
+          workspaces.find(workspace => workspace.id === workspaceId) ?? null
+        );
+      } catch (e) {
+        const workspaces = getPersistenceAllWorkspace();
+        return (
+          workspaces.find(workspace => workspace.id === workspaceId) ?? null
+        );
       }
-      return workspace;
     },
     list: async () => {
-      // fixme: refactor auth check
-      if (!apis.auth.isLogin) return [];
-      return await apis.getWorkspaces().then(workspaces => {
-        return workspaces.map(workspace => {
-          const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-            workspace.id,
-            (k: string) =>
-              // fixme: token could be expired
-              ({ api: '/api/workspace', token: apis.auth.token }[k])
-          );
-          const affineWorkspace: AffineWorkspace = {
-            ...workspace,
-            flavour: RemWorkspaceFlavour.AFFINE,
-            blockSuiteWorkspace,
-            providers: [...createAffineProviders(blockSuiteWorkspace)],
-          };
-          return affineWorkspace;
-        });
-      });
+      const allWorkspaces = getPersistenceAllWorkspace();
+      try {
+        if (apis.auth.isLogin) {
+          const workspaces = await apis.getWorkspaces().then(workspaces => {
+            return workspaces.map(workspace => {
+              const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+                workspace.id,
+                (k: string) =>
+                  // fixme: token could be expired
+                  ({ api: '/api/workspace', token: apis.auth.token }[k])
+              );
+              const dump = workspaces.map(workspace => {
+                return {
+                  id: workspace.id,
+                  type: workspace.type,
+                  public: workspace.public,
+                  permission: workspace.permission,
+                } satisfies z.infer<typeof schema>;
+              });
+              const old = storage.getItem(kAffineLocal);
+              if (
+                Array.isArray(old) &&
+                old.every(item => schema.safeParse(item).success)
+              ) {
+                const data = [...dump];
+                old.forEach((item: z.infer<typeof schema>) => {
+                  const has = dump.find(dump => dump.id === item.id);
+                  if (!has) {
+                    data.push(item);
+                  }
+                });
+                storage.setItem(kAffineLocal, [...data]);
+              }
+
+              const affineWorkspace: AffineWorkspace = {
+                ...workspace,
+                flavour: RemWorkspaceFlavour.AFFINE,
+                blockSuiteWorkspace,
+                providers: [...createAffineProviders(blockSuiteWorkspace)],
+              };
+              return affineWorkspace;
+            });
+          });
+          workspaces.forEach(workspace => {
+            const idx = allWorkspaces.findIndex(
+              ({ id }) => id === workspace.id
+            );
+            if (idx !== -1) {
+              allWorkspaces.splice(idx, 1, workspace);
+            } else {
+              allWorkspaces.push(workspace);
+            }
+          });
+
+          // only save data when login in
+          const dump = allWorkspaces.map(workspace => {
+            return {
+              id: workspace.id,
+              type: workspace.type,
+              public: workspace.public,
+              permission: workspace.permission,
+            } satisfies z.infer<typeof schema>;
+          });
+          storage.setItem(kAffineLocal, [...dump]);
+        }
+      } catch (e) {
+        console.error('fetch affine workspaces failed', e);
+      }
+      return [...allWorkspaces];
     },
   },
   PageDetail: ({ currentWorkspace, currentPageId }) => {

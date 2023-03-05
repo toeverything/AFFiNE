@@ -32,7 +32,6 @@ export interface Workspace {
   type: WorkspaceType;
   public: boolean;
   permission: PermissionType;
-  create_at: number;
 }
 
 export interface WorkspaceDetail extends Workspace {
