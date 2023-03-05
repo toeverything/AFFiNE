@@ -34,7 +34,7 @@ export function Modals() {
         user={user}
         workspaces={workspaces}
         currentWorkspaceId={currentWorkspaceId}
-        open={openWorkspacesModal}
+        open={openWorkspacesModal || workspaces.length === 0}
         onClose={useCallback(() => {
           setOpenWorkspacesModal(false);
         }, [setOpenWorkspacesModal])}
