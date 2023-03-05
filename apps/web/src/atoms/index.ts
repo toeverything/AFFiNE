@@ -49,7 +49,16 @@ jotaiWorkspacesAtom.onMount = set => {
   logger.info('mount');
   const controller = new AbortController();
   const lists = Object.values(WorkspacePlugins).map(plugin => plugin.CRUD.list);
-  Promise.all(lists.map(list => list())).then(result => {
+  Promise.all(
+    lists.map(list => {
+      try {
+        return list();
+      } catch (e) {
+        logger.error('list data error:', e);
+        return [];
+      }
+    })
+  ).then(result => {
     const items = result.flatMap(v => [...v]);
     if (controller.signal.aborted) {
       logger.info('abort');
