@@ -170,6 +170,7 @@ importers:
       jotai: ^2.0.3
       jotai-devtools: ^0.2.0
       lit: ^2.6.1
+      lottie-react: ^2.4.0
       next: ^13.2.2
       next-debug-local: ^0.1.5
       next-router-mock: ^0.9.2
@@ -211,6 +212,7 @@ importers:
       jotai: 2.0.3_react@18.2.0
       jotai-devtools: 0.2.0_tfg3pgykuuhpvkcrwis64xs5oq
       lit: 2.6.1
+      lottie-react: 2.4.0_biqbaboplfbrettd7655fr4n2y
       next-themes: 0.2.1_nvzgbose6yf6w7ijjprgspqefi
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
@@ -10217,6 +10219,21 @@ packages:
     hasBin: true
     dependencies:
       js-tokens: 4.0.0
+
+  /lottie-react/2.4.0_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-pDJGj+AQlnlyHvOHFK7vLdsDcvbuqvwPZdMlJ360wrzGFurXeKPr8SiRCjLf3LrNYKANQtSsh5dz9UYQHuqx4w==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      lottie-web: 5.10.2
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+    dev: false
+
+  /lottie-web/5.10.2:
+    resolution: {integrity: sha512-d0PFIGiwuMsJYaF4uPo+qG8dEorlI+xFI2zrrFtE1bGO4WoLIz+NjremxEq1swpR7juR10aeOtmNh3d6G3ub0A==}
+    dev: false
 
   /loupe/2.3.6:
     resolution: {integrity: sha512-RaPMZKiMy8/JruncMU5Bt6na1eftNoo++R4Y+N2FrxkDVTrGvcyzFTsaGif4QTeKESheMGegbhw6iUAq+5A8zA==}

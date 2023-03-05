@@ -31,6 +31,7 @@
     "jotai": "^2.0.3",
     "jotai-devtools": "^0.2.0",
     "lit": "^2.6.1",
+    "lottie-react": "^2.4.0",
     "next-themes": "^0.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
