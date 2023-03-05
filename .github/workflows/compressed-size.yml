@@ -27,5 +27,4 @@ jobs:
           ENABLE_DEBUG_PAGE: ''
         with:
           repo-token: '${{ secrets.GITHUB_TOKEN }}'
-          build-script: 'build:export'
-          pattern: 'apps/web/out/**/*.{js,css,html,json}'
+          pattern: 'apps/web/.next/**/*.{js,css,html,json}'
