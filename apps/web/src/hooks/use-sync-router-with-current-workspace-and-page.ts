@@ -33,6 +33,7 @@ export function findSuitablePageId(
   }
 }
 
+export const REDIRECT_TIMEOUT = 1000;
 export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
   const [currentPageId, setCurrentPageId] = useCurrentPageId();
@@ -174,7 +175,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
                 }
               }
               dispose.dispose();
-            }, 1000);
+            }, REDIRECT_TIMEOUT);
             return () => {
               clearTimeout(clearId);
               dispose.dispose();

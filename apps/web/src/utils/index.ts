@@ -31,7 +31,6 @@ export const createEmptyBlockSuiteWorkspace = (
   room: string,
   blobOptionsGetter?: BlobOptionsGetter
 ): BlockSuiteWorkspace => {
-  console.trace('createEmptyBlockSuiteWorkspace', room);
   if (hashMap.has(room)) {
     return hashMap.get(room) as BlockSuiteWorkspace;
   }
