@@ -23,5 +23,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-affine-${{ hashFiles('**/pnpm-lock.yaml') }}-
       - uses: preactjs/compressed-size-action@v2
+        env:
+          ENABLE_DEBUG_PAGE: ''
         with:
           repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          build-script: 'size-check'
+          pattern: 'apps/web/out/**/*.{js,css,html,json}'

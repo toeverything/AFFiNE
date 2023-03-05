@@ -22,6 +22,7 @@
     "test:unit:coverage": "vitest run --coverage",
     "postinstall": "husky install",
     "notify": "node scripts/notify.mjs",
+    "size-check": "pnpm run build && pnpm run export",
     "update:core": "pnpm up @blocksuite/*@nightly !@blocksuite/icons -r"
   },
   "lint-staged": {
