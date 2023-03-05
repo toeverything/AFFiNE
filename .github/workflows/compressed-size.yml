@@ -15,6 +15,13 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
           cache: 'pnpm'
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/apps/web/.next/cache
+          key: ${{ runner.os }}-affine-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-affine-${{ hashFiles('**/pnpm-lock.yaml') }}-
       - uses: preactjs/compressed-size-action@v2
         with:
           repo-token: '${{ secrets.GITHUB_TOKEN }}'
