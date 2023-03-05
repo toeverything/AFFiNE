@@ -8,22 +8,26 @@ import assert from 'node:assert';
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
+import { createStore, Provider } from 'jotai';
 import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
+import React from 'react';
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
+import { workspacesAtom } from '../../atoms';
 import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
-import { useCurrentWorkspace } from '../current/use-current-workspace';
-import { useBlockSuiteWorkspaceName } from '../use-blocksuite-workspace-name';
-import { useLastOpenedWorkspace } from '../use-last-opened-workspace';
-import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
-import { useSyncRouterWithCurrentWorkspaceAndPage } from '../use-sync-router-with-current-workspace-and-page';
 import {
-  useWorkspaces,
-  useWorkspacesHelper,
-  vitestRefreshWorkspaces,
-} from '../use-workspaces';
+  currentWorkspaceAtom,
+  useCurrentWorkspace,
+} from '../current/use-current-workspace';
+import { useBlockSuiteWorkspaceName } from '../use-blocksuite-workspace-name';
+import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
+import {
+  REDIRECT_TIMEOUT,
+  useSyncRouterWithCurrentWorkspaceAndPage,
+} from '../use-sync-router-with-current-workspace-and-page';
+import { useWorkspaces, useWorkspacesHelper } from '../use-workspaces';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 beforeAll(() => {
@@ -32,9 +36,26 @@ beforeAll(() => {
   );
 });
 
+beforeEach(() => {
+  localStorage.clear();
+});
+
+async function getJotaiContext() {
+  const store = createStore();
+  const ProviderWrapper: React.FC<React.PropsWithChildren> =
+    function ProviderWrapper({ children }) {
+      return <Provider store={store}>{children}</Provider>;
+    };
+  const workspaces = await store.get(workspacesAtom);
+  expect(workspaces.length).toBe(0);
+  return {
+    store,
+    ProviderWrapper,
+    initialWorkspaces: workspaces,
+  } as const;
+}
+
 beforeEach(async () => {
-  vitestRefreshWorkspaces();
-  dataCenter.isLoaded = true;
   return new Promise<void>(resolve => {
     blockSuiteWorkspace = new BlockSuiteWorkspace({
       room: 'test',
@@ -104,16 +125,50 @@ describe('usePageMetas', async () => {
   });
 });
 
+describe('useWorkspacesHelper', () => {
+  test('basic', async () => {
+    const { ProviderWrapper, store } = await getJotaiContext();
+    const workspaceHelperHook = renderHook(() => useWorkspacesHelper(), {
+      wrapper: ProviderWrapper,
+    });
+    const id = await workspaceHelperHook.result.current.createLocalWorkspace(
+      'test'
+    );
+    const workspaces = await store.get(workspacesAtom);
+    expect(workspaces.length).toBe(1);
+    expect(workspaces[0].id).toBe(id);
+    const workspacesHook = renderHook(() => useWorkspaces(), {
+      wrapper: ProviderWrapper,
+    });
+    await store.get(currentWorkspaceAtom);
+    const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
+      wrapper: ProviderWrapper,
+    });
+    currentWorkspaceHook.result.current[1](workspacesHook.result.current[0].id);
+  });
+});
+
 describe('useWorkspaces', () => {
-  test('basic', () => {
-    const { result } = renderHook(() => useWorkspaces());
+  test('basic', async () => {
+    const { ProviderWrapper } = await getJotaiContext();
+    const { result } = renderHook(() => useWorkspaces(), {
+      wrapper: ProviderWrapper,
+    });
     expect(result.current).toEqual([]);
   });
 
-  test('mutation', () => {
-    const { result } = renderHook(() => useWorkspacesHelper());
-    result.current.createRemLocalWorkspace('test');
-    const { result: result2 } = renderHook(() => useWorkspaces());
+  test('mutation', async () => {
+    const { ProviderWrapper, store } = await getJotaiContext();
+    const { result } = renderHook(() => useWorkspacesHelper(), {
+      wrapper: ProviderWrapper,
+    });
+    await result.current.createLocalWorkspace('test');
+    const workspaces = await store.get(workspacesAtom);
+    console.log(workspaces);
+    expect(workspaces.length).toEqual(1);
+    const { result: result2 } = renderHook(() => useWorkspaces(), {
+      wrapper: ProviderWrapper,
+    });
     expect(result2.current.length).toEqual(1);
     const firstWorkspace = result2.current[0];
     expect(firstWorkspace.flavour).toBe('local');
@@ -124,8 +179,13 @@ describe('useWorkspaces', () => {
 
 describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
   test('from "/"', async () => {
-    const mutationHook = renderHook(() => useWorkspacesHelper());
-    const id = mutationHook.result.current.createRemLocalWorkspace('test0');
+    const { ProviderWrapper, store } = await getJotaiContext();
+    const mutationHook = renderHook(() => useWorkspacesHelper(), {
+      wrapper: ProviderWrapper,
+    });
+    const id = await mutationHook.result.current.createLocalWorkspace('test0');
+    await store.get(currentWorkspaceAtom);
+    mutationHook.rerender();
     mutationHook.result.current.createWorkspacePage(id, 'page0');
     const routerHook = renderHook(() => useRouter());
     await routerHook.result.current.push('/');
@@ -134,6 +194,7 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
     renderHook(
       ({ router }) => useSyncRouterWithCurrentWorkspaceAndPage(router),
       {
+        wrapper: ProviderWrapper,
         initialProps: {
           router: routerHook.result.current,
         },
@@ -144,8 +205,14 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
   });
 
   test('from incorrect "/workspace/[workspaceId]/[pageId]"', async () => {
-    const mutationHook = renderHook(() => useWorkspacesHelper());
-    const id = mutationHook.result.current.createRemLocalWorkspace('test0');
+    const { ProviderWrapper, store } = await getJotaiContext();
+    const mutationHook = renderHook(() => useWorkspacesHelper(), {
+      wrapper: ProviderWrapper,
+    });
+    const id = await mutationHook.result.current.createLocalWorkspace('test0');
+    const workspaces = await store.get(workspacesAtom);
+    expect(workspaces.length).toEqual(1);
+    mutationHook.rerender();
     mutationHook.result.current.createWorkspacePage(id, 'page0');
     const routerHook = renderHook(() => useRouter());
     await routerHook.result.current.push(`/workspace/${id}/not_exist`);
@@ -154,29 +221,16 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
     renderHook(
       ({ router }) => useSyncRouterWithCurrentWorkspaceAndPage(router),
       {
+        wrapper: ProviderWrapper,
         initialProps: {
           router: routerHook.result.current,
         },
       }
     );
 
-    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
-  });
-});
+    await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT));
 
-describe('useLastOpenedWorkspace', () => {
-  test('basic', async () => {
-    const workspaceHelperHook = renderHook(() => useWorkspacesHelper());
-    workspaceHelperHook.result.current.createRemLocalWorkspace('test');
-    const workspacesHook = renderHook(() => useWorkspaces());
-    const currentWorkspaceHook = renderHook(() => useCurrentWorkspace());
-    currentWorkspaceHook.result.current[1](workspacesHook.result.current[0].id);
-    const lastOpenedWorkspace = renderHook(() => useLastOpenedWorkspace());
-    expect(lastOpenedWorkspace.result.current[0]).toBe(null);
-    const lastOpenedWorkspace2 = renderHook(() => useLastOpenedWorkspace());
-    expect(lastOpenedWorkspace2.result.current[0]).toBe(
-      workspacesHook.result.current[0].id
-    );
+    expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
   });
 });
 

@@ -24,15 +24,21 @@ export function stringToColour(str: string) {
   return colour;
 }
 
+const hashMap = new Map<string, BlockSuiteWorkspace>();
 export const createEmptyBlockSuiteWorkspace = (
   room: string,
   blobOptionsGetter?: BlobOptionsGetter
-) => {
-  return new BlockSuiteWorkspace({
+): BlockSuiteWorkspace => {
+  if (hashMap.has(room)) {
+    return hashMap.get(room) as BlockSuiteWorkspace;
+  }
+  const workspace = new BlockSuiteWorkspace({
     room,
     isSSR: typeof window === 'undefined',
     blobOptionsGetter,
   })
     .register(builtInSchemas)
     .register(__unstableSchemas);
+  hashMap.set(room, workspace);
+  return workspace;
 };

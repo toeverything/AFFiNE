@@ -18,7 +18,6 @@ import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary'
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
 import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
-import { ModalProvider } from '../providers/ModalProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
@@ -81,7 +80,6 @@ const App = function App({
                     <AffineSWRConfigProvider key="AffineSWRConfigProvider" />,
                     <Provider key="JotaiProvider" store={jotaiStore} />,
                     <ThemeProvider key="ThemeProvider" />,
-                    <ModalProvider key="ModalProvider" />,
                   ],
                   []
                 )}

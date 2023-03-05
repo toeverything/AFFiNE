@@ -1,4 +1,4 @@
-import { assertEquals } from '@blocksuite/store';
+import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
 import { preload } from 'swr';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 import { fetcher, QueryKey } from './fetcher';
 
+const storage = createJSONStorage(() => localStorage);
 const kAffineLocal = 'affine-local-storage-v2';
 const schema = z.object({
   id: z.string(),
@@ -31,33 +32,48 @@ const schema = z.object({
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
-  createWorkspace: async (blockSuiteWorkspace: BlockSuiteWorkspace) => {
-    const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(
-      blockSuiteWorkspace.doc
-    );
-    const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
-    return id;
-  },
-  deleteWorkspace: async workspace => {
-    await apis.deleteWorkspace({
-      id: workspace.id,
-    });
-    workspace.providers.forEach(p => p.cleanup());
-  },
-  prefetchData: async dataCenter => {
-    if (localStorage.getItem(kAffineLocal)) {
-      const localData = JSON.parse(localStorage.getItem(kAffineLocal) || '[]');
-      if (Array.isArray(localData)) {
-        const workspacesDump = localData
-          .map((item: any) => {
-            const result = schema.safeParse(item);
-            if (result.success) {
-              return result.data;
-            }
-            return null;
-          })
-          .filter(Boolean) as z.infer<typeof schema>[];
-        const workspaces = workspacesDump.map(workspace => {
+  CRUD: {
+    create: async blockSuiteWorkspace => {
+      const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(
+        blockSuiteWorkspace.doc
+      );
+      const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
+      return id;
+    },
+    delete: async workspace => {
+      await apis.deleteWorkspace({
+        id: workspace.id,
+      });
+    },
+    get: async workspaceId => {
+      const workspaces: AffineWorkspace[] = await preload(
+        QueryKey.getWorkspaces,
+        fetcher
+      );
+
+      const workspace = workspaces.find(
+        workspace => workspace.id === workspaceId
+      );
+      const dump = workspaces.map(workspace => {
+        return {
+          id: workspace.id,
+          type: workspace.type,
+          public: workspace.public,
+          permission: workspace.permission,
+          create_at: workspace.create_at,
+        } satisfies z.infer<typeof schema>;
+      });
+      storage.setItem(kAffineLocal, dump);
+      if (!workspace) {
+        return null;
+      }
+      return workspace;
+    },
+    list: async () => {
+      // fixme: refactor auth check
+      if (!apis.auth.isLogin) return [];
+      return await apis.getWorkspaces().then(workspaces => {
+        return workspaces.map(workspace => {
           const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
             workspace.id,
             (k: string) =>
@@ -66,75 +82,14 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
           );
           const affineWorkspace: AffineWorkspace = {
             ...workspace,
+            flavour: RemWorkspaceFlavour.AFFINE,
             blockSuiteWorkspace,
             providers: [...createAffineProviders(blockSuiteWorkspace)],
-            flavour: RemWorkspaceFlavour.AFFINE,
           };
           return affineWorkspace;
         });
-
-        // fixme: refactor to a function
-        workspaces.forEach(workspace => {
-          const exist = dataCenter.workspaces.findIndex(
-            ws => ws.id === workspace.id
-          );
-          if (exist !== -1) {
-            dataCenter.workspaces.splice(exist, 1, workspace);
-            dataCenter.workspaces = [...dataCenter.workspaces];
-          } else {
-            dataCenter.workspaces = [...dataCenter.workspaces, workspace];
-          }
-        });
-        dataCenter.callbacks.forEach(cb => cb());
-      } else {
-        localStorage.removeItem(kAffineLocal);
-      }
-    }
-    const promise: Promise<AffineWorkspace[]> = preload(
-      QueryKey.getWorkspaces,
-      fetcher
-    );
-    return promise
-      .then(async workspaces => {
-        const promises = workspaces.map(workspace => {
-          assertEquals(workspace.flavour, RemWorkspaceFlavour.AFFINE);
-          return workspace;
-        });
-        return Promise.all(promises)
-          .then(workspaces => {
-            workspaces.forEach(workspace => {
-              if (workspace === null) {
-                return;
-              }
-              const exist = dataCenter.workspaces.findIndex(
-                ws => ws.id === workspace.id
-              );
-              if (exist !== -1) {
-                dataCenter.workspaces.splice(exist, 1, workspace);
-                dataCenter.workspaces = [...dataCenter.workspaces];
-              } else {
-                dataCenter.workspaces = [...dataCenter.workspaces, workspace];
-              }
-            });
-            return workspaces;
-          })
-          .then(ws => {
-            const workspaces = ws.filter(Boolean) as AffineWorkspace[];
-            const dump = workspaces.map(workspace => {
-              return {
-                id: workspace.id,
-                type: workspace.type,
-                public: workspace.public,
-                permission: workspace.permission,
-                create_at: workspace.create_at,
-              } satisfies z.infer<typeof schema>;
-            });
-            localStorage.setItem(kAffineLocal, JSON.stringify(dump));
-          });
-      })
-      .catch(error => {
-        console.error(error);
       });
+    },
   },
   PageDetail: ({ currentWorkspace, currentPageId }) => {
     const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);

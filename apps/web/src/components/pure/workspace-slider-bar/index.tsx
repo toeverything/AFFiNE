@@ -217,6 +217,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               currentPath ===
               (currentWorkspaceId && paths.setting(currentWorkspaceId))
             }
+            data-testid="slider-bar-workspace-setting-button"
           >
             <StyledLink
               href={{

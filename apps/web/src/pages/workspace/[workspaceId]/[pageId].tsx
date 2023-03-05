@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
@@ -27,20 +27,6 @@ function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
 const WorkspaceDetail: React.FC = () => {
   const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
-  const [, rerender] = useState(false);
-  // fixme(himself65): this is a hack
-  useEffect(() => {
-    const dispose = currentWorkspace?.blockSuiteWorkspace.slots.pageAdded.on(
-      id => {
-        if (pageId === id) {
-          rerender(prev => !prev);
-        }
-      }
-    );
-    return () => {
-      dispose?.dispose();
-    };
-  }, [currentWorkspace?.blockSuiteWorkspace.slots.pageAdded, pageId]);
   useEffect(() => {
     if (currentWorkspace) {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);
@@ -50,9 +36,6 @@ const WorkspaceDetail: React.FC = () => {
     return <PageLoading />;
   }
   if (!pageId) {
-    return <PageLoading />;
-  }
-  if (!currentWorkspace.blockSuiteWorkspace.getPage(pageId)) {
     return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {

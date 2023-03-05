@@ -1,6 +1,10 @@
-import { atom } from 'jotai';
-import { createStore } from 'jotai';
+import { assertExists } from '@blocksuite/store';
+import { atom, createStore } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import { unstable_batchedUpdates } from 'react-dom';
+
+import { WorkspacePlugins } from '../plugins';
+import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
 
 // workspace necessary atoms
 export const currentWorkspaceIdAtom = atom<string | null>(null);
@@ -27,3 +31,32 @@ export const openCreateWorkspaceModalAtom = atom(false);
 export const openQuickSearchModalAtom = atom(false);
 
 export const jotaiStore = createStore();
+
+type JotaiWorkspace = {
+  id: string;
+  flavour: RemWorkspaceFlavour;
+};
+
+export const jotaiWorkspacesAtom = atomWithStorage<JotaiWorkspace[]>(
+  'jotai-workspaces',
+  []
+);
+
+export const workspacesAtom = atom<Promise<RemWorkspace[]>>(async get => {
+  const flavours: string[] = Object.values(WorkspacePlugins).map(
+    plugin => plugin.flavour
+  );
+  const jotaiWorkspaces = get(jotaiWorkspacesAtom).filter(workspace =>
+    flavours.includes(workspace.flavour)
+  );
+  const workspaces = await Promise.all(
+    jotaiWorkspaces.map(workspace => {
+      const plugin =
+        WorkspacePlugins[workspace.flavour as keyof typeof WorkspacePlugins];
+      assertExists(plugin);
+      const { CRUD } = plugin;
+      return CRUD.get(workspace.id);
+    })
+  );
+  return workspaces.filter(workspace => workspace !== null) as RemWorkspace[];
+});

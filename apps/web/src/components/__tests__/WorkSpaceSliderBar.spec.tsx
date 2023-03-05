@@ -5,22 +5,36 @@ import 'fake-indexeddb/auto';
 
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
+import { createStore, getDefaultStore, Provider } from 'jotai';
 import { useRouter } from 'next/router';
-import { useCallback, useState } from 'react';
-import { describe, expect, test, vi } from 'vitest';
+import React, { useCallback, useState } from 'react';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import createFetchMock from 'vitest-fetch-mock';
 
+import { workspacesAtom } from '../../atoms';
 import { useCurrentPageId } from '../../hooks/current/use-current-page-id';
-import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
+import {
+  currentWorkspaceAtom,
+  useCurrentWorkspace,
+} from '../../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../../hooks/use-blocksuite-workspace-helper';
 import { useWorkspacesHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
-import { pathGenerator } from '../../shared';
+import { pathGenerator, RemWorkspaceFlavour } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
 
 const fetchMocker = createFetchMock(vi);
 
 // fetchMocker.enableMocks();
+let store = getDefaultStore();
+beforeEach(async () => {
+  store = createStore();
+  await store.get(workspacesAtom);
+});
+
+const ProviderWrapper: React.FC<React.PropsWithChildren> = ({ children }) => {
+  return <Provider store={store}>{children}</Provider>;
+};
 
 describe('WorkSpaceSliderBar', () => {
   test('basic', async () => {
@@ -28,10 +42,17 @@ describe('WorkSpaceSliderBar', () => {
 
     const onOpenWorkspaceListModalFn = vi.fn();
     const onOpenQuickSearchModalFn = vi.fn();
-    const mutationHook = renderHook(() => useWorkspacesHelper());
-    const id = mutationHook.result.current.createRemLocalWorkspace('test0');
+    const mutationHook = renderHook(() => useWorkspacesHelper(), {
+      wrapper: ProviderWrapper,
+    });
+    const id = await mutationHook.result.current.createLocalWorkspace('test0');
+    await store.get(workspacesAtom);
+    mutationHook.rerender();
     mutationHook.result.current.createWorkspacePage(id, 'test1');
-    const currentWorkspaceHook = renderHook(() => useCurrentWorkspace());
+    await store.get(currentWorkspaceAtom);
+    const currentWorkspaceHook = renderHook(() => useCurrentWorkspace(), {
+      wrapper: ProviderWrapper,
+    });
     let i = 0;
     const Component = () => {
       const [show, setShow] = useState(false);
@@ -63,11 +84,17 @@ describe('WorkSpaceSliderBar', () => {
     const App = () => {
       return (
         <ThemeProvider>
-          <Component />
+          <ProviderWrapper>
+            <Component />
+          </ProviderWrapper>
         </ThemeProvider>
       );
     };
     currentWorkspaceHook.result.current[1](id);
+    const currentWorkspace = await store.get(currentWorkspaceAtom);
+    expect(currentWorkspace).toBeDefined();
+    expect(currentWorkspace?.flavour).toBe(RemWorkspaceFlavour.LOCAL);
+    expect(currentWorkspace?.id).toBe(id);
     const app = render(<App />);
     const card = await app.findByTestId('current-workspace');
     expect(onOpenWorkspaceListModalFn).toBeCalledTimes(0);

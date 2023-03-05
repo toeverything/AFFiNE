@@ -1,17 +1,15 @@
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
 import {
+  currentWorkspaceIdAtom,
   openCreateWorkspaceModalAtom,
-  openQuickSearchModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { CreateWorkspaceModal } from '../components/pure/create-workspace-modal';
-import QuickSearchModal from '../components/pure/quick-search-modal';
 import { WorkspaceListModal } from '../components/pure/workspace-list-modal';
 import { useCurrentUser } from '../hooks/current/use-current-user';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
 import { apis } from '../shared/apis';
 
@@ -22,28 +20,27 @@ export function Modals() {
   const [openCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
     openCreateWorkspaceModalAtom
   );
-  const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
-    openQuickSearchModalAtom
-  );
+
   const router = useRouter();
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
-  const [currentWorkspace, setCurrentWorkspace] = useCurrentWorkspace();
-  const { createRemLocalWorkspace } = useWorkspacesHelper();
+  const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
+  const setCurrentWorkspace = useSetAtom(currentWorkspaceIdAtom);
+  const { createLocalWorkspace } = useWorkspacesHelper();
 
-  const disableShortCut = router.pathname.startsWith('/404');
   return (
     <>
       <WorkspaceListModal
         user={user}
         workspaces={workspaces}
-        currentWorkspaceId={currentWorkspace?.id ?? null}
+        currentWorkspaceId={currentWorkspaceId}
         open={openWorkspacesModal}
         onClose={useCallback(() => {
           setOpenWorkspacesModal(false);
         }, [setOpenWorkspacesModal])}
         onClickWorkspace={useCallback(
           workspace => {
+            setOpenWorkspacesModal(false);
             setCurrentWorkspace(workspace.id);
             router.push({
               pathname: `/workspace/[workspaceId]/all`,
@@ -51,7 +48,6 @@ export function Modals() {
                 workspaceId: workspace.id,
               },
             });
-            setOpenWorkspacesModal(false);
           },
           [router, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
@@ -74,11 +70,11 @@ export function Modals() {
           setOpenCreateWorkspaceModal(false);
         }, [setOpenCreateWorkspaceModal])}
         onCreate={useCallback(
-          name => {
-            const id = createRemLocalWorkspace(name);
+          async name => {
+            const id = await createLocalWorkspace(name);
             setOpenCreateWorkspaceModal(false);
             setOpenWorkspacesModal(false);
-            router.push({
+            return router.push({
               pathname: '/workspace/[workspaceId]/all',
               query: {
                 workspaceId: id,
@@ -86,22 +82,13 @@ export function Modals() {
             });
           },
           [
-            createRemLocalWorkspace,
+            createLocalWorkspace,
             router,
             setOpenCreateWorkspaceModal,
             setOpenWorkspacesModal,
           ]
         )}
       />
-      {currentWorkspace?.blockSuiteWorkspace && (
-        <QuickSearchModal
-          enableShortCut={!disableShortCut}
-          blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
-          open={openQuickSearchModal}
-          setOpen={setOpenQuickSearchModalAtom}
-          router={router}
-        />
-      )}
     </>
   );
 }

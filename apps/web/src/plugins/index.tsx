@@ -1,12 +1,10 @@
-import { assertExists } from '@blocksuite/store';
 import React from 'react';
 
-import { refreshDataCenter } from '../hooks/use-workspaces';
+import { jotaiStore, jotaiWorkspacesAtom } from '../atoms';
 import {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
   LoadPriority,
-  RemWorkspace,
   RemWorkspaceFlavour,
   SettingPanel,
 } from '../shared';
@@ -45,19 +43,14 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   // Plugin will be loaded according to the priority
   loadPriority: LoadPriority;
   // Fetch necessary data for the first render
-  prefetchData: (
-    dataCenter: {
-      workspaces: RemWorkspace[];
-      callbacks: Set<() => void>;
-    },
-    signal?: AbortSignal
-  ) => Promise<void>;
-
-  createWorkspace: (
-    blockSuiteWorkspace: BlockSuiteWorkspace
-  ) => Promise<string>;
-
-  deleteWorkspace: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
+  CRUD: {
+    create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;
+    delete: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
+    get: (workspaceId: string) => Promise<FlavourToWorkspace[Flavour] | null>;
+    // not supported yet
+    // update: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
+    list: () => Promise<FlavourToWorkspace[Flavour][]>;
+  };
 
   //#region UI
   PageDetail: React.FC<PageDetailProps<Flavour>>;
@@ -73,18 +66,26 @@ export const WorkspacePlugins = {
   [Key in RemWorkspaceFlavour]: WorkspacePlugin<Key>;
 };
 
+/**
+ * Transform workspace from one flavour to another
+ *
+ * The logic here is to delete the old workspace and create a new one.
+ */
 export async function transformWorkspace<
   From extends RemWorkspaceFlavour,
   To extends RemWorkspaceFlavour
 >(from: From, to: To, workspace: FlavourToWorkspace[From]): Promise<string> {
   // fixme: type cast
-  await WorkspacePlugins[from].deleteWorkspace(workspace as any);
-  const newId = await WorkspacePlugins[to].createWorkspace(
+  await WorkspacePlugins[from].CRUD.delete(workspace as any);
+  const newId = await WorkspacePlugins[to].CRUD.create(
     workspace.blockSuiteWorkspace
   );
-  // refresh the data center
-  dataCenter.workspaces = [];
-  await refreshDataCenter();
-  assertExists(dataCenter.workspaces.some(w => w.id === newId));
+  const workspaces = jotaiStore.get(jotaiWorkspacesAtom);
+  const idx = workspaces.findIndex(ws => ws.id === workspace.id);
+  workspaces.splice(idx, 1, {
+    id: newId,
+    flavour: to,
+  });
+  jotaiStore.set(jotaiWorkspacesAtom, [...workspaces]);
   return newId;
 }
