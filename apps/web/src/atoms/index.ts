@@ -48,30 +48,26 @@ export const jotaiWorkspacesAtom = atomWithStorage<JotaiWorkspace[]>(
 jotaiWorkspacesAtom.onMount = set => {
   logger.info('mount');
   const controller = new AbortController();
-  const lists = Object.values(WorkspacePlugins).map(plugin => plugin.CRUD.list);
-  Promise.all(
-    lists.map(list => {
+  const lists = Object.values(WorkspacePlugins)
+    .sort((a, b) => a.loadPriority - b.loadPriority)
+    .map(({ CRUD }) => CRUD.list);
+  async function fetch() {
+    const items = [];
+    for (const list of lists) {
       try {
-        return list();
+        const item = await list();
+        items.push(...item.map(x => ({ id: x.id, flavour: x.flavour })));
       } catch (e) {
         logger.error('list data error:', e);
-        return [];
       }
-    })
-  ).then(result => {
-    const items = result.flatMap(v => [...v]);
+    }
     if (controller.signal.aborted) {
-      logger.info('abort');
       return;
     }
-    set(
-      items.map(item => ({
-        id: item.id,
-        flavour: item.flavour,
-      }))
-    );
-    logger.info('set all done');
-  });
+    set([...items]);
+    logger.info('mount first data:', items);
+  }
+  fetch();
   return () => {
     controller.abort();
     logger.info('unmount');
