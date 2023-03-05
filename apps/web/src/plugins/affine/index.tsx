@@ -70,6 +70,8 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       return workspace;
     },
     list: async () => {
+      // fixme: refactor auth check
+      if (!apis.auth.isLogin) return [];
       return await apis.getWorkspaces().then(workspaces => {
         return workspaces.map(workspace => {
           const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
