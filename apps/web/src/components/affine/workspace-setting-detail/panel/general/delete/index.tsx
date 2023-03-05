@@ -67,6 +67,7 @@ export const WorkspaceDeleteModal = ({
         <StyledInputContent>
           <Input
             onChange={setDeleteStr}
+            data-testid="delete-workspace-input"
             placeholder={t('Delete Workspace placeholder')}
             value={deleteStr}
             width={284}
@@ -78,6 +79,7 @@ export const WorkspaceDeleteModal = ({
             {t('Cancel')}
           </Button>
           <Button
+            data-testid="delete-workspace-confirm-button"
             disabled={!allowDelete}
             onClick={handleDelete}
             type="danger"
