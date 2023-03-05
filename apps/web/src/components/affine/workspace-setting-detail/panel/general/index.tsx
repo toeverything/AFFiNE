@@ -1,9 +1,9 @@
 import { Button, FlexWrapper, MuiFade } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { assertExists } from '@blocksuite/store';
 import React, { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
+import { useBlockSuiteWorkspaceBlobUrl } from '../../../../../hooks/use-blocksuite-workspace-blob-url';
 import { useBlockSuiteWorkspaceName } from '../../../../../hooks/use-blocksuite-workspace-name';
 import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Upload } from '../../../../pure/file-upload';
@@ -43,14 +43,9 @@ export const GeneralPanel: React.FC<PanelProps> = ({
     setName(name);
   };
 
-  const fileChange = async (file: File) => {
-    const blob = new Blob([file], { type: file.type });
-    const blobs = await workspace.blockSuiteWorkspace.blobs;
-    assertExists(blobs);
-    const blobId = await blobs.set(blob);
-    workspace.blockSuiteWorkspace.meta.setAvatar(blobId);
-  };
-
+  const [, update] = useBlockSuiteWorkspaceBlobUrl(
+    workspace.blockSuiteWorkspace
+  );
   return (
     <>
       <StyledRow>
@@ -59,7 +54,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
           {isOwner ? (
             <Upload
               accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-              fileChange={fileChange}
+              fileChange={update}
               data-testid="upload-avatar"
             >
               <>

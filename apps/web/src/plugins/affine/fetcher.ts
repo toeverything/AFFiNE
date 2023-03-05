@@ -1,3 +1,6 @@
+import { assertExists } from '@blocksuite/store';
+
+import { jotaiStore, workspacesAtom } from '../../atoms';
 import { createAffineProviders } from '../../blocksuite';
 import { Unreachable } from '../../components/affine/affine-error-eoundary';
 import { AffineWorkspace, RemWorkspaceFlavour } from '../../shared';
@@ -34,6 +37,20 @@ export const fetcher = async (
         workspace_id: query[1],
         email: query[2],
       });
+    } else if (query[0] === QueryKey.getImage) {
+      const workspaceId = query[1];
+      const key = query[2];
+      if (typeof key !== 'string') {
+        throw new TypeError('key must be a string');
+      }
+      const workspaces = await jotaiStore.get(workspacesAtom);
+      const workspace = workspaces.find(({ id }) => id === workspaceId);
+      assertExists(workspace);
+      const storage = await workspace.blockSuiteWorkspace.blobs;
+      if (!storage) {
+        return null;
+      }
+      return storage.get(key);
     }
   } else {
     if (query === QueryKey.getWorkspaces) {
@@ -60,6 +77,7 @@ export const fetcher = async (
 };
 
 export const QueryKey = {
+  getImage: 'getImage',
   getUser: 'getUser',
   getWorkspaces: 'getWorkspaces',
   downloadWorkspace: 'downloadWorkspace',

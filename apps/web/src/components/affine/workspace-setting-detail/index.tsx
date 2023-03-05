@@ -1,6 +1,7 @@
 import { useTranslation } from '@affine/i18n';
 import React, {
   MouseEvent,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -152,7 +153,10 @@ export const WorkspaceSettingDetail: React.FC<
         />
       </StyledTabButtonWrapper>
       <StyledSettingContent>
-        <Component {...props} key={currentTab} data-tab-ui={currentTab} />
+        {/* todo: add skeleton */}
+        <Suspense fallback="loading panel...">
+          <Component {...props} key={currentTab} data-tab-ui={currentTab} />
+        </Suspense>
       </StyledSettingContent>
     </StyledSettingContainer>
   );
