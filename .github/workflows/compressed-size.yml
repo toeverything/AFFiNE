@@ -22,9 +22,13 @@ jobs:
           key: ${{ runner.os }}-affine-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
             ${{ runner.os }}-affine-${{ hashFiles('**/pnpm-lock.yaml') }}-
+      - name: Build
+        run: |
+          pnpm run build
       - uses: preactjs/compressed-size-action@v2
         env:
           ENABLE_DEBUG_PAGE: ''
         with:
           repo-token: '${{ secrets.GITHUB_TOKEN }}'
-          pattern: 'apps/web/.next/**/*.{js,css,html,json}'
+          build-script: 'export'
+          pattern: 'apps/web/out/**/*.{js,css,html,json}'
