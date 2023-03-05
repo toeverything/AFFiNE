@@ -1,10 +1,10 @@
-# Building AFFiNE
+# Building AFFiNE Web
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Setup Environment](#setup-environment)
-- [Play with Playground](#play-with-playground)
+- [Start Development Server](#start-development-server)
 - [Testing](#testing)
 
 ## Prerequisites
@@ -33,13 +33,15 @@ nvm use --lts
 pnpm install
 ```
 
-## Play with Playground
+## Start Development Server
 
 ```sh
 pnpm dev
 ```
 
 The playground page should work at [http://localhost:8080/](http://localhost:8080/)
+
+For more details, see [apps/web/README.md](../apps/web/README.md)
 
 ## Testing
 
