@@ -21,7 +21,6 @@ const profileTarget = {
   stage: '',
   pro: 'http://pathfinder.affine.pro',
   local: '127.0.0.1:3000',
-  rem: 'stage.affine.pro',
 };
 
 const getRedirectConfig = profile => {
