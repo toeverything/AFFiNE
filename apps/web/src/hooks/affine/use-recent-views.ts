@@ -19,12 +19,16 @@ export function useRecentlyViewed() {
 
   useEffect(() => {
     const handleRouteChange = () => {
-      if (pageId) {
+      if (pageId && meta) {
         const workspaceRecentlyViewed =
           recentlyViewed[workspaceId] || ([] as WorkspaceRecentViews[string]);
 
         const newRecentlyViewed = [
-          { title: meta?.title || '', id: pageId as string },
+          {
+            title: meta.title || 'Untitled',
+            id: pageId as string,
+            mode: meta.mode || 'page',
+          },
           ...workspaceRecentlyViewed
             .filter(item => item.id !== pageId)
             .slice(0, 2),
@@ -42,11 +46,11 @@ export function useRecentlyViewed() {
     };
   }, [
     pageId,
-    meta?.title,
     recentlyViewed,
     router.events,
     setRecentlyViewed,
     workspaceId,
+    meta,
   ]);
 
   return recentlyViewed[workspaceId] || [];

@@ -62,7 +62,7 @@ export const workspacesAtom = atom<Promise<RemWorkspace[]>>(async get => {
 
 export type WorkspaceRecentViews = Record<
   string,
-  { title: string; id: string }[]
+  { title: string; id: string; mode: 'page' | 'edgeless' }[]
 >;
 
 export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(

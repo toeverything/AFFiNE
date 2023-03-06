@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import { useRecentlyViewed } from '../../../hooks/affine/use-recent-views';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { RemWorkspace } from '../../../shared';
 import { Arrow } from './icons';
@@ -118,6 +119,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
       openPage(pageId);
     }
   }, [createPage, openPage]);
+  useRecentlyViewed();
   return (
     <>
       <StyledSliderBar show={isPublicWorkspace ? false : show}>
