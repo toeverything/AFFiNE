@@ -197,9 +197,11 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
             <div id="toolWrapper" style={{ marginBottom: '12px' }}>
               {/* Slot for block hub */}
             </div>
-            <HelpIsland
-              showList={router.query.pageId ? undefined : ['contact']}
-            />
+            {!isPublicWorkspace && (
+              <HelpIsland
+                showList={router.query.pageId ? undefined : ['contact']}
+              />
+            )}
           </StyledToolWrapper>
         </StyledWrapper>
       </StyledPage>

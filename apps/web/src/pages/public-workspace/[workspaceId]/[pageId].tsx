@@ -86,13 +86,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
           editor.readonly = true;
         }}
         header={
-          <NavContainer
-            // fixme(himself65): this is a hack to make the breadcrumbs work
-            style={{
-              position: 'absolute',
-              left: '0',
-            }}
-          >
+          <NavContainer>
             <Breadcrumbs>
               <StyledBreadcrumbs
                 href={`/public-workspace/${blockSuiteWorkspace.room}`}
