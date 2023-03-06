@@ -21,6 +21,7 @@ export type BlockSuiteEditorHeaderProps = React.PropsWithChildren<{
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
   isPublic?: boolean;
+  isPreview?: boolean;
 }>;
 
 export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
@@ -28,6 +29,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   pageId,
   children,
   isPublic,
+  isPreview,
 }) => {
   const page = blockSuiteWorkspace.getPage(pageId);
   // fixme(himself65): remove this atom and move it to props
@@ -46,7 +48,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
     <Header
       rightItems={
         // fixme(himself65): other right items not supported in public mode
-        isPublic
+        isPublic || isPreview
           ? ['themeModeSwitch']
           : isTrash
           ? ['trashButtonGroup']

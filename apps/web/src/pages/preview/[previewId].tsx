@@ -5,11 +5,15 @@ import {
   NextPage,
 } from 'next';
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { PageLoading } from '../../components/pure/loading';
-import { StyledPage, StyledWrapper } from '../../layouts/styles';
+import {
+  StyledPage,
+  StyledToolWrapper,
+  StyledWrapper,
+} from '../../layouts/styles';
 import { BlockSuiteWorkspace } from '../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
@@ -52,6 +56,7 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
       <StyledPage>
         <StyledWrapper>
           <PageDetailEditor
+            isPreview
             blockSuiteWorkspace={blockSuiteWorkspace}
             pageId="preview"
             onInit={(page, editor) => {
@@ -71,6 +76,12 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
               });
             }}
           />
+          <StyledToolWrapper>
+            {/* fixme(himself65): remove this */}
+            <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+              {/* Slot for block hub */}
+            </div>
+          </StyledToolWrapper>
         </StyledWrapper>
       </StyledPage>
     </>

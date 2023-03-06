@@ -12,6 +12,7 @@ import { BlockSuiteEditorHeader } from './blocksuite/header';
 
 export type PageDetailEditorProps = {
   isPublic?: boolean;
+  isPreview?: boolean;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
   onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
@@ -34,6 +35,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   onLoad,
   header,
   isPublic,
+  isPreview,
 }) => {
   const page = blockSuiteWorkspace.getPage(pageId);
   if (!page) {
@@ -51,6 +53,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
       </Helmet>
       <BlockSuiteEditorHeader
         isPublic={isPublic}
+        isPreview={isPreview}
         blockSuiteWorkspace={blockSuiteWorkspace}
         pageId={pageId}
       >

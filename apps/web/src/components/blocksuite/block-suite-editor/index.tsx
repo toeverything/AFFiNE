@@ -97,16 +97,18 @@ export const BlockSuiteEditor = (props: EditorProps) => {
     if (!editor || !container || !page) {
       return;
     }
+    if (page.awarenessStore.getFlag('enable_block_hub')) {
+      editor.createBlockHub().then(blockHub => {
+        if (blockHubRef.current) {
+          blockHubRef.current.remove();
+        }
+        blockHubRef.current = blockHub;
+        const toolWrapper = document.querySelector('#toolWrapper');
+        assertExists(toolWrapper);
+        toolWrapper.appendChild(blockHub);
+      });
+    }
 
-    editor.createBlockHub().then(blockHub => {
-      if (blockHubRef.current) {
-        blockHubRef.current.remove();
-      }
-      blockHubRef.current = blockHub;
-      const toolWrapper = document.querySelector('#toolWrapper');
-      assertExists(toolWrapper);
-      toolWrapper.appendChild(blockHub);
-    });
     container.appendChild(editor);
     return () => {
       blockHubRef.current?.remove();
