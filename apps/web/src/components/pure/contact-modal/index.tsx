@@ -75,7 +75,7 @@ export const ContactModal = ({
       icon: <DocIcon />,
       title: t('Check Our Docs'),
       subTitle: 'Open Source',
-      link: 'https://github.com/toeverything/AFFiNE',
+      link: 'https://community.affine.pro',
     },
   ];
   const date = new Date();
