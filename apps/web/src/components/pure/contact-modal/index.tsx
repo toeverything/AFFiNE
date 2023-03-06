@@ -5,8 +5,8 @@ import {
   ModalWrapper,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { atom, useAtomValue } from 'jotai';
 
-import logo from './affine-text-logo.png';
 import {
   DiscordIcon,
   DocIcon,
@@ -59,6 +59,8 @@ type TransitionsModalProps = {
   onClose: () => void;
 };
 
+const logoImgAtom = atom(import('./affine-text-logo.png'));
+
 export const ContactModal = ({
   open,
   onClose,
@@ -80,11 +82,12 @@ export const ContactModal = ({
   ];
   const date = new Date();
   const year = date.getFullYear();
+  const logo = useAtomValue(logoImgAtom);
   return (
     <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
       <ModalWrapper width={720} height={436} style={{ letterSpacing: '1px' }}>
         <StyledModalHeader>
-          <StyledLogo src={logo.src} alt="" />
+          <StyledLogo src={logo.default.src} alt="" />
 
           <ModalCloseButton
             onClick={() => {
