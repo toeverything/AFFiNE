@@ -23,6 +23,7 @@
     "@emotion/react": "^11.10.6",
     "@emotion/server": "^11.10.0",
     "@emotion/styled": "^11.10.6",
+    "@fontsource/jetbrains-mono": "^4.5.12",
     "@mui/material": "^5.11.11",
     "@mui/styled-engine-sc": "^5.11.11",
     "cmdk": "^0.1.22",

@@ -1,4 +1,5 @@
 import '@blocksuite/editor/themes/affine.css';
+import '@fontsource/jetbrains-mono';
 import '../styles/globals.css';
 
 import { config, setupGlobal } from '@affine/env';

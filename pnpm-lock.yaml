@@ -154,6 +154,7 @@ importers:
       '@emotion/react': ^11.10.6
       '@emotion/server': ^11.10.0
       '@emotion/styled': ^11.10.6
+      '@fontsource/jetbrains-mono': ^4.5.12
       '@mui/material': ^5.11.11
       '@mui/styled-engine-sc': ^5.11.11
       '@perfsee/webpack': ^1.3.0
@@ -205,6 +206,7 @@ importers:
       '@emotion/react': 11.10.6_pmekkgnqduwlme35zpnqhenc34
       '@emotion/server': 11.10.0
       '@emotion/styled': 11.10.6_oouaibmszuch5k64ms7uxp2aia
+      '@fontsource/jetbrains-mono': 4.5.12
       '@mui/material': 5.11.11_xqeqsl5kvjjtyxwyi3jhw3yuli
       '@mui/styled-engine-sc': 5.11.11_styled-components@5.3.8
       cmdk: 0.1.22_zula6vjvt3wdocc4mwcxqa6nzi
@@ -2942,6 +2944,10 @@ packages:
 
   /@firebase/webchannel-wrapper/0.9.0:
     resolution: {integrity: sha512-BpiZLBWdLFw+qFel9p3Zs1jD6QmH7Ii4aTDu6+vx8ShdidChZUXqDhYJly4ZjSgQh54miXbBgBrk0S+jTIh/Qg==}
+    dev: false
+
+  /@fontsource/jetbrains-mono/4.5.12:
+    resolution: {integrity: sha512-LJF1ala1/u+wXZmESFqIk08FA9yGX4/uAAleCHmXUMgEjvNAYFHUQQ7eK5hQQoBOwh99cU5suTrqYqEkgzwzPA==}
     dev: false
 
   /@grpc/grpc-js/1.7.3:

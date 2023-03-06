@@ -64,7 +64,7 @@ export const getLightTheme = (
 
       family: `Avenir Next, Poppins, ${basicFontFamily}`,
       numberFamily: `Roboto Mono, ${basicFontFamily}`,
-      codeFamily: `Space Mono, Consolas, Menlo, Monaco, Courier, monospace, ${basicFontFamily}`,
+      codeFamily: `JetBrains Mono, Space Mono, Consolas, Menlo, Monaco, Courier, monospace, ${basicFontFamily}`,
       lineHeight: 'calc(1em + 8px)',
     },
     zIndex: {
