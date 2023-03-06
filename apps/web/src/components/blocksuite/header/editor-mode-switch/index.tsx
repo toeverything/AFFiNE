@@ -118,7 +118,7 @@ export const EditorModeSwitch: React.FC<EditorModeSwitchProps> = ({
     >
       <AnimateRadioItem
         isLeft={true}
-        label={t('Paper')}
+        label={t('Page')}
         icon={<PaperItem />}
         active={mode === 'page'}
         status={radioItemStatus.left}
