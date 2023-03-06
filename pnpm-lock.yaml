@@ -13,6 +13,7 @@ importers:
 
   .:
     specifiers:
+      '@perfsee/sdk': ^1.3.0
       '@playwright/test': ^1.31.1
       '@testing-library/react': ^14.0.0
       '@types/eslint': ^8.21.1
@@ -45,6 +46,7 @@ importers:
       vitest: ^0.28.5
       vitest-fetch-mock: ^0.2.2
     devDependencies:
+      '@perfsee/sdk': 1.3.0_typanion@3.12.1
       '@playwright/test': 1.31.1
       '@testing-library/react': 14.0.0_biqbaboplfbrettd7655fr4n2y
       '@types/eslint': 8.21.1
@@ -3646,6 +3648,22 @@ packages:
       - supports-color
     dev: true
 
+  /@perfsee/sdk/1.3.0_typanion@3.12.1:
+    resolution: {integrity: sha512-Yh9JXedRxeC2pSKZXT/VKaVUcNCmaqKhs9B8ARnqAsJVcQfcK/yWkefF+5cD+PyzLQ3QGJbdtx/+lIORSjO7Uw==}
+    hasBin: true
+    dependencies:
+      chalk: 4.1.2
+      clipanion: 3.2.0_typanion@3.12.1
+      graphql: 16.6.0
+      lodash: 4.17.21
+      node-fetch: 2.6.9
+      simple-git: 3.16.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+      - typanion
+    dev: true
+
   /@perfsee/utils/1.3.0:
     resolution: {integrity: sha512-Qla/tiqM6Ct5fMEFfWXoRTPXo/T/n5lkRd0yHl3jmSUMvDhIH0EIAzL0L5IoVdha8H4de5ly/FhVv2p9zZ3o9g==}
     dependencies:
@@ -6557,6 +6575,14 @@ packages:
   /client-only/0.0.1:
     resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
 
+  /clipanion/3.2.0_typanion@3.12.1:
+    resolution: {integrity: sha512-XaPQiJQZKbyaaDbv5yR/cAt/ORfZfENkr4wGQj+Go/Uf/65ofTQBCPirgWFeJctZW24V3mxrFiEnEmqBflrJYA==}
+    peerDependencies:
+      typanion: '*'
+    dependencies:
+      typanion: 3.12.1
+    dev: true
+
   /cliui/6.0.0:
     resolution: {integrity: sha512-t6wbgtoCXvAzst7QgXxJYqPt0usEfbgQdftEPbLL/cvv6HPE5VgvqCuAIDR0NgU52ds6rFwqrgakNLrHEjCbrQ==}
     dependencies:
@@ -8667,6 +8693,11 @@ packages:
 
   /grapheme-splitter/1.0.4:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
+    dev: true
+
+  /graphql/16.6.0:
+    resolution: {integrity: sha512-KPIBPDlW7NxrbT/eh4qPXz5FiFdL5UbaA0XUNz2Rp3Z3hqBSkbj0GVjwFDztsWVauZUWsbKHgMg++sk8UX0bkw==}
+    engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
     dev: true
 
   /gunzip-maybe/1.4.2:
@@ -12536,6 +12567,10 @@ packages:
     dependencies:
       domino: 2.1.6
     dev: false
+
+  /typanion/3.12.1:
+    resolution: {integrity: sha512-3SJF/czpzqq6G3lprGFLa6ps12yb1uQ1EmitNnep2fDMNh1aO/Zbq9sWY+3lem0zYb2oHJnQWyabTGUZ+L1ScQ==}
+    dev: true
 
   /type-check/0.3.2:
     resolution: {integrity: sha512-ZCmOJdvOWDBYJlzAoFkC+Q0+bUyEOS1ltgp1MGU03fqHG+dbi9tBFU2Rd9QKiDZFAYrhPh2JUf7rZRIuHRKtOg==}
