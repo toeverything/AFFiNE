@@ -1,31 +1,41 @@
 import { useAtom } from 'jotai';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
-import { workspaceRecentViewsAtom } from '../../atoms';
+import { WorkspaceRecentViews, workspaceRecentViewsAtom } from '../../atoms';
+import { useCurrentWorkspace } from '../current/use-current-workspace';
+import { usePageMeta } from '../use-page-meta';
 
-export const useRecentlyViewed = (workspaceId: string) => {
+export function useRecentlyViewed() {
+  const router = useRouter();
+  const [workspace] = useCurrentWorkspace();
+  const workspaceId = workspace?.id || '';
+  const blocksuiteWorkspace = workspace?.blockSuiteWorkspace || null;
+  const id = router.query.pageId as string;
+  const meta = usePageMeta(blocksuiteWorkspace).find(meta => meta.id === id);
   const [recentlyViewed, setRecentlyViewed] = useAtom(workspaceRecentViewsAtom);
 
-  const workspaceRecent = recentlyViewed[workspaceId] || [];
-  const MAX_RECENT_ITEMS = 3;
+  useEffect(() => {
+    router.events.on('routeChangeComplete', () => {
+      if (router.query.pageId) {
+        const workspaceRecentlyViewed =
+          recentlyViewed[workspaceId] || ([] as WorkspaceRecentViews[string]);
 
-  const addRecentlyViewed = ({ title, id }: { title: string; id: string }) => {
-    const workspaceRecentCopy = [...workspaceRecent];
+        const newRecentlyViewed = [
+          { title: meta?.title || '', id: id },
+          ...workspaceRecentlyViewed.filter(item => item.id !== id).slice(0, 2),
+        ];
 
-    const itemIndex = workspaceRecentCopy.findIndex(item => item.id === id);
-    if (itemIndex !== -1) {
-      workspaceRecentCopy.splice(itemIndex, 1);
-    }
+        setRecentlyViewed({
+          ...recentlyViewed,
+          [workspaceId]: newRecentlyViewed,
+        });
+      }
+    });
+    return () => {
+      router.events.off('routeChangeComplete', () => {});
+    };
+  }, [router, setRecentlyViewed, recentlyViewed, workspaceId, meta?.title, id]);
 
-    workspaceRecentCopy.unshift({ title, id });
-    if (workspaceRecentCopy.length > MAX_RECENT_ITEMS) {
-      workspaceRecentCopy.pop();
-    }
-
-    setRecentlyViewed(prev => ({
-      ...prev,
-      [workspaceId]: workspaceRecentCopy,
-    }));
-  };
-
-  return { recentlyViewed: workspaceRecent, addRecentlyViewed };
-};
+  return recentlyViewed[workspaceId] || [];
+}
