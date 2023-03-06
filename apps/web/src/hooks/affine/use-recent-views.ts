@@ -11,19 +11,23 @@ export function useRecentlyViewed() {
   const [workspace] = useCurrentWorkspace();
   const workspaceId = workspace?.id || '';
   const blocksuiteWorkspace = workspace?.blockSuiteWorkspace || null;
-  const id = router.query.pageId as string;
-  const meta = usePageMeta(blocksuiteWorkspace).find(meta => meta.id === id);
+  const pageId = router.query.pageId;
+  const meta = usePageMeta(blocksuiteWorkspace).find(
+    meta => meta.id === pageId
+  );
   const [recentlyViewed, setRecentlyViewed] = useAtom(workspaceRecentViewsAtom);
 
   useEffect(() => {
-    router.events.on('routeChangeComplete', () => {
-      if (router.query.pageId) {
+    const handleRouteChange = () => {
+      if (pageId) {
         const workspaceRecentlyViewed =
           recentlyViewed[workspaceId] || ([] as WorkspaceRecentViews[string]);
 
         const newRecentlyViewed = [
-          { title: meta?.title || '', id: id },
-          ...workspaceRecentlyViewed.filter(item => item.id !== id).slice(0, 2),
+          { title: meta?.title || '', id: pageId as string },
+          ...workspaceRecentlyViewed
+            .filter(item => item.id !== pageId)
+            .slice(0, 2),
         ];
 
         setRecentlyViewed({
@@ -31,11 +35,19 @@ export function useRecentlyViewed() {
           [workspaceId]: newRecentlyViewed,
         });
       }
-    });
-    return () => {
-      router.events.off('routeChangeComplete', () => {});
     };
-  }, [router, setRecentlyViewed, recentlyViewed, workspaceId, meta?.title, id]);
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [
+    pageId,
+    meta?.title,
+    recentlyViewed,
+    router.events,
+    setRecentlyViewed,
+    workspaceId,
+  ]);
 
   return recentlyViewed[workspaceId] || [];
 }
