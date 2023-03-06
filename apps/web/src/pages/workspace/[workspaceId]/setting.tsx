@@ -120,7 +120,8 @@ const SettingPage: NextPageWithLayout = () => {
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     return <PageLoading />;
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    const Setting = WorkspacePlugins[currentWorkspace.flavour].SettingsDetail;
+    const Setting =
+      WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
     return (
       <>
         <Helmet>
@@ -139,7 +140,8 @@ const SettingPage: NextPageWithLayout = () => {
       </>
     );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
-    const Setting = WorkspacePlugins[currentWorkspace.flavour].SettingsDetail;
+    const Setting =
+      WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
     return (
       <>
         <WorkspaceTitle icon={<SettingsIcon />}>

@@ -39,12 +39,12 @@ const WorkspaceDetail: React.FC = () => {
     return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].PageDetail;
+    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
       <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
     );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
-    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].PageDetail;
+    const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
       <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
     );

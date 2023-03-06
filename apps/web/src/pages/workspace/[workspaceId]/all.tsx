@@ -47,7 +47,7 @@ const AllPage: NextPageWithLayout = () => {
     return <PageLoading />;
   }
   if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    const PageList = WorkspacePlugins[currentWorkspace.flavour].PageList;
+    const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
         <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
@@ -58,7 +58,7 @@ const AllPage: NextPageWithLayout = () => {
       </>
     );
   } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
-    const PageList = WorkspacePlugins[currentWorkspace.flavour].PageList;
+    const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
         <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>

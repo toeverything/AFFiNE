@@ -51,12 +51,11 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
     // update: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
     list: () => Promise<FlavourToWorkspace[Flavour][]>;
   };
-
-  //#region UI
-  PageDetail: React.FC<PageDetailProps<Flavour>>;
-  PageList: React.FC<PageListProps<Flavour>>;
-  SettingsDetail: React.FC<SettingProps<Flavour>>;
-  //#endregion
+  UI: {
+    PageDetail: React.FC<PageDetailProps<Flavour>>;
+    PageList: React.FC<PageListProps<Flavour>>;
+    SettingsDetail: React.FC<SettingProps<Flavour>>;
+  };
 }
 
 export const WorkspacePlugins = {

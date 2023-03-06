@@ -104,46 +104,48 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       return data;
     },
   },
-  PageDetail: ({ currentWorkspace, currentPageId }) => {
-    const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-    if (!page) {
-      throw new PageNotFoundError(
-        currentWorkspace.blockSuiteWorkspace,
-        currentPageId
+  UI: {
+    PageDetail: ({ currentWorkspace, currentPageId }) => {
+      const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
+      if (!page) {
+        throw new PageNotFoundError(
+          currentWorkspace.blockSuiteWorkspace,
+          currentPageId
+        );
+      }
+      return (
+        <>
+          <PageDetailEditor
+            pageId={currentPageId}
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        </>
       );
-    }
-    return (
-      <>
-        <PageDetailEditor
-          pageId={currentPageId}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+    },
+    PageList: ({ blockSuiteWorkspace, onOpenPage }) => {
+      return (
+        <BlockSuitePageList
+          onOpenPage={onOpenPage}
+          blockSuiteWorkspace={blockSuiteWorkspace}
         />
-      </>
-    );
-  },
-  PageList: ({ blockSuiteWorkspace, onOpenPage }) => {
-    return (
-      <BlockSuitePageList
-        onOpenPage={onOpenPage}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-      />
-    );
-  },
-  SettingsDetail: ({
-    currentWorkspace,
-    onChangeTab,
-    currentTab,
-    onDeleteWorkspace,
-    onTransformWorkspace,
-  }) => {
-    return (
-      <WorkspaceSettingDetail
-        onDeleteWorkspace={onDeleteWorkspace}
-        onChangeTab={onChangeTab}
-        currentTab={currentTab}
-        workspace={currentWorkspace}
-        onTransferWorkspace={onTransformWorkspace}
-      />
-    );
+      );
+    },
+    SettingsDetail: ({
+      currentWorkspace,
+      onChangeTab,
+      currentTab,
+      onDeleteWorkspace,
+      onTransformWorkspace,
+    }) => {
+      return (
+        <WorkspaceSettingDetail
+          onDeleteWorkspace={onDeleteWorkspace}
+          onChangeTab={onChangeTab}
+          currentTab={currentTab}
+          workspace={currentWorkspace}
+          onTransferWorkspace={onTransformWorkspace}
+        />
+      );
+    },
   },
 };
