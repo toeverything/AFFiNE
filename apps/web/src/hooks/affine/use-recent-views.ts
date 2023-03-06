@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { WorkspaceRecentViews, workspaceRecentViewsAtom } from '../../atoms';
 import { useCurrentWorkspace } from '../current/use-current-workspace';
@@ -16,42 +16,33 @@ export function useRecentlyViewed() {
     meta => meta.id === pageId
   );
   const [recentlyViewed, setRecentlyViewed] = useAtom(workspaceRecentViewsAtom);
+  const prevMeta = useRef(meta);
 
   useEffect(() => {
-    const handleRouteChange = () => {
-      if (pageId && meta) {
-        const workspaceRecentlyViewed =
-          recentlyViewed[workspaceId] || ([] as WorkspaceRecentViews[string]);
+    if (pageId && meta && prevMeta.current !== meta) {
+      const workspaceRecentlyViewed =
+        recentlyViewed[workspaceId] || ([] as WorkspaceRecentViews[string]);
 
-        const newRecentlyViewed = [
-          {
-            title: meta.title || 'Untitled',
-            id: pageId as string,
-            mode: meta.mode || 'page',
-          },
-          ...workspaceRecentlyViewed
-            .filter(item => item.id !== pageId)
-            .slice(0, 2),
-        ];
+      const newRecentlyViewed = [
+        {
+          title: meta.title || 'Untitled',
+          id: pageId as string,
+          mode: meta.mode || 'page',
+        },
+        ...workspaceRecentlyViewed
+          .filter(item => item.id !== pageId)
+          .slice(0, 2),
+      ];
+      console.log('newRecentlyViewed', newRecentlyViewed);
 
-        setRecentlyViewed({
-          ...recentlyViewed,
-          [workspaceId]: newRecentlyViewed,
-        });
-      }
-    };
-    router.events.on('routeChangeComplete', handleRouteChange);
-    return () => {
-      router.events.off('routeChangeComplete', handleRouteChange);
-    };
-  }, [
-    pageId,
-    recentlyViewed,
-    router.events,
-    setRecentlyViewed,
-    workspaceId,
-    meta,
-  ]);
+      setRecentlyViewed({
+        ...recentlyViewed,
+        [workspaceId]: newRecentlyViewed,
+      });
+
+      prevMeta.current = meta;
+    }
+  }, [pageId, meta, setRecentlyViewed, workspaceId, recentlyViewed]);
 
   return recentlyViewed[workspaceId] || [];
 }
