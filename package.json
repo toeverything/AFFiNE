@@ -29,6 +29,7 @@
     "*.{ts,tsx,js,jsx}": "npx eslint --cache --fix"
   },
   "devDependencies": {
+    "@perfsee/sdk": "^1.3.0",
     "@playwright/test": "^1.31.1",
     "@testing-library/react": "^14.0.0",
     "@types/eslint": "^8.21.1",
