@@ -75,7 +75,7 @@ export const ContactModal = ({
       icon: <DocIcon />,
       title: t('Check Our Docs'),
       subTitle: 'Open Source',
-      link: 'https://github.com/toeverything/AFFiNE',
+      link: 'https://community.affine.pro',
     },
   ];
   const date = new Date();
@@ -124,8 +124,12 @@ export const ContactModal = ({
         <StyledModalFooter>
           <p>Copyright &copy; {year} Toeverything</p>
           <StyledPrivacyContainer>
-            <a href="https://affine.pro/terms">Terms</a>
-            <a href="https://affine.pro/privacy">Privacy</a>
+            <a href="https://affine.pro/terms" target="_blank">
+              Terms
+            </a>
+            <a href="https://affine.pro/privacy" target="_blank">
+              Privacy
+            </a>
           </StyledPrivacyContainer>
         </StyledModalFooter>
       </ModalWrapper>
