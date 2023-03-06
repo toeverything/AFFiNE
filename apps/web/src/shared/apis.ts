@@ -15,6 +15,9 @@ if (typeof window === 'undefined') {
   } else {
     console.warn('serverAPI is not a valid URL', config.serverAPI);
   }
+} else {
+  const params = new URLSearchParams(window.location.search);
+  params.get('prefixUrl') && (prefixUrl = params.get('prefixUrl') as string);
 }
 
 const bareAuth = createBareClient(prefixUrl);
