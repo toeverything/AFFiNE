@@ -8,6 +8,7 @@ import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
 import { useAtomsDebugValue } from 'jotai-devtools';
 import { AppProps } from 'next/app';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
@@ -91,6 +92,8 @@ const App = function App({
                       name="viewport"
                       content="initial-scale=1, width=device-width"
                     />
+                  </Helmet>
+                  <Head>
                     <meta name="twitter:card" content="summary_large_image" />
                     <meta
                       name="twitter:url"
@@ -123,7 +126,7 @@ const App = function App({
                       property="og:image"
                       content="https://affine.pro/og.jpeg"
                     />
-                  </Helmet>
+                  </Head>
                   {getLayout(<Component {...pageProps} />)}
                 </HelmetProvider>
               </ProviderComposer>
