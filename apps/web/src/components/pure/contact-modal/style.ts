@@ -97,12 +97,6 @@ export const StyledSubTitle = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledLogo = styled('img')({
-  height: '18px',
-  width: 'auto',
-  marginTop: '24px',
-});
-
 export const StyledModalHeader = styled('div')(() => {
   return {
     height: '72px',

@@ -5,6 +5,7 @@ import {
   ModalWrapper,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import Image from 'next/legacy/image';
 
 import logo from './affine-text-logo.png';
 import {
@@ -19,7 +20,6 @@ import {
 } from './Icons';
 import {
   StyledBigLink,
-  StyledLogo,
   StyledModalFooter,
   StyledModalHeader,
   StyledPrivacyContainer,
@@ -84,7 +84,15 @@ export const ContactModal = ({
     <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
       <ModalWrapper width={720} height={436} style={{ letterSpacing: '1px' }}>
         <StyledModalHeader>
-          <StyledLogo src={logo.src} alt="" />
+          <Image
+            src={logo.src}
+            alt=""
+            style={{
+              height: '18px',
+              width: 'auto',
+              marginTop: '24px',
+            }}
+          />
 
           <ModalCloseButton
             onClick={() => {
