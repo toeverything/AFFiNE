@@ -1,4 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
@@ -7,11 +8,19 @@ import {
   openCreateWorkspaceModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
-import { CreateWorkspaceModal } from '../components/pure/create-workspace-modal';
-import { WorkspaceListModal } from '../components/pure/workspace-list-modal';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
 import { apis } from '../shared/apis';
+
+const WorkspaceListModal = dynamic(
+  async () =>
+    (await import('../components/pure/workspace-list-modal')).WorkspaceListModal
+);
+const CreateWorkspaceModal = dynamic(
+  async () =>
+    (await import('../components/pure/create-workspace-modal'))
+      .CreateWorkspaceModal
+);
 
 export function Modals() {
   const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
