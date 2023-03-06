@@ -36,3 +36,4 @@ jobs:
           repo-token: '${{ secrets.GITHUB_TOKEN }}'
           build-script: 'export'
           pattern: 'apps/web/out/**/*.{js,css,html,json}'
+          compression: 'brotli'
