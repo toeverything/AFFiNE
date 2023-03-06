@@ -84,7 +84,6 @@ export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
     }
 
     record[id] = record[id].slice(0, 3);
-    console.log(record[id]);
     set(workspaceRecentViewsAtom, { ...record });
     return record[id];
   }
