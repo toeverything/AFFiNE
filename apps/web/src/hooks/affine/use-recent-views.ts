@@ -1,48 +1,40 @@
-import { useAtom } from 'jotai';
-import { useRouter } from 'next/router';
-import { useEffect, useRef } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { NextRouter } from 'next/router';
+import { useEffect } from 'react';
 
-import { WorkspaceRecentViews, workspaceRecentViewsAtom } from '../../atoms';
+import {
+  workspaceRecentViewsAtom,
+  workspaceRecentViresWriteAtom,
+} from '../../atoms';
 import { useCurrentWorkspace } from '../current/use-current-workspace';
 import { usePageMeta } from '../use-page-meta';
 
 export function useRecentlyViewed() {
-  const router = useRouter();
   const [workspace] = useCurrentWorkspace();
-  const workspaceId = workspace?.id || '';
-  const blocksuiteWorkspace = workspace?.blockSuiteWorkspace || null;
-  const pageId = router.query.pageId;
-  const meta = usePageMeta(blocksuiteWorkspace).find(
+  const workspaceId = workspace?.id || null;
+  const recentlyViewed = useAtomValue(workspaceRecentViewsAtom);
+
+  if (!workspaceId) return [];
+  return recentlyViewed[workspaceId] ?? [];
+}
+
+export function useSyncRecentViewsWithRouter(router: NextRouter) {
+  const [workspace] = useCurrentWorkspace();
+  const workspaceId = workspace?.id || null;
+  const blockSuiteWorkspace = workspace?.blockSuiteWorkspace || null;
+  const pageId = router.query.pageId as string;
+  const set = useSetAtom(workspaceRecentViresWriteAtom);
+  const meta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const [recentlyViewed, setRecentlyViewed] = useAtom(workspaceRecentViewsAtom);
-  const prevMeta = useRef(meta);
-
   useEffect(() => {
-    if (pageId && meta && prevMeta.current !== meta) {
-      const workspaceRecentlyViewed =
-        recentlyViewed[workspaceId] || ([] as WorkspaceRecentViews[string]);
-
-      const newRecentlyViewed = [
-        {
-          title: meta.title || 'Untitled',
-          id: pageId as string,
-          mode: meta.mode || 'page',
-        },
-        ...workspaceRecentlyViewed
-          .filter(item => item.id !== pageId)
-          .slice(0, 2),
-      ];
-      console.log('newRecentlyViewed', newRecentlyViewed);
-
-      setRecentlyViewed({
-        ...recentlyViewed,
-        [workspaceId]: newRecentlyViewed,
+    if (!workspaceId) return;
+    if (pageId && meta) {
+      set(workspaceId, {
+        title: meta.title || 'Untitled',
+        id: pageId as string,
+        mode: meta.mode || 'page',
       });
-
-      prevMeta.current = meta;
     }
-  }, [pageId, meta, setRecentlyViewed, workspaceId, recentlyViewed]);
-
-  return recentlyViewed[workspaceId] || [];
+  }, [pageId, meta, workspaceId, set]);
 }
