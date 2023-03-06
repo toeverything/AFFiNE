@@ -64,6 +64,10 @@
   "pnpm": {
     "patchedDependencies": {
       "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch"
+    },
+    "overrides": {
+      "@emotion/unitless": "0.8.0",
+      "react-is": "18.2.0"
     }
   },
   "packageManager": "pnpm@7.28.0"
