@@ -52,7 +52,9 @@ const nextConfig = {
       sourceMap: true,
     },
   },
-  images: {},
+  images: {
+    unoptimized: true,
+  },
   experimental: {
     swcPlugins: [
       ['@swc-jotai/debug-label', {}],
