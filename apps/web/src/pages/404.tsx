@@ -1,12 +1,11 @@
 import { Button, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { atom, useAtomValue } from 'jotai';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
-const errorImgAtom = atom(import('../../public/imgs/invite-error.svg'));
+import ErrorImg from '../../public/imgs/invite-error.svg';
 
 export const StyledContainer = styled('div')(() => {
   return {
@@ -29,10 +28,9 @@ export const StyledContainer = styled('div')(() => {
 export const NotfoundPage = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const img = useAtomValue(errorImgAtom);
   return (
     <StyledContainer data-testid="notFound">
-      <Image alt="404" src={img}></Image>
+      <Image alt="404" src={ErrorImg}></Image>
 
       <p>{t('404 - Page Not Found')}</p>
       <Button
