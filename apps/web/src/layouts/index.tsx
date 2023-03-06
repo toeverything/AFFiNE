@@ -4,6 +4,7 @@ import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import React, { Suspense, useCallback, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -17,7 +18,6 @@ import {
 } from '../atoms';
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
-import QuickSearchModal from '../components/pure/quick-search-modal';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -29,6 +29,10 @@ import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
+
+const QuickSearchModal = dynamic(
+  () => import('../components/pure/quick-search-modal')
+);
 
 const sideBarOpenAtom = atomWithStorage('sideBarOpen', true);
 
