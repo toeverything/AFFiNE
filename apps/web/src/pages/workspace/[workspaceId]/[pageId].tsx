@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
+import { useSyncRecentViewsWithRouter } from '../../../hooks/affine/use-recent-views';
 import { useCurrentPageId } from '../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
@@ -27,6 +28,7 @@ function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
 const WorkspaceDetail: React.FC = () => {
   const [pageId] = useCurrentPageId();
   const [currentWorkspace] = useCurrentWorkspace();
+  useSyncRecentViewsWithRouter(useRouter());
   useEffect(() => {
     if (currentWorkspace) {
       enableFullFlags(currentWorkspace.blockSuiteWorkspace);

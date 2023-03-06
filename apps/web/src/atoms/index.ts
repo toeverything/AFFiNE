@@ -5,7 +5,6 @@ import { unstable_batchedUpdates } from 'react-dom';
 
 import { WorkspacePlugins } from '../plugins';
 import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
-
 // workspace necessary atoms
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);
@@ -60,3 +59,32 @@ export const workspacesAtom = atom<Promise<RemWorkspace[]>>(async get => {
   );
   return workspaces.filter(workspace => workspace !== null) as RemWorkspace[];
 });
+
+type View = { title: string; id: string; mode: 'page' | 'edgeless' };
+
+export type WorkspaceRecentViews = Record<string, View[]>;
+
+export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
+  'recentViews',
+  {}
+);
+
+export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
+  null,
+  (get, set, id, value) => {
+    const record = get(workspaceRecentViewsAtom);
+    if (Array.isArray(record[id])) {
+      const idx = record[id].findIndex(view => view.id === value.id);
+      if (idx !== -1) {
+        record[id].splice(idx, 1);
+      }
+      record[id] = [value, ...record[id]];
+    } else {
+      record[id] = [value];
+    }
+
+    record[id] = record[id].slice(0, 3);
+    set(workspaceRecentViewsAtom, { ...record });
+    return record[id];
+  }
+);

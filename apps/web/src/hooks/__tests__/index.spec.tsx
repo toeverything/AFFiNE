@@ -13,10 +13,23 @@ import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import React from 'react';
-import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { workspacesAtom } from '../../atoms';
-import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
+import {
+  currentWorkspaceIdAtom,
+  jotaiWorkspacesAtom,
+  workspacesAtom,
+} from '../../atoms';
+import { LocalPlugin } from '../../plugins/local';
+import {
+  BlockSuiteWorkspace,
+  LocalWorkspace,
+  RemWorkspaceFlavour,
+} from '../../shared';
+import {
+  useRecentlyViewed,
+  useSyncRecentViewsWithRouter,
+} from '../affine/use-recent-views';
 import {
   currentWorkspaceAtom,
   useCurrentWorkspace,
@@ -246,5 +259,61 @@ describe('useBlockSuiteWorkspaceName', () => {
     expect(workspaceNameHook.result.current[0]).toBe('test 2');
     workspaceNameHook.result.current[1]('test 3');
     expect(blockSuiteWorkspace.meta.name).toBe('test 3');
+  });
+});
+
+describe('useRecentlyViewed', () => {
+  test('basic', async () => {
+    const { ProviderWrapper, store } = await getJotaiContext();
+    const workspaceId = blockSuiteWorkspace.room as string;
+    const pageId = 'page0';
+    store.set(jotaiWorkspacesAtom, [
+      {
+        id: workspaceId,
+        flavour: RemWorkspaceFlavour.LOCAL,
+      },
+    ]);
+    LocalPlugin.CRUD.get = vi.fn().mockResolvedValue({
+      id: workspaceId,
+      flavour: RemWorkspaceFlavour.LOCAL,
+      blockSuiteWorkspace,
+      providers: [],
+    } satisfies LocalWorkspace);
+    store.set(currentWorkspaceIdAtom, blockSuiteWorkspace.room as string);
+    const workspace = await store.get(currentWorkspaceAtom);
+    expect(workspace?.id).toBe(blockSuiteWorkspace.room as string);
+    const currentHook = renderHook(() => useCurrentWorkspace(), {
+      wrapper: ProviderWrapper,
+    });
+    expect(currentHook.result.current[0]?.id).toEqual(workspaceId);
+    await store.get(currentWorkspaceAtom);
+    const recentlyViewedHook = renderHook(() => useRecentlyViewed(), {
+      wrapper: ProviderWrapper,
+    });
+    expect(recentlyViewedHook.result.current).toEqual([]);
+    const routerHook = renderHook(() => useRouter());
+    await routerHook.result.current.push({
+      pathname: '/workspace/[workspaceId]/[pageId]',
+      query: {
+        workspaceId,
+        pageId,
+      },
+    });
+    routerHook.rerender();
+    const syncHook = renderHook(
+      router => useSyncRecentViewsWithRouter(router),
+      {
+        wrapper: ProviderWrapper,
+        initialProps: routerHook.result.current,
+      }
+    );
+    syncHook.rerender(routerHook.result.current);
+    expect(recentlyViewedHook.result.current).toEqual([
+      {
+        id: 'page0',
+        mode: 'page',
+        title: 'Untitled',
+      },
+    ]);
   });
 });

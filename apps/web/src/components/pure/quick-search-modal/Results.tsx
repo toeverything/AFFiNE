@@ -5,6 +5,7 @@ import { Command } from 'cmdk';
 import { NextRouter } from 'next/router';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
+import { useRecentlyViewed } from '../../../hooks/affine/use-recent-views';
 import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../../../shared';
@@ -33,6 +34,7 @@ export const Results: React.FC<ResultsProps> = ({
   assertExists(blockSuiteWorkspace.room);
   const List = useSwitchToConfig(blockSuiteWorkspace.room);
   const [results, setResults] = useState(new Map<string, string | undefined>());
+  const recentlyViewed = useRecentlyViewed();
   const { t } = useTranslation();
   useEffect(() => {
     setResults(blockSuiteWorkspace.search(query));
@@ -93,25 +95,56 @@ export const Results: React.FC<ResultsProps> = ({
           </StyledNotFound>
         )
       ) : (
-        <Command.Group heading={t('Jump to')}>
-          {List.map(link => {
-            return (
-              <Command.Item
-                key={link.title}
-                value={link.title}
-                onSelect={() => {
-                  onClose();
-                  router.push(link.href);
-                }}
-              >
-                <StyledListItem>
-                  <link.icon />
-                  <span>{link.title}</span>
-                </StyledListItem>
-              </Command.Item>
-            );
-          })}
-        </Command.Group>
+        <div>
+          <Command.Group heading={t('Recently viewed')}>
+            {recentlyViewed.map(recent => {
+              return (
+                <Command.Item
+                  key={recent.id}
+                  value={recent.id}
+                  onSelect={() => {
+                    onClose();
+                    router.push({
+                      pathname: '/workspace/[workspaceId]/[pageId]',
+                      query: {
+                        workspaceId: blockSuiteWorkspace.room,
+                        pageId: recent.id,
+                      },
+                    });
+                  }}
+                >
+                  <StyledListItem>
+                    {recent.mode === 'edgeless' ? (
+                      <EdgelessIcon />
+                    ) : (
+                      <PaperIcon />
+                    )}
+                    <span>{recent.title}</span>
+                  </StyledListItem>
+                </Command.Item>
+              );
+            })}
+          </Command.Group>
+          <Command.Group heading={t('Jump to')}>
+            {List.map(link => {
+              return (
+                <Command.Item
+                  key={link.title}
+                  value={link.title}
+                  onSelect={() => {
+                    onClose();
+                    router.push(link.href);
+                  }}
+                >
+                  <StyledListItem>
+                    <link.icon />
+                    <span>{link.title}</span>
+                  </StyledListItem>
+                </Command.Item>
+              );
+            })}
+          </Command.Group>
+        </div>
       )}
     </>
   );
