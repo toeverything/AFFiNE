@@ -62,7 +62,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         }}
         icon={<DeleteTemporarilyIcon />}
       >
-        {t('Delete')}
+        {t('Move to Trash')}
       </MenuItem>
     </>
   );
