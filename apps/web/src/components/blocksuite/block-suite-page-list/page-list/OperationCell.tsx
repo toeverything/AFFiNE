@@ -83,7 +83,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       <Confirm
         open={open}
         title={t('Delete page?')}
-        content={t('will be permanently deleted', {
+        content={t('will be moved to Trash', {
           title: pageMeta.title || 'Untitled',
         })}
         confirmText={t('Delete')}
