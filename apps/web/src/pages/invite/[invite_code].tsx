@@ -5,6 +5,7 @@ import {
   SucessfulDuotoneIcon,
   UnsucessfulDuotoneIcon,
 } from '@blocksuite/icons';
+import { NoSsr } from '@mui/material';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { Suspense } from 'react';
@@ -75,7 +76,11 @@ const InvitePage: NextPageWithLayout = () => {
 export default InvitePage;
 
 InvitePage.getLayout = page => {
-  return <Suspense fallback={<PageLoading />}>{page}</Suspense>;
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <NoSsr>{page}</NoSsr>
+    </Suspense>
+  );
 };
 
 const StyledContainer = styled('div')(({ theme }) => {
