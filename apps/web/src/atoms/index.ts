@@ -88,5 +88,3 @@ export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
     return record[id];
   }
 );
-
-export const isFirstLoadAtom = atomWithStorage<boolean>('isFirstLoad', true);

@@ -1,4 +1,5 @@
-import { Content } from '@affine/component';
+import { Content, Tooltip } from '@affine/component';
+import { getEnvironment } from '@affine/env';
 import { assertExists } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
 import React, { useState } from 'react';
@@ -44,6 +45,13 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   const title = pageMeta.title;
   const [isHover, setIsHover] = useState(false);
   const { trash: isTrash } = pageMeta;
+  const isMac = () => {
+    const env = getEnvironment();
+    return env.isBrowser && env.isMacOs;
+  };
+  const tipsContent = isMac()
+    ? 'You can activate Quick Search by clicking here or using ⌘ + K. Then you can search keywords or quickly open recently viewed pages.'
+    : 'You can activate Quick Search by clicking here or using Ctrl + K. Then you can search keywords or quickly open recently viewed pages.';
   return (
     <Header
       rightItems={
@@ -82,13 +90,15 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
               />
             </StyledSwitchWrapper>
             <Content ellipsis={true}>{title}</Content>
-            <StyledSearchArrowWrapper>
-              <QuickSearchButton
-                onClick={() => {
-                  setOpenQuickSearch(true);
-                }}
-              />
-            </StyledSearchArrowWrapper>
+            <Tooltip content={tipsContent} placement="bottom" showArrow={true}>
+              <StyledSearchArrowWrapper>
+                <QuickSearchButton
+                  onClick={() => {
+                    setOpenQuickSearch(true);
+                  }}
+                />
+              </StyledSearchArrowWrapper>
+            </Tooltip>
           </StyledTitleWrapper>
         </StyledTitle>
       )}
