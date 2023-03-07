@@ -18,7 +18,7 @@ jobs:
   build:
     name: Build on Pull Request
     if: github.ref != 'refs/heads/master'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: development
 
     steps:
@@ -40,6 +40,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
+      - run: pnpm i
+      - run: pnpm lint --max-warnings=0
+
       - name: Build
         run: pnpm i && pnpm build
         env:
@@ -60,9 +63,13 @@ jobs:
           name: artifact
           path: ./apps/web/.next
 
-  lint:
-    name: Lint and E2E Test
-    runs-on: self-hosted
+  e2e-test:
+    name: E2E Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     environment: development
     needs: build
 
@@ -81,20 +88,12 @@ jobs:
           name: artifact
           path: ./apps/web/.next
 
-      - name: Lint & E2E Test & Unit Test
-        run: |
-          pnpm lint --max-warnings=0
-          npx playwright install chromium
-          pnpm run test:coverage
-          pnpm run test:unit
-        # env:
-        #   NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-        #   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-        #   NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-        #   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-        #   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-        #   NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-        #   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+      - name: Install playwright browsers
+        run: npx playwright install chromium
+      - name: Run playwright tests
+        run: pnpm test -- --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          COVERAGE: true
 
       - name: Collect code coverage report
         run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
@@ -112,14 +111,55 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
-          name: test-results-main
+          name: test-results-e2e
+          path: ./test-results
+          if-no-files-found: ignore
+
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - run: pnpm i
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: ./apps/web/.next
+
+      - name: Unit Test
+        run: pnpm run test:unit:coverage
+
+      - name: Upload unit test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/store/lcov.info
+          flags: unittest
+          name: affine
+          fail_ci_if_error: true
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results-unit
           path: ./test-results
           if-no-files-found: ignore
 
   build-frontend:
     name: Build frontend
     if: github.ref == 'refs/heads/master'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: production
 
     steps:
