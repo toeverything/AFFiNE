@@ -96,7 +96,7 @@ export const Results: React.FC<ResultsProps> = ({
         )
       ) : (
         <div>
-          <Command.Group heading={t('Recently viewed')}>
+          <Command.Group heading={t('Recent')}>
             {recentlyViewed.map(recent => {
               return (
                 <Command.Item
