@@ -137,9 +137,7 @@ jobs:
           path: ./apps/web/.next
 
       - name: Unit Test
-        run: pnpm run test:unit
-        env:
-          COVERAGE: true
+        run: pnpm run test:unit:coverage
 
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
