@@ -97,9 +97,6 @@ export const EditorOptionMenu = () => {
         data-testid="editor-option-menu-delete"
         onClick={() => {
           setOpen(true);
-          // fixme(himself65): regression that don't have conform dialog
-          setPageMeta(pageId, { trash: !trash, trashDate: +new Date() });
-          toast(t('Moved to Trash'));
         }}
         icon={<DeleteTemporarilyIcon />}
       >
@@ -133,7 +130,7 @@ export const EditorOptionMenu = () => {
         onConfirm={() => {
           toast(t('Moved to Trash'));
           setOpen(false);
-          setPageMeta(pageId, { trash: !trash });
+          setPageMeta(pageId, { trash: !trash, trashDate: +new Date() });
         }}
         onClose={() => {
           setOpen(false);
