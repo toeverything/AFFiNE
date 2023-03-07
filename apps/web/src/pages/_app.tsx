@@ -23,6 +23,29 @@ import { ThemeProvider } from '../providers/ThemeProvider';
 import { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
 
+declare global {
+  // eslint-disable-next-line no-var
+  var mockServer: typeof import('@affine/mock').worker | undefined;
+}
+if (typeof window !== 'undefined') {
+  import('@affine/mock').then(async ({ worker }) => {
+    globalThis.mockServer = worker;
+    await worker.start();
+  });
+}
+
+if (import.meta.webpackHot) {
+  import.meta.webpackHot.accept(['@affine/mock'], () => {
+    import('@affine/mock').then(async ({ worker }) => {
+      if (globalThis.mockServer) {
+        await globalThis.mockServer.stop();
+      }
+      globalThis.mockServer = worker;
+      await worker.start();
+    });
+  });
+}
+
 setupGlobal();
 
 type AppPropsWithLayout = AppProps & {

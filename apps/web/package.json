@@ -14,6 +14,7 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/i18n": "workspace:*",
+    "@affine/mock": "workspace:*",
     "@blocksuite/blocks": "0.5.0-20230307101545-7d5aefc",
     "@blocksuite/editor": "0.5.0-20230307101545-7d5aefc",
     "@blocksuite/icons": "2.0.17",
@@ -31,6 +32,7 @@
     "jotai": "^2.0.3",
     "jotai-devtools": "^0.2.0",
     "lit": "^2.6.1",
+    "msw": "^1.1.0",
     "next-themes": "^0.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -61,5 +63,8 @@
     "redux": "^4.2.1",
     "typescript": "^4.9.5",
     "webpack": "^5.75.0"
+  },
+  "msw": {
+    "workerDirectory": "public"
   }
 }

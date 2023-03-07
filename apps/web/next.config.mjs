@@ -67,6 +67,7 @@ const nextConfig = {
     '@affine/i18n',
     '@affine/debug',
     '@affine/env',
+    '@affine/mock',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name,

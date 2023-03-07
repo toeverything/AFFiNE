@@ -1,0 +1,8 @@
+{
+  "name": "@affine/mock",
+  "private": true,
+  "main": "./src/index.ts",
+  "dependencies": {
+    "msw": "^1.1.0"
+  }
+}
