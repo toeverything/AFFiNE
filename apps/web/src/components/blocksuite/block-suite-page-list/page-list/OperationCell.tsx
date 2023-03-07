@@ -58,12 +58,13 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         {t('Open in new tab')}
       </MenuItem>
       <MenuItem
+        data-testid="move-to-trash"
         onClick={() => {
           setOpen(true);
         }}
         icon={<DeleteTemporarilyIcon />}
       >
-        {t('Delete')}
+        {t('Move to Trash')}
       </MenuItem>
     </>
   );
