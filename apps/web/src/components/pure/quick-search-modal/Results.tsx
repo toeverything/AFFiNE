@@ -96,35 +96,38 @@ export const Results: React.FC<ResultsProps> = ({
         )
       ) : (
         <div>
-          <Command.Group heading={t('Recently viewed')}>
-            {recentlyViewed.map(recent => {
-              return (
-                <Command.Item
-                  key={recent.id}
-                  value={recent.id}
-                  onSelect={() => {
-                    onClose();
-                    router.push({
-                      pathname: '/workspace/[workspaceId]/[pageId]',
-                      query: {
-                        workspaceId: blockSuiteWorkspace.room,
-                        pageId: recent.id,
-                      },
-                    });
-                  }}
-                >
-                  <StyledListItem>
-                    {recent.mode === 'edgeless' ? (
-                      <EdgelessIcon />
-                    ) : (
-                      <PaperIcon />
-                    )}
-                    <span>{recent.title}</span>
-                  </StyledListItem>
-                </Command.Item>
-              );
-            })}
-          </Command.Group>
+          {recentlyViewed.length > 0 && (
+            <Command.Group heading={t('Recent')}>
+              {recentlyViewed.map(recent => {
+                return (
+                  <Command.Item
+                    key={recent.id}
+                    value={recent.id}
+                    onSelect={() => {
+                      onClose();
+                      router.push({
+                        pathname: '/workspace/[workspaceId]/[pageId]',
+                        query: {
+                          workspaceId: blockSuiteWorkspace.room,
+                          pageId: recent.id,
+                        },
+                      });
+                    }}
+                  >
+                    <StyledListItem>
+                      {recent.mode === 'edgeless' ? (
+                        <EdgelessIcon />
+                      ) : (
+                        <PaperIcon />
+                      )}
+                      <span>{recent.title}</span>
+                    </StyledListItem>
+                  </Command.Item>
+                );
+              })}
+            </Command.Group>
+          )}
+
           <Command.Group heading={t('Jump to')}>
             {List.map(link => {
               return (

@@ -83,7 +83,8 @@ const PublicWorkspaceDetailPageInner: React.FC<{
         pageId={pageId}
         blockSuiteWorkspace={blockSuiteWorkspace}
         onLoad={(_, editor) => {
-          editor.readonly = true;
+          const { page } = editor;
+          page.awarenessStore.setReadonly(page, true);
         }}
         header={
           <NavContainer>

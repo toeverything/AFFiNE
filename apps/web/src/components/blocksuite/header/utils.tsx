@@ -32,6 +32,7 @@ export const OSWarningMessage: React.FC = () => {
       env.isBrowser && env.isChrome && env.chromeVersion < minimumChromeVersion
     );
   }, []);
+
   if (notChrome) {
     return (
       <span>
