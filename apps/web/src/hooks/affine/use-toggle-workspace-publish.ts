@@ -20,6 +20,6 @@ export function useToggleWorkspacePublish(workspace: AffineWorkspace) {
         ...jotaiStore.get(jotaiWorkspacesAtom),
       ]);
     },
-    [workspace]
+    [mutate, workspace.id]
   );
 }
