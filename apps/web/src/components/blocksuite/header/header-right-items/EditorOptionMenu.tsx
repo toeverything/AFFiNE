@@ -1,5 +1,5 @@
 // fixme(himself65): refactor this file
-import { Menu, MenuItem } from '@affine/component';
+import { Confirm, FlexWrapper, Menu, MenuItem } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
@@ -13,6 +13,7 @@ import {
   MoreVerticalIcon,
 } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
+import { useState } from 'react';
 
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -22,9 +23,8 @@ import {
 } from '../../../../hooks/use-page-meta';
 import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/Icons';
 
-const PopoverContent = () => {
+export const EditorOptionMenu = () => {
   const { t } = useTranslation();
-  // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
   const [pageId] = useCurrentPageId();
   assertExists(workspace);
@@ -36,9 +36,9 @@ const PopoverContent = () => {
   assertExists(pageMeta);
   const { mode = 'page', favorite, trash } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-  //
+  const [open, setOpen] = useState(false);
 
-  return (
+  const EditMenu = (
     <>
       <MenuItem
         data-testid="editor-option-menu-favorite"
@@ -96,9 +96,7 @@ const PopoverContent = () => {
       <MenuItem
         data-testid="editor-option-menu-delete"
         onClick={() => {
-          // fixme(himself65): regression that don't have conform dialog
-          setPageMeta(pageId, { trash: !trash });
-          toast(t('Moved to Trash'));
+          setOpen(true);
         }}
         icon={<DeleteTemporarilyIcon />}
       >
@@ -106,14 +104,41 @@ const PopoverContent = () => {
       </MenuItem>
     </>
   );
-};
 
-export const EditorOptionMenu = () => {
   return (
-    <Menu content={<PopoverContent />} placement="bottom-end" trigger="click">
-      <IconButton data-testid="editor-option-menu">
-        <MoreVerticalIcon />
-      </IconButton>
-    </Menu>
+    <>
+      <FlexWrapper alignItems="center" justifyContent="center">
+        <Menu
+          content={EditMenu}
+          placement="bottom-end"
+          disablePortal={true}
+          trigger="click"
+        >
+          <IconButton>
+            <MoreVerticalIcon />
+          </IconButton>
+        </Menu>
+      </FlexWrapper>
+      <Confirm
+        title={t('Delete page?')}
+        content={t('will be moved to Trash', {
+          title: pageMeta.title || 'Untitled',
+        })}
+        confirmText={t('Delete')}
+        confirmType="danger"
+        open={open}
+        onConfirm={() => {
+          toast(t('Moved to Trash'));
+          setOpen(false);
+          setPageMeta(pageId, { trash: !trash });
+        }}
+        onClose={() => {
+          setOpen(false);
+        }}
+        onCancel={() => {
+          setOpen(false);
+        }}
+      />
+    </>
   );
 };
