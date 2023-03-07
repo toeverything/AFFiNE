@@ -4,7 +4,6 @@ export const StyledHeaderContainer = styled('div')<{ hasWarning: boolean }>(
   ({ hasWarning }) => {
     return {
       height: hasWarning ? '96px' : '60px',
-      padding: '0 28px',
     };
   }
 );
@@ -13,6 +12,7 @@ export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
     return {
       height: '60px',
       width: '100%',
+      padding: '0 28px',
       ...displayFlex('flex-end', 'center'),
       background: theme.colors.pageBackground,
       transition: 'background-color 0.5s',
@@ -53,11 +53,7 @@ export const StyledBrowserWarning = styled('div')<{ show: boolean }>(
       backgroundColor: theme.colors.warningBackground,
       color: theme.colors.warningColor,
       height: '36px',
-      width: '100vw',
       fontSize: theme.font.sm,
-      position: 'fixed',
-      left: '0',
-      top: '0',
       display: show ? 'flex' : 'none',
       justifyContent: 'center',
       alignItems: 'center',
