@@ -7,19 +7,23 @@ loadPage();
 
 test.describe('Change Theme', () => {
   // default could be anything according to the system
-  test.skip('default white', async ({ page }) => {
+  test('default white', async ({ browser }) => {
+    const context = await browser.newContext({
+      colorScheme: 'light',
+    });
+    const page = await context.newPage();
+    await page.goto('http://localhost:8080');
+    // waiting for page loading end
+    await page.waitForSelector('#__next');
     await page.waitForSelector('html');
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>
-      window.getComputedStyle(element).getPropertyValue('--affine-theme-mode')
+      element.getAttribute('data-theme')
     );
     expect(themeMode).toBe('light');
 
-    const lightButton = page.locator('[data-testid=change-theme-light]');
-    const buttonPositionTop = await lightButton.evaluate(
-      element => window.getComputedStyle(element).top
-    );
-    expect(buttonPositionTop).toBe('0px');
+    const lightButton = page.locator('[data-testid=change-theme-dark]');
+    expect(await lightButton.isVisible()).toBe(false);
   });
 
   test('change theme to dark', async ({ page }) => {
@@ -40,7 +44,7 @@ test.describe('Change Theme', () => {
     await page.mouse.click((box?.x ?? 0) + 5, (box?.y ?? 0) + 5);
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>
-      window.getComputedStyle(element).getPropertyValue('--affine-theme-mode')
+      element.getAttribute('data-theme')
     );
     expect(themeMode).toBe('dark');
   });
