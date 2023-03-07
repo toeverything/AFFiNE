@@ -153,7 +153,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
                       query: {
                         ...router.query,
                         workspaceId: currentWorkspace.id,
-                        pageId: targetId,
+                        pageId: targetPageId,
                       },
                     });
                   }
