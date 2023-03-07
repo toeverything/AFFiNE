@@ -141,9 +141,6 @@ jobs:
         env:
           COVERAGE: true
 
-      - name: Collect code coverage report
-        run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
-
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
         with:
