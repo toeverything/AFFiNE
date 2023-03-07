@@ -1,5 +1,6 @@
-import { Content, Tooltip } from '@affine/component';
+import { Content, QuickSearchTips } from '@affine/component';
 import { getEnvironment } from '@affine/env';
+import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
 import React, { useState } from 'react';
@@ -49,9 +50,26 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
     const env = getEnvironment();
     return env.isBrowser && env.isMacOs;
   };
-  const tipsContent = isMac()
-    ? 'You can activate Quick Search by clicking here or using ⌘ + K. Then you can search keywords or quickly open recently viewed pages.'
-    : 'You can activate Quick Search by clicking here or using Ctrl + K. Then you can search keywords or quickly open recently viewed pages.';
+  const tipsContent = () => {
+    return (
+      <div>
+        Click button
+        {
+          <span
+            style={{
+              fontSize: '24px',
+              verticalAlign: 'middle',
+            }}
+          >
+            <ArrowDownSmallIcon />
+          </span>
+        }
+        or use
+        {isMac() ? ' ⌘ + K' : ' Ctrl + K'} to activate Quick Search. Then you
+        can search keywords or quickly open recently viewed pages.
+      </div>
+    );
+  };
   return (
     <Header
       rightItems={
@@ -90,7 +108,11 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
               />
             </StyledSwitchWrapper>
             <Content ellipsis={true}>{title}</Content>
-            <Tooltip content={tipsContent} placement="bottom" showArrow={true}>
+            <QuickSearchTips
+              content={tipsContent()}
+              placement="bottom"
+              open={true}
+            >
               <StyledSearchArrowWrapper>
                 <QuickSearchButton
                   onClick={() => {
@@ -98,7 +120,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
                   }}
                 />
               </StyledSearchArrowWrapper>
-            </Tooltip>
+            </QuickSearchTips>
           </StyledTitleWrapper>
         </StyledTitle>
       )}

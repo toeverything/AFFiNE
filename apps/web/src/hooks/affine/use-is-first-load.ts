@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 
-import { isFirstLoadAtom } from '../../atoms';
+import { isFirstLoadAtom } from '../../atoms/first-load';
 
 export function useIsFirstLoad() {
   const [isFirstLoad, setIsFirstLoad] = useAtom(isFirstLoadAtom);
