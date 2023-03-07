@@ -56,7 +56,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
       }
     >
       {children}
-      {title && (
+      {title && !isPublic && (
         <StyledTitle
           data-tauri-drag-region
           onMouseEnter={() => {

@@ -5,7 +5,7 @@ import { clickPageMoreActions } from './libs/page-logic';
 import { test } from './libs/playwright';
 loadPage();
 
-test.describe('Change page mode(Paper or Edgeless)', () => {
+test.describe('Change page mode(Page or Edgeless)', () => {
   test('Switch to edgeless by switch edgeless item', async ({ page }) => {
     const switcher = page.locator('[data-testid=editor-mode-switcher]');
     const box = await switcher.boundingBox();

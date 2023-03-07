@@ -1,6 +1,6 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { CloudWorkspaceIcon } from '@blocksuite/icons';
+import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
 import { assertEquals, assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
@@ -14,7 +14,6 @@ import {
   RemWorkspaceFlavour,
 } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
-import { LocalWorkspaceIcon } from '../../../pure/icons';
 
 const NoNetWorkIcon = () => {
   return (
@@ -33,12 +32,13 @@ const NoNetWorkIcon = () => {
     </svg>
   );
 };
-const IconWrapper = styled('div')(() => {
+const IconWrapper = styled('div')(({ theme }) => {
   return {
     width: '32px',
     height: '32px',
     marginRight: '12px',
     fontSize: '22px',
+    color: theme.colors.iconColor,
     ...displayFlex('center', 'center'),
   };
 });
