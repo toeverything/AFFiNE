@@ -212,6 +212,7 @@ export const PageList: React.FC<PageListProps> = ({
                             onToggleTrashPage={() => {
                               helper.setPageMeta(pageMeta.id, {
                                 trash: !pageMeta.trash,
+                                trashDate: +new Date(),
                               });
                             }}
                           />
