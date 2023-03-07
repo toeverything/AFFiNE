@@ -12,9 +12,16 @@ export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(
       throw new Error('No workspace id');
     }
     const binary = await apis.downloadWorkspace(workspaceId, true);
+    // fixme: this is a hack
+    const params = new URLSearchParams(window.location.search);
+    const prefixUrl = params.get('prefixUrl')
+      ? (params.get('prefixUrl') as string)
+      : '/';
     const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
       workspaceId,
-      (_: string) => undefined
+      (k: string) =>
+        // fixme: token could be expired
+        ({ api: `${prefixUrl}api/workspace`, token: apis.auth.token }[k])
     );
     BlockSuiteWorkspace.Y.applyUpdate(
       blockSuiteWorkspace.doc,
