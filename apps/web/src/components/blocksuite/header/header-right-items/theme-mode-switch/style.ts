@@ -15,8 +15,7 @@ export const StyledThemeModeSwitch = styled('div')({
 export const StyledSwitchItem = styled('div')<{
   active: boolean;
   isHover: boolean;
-  firstTrigger: boolean;
-}>(({ active, isHover, firstTrigger, theme }) => {
+}>(({ active, isHover, theme }) => {
   const activeRaiseAnimate = toString(
     spring({ top: '0' }, { top: '-100%' }, { preset: 'gentle' })
   );
@@ -34,26 +33,22 @@ export const StyledSwitchItem = styled('div')<{
     ? {
         color: theme.colors.iconColor,
         top: '0',
-        animation: firstTrigger
-          ? css`
-              ${keyframes`${
-                isHover ? activeRaiseAnimate : activeDeclineAnimate
-              }`} ${ANIMATE_DURATION}ms forwards
-            `
-          : 'unset',
+        animation: css`
+          ${keyframes`${
+            isHover ? activeRaiseAnimate : activeDeclineAnimate
+          }`} ${ANIMATE_DURATION}ms forwards
+        `,
         animationDirection: isHover ? 'normal' : 'alternate',
       }
     : {
         top: '100%',
         color: theme.colors.primaryColor,
         backgroundColor: theme.colors.hoverBackground,
-        animation: firstTrigger
-          ? css`
-              ${keyframes`${
-                isHover ? raiseAnimate : declineAnimate
-              }`} ${ANIMATE_DURATION}ms forwards
-            `
-          : 'unset',
+        animation: css`
+          ${keyframes`${
+            isHover ? raiseAnimate : declineAnimate
+          }`} ${ANIMATE_DURATION}ms forwards
+        `,
         animationDirection: isHover ? 'normal' : 'alternate',
       };
   return css`
