@@ -10,7 +10,7 @@ import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 
-import { useCurrentPageId } from '../hooks/current/use-current-page-id';
+import { useCurrentPage } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { usePageMeta } from '../hooks/use-page-meta';
 
@@ -20,7 +20,7 @@ const ThemeInjector = React.memo<{
   return (
     <GlobalStyles
       styles={{
-        ':root': globalThemeVariables(themeStyle) as any,
+        '#__next': globalThemeVariables(themeStyle) as any,
       }}
     />
   );
@@ -30,10 +30,10 @@ const ThemeProviderInner = memo<React.PropsWithChildren>(
   function ThemeProviderInner({ children }) {
     const { theme } = useTheme();
     const [currentWorkspace] = useCurrentWorkspace();
-    const [currentPage] = useCurrentPageId();
+    const currentPage = useCurrentPage();
     const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
     const editorMode =
-      pageMeta.find(page => page.id === currentPage)?.mode ?? 'page';
+      pageMeta.find(page => page.id === currentPage?.id)?.mode ?? 'page';
     const themeStyle = useMemo(() => getLightTheme(editorMode), [editorMode]);
     const darkThemeStyle = useMemo(
       () => getDarkTheme(editorMode),
