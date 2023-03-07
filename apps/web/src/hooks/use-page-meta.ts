@@ -8,6 +8,7 @@ declare module '@blocksuite/store' {
     mode?: 'page' | 'edgeless';
     favorite?: boolean;
     trash?: boolean;
+    trashDate?: number;
   }
 }
 
