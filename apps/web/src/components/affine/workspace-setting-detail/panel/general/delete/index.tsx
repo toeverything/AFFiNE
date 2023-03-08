@@ -2,6 +2,7 @@ import { Button, Input, Modal, ModalCloseButton } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
 import { useCallback, useState } from 'react';
 
+import { useBlockSuiteWorkspaceName } from '../../../../../../hooks/use-blocksuite-workspace-name';
 import {
   AffineOfficialWorkspace,
   RemWorkspaceFlavour,
@@ -28,8 +29,11 @@ export const WorkspaceDeleteModal = ({
   workspace,
   onDeleteWorkspace,
 }: WorkspaceDeleteProps) => {
+  const [workspaceName] = useBlockSuiteWorkspaceName(
+    workspace?.blockSuiteWorkspace ?? null
+  );
   const [deleteStr, setDeleteStr] = useState<string>('');
-  const allowDelete = deleteStr === workspace.blockSuiteWorkspace.meta.name;
+  const allowDelete = deleteStr === workspaceName;
   const { t } = useTranslation();
 
   const handleDelete = useCallback(() => {
@@ -69,7 +73,7 @@ export const WorkspaceDeleteModal = ({
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
             placeholder={t('Delete Workspace placeholder', {
-              workspace: workspace.blockSuiteWorkspace.meta.name,
+              workspaceName: workspaceName,
             })}
             value={deleteStr}
             width={284}
