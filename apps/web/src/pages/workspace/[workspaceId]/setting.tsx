@@ -130,7 +130,7 @@ const SettingPage: NextPageWithLayout = () => {
     return (
       <>
         <Head>
-          <title>{t('Workspace Settings')} - AFFiNE</title>
+          <title>{t('Settings')} - AFFiNE</title>
         </Head>
         <WorkspaceTitle icon={<SettingsIcon />}>
           {t('Workspace Settings')}
@@ -150,7 +150,7 @@ const SettingPage: NextPageWithLayout = () => {
     return (
       <>
         <Head>
-          <title>{t('Workspace Settings')} - AFFiNE</title>
+          <title>{t('Settings')} - AFFiNE</title>
         </Head>
         <WorkspaceTitle icon={<SettingsIcon />}>
           {t('Workspace Settings')}
