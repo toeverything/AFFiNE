@@ -176,7 +176,7 @@ const LocalCollaborationPanel: React.FC<
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
+      <Wrapper marginBottom="42px">{t('Collaboration Description')}</Wrapper>
       <Button
         type="light"
         shape="circle"
