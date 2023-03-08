@@ -22,54 +22,38 @@ const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
 const StyledCircleContainer = styled('div')(({ theme }) => {
   return {
     position: 'relative',
-    width: '50px',
-    height: '50px',
-    '&::after': {
-      content: '',
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: '2px',
-      height: '30px',
-      border: '4px solid #000',
-      backgroundColor: '#66ccff',
-    },
+    content: '""',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(0%, 0%)',
+    width: '0px',
+    height: '40px',
+    border: `1px solid ${theme.colors.primaryColor}}`,
+    // '&::after': {
+    //   content: '""',
+    //   position: 'absolute',
+    //   top: '50%',
+    //   left: '50%',
+    //   transform: 'translate(-50%, -50%)',
+    //   width: '100%',
+    //   height: '100%',
+    //   borderRadius: '50%',
+    //   border: `1px solid ${theme.colors.primaryColor}`,
+    // },
+    // '&::before': {
+    //   content: '""',
+    //   position: 'absolute',
+    //   top: '50%',
+    //   left: '50%',
+    //   transform: 'translate(-50%, -50%)',
+    //   width: '50%',
+    //   height: '50%',
+    //   backgroundColor: theme.colors.primaryColor,
+    //   borderRadius: '50%',
+    //   border: `1px solid ${theme.colors.primaryColor}`,
+    // },
   };
 });
-const StyledOuterCircle = styled('div')(({ theme }) => {
-  return {
-    position: 'absolute',
-    top: '0',
-    left: '0',
-    width: '100%',
-    height: '100%',
-    borderRadius: '50%',
-    border: '2px solid #000',
-  };
-});
-const StyledInnerCircle = styled('div')(({ theme }) => {
-  return {
-    position: 'absolute',
-    top: '8px',
-    left: '8px',
-    width: '34px',
-    height: '34px',
-    borderRadius: '50%',
-    border: '2px solid #000',
-  };
-});
-
-const StyledCircle = () => {
-  return (
-    <>
-      <StyledCircleContainer>
-        <StyledOuterCircle></StyledOuterCircle>
-        <StyledInnerCircle></StyledInnerCircle>
-      </StyledCircleContainer>
-    </>
-  );
-};
 
 export const QuickSearchTips = (
   props: PopperProps & Omit<TooltipProps, 'title'>
@@ -79,10 +63,10 @@ export const QuickSearchTips = (
     <Popper
       {...props}
       content={
-        <>
-          <StyledCircle />
+        <div>
+          <StyledCircleContainer />
           <StyledTooltip placement={placement}>{content}</StyledTooltip>
-        </>
+        </div>
       }
     >
       {children}
