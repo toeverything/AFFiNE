@@ -13,5 +13,5 @@ export default function createEmotionCache() {
     insertionPoint = emotionInsertionPoint ?? undefined;
   }
 
-  return createCache({ key: 'affine-style', insertionPoint });
+  return createCache({ key: 'affine', insertionPoint });
 }

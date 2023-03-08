@@ -135,7 +135,7 @@ export class DataCenter {
     // assert(workspaceInfo, 'Workspace not found');
     return (
       // this._workspaceInstances.get(workspaceId) ||
-      createBlocksuiteWorkspace(workspaceId)
+      createBlocksuiteWorkspace({ id: workspaceId })
     );
   }
 

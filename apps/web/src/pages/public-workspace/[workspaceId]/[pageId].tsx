@@ -90,15 +90,13 @@ const PublicWorkspaceDetailPageInner: React.FC<{
           <NavContainer>
             <Breadcrumbs>
               <StyledBreadcrumbs
-                href={`/public-workspace/${blockSuiteWorkspace.room}`}
+                href={`/public-workspace/${blockSuiteWorkspace.id}`}
               >
                 <WorkspaceAvatar size={24} name={name} avatar={avatar} />
                 <span>{name}</span>
               </StyledBreadcrumbs>
               <StyledBreadcrumbs
-                href={`/public-workspace/${
-                  blockSuiteWorkspace.room as string
-                }/${pageId}`}
+                href={`/public-workspace/${blockSuiteWorkspace.id}/${pageId}`}
               >
                 <PaperIcon fontSize={24} />
                 <span>{pageTitle ? pageTitle : t('Untitled')}</span>

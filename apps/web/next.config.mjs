@@ -56,9 +56,10 @@ const nextConfig = {
   },
   experimental: {
     swcPlugins: [
+      process.env.COVERAGE === 'true' && ['swc-plugin-coverage-instrument', {}],
       ['@swc-jotai/debug-label', {}],
       // ['@swc-jotai/react-refresh', {}],
-    ],
+    ].filter(Boolean),
   },
   reactStrictMode: true,
   transpilePackages: [
@@ -85,7 +86,6 @@ const nextConfig = {
       loader: 'raw-loader',
     });
     config.resolve.alias['yjs'] = require.resolve('yjs');
-    config.resolve.alias['@mui/styled-engine'] = '@mui/styled-engine-sc';
 
     if (!isServer && !dev) {
       config.devtool = 'hidden-nosources-source-map';

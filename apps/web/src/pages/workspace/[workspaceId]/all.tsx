@@ -1,8 +1,9 @@
 import { useTranslation } from '@affine/i18n';
 import { FolderIcon } from '@blocksuite/icons';
-import { assertExists } from '@blocksuite/store';
+import { assertExists, nanoid } from '@blocksuite/store';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 
 import {
   QueryParamError,
@@ -20,6 +21,29 @@ const AllPage: NextPageWithLayout = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useSyncRouterWithCurrentWorkspace(router);
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+    if (currentWorkspace?.blockSuiteWorkspace.isEmpty) {
+      // this is a new workspace, so we should redirect to the new page
+      const pageId = nanoid();
+      currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
+        currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
+          init: true,
+        });
+        assertExists(pageId, id);
+        router.push({
+          pathname: '/workspace/[workspaceId]/[pageId]',
+          query: {
+            workspaceId: currentWorkspace.id,
+            pageId,
+          },
+        });
+      });
+      currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+    }
+  }, [currentWorkspace, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
@@ -50,6 +74,9 @@ const AllPage: NextPageWithLayout = () => {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
+        <Head>
+          <title>{t('All Pages')} - AFFiNE</title>
+        </Head>
         <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}
@@ -61,6 +88,9 @@ const AllPage: NextPageWithLayout = () => {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
+        <Head>
+          <title>{t('All Pages')} - AFFiNE</title>
+        </Head>
         <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}

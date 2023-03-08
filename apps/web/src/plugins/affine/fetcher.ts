@@ -51,6 +51,14 @@ export const fetcher = async (
         return null;
       }
       return storage.get(key);
+    } else if (query[0] === QueryKey.acceptInvite) {
+      const invitingCode = query[1];
+      if (typeof invitingCode !== 'string') {
+        throw new TypeError('invitingCode must be a string');
+      }
+      return apis.acceptInviting({
+        invitingCode,
+      });
     }
   } else {
     if (query === QueryKey.getWorkspaces) {
@@ -77,6 +85,7 @@ export const fetcher = async (
 };
 
 export const QueryKey = {
+  acceptInvite: 'acceptInvite',
   getImage: 'getImage',
   getUser: 'getUser',
   getWorkspaces: 'getWorkspaces',

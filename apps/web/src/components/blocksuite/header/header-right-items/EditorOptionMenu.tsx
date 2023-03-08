@@ -13,6 +13,7 @@ import {
   MoreVerticalIcon,
 } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
+import { useTheme } from '@mui/material';
 
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -24,6 +25,8 @@ import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/Icons';
 
 const PopoverContent = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
   const [pageId] = useCurrentPageId();
@@ -48,7 +51,13 @@ const PopoverContent = () => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavoritedIcon /> : <FavoriteIcon />}
+        icon={
+          favorite ? (
+            <FavoritedIcon style={{ color: theme.colors.primaryColor }} />
+          ) : (
+            <FavoriteIcon />
+          )
+        }
       >
         {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>
@@ -111,7 +120,7 @@ const PopoverContent = () => {
 export const EditorOptionMenu = () => {
   return (
     <Menu content={<PopoverContent />} placement="bottom-end" trigger="click">
-      <IconButton data-testid="editor-option-menu">
+      <IconButton data-testid="editor-option-menu" iconSize={[20, 20]}>
         <MoreVerticalIcon />
       </IconButton>
     </Menu>

@@ -4,11 +4,9 @@ import { CloseIcon } from '@blocksuite/icons';
 import React from 'react';
 
 import { useCurrentUser } from '../../../hooks/current/use-current-user';
-import { AffineWorkspace } from '../../../shared';
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 
 interface EnableAffineCloudModalProps {
-  workspace: AffineWorkspace;
   open: boolean;
   onConfirm: () => void;
   onClose: () => void;

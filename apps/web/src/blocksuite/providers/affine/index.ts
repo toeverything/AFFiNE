@@ -9,8 +9,8 @@ const hashMap = new Map<string, ArrayBuffer>();
 export const createAffineDownloadProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): AffineDownloadProvider => {
-  assertExists(blockSuiteWorkspace.room);
-  const id = blockSuiteWorkspace.room;
+  assertExists(blockSuiteWorkspace.id);
+  const id = blockSuiteWorkspace.id;
   return {
     flavour: 'affine-download',
     background: true,

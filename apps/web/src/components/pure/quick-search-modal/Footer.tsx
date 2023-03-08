@@ -36,7 +36,7 @@ export const Footer: React.FC<FooterProps> = ({
         router.push({
           pathname: '/workspace/[workspaceId]/[pageId]',
           query: {
-            workspaceId: blockSuiteWorkspace.room,
+            workspaceId: blockSuiteWorkspace.id,
             pageId,
           },
         });
