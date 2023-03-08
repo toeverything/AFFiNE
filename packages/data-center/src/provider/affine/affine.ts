@@ -172,15 +172,15 @@ export class AffineProvider extends BaseProvider {
   }
 
   private _getWebsocketProvider(workspace: BlocksuiteWorkspace) {
-    const { doc, room } = workspace;
-    assert(room);
+    const { doc, id } = workspace;
+    assert(id);
     assert(doc);
     let ws = this._wsMap.get(workspace);
     if (!ws) {
       const wsUrl = `${
         window.location.protocol === 'https:' ? 'wss' : 'ws'
       }://${window.location.host}/api/sync/`;
-      ws = new WebsocketProvider(wsUrl, room, doc, {
+      ws = new WebsocketProvider(wsUrl, id, doc, {
         params: { token: this._apis.auth.refresh },
         // @ts-expect-error ignore the type
         awareness: workspace.awarenessStore.awareness,
@@ -200,7 +200,7 @@ export class AffineProvider extends BaseProvider {
     blocksuiteWorkspace: BlocksuiteWorkspace,
     published = false
   ) {
-    const { room: workspaceId } = blocksuiteWorkspace;
+    const { id: workspaceId } = blocksuiteWorkspace;
     assert(workspaceId, 'Blocksuite Workspace without room(workspaceId).');
     const updates = await this._apis.downloadWorkspace(workspaceId, published);
     await applyUpdate(blocksuiteWorkspace, new Uint8Array(updates));
@@ -217,8 +217,8 @@ export class AffineProvider extends BaseProvider {
     );
     // FIXME: if add indexedDB cache in the future, can remove following line.
     await this._applyCloudUpdates(workspace);
-    const { room } = workspace;
-    assert(room);
+    const { id } = workspace;
+    assert(id);
     this.linkLocal(workspace);
     const ws = this._getWebsocketProvider(workspace);
     // close all websocket links
@@ -364,11 +364,11 @@ export class AffineProvider extends BaseProvider {
 
   public override async linkLocal(workspace: BlocksuiteWorkspace) {
     return workspace;
-    // assert(workspace.room);
-    // let idb = this._idbMap.get(workspace.room);
+    // assert(workspace.id);
+    // let idb = this._idbMap.get(workspace.id);
     // idb?.destroy();
-    // idb = new IndexedDBProvider(workspace.room, workspace.doc);
-    // this._idbMap.set(workspace.room, idb);
+    // idb = new IndexedDBProvider(workspace.id, workspace.doc);
+    // this._idbMap.set(workspace.id, idb);
     // await idb.whenSynced;
     // this._logger('Local data loaded');
     // return workspace;

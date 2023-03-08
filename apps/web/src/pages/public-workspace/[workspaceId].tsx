@@ -61,7 +61,7 @@ const ListPageInner: React.FC<{
       <NavContainer>
         <Breadcrumbs>
           <StyledBreadcrumbs
-            href={`/public-workspace/${blockSuiteWorkspace.room}`}
+            href={`/public-workspace/${blockSuiteWorkspace.id}`}
           >
             <WorkspaceAvatar size={24} name={name} avatar={avatar} />
             <span>{name}</span>

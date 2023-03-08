@@ -29,7 +29,7 @@ const createAffineWebSocketProvider = (
       }://${window.location.host}/api/sync/`;
       webSocketProvider = new WebsocketProvider(
         wsUrl,
-        blockSuiteWorkspace.room as string,
+        blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc,
         {
           params: { token: apis.auth.refresh },
@@ -66,12 +66,9 @@ const createIndexedDBProvider = (
       indexeddbProvider = null;
     },
     connect: () => {
-      providerLogger.info(
-        'connect indexeddb provider',
-        blockSuiteWorkspace.room
-      );
+      providerLogger.info('connect indexeddb provider', blockSuiteWorkspace.id);
       indexeddbProvider = new IndexeddbPersistence(
-        blockSuiteWorkspace.room as string,
+        blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc
       );
     },
@@ -79,7 +76,7 @@ const createIndexedDBProvider = (
       assertExists(indexeddbProvider);
       providerLogger.info(
         'disconnect indexeddb provider',
-        blockSuiteWorkspace.room
+        blockSuiteWorkspace.id
       );
       indexeddbProvider.destroy();
       indexeddbProvider = null;

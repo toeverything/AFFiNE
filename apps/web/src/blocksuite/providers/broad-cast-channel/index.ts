@@ -78,17 +78,14 @@ export const createBroadCastChannelProvider = (
     flavour: 'broadcast-channel',
     background: false,
     connect: () => {
-      assertExists(blockSuiteWorkspace.room);
+      assertExists(blockSuiteWorkspace.id);
       broadcastChannel = Object.assign(
-        new BroadcastChannel(blockSuiteWorkspace.room),
+        new BroadcastChannel(blockSuiteWorkspace.id),
         {
           onmessage: handleBroadcastChannelMessage,
         }
       );
-      providerLogger.info(
-        'connect broadcast channel',
-        blockSuiteWorkspace.room
-      );
+      providerLogger.info('connect broadcast channel', blockSuiteWorkspace.id);
       const docDiff = Y.encodeStateVector(doc);
       broadcastChannel.postMessage(['doc:diff', docDiff, awareness.clientID]);
       const docUpdateV2 = Y.encodeStateAsUpdate(doc);
@@ -105,7 +102,7 @@ export const createBroadCastChannelProvider = (
       assertExists(broadcastChannel);
       providerLogger.info(
         'disconnect broadcast channel',
-        blockSuiteWorkspace.room
+        blockSuiteWorkspace.id
       );
       doc.off('update', handleDocUpdate);
       awareness.off('update', handleAwarenessUpdate);

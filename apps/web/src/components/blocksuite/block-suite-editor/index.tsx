@@ -123,7 +123,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
   }, [page]);
   return (
     <div
-      data-testid={`editor-${props.blockSuiteWorkspace.room}-${props.page.id}`}
+      data-testid={`editor-${props.blockSuiteWorkspace.id}-${props.page.id}`}
       className="editor-wrapper"
       style={props.style}
       ref={ref}
