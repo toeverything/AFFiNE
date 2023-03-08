@@ -118,6 +118,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
             </StyledSwitchWrapper>
             <Content ellipsis={true}>{title}</Content>
             <QuickSearchTips
+              data-testid="quick-search-tips"
               content={tipsContent()}
               placement="bottom"
               open={openTips}
