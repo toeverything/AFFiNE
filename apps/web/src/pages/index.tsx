@@ -3,25 +3,32 @@ import { useRouter } from 'next/router';
 import React, { Suspense, useEffect } from 'react';
 
 import { PageLoading } from '../components/pure/loading';
+import { useLastWorkspaceId } from '../hooks/affine/use-last-leave-workspace-id';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useWorkspaces } from '../hooks/use-workspaces';
 
 const IndexPageInner = () => {
   const router = useRouter();
   const workspaces = useWorkspaces();
+  const lastWorkspaceId = useLastWorkspaceId();
+
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
-    const firstWorkspace = workspaces.at(0);
-    if (firstWorkspace) {
+    const targetWorkspace =
+      (lastWorkspaceId &&
+        workspaces.find(({ id }) => id === lastWorkspaceId)) ||
+      workspaces.at(0);
+
+    if (targetWorkspace) {
       const pageId =
-        firstWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
+        targetWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
       if (pageId) {
         router.replace({
           pathname: '/workspace/[workspaceId]/[pageId]',
           query: {
-            workspaceId: firstWorkspace.id,
+            workspaceId: targetWorkspace.id,
             pageId,
           },
         });
@@ -32,29 +39,29 @@ const IndexPageInner = () => {
           router.replace({
             pathname: '/workspace/[workspaceId]/all',
             query: {
-              workspaceId: firstWorkspace.id,
+              workspaceId: targetWorkspace.id,
             },
           });
         }, 1000);
-        const dispose = firstWorkspace.blockSuiteWorkspace.slots.pageAdded.once(
-          pageId => {
+        const dispose =
+          targetWorkspace.blockSuiteWorkspace.slots.pageAdded.once(pageId => {
             clearTimeout(clearId);
             router.replace({
               pathname: '/workspace/[workspaceId]/[pageId]',
               query: {
-                workspaceId: firstWorkspace.id,
+                workspaceId: targetWorkspace.id,
                 pageId,
               },
             });
-          }
-        );
+          });
         return () => {
           clearTimeout(clearId);
           dispose.dispose();
         };
       }
     }
-  }, [router, workspaces]);
+  }, [lastWorkspaceId, router, workspaces]);
+
   return <PageLoading />;
 };
 

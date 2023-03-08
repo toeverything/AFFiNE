@@ -8,7 +8,7 @@ export const StyledSliderBar = styled('div')<{ show: boolean }>(
       height: '100vh',
       minHeight: '450px',
       background: theme.colors.hubBackground,
-      boxShadow: theme.shadow.modal,
+      boxShadow: theme.shadow.popover,
       transition: 'width .15s, padding .15s',
       position: 'relative',
       zIndex: theme.zIndex.modal,
