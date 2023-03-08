@@ -23,12 +23,10 @@
     "@mui/base": "5.0.0-alpha.119",
     "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.11",
-    "@mui/styled-engine-sc": "^5.11.11",
     "lit": "^2.6.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-is": "^18.2.0",
-    "styled-components": "^5.3.8"
+    "react-is": "^18.2.0"
   },
   "devDependencies": {
     "@storybook/addon-actions": "7.0.0-beta.60",
