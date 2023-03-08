@@ -50,7 +50,7 @@ export const WorkspaceDeleteModal = ({
             <Trans i18nKey="Delete Workspace Description">
               Deleting (
               <StyledWorkspaceName>
-                {{ workspace: workspace.blockSuiteWorkspace.meta.name } as any}
+                {{ workspaceName } as any}
               </StyledWorkspaceName>
               ) cannot be undone, please proceed with caution. All contents will
               be lost.
@@ -61,7 +61,7 @@ export const WorkspaceDeleteModal = ({
             <Trans i18nKey="Delete Workspace Description2">
               Deleting (
               <StyledWorkspaceName>
-                {{ workspace: workspace.blockSuiteWorkspace.meta.name } as any}
+                {{ workspaceName } as any}
               </StyledWorkspaceName>
               ) will delete both local and cloud data, this operation cannot be
               undone, please proceed with caution.
@@ -72,11 +72,9 @@ export const WorkspaceDeleteModal = ({
           <Input
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
-            placeholder={t('Delete Workspace placeholder', {
-              workspaceName: workspaceName,
-            })}
+            placeholder={t('Delete Workspace placeholder')}
             value={deleteStr}
-            width={284}
+            width={315}
             height={42}
           />
         </StyledInputContent>
