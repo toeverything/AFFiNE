@@ -67,16 +67,20 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       } else {
         console.debug('Initializing page with default content');
         // Add page block and surface block at root level
-        const title =
-          localStorage.getItem(kFirstPage) === null ? exampleTitle : undefined;
+        const isFirstPage = page.meta.init === true;
+        if (isFirstPage) {
+          page.workspace.setPageMeta(page.id, {
+            init: false,
+          });
+        }
+        const title = isFirstPage ? exampleTitle : undefined;
         const pageBlockId = page.addBlockByFlavour('affine:page', {
           title: new page.Text(title),
         });
         page.addBlockByFlavour('affine:surface', {}, null);
         const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
         page.addBlockByFlavour('affine:paragraph', {}, frameId);
-        if (localStorage.getItem(kFirstPage) === null) {
-          // fixme(himself65): remove
+        if (isFirstPage) {
           editor.clipboard.importMarkdown(exampleText, frameId);
           props.blockSuiteWorkspace.setPageMeta(page.id, { title });
           localStorage.setItem(kFirstPage, 'true');
