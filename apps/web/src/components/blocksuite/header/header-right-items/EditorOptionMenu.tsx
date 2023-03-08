@@ -111,7 +111,7 @@ const PopoverContent = () => {
 export const EditorOptionMenu = () => {
   return (
     <Menu content={<PopoverContent />} placement="bottom-end" trigger="click">
-      <IconButton data-testid="editor-option-menu">
+      <IconButton data-testid="editor-option-menu" iconSize={[20, 20]}>
         <MoreVerticalIcon />
       </IconButton>
     </Menu>
