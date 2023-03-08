@@ -15,9 +15,8 @@ import {
 } from '@blocksuite/icons';
 import React, { useCallback, useState } from 'react';
 
-import { lockMutex } from '../../../../../atoms';
 import { useMembers } from '../../../../../hooks/affine/use-members';
-import { transformWorkspace } from '../../../../../plugins';
+import { useTransformWorkspace } from '../../../../../hooks/use-transform-workspace';
 import {
   AffineWorkspace,
   LocalWorkspace,
@@ -176,6 +175,7 @@ const LocalCollaborationPanel: React.FC<
 > = ({ workspace, onTransferWorkspace }) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const transformWorkspace = useTransformWorkspace();
   return (
     <>
       <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
@@ -193,17 +193,14 @@ const LocalCollaborationPanel: React.FC<
         onClose={() => {
           setOpen(false);
         }}
-        onConform={() => {
-          // todo(himself65): move this function out of affine component
-          lockMutex(async () => {
-            const id = await transformWorkspace(
-              RemWorkspaceFlavour.LOCAL,
-              RemWorkspaceFlavour.AFFINE,
-              workspace
-            );
-            onTransferWorkspace(id);
-            setOpen(false);
-          });
+        onConform={async () => {
+          const id = await transformWorkspace(
+            RemWorkspaceFlavour.LOCAL,
+            RemWorkspaceFlavour.AFFINE,
+            workspace
+          );
+          onTransferWorkspace(id);
+          setOpen(false);
         }}
       />
     </>
