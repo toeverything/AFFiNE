@@ -45,7 +45,6 @@ const App = function App({
 }) {
   const getLayout = Component.getLayout || EmptyLayout;
   const i18n = useMemo(() => createI18n(), []);
-
   if (process.env.NODE_ENV === 'development') {
     // I know what I'm doing
     // eslint-disable-next-line react-hooks/rules-of-hooks
