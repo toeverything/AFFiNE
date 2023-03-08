@@ -25,29 +25,23 @@ const AllPage: NextPageWithLayout = () => {
     if (!router.isReady) {
       return;
     }
-    if (currentWorkspace) {
-      const doc = currentWorkspace.blockSuiteWorkspace.doc;
-      if (doc.store.clients.size === 1) {
-        const items = [...doc.store.clients.values()][0];
-        if (items.length <= 1) {
-          // this is a new workspace, so we should redirect to the new page
-          const pageId = nanoid();
-          currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
-            currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
-              init: true,
-            });
-            assertExists(pageId, id);
-            router.push({
-              pathname: '/workspace/[workspaceId]/[pageId]',
-              query: {
-                workspaceId: currentWorkspace.id,
-                pageId,
-              },
-            });
-          });
-          currentWorkspace.blockSuiteWorkspace.createPage(pageId);
-        }
-      }
+    if (currentWorkspace?.blockSuiteWorkspace.isEmpty) {
+      // this is a new workspace, so we should redirect to the new page
+      const pageId = nanoid();
+      currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
+        currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
+          init: true,
+        });
+        assertExists(pageId, id);
+        router.push({
+          pathname: '/workspace/[workspaceId]/[pageId]',
+          query: {
+            workspaceId: currentWorkspace.id,
+            pageId,
+          },
+        });
+      });
+      currentWorkspace.blockSuiteWorkspace.createPage(pageId);
     }
   }, [currentWorkspace, router]);
   const onClickPage = useCallback(

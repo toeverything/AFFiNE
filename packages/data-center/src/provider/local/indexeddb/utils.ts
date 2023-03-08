@@ -9,7 +9,7 @@ const { encodeStateAsUpdate, mergeUpdates } = BlocksuiteWorkspace.Y;
 export const writeUpdatesToLocal = async (
   blocksuiteWorkspace: BlocksuiteWorkspace
 ) => {
-  const workspaceId = blocksuiteWorkspace.room;
+  const workspaceId = blocksuiteWorkspace.id;
   assert(workspaceId);
   await idb.deleteDB(workspaceId);
   const db = await idb.openDB(workspaceId, db =>
@@ -27,7 +27,7 @@ export const writeUpdatesToLocal = async (
 export const applyLocalUpdates = async (
   blocksuiteWorkspace: BlocksuiteWorkspace
 ) => {
-  const workspaceId = blocksuiteWorkspace.room;
+  const workspaceId = blocksuiteWorkspace.id;
   assert(workspaceId, 'Blocksuite workspace without room(workspaceId).');
   const db = await idb.openDB(workspaceId, db =>
     idb.createStores(db, [['updates', { autoIncrement: true }], ['custom']])

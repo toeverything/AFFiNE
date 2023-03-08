@@ -31,8 +31,8 @@ export const Results: React.FC<ResultsProps> = ({
 }) => {
   useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageList = usePageMeta(blockSuiteWorkspace);
-  assertExists(blockSuiteWorkspace.room);
-  const List = useSwitchToConfig(blockSuiteWorkspace.room);
+  assertExists(blockSuiteWorkspace.id);
+  const List = useSwitchToConfig(blockSuiteWorkspace.id);
   const [results, setResults] = useState(new Map<string, string | undefined>());
   const recentlyViewed = useRecentlyViewed();
   const { t } = useTranslation();
@@ -64,12 +64,12 @@ export const Results: React.FC<ResultsProps> = ({
                   key={result.id}
                   onSelect={() => {
                     onClose();
-                    assertExists(blockSuiteWorkspace.room);
+                    assertExists(blockSuiteWorkspace.id);
                     // fixme: refactor to `useRouterHelper`
                     router.push({
                       pathname: '/workspace/[workspaceId]/[pageId]',
                       query: {
-                        workspaceId: blockSuiteWorkspace.room,
+                        workspaceId: blockSuiteWorkspace.id,
                         pageId: result.id,
                       },
                     });
@@ -108,7 +108,7 @@ export const Results: React.FC<ResultsProps> = ({
                       router.push({
                         pathname: '/workspace/[workspaceId]/[pageId]',
                         query: {
-                          workspaceId: blockSuiteWorkspace.room,
+                          workspaceId: blockSuiteWorkspace.id,
                           pageId: recent.id,
                         },
                       });
