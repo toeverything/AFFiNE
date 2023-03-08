@@ -29,7 +29,7 @@ export const WorkspaceDeleteModal = ({
   onDeleteWorkspace,
 }: WorkspaceDeleteProps) => {
   const [deleteStr, setDeleteStr] = useState<string>('');
-  const allowDelete = deleteStr.toLowerCase() === 'delete';
+  const allowDelete = deleteStr === workspace.blockSuiteWorkspace.meta.name;
   const { t } = useTranslation();
 
   const handleDelete = useCallback(() => {
@@ -68,11 +68,13 @@ export const WorkspaceDeleteModal = ({
           <Input
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
-            placeholder={t('Delete Workspace placeholder')}
+            placeholder={t('Delete Workspace placeholder', {
+              workspace: workspace.blockSuiteWorkspace.meta.name,
+            })}
             value={deleteStr}
             width={284}
             height={42}
-          ></Input>
+          />
         </StyledInputContent>
         <StyledButtonContent>
           <Button shape="circle" onClick={onClose}>
