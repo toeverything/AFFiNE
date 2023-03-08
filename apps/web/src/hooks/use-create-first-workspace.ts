@@ -26,18 +26,12 @@ export function useCreateFirstWorkspace() {
       const workspace = await LocalPlugin.CRUD.get(id);
       assertExists(workspace);
       assertEquals(workspace.id, id);
-      const newPageId = nanoid();
-      workspace.blockSuiteWorkspace.slots.pageAdded.once(pageId => {
-        assertEquals(pageId, newPageId);
-        set(workspaces => [
-          ...workspaces,
-          {
-            id: workspace.id,
-            flavour: RemWorkspaceFlavour.LOCAL,
-          },
-        ]);
-      });
-      workspace.blockSuiteWorkspace.createPage(newPageId);
+      set([
+        {
+          id: workspace.id,
+          flavour: RemWorkspaceFlavour.LOCAL,
+        },
+      ]);
     }
     if (
       jotaiWorkspaces.length === 0 &&
