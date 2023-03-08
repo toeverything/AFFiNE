@@ -8,6 +8,7 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useRecentlyViewed } from '../../../hooks/affine/use-recent-views';
 import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMeta } from '../../../hooks/use-page-meta';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
 import { NoResultSVG } from './NoResultSVG';
@@ -36,6 +37,7 @@ export const Results: React.FC<ResultsProps> = ({
   const [results, setResults] = useState(new Map<string, string | undefined>());
   const recentlyViewed = useRecentlyViewed();
   const { t } = useTranslation();
+  const { jumpToPage } = useRouterHelper(router);
   useEffect(() => {
     setResults(blockSuiteWorkspace.search(query));
     //Save the Map<BlockId, PageId> obtained from the search as state
@@ -65,14 +67,7 @@ export const Results: React.FC<ResultsProps> = ({
                   onSelect={() => {
                     onClose();
                     assertExists(blockSuiteWorkspace.id);
-                    // fixme: refactor to `useRouterHelper`
-                    router.push({
-                      pathname: '/workspace/[workspaceId]/[pageId]',
-                      query: {
-                        workspaceId: blockSuiteWorkspace.id,
-                        pageId: result.id,
-                      },
-                    });
+                    jumpToPage(blockSuiteWorkspace.id, result.id);
                   }}
                   value={result.id}
                 >
@@ -105,13 +100,7 @@ export const Results: React.FC<ResultsProps> = ({
                     value={recent.id}
                     onSelect={() => {
                       onClose();
-                      router.push({
-                        pathname: '/workspace/[workspaceId]/[pageId]',
-                        query: {
-                          workspaceId: blockSuiteWorkspace.id,
-                          pageId: recent.id,
-                        },
-                      });
+                      jumpToPage(blockSuiteWorkspace.id, recent.id);
                     }}
                   >
                     <StyledListItem>

@@ -5,10 +5,13 @@ import React, { Suspense, useEffect } from 'react';
 import { PageLoading } from '../components/pure/loading';
 import { useLastWorkspaceId } from '../hooks/affine/use-last-leave-workspace-id';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
+import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces } from '../hooks/use-workspaces';
+import { WorkspaceSubPath } from '../shared';
 
 const IndexPageInner = () => {
   const router = useRouter();
+  const { jumpToPage, jumpToSubPath } = useRouterHelper(router);
   const workspaces = useWorkspaces();
   const lastWorkspaceId = useLastWorkspaceId();
 
@@ -25,34 +28,21 @@ const IndexPageInner = () => {
       const pageId =
         targetWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
       if (pageId) {
-        router.replace({
-          pathname: '/workspace/[workspaceId]/[pageId]',
-          query: {
-            workspaceId: targetWorkspace.id,
-            pageId,
-          },
-        });
+        jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
         return;
       } else {
         const clearId = setTimeout(() => {
           dispose.dispose();
-          router.replace({
-            pathname: '/workspace/[workspaceId]/all',
-            query: {
-              workspaceId: targetWorkspace.id,
-            },
-          });
+          jumpToSubPath(
+            targetWorkspace.id,
+            WorkspaceSubPath.ALL,
+            RouteLogic.REPLACE
+          );
         }, 1000);
         const dispose =
           targetWorkspace.blockSuiteWorkspace.slots.pageAdded.once(pageId => {
             clearTimeout(clearId);
-            router.replace({
-              pathname: '/workspace/[workspaceId]/[pageId]',
-              query: {
-                workspaceId: targetWorkspace.id,
-                pageId,
-              },
-            });
+            jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
           });
         return () => {
           clearTimeout(clearId);
@@ -60,7 +50,7 @@ const IndexPageInner = () => {
         };
       }
     }
-  }, [lastWorkspaceId, router, workspaces]);
+  }, [jumpToPage, jumpToSubPath, lastWorkspaceId, router, workspaces]);
 
   return <PageLoading />;
 };

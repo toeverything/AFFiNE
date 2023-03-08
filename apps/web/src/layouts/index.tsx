@@ -23,6 +23,7 @@ import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
+import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
@@ -131,6 +132,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
     }
   }, [currentWorkspace]);
   const router = useRouter();
+  const { jumpToPage, jumpToPublicWorkspacePage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(
     currentWorkspace?.blockSuiteWorkspace ?? null
@@ -141,17 +143,13 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const handleOpenPage = useCallback(
     (pageId: string) => {
       assertExists(currentWorkspace);
-      router.push({
-        pathname: `/${
-          isPublicWorkspace ? 'public-workspace' : 'workspace'
-        }/[workspaceId]/[pageId]`,
-        query: {
-          workspaceId: currentWorkspace.id,
-          pageId,
-        },
-      });
+      if (isPublicWorkspace) {
+        jumpToPublicWorkspacePage(currentWorkspace.id, pageId);
+      } else {
+        jumpToPage(currentWorkspace.id, pageId);
+      }
     },
-    [currentWorkspace, isPublicWorkspace, router]
+    [currentWorkspace, isPublicWorkspace, jumpToPage, jumpToPublicWorkspacePage]
   );
   const handleCreatePage = useCallback(async () => {
     return helper.createPage(nanoid());

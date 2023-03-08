@@ -14,11 +14,13 @@ import useSWR from 'swr';
 import inviteError from '../../../public/imgs/invite-error.svg';
 import inviteSuccess from '../../../public/imgs/invite-success.svg';
 import { PageLoading } from '../../components/pure/loading';
+import { RouteLogic, useRouterHelper } from '../../hooks/use-router-helper';
 import { QueryKey } from '../../plugins/affine/fetcher';
-import { NextPageWithLayout } from '../../shared';
+import { NextPageWithLayout, WorkspaceSubPath } from '../../shared';
 
 const InvitePage: NextPageWithLayout = () => {
   const router = useRouter();
+  const { jumpToSubPath } = useRouterHelper(router);
   const { data: inviteData } = useSWR<Permission>(
     typeof router.query.invite_code === 'string'
       ? [QueryKey.acceptInvite, router.query.invite_code]
@@ -33,12 +35,11 @@ const InvitePage: NextPageWithLayout = () => {
           type="primary"
           shape="round"
           onClick={() => {
-            router.replace({
-              pathname: `/workspace/[workspaceId]/all`,
-              query: {
-                workspaceId: inviteData.workspace_id,
-              },
-            });
+            jumpToSubPath(
+              inviteData.workspace_id,
+              WorkspaceSubPath.ALL,
+              RouteLogic.REPLACE
+            );
           }}
         >
           Go to Workspace

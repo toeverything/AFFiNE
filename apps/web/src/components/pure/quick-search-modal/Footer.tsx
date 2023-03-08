@@ -6,6 +6,7 @@ import { NextRouter } from 'next/router';
 import React from 'react';
 
 import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { StyledModalFooterContent } from './style';
 
@@ -24,6 +25,7 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
+  const { jumpToPage } = useRouterHelper(router);
 
   return (
     <Command.Item
@@ -33,13 +35,7 @@ export const Footer: React.FC<FooterProps> = ({
         const id = nanoid();
         const pageId = await createPage(id, query);
         assertEquals(pageId, id);
-        router.push({
-          pathname: '/workspace/[workspaceId]/[pageId]',
-          query: {
-            workspaceId: blockSuiteWorkspace.id,
-            pageId,
-          },
-        });
+        jumpToPage(blockSuiteWorkspace.id, pageId);
       }}
     >
       <StyledModalFooterContent>
