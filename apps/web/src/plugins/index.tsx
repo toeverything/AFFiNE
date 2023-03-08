@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { jotaiStore, jotaiWorkspacesAtom } from '../atoms';
 import {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
@@ -20,7 +19,14 @@ type SettingProps<Flavour extends RemWorkspaceFlavour> =
     currentTab: SettingPanel;
     onChangeTab: (tab: SettingPanel) => void;
     onDeleteWorkspace: () => void;
-    onTransformWorkspace: (targetWorkspaceId: string) => void;
+    onTransformWorkspace: <
+      From extends RemWorkspaceFlavour,
+      To extends RemWorkspaceFlavour
+    >(
+      from: From,
+      to: To,
+      workspace: FlavourToWorkspace[From]
+    ) => void;
   };
 
 type PageDetailProps<Flavour extends RemWorkspaceFlavour> =
@@ -64,27 +70,3 @@ export const WorkspacePlugins = {
 } satisfies {
   [Key in RemWorkspaceFlavour]: WorkspacePlugin<Key>;
 };
-
-/**
- * Transform workspace from one flavour to another
- *
- * The logic here is to delete the old workspace and create a new one.
- */
-export async function transformWorkspace<
-  From extends RemWorkspaceFlavour,
-  To extends RemWorkspaceFlavour
->(from: From, to: To, workspace: FlavourToWorkspace[From]): Promise<string> {
-  // fixme: type cast
-  await WorkspacePlugins[from].CRUD.delete(workspace as any);
-  const newId = await WorkspacePlugins[to].CRUD.create(
-    workspace.blockSuiteWorkspace
-  );
-  const workspaces = jotaiStore.get(jotaiWorkspacesAtom);
-  const idx = workspaces.findIndex(ws => ws.id === workspace.id);
-  workspaces.splice(idx, 1, {
-    id: newId,
-    flavour: to,
-  });
-  jotaiStore.set(jotaiWorkspacesAtom, [...workspaces]);
-  return newId;
-}

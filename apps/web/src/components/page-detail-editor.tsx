@@ -1,8 +1,8 @@
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists, Page } from '@blocksuite/store';
 import dynamic from 'next/dynamic';
+import Head from 'next/head';
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 
 import { useBlockSuiteWorkspacePageTitle } from '../hooks/use-blocksuite-workspace-page-title';
 import { usePageMeta } from '../hooks/use-page-meta';
@@ -48,9 +48,9 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   assertExists(meta);
   return (
     <>
-      <Helmet defaultTitle={title}>
+      <Head>
         <title>{title}</title>
-      </Helmet>
+      </Head>
       <BlockSuiteEditorHeader
         isPublic={isPublic}
         isPreview={isPreview}
