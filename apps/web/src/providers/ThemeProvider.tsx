@@ -20,7 +20,10 @@ const ThemeInjector = React.memo<{
   return (
     <GlobalStyles
       styles={{
-        '#__next': {
+        // '#__next': {
+        //   ...globalThemeVariables(themeStyle),
+        // },
+        ':root': {
           ...globalThemeVariables(themeStyle),
         },
         html: {

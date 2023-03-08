@@ -1,5 +1,3 @@
-import '@blocksuite/editor/themes/affine.css';
-
 import { config } from '@affine/env';
 import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';

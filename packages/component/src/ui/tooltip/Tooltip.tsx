@@ -6,7 +6,7 @@ import StyledPopperContainer from '../shared/Container';
 const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   return {
     maxWidth: '320px',
-    boxShadow: theme.shadow.tooltip,
+    boxShadow: theme.shadow.popover,
     padding: '4px 12px',
     backgroundColor: theme.colors.tooltipBackground,
     color: '#fff',
