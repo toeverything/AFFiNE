@@ -4,17 +4,13 @@ import { useState } from 'react';
 import { MoonIcon, SunIcon } from './Icons';
 import { StyledSwitchItem, StyledThemeModeSwitch } from './style';
 export const ThemeModeSwitch = () => {
-  const { theme, setTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [isHover, setIsHover] = useState(false);
-  const [firstTrigger, setFirstTrigger] = useState(false);
   return (
     <StyledThemeModeSwitch
       data-testid="change-theme-container"
       onMouseEnter={() => {
         setIsHover(true);
-        if (!firstTrigger) {
-          setFirstTrigger(true);
-        }
       }}
       onMouseLeave={() => {
         setIsHover(false);
@@ -22,9 +18,8 @@ export const ThemeModeSwitch = () => {
     >
       <StyledSwitchItem
         data-testid="change-theme-light"
-        active={theme === 'light'}
+        active={resolvedTheme === 'light'}
         isHover={isHover}
-        firstTrigger={firstTrigger}
         onClick={() => {
           setTheme('light');
         }}
@@ -33,9 +28,8 @@ export const ThemeModeSwitch = () => {
       </StyledSwitchItem>
       <StyledSwitchItem
         data-testid="change-theme-dark"
-        active={theme === 'dark'}
+        active={resolvedTheme === 'dark'}
         isHover={isHover}
-        firstTrigger={firstTrigger}
         onClick={() => {
           setTheme('dark');
         }}

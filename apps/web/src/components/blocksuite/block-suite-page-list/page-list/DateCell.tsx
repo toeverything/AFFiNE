@@ -19,7 +19,9 @@ export const DateCell = ({
   const value = pageMeta[dateKey] ?? pageMeta[backupKey];
   return (
     <TableCell ellipsis={true} {...props}>
-      {value ? dayjs(value as string).format('YYYY-MM-DD HH:mm') : '--'}
+      {typeof value === 'number'
+        ? dayjs(value).format('YYYY-MM-DD HH:mm')
+        : '--'}
     </TableCell>
   );
 };

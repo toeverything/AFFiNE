@@ -97,7 +97,7 @@ const PopoverContent = () => {
         data-testid="editor-option-menu-delete"
         onClick={() => {
           // fixme(himself65): regression that don't have conform dialog
-          setPageMeta(pageId, { trash: !trash });
+          setPageMeta(pageId, { trash: !trash, trashDate: +new Date() });
           toast(t('Moved to Trash'));
         }}
         icon={<DeleteTemporarilyIcon />}

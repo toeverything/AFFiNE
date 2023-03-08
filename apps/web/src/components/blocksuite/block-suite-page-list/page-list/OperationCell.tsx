@@ -57,12 +57,13 @@ export const OperationCell: React.FC<OperationCellProps> = ({
         {t('Open in new tab')}
       </MenuItem>
       <MenuItem
+        data-testid="move-to-trash"
         onClick={() => {
           setOpen(true);
         }}
         icon={<DeleteTemporarilyIcon />}
       >
-        {t('Delete')}
+        {t('Move to Trash')}
       </MenuItem>
     </>
   );
@@ -83,7 +84,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
       <Confirm
         open={open}
         title={t('Delete page?')}
-        content={t('will be permanently deleted', {
+        content={t('will be moved to Trash', {
           title: pageMeta.title || 'Untitled',
         })}
         confirmText={t('Delete')}

@@ -24,7 +24,7 @@ test.describe('Local first trash page', () => {
       .getByRole('button')
       .first()
       .click();
-    const deleteBtn = page.getByRole('button', { name: 'Delete' });
+    const deleteBtn = page.getByTestId('move-to-trash');
     await deleteBtn.click();
     const confirmTip = page.getByText('Delete page?');
     expect(confirmTip).not.toBeUndefined();
