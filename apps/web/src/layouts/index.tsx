@@ -5,9 +5,9 @@ import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import dynamic from 'next/dynamic';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { Suspense, useCallback, useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
 
 import {
   currentWorkspaceIdAtom,
@@ -173,9 +173,9 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
 
   return (
     <>
-      <Helmet>
+      <Head>
         <title>{title}</title>
-      </Helmet>
+      </Head>
       <StyledPage>
         <WorkSpaceSliderBar
           isPublicWorkspace={isPublicWorkspace}

@@ -26,19 +26,19 @@ export function stringToColour(str: string) {
 
 const hashMap = new Map<string, BlockSuiteWorkspace>();
 export const createEmptyBlockSuiteWorkspace = (
-  room: string,
+  id: string,
   blobOptionsGetter?: BlobOptionsGetter
 ): BlockSuiteWorkspace => {
-  if (hashMap.has(room)) {
-    return hashMap.get(room) as BlockSuiteWorkspace;
+  if (hashMap.has(id)) {
+    return hashMap.get(id) as BlockSuiteWorkspace;
   }
   const workspace = new BlockSuiteWorkspace({
-    room,
+    id,
     isSSR: typeof window === 'undefined',
     blobOptionsGetter,
   })
     .register(builtInSchemas)
     .register(__unstableSchemas);
-  hashMap.set(room, workspace);
+  hashMap.set(id, workspace);
   return workspace;
 };

@@ -13,6 +13,7 @@ import {
   MoreVerticalIcon,
 } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
+import { useTheme } from '@mui/material';
 import { useState } from 'react';
 
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
@@ -25,6 +26,9 @@ import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/Icons';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+
+  // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
   const [pageId] = useCurrentPageId();
   assertExists(workspace);
@@ -48,7 +52,13 @@ export const EditorOptionMenu = () => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        icon={favorite ? <FavoritedIcon /> : <FavoriteIcon />}
+        icon={
+          favorite ? (
+            <FavoritedIcon style={{ color: theme.colors.primaryColor }} />
+          ) : (
+            <FavoriteIcon />
+          )
+        }
       >
         {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>

@@ -13,6 +13,8 @@ import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owne
 import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
 import {
   AffineOfficialWorkspace,
+  FlavourToWorkspace,
+  RemWorkspaceFlavour,
   SettingPanel,
   settingPanel,
 } from '../../../shared';
@@ -33,7 +35,14 @@ export type WorkspaceSettingDetailProps = {
   currentTab: SettingPanel;
   onChangeTab: (tab: SettingPanel) => void;
   onDeleteWorkspace: () => void;
-  onTransferWorkspace: (targetWorkspaceId: string) => void;
+  onTransferWorkspace: <
+    From extends RemWorkspaceFlavour,
+    To extends RemWorkspaceFlavour
+  >(
+    from: From,
+    to: To,
+    workspace: FlavourToWorkspace[From]
+  ) => void;
 };
 
 export type PanelProps = WorkspaceSettingDetailProps;

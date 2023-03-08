@@ -94,7 +94,7 @@ export class AffineErrorBoundary extends Component<
                     .replace({
                       pathname: '/workspace/[workspaceId]/[pageId]',
                       query: {
-                        workspaceId: error.workspace.room,
+                        workspaceId: error.workspace.id,
                         pageId: error.workspace.meta.pageMetas[0].id,
                       },
                     })

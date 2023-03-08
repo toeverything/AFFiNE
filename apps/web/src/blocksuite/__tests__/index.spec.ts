@@ -11,9 +11,7 @@ import { createAffineProviders, createLocalProviders } from '..';
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 
 beforeEach(() => {
-  blockSuiteWorkspace = new BlockSuiteWorkspace({
-    room: 'test',
-  });
+  blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' });
 });
 
 describe('blocksuite providers', () => {

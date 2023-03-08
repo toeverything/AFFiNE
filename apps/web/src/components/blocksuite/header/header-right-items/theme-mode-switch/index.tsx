@@ -1,7 +1,7 @@
+import { DarkModeIcon, LightModeIcon } from '@blocksuite/icons';
 import { useTheme } from 'next-themes';
 import { useState } from 'react';
 
-import { MoonIcon, SunIcon } from './Icons';
 import { StyledSwitchItem, StyledThemeModeSwitch } from './style';
 export const ThemeModeSwitch = () => {
   const { setTheme, resolvedTheme } = useTheme();
@@ -24,7 +24,7 @@ export const ThemeModeSwitch = () => {
           setTheme('light');
         }}
       >
-        <SunIcon />
+        <LightModeIcon />
       </StyledSwitchItem>
       <StyledSwitchItem
         data-testid="change-theme-dark"
@@ -34,7 +34,7 @@ export const ThemeModeSwitch = () => {
           setTheme('dark');
         }}
       >
-        <MoonIcon />
+        <DarkModeIcon />
       </StyledSwitchItem>
     </StyledThemeModeSwitch>
   );
