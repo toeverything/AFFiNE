@@ -149,7 +149,6 @@ legend {
   border: 0;
   font-size: var(--affine-font-base);
   line-height: var(--affine-line-height);
-  color: var(--affine-text-color);
   font-family: var(--affine-font-family);
 }
 body {
