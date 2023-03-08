@@ -1,9 +1,9 @@
 import { Button, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import Head from 'next/head';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 
 import ErrorImg from '../../public/imgs/invite-error.svg';
 
@@ -48,9 +48,9 @@ export const NotfoundPage = () => {
 export default function Custom404() {
   return (
     <>
-      <Helmet>
-        s<title>404 - AFFiNE</title>
-      </Helmet>
+      <Head>
+        <title>404 - AFFiNE</title>
+      </Head>
       <NotfoundPage></NotfoundPage>
     </>
   );

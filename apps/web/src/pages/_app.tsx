@@ -10,7 +10,6 @@ import { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
-import { Helmet, HelmetProvider } from 'react-helmet-async';
 
 import { jotaiStore } from '../atoms';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
@@ -71,47 +70,43 @@ const App = function App({
                 []
               )}
             >
-              <HelmetProvider key="HelmetProvider" context={helmetContext}>
-                <Helmet>
-                  <title>AFFiNE</title>
-                  <meta
-                    name="viewport"
-                    content="initial-scale=1, width=device-width"
-                  />
-                </Helmet>
-                <Head>
-                  <meta name="twitter:card" content="summary_large_image" />
-                  <meta name="twitter:url" content="https://app.affine.pro/" />
-                  <meta
-                    name="twitter:title"
-                    content="AFFiNE：There can be more than Notion and Miro."
-                  />
-                  <meta
-                    name="twitter:description"
-                    content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
-                  />
-                  <meta name="twitter:site" content="@AffineOfficial" />
-                  <meta
-                    name="twitter:image"
-                    content="https://affine.pro/og.jpeg"
-                  />
-                  <meta
-                    property="og:title"
-                    content="AFFiNE：There can be more than Notion and Miro."
-                  />
-                  <meta property="og:type" content="website" />
-                  <meta
-                    property="og:description"
-                    content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
-                  />
-                  <meta property="og:url" content="https://app.affine.pro/" />
-                  <meta
-                    property="og:image"
-                    content="https://affine.pro/og.jpeg"
-                  />
-                </Head>
-                {getLayout(<Component {...pageProps} />)}
-              </HelmetProvider>
+              <Head>
+                <title>AFFiNE</title>
+                <meta
+                  name="viewport"
+                  content="initial-scale=1, width=device-width"
+                />
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:url" content="https://app.affine.pro/" />
+                <meta
+                  name="twitter:title"
+                  content="AFFiNE：There can be more than Notion and Miro."
+                />
+                <meta
+                  name="twitter:description"
+                  content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
+                />
+                <meta name="twitter:site" content="@AffineOfficial" />
+                <meta
+                  name="twitter:image"
+                  content="https://affine.pro/og.jpeg"
+                />
+                <meta
+                  property="og:title"
+                  content="AFFiNE：There can be more than Notion and Miro."
+                />
+                <meta property="og:type" content="website" />
+                <meta
+                  property="og:description"
+                  content="There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together."
+                />
+                <meta property="og:url" content="https://app.affine.pro/" />
+                <meta
+                  property="og:image"
+                  content="https://affine.pro/og.jpeg"
+                />
+              </Head>
+              {getLayout(<Component {...pageProps} />)}
             </ProviderComposer>
           </Suspense>
         </AffineErrorBoundary>
