@@ -33,7 +33,7 @@ export function Modals() {
   );
 
   const router = useRouter();
-  const { jumpToPage, jumpToSubPath } = useRouterHelper(router);
+  const { jumpToSubPath } = useRouterHelper(router);
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
