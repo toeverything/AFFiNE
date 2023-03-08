@@ -23,6 +23,7 @@ export const MenuItem = forwardRef<HTMLButtonElement, IconMenuProps>(
             height: 16,
             style: {
               marginRight: 14,
+              ...icon.props?.style,
             },
           })}
         {children}
