@@ -20,7 +20,14 @@ const ThemeInjector = React.memo<{
   return (
     <GlobalStyles
       styles={{
-        '#__next': globalThemeVariables(themeStyle) as any,
+        '#__next': {
+          ...globalThemeVariables(themeStyle),
+        },
+        html: {
+          fontFamily: themeStyle.font.family,
+          fontSize: themeStyle.font.base,
+          lineHeight: themeStyle.font.lineHeight,
+        },
       }}
     />
   );
