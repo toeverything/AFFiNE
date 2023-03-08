@@ -36,10 +36,10 @@ export class LocalProvider extends BaseProvider {
   }
 
   public override async linkLocal(workspace: BlocksuiteWorkspace) {
-    assert(workspace.room);
+    assert(workspace.id);
     let idb = this._idbMap.get(workspace);
     if (!idb) {
-      idb = new IndexedDBProvider(workspace.room, workspace.doc);
+      idb = new IndexedDBProvider(workspace.id, workspace.doc);
     }
     this._idbMap.set(workspace, idb);
     this._logger.debug('Local data loaded');
@@ -49,7 +49,7 @@ export class LocalProvider extends BaseProvider {
   public override async warpWorkspace(
     workspace: BlocksuiteWorkspace
   ): Promise<BlocksuiteWorkspace> {
-    assert(workspace.room);
+    assert(workspace.id);
     await applyLocalUpdates(workspace);
     await this.linkLocal(workspace);
     return workspace;

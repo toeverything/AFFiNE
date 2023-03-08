@@ -1,5 +1,3 @@
-import '@blocksuite/editor/themes/affine.css';
-
 import { config } from '@affine/env';
 import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
@@ -123,7 +121,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
   }, [page]);
   return (
     <div
-      data-testid={`editor-${props.blockSuiteWorkspace.room}-${props.page.id}`}
+      data-testid={`editor-${props.blockSuiteWorkspace.id}-${props.page.id}`}
       className="editor-wrapper"
       style={props.style}
       ref={ref}

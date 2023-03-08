@@ -4,15 +4,11 @@ import {
   Workspace as BlocksuiteWorkspace,
 } from '@blocksuite/store';
 
-export const createBlocksuiteWorkspace = (
-  workspaceId: string,
-  workspaceOption?: StoreOptions
-) => {
+export const createBlocksuiteWorkspace = (options: StoreOptions) => {
   return new BlocksuiteWorkspace({
-    room: workspaceId,
     defaultFlags: {},
     isSSR: typeof window === 'undefined',
-    ...workspaceOption,
+    ...options,
   })
     .register(builtInSchemas)
     .register(__unstableSchemas);

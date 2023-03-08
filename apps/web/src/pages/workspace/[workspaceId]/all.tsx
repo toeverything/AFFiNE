@@ -12,12 +12,14 @@ import {
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
+  const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useSyncRouterWithCurrentWorkspace(router);
@@ -25,47 +27,29 @@ const AllPage: NextPageWithLayout = () => {
     if (!router.isReady) {
       return;
     }
-    if (currentWorkspace) {
-      const doc = currentWorkspace.blockSuiteWorkspace.doc;
-      if (doc.store.clients.size === 1) {
-        const items = [...doc.store.clients.values()][0];
-        if (items.length <= 1) {
-          // this is a new workspace, so we should redirect to the new page
-          const pageId = nanoid();
-          currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
-            currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
-              init: true,
-            });
-            assertExists(pageId, id);
-            router.push({
-              pathname: '/workspace/[workspaceId]/[pageId]',
-              query: {
-                workspaceId: currentWorkspace.id,
-                pageId,
-              },
-            });
-          });
-          currentWorkspace.blockSuiteWorkspace.createPage(pageId);
-        }
-      }
+    if (currentWorkspace?.blockSuiteWorkspace.isEmpty) {
+      // this is a new workspace, so we should redirect to the new page
+      const pageId = nanoid();
+      currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
+        currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
+          init: true,
+        });
+        assertExists(pageId, id);
+        jumpToPage(currentWorkspace.id, pageId);
+      });
+      currentWorkspace.blockSuiteWorkspace.createPage(pageId);
     }
-  }, [currentWorkspace, router]);
+  }, [currentWorkspace, jumpToPage, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
       if (newTab) {
         window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
       } else {
-        router.push({
-          pathname: '/workspace/[workspaceId]/[pageId]',
-          query: {
-            workspaceId: currentWorkspace.id,
-            pageId,
-          },
-        });
+        jumpToPage(currentWorkspace.id, pageId);
       }
     },
-    [currentWorkspace, router]
+    [currentWorkspace, jumpToPage]
   );
   if (!router.isReady) {
     return <PageLoading />;

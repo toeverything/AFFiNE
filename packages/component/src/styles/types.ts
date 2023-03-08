@@ -127,7 +127,6 @@ export interface AffineThemeCSSVariables {
 
   '--affine-modal-shadow': AffineTheme['shadow']['modal'];
   '--affine-popover-shadow': AffineTheme['shadow']['popover'];
-  '--affine-tooltip-shadow': AffineTheme['shadow']['tooltip'];
   '--affine-font-h1': AffineTheme['font']['h1'];
   '--affine-font-h2': AffineTheme['font']['h2'];
   '--affine-font-h3': AffineTheme['font']['h3'];

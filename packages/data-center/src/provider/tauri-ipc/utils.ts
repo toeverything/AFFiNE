@@ -7,7 +7,8 @@ import { IPCBlobProvider } from './blocksuite-provider/blob';
 export const createWorkspaceUnit = async (params: WorkspaceUnitCtorParams) => {
   const workspaceUnit = new WorkspaceUnit(params);
 
-  const blocksuiteWorkspace = createBlocksuiteWorkspace(workspaceUnit.id, {
+  const blocksuiteWorkspace = createBlocksuiteWorkspace({
+    id: workspaceUnit.id,
     blobOptionsGetter: (k: string) => undefined,
   });
   blocksuiteWorkspace.meta.setName(workspaceUnit.name);

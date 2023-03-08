@@ -22,16 +22,16 @@
 //       databases
 //         .map(db => db.name)
 //         .filter(v => v)
-//         .includes(this._workspace.room)
+//         .includes(this._workspace.id)
 //     );
 
 //     const workspace = this._workspace;
 //     const doc = workspace.doc;
 
-//     if (workspace.room) {
+//     if (workspace.id) {
 //       try {
 //         // Wait for ws synchronization to complete, otherwise the data will be modified in reverse, which can be optimized later
-//         this._ws = new WebsocketProvider(this.host, workspace.room, doc);
+//         this._ws = new WebsocketProvider(this.host, workspace.id, doc);
 //         await new Promise<void>((resolve, reject) => {
 //           // TODO: synced will also be triggered on reconnection after losing sync
 //           // There needs to be an event mechanism to emit the synchronization state to the upper layer
@@ -41,7 +41,7 @@
 //           this._ws.once('connection-error', () => reject());
 //         });
 //         this._slots.listAdd.emit({
-//           workspace: workspace.room,
+//           workspace: workspace.id,
 //           provider: this.id,
 //           locally: true,
 //         });
