@@ -2,3 +2,5 @@ node_modules
 dist
 .next
 out
+storybook-static
+affine-out
