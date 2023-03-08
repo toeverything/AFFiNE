@@ -57,6 +57,15 @@ export const StyledRow = styled(FlexWrapper)(() => {
     marginBottom: '42px',
   };
 });
+export const StyledColumn = styled(FlexWrapper)(() => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    rowGap: '7px',
+    textAlign: 'center',
+    alignItems: 'center',
+  };
+});
 
 export const StyledWorkspaceName = styled('span')(({ theme }) => {
   return {

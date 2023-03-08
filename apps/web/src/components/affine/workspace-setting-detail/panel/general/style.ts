@@ -24,7 +24,6 @@ export const StyledAvatar = styled('div')(
   ({ disabled }: { disabled: boolean }) => {
     return {
       position: 'relative',
-      marginRight: '20px',
       cursor: disabled ? 'default' : 'pointer',
       ':hover': {
         '.camera-icon': {

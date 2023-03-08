@@ -14,7 +14,7 @@ import {
 } from '../../../../pure/icons';
 import { WorkspaceAvatar } from '../../../../pure/workspace-avatar';
 import { PanelProps } from '../../index';
-import { StyledRow, StyledSettingKey } from '../../style';
+import { StyledColumn, StyledRow, StyledSettingKey } from '../../style';
 import { WorkspaceDeleteModal } from './delete';
 import { CameraIcon } from './icons';
 import { WorkspaceLeave } from './leave';
@@ -50,24 +50,47 @@ export const GeneralPanel: React.FC<PanelProps> = ({
     <>
       <StyledRow>
         <StyledSettingKey>{t('Workspace Avatar')}</StyledSettingKey>
-        <StyledAvatar disabled={!isOwner}>
+
+        <StyledColumn>
+          <StyledAvatar disabled={!isOwner}>
+            {isOwner ? (
+              <Upload
+                accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+                fileChange={update}
+                data-testid="upload-avatar"
+              >
+                <>
+                  <div className="camera-icon">
+                    <CameraIcon></CameraIcon>
+                  </div>
+                  <WorkspaceAvatar size={72} workspace={workspace} />
+                </>
+              </Upload>
+            ) : (
+              <WorkspaceAvatar size={72} workspace={workspace} />
+            )}
+          </StyledAvatar>
           {isOwner ? (
-            <Upload
-              accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-              fileChange={update}
-              data-testid="upload-avatar"
-            >
-              <>
-                <div className="camera-icon">
-                  <CameraIcon></CameraIcon>
-                </div>
-                <WorkspaceAvatar size={72} workspace={workspace} />
-              </>
-            </Upload>
-          ) : (
-            <WorkspaceAvatar size={72} workspace={workspace} />
-          )}
-        </StyledAvatar>
+            <>
+              <Button
+                type="danger"
+                shape="circle"
+                style={{
+                  borderRadius: '40px',
+                  width: '100%',
+                  height: '100%',
+                  fontSize: '12px',
+                }}
+                data-testid="remove-avatar-button"
+                onClick={async () => {
+                  await workspace.blockSuiteWorkspace.meta.setAvatar('');
+                }}
+              >
+                {t('Remove Avatar')}
+              </Button>
+            </>
+          ) : null}
+        </StyledColumn>
       </StyledRow>
 
       <StyledRow>
