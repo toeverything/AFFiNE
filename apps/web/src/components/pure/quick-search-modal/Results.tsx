@@ -93,27 +93,32 @@ export const Results: React.FC<ResultsProps> = ({
         <div>
           {recentlyViewed.length > 0 && (
             <Command.Group heading={t('Recent')}>
-              {recentlyViewed.map(recent => {
-                return (
-                  <Command.Item
-                    key={recent.id}
-                    value={recent.id}
-                    onSelect={() => {
-                      onClose();
-                      jumpToPage(blockSuiteWorkspace.id, recent.id);
-                    }}
-                  >
-                    <StyledListItem>
-                      {recent.mode === 'edgeless' ? (
-                        <EdgelessIcon />
-                      ) : (
-                        <PaperIcon />
-                      )}
-                      <span>{recent.title}</span>
-                    </StyledListItem>
-                  </Command.Item>
-                );
-              })}
+              {recentlyViewed
+                .filter(
+                  recent =>
+                    pageList.find(page => recent.id === page.id)?.trash !== true
+                )
+                .map(recent => {
+                  return (
+                    <Command.Item
+                      key={recent.id}
+                      value={recent.id}
+                      onSelect={() => {
+                        onClose();
+                        jumpToPage(blockSuiteWorkspace.id, recent.id);
+                      }}
+                    >
+                      <StyledListItem>
+                        {recent.mode === 'edgeless' ? (
+                          <EdgelessIcon />
+                        ) : (
+                          <PaperIcon />
+                        )}
+                        <span>{recent.title}</span>
+                      </StyledListItem>
+                    </Command.Item>
+                  );
+                })}
             </Command.Group>
           )}
 
