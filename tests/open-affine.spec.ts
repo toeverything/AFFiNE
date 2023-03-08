@@ -17,7 +17,6 @@ test.describe('Open AFFiNE', () => {
 
     //check workspace list length
     const workspaceCards = await page.$$('data-testid=workspace-card');
-    console.log('workspaceCards', workspaceCards);
     expect(workspaceCards.length).toBe(2);
     await workspaceCards[1].click();
     await page.goto('http://localhost:8080');
