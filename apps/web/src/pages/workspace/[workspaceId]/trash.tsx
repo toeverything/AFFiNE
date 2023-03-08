@@ -1,9 +1,9 @@
 import { useTranslation } from '@affine/i18n';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
-import { Helmet } from 'react-helmet-async';
 
 import PageList from '../../../components/blocksuite/block-suite-page-list/page-list';
 import { PageLoading } from '../../../components/pure/loading';
@@ -45,9 +45,9 @@ const TrashPage: NextPageWithLayout = () => {
   assertExists(blockSuiteWorkspace);
   return (
     <>
-      <Helmet>
+      <Head>
         <title>{t('Trash')} - AFFiNE</title>
-      </Helmet>
+      </Head>
       <WorkspaceTitle icon={<DeleteTemporarilyIcon />}>
         {t('Trash')}
       </WorkspaceTitle>

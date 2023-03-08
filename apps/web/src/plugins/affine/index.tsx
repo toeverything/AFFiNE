@@ -1,6 +1,6 @@
 import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
-import { preload } from 'swr';
+import { mutate, preload } from 'swr';
 import { z } from 'zod';
 
 import { createAffineProviders } from '../../blocksuite';
@@ -65,6 +65,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
         blockSuiteWorkspace.doc
       );
       const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
+      await mutate(matcher => matcher === QueryKey.getWorkspaces);
       // refresh the local storage
       await AffinePlugin.CRUD.list();
       return id;
@@ -83,6 +84,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       await apis.deleteWorkspace({
         id: workspace.id,
       });
+      await mutate(matcher => matcher === QueryKey.getWorkspaces);
     },
     get: async workspaceId => {
       try {

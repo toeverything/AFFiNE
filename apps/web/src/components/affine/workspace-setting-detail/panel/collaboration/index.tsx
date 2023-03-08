@@ -15,9 +15,7 @@ import {
 } from '@blocksuite/icons';
 import React, { useCallback, useState } from 'react';
 
-import { lockMutex } from '../../../../../atoms';
 import { useMembers } from '../../../../../hooks/affine/use-members';
-import { transformWorkspace } from '../../../../../plugins';
 import {
   AffineWorkspace,
   LocalWorkspace,
@@ -194,16 +192,12 @@ const LocalCollaborationPanel: React.FC<
           setOpen(false);
         }}
         onConform={() => {
-          // todo(himself65): move this function out of affine component
-          lockMutex(async () => {
-            const id = await transformWorkspace(
-              RemWorkspaceFlavour.LOCAL,
-              RemWorkspaceFlavour.AFFINE,
-              workspace
-            );
-            onTransferWorkspace(id);
-            setOpen(false);
-          });
+          onTransferWorkspace(
+            RemWorkspaceFlavour.LOCAL,
+            RemWorkspaceFlavour.AFFINE,
+            workspace
+          );
+          setOpen(false);
         }}
       />
     </>
