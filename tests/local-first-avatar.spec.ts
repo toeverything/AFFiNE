@@ -26,7 +26,7 @@ test.describe('Local first create page', () => {
     await page.waitForTimeout(1000);
     const text = await page.getByTestId('workspace-avatar').textContent();
     // default avatar for default workspace
-    expect(text).toBe('U');
+    expect(text).toBe('D');
     await page.getByTestId('workspace-name').click();
     await page.getByTestId('workspace-card').nth(1).click();
     const blobUrl = await page
