@@ -7,24 +7,27 @@ import {
   Wrapper,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { Box } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { lockMutex } from '../../../../../atoms';
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
+import { transformWorkspace } from '../../../../../plugins';
 import {
   AffineOfficialWorkspace,
   AffineWorkspace,
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../../shared';
+import { apis } from '../../../../../shared/apis';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
+import { WorkspaceSettingDetailProps } from '../../index';
 
-export type PublishPanelProps = {
+export type PublishPanelProps = WorkspaceSettingDetailProps & {
   workspace: AffineOfficialWorkspace;
 };
 
-export type PublishPanelAffineProps = {
+export type PublishPanelAffineProps = WorkspaceSettingDetailProps & {
   workspace: AffineWorkspace;
 };
 
@@ -70,9 +73,7 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
         </FlexWrapper>
         <Button
           onClick={async () => {
-            lockMutex(async () => {
-              return publishWorkspace(false);
-            });
+            await publishWorkspace(false);
           }}
           loading={false}
           type="danger"
@@ -97,51 +98,76 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
         {t('Publish to web')}
       </Button>
       <EnableAffineCloudModal
-        workspace={workspace}
         open={open}
         onClose={() => {
           setOpen(false);
         }}
-        onConfirm={() => {
-          lockMutex(async () => {
-            return publishWorkspace(true);
-          }).then(() => {
-            setOpen(false);
-          });
+        onConfirm={async () => {
+          await publishWorkspace(true);
+          setOpen(false);
         }}
       />
     </>
   );
 };
 
-export type PublishPanelLocalProps = {
+export type PublishPanelLocalProps = WorkspaceSettingDetailProps & {
   workspace: LocalWorkspace;
 };
 
-const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({ workspace }) => {
+const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
+  workspace,
+  onTransferWorkspace,
+}) => {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   return (
     <>
-      <Wrapper marginBottom="42px">{t('Publishing')}</Wrapper>
+      <Box
+        sx={{
+          marginBottom: '42px',
+        }}
+      >
+        {t('Publishing')}
+      </Box>
       <Button
         type="light"
         shape="circle"
-        onClick={async () => {
-          // fixme: regression
-          toast('You need to enable AFFiNE Cloud to use this feature.');
+        onClick={() => {
+          setOpen(true);
         }}
       >
         {t('Enable AFFiNE Cloud')}
       </Button>
+      <EnableAffineCloudModal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+        }}
+        onConfirm={async () => {
+          const id = await transformWorkspace(
+            RemWorkspaceFlavour.LOCAL,
+            RemWorkspaceFlavour.AFFINE,
+            workspace
+          );
+          await apis.updateWorkspace({
+            id,
+            public: true,
+          });
+          // fixme: there imply that reload the whole page
+          onTransferWorkspace(id);
+          setOpen(false);
+        }}
+      />
     </>
   );
 };
 
-export const PublishPanel: React.FC<PublishPanelProps> = ({ workspace }) => {
-  if (workspace.flavour === RemWorkspaceFlavour.AFFINE) {
-    return <PublishPanelAffine workspace={workspace} />;
-  } else if (workspace.flavour === RemWorkspaceFlavour.LOCAL) {
-    return <PublishPanelLocal workspace={workspace} />;
+export const PublishPanel: React.FC<PublishPanelProps> = props => {
+  if (props.workspace.flavour === RemWorkspaceFlavour.AFFINE) {
+    return <PublishPanelAffine {...props} workspace={props.workspace} />;
+  } else if (props.workspace.flavour === RemWorkspaceFlavour.LOCAL) {
+    return <PublishPanelLocal {...props} workspace={props.workspace} />;
   }
   throw new Unreachable();
 };

@@ -102,8 +102,9 @@ const SettingPage: NextPageWithLayout = () => {
     (targetWorkspaceId: string) => {
       router
         .replace({
-          pathname: `/workspace/[workspaceId]/all`,
+          pathname: `/workspace/[workspaceId]/setting`,
           query: {
+            ...router.query,
             workspaceId: targetWorkspaceId,
           },
         })
