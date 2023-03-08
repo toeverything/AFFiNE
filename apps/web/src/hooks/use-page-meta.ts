@@ -9,6 +9,8 @@ declare module '@blocksuite/store' {
     favorite?: boolean;
     trash?: boolean;
     trashDate?: number;
+    // whether to create the page with the default template
+    init?: boolean;
   }
 }
 
