@@ -3,9 +3,10 @@ import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
+import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { PageNotFoundError } from '../../affine/affine-error-eoundary';
@@ -46,6 +47,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   const title = pageMeta.title;
   const [isHover, setIsHover] = useState(false);
   const { trash: isTrash } = pageMeta;
+  const [openTips, setOpenTips] = useOpenTips();
   const isMac = () => {
     const env = getEnvironment();
     return env.isBrowser && env.isMacOs;
@@ -70,6 +72,13 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
       </div>
     );
   };
+  useEffect(() => {
+    if (openTips) {
+      setTimeout(() => {
+        setOpenTips(false);
+      }, 5000);
+    }
+  }, [openTips, setOpenTips]);
   return (
     <Header
       rightItems={
@@ -111,7 +120,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
             <QuickSearchTips
               content={tipsContent()}
               placement="bottom"
-              open={true}
+              open={openTips}
             >
               <StyledSearchArrowWrapper>
                 <QuickSearchButton

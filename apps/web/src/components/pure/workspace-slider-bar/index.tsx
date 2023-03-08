@@ -16,6 +16,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import {
+  useIsFirstLoad,
+  useOpenTips,
+} from '../../../hooks/affine/use-is-first-load';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { RemWorkspace } from '../../../shared';
 import { Arrow } from './icons';
@@ -112,6 +116,8 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [showTip, setShowTip] = useState(false);
   const { t } = useTranslation();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
+  const [isFirstLoad, setIsFirstLoad] = useIsFirstLoad();
+  const [, setOpenTips] = useOpenTips();
   const onClickNewPage = useCallback(async () => {
     const pageId = await createPage();
     if (pageId) {
@@ -135,7 +141,13 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             onClick={useCallback(() => {
               setShow(!show);
               setShowTip(false);
-            }, [setShow, show])}
+              if (isFirstLoad) {
+                setIsFirstLoad(false);
+                setTimeout(() => {
+                  setOpenTips(true);
+                }, 1000);
+              }
+            }, [isFirstLoad, setIsFirstLoad, setOpenTips, setShow, show])}
             onMouseEnter={useCallback(() => {
               setShowTip(true);
             }, [])}
