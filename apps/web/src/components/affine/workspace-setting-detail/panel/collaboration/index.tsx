@@ -16,7 +16,6 @@ import {
 import React, { useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../hooks/affine/use-members';
-import { useTransformWorkspace } from '../../../../../hooks/use-transform-workspace';
 import {
   AffineWorkspace,
   LocalWorkspace,
@@ -175,7 +174,6 @@ const LocalCollaborationPanel: React.FC<
 > = ({ workspace, onTransferWorkspace }) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const transformWorkspace = useTransformWorkspace();
   return (
     <>
       <Wrapper marginBottom="32px">{t('Collaboration Description')}</Wrapper>
@@ -193,13 +191,12 @@ const LocalCollaborationPanel: React.FC<
         onClose={() => {
           setOpen(false);
         }}
-        onConform={async () => {
-          const id = await transformWorkspace(
+        onConform={() => {
+          onTransferWorkspace(
             RemWorkspaceFlavour.LOCAL,
             RemWorkspaceFlavour.AFFINE,
             workspace
           );
-          onTransferWorkspace(id);
           setOpen(false);
         }}
       />

@@ -1,6 +1,7 @@
 import { useTranslation } from '@affine/i18n';
 import { FolderIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
@@ -50,6 +51,9 @@ const AllPage: NextPageWithLayout = () => {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
+        <Head>
+          <title>{t('All Pages')} - AFFiNE</title>
+        </Head>
         <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}
@@ -61,6 +65,9 @@ const AllPage: NextPageWithLayout = () => {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
+        <Head>
+          <title>{t('All Pages')} - AFFiNE</title>
+        </Head>
         <WorkspaceTitle icon={<FolderIcon />}>{t('All pages')}</WorkspaceTitle>
         <PageList
           onOpenPage={onClickPage}

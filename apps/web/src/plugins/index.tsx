@@ -19,7 +19,14 @@ type SettingProps<Flavour extends RemWorkspaceFlavour> =
     currentTab: SettingPanel;
     onChangeTab: (tab: SettingPanel) => void;
     onDeleteWorkspace: () => void;
-    onTransformWorkspace: (targetWorkspaceId: string) => void;
+    onTransformWorkspace: <
+      From extends RemWorkspaceFlavour,
+      To extends RemWorkspaceFlavour
+    >(
+      from: From,
+      to: To,
+      workspace: FlavourToWorkspace[From]
+    ) => void;
   };
 
 type PageDetailProps<Flavour extends RemWorkspaceFlavour> =
