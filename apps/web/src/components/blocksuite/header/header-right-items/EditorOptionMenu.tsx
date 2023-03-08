@@ -124,7 +124,7 @@ export const EditorOptionMenu = () => {
           disablePortal={true}
           trigger="click"
         >
-          <IconButton>
+          <IconButton data-testid="editor-option-menu" iconSize={[20, 20]}>
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
