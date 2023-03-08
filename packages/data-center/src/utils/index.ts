@@ -9,7 +9,7 @@ export const createBlocksuiteWorkspace = (
   workspaceOption?: StoreOptions
 ) => {
   return new BlocksuiteWorkspace({
-    room: workspaceId,
+    id: workspaceId,
     defaultFlags: {},
     isSSR: typeof window === 'undefined',
     ...workspaceOption,
