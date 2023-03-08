@@ -149,7 +149,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
         jumpToPage(currentWorkspace.id, pageId);
       }
     },
-    [currentWorkspace, isPublicWorkspace, router]
+    [currentWorkspace, isPublicWorkspace, jumpToPage, jumpToPublicWorkspacePage]
   );
   const handleCreatePage = useCallback(async () => {
     return helper.createPage(nanoid());

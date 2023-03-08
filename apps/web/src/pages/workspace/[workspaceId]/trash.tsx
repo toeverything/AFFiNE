@@ -29,7 +29,7 @@ const TrashPage: NextPageWithLayout = () => {
         jumpToPage(currentWorkspace.id, pageId);
       }
     },
-    [currentWorkspace, router]
+    [currentWorkspace, jumpToPage]
   );
   if (!router.isReady) {
     return <PageLoading />;

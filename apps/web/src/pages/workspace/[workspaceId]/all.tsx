@@ -39,7 +39,7 @@ const AllPage: NextPageWithLayout = () => {
       });
       currentWorkspace.blockSuiteWorkspace.createPage(pageId);
     }
-  }, [currentWorkspace, router]);
+  }, [currentWorkspace, jumpToPage, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
@@ -49,7 +49,7 @@ const AllPage: NextPageWithLayout = () => {
         jumpToPage(currentWorkspace.id, pageId);
       }
     },
-    [currentWorkspace, router]
+    [currentWorkspace, jumpToPage]
   );
   if (!router.isReady) {
     return <PageLoading />;

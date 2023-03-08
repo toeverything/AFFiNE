@@ -56,7 +56,7 @@ export function Modals() {
             setCurrentWorkspace(workspace.id);
             jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
           },
-          [router, setCurrentWorkspace, setOpenWorkspacesModal]
+          [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
         onClickLogin={useCallback(() => {
           apis.signInWithGoogle().then(() => {
@@ -85,7 +85,7 @@ export function Modals() {
           },
           [
             createLocalWorkspace,
-            router,
+            jumpToSubPath,
             setOpenCreateWorkspaceModal,
             setOpenWorkspacesModal,
           ]

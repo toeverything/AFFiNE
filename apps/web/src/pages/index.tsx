@@ -50,7 +50,7 @@ const IndexPageInner = () => {
         };
       }
     }
-  }, [lastWorkspaceId, router, workspaces]);
+  }, [jumpToPage, jumpToSubPath, lastWorkspaceId, router, workspaces]);
 
   return <PageLoading />;
 };

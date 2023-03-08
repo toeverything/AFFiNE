@@ -29,7 +29,7 @@ const FavouritePage: NextPageWithLayout = () => {
         jumpToPage(currentWorkspace.id, pageId);
       }
     },
-    [currentWorkspace, router]
+    [currentWorkspace, jumpToPage]
   );
   if (currentWorkspace === null) {
     return <PageLoading />;
