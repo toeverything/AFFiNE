@@ -1,4 +1,3 @@
-import '@blocksuite/editor/themes/affine.css';
 import '../styles/globals.css';
 
 import { config, setupGlobal } from '@affine/env';

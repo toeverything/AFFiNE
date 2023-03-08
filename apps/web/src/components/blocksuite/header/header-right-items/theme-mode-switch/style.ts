@@ -63,9 +63,10 @@ export const StyledSwitchItem = styled('div')<{
     background-color: ${activeStyle.backgroundColor};
     animation: ${activeStyle.animation};
     animation-direction: ${activeStyle.animationDirection};
-    svg {
-      width: 24px;
-      height: 24px;
-    },
+    font-size: 20px;
+    //svg {
+    //  width: 24px;
+    //  height: 24px;
+    //},
   `;
 });
