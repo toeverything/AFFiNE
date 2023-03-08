@@ -15,7 +15,6 @@ import { jotaiStore } from '../atoms';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
-import { useSaveLastLeaveWorkspaceId } from '../hooks/affine/use-save-last-leave-workspace-id';
 import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { NextPageWithLayout } from '../shared';
@@ -46,7 +45,6 @@ const App = function App({
 }) {
   const getLayout = Component.getLayout || EmptyLayout;
   const i18n = useMemo(() => createI18n(), []);
-  useSaveLastLeaveWorkspaceId();
   if (process.env.NODE_ENV === 'development') {
     // I know what I'm doing
     // eslint-disable-next-line react-hooks/rules-of-hooks

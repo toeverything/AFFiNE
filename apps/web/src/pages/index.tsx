@@ -3,20 +3,19 @@ import { useRouter } from 'next/router';
 import React, { Suspense, useEffect } from 'react';
 
 import { PageLoading } from '../components/pure/loading';
-import { useSaveLastLeaveWorkspaceId } from '../hooks/affine/use-save-last-leave-workspace-id';
+import { useLastWorkspaceId } from '../hooks/affine/use-last-leave-workspace-id';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { useWorkspaces } from '../hooks/use-workspaces';
 
 const IndexPageInner = () => {
   const router = useRouter();
   const workspaces = useWorkspaces();
-  const { getSavedLastLeaveWorkspaceId } = useSaveLastLeaveWorkspaceId();
+  const lastWorkspaceId = useLastWorkspaceId();
 
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
-    const lastWorkspaceId = getSavedLastLeaveWorkspaceId();
     const targetWorkspace =
       (lastWorkspaceId &&
         workspaces.find(({ id }) => id === lastWorkspaceId)) ||
@@ -61,7 +60,7 @@ const IndexPageInner = () => {
         };
       }
     }
-  }, [getSavedLastLeaveWorkspaceId, router, workspaces]);
+  }, [lastWorkspaceId, router, workspaces]);
 
   return <PageLoading />;
 };
