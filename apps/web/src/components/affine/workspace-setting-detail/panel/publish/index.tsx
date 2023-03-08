@@ -11,14 +11,12 @@ import { Box } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
-import { transformWorkspace } from '../../../../../plugins';
 import {
   AffineOfficialWorkspace,
   AffineWorkspace,
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../../shared';
-import { apis } from '../../../../../shared/apis';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
 import { WorkspaceSettingDetailProps } from '../../index';
@@ -102,8 +100,8 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
         onClose={() => {
           setOpen(false);
         }}
-        onConfirm={async () => {
-          await publishWorkspace(true);
+        onConfirm={() => {
+          publishWorkspace(true);
           setOpen(false);
         }}
       />
@@ -144,18 +142,12 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
         onClose={() => {
           setOpen(false);
         }}
-        onConfirm={async () => {
-          const id = await transformWorkspace(
+        onConfirm={() => {
+          onTransferWorkspace(
             RemWorkspaceFlavour.LOCAL,
             RemWorkspaceFlavour.AFFINE,
             workspace
           );
-          await apis.updateWorkspace({
-            id,
-            public: true,
-          });
-          // fixme: there imply that reload the whole page
-          onTransferWorkspace(id);
           setOpen(false);
         }}
       />

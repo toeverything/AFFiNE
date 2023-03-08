@@ -3,19 +3,21 @@ import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
+import { useTransformWorkspace } from '../../../hooks/use-transform-workspace';
 import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import {
+  FlavourToWorkspace,
   NextPageWithLayout,
   RemWorkspaceFlavour,
   SettingPanel,
@@ -96,23 +98,25 @@ const SettingPage: NextPageWithLayout = () => {
   const onDeleteWorkspace = useCallback(() => {
     assertExists(currentWorkspace);
     const workspaceId = currentWorkspace.id;
-    helper.deleteWorkspace(workspaceId);
+    return helper.deleteWorkspace(workspaceId);
   }, [currentWorkspace, helper]);
+  const transformWorkspace = useTransformWorkspace();
   const onTransformWorkspace = useCallback(
-    (targetWorkspaceId: string) => {
-      router
-        .replace({
-          pathname: `/workspace/[workspaceId]/setting`,
-          query: {
-            ...router.query,
-            workspaceId: targetWorkspaceId,
-          },
-        })
-        .then(() => {
-          router.reload();
-        });
+    async <From extends RemWorkspaceFlavour, To extends RemWorkspaceFlavour>(
+      from: From,
+      to: To,
+      workspace: FlavourToWorkspace[From]
+    ): Promise<void> => {
+      const workspaceId = await transformWorkspace(from, to, workspace);
+      await router.replace({
+        pathname: `/workspace/[workspaceId]/setting`,
+        query: {
+          ...router.query,
+          workspaceId,
+        },
+      });
     },
-    [router]
+    [router, transformWorkspace]
   );
   if (!router.isReady) {
     return <PageLoading />;
@@ -125,9 +129,9 @@ const SettingPage: NextPageWithLayout = () => {
       WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
     return (
       <>
-        <Helmet>
+        <Head>
           <title>{t('Workspace Settings')} - AFFiNE</title>
-        </Helmet>
+        </Head>
         <WorkspaceTitle icon={<SettingsIcon />}>
           {t('Workspace Settings')}
         </WorkspaceTitle>
@@ -145,6 +149,9 @@ const SettingPage: NextPageWithLayout = () => {
       WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
     return (
       <>
+        <Head>
+          <title>{t('Workspace Settings')} - AFFiNE</title>
+        </Head>
         <WorkspaceTitle icon={<SettingsIcon />}>
           {t('Workspace Settings')}
         </WorkspaceTitle>

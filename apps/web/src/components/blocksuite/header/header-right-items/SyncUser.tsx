@@ -9,9 +9,8 @@ import { assertEquals, assertExists } from '@blocksuite/store';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
-import { lockMutex } from '../../../../atoms';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import { transformWorkspace } from '../../../../plugins';
+import { useTransformWorkspace } from '../../../../hooks/use-transform-workspace';
 import {
   AffineOfficialWorkspace,
   LocalWorkspace,
@@ -75,6 +74,7 @@ export const SyncUser = () => {
   const [open, setOpen] = useState(false);
 
   const { t } = useTranslation();
+  const transformWorkspace = useTransformWorkspace();
 
   if (status === 'offline') {
     return (
@@ -111,28 +111,25 @@ export const SyncUser = () => {
           onClose={() => {
             setOpen(false);
           }}
-          onConform={() => {
-            // todo(himself65): move this function out of affine component
-            lockMutex(async () => {
-              assertEquals(workspace.flavour, RemWorkspaceFlavour.LOCAL);
-              const id = await transformWorkspace(
-                RemWorkspaceFlavour.LOCAL,
-                RemWorkspaceFlavour.AFFINE,
-                workspace as LocalWorkspace
-              );
-              // fixme(himself65): refactor this
-              router
-                .replace({
-                  pathname: `/workspace/[workspaceId]/all`,
-                  query: {
-                    workspaceId: id,
-                  },
-                })
-                .then(() => {
-                  router.reload();
-                });
-              setOpen(false);
-            });
+          onConform={async () => {
+            assertEquals(workspace.flavour, RemWorkspaceFlavour.LOCAL);
+            const id = await transformWorkspace(
+              RemWorkspaceFlavour.LOCAL,
+              RemWorkspaceFlavour.AFFINE,
+              workspace as LocalWorkspace
+            );
+            // fixme(himself65): refactor this
+            router
+              .replace({
+                pathname: `/workspace/[workspaceId]/all`,
+                query: {
+                  workspaceId: id,
+                },
+              })
+              .then(() => {
+                router.reload();
+              });
+            setOpen(false);
           }}
         />
       </>
