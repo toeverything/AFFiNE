@@ -1,9 +1,9 @@
 import { useTranslation } from '@affine/i18n';
 import { FolderIcon } from '@blocksuite/icons';
-import { assertExists } from '@blocksuite/store';
+import { assertExists, nanoid } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 
 import {
   QueryParamError,
@@ -21,6 +21,35 @@ const AllPage: NextPageWithLayout = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useSyncRouterWithCurrentWorkspace(router);
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+    if (currentWorkspace) {
+      const doc = currentWorkspace.blockSuiteWorkspace.doc;
+      if (doc.store.clients.size === 1) {
+        const items = [...doc.store.clients.values()][0];
+        if (items.length <= 1) {
+          // this is a new workspace, so we should redirect to the new page
+          const pageId = nanoid();
+          currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
+            currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
+              init: true,
+            });
+            assertExists(pageId, id);
+            router.push({
+              pathname: '/workspace/[workspaceId]/[pageId]',
+              query: {
+                workspaceId: currentWorkspace.id,
+                pageId,
+              },
+            });
+          });
+          currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+        }
+      }
+    }
+  }, [currentWorkspace, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
