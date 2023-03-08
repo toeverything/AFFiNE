@@ -120,14 +120,14 @@ export class TauriIPCProvider extends LocalProvider {
   }
 
   override async warpWorkspace(blocksuiteWorkspace: BlocksuiteWorkspace) {
-    const { room } = blocksuiteWorkspace;
-    assert(room);
+    const { id } = blocksuiteWorkspace;
+    assert(id);
 
     (await blocksuiteWorkspace.blobs)?.setProvider(
-      await IPCBlobProvider.init(room)
+      await IPCBlobProvider.init(id)
     );
-    await this.#initDocFromIPC(room, blocksuiteWorkspace);
-    await this.#connectDocToIPC(room, blocksuiteWorkspace);
+    await this.#initDocFromIPC(id, blocksuiteWorkspace);
+    await this.#connectDocToIPC(id, blocksuiteWorkspace);
 
     return blocksuiteWorkspace;
   }
