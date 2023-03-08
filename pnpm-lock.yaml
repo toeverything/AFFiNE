@@ -181,6 +181,7 @@ importers:
       react-dom: ^18.2.0
       react-is: ^18.2.0
       redux: ^4.2.1
+      swc-plugin-coverage-instrument: ^0.0.14
       swr: ^2.0.4
       typescript: ^4.9.5
       webpack: ^5.75.0
@@ -235,6 +236,7 @@ importers:
       next-router-mock: 0.9.2_next@13.2.3+react@18.2.0
       raw-loader: 4.0.2_webpack@5.75.0
       redux: 4.2.1
+      swc-plugin-coverage-instrument: 0.0.14
       typescript: 4.9.5
       webpack: 5.75.0
 
@@ -11966,6 +11968,10 @@ packages:
   /supports-preserve-symlinks-flag/1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
+
+  /swc-plugin-coverage-instrument/0.0.14:
+    resolution: {integrity: sha512-bTti+296N3Okb7GOjZMn034nAaptywz3GgPF5WTp3b8FWOCuO9I9wldoBYFYPqk0tWNFbeNQKtxREMOnGEWTMg==}
+    dev: true
 
   /swr/2.0.4_react@18.2.0:
     resolution: {integrity: sha512-4GUiTjknRUVuw4MWUHR7mzJ9G/DWL+yZz/TgWDfiA0OZ9tL6qyrTkN2wPeboBpL3OJTkej3pexh3mWCnv8cFkQ==}
