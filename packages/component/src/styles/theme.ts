@@ -36,14 +36,14 @@ export const getLightTheme = (
       handleColor: '#c7c3d9',
       linkColor: '#5438FF',
       linkColor2: '#5438FF',
-      linkVisitedColor: '#ABB8FE',
+      linkVisitedColor: '#5438FF',
       popoverColor: '#4C6275',
       inputColor: '#4C6275',
       tooltipColor: '#fff',
       codeColor: '#77757D',
       quoteColor: '#645F82',
       placeHolderColor: '#C0BFC1',
-      selectedColor: 'rgba(84,56,255,0.08)',
+      selectedColor: 'rgba(84, 56, 255, 0.04)',
       borderColor: '#9787FF',
       disableColor: '#A9A9AD',
       warningColor: '#906616',
@@ -208,5 +208,9 @@ export const globalThemeVariables: (
 
     '--affine-paragraph-space': theme.space.paragraph,
     '--affine-popover-radius': theme.radius.popover,
+
+    '--affine-editor-width': '720px',
+    '--affine-zoom': '1',
+    '--affine-scale': 'calc(1 / var(--affine-zoom))',
   };
 };
