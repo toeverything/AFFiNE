@@ -2,6 +2,7 @@ import { Button, Input, Modal, ModalCloseButton } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
 import { useCallback, useState } from 'react';
 
+import { useBlockSuiteWorkspaceName } from '../../../../../../hooks/use-blocksuite-workspace-name';
 import {
   AffineOfficialWorkspace,
   RemWorkspaceFlavour,
@@ -28,8 +29,11 @@ export const WorkspaceDeleteModal = ({
   workspace,
   onDeleteWorkspace,
 }: WorkspaceDeleteProps) => {
+  const [workspaceName] = useBlockSuiteWorkspaceName(
+    workspace.blockSuiteWorkspace ?? null
+  );
   const [deleteStr, setDeleteStr] = useState<string>('');
-  const allowDelete = deleteStr.toLowerCase() === 'delete';
+  const allowDelete = deleteStr === workspaceName;
   const { t } = useTranslation();
 
   const handleDelete = useCallback(() => {
@@ -46,7 +50,7 @@ export const WorkspaceDeleteModal = ({
             <Trans i18nKey="Delete Workspace Description">
               Deleting (
               <StyledWorkspaceName>
-                {{ workspace: workspace.blockSuiteWorkspace.meta.name } as any}
+                {{ workspace: workspaceName } as any}
               </StyledWorkspaceName>
               ) cannot be undone, please proceed with caution. All contents will
               be lost.
@@ -57,7 +61,7 @@ export const WorkspaceDeleteModal = ({
             <Trans i18nKey="Delete Workspace Description2">
               Deleting (
               <StyledWorkspaceName>
-                {{ workspace: workspace.blockSuiteWorkspace.meta.name } as any}
+                {{ workspace: workspaceName } as any}
               </StyledWorkspaceName>
               ) will delete both local and cloud data, this operation cannot be
               undone, please proceed with caution.
@@ -68,11 +72,11 @@ export const WorkspaceDeleteModal = ({
           <Input
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
-            placeholder={t('Delete Workspace placeholder')}
+            placeholder={t('Placeholder of delete workspace')}
             value={deleteStr}
-            width={284}
+            width={315}
             height={42}
-          ></Input>
+          />
         </StyledInputContent>
         <StyledButtonContent>
           <Button shape="circle" onClick={onClose}>
