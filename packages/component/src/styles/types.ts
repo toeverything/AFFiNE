@@ -1,4 +1,5 @@
 import { EditorContainer } from '@blocksuite/editor';
+import { CSSProperties } from 'react';
 
 export type Theme = 'light' | 'dark';
 export type ThemeMode = Theme | 'auto';
@@ -148,6 +149,10 @@ export interface AffineThemeCSSVariables {
   '--affine-paragraph-space': AffineTheme['space']['paragraph'];
 
   '--affine-popover-radius': AffineTheme['radius']['popover'];
+  // use for blocksuite
+  '--affine-editor-width': CSSProperties['width'];
+  '--affine-zoom': CSSProperties['zoom'];
+  '--affine-scale': string;
 }
 
 declare module '@emotion/react' {

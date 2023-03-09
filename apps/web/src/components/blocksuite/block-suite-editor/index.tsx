@@ -101,7 +101,10 @@ export const BlockSuiteEditor = (props: EditorProps) => {
     if (!editor || !container || !page) {
       return;
     }
-    if (page.awarenessStore.getFlag('enable_block_hub')) {
+    if (
+      page.awarenessStore.getFlag('enable_block_hub') &&
+      props.mode === 'page'
+    ) {
       editor.createBlockHub().then(blockHub => {
         if (blockHubRef.current) {
           blockHubRef.current.remove();
@@ -118,7 +121,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       blockHubRef.current?.remove();
       container.removeChild(editor);
     };
-  }, [page]);
+  }, [page, props.mode]);
   return (
     <div
       data-testid={`editor-${props.blockSuiteWorkspace.id}-${props.page.id}`}
