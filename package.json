@@ -6,8 +6,8 @@
   "license": "MPL-2.0",
   "scripts": {
     "dev": "pnpm --filter @affine/app dev",
-    "dev:ac": "cross-env NODE_API_SERVER=ac pnpm --filter @affine/app dev",
-    "dev:local": "cross-env NODE_API_SERVER=local pnpm --filter @affine/app dev",
+    "dev:ac": "NODE_API_SERVER=ac pnpm --filter @affine/app dev",
+    "dev:local": "NODE_API_SERVER=local pnpm --filter @affine/app dev",
     "build": "pnpm --filter @affine/app build",
     "build:client": "pnpm --filter @affine/client-app build:app",
     "build:storybook": "pnpm -r build-storybook",
@@ -16,17 +16,17 @@
     "lint": "eslint . --ext .js,mjs,.ts,.tsx",
     "lint:fix": "pnpm lint --fix",
     "test": "playwright test",
-    "test:coverage": "cross-env COVERAGE=true pnpm test -- --forbid-only",
+    "test:coverage": "COVERAGE=true pnpm test -- --forbid-only",
     "test:unit": "vitest --run",
     "test:unit:ui": "vitest --ui",
     "test:unit:coverage": "vitest run --coverage",
     "postinstall": "husky install",
     "notify": "node scripts/notify.mjs",
-    "update:core": "pnpm up @blocksuite/*@nightly !@blocksuite/icons -r"
+    "update:core": "pnpm up '@blocksuite/*@nightly' !@blocksuite/icons -r"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
-    "*.{ts,tsx,js,jsx}": "npx eslint --cache --fix"
+    "*.{ts,tsx,js,jsx}": "eslint --cache --fix"
   },
   "devDependencies": {
     "@perfsee/sdk": "^1.3.0",
@@ -39,8 +39,6 @@
     "@vitejs/plugin-react": "^3.1.0",
     "@vitest/coverage-istanbul": "^0.28.5",
     "@vitest/ui": "^0.29.2",
-    "concurrently": "^7.6.0",
-    "cross-env": "^7.0.3",
     "eslint": "^8.35.0",
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-import": "^2.27.5",
