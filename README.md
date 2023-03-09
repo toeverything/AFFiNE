@@ -69,15 +69,11 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 
 ## Features
 
-**Privacy focussed** — AFFiNE is built with your privacy in mind and is one of our key concerns. We want you to keep control of your data, allowing you to store it as you like, where you like while still being able to freely edit and view your data on-demand.
-
-**Offline-first** - With your privacy in mind we also decided to go offline-first. This means that AFFiNE can be used offline, whether you want to view or edit, with support for conflict-free merging when you are back online.
-
-**Clean, intuitive design** — With AFFiNE you can concentrate on editing with a clean and modern interface. Which is responsive, so it looks great on tablets too, and mobile support is coming in the future.
-
-**Seamless transitions** — However you want your data displayed, whichever viewing mode you use, AFFiNE supports easy transitions to allow you to quickly and effortlessly view your data in the way you want.
-
-**Markdown support** — When you write in AFFiNE you can use Markdown syntax which helps create an easier editing experience, that can be experienced with just a keyboard. And this allows you to export your data cleanly into Markdown.
+- **Privacy focussed** — AFFiNE is built with your privacy in mind and is one of our key concerns. We want you to keep control of your data, allowing you to store it as you like, where you like while still being able to freely edit and view your data on-demand.
+- **Offline-first** - With your privacy in mind we also decided to go offline-first. This means that AFFiNE can be used offline, whether you want to view or edit, with support for conflict-free merging when you are back online.
+- **Clean, intuitive design** — With AFFiNE you can concentrate on editing with a clean and modern interface. Which is responsive, so it looks great on tablets too, and mobile support is coming in the future.
+- **Seamless transitions** — However you want your data displayed, whichever viewing mode you use, AFFiNE supports easy transitions to allow you to quickly and effortlessly view your data in the way you want.
+- **Markdown support** — When you write in AFFiNE you can use Markdown syntax which helps create an easier editing experience, that can be experienced with just a keyboard. And this allows you to export your data cleanly into Markdown.
 
 <!--
 **Collaboration** — Whether you want to collaborate with yourself across multiple devices, or work together with others, support for collaboration and multiplayer is out-of-the-box, which makes it easy for teams to get started with AFFiNE.
@@ -111,7 +107,7 @@ We would also like to give thanks to open-source projects that make AFFiNE possi
 - [Rust](https://github.com/rust-lang/rust) - High performance language that extends the ability and availability of our real-time backend, OctoBase.
 - [Jotai](https://github.com/pmndrs/jotai) - Primitive and flexible state management for React.
 - [MUI](https://github.com/mui/material-ui) - Our most used graphic UI component library.
-- Other [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
+- Other upstream [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 
@@ -204,7 +200,7 @@ For upgrading information please see our [update page].
 
 ## Feature Request
 
-For feature request please see https://community.affine.pro/c/feature-requests/
+For feature request please see [community.affine.pro](https://community.affine.pro/c/feature-requests/).
 
 ## Is it awesome?
 
