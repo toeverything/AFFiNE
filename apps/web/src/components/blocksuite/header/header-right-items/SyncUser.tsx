@@ -16,6 +16,7 @@ import {
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../shared';
+import { apis } from '../../../../shared/apis';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
 const IconWrapper = styled('div')(({ theme }) => {
@@ -112,6 +113,11 @@ export const SyncUser = () => {
             setOpen(false);
           }}
           onConform={async () => {
+            if (!apis.auth.isLogin) {
+              await apis.signInWithGoogle();
+              router.reload();
+              return;
+            }
             assertEquals(workspace.flavour, RemWorkspaceFlavour.LOCAL);
             const id = await transformWorkspace(
               RemWorkspaceFlavour.LOCAL,
