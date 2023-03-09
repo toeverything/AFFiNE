@@ -35,6 +35,7 @@ export const EditorModeSwitch = ({
       showAlone={trash}
     >
       <StyledSwitchItem
+        data-testid="switch-page-mode-button"
         active={mode === 'page'}
         hide={trash && mode !== 'page'}
         onClick={() => {
@@ -44,6 +45,7 @@ export const EditorModeSwitch = ({
         <PaperIcon />
       </StyledSwitchItem>
       <StyledSwitchItem
+        data-testid="switch-edgeless-mode-button"
         active={mode === 'edgeless'}
         hide={trash && mode !== 'edgeless'}
         onClick={() => {
