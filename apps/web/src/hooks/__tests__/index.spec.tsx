@@ -310,7 +310,6 @@ describe('useRecentlyViewed', () => {
       {
         id: 'page0',
         mode: 'page',
-        title: 'Untitled',
       },
     ]);
   });
