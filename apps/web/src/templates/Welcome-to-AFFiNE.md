@@ -32,4 +32,4 @@ Let's get started!
 Looking for more support?
 -------------
 
-If you are looking for more support, you can come and join the awesome [AFFiNE Community](https://community.affine.pro). Whether you want to share new ideas or interact with other like minded individuals - we look forward to having you.
+Why not come and join the awesome [AFFiNE Community](https://community.affine.pro)? Whether you want to share new ideas or interact with other like minded individuals - we look forward to having you.
