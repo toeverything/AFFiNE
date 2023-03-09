@@ -1,7 +1,7 @@
 import { Content } from '@affine/component';
 import { assertExists } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
-import React, { useState } from 'react';
+import React from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
 import { usePageMeta } from '../../../hooks/use-page-meta';
@@ -42,7 +42,6 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   );
   assertExists(pageMeta);
   const title = pageMeta.title;
-  const [isHover, setIsHover] = useState(false);
   const { trash: isTrash } = pageMeta;
   return (
     <Header
@@ -57,25 +56,12 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
     >
       {children}
       {title && !isPublic && (
-        <StyledTitle
-          data-tauri-drag-region
-          onMouseEnter={() => {
-            if (isTrash) return;
-
-            setIsHover(true);
-          }}
-          onMouseLeave={() => {
-            if (isTrash) return;
-
-            setIsHover(false);
-          }}
-        >
+        <StyledTitle data-tauri-drag-region>
           <StyledTitleWrapper>
             <StyledSwitchWrapper>
               <EditorModeSwitch
                 blockSuiteWorkspace={blockSuiteWorkspace}
                 pageId={pageId}
-                isHover={isHover}
                 style={{
                   marginRight: '12px',
                 }}

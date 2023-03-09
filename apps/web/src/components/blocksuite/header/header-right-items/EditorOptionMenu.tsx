@@ -12,6 +12,7 @@ import {
   FavoriteIcon,
   MoreVerticalIcon,
 } from '@blocksuite/icons';
+import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
 import { useState } from 'react';
@@ -22,7 +23,6 @@ import {
   usePageMeta,
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
-import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/Icons';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
