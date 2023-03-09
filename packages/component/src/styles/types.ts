@@ -148,6 +148,10 @@ export interface AffineThemeCSSVariables {
   '--affine-paragraph-space': AffineTheme['space']['paragraph'];
 
   '--affine-popover-radius': AffineTheme['radius']['popover'];
+  // use for blocksuite
+  '--affine-editor-width': 'string';
+  '--affine-zoom': 'string';
+  '--affine-scale': 'string';
 }
 
 declare module '@emotion/react' {
