@@ -55,7 +55,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
       }
     >
       {children}
-      {title && !isPublic && (
+      {!isPublic && (
         <StyledTitle data-tauri-drag-region>
           <StyledTitleWrapper>
             <StyledSwitchWrapper>
@@ -67,7 +67,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
                 }}
               />
             </StyledSwitchWrapper>
-            <Content ellipsis={true}>{title}</Content>
+            <Content ellipsis={true}>{title || 'Untitled'}</Content>
             <StyledSearchArrowWrapper>
               <QuickSearchButton
                 onClick={() => {
