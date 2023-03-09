@@ -60,7 +60,7 @@ export const WorkspaceDeleteModal = ({
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description2">
               Deleting (
-              <StyledWorkspaceName data-testid="delete-workspace-name">
+              <StyledWorkspaceName>
                 {{ workspace: workspaceName } as any}
               </StyledWorkspaceName>
               ) will delete both local and cloud data, this operation cannot be
