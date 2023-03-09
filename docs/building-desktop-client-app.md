@@ -20,13 +20,10 @@ To run AFFiNE Desktop Client Application locally, run the following commands in 
 ```sh
 
 pnpm install
-pnpm build:affine
 pnpm build:preload
 pnpm dev:app
 
 ```
-
-> **TODO**: better Tauri dx
 
 ## Build
 
