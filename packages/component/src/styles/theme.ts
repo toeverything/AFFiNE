@@ -43,7 +43,7 @@ export const getLightTheme = (
       codeColor: '#77757D',
       quoteColor: '#645F82',
       placeHolderColor: '#C0BFC1',
-      selectedColor: '#F3F0FF',
+      selectedColor: 'rgba(84,56,255,0.08)',
       borderColor: '#9787FF',
       disableColor: '#A9A9AD',
       warningColor: '#906616',
