@@ -3,7 +3,7 @@ import { FolderIcon } from '@blocksuite/icons';
 import { assertExists, nanoid } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 
 import {
   QueryParamError,
@@ -17,17 +17,32 @@ import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-route
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
+
+// Fixme: this is a hack
+export const usePreviousRoute = () => {
+  const router = useRouter();
+
+  const ref = useRef<string | null>(null);
+
+  router.events?.on('routeChangeStart', () => {
+    ref.current = router.asPath;
+  });
+
+  return ref.current;
+};
+
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useSyncRouterWithCurrentWorkspace(router);
+  const previousRoute = usePreviousRoute();
   useEffect(() => {
     if (!router.isReady) {
       return;
     }
-    if (currentWorkspace?.blockSuiteWorkspace.isEmpty) {
+    if (previousRoute && currentWorkspace?.blockSuiteWorkspace.isEmpty) {
       // this is a new workspace, so we should redirect to the new page
       const pageId = nanoid();
       currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
