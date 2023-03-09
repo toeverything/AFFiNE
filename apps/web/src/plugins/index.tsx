@@ -48,6 +48,8 @@ export interface WorkspacePlugin<Flavour extends RemWorkspaceFlavour> {
   flavour: Flavour;
   // Plugin will be loaded according to the priority
   loadPriority: LoadPriority;
+  // fixme: this is a hack
+  cleanup?: () => void;
   // Fetch necessary data for the first render
   CRUD: {
     create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;
