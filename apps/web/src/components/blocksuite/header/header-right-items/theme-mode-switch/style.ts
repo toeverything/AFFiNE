@@ -4,13 +4,17 @@ import spring, { toString } from 'css-spring';
 
 const ANIMATE_DURATION = 400;
 
-export const StyledThemeModeSwitch = styled('div')({
-  width: '32px',
-  height: '32px',
-  borderRadius: '6px',
-  overflow: 'hidden',
-  backgroundColor: 'transparent',
-  position: 'relative',
+export const StyledThemeModeSwitch = styled('div')(({ theme }) => {
+  return {
+    width: '32px',
+    height: '32px',
+    borderRadius: '6px',
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    position: 'relative',
+    color: theme.colors.iconColor,
+    fontSize: '24px',
+  };
 });
 export const StyledSwitchItem = styled('div')<{
   active: boolean;
@@ -63,7 +67,6 @@ export const StyledSwitchItem = styled('div')<{
     background-color: ${activeStyle.backgroundColor};
     animation: ${activeStyle.animation};
     animation-direction: ${activeStyle.animationDirection};
-    font-size: 20px;
     //svg {
     //  width: 24px;
     //  height: 24px;

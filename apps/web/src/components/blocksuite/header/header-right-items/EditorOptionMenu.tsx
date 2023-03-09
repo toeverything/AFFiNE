@@ -52,6 +52,7 @@ export const EditorOptionMenu = () => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
+        iconSize={[20, 20]}
         icon={
           favorite ? (
             <FavoritedIcon style={{ color: theme.colors.primaryColor }} />
@@ -64,6 +65,7 @@ export const EditorOptionMenu = () => {
       </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
+        iconSize={[20, 20]}
         data-testid="editor-option-menu-edgeless"
         onClick={() => {
           setPageMeta(pageId, {
@@ -84,6 +86,7 @@ export const EditorOptionMenu = () => {
                 globalThis.editor.contentParser.onExportHtml();
               }}
               icon={<ExportToHtmlIcon />}
+              iconSize={[20, 20]}
             >
               {t('Export to HTML')}
             </MenuItem>
@@ -93,13 +96,14 @@ export const EditorOptionMenu = () => {
                 globalThis.editor.contentParser.onExportMarkdown();
               }}
               icon={<ExportToMarkdownIcon />}
+              iconSize={[20, 20]}
             >
               {t('Export to Markdown')}
             </MenuItem>
           </>
         }
       >
-        <MenuItem icon={<ExportIcon />} isDir={true}>
+        <MenuItem icon={<ExportIcon />} iconSize={[20, 20]} isDir={true}>
           {t('Export')}
         </MenuItem>
       </Menu>
@@ -109,6 +113,7 @@ export const EditorOptionMenu = () => {
           setOpen(true);
         }}
         icon={<DeleteTemporarilyIcon />}
+        iconSize={[20, 20]}
       >
         {t('Delete')}
       </MenuItem>
@@ -124,7 +129,7 @@ export const EditorOptionMenu = () => {
           disablePortal={true}
           trigger="click"
         >
-          <IconButton data-testid="editor-option-menu" iconSize={[20, 20]}>
+          <IconButton data-testid="editor-option-menu" iconSize={[24, 24]}>
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
