@@ -24,7 +24,7 @@ const IconWrapper = styled('div')(({ theme }) => {
     width: '32px',
     height: '32px',
     marginRight: '12px',
-    fontSize: '20px',
+    fontSize: '24px',
     color: theme.colors.iconColor,
     ...displayFlex('center', 'center'),
   };
@@ -102,7 +102,6 @@ export const SyncUser = () => {
               setOpen(true);
             }}
             style={{ marginRight: '12px' }}
-            iconSize={[20, 20]}
           >
             <LocalWorkspaceIcon />
           </IconButton>

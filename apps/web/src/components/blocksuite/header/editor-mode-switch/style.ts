@@ -1,179 +1,58 @@
-import { css, displayFlex, keyframes, styled } from '@affine/component';
-// @ts-ignore
-import spring, { toString } from 'css-spring';
+import { displayFlex, styled } from '@affine/component';
 
-// @ts-ignore
-import type { ItemStatus } from './type';
-
-const ANIMATE_DURATION = 500;
-
-export const StyledAnimateRadioContainer = styled('div')<{
-  shrink: boolean;
-  disabled: boolean;
-}>(({ shrink, theme, disabled }) => {
-  const animateScaleStretch = toString(
-    spring({ width: '36px' }, { width: '160px' }, { preset: 'gentle' })
-  );
-  const animateScaleShrink = toString(
-    spring({ width: '160px' }, { width: '36px' }, { preset: 'gentle' })
-  );
-  const shrinkStyle: any = shrink
-    ? {
-        animation: css`
-          ${keyframes`${animateScaleShrink}`} ${ANIMATE_DURATION}ms forwards
-        `,
-        background: 'transparent',
-      }
-    : {
-        animation: css`
-          ${keyframes`${animateScaleStretch}`} ${ANIMATE_DURATION}ms forwards
-        `,
-      };
-  return css`
-    height: 36px;
-    border-radius: 18px;
-    background: ${disabled ? 'transparent' : theme.colors.hoverBackground}
-    position: relative;
-    display: flex;
-    transition: background ${ANIMATE_DURATION}ms, border ${ANIMATE_DURATION}ms;
-    border: 1px solid transparent;
-    ${
-      disabled
-        ? css`
-            pointer-events: none;
-          `
-        : css`
-            animation: ${shrinkStyle.animation};
-            background: ${shrinkStyle.background};
-          `
-    }
-
-    //...(disabled ? { pointerEvents: 'none' } : shrinkStyle),
-    :hover {
-      border: ${disabled ? '' : `1px solid ${theme.colors.primaryColor}`}
-    }
-  `;
-});
-
-export const StyledMiddleLine = styled('div')<{
-  hidden: boolean;
-  dark: boolean;
-}>(({ hidden, dark }) => {
+export const StyledEditorModeSwitch = styled('div')<{
+  switchLeft: boolean;
+  showAlone?: boolean;
+}>(({ theme, switchLeft, showAlone }) => {
+  const {
+    palette: { mode },
+  } = theme;
   return {
-    width: '1px',
-    height: '16px',
-    background: dark ? '#4d4c53' : '#D0D7E3',
-    top: '0',
-    bottom: '0',
-    margin: 'auto',
-    opacity: hidden ? '0' : '1',
+    width: showAlone ? '40px' : '78px',
+    height: '32px',
+    background: showAlone
+      ? 'transparent'
+      : mode === 'dark'
+      ? '#242424'
+      : '#F9F9FB',
+    borderRadius: '12px',
+    ...displayFlex('space-between', 'center'),
+    padding: '0 8px',
+    position: 'relative',
+
+    '::after': {
+      content: '""',
+      display: showAlone ? 'none' : 'block',
+      width: '24px',
+      height: '24px',
+      background: theme.colors.pageBackground,
+      boxShadow:
+        mode === 'dark'
+          ? '0px 0px 6px rgba(22, 22, 22, 0.6)'
+          : '0px 0px 6px #E2E2E2',
+      borderRadius: '8px',
+      zIndex: 1,
+      position: 'absolute',
+      transform: `translateX(${switchLeft ? '0' : '38px'})`,
+      transition: 'all .15s',
+    },
   };
 });
 
-export const StyledRadioItem = styled('div')<{
-  status: ItemStatus;
+export const StyledSwitchItem = styled('button')<{
   active: boolean;
-}>(({ status, active, theme }) => {
-  const animateScaleStretch = toString(
-    spring({ width: '44px' }, { width: '112px' })
-  );
-  const animateScaleOrigin = toString(
-    spring({ width: '112px' }, { width: '44px' })
-  );
-  const animateScaleShrink = toString(
-    spring({ width: '0px' }, { width: '36px' })
-  );
-  const dynamicStyle =
-    status === 'stretch'
-      ? {
-          animation: css`
-            ${keyframes`${animateScaleStretch}`} ${ANIMATE_DURATION}ms forwards
-          `,
-          flexShrink: '0',
-        }
-      : status === 'shrink'
-      ? {
-          animation: css`
-            ${keyframes`${animateScaleShrink}`} ${ANIMATE_DURATION}ms forwards
-          `,
-        }
-      : status === 'normal'
-      ? {
-          animation: css`
-            ${keyframes`${animateScaleOrigin}`} ${ANIMATE_DURATION}ms forwards
-          `,
-        }
-      : {};
-
-  const {
-    colors: { iconColor, primaryColor },
-  } = theme;
-  return css`
-    width: 0;
-    height: 100%;
-    display: flex;
-    cursor: pointer;
-    overflow: hidden;
-    color: ${active ? primaryColor : iconColor};
-    animation: ${dynamicStyle.animation};
-    flex-shrink: ${dynamicStyle.flexShrink};
-  `;
-});
-
-export const StyledLabel = styled('div')<{
-  shrink: boolean;
-  isLeft: boolean;
-}>(({ shrink, isLeft }) => {
-  const animateScaleStretch = toString(
-    spring(
-      { width: '0px' },
-      { width: isLeft ? '65px' : '75px' },
-      { preset: 'gentle' }
-    )
-  );
-  const animateScaleShrink = toString(
-    spring(
-      { width: isLeft ? '65px' : '75px' },
-      { width: '0px' },
-      { preset: 'gentle' }
-    )
-  );
-  const shrinkStyle = shrink
-    ? {
-        animation: css`
-          ${keyframes`${animateScaleShrink}`} ${ANIMATE_DURATION}ms forwards
-        `,
-      }
-    : {
-        animation: css`
-          ${keyframes`${animateScaleStretch}`} ${ANIMATE_DURATION}ms forwards
-        `,
-      };
-
-  return css`
-    display: flex;
-    align-items: center;
-    justify-content: ${isLeft ? 'flex-start' : 'flex-end'};
-    font-size: 16px;
-    flex-shrink: 0;
-    transition: transform ${ANIMATE_DURATION}ms;
-    font-weight: normal;
-    overflow: hidden;
-    white-space: nowrap;
-    animation: ${shrinkStyle.animation};
-  `;
-});
-
-export const StyledIcon = styled('div')<{
-  shrink: boolean;
-  isLeft: boolean;
-}>(({ shrink, isLeft }) => {
-  const dynamicStyle = shrink
-    ? { width: '36px' }
-    : { width: isLeft ? '44px' : '34px' };
+  hide?: boolean;
+}>(({ theme, active, hide = false }) => {
   return {
-    ...displayFlex('center', 'center'),
-    flexShrink: '0',
-    ...dynamicStyle,
+    width: '24px',
+    height: '24px',
+    borderRadius: '8px',
+    color: active ? theme.colors.primaryColor : theme.colors.iconColor,
+    display: hide ? 'none' : 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    zIndex: 2,
+    fontSize: '20px',
   };
 });

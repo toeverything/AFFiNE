@@ -1,5 +1,4 @@
 import { MuiCollapse } from '@affine/component';
-import { Tooltip } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
@@ -16,14 +15,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { RemWorkspace } from '../../../shared';
-import { Arrow } from './icons';
+import { SidebarSwitch } from '../../affine/sidebar-switch';
 import {
-  StyledArrowButton,
   StyledLink,
   StyledListItem,
   StyledNewPageButton,
+  StyledSidebarWrapper,
   StyledSliderBar,
   StyledSliderBarWrapper,
   StyledSubListItem,
@@ -83,8 +83,6 @@ export type WorkSpaceSliderBarProps = {
   currentPageId: string | null;
   openPage: (pageId: string) => void;
   createPage: () => Promise<string>;
-  show: boolean;
-  setShow: (show: boolean) => void;
   currentPath: string;
   paths: {
     all: (workspaceId: string) => string;
@@ -100,17 +98,17 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   currentPageId,
   openPage,
   createPage,
-  show,
-  setShow,
   currentPath,
   paths,
   onOpenQuickSearchModal,
   onOpenWorkspaceListModal,
 }) => {
   const currentWorkspaceId = currentWorkspace?.id || null;
-  const [showSubFavorite, setShowSubFavorite] = useState(true);
-  const [showTip, setShowTip] = useState(false);
+  const [showSubFavorite, setOpenSubFavorite] = useState(true);
   const { t } = useTranslation();
+  const [open] = useSidebarStatus();
+
+  const [sidebarOpen] = useSidebarStatus();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
     const pageId = await createPage();
@@ -120,33 +118,14 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   }, [createPage, openPage]);
   return (
     <>
-      <StyledSliderBar show={isPublicWorkspace ? false : show}>
-        <Tooltip
-          content={show ? t('Collapse sidebar') : t('Expand sidebar')}
-          placement="right"
-          visible={showTip}
-        >
-          <StyledArrowButton
-            data-testid="sliderBar-arrowButton"
-            isShow={show}
-            style={{
-              visibility: isPublicWorkspace ? 'hidden' : 'visible',
-            }}
-            onClick={useCallback(() => {
-              setShow(!show);
-              setShowTip(false);
-            }, [setShow, show])}
-            onMouseEnter={useCallback(() => {
-              setShowTip(true);
-            }, [])}
-            onMouseLeave={useCallback(() => {
-              setShowTip(false);
-            }, [])}
-          >
-            <Arrow />
-          </StyledArrowButton>
-        </Tooltip>
-
+      <StyledSliderBar show={isPublicWorkspace ? false : sidebarOpen}>
+        <StyledSidebarWrapper>
+          <SidebarSwitch
+            visible={open}
+            tooltipContent={t('Collapse sidebar')}
+            testid="sliderBar-arrowButton-collapse"
+          />
+        </StyledSidebarWrapper>
         <StyledSliderBarWrapper data-testid="sliderBar">
           <WorkspaceSelector
             currentWorkspace={currentWorkspace}
@@ -196,7 +175,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             <IconButton
               darker={true}
               onClick={useCallback(() => {
-                setShowSubFavorite(!showSubFavorite);
+                setOpenSubFavorite(!showSubFavorite);
               }, [showSubFavorite])}
             >
               <ArrowDownSmallIcon
@@ -233,7 +212,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
           {/* <WorkspaceSetting
             isShow={showWorkspaceSetting}
             onClose={() => {
-              setShowWorkspaceSetting(false);
+              setOpenWorkspaceSetting(false);
             }}
           /> */}
           {/* TODO: will finish the feature next version */}

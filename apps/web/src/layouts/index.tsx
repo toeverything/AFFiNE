@@ -3,7 +3,6 @@ import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -34,8 +33,6 @@ import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 const QuickSearchModal = dynamic(
   () => import('../components/pure/quick-search-modal')
 );
-
-const sideBarOpenAtom = atomWithStorage('sideBarOpen', true);
 
 const logger = new DebugLogger('workspace-layout');
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
@@ -91,7 +88,6 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
 export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
-  const [show, setShow] = useAtom(sideBarOpenAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
@@ -183,8 +179,6 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
           openPage={handleOpenPage}
           createPage={handleCreatePage}
-          show={show}
-          setShow={setShow}
           currentPath={router.asPath}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
