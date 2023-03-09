@@ -1,5 +1,5 @@
 import { useTranslation } from '@affine/i18n';
-import { PageBlockModel } from '@blocksuite/blocks';
+import type { PageBlockModel } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons';
 import { assertEquals, nanoid } from '@blocksuite/store';
 import { Command } from 'cmdk';
