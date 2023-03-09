@@ -117,7 +117,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
   pageMeta,
   onPermanentlyDeletePage,
   onRestorePage,
-  onOpenPage,
 }) => {
   const { id, title } = pageMeta;
   const { t } = useTranslation();
@@ -131,7 +130,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
           onClick={() => {
             onRestorePage(id);
             toast(t('restored', { title: title || 'Untitled' }));
-            onOpenPage(id);
           }}
         >
           <ResetIcon />
