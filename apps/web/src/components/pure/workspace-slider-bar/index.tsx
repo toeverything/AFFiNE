@@ -123,6 +123,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
           <SidebarSwitch
             visible={open}
             tooltipContent={t('Collapse sidebar')}
+            testid="sliderBar-arrowButton-collapse"
           />
         </StyledSidebarWrapper>
         <StyledSliderBarWrapper data-testid="sliderBar">

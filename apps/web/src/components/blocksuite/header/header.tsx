@@ -75,7 +75,12 @@ export const Header: React.FC<HeaderProps> = ({
         data-testid="editor-header-items"
         data-tauri-drag-region
       >
-        <SidebarSwitch visible={!open} tooltipContent={t('Expand sidebar')} />
+        <SidebarSwitch
+          visible={!open}
+          tooltipContent={t('Expand sidebar')}
+          testid="sliderBar-arrowButton-expand"
+        />
+
         {children}
         <StyledHeaderRightSide>
           {useMemo(

@@ -8,10 +8,12 @@ import { StyledSidebarSwitch } from './style';
 type SidebarSwitchProps = {
   visible?: boolean;
   tooltipContent?: string;
+  testid?: string;
 };
 export const SidebarSwitch = ({
   visible = true,
   tooltipContent,
+  testid = '',
 }: SidebarSwitchProps) => {
   const [open, setOpen] = useSidebarStatus();
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -28,7 +30,7 @@ export const SidebarSwitch = ({
     >
       <StyledSidebarSwitch
         visible={visible}
-        data-testid="sliderBar-arrowButton"
+        data-testid={testid}
         onClick={useCallback(() => {
           setOpen(!open);
           setTooltipVisible(false);
