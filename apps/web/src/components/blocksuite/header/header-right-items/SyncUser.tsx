@@ -142,7 +142,7 @@ export const SyncUser = () => {
   }
 
   return (
-    <Tooltip content={t('AFFiNE Cloud')} placement="bottom-end">
+    <Tooltip content={t('Synced with AFFiNE Cloud')} placement="bottom-end">
       <IconWrapper>
         <CloudWorkspaceIcon />
       </IconWrapper>

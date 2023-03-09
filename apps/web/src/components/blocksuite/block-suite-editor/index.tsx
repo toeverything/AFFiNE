@@ -16,7 +16,7 @@ export type EditorProps = {
   style?: CSSProperties;
 };
 
-import markdown from '../../../templates/Welcome-to-AFFiNE-Alpha-Downhills.md';
+import markdown from '../../../templates/Welcome-to-AFFiNE.md';
 
 const exampleTitle = markdown
   .split('\n')

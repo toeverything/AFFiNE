@@ -1,3 +1,4 @@
+import { toast } from '@affine/component';
 import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { CSSProperties } from 'react';
@@ -40,6 +41,7 @@ export const EditorModeSwitch = ({
         hide={trash && mode !== 'page'}
         onClick={() => {
           setPageMeta(pageId, { mode: 'page' });
+          toast('Page mode');
         }}
       >
         <PaperIcon />
@@ -50,6 +52,7 @@ export const EditorModeSwitch = ({
         hide={trash && mode !== 'edgeless'}
         onClick={() => {
           setPageMeta(pageId, { mode: 'edgeless' });
+          toast('Edgeless mode');
         }}
       >
         <EdgelessIcon />
