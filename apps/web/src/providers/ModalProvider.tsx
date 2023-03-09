@@ -82,11 +82,13 @@ export function Modals() {
             const id = await createLocalWorkspace(name);
             setOpenCreateWorkspaceModal(false);
             setOpenWorkspacesModal(false);
+            setCurrentWorkspace(id);
             return jumpToSubPath(id, WorkspaceSubPath.ALL);
           },
           [
             createLocalWorkspace,
             jumpToSubPath,
+            setCurrentWorkspace,
             setOpenCreateWorkspaceModal,
             setOpenWorkspacesModal,
           ]
