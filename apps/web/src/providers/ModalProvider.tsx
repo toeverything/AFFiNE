@@ -70,7 +70,7 @@ export function Modals() {
           apis.auth.clear();
           set(workspaces =>
             workspaces.filter(
-              workspace => workspace.flavour === RemWorkspaceFlavour.AFFINE
+              workspace => workspace.flavour !== RemWorkspaceFlavour.AFFINE
             )
           );
           router.reload();
