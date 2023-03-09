@@ -17,6 +17,7 @@ import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-route
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
+
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { jumpToPage } = useRouterHelper(router);
@@ -27,18 +28,23 @@ const AllPage: NextPageWithLayout = () => {
     if (!router.isReady) {
       return;
     }
-    if (currentWorkspace?.blockSuiteWorkspace.isEmpty) {
-      // this is a new workspace, so we should redirect to the new page
-      const pageId = nanoid();
-      currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
-        currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
-          init: true,
+    const id = setTimeout(() => {
+      if (currentWorkspace?.blockSuiteWorkspace.isEmpty) {
+        // this is a new workspace, so we should redirect to the new page
+        const pageId = nanoid();
+        currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
+          currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
+            init: true,
+          });
+          assertExists(pageId, id);
+          jumpToPage(currentWorkspace.id, pageId);
         });
-        assertExists(pageId, id);
-        jumpToPage(currentWorkspace.id, pageId);
-      });
-      currentWorkspace.blockSuiteWorkspace.createPage(pageId);
-    }
+        currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+      }
+    }, 1000);
+    return () => {
+      clearTimeout(id);
+    };
   }, [currentWorkspace, jumpToPage, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
