@@ -36,10 +36,14 @@ export const Footer: React.FC<FooterProps> = ({
         const pageId = await createPage(id, query);
         assertEquals(pageId, id);
         await jumpToPage(blockSuiteWorkspace.id, pageId);
-        if (query) {
-          const block = blockSuiteWorkspace
-            .getPage(pageId)
-            ?.getBlockByFlavour('affine:page')[0] as PageBlockModel;
+        if (!query) {
+          return;
+        }
+        const newPage = blockSuiteWorkspace.getPage(pageId);
+        if (newPage) {
+          const block = newPage.getBlockByFlavour(
+            'affine:page'
+          )[0] as PageBlockModel;
           block.title.insert(query, 0);
         }
       }}
