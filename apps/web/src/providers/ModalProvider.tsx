@@ -13,6 +13,7 @@ import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
+import { WorkspacePlugins } from '../plugins';
 import { RemWorkspaceFlavour, WorkspaceSubPath } from '../shared';
 import { apis } from '../shared/apis';
 
@@ -73,6 +74,7 @@ export function Modals() {
               workspace => workspace.flavour !== RemWorkspaceFlavour.AFFINE
             )
           );
+          WorkspacePlugins[RemWorkspaceFlavour.AFFINE].cleanup?.();
           router.reload();
         }, [router, set])}
         onCreateWorkspace={useCallback(() => {
