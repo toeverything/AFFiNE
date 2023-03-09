@@ -6,7 +6,7 @@ import { test } from './libs/playwright';
 loadPage();
 
 test.describe('Layout ui', () => {
-  test.only('Collapse Sidebar', async ({ page }) => {
+  test('Collapse Sidebar', async ({ page }) => {
     await page.getByTestId('sliderBar-arrowButton-collapse').click();
     const sliderBarArea = page.getByTestId('sliderBar');
     await expect(sliderBarArea).not.toBeVisible();
