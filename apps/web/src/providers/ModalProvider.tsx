@@ -1,4 +1,4 @@
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
@@ -9,6 +9,7 @@ import {
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useCurrentUser } from '../hooks/current/use-current-user';
+import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
@@ -37,7 +38,7 @@ export function Modals() {
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-  const setCurrentWorkspace = useSetAtom(currentWorkspaceIdAtom);
+  const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useWorkspacesHelper();
 
   return (
@@ -81,11 +82,13 @@ export function Modals() {
             const id = await createLocalWorkspace(name);
             setOpenCreateWorkspaceModal(false);
             setOpenWorkspacesModal(false);
+            setCurrentWorkspace(id);
             return jumpToSubPath(id, WorkspaceSubPath.ALL);
           },
           [
             createLocalWorkspace,
             jumpToSubPath,
+            setCurrentWorkspace,
             setOpenCreateWorkspaceModal,
             setOpenWorkspacesModal,
           ]
