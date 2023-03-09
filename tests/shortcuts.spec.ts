@@ -10,6 +10,7 @@ test.describe('Shortcuts Modal', () => {
     await page.locator('[data-testid=help-island]').click();
 
     const shortcutsIcon = page.locator('[data-testid=shortcuts-icon]');
+    await page.waitForTimeout(800);
     expect(await shortcutsIcon.isVisible()).toEqual(true);
 
     await shortcutsIcon.click();
