@@ -24,6 +24,7 @@ import {
   settingPanel,
   settingPanelValues,
 } from '../../../shared';
+import { apis } from '../../../shared/apis';
 
 const settingPanelAtom = atomWithStorage<SettingPanel>(
   'workspaceId',
@@ -107,6 +108,11 @@ const SettingPage: NextPageWithLayout = () => {
       to: To,
       workspace: FlavourToWorkspace[From]
     ): Promise<void> => {
+      if (to === RemWorkspaceFlavour.AFFINE && !apis.auth.isLogin) {
+        await apis.signInWithGoogle();
+        router.reload();
+        return;
+      }
       const workspaceId = await transformWorkspace(from, to, workspace);
       await router.replace({
         pathname: `/workspace/[workspaceId]/setting`,

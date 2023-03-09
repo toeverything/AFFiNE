@@ -1,5 +1,8 @@
 # Building AFFiNE Web
 
+> **Note**
+> For developing & building desktop client app, please refer to [building-desktop-client-app.md](./building-desktop-client-app.md)
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)

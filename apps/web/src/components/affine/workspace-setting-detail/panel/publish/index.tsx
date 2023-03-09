@@ -17,6 +17,7 @@ import {
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../../shared';
+import { apis } from '../../../../../shared/apis';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
 import { WorkspaceSettingDetailProps } from '../../index';
@@ -101,8 +102,12 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
           setOpen(false);
         }}
         onConfirm={() => {
-          publishWorkspace(true);
-          setOpen(false);
+          if (!apis.auth.isLogin) {
+            toast(t('Please login first'));
+          } else {
+            publishWorkspace(true);
+            setOpen(false);
+          }
         }}
       />
     </>

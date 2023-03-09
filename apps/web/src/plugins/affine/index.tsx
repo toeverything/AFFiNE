@@ -59,6 +59,9 @@ const getPersistenceAllWorkspace = () => {
 export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
   flavour: RemWorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
+  cleanup: () => {
+    storage.removeItem(kAffineLocal);
+  },
   CRUD: {
     create: async blockSuiteWorkspace => {
       const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(
