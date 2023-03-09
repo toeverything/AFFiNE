@@ -95,7 +95,7 @@ importers:
       cross-env: ^7.0.3
       esbuild: ^0.17.8
       json-schema-to-typescript: ^11.0.5
-      lib0: ^0.2.62
+      lib0: ^0.2.63
       lit: ^2.6.1
       next: 13.1.0
       prettier: 2.8.4
@@ -117,7 +117,7 @@ importers:
       '@emotion/styled': 11.10.6_oouaibmszuch5k64ms7uxp2aia
       '@tauri-apps/api': 1.2.0_nb4isgkwd3sres4g7j7rgtldsu
       json-schema-to-typescript: 11.0.5
-      lib0: 0.2.63
+      lib0: 0.2.64
       next: 13.1.0_biqbaboplfbrettd7655fr4n2y
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
@@ -324,7 +324,7 @@ importers:
       js-base64: ^3.7.5
       ky: ^0.33.2
       ky-universal: ^0.11.0
-      lib0: ^0.2.62
+      lib0: ^0.2.63
       lit: ^2.6.1
       typescript: ^4.9.5
       y-protocols: ^1.0.5
@@ -340,7 +340,7 @@ importers:
       js-base64: 3.7.5
       ky: 0.33.2
       ky-universal: 0.11.0_ky@0.33.2
-      lib0: 0.2.63
+      lib0: 0.2.64
       lit: 2.6.1
       y-protocols: 1.0.5
       yjs: 13.5.48
@@ -9457,19 +9457,12 @@ packages:
       type-check: 0.4.0
     dev: true
 
-  /lib0/0.2.63:
-    resolution: {integrity: sha512-JhUd/JXR4rnWsSP1zup904ACbVFcdRieWoIGwGAtHww4zms0gNyi8EM30Rfftnk+6A10qQMSufjLM0/ncq06xw==}
-    engines: {node: '>=14'}
-    dependencies:
-      isomorphic.js: 0.2.5
-
   /lib0/0.2.64:
     resolution: {integrity: sha512-uj2xp9i4QC0JEe5hf04whZ3MoDvB9QeJr17SJtjd5zUI5wCcIcnDpuhEMkunr+kSs/oJsz0e1rQvrW/TiX49gw==}
     engines: {node: '>=14'}
     hasBin: true
     dependencies:
       isomorphic.js: 0.2.5
-    dev: false
 
   /lilconfig/2.0.6:
     resolution: {integrity: sha512-9JROoBW7pobfsx+Sq2JsASvCo6Pfo6WWoUW79HuB1BCoBXD4PLWJPqDF6fNj67pqBYTbAHkE57M1kS/+L1neOg==}
@@ -13120,14 +13113,14 @@ packages:
     peerDependencies:
       yjs: ^13.0.0
     dependencies:
-      lib0: 0.2.63
+      lib0: 0.2.64
       yjs: 13.5.48
     dev: false
 
   /y-protocols/1.0.5:
     resolution: {integrity: sha512-Wil92b7cGk712lRHDqS4T90IczF6RkcvCwAD0A2OPg+adKmOe+nOiT/N2hvpQIWS3zfjmtL4CPaH5sIW1Hkm/A==}
     dependencies:
-      lib0: 0.2.63
+      lib0: 0.2.64
     dev: false
 
   /y-webrtc/10.2.4:
@@ -13241,7 +13234,7 @@ packages:
   /yjs/13.5.48:
     resolution: {integrity: sha512-RFUqe1UQa1iKfQ9wZkZQP33iEBBSTz6sW3S5CWzHEe0JVksOi8AzspSTvQk5VskoJj4HzMUYgaNcPrE0MqJ8xQ==}
     dependencies:
-      lib0: 0.2.63
+      lib0: 0.2.64
 
   /yn/3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
