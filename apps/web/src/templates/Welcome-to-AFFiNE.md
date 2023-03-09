@@ -16,7 +16,7 @@ AFFiNE is **feature-rich** - offering a wide-range of _blocks_ that _empower_ yo
 
 AFFiNE is **privacy focused** - with a local-first approach, keep control of your data
 
-AFFiNE is **open soure** - you can check us out on [GitHub: toeverything/AFFiNE](https://github.com/toeverything/affine)
+AFFiNE is **open source** - you can check us out on [GitHub: toeverything/AFFiNE](https://github.com/toeverything/affine)
 
 Let's get started!
 ------------------
