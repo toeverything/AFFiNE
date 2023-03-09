@@ -73,9 +73,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
           setOpen(false);
           return;
         }
-        if (selection?.isCollapsed) {
-          setOpen(!open);
-        }
+        setOpen(!open);
       }
     };
     document.addEventListener('keydown', keydown, { capture: true });
