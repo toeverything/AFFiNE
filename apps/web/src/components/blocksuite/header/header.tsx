@@ -1,6 +1,9 @@
+import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
 import React, { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 
+import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
+import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import SyncUser from './header-right-items/SyncUser';
 import ThemeModeSwitch from './header-right-items/theme-mode-switch';
@@ -56,6 +59,9 @@ export const Header: React.FC<HeaderProps> = ({
   useEffect(() => {
     setShowWarning(shouldShowWarning());
   }, []);
+  const [open] = useSidebarStatus();
+  const { t } = useTranslation();
+
   return (
     <StyledHeaderContainer hasWarning={showWarning}>
       <BrowserWarning
@@ -69,6 +75,12 @@ export const Header: React.FC<HeaderProps> = ({
         data-testid="editor-header-items"
         data-tauri-drag-region
       >
+        <SidebarSwitch
+          visible={!open}
+          tooltipContent={t('Expand sidebar')}
+          testid="sliderBar-arrowButton-expand"
+        />
+
         {children}
         <StyledHeaderRightSide>
           {useMemo(

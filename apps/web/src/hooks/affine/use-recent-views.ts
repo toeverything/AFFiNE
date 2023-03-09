@@ -22,7 +22,7 @@ export function useSyncRecentViewsWithRouter(router: NextRouter) {
   const [workspace] = useCurrentWorkspace();
   const workspaceId = workspace?.id || null;
   const blockSuiteWorkspace = workspace?.blockSuiteWorkspace || null;
-  const pageId = router.query.pageId as string;
+  const pageId = router.query.pageId;
   const set = useSetAtom(workspaceRecentViresWriteAtom);
   const meta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
@@ -31,7 +31,6 @@ export function useSyncRecentViewsWithRouter(router: NextRouter) {
     if (!workspaceId) return;
     if (pageId && meta) {
       set(workspaceId, {
-        title: meta.title || 'Untitled',
         id: pageId as string,
         mode: meta.mode || 'page',
       });

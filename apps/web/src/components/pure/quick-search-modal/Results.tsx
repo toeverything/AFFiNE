@@ -1,3 +1,4 @@
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
@@ -94,18 +95,24 @@ export const Results: React.FC<ResultsProps> = ({
           {recentlyViewed.length > 0 && (
             <Command.Group heading={t('Recent')}>
               {recentlyViewed
-                .filter(
-                  recent =>
-                    pageList.find(page => recent.id === page.id)?.trash !== true
-                )
+                .filter(recent => {
+                  const page = pageList.find(page => recent.id === page.id);
+                  if (!page) {
+                    return false;
+                  } else {
+                    return page.trash !== true;
+                  }
+                })
                 .map(recent => {
+                  const page = pageList.find(page => recent.id === page.id);
+                  assertExists(page);
                   return (
                     <Command.Item
-                      key={recent.id}
-                      value={recent.id}
+                      key={page.id}
+                      value={page.id}
                       onSelect={() => {
                         onClose();
-                        jumpToPage(blockSuiteWorkspace.id, recent.id);
+                        jumpToPage(blockSuiteWorkspace.id, page.id);
                       }}
                     >
                       <StyledListItem>
@@ -114,7 +121,7 @@ export const Results: React.FC<ResultsProps> = ({
                         ) : (
                           <PaperIcon />
                         )}
-                        <span>{recent.title}</span>
+                        <span>{page.title || UNTITLED_WORKSPACE_NAME}</span>
                       </StyledListItem>
                     </Command.Item>
                   );

@@ -9,7 +9,7 @@
     "zod": "^3.21.3"
   },
   "dependencies": {
-    "@blocksuite/global": "0.5.0-20230308090832-6594d8d",
+    "@blocksuite/global": "0.5.0-20230309082016-5a8e126",
     "lit": "^2.6.1"
   }
 }

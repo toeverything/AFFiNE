@@ -148,14 +148,6 @@ jobs:
           name: affine
           fail_ci_if_error: true
 
-      - name: Upload test results
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-results-unit
-          path: ./test-results
-          if-no-files-found: ignore
-
   build-frontend:
     name: Build frontend
     if: github.ref == 'refs/heads/master'
@@ -258,3 +250,62 @@ jobs:
           file: ./.github/deployment/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    environment: development
+    needs: build-frontend
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - run: pnpm i
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: ./apps/web/.next
+
+      - name: Install playwright browsers
+        run: npx playwright install chromium
+      - name: Run e2e & unit tests
+        run: |
+          pnpm test -- --forbid-only
+          pnpm run test:unit:coverage
+        env:
+          COVERAGE: true
+
+      - name: Collect code coverage report
+        run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
+      - name: Upload e2e test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/lcov.info
+          flags: e2etest
+          name: affine
+          fail_ci_if_error: true
+
+      - name: Upload unit test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/store/lcov.info
+          flags: unittest
+          name: affine
+          fail_ci_if_error: true
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results-e2e
+          path: ./test-results
+          if-no-files-found: ignore

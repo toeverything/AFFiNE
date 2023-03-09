@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "@blocksuite/blocks": "0.5.0-20230308090832-6594d8d",
-    "@blocksuite/store": "0.5.0-20230308090832-6594d8d",
+    "@blocksuite/blocks": "0.5.0-20230309082016-5a8e126",
+    "@blocksuite/store": "0.5.0-20230309082016-5a8e126",
     "@tauri-apps/api": "^1.2.0",
     "encoding": "^0.1.13",
     "firebase": "^9.17.1",

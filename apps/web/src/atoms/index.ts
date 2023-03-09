@@ -60,7 +60,7 @@ export const workspacesAtom = atom<Promise<RemWorkspace[]>>(async get => {
   return workspaces.filter(workspace => workspace !== null) as RemWorkspace[];
 });
 
-type View = { title: string; id: string; mode: 'page' | 'edgeless' };
+type View = { id: string; mode: 'page' | 'edgeless' };
 
 export type WorkspaceRecentViews = Record<string, View[]>;
 
