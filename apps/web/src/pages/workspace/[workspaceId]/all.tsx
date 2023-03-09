@@ -54,7 +54,7 @@ const AllPage: NextPageWithLayout = () => {
       });
       currentWorkspace.blockSuiteWorkspace.createPage(pageId);
     }
-  }, [currentWorkspace, jumpToPage, router]);
+  }, [currentWorkspace, jumpToPage, previousRoute, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
