@@ -5,6 +5,7 @@ export const StyledSliderBar = styled('div')<{ show: boolean }>(
   ({ theme, show }) => {
     return {
       width: show ? '256px' : '0',
+      whiteSpace: 'nowrap',
       height: '100vh',
       minHeight: '450px',
       background: theme.colors.hubBackground,

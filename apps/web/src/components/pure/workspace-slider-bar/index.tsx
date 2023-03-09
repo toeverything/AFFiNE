@@ -106,8 +106,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const currentWorkspaceId = currentWorkspace?.id || null;
   const [showSubFavorite, setOpenSubFavorite] = useState(true);
   const { t } = useTranslation();
-  const [open] = useSidebarStatus();
-
   const [sidebarOpen] = useSidebarStatus();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
@@ -121,7 +119,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
       <StyledSliderBar show={isPublicWorkspace ? false : sidebarOpen}>
         <StyledSidebarWrapper>
           <SidebarSwitch
-            visible={open}
+            visible={sidebarOpen}
             tooltipContent={t('Collapse sidebar')}
             testid="sliderBar-arrowButton-collapse"
           />
