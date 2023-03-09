@@ -54,10 +54,10 @@ export const Avatar: React.FC<AvatarProps> = React.memo<AvatarProps>(
               fontSize: Math.ceil(0.5 * size) + 'px',
               background: stringToColour(name || 'AFFiNE'),
               borderRadius: '50%',
-              textAlign: 'center',
-              lineHeight: size + 'px',
-              display: 'inline-block',
-              verticalAlign: 'middle',
+              display: 'inline-flex',
+              lineHeight: '1',
+              justifyContent: 'center',
+              alignItems: 'center',
             }}
           >
             {(name || 'AFFiNE').substring(0, 1)}

@@ -2,12 +2,13 @@ import { MuiAvatar, textEllipsis } from '@affine/component';
 import { styled } from '@affine/component';
 export const SelectorWrapper = styled('div')(({ theme }) => {
   return {
-    height: '52px',
+    height: '64px',
     display: 'flex',
     alignItems: 'center',
-    padding: '0 12px',
+    padding: '0 44px 0 12px',
     borderRadius: '5px',
     color: theme.colors.textColor,
+    position: 'relative',
     ':hover': {
       cursor: 'pointer',
       background: theme.colors.hoverBackground,
@@ -25,7 +26,6 @@ export const WorkspaceName = styled('span')(({ theme }) => {
     marginLeft: '12px',
     fontSize: theme.font.h6,
     fontWeight: 500,
-    marginTop: '4px',
     flexGrow: 1,
     ...textEllipsis(1),
   };

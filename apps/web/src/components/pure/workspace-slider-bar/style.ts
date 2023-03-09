@@ -12,11 +12,19 @@ export const StyledSliderBar = styled('div')<{ show: boolean }>(
       transition: 'width .15s, padding .15s',
       position: 'relative',
       zIndex: theme.zIndex.modal,
-      padding: show ? '24px 12px' : '24px 0',
+      padding: show ? '0 12px' : '0',
       flexShrink: 0,
     };
   }
 );
+export const StyledSidebarWrapper = styled('div')(() => {
+  return {
+    position: 'absolute',
+    right: '12px',
+    top: '16px',
+    zIndex: 1,
+  };
+});
 export const StyledSliderBarWrapper = styled('div')(() => {
   return {
     height: '100%',
@@ -25,31 +33,6 @@ export const StyledSliderBarWrapper = styled('div')(() => {
     position: 'relative',
   };
 });
-
-export const StyledArrowButton = styled('button')<{ isShow: boolean }>(
-  ({ theme, isShow }) => {
-    return {
-      width: '32px',
-      height: '32px',
-      ...displayFlex('center', 'center'),
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
-      borderRadius: '50%',
-      transition: 'all .15s',
-      position: 'absolute',
-      top: '34px',
-      right: '-20px',
-      zIndex: theme.zIndex.modal,
-      svg: {
-        transform: isShow ? 'rotate(180deg)' : 'unset',
-      },
-      ':hover': {
-        color: '#fff',
-        backgroundColor: theme.colors.primaryColor,
-      },
-    };
-  }
-);
 
 export const StyledListItem = styled('div')<{
   active?: boolean;
