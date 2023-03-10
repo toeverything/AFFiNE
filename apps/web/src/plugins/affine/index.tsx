@@ -14,7 +14,7 @@ import {
   LoadPriority,
   RemWorkspaceFlavour,
 } from '../../shared';
-import { apis } from '../../shared/apis';
+import { apis, clientAuth } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 import { fetcher, QueryKey } from './fetcher';
@@ -68,25 +68,19 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
         blockSuiteWorkspace.doc
       );
       const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
-
       // fixme: syncing images
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
       const blobs = await blockSuiteWorkspace.blobs;
       if (blobs) {
-        const newBlockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-          blockSuiteWorkspace.id,
-          (k: string) =>
-            // fixme: token could be expired
-            ({ api: '/api/workspace', token: apis.auth.token }[k])
-        );
-        const newBlobs = await newBlockSuiteWorkspace.blobs;
-        if (newBlobs) {
-          const ids = await blobs.blobs;
-          for (const id of ids) {
-            const url = await blobs.get(id);
-            if (url) {
-              const blob = await fetch(url).then(res => res.blob());
-              await newBlobs.set(blob);
-            }
+        const ids = await blobs.blobs;
+        for (const id of ids) {
+          const url = await blobs.get(id);
+          if (url) {
+            const blob = await fetch(url).then(res => res.blob());
+            await clientAuth.put(`api/workspace/${id}/blob`, {
+              body: blob,
+            });
           }
         }
       }
