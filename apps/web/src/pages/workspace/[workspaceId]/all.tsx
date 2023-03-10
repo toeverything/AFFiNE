@@ -16,7 +16,11 @@ import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
+import {
+  LocalIndexedDBProvider,
+  NextPageWithLayout,
+  RemWorkspaceFlavour,
+} from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
@@ -28,23 +32,33 @@ const AllPage: NextPageWithLayout = () => {
     if (!router.isReady) {
       return;
     }
-    const id = setTimeout(() => {
-      if (currentWorkspace?.blockSuiteWorkspace.isEmpty) {
-        // this is a new workspace, so we should redirect to the new page
-        const pageId = nanoid();
-        currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
-          currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
-            init: true,
+    if (!currentWorkspace) {
+      return;
+    }
+    const localProvider = currentWorkspace.providers.find(
+      provider => provider.flavour === 'local-indexeddb'
+    );
+    if (localProvider && localProvider.flavour === 'local-indexeddb') {
+      const provider = localProvider as LocalIndexedDBProvider;
+      const callback = () => {
+        if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
+          // this is a new workspace, so we should redirect to the new page
+          const pageId = nanoid();
+          currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
+            currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
+              init: true,
+            });
+            assertExists(pageId, id);
+            jumpToPage(currentWorkspace.id, pageId);
           });
-          assertExists(pageId, id);
-          jumpToPage(currentWorkspace.id, pageId);
-        });
-        currentWorkspace.blockSuiteWorkspace.createPage(pageId);
-      }
-    }, 1000);
-    return () => {
-      clearTimeout(id);
-    };
+          currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+        }
+      };
+      provider.callbacks.add(callback);
+      return () => {
+        provider.callbacks.delete(callback);
+      };
+    }
   }, [currentWorkspace, jumpToPage, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {

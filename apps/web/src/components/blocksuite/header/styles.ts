@@ -113,3 +113,24 @@ export const StyledPageListTittleWrapper = styled(StyledTitle)(({ theme }) => {
     },
   };
 });
+export const StyledQuickSearchTipButton = styled('div')(({ theme }) => {
+  return {
+    ...displayFlex('center', 'center'),
+    marginTop: '12px',
+    color: '#FFFFFF',
+    width: '60px',
+    height: ' 26px',
+    fontSize: theme.font.sm,
+    lineHeight: '22px',
+    background: theme.colors.primaryColor,
+    borderRadius: '8px',
+    textAlign: 'center',
+    cursor: 'pointer',
+  };
+});
+export const StyledQuickSearchTipContent = styled('div')(({ theme }) => {
+  return {
+    ...displayFlex('center', 'flex-end'),
+    flexDirection: 'column',
+  };
+});

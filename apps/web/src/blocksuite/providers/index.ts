@@ -56,13 +56,16 @@ const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBProvider => {
   let indexeddbProvider: IndexeddbPersistence | null = null;
+  const callbacks = new Set<() => void>();
   return {
     flavour: 'local-indexeddb',
+    callbacks,
     // fixme: remove background long polling
     background: true,
     cleanup: () => {
       assertExists(indexeddbProvider);
       indexeddbProvider.clearData();
+      callbacks.clear();
       indexeddbProvider = null;
     },
     connect: () => {
@@ -71,6 +74,9 @@ const createIndexedDBProvider = (
         blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc
       );
+      indexeddbProvider.whenSynced.then(() => {
+        callbacks.forEach(cb => cb());
+      });
     },
     disconnect: () => {
       assertExists(indexeddbProvider);

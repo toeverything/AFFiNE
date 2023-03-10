@@ -45,6 +45,11 @@ export type BaseProvider = {
   cleanup: () => void;
 };
 
+export interface BackgroundProvider extends BaseProvider {
+  background: true;
+  callbacks: Set<() => void>;
+}
+
 export interface AffineDownloadProvider extends BaseProvider {
   flavour: 'affine-download';
 }
@@ -53,7 +58,7 @@ export interface BroadCastChannelProvider extends BaseProvider {
   flavour: 'broadcast-channel';
 }
 
-export interface LocalIndexedDBProvider extends BaseProvider {
+export interface LocalIndexedDBProvider extends BackgroundProvider {
   flavour: 'local-indexeddb';
 }
 
@@ -89,8 +94,7 @@ export const settingPanel = {
   Collaboration: 'collaboration',
   Publish: 'publish',
   Export: 'export',
-  // TODO: add it back for desktop version
-  // Sync = 'sync'
+  Sync: 'sync',
 } as const;
 export const settingPanelValues = [...Object.values(settingPanel)] as const;
 export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];

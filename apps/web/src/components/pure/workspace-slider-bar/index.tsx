@@ -124,6 +124,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             testid="sliderBar-arrowButton-collapse"
           />
         </StyledSidebarWrapper>
+
         <StyledSliderBarWrapper data-testid="sliderBar">
           <WorkspaceSelector
             currentWorkspace={currentWorkspace}
