@@ -1,4 +1,4 @@
-import { displayFlex, styled } from '@affine/component';
+import { displayFlex, styled, textEllipsis } from '@affine/component';
 
 export const StyledContent = styled('div')(({ theme }) => {
   return {
@@ -150,6 +150,9 @@ export const StyledListItem = styled('button')(({ theme }) => {
     borderRadius: '5px',
     transition: 'background .15s, color .15s',
     ...displayFlex('flex-start', 'center'),
+    span: {
+      ...textEllipsis(1),
+    },
     '>svg': {
       fontSize: '20px',
       marginRight: '12px',

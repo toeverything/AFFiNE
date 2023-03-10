@@ -27,6 +27,11 @@ export const Footer: React.FC<FooterProps> = ({
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
   const { jumpToPage } = useRouterHelper(router);
+  const MAX_QUERY_SHOW_LENGTH = 20;
+  const normalizedQuery =
+    query.length > MAX_QUERY_SHOW_LENGTH
+      ? query.slice(0, MAX_QUERY_SHOW_LENGTH) + '...'
+      : query;
   return (
     <Command.Item
       data-testid="quick-search-add-new-page"
@@ -52,7 +57,7 @@ export const Footer: React.FC<FooterProps> = ({
       <StyledModalFooterContent>
         <PlusIcon />
         {query ? (
-          <span>{t('New Keyword Page', { query: query })}</span>
+          <span>{t('New Keyword Page', { query: normalizedQuery })}</span>
         ) : (
           <span>{t('New Page')}</span>
         )}
