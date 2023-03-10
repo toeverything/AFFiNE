@@ -84,7 +84,6 @@ const createIndexedDBProvider = (
         'disconnect indexeddb provider',
         blockSuiteWorkspace.id
       );
-      callbacks.clear();
       indexeddbProvider.destroy();
       indexeddbProvider = null;
     },
