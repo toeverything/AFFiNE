@@ -36,6 +36,7 @@ export const SidebarSwitch = ({
     >
       <StyledSidebarSwitch
         visible={visible}
+        disabled={!visible}
         data-testid={testid}
         onClick={useCallback(() => {
           setOpen(!open);
