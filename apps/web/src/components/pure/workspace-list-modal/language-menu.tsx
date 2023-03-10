@@ -57,7 +57,6 @@ export const LanguageMenu: React.FC = () => {
 
 const ListItem = styled(MenuItem)(({ theme }) => ({
   height: '38px',
-  color: theme.colors.popoverColor,
   fontSize: theme.font.base,
   textTransform: 'capitalize',
   padding: '0 24px',

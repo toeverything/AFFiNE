@@ -7,7 +7,6 @@ export const StyledShortcutsModal = styled('div')(({ theme }) => ({
   backgroundColor: theme.colors.popoverBackground,
   boxShadow: theme.shadow.popover,
   borderRadius: `${theme.radius.popover} 0 ${theme.radius.popover} ${theme.radius.popover}`,
-  color: theme.colors.popoverColor,
   overflow: 'auto',
   boxRadius: '10px',
   position: 'fixed',
@@ -30,7 +29,6 @@ export const StyledTitle = styled('div')(({ theme }) => ({
   },
 }));
 export const StyledSubTitle = styled('div')(({ theme }) => ({
-  color: theme.colors.popoverColor,
   fontWeight: '500',
   fontSize: theme.font.sm,
   height: '34px',

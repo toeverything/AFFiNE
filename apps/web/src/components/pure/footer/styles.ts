@@ -20,7 +20,6 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
     marginLeft: '15px',
     width: '202px',
     p: {
-      color: theme.colors.popoverColor,
       height: '20px',
       fontSize: theme.font.sm,
       ...displayFlex('flex-start', 'center'),
