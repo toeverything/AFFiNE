@@ -21,7 +21,8 @@ import { useWorkspacesHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
 import { pathGenerator, RemWorkspaceFlavour } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
-vi.mock('react-lottie', () => ({
+
+vi.mock('../blocksuite/header/editor-mode-switch/CustomLottie', () => ({
   default: (props: React.PropsWithChildren) => <>{props.children}</>,
 }));
 

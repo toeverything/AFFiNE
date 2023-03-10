@@ -53,19 +53,20 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
       {favoriteList.map((pageMeta, index) => {
         const active = router.query.pageId === pageMeta.id;
         return (
-          <StyledSubListItem
-            data-testid={`favorite-list-item-${pageMeta.id}`}
-            active={active}
-            key={`${pageMeta}-${index}`}
-            onClick={() => {
-              if (active) {
-                return;
-              }
-              openPage(pageMeta.id);
-            }}
-          >
-            {pageMeta.title || 'Untitled'}
-          </StyledSubListItem>
+          <div key={`${pageMeta}-${index}`}>
+            <StyledSubListItem
+              data-testid={`favorite-list-item-${pageMeta.id}`}
+              active={active}
+              onClick={() => {
+                if (active) {
+                  return;
+                }
+                openPage(pageMeta.id);
+              }}
+            >
+              {pageMeta.title || 'Untitled'}
+            </StyledSubListItem>
+          </div>
         );
       })}
       {favoriteList.length === 0 && (

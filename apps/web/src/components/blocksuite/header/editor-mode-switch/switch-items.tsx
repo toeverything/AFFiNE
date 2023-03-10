@@ -1,6 +1,6 @@
 import React, { cloneElement, HTMLAttributes, useState } from 'react';
-import Lottie from 'react-lottie';
 
+import Lottie from './CustomLottie';
 import { StyledSwitchItem } from './style';
 
 type HoverAnimateControllerProps = {
