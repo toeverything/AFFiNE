@@ -65,7 +65,8 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         }}
         key={pageId}
         blockSuiteWorkspace={blockSuiteWorkspace}
-        mode={meta.mode ?? 'page'}
+        // fixme: remove mode from meta
+        mode={isPublic ? 'page' : meta.mode ?? 'page'}
         page={page}
         onInit={onInit}
         onLoad={onLoad}
