@@ -1758,6 +1758,16 @@ packages:
       react: 18.2.0
     dev: false
 
+  /@blocksuite/icons/2.0.22_pmekkgnqduwlme35zpnqhenc34:
+    resolution: {integrity: sha512-VBpxzQCSDpQCXq+3TPj+gvWR0UZXwfZXOF0buu030GNQtw53yT1Y0Pynw9mDHzhUztm4LwBN8VKiBK1CbC3Q1g==}
+    peerDependencies:
+      '@types/react': ^18.0.25
+      react: ^18.2.0
+    dependencies:
+      '@types/react': 18.0.28
+      react: 18.2.0
+    dev: false
+
   /@blocksuite/phasor/0.5.0-20230310062711-a86b71f_lit@2.6.1+yjs@13.5.48:
     resolution: {integrity: sha512-LsPgNPM2G4jQHJ7U40wK/4BfqkKiE97YtC3KphYrp4Vc3wFctr8JIsMnhwDKYltmJ9rFgfBGp1L8wGE/K8OyTg==}
     peerDependencies:
@@ -5374,7 +5384,7 @@ packages:
       '@babel/plugin-transform-react-jsx-source': 7.19.6_@babel+core@7.21.0
       magic-string: 0.27.0
       react-refresh: 0.14.0
-      vite: 4.1.4_@types+node@18.14.4
+      vite: 4.1.4
     transitivePeerDependencies:
       - supports-color
     dev: true
