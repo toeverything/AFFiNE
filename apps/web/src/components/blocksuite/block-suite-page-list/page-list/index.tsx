@@ -11,7 +11,7 @@ import {
   EdgelessIcon,
   FavoritedIcon,
   FavoriteIcon,
-  PaperIcon,
+  PageIcon,
 } from '@blocksuite/icons';
 import { PageMeta } from '@blocksuite/store';
 import {
@@ -143,7 +143,7 @@ export const PageList: React.FC<PageListProps> = ({
                       {pageMeta.mode === 'edgeless' ? (
                         <EdgelessIcon />
                       ) : (
-                        <PaperIcon />
+                        <PageIcon />
                       )}
                       <Content ellipsis={true} color="inherit">
                         {pageMeta.title || t('Untitled')}

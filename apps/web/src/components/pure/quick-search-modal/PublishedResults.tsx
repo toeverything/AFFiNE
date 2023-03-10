@@ -1,5 +1,5 @@
 import { useTranslation } from '@affine/i18n';
-import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
+import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { Command } from 'cmdk';
 import { useRouter } from 'next/router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -21,7 +21,6 @@ export const PublishedResults: React.FC<PublishedResultsProps> = ({
   query,
   loading,
   onClose,
-  setPublishWorkspaceName,
   blockSuiteWorkspace,
 }) => {
   const [results, setResults] = useState(new Map<string, string | undefined>());
@@ -75,7 +74,7 @@ export const PublishedResults: React.FC<PublishedResultsProps> = ({
                     {result.mode === 'edgeless' ? (
                       <EdgelessIcon />
                     ) : (
-                      <PaperIcon />
+                      <PageIcon />
                     )}
                     <span>{result.title}</span>
                   </StyledListItem>
