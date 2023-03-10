@@ -105,7 +105,7 @@ export const StyledSubListItem = styled('button')<{
       ? theme.colors.disableColor
       : active
       ? theme.colors.primaryColor
-      : theme.colors.popoverColor,
+      : theme.colors.textColor,
     backgroundColor: active ? theme.colors.hoverBackground : 'unset',
 
     cursor: disable ? 'not-allowed' : 'pointer',

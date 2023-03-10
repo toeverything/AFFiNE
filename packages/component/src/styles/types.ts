@@ -45,8 +45,6 @@ export interface AffineTheme {
     linkVisitedColor: string;
     iconColor: string;
     handleColor: string;
-    popoverColor: string;
-    inputColor: string;
     tooltipColor: string;
     codeColor: string;
     quoteColor: string;
@@ -116,7 +114,6 @@ export interface AffineThemeCSSVariables {
   '--affine-link-color2': AffineTheme['colors']['linkColor2'];
   '--affine-link-visited-color': AffineTheme['colors']['linkVisitedColor'];
   '--affine-icon-color': AffineTheme['colors']['iconColor'];
-  '--affine-popover-color': AffineTheme['colors']['popoverColor'];
   '--affine-code-color': AffineTheme['colors']['codeColor'];
   '--affine-quote-color': AffineTheme['colors']['quoteColor'];
   '--affine-placeholder-color': AffineTheme['colors']['placeHolderColor'];

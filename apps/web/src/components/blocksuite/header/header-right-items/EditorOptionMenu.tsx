@@ -77,6 +77,7 @@ export const EditorOptionMenu = () => {
         {mode === 'page' ? t('Edgeless') : t('Page')}
       </MenuItem>
       <Menu
+        width={248}
         placement="left-start"
         content={
           <>
@@ -124,6 +125,7 @@ export const EditorOptionMenu = () => {
     <>
       <FlexWrapper alignItems="center" justifyContent="center">
         <Menu
+          width={276}
           content={EditMenu}
           placement="bottom-end"
           disablePortal={true}

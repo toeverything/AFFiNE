@@ -13,7 +13,7 @@ import { Footer } from '../footer';
 import { WorkspaceCard } from '../workspace-card';
 import { LanguageMenu } from './language-menu';
 import {
-  StyledCard,
+  StyledCreateWorkspaceCard,
   StyledHelperContainer,
   StyledModalContent,
   StyledModalHeader,
@@ -33,6 +33,7 @@ interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
   onClickWorkspace: (workspace: RemWorkspace) => void;
+  onClickWorkspaceSetting: (workspace: RemWorkspace) => void;
   onClickLogin: () => void;
   onClickLogout: () => void;
   onCreateWorkspace: () => void;
@@ -46,6 +47,7 @@ export const WorkspaceListModal = ({
   onClickLogin,
   onClickLogout,
   onClickWorkspace,
+  onClickWorkspaceSetting,
   onCreateWorkspace,
   currentWorkspaceId,
 }: WorkspaceModalProps) => {
@@ -95,11 +97,16 @@ export const WorkspaceListModal = ({
                 workspace={workspace}
                 currentWorkspaceId={currentWorkspaceId}
                 onClick={onClickWorkspace}
+                onSettingClick={onClickWorkspaceSetting}
                 key={workspace.id}
               />
             );
           })}
-          <StyledCard data-testid="new-workspace" onClick={onCreateWorkspace}>
+
+          <StyledCreateWorkspaceCard
+            data-testid="new-workspace"
+            onClick={onCreateWorkspace}
+          >
             <StyleWorkspaceAdd className="add-icon">
               <PlusIcon />
             </StyleWorkspaceAdd>
@@ -108,7 +115,7 @@ export const WorkspaceListModal = ({
               <StyleWorkspaceTitle>{t('New Workspace')}</StyleWorkspaceTitle>
               <p>{t('Create Or Import')}</p>
             </StyleWorkspaceInfo>
-          </StyledCard>
+          </StyledCreateWorkspaceCard>
         </StyledModalContent>
 
         <Footer user={user} onLogin={onClickLogin} onLogout={onClickLogout} />

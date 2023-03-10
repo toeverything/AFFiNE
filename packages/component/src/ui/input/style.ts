@@ -15,7 +15,7 @@ export const StyledInput = styled('input')<{
     fontWeight,
     fontSize,
     height: height ? `${height}px` : 'auto',
-    color: disabled ? theme.colors.disableColor : theme.colors.inputColor,
+    color: disabled ? theme.colors.disableColor : theme.colors.textColor,
     border: `1px solid`,
     borderColor: theme.colors.borderColor, // TODO: check out disableColor,
     backgroundColor: theme.colors.popoverBackground,

@@ -15,7 +15,6 @@ export const StyledConfirmTitle = styled('div')(({ theme }) => {
     fontSize: theme.font.h6,
     fontWeight: 600,
     textAlign: 'center',
-    color: theme.colors.popoverColor,
     lineHeight: '28px',
   };
 });

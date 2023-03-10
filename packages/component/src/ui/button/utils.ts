@@ -104,7 +104,7 @@ export const getButtonColors = (
       };
     default:
       return {
-        color: theme.colors.popoverColor,
+        color: theme.colors.textColor,
         borderColor: theme.colors.borderColor,
         ':hover': {
           borderColor: theme.colors.primaryColor,

@@ -67,7 +67,6 @@ export const StyledInputContent = styled('div')(({ theme }) => {
       fontSize: theme.font.base,
       ...displayFlex('space-between', 'center'),
       letterSpacing: '0.06em',
-      color: theme.colors.popoverColor,
 
       '::placeholder': {
         color: theme.colors.placeHolderColor,
@@ -91,12 +90,11 @@ export const StyledLabel = styled('label')(({ theme }) => {
   };
 });
 
-export const StyledModalHeader = styled('div')(({ theme }) => {
+export const StyledModalHeader = styled('div')(() => {
   return {
     height: '48px',
     margin: '12px 24px 0px 24px',
     ...displayFlex('space-between', 'center'),
-    color: theme.colors.popoverColor,
   };
 });
 export const StyledModalDivider = styled('div')(({ theme }) => {
@@ -117,7 +115,6 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     marginBottom: '8px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),
-    color: theme.colors.popoverColor,
     '[aria-selected="true"]': {
       transition: 'background .15s, color .15s',
       borderRadius: '5px',
