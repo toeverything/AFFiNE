@@ -98,6 +98,7 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
           )}
       </StyleWorkspaceInfo>
       <StyledSettingLink
+        className="setting-entry"
         hoverBackground="#fff"
         onClick={e => {
           e.stopPropagation();

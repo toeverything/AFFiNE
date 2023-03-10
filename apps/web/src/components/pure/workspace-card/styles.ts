@@ -56,6 +56,10 @@ export const StyledCard = styled('div')<{
         borderColor: theme.colors.primaryColor,
         color: theme.colors.primaryColor,
       },
+      '.setting-entry': {
+        opacity: 1,
+        pointerEvents: 'auto',
+      },
     },
   };
 });
@@ -78,6 +82,9 @@ export const StyledSettingLink = styled(IconButton)(({ theme }) => {
     position: 'absolute',
     right: '6px',
     bottom: '6px',
+    opacity: 0,
+    pointerEvents: 'none',
+    transition: 'all .15s',
     ':hover': {
       background: theme.colors.pageBackground,
     },
