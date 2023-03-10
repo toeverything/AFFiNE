@@ -42,7 +42,7 @@ export const getLightTheme = (
       quoteColor: '#645F82',
       placeHolderColor: '#C0BFC1',
       selectedColor: 'rgba(84, 56, 255, 0.04)',
-      borderColor: '#9787FF',
+      borderColor: '#E3E2E4',
       disableColor: '#A9A9AD',
       warningColor: '#906616',
       errorColor: '#EB4335',
