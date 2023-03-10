@@ -14,10 +14,10 @@
     "build:app": "tauri build"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.5.0-20230310090329-2ebbde2",
-    "@blocksuite/editor": "0.5.0-20230310090329-2ebbde2",
+    "@blocksuite/blocks": "0.5.0-20230310095333-5202fb9",
+    "@blocksuite/editor": "0.5.0-20230310095333-5202fb9",
     "@blocksuite/icons": "2.0.17",
-    "@blocksuite/store": "0.5.0-20230310090329-2ebbde2",
+    "@blocksuite/store": "0.5.0-20230310095333-5202fb9",
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@tauri-apps/api": "^1.2.0",
