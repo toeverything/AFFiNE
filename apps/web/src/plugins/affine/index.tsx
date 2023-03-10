@@ -68,6 +68,29 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
         blockSuiteWorkspace.doc
       );
       const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
+
+      // fixme: syncing images
+      const blobs = await blockSuiteWorkspace.blobs;
+      if (blobs) {
+        const newBlockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+          blockSuiteWorkspace.id,
+          (k: string) =>
+            // fixme: token could be expired
+            ({ api: '/api/workspace', token: apis.auth.token }[k])
+        );
+        const newBlobs = await newBlockSuiteWorkspace.blobs;
+        if (newBlobs) {
+          const ids = await blobs.blobs;
+          for (const id of ids) {
+            const url = await blobs.get(id);
+            if (url) {
+              const blob = await fetch(url).then(res => res.blob());
+              await newBlobs.set(blob);
+            }
+          }
+        }
+      }
+
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
       // refresh the local storage
       await AffinePlugin.CRUD.list();
