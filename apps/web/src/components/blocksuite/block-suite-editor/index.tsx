@@ -11,22 +11,10 @@ export type EditorProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   page: Page;
   mode: 'page' | 'edgeless';
-  onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
   style?: CSSProperties;
 };
-
-import markdown from '../../../templates/Welcome-to-AFFiNE.md';
-
-const exampleTitle = markdown
-  .split('\n')
-  .splice(0, 1)
-  .join('')
-  .replaceAll('#', '')
-  .trim();
-const exampleText = markdown.split('\n').slice(1).join('\n');
-
-const kFirstPage = 'affine-first-page';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -60,31 +48,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
 
     editor.page = page;
     if (page.root === null) {
-      if (props.onInit) {
-        props.onInit(page, editor);
-      } else {
-        console.debug('Initializing page with default content');
-        // Add page block and surface block at root level
-        const isFirstPage = page.meta.init === true;
-        if (isFirstPage) {
-          page.workspace.setPageMeta(page.id, {
-            init: false,
-          });
-        }
-        const title = isFirstPage ? exampleTitle : undefined;
-        const pageBlockId = page.addBlockByFlavour('affine:page', {
-          title: new page.Text(title),
-        });
-        page.addBlockByFlavour('affine:surface', {}, null);
-        const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-        page.addBlockByFlavour('affine:paragraph', {}, frameId);
-        if (isFirstPage) {
-          editor.clipboard.importMarkdown(exampleText, frameId);
-          props.blockSuiteWorkspace.setPageMeta(page.id, { title });
-          localStorage.setItem(kFirstPage, 'true');
-        }
-        page.resetHistory();
-      }
+      props.onInit(page, editor);
     }
     if (config.exposeInternal) {
       globalThis.currentBlockSuiteWorkspace = props.blockSuiteWorkspace;

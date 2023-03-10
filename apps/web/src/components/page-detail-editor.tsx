@@ -15,7 +15,7 @@ export type PageDetailEditorProps = {
   isPreview?: boolean;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
-  onInit?: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
   header?: React.ReactNode;
 };
