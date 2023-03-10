@@ -1,6 +1,6 @@
 import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
-import { mutate, preload } from 'swr';
+import { mutate } from 'swr';
 import { z } from 'zod';
 
 import { createAffineProviders } from '../../blocksuite';
@@ -17,7 +17,7 @@ import {
 import { apis, clientAuth } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
-import { fetcher, QueryKey } from './fetcher';
+import { QueryKey } from './fetcher';
 
 const storage = createJSONStorage(() => localStorage);
 const kAffineLocal = 'affine-local-storage-v2';
@@ -118,10 +118,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
             workspaces.find(workspace => workspace.id === workspaceId) ?? null
           );
         }
-        const workspaces: AffineWorkspace[] = await preload(
-          QueryKey.getWorkspaces,
-          fetcher
-        );
+        const workspaces: AffineWorkspace[] = await AffinePlugin.CRUD.list();
         return (
           workspaces.find(workspace => workspace.id === workspaceId) ?? null
         );
