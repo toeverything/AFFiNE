@@ -22,6 +22,7 @@ import { CollaborationPanel } from './panel/collaboration';
 import { ExportPanel } from './panel/export';
 import { GeneralPanel } from './panel/general';
 import { PublishPanel } from './panel/publish';
+import { SyncPanel } from './panel/sync';
 import {
   StyledIndicator,
   StyledSettingContainer,
@@ -52,6 +53,12 @@ const panelMap = {
     name: 'General',
     ui: GeneralPanel,
   },
+  [settingPanel.Sync]: {
+    name: 'Sync',
+    enable: (flavour: RemWorkspaceFlavour) =>
+      flavour === RemWorkspaceFlavour.AFFINE,
+    ui: SyncPanel,
+  },
   [settingPanel.Collaboration]: {
     name: 'Collaboration',
     ui: CollaborationPanel,
@@ -67,6 +74,7 @@ const panelMap = {
 } satisfies {
   [Key in SettingPanel]: {
     name: string;
+    enable?: (flavour: RemWorkspaceFlavour) => boolean;
     ui: React.FC<PanelProps>;
   };
 };
@@ -140,7 +148,7 @@ export const WorkspaceSettingDetail: React.FC<
     >
       <StyledTabButtonWrapper>
         {Object.entries(panelMap).map(([key, value]) => {
-          if (!isAffine && key === 'Sync') {
+          if ('enable' in value && !value.enable(workspace.flavour)) {
             return null;
           }
           return (
