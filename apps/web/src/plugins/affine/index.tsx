@@ -69,6 +69,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
       );
       const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
       // fixme: syncing images
+      const newWorkspaceId = id;
 
       await new Promise(resolve => setTimeout(resolve, 1000));
       const blobs = await blockSuiteWorkspace.blobs;
@@ -78,8 +79,11 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
           const url = await blobs.get(id);
           if (url) {
             const blob = await fetch(url).then(res => res.blob());
-            await clientAuth.put(`api/workspace/${id}/blob`, {
+            await clientAuth.put(`api/workspace/${newWorkspaceId}/blob`, {
               body: blob,
+              headers: {
+                'Content-Type': blob.type,
+              },
             });
           }
         }
