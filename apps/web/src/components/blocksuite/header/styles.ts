@@ -1,4 +1,9 @@
-import { displayFlex, styled } from '@affine/component';
+import {
+  absoluteCenter,
+  displayFlex,
+  styled,
+  textEllipsis,
+} from '@affine/component';
 
 export const StyledHeaderContainer = styled('div')<{ hasWarning: boolean }>(
   ({ hasWarning }) => {
@@ -17,19 +22,27 @@ export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
       background: theme.colors.pageBackground,
       transition: 'background-color 0.5s',
       zIndex: 99,
+      position: 'relative',
     };
   }
 );
 
-export const StyledTitle = styled('div')(({ theme }) => ({
+export const StyledTitleContainer = styled('div')(({ theme }) => ({
   width: '720px',
   height: '100%',
 
   margin: 'auto',
-
+  ...absoluteCenter({ horizontal: true, position: { top: 0 } }),
   ...displayFlex('center', 'center'),
   fontSize: theme.font.base,
 }));
+
+export const StyledTitle = styled('div')(() => {
+  return {
+    maxWidth: '620px',
+    ...textEllipsis(1),
+  };
+});
 
 export const StyledTitleWrapper = styled('div')({
   maxWidth: '720px',
@@ -128,7 +141,7 @@ export const StyledQuickSearchTipButton = styled('div')(({ theme }) => {
     cursor: 'pointer',
   };
 });
-export const StyledQuickSearchTipContent = styled('div')(({ theme }) => {
+export const StyledQuickSearchTipContent = styled('div')(() => {
   return {
     ...displayFlex('center', 'flex-end'),
     flexDirection: 'column',
