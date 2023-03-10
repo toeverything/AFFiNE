@@ -49,7 +49,14 @@ export const Results: React.FC<ResultsProps> = ({
   const resultsPageMeta = pageList.filter(
     page => pageIds.indexOf(page.id) > -1 && !page.trash
   );
-
+  const recentlyViewedItem = recentlyViewed.filter(recent => {
+    const page = pageList.find(page => recent.id === page.id);
+    if (!page) {
+      return false;
+    } else {
+      return page.trash !== true;
+    }
+  });
   useEffect(() => {
     setShowCreatePage(!resultsPageMeta.length);
     //Determine whether to display the  ‘+ New page’
@@ -92,40 +99,31 @@ export const Results: React.FC<ResultsProps> = ({
         )
       ) : (
         <div>
-          {recentlyViewed.length > 0 && (
+          {recentlyViewedItem.length > 0 && (
             <Command.Group heading={t('Recent')}>
-              {recentlyViewed
-                .filter(recent => {
-                  const page = pageList.find(page => recent.id === page.id);
-                  if (!page) {
-                    return false;
-                  } else {
-                    return page.trash !== true;
-                  }
-                })
-                .map(recent => {
-                  const page = pageList.find(page => recent.id === page.id);
-                  assertExists(page);
-                  return (
-                    <Command.Item
-                      key={page.id}
-                      value={page.id}
-                      onSelect={() => {
-                        onClose();
-                        jumpToPage(blockSuiteWorkspace.id, page.id);
-                      }}
-                    >
-                      <StyledListItem>
-                        {recent.mode === 'edgeless' ? (
-                          <EdgelessIcon />
-                        ) : (
-                          <PaperIcon />
-                        )}
-                        <span>{page.title || UNTITLED_WORKSPACE_NAME}</span>
-                      </StyledListItem>
-                    </Command.Item>
-                  );
-                })}
+              {recentlyViewedItem.map(recent => {
+                const page = pageList.find(page => recent.id === page.id);
+                assertExists(page);
+                return (
+                  <Command.Item
+                    key={page.id}
+                    value={page.id}
+                    onSelect={() => {
+                      onClose();
+                      jumpToPage(blockSuiteWorkspace.id, page.id);
+                    }}
+                  >
+                    <StyledListItem>
+                      {recent.mode === 'edgeless' ? (
+                        <EdgelessIcon />
+                      ) : (
+                        <PaperIcon />
+                      )}
+                      <span>{page.title || UNTITLED_WORKSPACE_NAME}</span>
+                    </StyledListItem>
+                  </Command.Item>
+                );
+              })}
             </Command.Group>
           )}
 
