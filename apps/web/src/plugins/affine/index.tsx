@@ -14,7 +14,7 @@ import {
   LoadPriority,
   RemWorkspaceFlavour,
 } from '../../shared';
-import { apis } from '../../shared/apis';
+import { apis, clientAuth } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { WorkspacePlugin } from '..';
 import { fetcher, QueryKey } from './fetcher';
@@ -68,6 +68,27 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
         blockSuiteWorkspace.doc
       );
       const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
+      // fixme: syncing images
+      const newWorkspaceId = id;
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const blobs = await blockSuiteWorkspace.blobs;
+      if (blobs) {
+        const ids = await blobs.blobs;
+        for (const id of ids) {
+          const url = await blobs.get(id);
+          if (url) {
+            const blob = await fetch(url).then(res => res.blob());
+            await clientAuth.put(`api/workspace/${newWorkspaceId}/blob`, {
+              body: blob,
+              headers: {
+                'Content-Type': blob.type,
+              },
+            });
+          }
+        }
+      }
+
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
       // refresh the local storage
       await AffinePlugin.CRUD.list();

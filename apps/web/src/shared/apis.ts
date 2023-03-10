@@ -22,5 +22,5 @@ if (typeof window === 'undefined') {
 
 const bareAuth = createBareClient(prefixUrl);
 const googleAuth = new GoogleAuth(bareAuth);
-const clientAuth = createAuthClient(bareAuth, googleAuth);
+export const clientAuth = createAuthClient(bareAuth, googleAuth);
 export const apis = getApis(bareAuth, clientAuth, googleAuth);
