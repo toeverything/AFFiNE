@@ -23,6 +23,7 @@ import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-w
 import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
 import { WorkspaceLayout } from '../../../layouts';
 import { NextPageWithLayout } from '../../../shared';
+import { initPage } from '../../../utils/blocksuite';
 
 export const NavContainer = styled('div')(({ theme }) => {
   return {
@@ -85,6 +86,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
           const { page } = editor;
           page.awarenessStore.setReadonly(page, true);
         }}
+        onInit={initPage}
         header={
           <NavContainer>
             <Breadcrumbs>

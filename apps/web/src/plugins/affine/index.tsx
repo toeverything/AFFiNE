@@ -16,6 +16,7 @@ import {
 } from '../../shared';
 import { apis, clientAuth } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
+import { initPage } from '../../utils/blocksuite';
 import { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
 
@@ -215,6 +216,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
           <PageDetailEditor
             pageId={currentPageId}
             blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            onInit={initPage}
           />
         </>
       );

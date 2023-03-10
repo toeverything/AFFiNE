@@ -17,6 +17,7 @@ import {
   RemWorkspaceFlavour,
 } from '../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
+import { initPage } from '../../utils/blocksuite';
 import { WorkspacePlugin } from '..';
 
 const getStorage = () => createJSONStorage(() => localStorage);
@@ -117,6 +118,7 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
         <>
           <PageDetailEditor
             pageId={currentPageId}
+            onInit={initPage}
             blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
           />
         </>
