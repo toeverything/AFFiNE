@@ -72,7 +72,10 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
           {isMac() ? ' ⌘ + K' : ' Ctrl + K'} to activate Quick Search. Then you
           can search keywords or quickly open recently viewed pages.
         </div>
-        <StyledQuickSearchTipButton onClick={() => setOpenTips(false)}>
+        <StyledQuickSearchTipButton
+          data-testid="quick-search-got-it"
+          onClick={() => setOpenTips(false)}
+        >
           Got it
         </StyledQuickSearchTipButton>
       </StyledQuickSearchTipContent>
