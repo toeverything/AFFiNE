@@ -1,4 +1,4 @@
-import { Content, QuickSearchTips } from '@affine/component';
+import { QuickSearchTips } from '@affine/component';
 import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
@@ -19,6 +19,7 @@ import {
   StyledSearchArrowWrapper,
   StyledSwitchWrapper,
   StyledTitle,
+  StyledTitleContainer,
   StyledTitleWrapper,
 } from './styles';
 
@@ -94,7 +95,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
     >
       {children}
       {!isPublic && (
-        <StyledTitle data-tauri-drag-region>
+        <StyledTitleContainer data-tauri-drag-region>
           <StyledTitleWrapper>
             <StyledSwitchWrapper>
               <EditorModeSwitch
@@ -105,7 +106,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
                 }}
               />
             </StyledSwitchWrapper>
-            <Content ellipsis={true}>{title || 'Untitled'}</Content>
+            <StyledTitle>{title || 'Untitled'}</StyledTitle>
             <QuickSearchTips
               data-testid="quick-search-tips"
               content={tipsContent()}
@@ -122,7 +123,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
               </StyledSearchArrowWrapper>
             </QuickSearchTips>
           </StyledTitleWrapper>
-        </StyledTitle>
+        </StyledTitleContainer>
       )}
     </Header>
   );
