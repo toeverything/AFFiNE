@@ -140,7 +140,7 @@ importers:
       '@affine/i18n': workspace:*
       '@blocksuite/blocks': 0.5.0-20230309082016-5a8e126
       '@blocksuite/editor': 0.5.0-20230309082016-5a8e126
-      '@blocksuite/icons': 2.0.17
+      '@blocksuite/icons': 2.0.22
       '@blocksuite/react': 0.5.0-20230309082016-5a8e126
       '@blocksuite/store': 0.5.0-20230309082016-5a8e126
       '@emotion/cache': ^11.10.5
@@ -189,7 +189,7 @@ importers:
       '@affine/i18n': link:../../packages/i18n
       '@blocksuite/blocks': 0.5.0-20230309082016-5a8e126_pqufealkzh27rdmgd7wlzoyt6y
       '@blocksuite/editor': 0.5.0-20230309082016-5a8e126_2jou4ldwihhgftj3dszz6vmhxu
-      '@blocksuite/icons': 2.0.17_pmekkgnqduwlme35zpnqhenc34
+      '@blocksuite/icons': 2.0.22_pmekkgnqduwlme35zpnqhenc34
       '@blocksuite/react': 0.5.0-20230309082016-5a8e126_hd4fnlg4rqbmgu52s2jomnhepi
       '@blocksuite/store': 0.5.0-20230309082016-5a8e126_lit@2.6.1+yjs@13.5.48
       '@emotion/cache': 11.10.5
@@ -1746,6 +1746,16 @@ packages:
 
   /@blocksuite/icons/2.0.17_pmekkgnqduwlme35zpnqhenc34:
     resolution: {integrity: sha512-nFhgnmfYvy/Pk+KBON5M+veZaz/IoQ+rAugzx2nPy+YPkgXvOxa5ml4rhzZYE2qgx7/FdsKQ5qkBWPjJoYRlbw==}
+    peerDependencies:
+      '@types/react': ^18.0.25
+      react: ^18.2.0
+    dependencies:
+      '@types/react': 18.0.28
+      react: 18.2.0
+    dev: false
+
+  /@blocksuite/icons/2.0.22_pmekkgnqduwlme35zpnqhenc34:
+    resolution: {integrity: sha512-VBpxzQCSDpQCXq+3TPj+gvWR0UZXwfZXOF0buu030GNQtw53yT1Y0Pynw9mDHzhUztm4LwBN8VKiBK1CbC3Q1g==}
     peerDependencies:
       '@types/react': ^18.0.25
       react: ^18.2.0
@@ -5364,7 +5374,7 @@ packages:
       '@babel/plugin-transform-react-jsx-source': 7.19.6_@babel+core@7.21.0
       magic-string: 0.27.0
       react-refresh: 0.14.0
-      vite: 4.1.4
+      vite: 4.1.4_@types+node@18.14.4
     transitivePeerDependencies:
       - supports-color
     dev: true

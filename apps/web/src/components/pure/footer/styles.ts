@@ -156,13 +156,15 @@ export const StyledModalHeader = styled('div')(() => {
 
 export const StyledSignInButton = styled(Button)(({ theme }) => {
   return {
-    fontWeight: 700,
+    fontWeight: 600,
     paddingLeft: 0,
     '.circle': {
       width: '40px',
       height: '40px',
       borderRadius: '20px',
-      backgroundColor: theme.colors.innerHoverBackground,
+      backgroundColor: theme.colors.hoverBackground,
+      color: theme.colors.primaryColor,
+      fontSize: '24px',
       flexShrink: 0,
       marginRight: '16px',
       ...displayInlineFlex('center', 'center'),
