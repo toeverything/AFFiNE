@@ -5,7 +5,7 @@ import {
   styled,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { PaperIcon } from '@blocksuite/icons';
+import { PageIcon } from '@blocksuite/icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -97,7 +97,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
               <StyledBreadcrumbs
                 href={`/public-workspace/${blockSuiteWorkspace.id}/${pageId}`}
               >
-                <PaperIcon fontSize={24} />
+                <PageIcon fontSize={24} />
                 <span>{pageTitle ? pageTitle : t('Untitled')}</span>
               </StyledBreadcrumbs>
             </Breadcrumbs>
