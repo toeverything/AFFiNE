@@ -1,7 +1,5 @@
 import React, { cloneElement, HTMLAttributes, useState } from 'react';
 
-import * as edgelessHoverAnimationData from './animation-data/edgeless-hover.json';
-import * as pageHoverAnimationData from './animation-data/page-hover.json';
 import Lottie from './CustomLottie';
 import { StyledSwitchItem } from './style';
 
@@ -49,7 +47,7 @@ export const PageSwitchItem = (
         options={{
           loop: false,
           autoplay: false,
-          animationData: pageHoverAnimationData,
+          animationData: require('./animation-data/page-hover.json'),
           rendererSettings: {
             preserveAspectRatio: 'xMidYMid slice',
           },
@@ -68,7 +66,7 @@ export const EdgelessSwitchItem = (
         options={{
           loop: false,
           autoplay: false,
-          animationData: edgelessHoverAnimationData,
+          animationData: require('./animation-data/edgeless-hover.json'),
           rendererSettings: {
             preserveAspectRatio: 'xMidYMid slice',
           },

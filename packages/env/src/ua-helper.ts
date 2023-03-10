@@ -12,6 +12,7 @@ export function getUaHelper() {
           (uas.indexOf('android') > -1 || uas.indexOf('linux') > -1)) ||
         uas.indexOf('adr') > -1;
       const ios = mobile && !android && /Mac OS/i.test(ua);
+      const mac = !mobile && /Mac OS/i.test(ua);
       const iphone = ios && uas.indexOf('iphone') > -1;
       const ipad = ios && !iphone;
       const wx = /MicroMessenger/i.test(ua);
@@ -33,6 +34,7 @@ export function getUaHelper() {
         mobile,
         android,
         ios,
+        mac,
         wx,
         chrome,
         iphone,
@@ -73,7 +75,7 @@ export function getUaHelper() {
 
       private initUaFlags() {
         this.isLinux = this.checkUseragent('linux');
-        this.isMacOs = this.checkUseragent('ios');
+        this.isMacOs = this.checkUseragent('mac');
         this.isSafari = this.checkUseragent('safari');
         this.isWindows = this.checkUseragent('win');
         this.isFireFox = this.checkUseragent('firefox');
