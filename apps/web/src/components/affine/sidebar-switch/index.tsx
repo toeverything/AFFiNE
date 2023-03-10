@@ -44,7 +44,7 @@ export const SidebarSwitch = ({
             setIsFirstLoad(false);
             setTimeout(() => {
               setOpenTips(true);
-            }, 1000);
+            }, 200);
           }
         }, [isFirstLoad, open, setIsFirstLoad, setOpen, setOpenTips])}
         onMouseEnter={useCallback(() => {
