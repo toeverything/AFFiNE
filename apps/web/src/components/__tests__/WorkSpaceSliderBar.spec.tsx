@@ -7,9 +7,8 @@ import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { createStore, getDefaultStore, Provider } from 'jotai';
 import { useRouter } from 'next/router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import createFetchMock from 'vitest-fetch-mock';
 
 import { workspacesAtom } from '../../atoms';
 import { useCurrentPageId } from '../../hooks/current/use-current-page-id';
@@ -22,8 +21,6 @@ import { useWorkspacesHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
 import { pathGenerator, RemWorkspaceFlavour } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
-
-const fetchMocker = createFetchMock(vi);
 
 // fetchMocker.enableMocks();
 let store = getDefaultStore();
@@ -55,7 +52,6 @@ describe('WorkSpaceSliderBar', () => {
     });
     let i = 0;
     const Component = () => {
-      const [show, setShow] = useState(false);
       const [currentWorkspace] = useCurrentWorkspace();
       const [currentPageId] = useCurrentPageId();
       assertExists(currentWorkspace);
@@ -73,8 +69,6 @@ describe('WorkSpaceSliderBar', () => {
             i++;
             return helper.createPage('page-test-' + i);
           }}
-          show={show}
-          setShow={setShow}
           currentPath={useRouter().asPath}
           paths={pathGenerator}
           isPublicWorkspace={false}

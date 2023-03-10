@@ -13,7 +13,7 @@ import { Footer } from '../footer';
 import { WorkspaceCard } from '../workspace-card';
 import { LanguageMenu } from './language-menu';
 import {
-  StyledCard,
+  StyledCreateWorkspaceCard,
   StyledHelperContainer,
   StyledModalContent,
   StyledModalHeader,
@@ -99,7 +99,11 @@ export const WorkspaceListModal = ({
               />
             );
           })}
-          <StyledCard data-testid="new-workspace" onClick={onCreateWorkspace}>
+
+          <StyledCreateWorkspaceCard
+            data-testid="new-workspace"
+            onClick={onCreateWorkspace}
+          >
             <StyleWorkspaceAdd className="add-icon">
               <PlusIcon />
             </StyleWorkspaceAdd>
@@ -108,7 +112,7 @@ export const WorkspaceListModal = ({
               <StyleWorkspaceTitle>{t('New Workspace')}</StyleWorkspaceTitle>
               <p>{t('Create Or Import')}</p>
             </StyleWorkspaceInfo>
-          </StyledCard>
+          </StyledCreateWorkspaceCard>
         </StyledModalContent>
 
         <Footer user={user} onLogin={onClickLogin} onLogout={onClickLogout} />
