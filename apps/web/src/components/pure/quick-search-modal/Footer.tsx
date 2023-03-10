@@ -1,7 +1,7 @@
 import { useTranslation } from '@affine/i18n';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons';
-import { assertEquals, nanoid } from '@blocksuite/store';
+import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import { Command } from 'cmdk';
 import { NextRouter } from 'next/router';
 import React from 'react';
@@ -44,6 +44,7 @@ export const Footer: React.FC<FooterProps> = ({
           const block = newPage.getBlockByFlavour(
             'affine:page'
           )[0] as PageBlockModel;
+          assertExists(block);
           block.title.insert(query, 0);
         }
       }}
