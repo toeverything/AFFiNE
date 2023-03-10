@@ -40,9 +40,9 @@ export const StyledEditorModeSwitch = styled('div')<{
 });
 
 export const StyledSwitchItem = styled('button')<{
-  active: boolean;
+  active?: boolean;
   hide?: boolean;
-}>(({ theme, active, hide = false }) => {
+}>(({ theme, active = false, hide = false }) => {
   return {
     width: '24px',
     height: '24px',
@@ -54,5 +54,8 @@ export const StyledSwitchItem = styled('button')<{
     position: 'relative',
     zIndex: 2,
     fontSize: '20px',
+    path: {
+      fill: 'currentColor',
+    },
   };
 });

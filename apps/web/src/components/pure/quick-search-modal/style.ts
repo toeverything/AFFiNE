@@ -2,8 +2,8 @@ import { displayFlex, styled } from '@affine/component';
 
 export const StyledContent = styled('div')(({ theme }) => {
   return {
-    minHeight: '220px',
-    maxHeight: '55vh',
+    minHeight: '280px',
+    maxHeight: '70vh',
     width: '100%',
     overflow: 'auto',
     marginBottom: '10px',
