@@ -1,15 +1,23 @@
 import { TooltipProps } from '@mui/material';
+import { CSSProperties } from 'react';
 
 import { Popper, type PopperProps } from '../popper';
 import { StyledMenuWrapper } from './styles';
-export const Menu = (props: PopperProps & Omit<TooltipProps, 'title'>) => {
-  const { content, placement = 'bottom-start', children } = props;
+
+export type MenuProps = {
+  width?: CSSProperties['width'];
+} & PopperProps &
+  Omit<TooltipProps, 'title'>;
+export const Menu = (props: MenuProps) => {
+  const { width, content, placement = 'bottom-start', children } = props;
   return content ? (
     <Popper
       {...props}
       showArrow={false}
       content={
-        <StyledMenuWrapper placement={placement}>{content}</StyledMenuWrapper>
+        <StyledMenuWrapper width={width} placement={placement}>
+          {content}
+        </StyledMenuWrapper>
       }
     >
       {children}
