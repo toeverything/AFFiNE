@@ -94,8 +94,7 @@ export const settingPanel = {
   Collaboration: 'collaboration',
   Publish: 'publish',
   Export: 'export',
-  // TODO: add it back for desktop version
-  // Sync = 'sync'
+  Sync: 'sync',
 } as const;
 export const settingPanelValues = [...Object.values(settingPanel)] as const;
 export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
