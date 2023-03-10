@@ -10,7 +10,7 @@ import {
 } from '../components/BlockSuiteEditor';
 
 const workspace = new Workspace({
-  room: 'test',
+  id: 'test',
   providers: [],
   isSSR: typeof window === 'undefined',
 }).register(builtInSchemas);

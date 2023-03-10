@@ -44,9 +44,6 @@
       "path": "./packages/i18n"
     },
     {
-      "path": "./packages/logger"
-    },
-    {
       "path": "./packages/env"
     }
   ],
