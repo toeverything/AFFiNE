@@ -1,6 +1,6 @@
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
-import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
+import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { Command } from 'cmdk';
 import { NextRouter } from 'next/router';
@@ -83,7 +83,7 @@ export const Results: React.FC<ResultsProps> = ({
                     {result.mode === 'edgeless' ? (
                       <EdgelessIcon />
                     ) : (
-                      <PaperIcon />
+                      <PageIcon />
                     )}
                     <span>{result.title}</span>
                   </StyledListItem>
@@ -117,7 +117,7 @@ export const Results: React.FC<ResultsProps> = ({
                       {recent.mode === 'edgeless' ? (
                         <EdgelessIcon />
                       ) : (
-                        <PaperIcon />
+                        <PageIcon />
                       )}
                       <span>{page.title || UNTITLED_WORKSPACE_NAME}</span>
                     </StyledListItem>
