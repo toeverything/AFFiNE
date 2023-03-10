@@ -22,6 +22,9 @@ import { useWorkspacesHelper } from '../../hooks/use-workspaces';
 import { ThemeProvider } from '../../providers/ThemeProvider';
 import { pathGenerator, RemWorkspaceFlavour } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
+vi.mock('react-lottie', () => ({
+  default: (props: React.PropsWithChildren) => <>{props.children}</>,
+}));
 
 const fetchMocker = createFetchMock(vi);
 

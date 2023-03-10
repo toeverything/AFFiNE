@@ -42,6 +42,9 @@ import {
   useSyncRouterWithCurrentWorkspaceAndPage,
 } from '../use-sync-router-with-current-workspace-and-page';
 import { useWorkspaces, useWorkspacesHelper } from '../use-workspaces';
+vi.mock('react-lottie', () => ({
+  default: (props: React.PropsWithChildren) => <>{props.children}</>,
+}));
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 beforeAll(() => {
