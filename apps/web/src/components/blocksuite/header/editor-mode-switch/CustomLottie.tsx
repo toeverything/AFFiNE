@@ -36,7 +36,7 @@ const CustomLottie: FC<CustomLottieProps> = ({
     return () => {
       lottieInstance.current?.destroy();
     };
-  }, [options?.animationData]);
+  }, [options]);
 
   useEffect(() => {
     if (speed) {
