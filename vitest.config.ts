@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  assetsInclude: ['**/*.md'],
   resolve: {
     alias: {
       'next/router': 'next-router-mock',
