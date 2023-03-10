@@ -7,7 +7,8 @@ export const StyledContent = styled('div')(({ theme }) => {
     width: '100%',
     overflow: 'auto',
     marginBottom: '10px',
-    ...displayFlex('center', 'flex-start'),
+    ...displayFlex('flex-start', 'flex-start'),
+    flexDirection: 'column',
     color: theme.colors.textColor,
     transition: 'all 0.15s',
     letterSpacing: '0.06em',
@@ -67,7 +68,7 @@ export const StyledInputContent = styled('div')(({ theme }) => {
       fontSize: theme.font.base,
       ...displayFlex('space-between', 'center'),
       letterSpacing: '0.06em',
-
+      color: theme.colors.textColor,
       '::placeholder': {
         color: theme.colors.placeHolderColor,
       },
@@ -114,6 +115,7 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     lineHeight: '22px',
     marginBottom: '8px',
     textAlign: 'center',
+    color: theme.colors.textColor,
     ...displayFlex('center', 'center'),
     '[aria-selected="true"]': {
       transition: 'background .15s, color .15s',
