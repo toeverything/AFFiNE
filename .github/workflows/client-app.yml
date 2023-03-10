@@ -86,10 +86,8 @@ jobs:
             apps/desktop/src-tauri
 
       - name: Make App Binary
-        run: pnpm build:app
-        working-directory: apps/desktop
+        run: pnpm build:client
         env:
-          CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -93,8 +93,8 @@ pub async fn create_workspace<'s>(
 
 #[tauri::command]
 pub async fn update_workspace<'s>(
-  state: tauri::State<'s, AppState>,
-  parameters: UpdateWorkspace,
+  _state: tauri::State<'s, AppState>,
+  _parameters: UpdateWorkspace,
 ) -> Result<bool, String> {
   // TODO: check user permission
   // No thing to update now. The avatar is update in YDoc using websocket or yrs.update

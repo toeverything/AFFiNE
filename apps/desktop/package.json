@@ -6,7 +6,7 @@
   "license": "MPL-2.0",
   "module": "true",
   "scripts": {
-    "dev:app": "cross-env NODE_ENV=development tauri dev",
+    "dev:app": "NODE_ENV=development tauri dev",
     "dev:web": "pnpm --filter @affine/app dev",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
     "build:affine": "zx scripts/buildAffine.mjs",
@@ -34,8 +34,6 @@
     "@types/node": "^18.14.4",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
-    "concurrently": "^7.6.0",
-    "cross-env": "^7.0.3",
     "esbuild": "^0.17.8",
     "lit": "^2.6.1",
     "prettier": "2.8.4",
