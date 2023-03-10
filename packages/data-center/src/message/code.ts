@@ -62,4 +62,4 @@ export const messages = {
   [MessageCode.refreshTokenError]: {
     message: 'Refresh token failed',
   },
-};
+} as const;
