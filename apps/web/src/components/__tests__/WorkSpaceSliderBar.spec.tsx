@@ -22,6 +22,10 @@ import { ThemeProvider } from '../../providers/ThemeProvider';
 import { pathGenerator, RemWorkspaceFlavour } from '../../shared';
 import { WorkSpaceSliderBar } from '../pure/workspace-slider-bar';
 
+vi.mock('../blocksuite/header/editor-mode-switch/CustomLottie', () => ({
+  default: (props: React.PropsWithChildren) => <>{props.children}</>,
+}));
+
 // fetchMocker.enableMocks();
 let store = getDefaultStore();
 beforeEach(async () => {
