@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { CSSProperties, forwardRef } from 'react';
 
 import { styled } from '../../styles';
 import { PopperArrowProps } from './interface';
@@ -9,7 +9,10 @@ export const PopperArrow = forwardRef<HTMLElement, PopperArrowProps>(
   }
 );
 
-const getArrowStyle = (placement: PopperArrowProps['placement']) => {
+const getArrowStyle = (
+  placement: PopperArrowProps['placement'],
+  backgroundColor: CSSProperties['backgroundColor']
+) => {
   if (placement.indexOf('bottom') === 0) {
     return {
       top: 0,
@@ -19,7 +22,7 @@ const getArrowStyle = (placement: PopperArrowProps['placement']) => {
       height: '1em',
       '&::before': {
         borderWidth: '0 1em 1em 1em',
-        borderColor: `transparent transparent #98ACBD transparent`,
+        borderColor: `transparent transparent ${backgroundColor} transparent`,
       },
     };
   }
@@ -33,7 +36,7 @@ const getArrowStyle = (placement: PopperArrowProps['placement']) => {
       height: '1em',
       '&::before': {
         borderWidth: '1em 1em 0 1em',
-        borderColor: `#98ACBD transparent transparent transparent`,
+        borderColor: `${backgroundColor} transparent transparent transparent`,
       },
     };
   }
@@ -45,7 +48,7 @@ const getArrowStyle = (placement: PopperArrowProps['placement']) => {
       width: '1em',
       '&::before': {
         borderWidth: '1em 0 1em 1em',
-        borderColor: `transparent transparent transparent #98ACBD`,
+        borderColor: `transparent transparent transparent ${backgroundColor}`,
       },
     };
   }
@@ -57,7 +60,7 @@ const getArrowStyle = (placement: PopperArrowProps['placement']) => {
       width: '1em',
       '&::before': {
         borderWidth: '1em 1em 1em 0',
-        borderColor: `transparent #98ACBD transparent transparent`,
+        borderColor: `transparent ${backgroundColor} transparent transparent`,
       },
     };
   }
@@ -69,7 +72,7 @@ const getArrowStyle = (placement: PopperArrowProps['placement']) => {
 
 const StyledArrow = styled('span')<{
   placement: PopperArrowProps['placement'];
-}>(({ placement }) => {
+}>(({ placement, theme }) => {
   return {
     position: 'absolute',
     fontSize: '7px',
@@ -88,6 +91,6 @@ const StyledArrow = styled('span')<{
       bottom: 0,
     },
 
-    ...getArrowStyle(placement),
+    ...getArrowStyle(placement, theme.colors.tooltipBackground),
   };
 });

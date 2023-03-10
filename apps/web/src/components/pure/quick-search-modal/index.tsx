@@ -92,8 +92,8 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         width={620}
         style={{
           maxHeight: '80vh',
-          minHeight: isPublicAndNoQuery() ? '72px' : '350px',
-          top: '12vh',
+          minHeight: isPublicAndNoQuery() ? '72px' : '412px',
+          top: '80px',
         }}
       >
         <Command

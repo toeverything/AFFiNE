@@ -1,7 +1,11 @@
 import { Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
+import {
+  useIsFirstLoad,
+  useOpenTips,
+} from '../../../hooks/affine/use-is-first-load';
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
 import { StyledSidebarSwitch } from './style';
@@ -17,6 +21,8 @@ export const SidebarSwitch = ({
 }: SidebarSwitchProps) => {
   const [open, setOpen] = useSidebarStatus();
   const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useIsFirstLoad();
+  const [, setOpenTips] = useOpenTips();
   const { t } = useTranslation();
   tooltipContent =
     tooltipContent || (open ? t('Collapse sidebar') : t('Expand sidebar'));
@@ -34,7 +40,13 @@ export const SidebarSwitch = ({
         onClick={useCallback(() => {
           setOpen(!open);
           setTooltipVisible(false);
-        }, [open, setOpen])}
+          if (isFirstLoad) {
+            setIsFirstLoad(false);
+            setTimeout(() => {
+              setOpenTips(true);
+            }, 200);
+          }
+        }, [isFirstLoad, open, setIsFirstLoad, setOpen, setOpenTips])}
         onMouseEnter={useCallback(() => {
           setTooltipVisible(true);
         }, [])}

@@ -150,3 +150,17 @@ test.describe('Focus event for quick search', () => {
     await titleIsFocused(page);
   });
 });
+test.describe('Novice guidance for quick search', () => {
+  test('When opening the website for the first time, the first folding sidebar will appear novice guide', async ({
+    page,
+  }) => {
+    const quickSearchTips = page.locator('[data-testid=quick-search-tips]');
+    await expect(quickSearchTips).not.toBeVisible();
+    await page.getByTestId('sliderBar-arrowButton-collapse').click();
+    const sliderBarArea = page.getByTestId('sliderBar');
+    await expect(sliderBarArea).not.toBeVisible();
+    await expect(quickSearchTips).toBeVisible();
+    await page.locator('[data-testid=quick-search-got-it]').click();
+    await expect(quickSearchTips).not.toBeVisible();
+  });
+});
