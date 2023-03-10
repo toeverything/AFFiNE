@@ -121,7 +121,7 @@
   "Create Or Import": "Create or Import",
   "Delete Workspace": "Delete Workspace",
   "Delete Workspace Description2": "Deleting (<1>{{workspace}}</1>) will delete both local and cloud data, this operation cannot be undone, please proceed with caution.",
-  "Delete Workspace placeholder": "Please type “Delete” to confirm",
+  "Placeholder of delete workspace": "Please type workspace name to confirm",
   "Leave Workspace": "Leave Workspace",
   "Leave": "Leave",
   "Workspace Icon": "Workspace Icon",

@@ -16,6 +16,7 @@ import {
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../../../shared';
+import { apis } from '../../../../shared/apis';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
 const IconWrapper = styled('div')(({ theme }) => {
@@ -23,7 +24,7 @@ const IconWrapper = styled('div')(({ theme }) => {
     width: '32px',
     height: '32px',
     marginRight: '12px',
-    fontSize: '20px',
+    fontSize: '24px',
     color: theme.colors.iconColor,
     ...displayFlex('center', 'center'),
   };
@@ -101,7 +102,6 @@ export const SyncUser = () => {
               setOpen(true);
             }}
             style={{ marginRight: '12px' }}
-            iconSize={[20, 20]}
           >
             <LocalWorkspaceIcon />
           </IconButton>
@@ -112,6 +112,11 @@ export const SyncUser = () => {
             setOpen(false);
           }}
           onConform={async () => {
+            if (!apis.auth.isLogin) {
+              await apis.signInWithGoogle();
+              router.reload();
+              return;
+            }
             assertEquals(workspace.flavour, RemWorkspaceFlavour.LOCAL);
             const id = await transformWorkspace(
               RemWorkspaceFlavour.LOCAL,
@@ -137,7 +142,7 @@ export const SyncUser = () => {
   }
 
   return (
-    <Tooltip content={t('AFFiNE Cloud')} placement="bottom-end">
+    <Tooltip content={t('Synced with AFFiNE Cloud')} placement="bottom-end">
       <IconWrapper>
         <CloudWorkspaceIcon />
       </IconWrapper>

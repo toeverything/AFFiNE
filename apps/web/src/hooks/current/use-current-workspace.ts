@@ -1,4 +1,5 @@
-import { atom, useAtom, useAtomValue } from 'jotai';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import { useCallback } from 'react';
 
 import {
@@ -16,6 +17,11 @@ export const currentWorkspaceAtom = atom<Promise<RemWorkspace | null>>(
   }
 );
 
+export const lastWorkspaceIdAtom = atomWithStorage<string | null>(
+  'last_workspace_id',
+  null
+);
+
 export function useCurrentWorkspace(): [
   RemWorkspace | null,
   (id: string | null) => void
@@ -23,14 +29,16 @@ export function useCurrentWorkspace(): [
   const currentWorkspace = useAtomValue(currentWorkspaceAtom);
   const [, setId] = useAtom(currentWorkspaceIdAtom);
   const [, setPageId] = useAtom(currentPageIdAtom);
+  const setLast = useSetAtom(lastWorkspaceIdAtom);
   return [
     currentWorkspace,
     useCallback(
       (id: string | null) => {
         setPageId(null);
+        setLast(id);
         setId(id);
       },
-      [setId, setPageId]
+      [setId, setLast, setPageId]
     ),
   ];
 }

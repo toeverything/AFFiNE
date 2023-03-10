@@ -36,6 +36,12 @@ export const Modal = (props: ModalProps) => {
     ...otherProps
   } = props;
   const [vertical, horizontal] = wrapperPosition;
+  // Fixme: This is a workaround for Mui bug
+  // Refs: https://github.com/mui/material-ui/issues/33748
+  if (!open) {
+    return null;
+  }
+
   return (
     <StyledModal
       {...otherProps}

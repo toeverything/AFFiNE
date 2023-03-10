@@ -1,5 +1,4 @@
 use cloud_database::SqliteDBContext;
-use jwst::Workspace;
 use jwst_storage::{BlobAutoStorage, DocAutoStorage};
 use std::{fs, path::Path};
 use tauri::api::path::document_dir;

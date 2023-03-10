@@ -3,7 +3,6 @@ import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -23,6 +22,7 @@ import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
 import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
+import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
@@ -33,8 +33,6 @@ import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 const QuickSearchModal = dynamic(
   () => import('../components/pure/quick-search-modal')
 );
-
-const sideBarOpenAtom = atomWithStorage('sideBarOpen', true);
 
 const logger = new DebugLogger('workspace-layout');
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
@@ -90,7 +88,6 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
 export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
-  const [show, setShow] = useAtom(sideBarOpenAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
@@ -131,6 +128,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
     }
   }, [currentWorkspace]);
   const router = useRouter();
+  const { jumpToPage, jumpToPublicWorkspacePage } = useRouterHelper(router);
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = useBlockSuiteWorkspaceHelper(
     currentWorkspace?.blockSuiteWorkspace ?? null
@@ -141,17 +139,13 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const handleOpenPage = useCallback(
     (pageId: string) => {
       assertExists(currentWorkspace);
-      router.push({
-        pathname: `/${
-          isPublicWorkspace ? 'public-workspace' : 'workspace'
-        }/[workspaceId]/[pageId]`,
-        query: {
-          workspaceId: currentWorkspace.id,
-          pageId,
-        },
-      });
+      if (isPublicWorkspace) {
+        jumpToPublicWorkspacePage(currentWorkspace.id, pageId);
+      } else {
+        jumpToPage(currentWorkspace.id, pageId);
+      }
     },
-    [currentWorkspace, isPublicWorkspace, router]
+    [currentWorkspace, isPublicWorkspace, jumpToPage, jumpToPublicWorkspacePage]
   );
   const handleCreatePage = useCallback(async () => {
     return helper.createPage(nanoid());
@@ -185,8 +179,6 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
           openPage={handleOpenPage}
           createPage={handleCreatePage}
-          show={show}
-          setShow={setShow}
           currentPath={router.asPath}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />

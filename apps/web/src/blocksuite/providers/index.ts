@@ -29,7 +29,7 @@ const createAffineWebSocketProvider = (
       }://${window.location.host}/api/sync/`;
       webSocketProvider = new WebsocketProvider(
         wsUrl,
-        blockSuiteWorkspace.room as string,
+        blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc,
         {
           params: { token: apis.auth.refresh },
@@ -56,30 +56,33 @@ const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBProvider => {
   let indexeddbProvider: IndexeddbPersistence | null = null;
+  const callbacks = new Set<() => void>();
   return {
     flavour: 'local-indexeddb',
+    callbacks,
     // fixme: remove background long polling
     background: true,
     cleanup: () => {
       assertExists(indexeddbProvider);
       indexeddbProvider.clearData();
+      callbacks.clear();
       indexeddbProvider = null;
     },
     connect: () => {
-      providerLogger.info(
-        'connect indexeddb provider',
-        blockSuiteWorkspace.room
-      );
+      providerLogger.info('connect indexeddb provider', blockSuiteWorkspace.id);
       indexeddbProvider = new IndexeddbPersistence(
-        blockSuiteWorkspace.room as string,
+        blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc
       );
+      indexeddbProvider.whenSynced.then(() => {
+        callbacks.forEach(cb => cb());
+      });
     },
     disconnect: () => {
       assertExists(indexeddbProvider);
       providerLogger.info(
         'disconnect indexeddb provider',
-        blockSuiteWorkspace.room
+        blockSuiteWorkspace.id
       );
       indexeddbProvider.destroy();
       indexeddbProvider = null;

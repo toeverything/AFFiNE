@@ -13,7 +13,7 @@ export function useBlockSuiteWorkspaceAvatarUrl(
     blockSuiteWorkspace
       ? [
           QueryKey.getImage,
-          blockSuiteWorkspace.room,
+          blockSuiteWorkspace.id,
           blockSuiteWorkspace.meta.avatar,
         ]
       : null,

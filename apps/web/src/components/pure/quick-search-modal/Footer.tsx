@@ -1,4 +1,5 @@
 import { useTranslation } from '@affine/i18n';
+import type { PageBlockModel } from '@blocksuite/blocks';
 import { PlusIcon } from '@blocksuite/icons';
 import { assertEquals, nanoid } from '@blocksuite/store';
 import { Command } from 'cmdk';
@@ -6,6 +7,7 @@ import { NextRouter } from 'next/router';
 import React from 'react';
 
 import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { StyledModalFooterContent } from './style';
 
@@ -24,7 +26,7 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
-
+  const { jumpToPage } = useRouterHelper(router);
   return (
     <Command.Item
       data-testid="quick-search-add-new-page"
@@ -33,13 +35,17 @@ export const Footer: React.FC<FooterProps> = ({
         const id = nanoid();
         const pageId = await createPage(id, query);
         assertEquals(pageId, id);
-        router.push({
-          pathname: '/workspace/[workspaceId]/[pageId]',
-          query: {
-            workspaceId: blockSuiteWorkspace.room,
-            pageId,
-          },
-        });
+        await jumpToPage(blockSuiteWorkspace.id, pageId);
+        if (!query) {
+          return;
+        }
+        const newPage = blockSuiteWorkspace.getPage(pageId);
+        if (newPage) {
+          const block = newPage.getBlockByFlavour(
+            'affine:page'
+          )[0] as PageBlockModel;
+          block.title.insert(query, 0);
+        }
       }}
     >
       <StyledModalFooterContent>

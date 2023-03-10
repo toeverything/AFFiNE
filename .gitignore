@@ -36,6 +36,7 @@ yarn-error.log
 testem.log
 .pnpm-debug.log
 /typings
+tsconfig.tsbuildinfo
 
 # System Files
 .DS_Store

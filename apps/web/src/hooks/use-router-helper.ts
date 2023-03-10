@@ -24,6 +24,19 @@ export function useRouterHelper(router: NextRouter) {
           },
         });
       },
+      jumpToPublicWorkspacePage: (
+        workspaceId: string,
+        pageId: string,
+        logic: RouteLogic = RouteLogic.PUSH
+      ) => {
+        return router[logic]({
+          pathname: `/public-workspace/[workspaceId]/[pageId]`,
+          query: {
+            workspaceId,
+            pageId,
+          },
+        });
+      },
       jumpToSubPath: (
         workspaceId: string,
         subPath: WorkspaceSubPath,

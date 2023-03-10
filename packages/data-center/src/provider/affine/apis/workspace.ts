@@ -249,7 +249,8 @@ export function createWorkspaceApis(
       if (googleAuth.isExpired && googleAuth.isLogin) {
         await googleAuth.refreshToken();
       }
-      return _createBlocksuiteWorkspace(newWorkspaceId, {
+      return _createBlocksuiteWorkspace({
+        id: newWorkspaceId,
         blobOptionsGetter: (k: string) =>
           // token could be expired
           ({ api: '/api/workspace', token: googleAuth.token }[k]),

@@ -5,11 +5,16 @@ import React, { useCallback } from 'react';
 
 import {
   currentWorkspaceIdAtom,
+  jotaiWorkspacesAtom,
   openCreateWorkspaceModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useCurrentUser } from '../hooks/current/use-current-user';
+import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
+import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
+import { WorkspacePlugins } from '../plugins';
+import { RemWorkspaceFlavour, WorkspaceSubPath } from '../shared';
 import { apis } from '../shared/apis';
 
 const WorkspaceListModal = dynamic(
@@ -31,11 +36,13 @@ export function Modals() {
   );
 
   const router = useRouter();
+  const { jumpToSubPath } = useRouterHelper(router);
   const user = useCurrentUser();
   const workspaces = useWorkspaces();
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-  const setCurrentWorkspace = useSetAtom(currentWorkspaceIdAtom);
+  const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useWorkspacesHelper();
+  const set = useSetAtom(jotaiWorkspacesAtom);
 
   return (
     <>
@@ -51,14 +58,9 @@ export function Modals() {
           workspace => {
             setOpenWorkspacesModal(false);
             setCurrentWorkspace(workspace.id);
-            router.push({
-              pathname: `/workspace/[workspaceId]/all`,
-              query: {
-                workspaceId: workspace.id,
-              },
-            });
+            jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
           },
-          [router, setCurrentWorkspace, setOpenWorkspacesModal]
+          [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
         onClickLogin={useCallback(() => {
           apis.signInWithGoogle().then(() => {
@@ -67,8 +69,14 @@ export function Modals() {
         }, [router])}
         onClickLogout={useCallback(() => {
           apis.auth.clear();
+          set(workspaces =>
+            workspaces.filter(
+              workspace => workspace.flavour !== RemWorkspaceFlavour.AFFINE
+            )
+          );
+          WorkspacePlugins[RemWorkspaceFlavour.AFFINE].cleanup?.();
           router.reload();
-        }, [router])}
+        }, [router, set])}
         onCreateWorkspace={useCallback(() => {
           setOpenCreateWorkspaceModal(true);
         }, [setOpenCreateWorkspaceModal])}
@@ -83,16 +91,13 @@ export function Modals() {
             const id = await createLocalWorkspace(name);
             setOpenCreateWorkspaceModal(false);
             setOpenWorkspacesModal(false);
-            return router.push({
-              pathname: '/workspace/[workspaceId]/all',
-              query: {
-                workspaceId: id,
-              },
-            });
+            setCurrentWorkspace(id);
+            return jumpToSubPath(id, WorkspaceSubPath.ALL);
           },
           [
             createLocalWorkspace,
-            router,
+            jumpToSubPath,
+            setCurrentWorkspace,
             setOpenCreateWorkspaceModal,
             setOpenWorkspacesModal,
           ]

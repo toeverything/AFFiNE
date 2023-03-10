@@ -3,7 +3,7 @@ import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
 import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
@@ -45,7 +45,6 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   );
   assertExists(pageMeta);
   const title = pageMeta.title;
-  const [isHover, setIsHover] = useState(false);
   const { trash: isTrash } = pageMeta;
   const [openTips, setOpenTips] = useOpenTips();
   const isMac = () => {
@@ -91,32 +90,19 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
       }
     >
       {children}
-      {title && !isPublic && (
-        <StyledTitle
-          data-tauri-drag-region
-          onMouseEnter={() => {
-            if (isTrash) return;
-
-            setIsHover(true);
-          }}
-          onMouseLeave={() => {
-            if (isTrash) return;
-
-            setIsHover(false);
-          }}
-        >
+      {!isPublic && (
+        <StyledTitle data-tauri-drag-region>
           <StyledTitleWrapper>
             <StyledSwitchWrapper>
               <EditorModeSwitch
                 blockSuiteWorkspace={blockSuiteWorkspace}
                 pageId={pageId}
-                isHover={isHover}
                 style={{
                   marginRight: '12px',
                 }}
               />
             </StyledSwitchWrapper>
-            <Content ellipsis={true}>{title}</Content>
+            <Content ellipsis={true}>{title || 'Untitled'}</Content>
             <QuickSearchTips
               data-testid="quick-search-tips"
               content={tipsContent()}

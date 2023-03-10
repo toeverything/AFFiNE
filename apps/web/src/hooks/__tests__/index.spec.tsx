@@ -71,9 +71,7 @@ async function getJotaiContext() {
 
 beforeEach(async () => {
   return new Promise<void>(resolve => {
-    blockSuiteWorkspace = new BlockSuiteWorkspace({
-      room: 'test',
-    })
+    blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' })
       .register(builtInSchemas)
       .register(__unstableSchemas);
     blockSuiteWorkspace.slots.pageAdded.on(pageId => {
@@ -266,7 +264,7 @@ describe('useBlockSuiteWorkspaceName', () => {
 describe('useRecentlyViewed', () => {
   test('basic', async () => {
     const { ProviderWrapper, store } = await getJotaiContext();
-    const workspaceId = blockSuiteWorkspace.room as string;
+    const workspaceId = blockSuiteWorkspace.id;
     const pageId = 'page0';
     store.set(jotaiWorkspacesAtom, [
       {
@@ -280,9 +278,9 @@ describe('useRecentlyViewed', () => {
       blockSuiteWorkspace,
       providers: [],
     } satisfies LocalWorkspace);
-    store.set(currentWorkspaceIdAtom, blockSuiteWorkspace.room as string);
+    store.set(currentWorkspaceIdAtom, blockSuiteWorkspace.id);
     const workspace = await store.get(currentWorkspaceAtom);
-    expect(workspace?.id).toBe(blockSuiteWorkspace.room as string);
+    expect(workspace?.id).toBe(blockSuiteWorkspace.id);
     const currentHook = renderHook(() => useCurrentWorkspace(), {
       wrapper: ProviderWrapper,
     });
@@ -313,7 +311,6 @@ describe('useRecentlyViewed', () => {
       {
         id: 'page0',
         mode: 'page',
-        title: 'Untitled',
       },
     ]);
   });

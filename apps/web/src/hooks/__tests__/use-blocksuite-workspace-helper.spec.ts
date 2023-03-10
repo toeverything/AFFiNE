@@ -16,7 +16,7 @@ let blockSuiteWorkspace: BlockSuiteWorkspace;
 
 beforeEach(() => {
   blockSuiteWorkspace = new BlockSuiteWorkspace({
-    room: 'test',
+    id: 'test',
   })
     .register(builtInSchemas)
     .register(__unstableSchemas);

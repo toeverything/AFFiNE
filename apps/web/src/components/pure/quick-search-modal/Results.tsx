@@ -1,3 +1,4 @@
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
@@ -8,6 +9,7 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useRecentlyViewed } from '../../../hooks/affine/use-recent-views';
 import { useBlockSuiteWorkspaceHelper } from '../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMeta } from '../../../hooks/use-page-meta';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
 import { NoResultSVG } from './NoResultSVG';
@@ -31,11 +33,12 @@ export const Results: React.FC<ResultsProps> = ({
 }) => {
   useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageList = usePageMeta(blockSuiteWorkspace);
-  assertExists(blockSuiteWorkspace.room);
-  const List = useSwitchToConfig(blockSuiteWorkspace.room);
+  assertExists(blockSuiteWorkspace.id);
+  const List = useSwitchToConfig(blockSuiteWorkspace.id);
   const [results, setResults] = useState(new Map<string, string | undefined>());
   const recentlyViewed = useRecentlyViewed();
   const { t } = useTranslation();
+  const { jumpToPage } = useRouterHelper(router);
   useEffect(() => {
     setResults(blockSuiteWorkspace.search(query));
     //Save the Map<BlockId, PageId> obtained from the search as state
@@ -64,15 +67,8 @@ export const Results: React.FC<ResultsProps> = ({
                   key={result.id}
                   onSelect={() => {
                     onClose();
-                    assertExists(blockSuiteWorkspace.room);
-                    // fixme: refactor to `useRouterHelper`
-                    router.push({
-                      pathname: '/workspace/[workspaceId]/[pageId]',
-                      query: {
-                        workspaceId: blockSuiteWorkspace.room,
-                        pageId: result.id,
-                      },
-                    });
+                    assertExists(blockSuiteWorkspace.id);
+                    jumpToPage(blockSuiteWorkspace.id, result.id);
                   }}
                   value={result.id}
                 >
@@ -98,33 +94,38 @@ export const Results: React.FC<ResultsProps> = ({
         <div>
           {recentlyViewed.length > 0 && (
             <Command.Group heading={t('Recent')}>
-              {recentlyViewed.map(recent => {
-                return (
-                  <Command.Item
-                    key={recent.id}
-                    value={recent.id}
-                    onSelect={() => {
-                      onClose();
-                      router.push({
-                        pathname: '/workspace/[workspaceId]/[pageId]',
-                        query: {
-                          workspaceId: blockSuiteWorkspace.room,
-                          pageId: recent.id,
-                        },
-                      });
-                    }}
-                  >
-                    <StyledListItem>
-                      {recent.mode === 'edgeless' ? (
-                        <EdgelessIcon />
-                      ) : (
-                        <PaperIcon />
-                      )}
-                      <span>{recent.title}</span>
-                    </StyledListItem>
-                  </Command.Item>
-                );
-              })}
+              {recentlyViewed
+                .filter(recent => {
+                  const page = pageList.find(page => recent.id === page.id);
+                  if (!page) {
+                    return false;
+                  } else {
+                    return page.trash !== true;
+                  }
+                })
+                .map(recent => {
+                  const page = pageList.find(page => recent.id === page.id);
+                  assertExists(page);
+                  return (
+                    <Command.Item
+                      key={page.id}
+                      value={page.id}
+                      onSelect={() => {
+                        onClose();
+                        jumpToPage(blockSuiteWorkspace.id, page.id);
+                      }}
+                    >
+                      <StyledListItem>
+                        {recent.mode === 'edgeless' ? (
+                          <EdgelessIcon />
+                        ) : (
+                          <PaperIcon />
+                        )}
+                        <span>{page.title || UNTITLED_WORKSPACE_NAME}</span>
+                      </StyledListItem>
+                    </Command.Item>
+                  );
+                })}
             </Command.Group>
           )}
 

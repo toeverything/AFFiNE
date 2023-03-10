@@ -26,6 +26,7 @@ export type OperationCellProps = {
   onToggleFavoritePage: (pageId: string) => void;
   onToggleTrashPage: (pageId: string) => void;
 };
+
 export const OperationCell: React.FC<OperationCellProps> = ({
   pageMeta,
   onOpenPageInNewTab,
@@ -119,9 +120,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
   onOpenPage,
 }) => {
   const { id, title } = pageMeta;
-  // const { openPage, getPageMeta } = usePageHelper();
-  // const { toggleDeletePage, permanentlyDeletePage } = usePageHelper();
-  // const confirm = useConfirm(store => store.confirm);
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (

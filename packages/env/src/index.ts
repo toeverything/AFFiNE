@@ -51,6 +51,12 @@ export type Environment = Browser | Server | Desktop;
 
 let environment: Environment | null = null;
 
+declare global {
+  interface Window {
+    CLIENT_APP?: boolean;
+  }
+}
+
 export function getEnvironment() {
   if (environment) {
     return environment;

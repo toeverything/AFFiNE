@@ -12,12 +12,19 @@ import {
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import { NextPageWithLayout, RemWorkspaceFlavour } from '../../../shared';
+import {
+  LocalIndexedDBProvider,
+  NextPageWithLayout,
+  RemWorkspaceFlavour,
+} from '../../../shared';
+
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
+  const { jumpToPage } = useRouterHelper(router);
   const [currentWorkspace] = useCurrentWorkspace();
   const { t } = useTranslation();
   useSyncRouterWithCurrentWorkspace(router);
@@ -25,11 +32,16 @@ const AllPage: NextPageWithLayout = () => {
     if (!router.isReady) {
       return;
     }
-    if (currentWorkspace) {
-      const doc = currentWorkspace.blockSuiteWorkspace.doc;
-      if (doc.store.clients.size === 1) {
-        const items = [...doc.store.clients.values()][0];
-        if (items.length <= 1) {
+    if (!currentWorkspace) {
+      return;
+    }
+    const localProvider = currentWorkspace.providers.find(
+      provider => provider.flavour === 'local-indexeddb'
+    );
+    if (localProvider && localProvider.flavour === 'local-indexeddb') {
+      const provider = localProvider as LocalIndexedDBProvider;
+      const callback = () => {
+        if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
           // this is a new workspace, so we should redirect to the new page
           const pageId = nanoid();
           currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
@@ -37,35 +49,27 @@ const AllPage: NextPageWithLayout = () => {
               init: true,
             });
             assertExists(pageId, id);
-            router.push({
-              pathname: '/workspace/[workspaceId]/[pageId]',
-              query: {
-                workspaceId: currentWorkspace.id,
-                pageId,
-              },
-            });
+            jumpToPage(currentWorkspace.id, pageId);
           });
           currentWorkspace.blockSuiteWorkspace.createPage(pageId);
         }
-      }
+      };
+      provider.callbacks.add(callback);
+      return () => {
+        provider.callbacks.delete(callback);
+      };
     }
-  }, [currentWorkspace, router]);
+  }, [currentWorkspace, jumpToPage, router]);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);
       if (newTab) {
         window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
       } else {
-        router.push({
-          pathname: '/workspace/[workspaceId]/[pageId]',
-          query: {
-            workspaceId: currentWorkspace.id,
-            pageId,
-          },
-        });
+        jumpToPage(currentWorkspace.id, pageId);
       }
     },
-    [currentWorkspace, router]
+    [currentWorkspace, jumpToPage]
   );
   if (!router.isReady) {
     return <PageLoading />;

@@ -1,5 +1,5 @@
 // fixme(himself65): refactor this file
-import { Menu, MenuItem } from '@affine/component';
+import { Confirm, FlexWrapper, Menu, MenuItem } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
@@ -12,8 +12,10 @@ import {
   FavoriteIcon,
   MoreVerticalIcon,
 } from '@blocksuite/icons';
+import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
+import { useState } from 'react';
 
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -21,9 +23,8 @@ import {
   usePageMeta,
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
-import { EdgelessIcon, PaperIcon } from '../editor-mode-switch/Icons';
 
-const PopoverContent = () => {
+export const EditorOptionMenu = () => {
   const { t } = useTranslation();
   const theme = useTheme();
 
@@ -39,9 +40,9 @@ const PopoverContent = () => {
   assertExists(pageMeta);
   const { mode = 'page', favorite, trash } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-  //
+  const [open, setOpen] = useState(false);
 
-  return (
+  const EditMenu = (
     <>
       <MenuItem
         data-testid="editor-option-menu-favorite"
@@ -51,6 +52,7 @@ const PopoverContent = () => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
+        iconSize={[20, 20]}
         icon={
           favorite ? (
             <FavoritedIcon style={{ color: theme.colors.primaryColor }} />
@@ -63,6 +65,7 @@ const PopoverContent = () => {
       </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
+        iconSize={[20, 20]}
         data-testid="editor-option-menu-edgeless"
         onClick={() => {
           setPageMeta(pageId, {
@@ -83,6 +86,7 @@ const PopoverContent = () => {
                 globalThis.editor.contentParser.onExportHtml();
               }}
               icon={<ExportToHtmlIcon />}
+              iconSize={[20, 20]}
             >
               {t('Export to HTML')}
             </MenuItem>
@@ -92,37 +96,64 @@ const PopoverContent = () => {
                 globalThis.editor.contentParser.onExportMarkdown();
               }}
               icon={<ExportToMarkdownIcon />}
+              iconSize={[20, 20]}
             >
               {t('Export to Markdown')}
             </MenuItem>
           </>
         }
       >
-        <MenuItem icon={<ExportIcon />} isDir={true}>
+        <MenuItem icon={<ExportIcon />} iconSize={[20, 20]} isDir={true}>
           {t('Export')}
         </MenuItem>
       </Menu>
       <MenuItem
         data-testid="editor-option-menu-delete"
         onClick={() => {
-          // fixme(himself65): regression that don't have conform dialog
-          setPageMeta(pageId, { trash: !trash, trashDate: +new Date() });
-          toast(t('Moved to Trash'));
+          setOpen(true);
         }}
         icon={<DeleteTemporarilyIcon />}
+        iconSize={[20, 20]}
       >
         {t('Delete')}
       </MenuItem>
     </>
   );
-};
 
-export const EditorOptionMenu = () => {
   return (
-    <Menu content={<PopoverContent />} placement="bottom-end" trigger="click">
-      <IconButton data-testid="editor-option-menu" iconSize={[20, 20]}>
-        <MoreVerticalIcon />
-      </IconButton>
-    </Menu>
+    <>
+      <FlexWrapper alignItems="center" justifyContent="center">
+        <Menu
+          content={EditMenu}
+          placement="bottom-end"
+          disablePortal={true}
+          trigger="click"
+        >
+          <IconButton data-testid="editor-option-menu" iconSize={[24, 24]}>
+            <MoreVerticalIcon />
+          </IconButton>
+        </Menu>
+      </FlexWrapper>
+      <Confirm
+        title={t('Delete page?')}
+        content={t('will be moved to Trash', {
+          title: pageMeta.title || 'Untitled',
+        })}
+        confirmText={t('Delete')}
+        confirmType="danger"
+        open={open}
+        onConfirm={() => {
+          toast(t('Moved to Trash'));
+          setOpen(false);
+          setPageMeta(pageId, { trash: !trash, trashDate: +new Date() });
+        }}
+        onClose={() => {
+          setOpen(false);
+        }}
+        onCancel={() => {
+          setOpen(false);
+        }}
+      />
+    </>
   );
 };
