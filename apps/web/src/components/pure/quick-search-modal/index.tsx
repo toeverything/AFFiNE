@@ -1,20 +1,22 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { getEnvironment } from '@affine/env';
+import { useTranslation } from '@affine/i18n';
 import { Command } from 'cmdk';
 import { NextRouter } from 'next/router';
 import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from 'react';
 
 import { BlockSuiteWorkspace } from '../../../shared';
 import { Footer } from './Footer';
-import { Input } from './Input';
 import { PublishedResults } from './PublishedResults';
 import { Results } from './Results';
+import { SearchInput } from './SearchInput';
 import {
   StyledContent,
   StyledModalDivider,
@@ -41,6 +43,8 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   router,
   blockSuiteWorkspace,
 }) => {
+  const { t } = useTranslation();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [loading, startTransition] = useTransition();
   const [query, _setQuery] = useState('');
   const setQuery = useCallback((query: string) => {
@@ -58,9 +62,8 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     return isPublicWorkspace && query.length === 0;
   }, [isPublicWorkspace, query.length]);
   const handleClose = useCallback(() => {
-    setQuery('');
     setOpen(false);
-  }, [setOpen, setQuery]);
+  }, [setOpen]);
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
@@ -80,7 +83,15 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [open, router, setOpen, setQuery]);
-
+  useEffect(() => {
+    if (open) {
+      // Waiting for DOM rendering
+      requestAnimationFrame(() => {
+        const inputElement = inputRef.current;
+        inputElement?.focus();
+      });
+    }
+  }, [open]);
   return (
     <Modal
       open={open}
@@ -111,12 +122,25 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
           }}
         >
           <StyledModalHeader>
-            <Input
-              open={open}
-              query={query}
-              setQuery={setQuery}
-              isPublic={isPublicWorkspace}
-              publishWorkspaceName={publishWorkspaceName}
+            <SearchInput
+              ref={inputRef}
+              onValueChange={value => {
+                setQuery(value);
+              }}
+              onKeyDown={e => {
+                // Avoid triggering the cmdk onSelect event when the input method is in use
+                if (e.nativeEvent.isComposing) {
+                  e.stopPropagation();
+                  return;
+                }
+              }}
+              placeholder={
+                isPublicWorkspace
+                  ? t('Quick search placeholder2', {
+                      workspace: publishWorkspaceName,
+                    })
+                  : t('Quick search placeholder')
+              }
             />
             <StyledShortcut>{isMac() ? '⌘ + K' : 'Ctrl + K'}</StyledShortcut>
           </StyledModalHeader>
@@ -130,7 +154,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
               {!isPublicWorkspace ? (
                 <Results
                   query={query}
-                  loading={loading}
                   onClose={handleClose}
                   router={router}
                   blockSuiteWorkspace={blockSuiteWorkspace}
