@@ -33,6 +33,7 @@ interface WorkspaceModalProps {
   open: boolean;
   onClose: () => void;
   onClickWorkspace: (workspace: RemWorkspace) => void;
+  onClickWorkspaceSetting: (workspace: RemWorkspace) => void;
   onClickLogin: () => void;
   onClickLogout: () => void;
   onCreateWorkspace: () => void;
@@ -46,6 +47,7 @@ export const WorkspaceListModal = ({
   onClickLogin,
   onClickLogout,
   onClickWorkspace,
+  onClickWorkspaceSetting,
   onCreateWorkspace,
   currentWorkspaceId,
 }: WorkspaceModalProps) => {
@@ -95,6 +97,7 @@ export const WorkspaceListModal = ({
                 workspace={workspace}
                 currentWorkspaceId={currentWorkspaceId}
                 onClick={onClickWorkspace}
+                onSettingClick={onClickWorkspaceSetting}
                 key={workspace.id}
               />
             );

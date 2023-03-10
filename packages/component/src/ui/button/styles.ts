@@ -68,9 +68,10 @@ export const StyledIconButton = styled('button', {
         color: hoverColor ?? theme.colors.primaryColor,
         '::after': {
           background:
-            hoverBackground ?? darker
+            hoverBackground ||
+            (darker
               ? theme.colors.innerHoverBackground
-              : theme.colors.hoverBackground,
+              : theme.colors.hoverBackground),
         },
         ...(hoverStyle ?? {}),
       },
@@ -116,7 +117,7 @@ export const StyledTextButton = styled('button', {
     shape = 'default',
     // TODO: Implement type
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    type = 'default',
+    // type = 'default',
   }) => {
     const { fontSize, borderRadius, padding, height } = getSize(size);
     console.log('size', size, height);
