@@ -18,7 +18,7 @@ export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
       height: '64px',
       width: '100%',
       padding: '0 28px',
-      ...displayFlex('flex-end', 'center'),
+      ...displayFlex('space-between', 'center'),
       background: theme.colors.pageBackground,
       transition: 'background-color 0.5s',
       zIndex: 99,
@@ -120,6 +120,7 @@ export const StyledPageListTittleWrapper = styled(StyledTitle)(({ theme }) => {
   return {
     fontSize: theme.font.base,
     color: theme.colors.textColor,
+    ...displayFlex('center', 'center'),
     '>svg': {
       fontSize: '20px',
       marginRight: '12px',
