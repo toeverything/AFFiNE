@@ -10,9 +10,9 @@ import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { PageNotFoundError } from '../../affine/affine-error-eoundary';
+import { QuickSearchButton } from '../../pure/quick-search-button';
 import { EditorModeSwitch } from './editor-mode-switch';
 import Header from './header';
-import { QuickSearchButton } from './quick-search-button';
 import {
   StyledQuickSearchTipButton,
   StyledQuickSearchTipContent,
