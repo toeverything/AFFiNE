@@ -14,7 +14,6 @@ export const StyledMenuWrapper = styled(StyledPopperContainer)<{
     fontSize: '14px',
     backgroundColor: theme.colors.popoverBackground,
     boxShadow: theme.shadow.popover,
-    color: theme.colors.popoverColor,
   };
 });
 
@@ -39,7 +38,6 @@ export const StyledMenuItem = styled('button')<{
     ...displayFlex('flex-start', 'center'),
     cursor: isDir ? 'pointer' : '',
     position: 'relative',
-    color: theme.colors.popoverColor,
     backgroundColor: 'transparent',
 
     ':hover': {

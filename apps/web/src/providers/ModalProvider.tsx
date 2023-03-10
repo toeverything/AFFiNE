@@ -62,6 +62,14 @@ export function Modals() {
           },
           [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
+        onClickWorkspaceSetting={useCallback(
+          workspace => {
+            setOpenWorkspacesModal(false);
+            setCurrentWorkspace(workspace.id);
+            jumpToSubPath(workspace.id, WorkspaceSubPath.SETTING);
+          },
+          [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
+        )}
         onClickLogin={useCallback(() => {
           apis.signInWithGoogle().then(() => {
             router.reload();

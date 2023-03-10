@@ -91,13 +91,12 @@ const Header = styled('div')({
   height: '44px',
 });
 
-const Content = styled('div')(({ theme }) => {
+const Content = styled('div')(() => {
   return {
     padding: '0 84px',
     textAlign: 'center',
     fontSize: '18px',
     lineHeight: '26px',
-    color: theme.colors.inputColor,
     p: {
       marginTop: '12px',
       marginBottom: '16px',

@@ -47,7 +47,6 @@ export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
     ':hover': { color: theme.colors.primaryColor },
     transition: 'all .15s',
     ':visited': {
-      color: theme.colors.popoverColor,
       ':hover': { color: theme.colors.primaryColor },
     },
   };

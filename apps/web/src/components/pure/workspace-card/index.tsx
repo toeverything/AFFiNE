@@ -1,5 +1,6 @@
 import { PermissionType } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import { SettingsIcon } from '@blocksuite/icons';
 import React, { useCallback } from 'react';
 
 import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
@@ -12,8 +13,12 @@ import {
   PublishIcon,
 } from '../icons';
 import { WorkspaceAvatar } from '../workspace-avatar';
-import { StyledCard, StyleWorkspaceInfo, StyleWorkspaceTitle } from './styles';
-
+import {
+  StyledCard,
+  StyledSettingLink,
+  StyleWorkspaceInfo,
+  StyleWorkspaceTitle,
+} from './styles';
 export type WorkspaceTypeProps = {
   workspace: RemWorkspace;
 };
@@ -53,11 +58,13 @@ export type WorkspaceCardProps = {
   currentWorkspaceId: string | null;
   workspace: RemWorkspace;
   onClick: (workspace: RemWorkspace) => void;
+  onSettingClick: (workspace: RemWorkspace) => void;
 };
 
 export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
   workspace,
   onClick,
+  onSettingClick,
   currentWorkspaceId,
 }) => {
   const { t } = useTranslation();
@@ -90,6 +97,15 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
             </p>
           )}
       </StyleWorkspaceInfo>
+      <StyledSettingLink
+        hoverBackground="#fff"
+        onClick={e => {
+          e.stopPropagation();
+          onSettingClick(workspace);
+        }}
+      >
+        <SettingsIcon />
+      </StyledSettingLink>
     </StyledCard>
   );
 };

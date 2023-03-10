@@ -45,8 +45,6 @@ declare module '@mui/material/styles' {
       linkVisitedColor: string;
       iconColor: string;
       handleColor: string;
-      popoverColor: string;
-      inputColor: string;
       tooltipColor: string;
       codeColor: string;
       quoteColor: string;
@@ -120,8 +118,6 @@ declare module '@mui/material/styles' {
       linkVisitedColor: string;
       iconColor: string;
       handleColor: string;
-      popoverColor: string;
-      inputColor: string;
       tooltipColor: string;
       codeColor: string;
       quoteColor: string;
