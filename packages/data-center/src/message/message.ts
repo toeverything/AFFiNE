@@ -26,6 +26,13 @@ export class MessageCenter extends Observable<string> {
   }
 
   private _send(provider: string, messageCode: MessageCode) {
+    document.dispatchEvent(
+      new CustomEvent('affine-error', {
+        detail: {
+          code: messageCode,
+        },
+      })
+    );
     this.emit('message', [
       { ...this._messages[messageCode], provider, code: messageCode },
     ]);
