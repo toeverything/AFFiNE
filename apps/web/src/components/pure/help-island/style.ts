@@ -67,5 +67,8 @@ export const StyledTriggerWrapper = styled('div')(({ theme }) => {
     fontSize: '24px',
     ...displayFlex('center', 'center'),
     ...positionAbsolute({ left: '4px', bottom: '4px' }),
+    ':hover': {
+      color: theme.colors.primaryColor,
+    },
   };
 });
