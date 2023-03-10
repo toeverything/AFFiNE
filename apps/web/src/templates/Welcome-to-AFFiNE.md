@@ -23,7 +23,7 @@ Let's get started!
 
 *   Create a new page and begin editing - in `Paper` or `Edgeless`
 
-![](https://cdn.affine.pro/63412d45336009801a0273e4bdde39492984198d0f813ecd8b8be8b6.gif)
+![](https://cdn.affine.pro/38928b822e78a8cf6cc1278c3cd7563967dfefcf744c2517a60c7bfe.gif)
 
 *   Head over to `Workspace Settings` to find your `General` settings, enable multiplayer with `Collaboration`, share your docs with `Publish` and download your data with `Export`
 
