@@ -3,7 +3,7 @@ import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
 import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
@@ -14,6 +14,8 @@ import { EditorModeSwitch } from './editor-mode-switch';
 import Header from './header';
 import { QuickSearchButton } from './quick-search-button';
 import {
+  StyledQuickSearchTipButton,
+  StyledQuickSearchTipContent,
   StyledSearchArrowWrapper,
   StyledSwitchWrapper,
   StyledTitle,
@@ -53,31 +55,29 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
   };
   const tipsContent = () => {
     return (
-      <div>
-        Click button
-        {
-          <span
-            style={{
-              fontSize: '24px',
-              verticalAlign: 'middle',
-            }}
-          >
-            <ArrowDownSmallIcon />
-          </span>
-        }
-        or use
-        {isMac() ? ' ⌘ + K' : ' Ctrl + K'} to activate Quick Search. Then you
-        can search keywords or quickly open recently viewed pages.
-      </div>
+      <StyledQuickSearchTipContent>
+        <div>
+          Click button
+          {
+            <span
+              style={{
+                fontSize: '24px',
+                verticalAlign: 'middle',
+              }}
+            >
+              <ArrowDownSmallIcon />
+            </span>
+          }
+          or use
+          {isMac() ? ' ⌘ + K' : ' Ctrl + K'} to activate Quick Search. Then you
+          can search keywords or quickly open recently viewed pages.
+        </div>
+        <StyledQuickSearchTipButton onClick={() => setOpenTips(false)}>
+          Got it
+        </StyledQuickSearchTipButton>
+      </StyledQuickSearchTipContent>
     );
   };
-  useEffect(() => {
-    if (openTips) {
-      setTimeout(() => {
-        setOpenTips(false);
-      }, 5000);
-    }
-  }, [openTips, setOpenTips]);
   return (
     <Header
       rightItems={
@@ -108,6 +108,7 @@ export const BlockSuiteEditorHeader: React.FC<BlockSuiteEditorHeaderProps> = ({
               content={tipsContent()}
               placement="bottom"
               open={openTips}
+              offset={[0, -5]}
             >
               <StyledSearchArrowWrapper>
                 <QuickSearchButton

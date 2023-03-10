@@ -5,7 +5,7 @@ import { Popper, type PopperProps } from '../popper';
 import StyledPopperContainer from '../shared/Container';
 const StyledTooltip = styled(StyledPopperContainer)(({ theme }) => {
   return {
-    width: '378px',
+    width: '390px',
     minHeight: '92px',
     boxShadow: theme.shadow.tooltip,
     padding: '12px',
