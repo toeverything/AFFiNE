@@ -39,16 +39,28 @@ const config: PlaywrightTestConfig = {
   // See https://playwright.dev/docs/test-reporters#github-actions-annotations
   reporter: process.env.CI ? 'github' : 'list',
 
-  webServer: {
-    command: 'pnpm build:e2e && pnpm start:e2e',
-    port: 8080,
-    timeout: 120 * 1000,
-    reuseExistingServer: !process.env.CI,
-    env: {
-      COVERAGE: process.env.COVERAGE || 'false',
-      ENABLE_DEBUG_PAGE: '1',
+  webServer: [
+    {
+      command: 'pnpm build && pnpm start',
+      port: 8080,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+      },
     },
-  },
+    {
+      command: 'pnpm run build:storybook && pnpm run start:storybook',
+      port: 6006,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+      },
+    },
+  ],
 };
 
 if (process.env.CI) {
