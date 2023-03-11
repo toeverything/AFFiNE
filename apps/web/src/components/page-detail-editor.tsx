@@ -2,7 +2,7 @@ import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists, Page } from '@blocksuite/store';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { useBlockSuiteWorkspacePageTitle } from '../hooks/use-blocksuite-workspace-page-title';
 import { usePageMeta } from '../hooks/use-page-meta';
@@ -46,6 +46,20 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
     meta => meta.id === pageId
   );
   assertExists(meta);
+
+  // Prevent default "save page as" keyboard shortcut
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      if ((e.key === 's' && e.metaKey) || (e.key === 's' && e.ctrlKey)) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('keydown', handleKeydown);
+    return () => {
+      document.removeEventListener('keydown', handleKeydown);
+    };
+  }, []);
+
   return (
     <>
       <Head>
