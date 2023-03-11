@@ -13,7 +13,6 @@ We're open for Fullstack Engineer positions across the BlockSuite sub-team. The 
 -   Assisting our subscribers in utilizing our product in a data-based way with help from the operational teams.
 -   Researching on better activation of potential subscribers.
 -   Engineers who are self-organized individuals and also responsible team members, no matter they are on-site or working remotely.
--
 
 ### What we are looking for:
 
