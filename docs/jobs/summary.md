@@ -1,6 +1,5 @@
 # Jobs
 
-
 - [<b>Fullstack Engineer - China</b>](./affine.pro.md) @[affine.pro](http://affine.pro/)
 
   Rust ·TS · BlockSuite · OctoBase · Singapore,China,Remote
@@ -8,7 +7,7 @@
 - [<b>Fullstack Engineer - Rust</b>](./affine.pro-rust.md) @[affine.pro](http://affine.pro/)
 
   Rust ·TS · BlockSuite · OctoBase · Singapore,China,Remote
-  
+
 - [<b>Senior UI/UX Desginer </b>](./affine-designer.md) @[affine.pro](http://affine.pro/)
 
   UI ·UX · Creative Designer · Singapore,China,Remote
