@@ -1,4 +1,6 @@
 import React from 'react';
+import '@blocksuite/editor/themes/affine.css';
+
 import { getDarkTheme, getLightTheme, ThemeProvider } from '../src';
 import { useDarkMode } from 'storybook-dark-mode-v7';
 export const parameters = {

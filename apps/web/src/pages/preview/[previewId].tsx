@@ -98,7 +98,15 @@ export const getStaticProps: GetStaticProps<
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
   const markdown: string = await fs.readFile(
-    path.resolve(process.cwd(), 'src', 'templates', `${name}.md`),
+    path.resolve(
+      process.cwd(),
+      '..',
+      '..',
+      'packages',
+      'templates',
+      'src',
+      `${name}.md`
+    ),
     'utf8'
   );
   const title = markdown

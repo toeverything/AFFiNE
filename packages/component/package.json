@@ -8,6 +8,10 @@
     "build-storybook": "storybook build",
     "test-storybook": "test-storybook"
   },
+  "exports": {
+    ".": "./src/index.ts",
+    "./block-suite-editor": "./src/components/block-suite-editor/index.tsx"
+  },
   "dependencies": {
     "@affine/debug": "workspace:*",
     "@affine/i18n": "workspace:*",
