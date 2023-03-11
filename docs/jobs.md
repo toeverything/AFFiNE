@@ -46,7 +46,7 @@
   - Free English language lessons (including free IELTS test) open to all employees.
   - Become a maintainer of great open source projects and use Copilot powered by GitHub for free if you want.
 
-  ### Contact us
+  ## Contact us
 
   Interested? Send us your CV to [contact@toeverything.info].
 
@@ -99,7 +99,7 @@
   - Free English language lessons (including free IELTS test) open to all employees.
   - Become a maintainer of great open source projects and use Copilot powered by GitHub for free if you want.
 
-  ### Contact us
+  ## Contact us
 
   Interested? Send us your CV to [contact@toeverything.info].
 
@@ -149,7 +149,7 @@
   - Free English language lessons (including free IELTS test) open to all employees.
   - Become a maintainer of great open source projects and use Copilot powered by GitHub for free if you want.
 
-  ### Contact us
+  ## Contact us
 
   Interested? Send us your CV to [contact@toeverything.info].
 
@@ -189,7 +189,7 @@
   - Heavy user of knowledge/project management tools.
   - Enthusiastic about AFFiNE products as a user or contributor.
 
-  ### Contact us
+  ## Contact us
 
   Interested? Send us your CV to [contact@toeverything.info].
 
