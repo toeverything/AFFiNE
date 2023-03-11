@@ -40,7 +40,7 @@ const config: PlaywrightTestConfig = {
   reporter: process.env.CI ? 'github' : 'list',
 
   webServer: {
-    command: 'pnpm build && pnpm start -p 8080',
+    command: 'pnpm build && pnpm start:e2e',
     port: 8080,
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
