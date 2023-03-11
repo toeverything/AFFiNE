@@ -2,7 +2,7 @@
 
 - <b>Fullstack Engineer - Mainly work with TypeScript</b> @[affine.pro]
 
-  <details><summary>TypeScript & Rust · BlockSuite & OctoBase · Singapore / China /Remote</summary>
+  <details><summary>TypeScript & Rust · BlockSuite & OctoBase · Singapore / China / Remote</summary>
   <p>
 
   ## What we do
@@ -57,7 +57,7 @@
 
 - <b>Fullstack Engineer - Mainly work with Rust</b> @[affine.pro]
 
-  <details><summary>Rust & TypeScript · OctoBase & BlockSuite · Singapore / China /Remote</summary>
+  <details><summary>Rust & TypeScript · OctoBase & BlockSuite · Singapore / China / Remote</summary>
   <p>
 
   ## What we do
@@ -110,7 +110,7 @@
 
 - <b>Senior UI/UX Designer </b> @[affine.pro]
 
-  <details><summary>UI / UX · Creative Designer · Singapore / China /Remote</summary>
+  <details><summary>UI / UX · Creative Designer · Singapore / China / Remote</summary>
   <p>
 
   ## Senior UI/UX Designer
