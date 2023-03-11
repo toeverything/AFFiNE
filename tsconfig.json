@@ -18,10 +18,15 @@
     "baseUrl": ".",
     "paths": {
       "@affine/component": ["./packages/component/src/index"],
+      "@affine/component/block-suite-editor": [
+        "./packages/component/src/components/block-suite-editor/index"
+      ],
+      "@affine/templates/*": ["./packages/templates/src/*"],
       "@affine/datacenter": ["./packages/datacenter/src"],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/debug": ["./packages/debug"],
-      "@affine/env": ["./packages/env"]
+      "@affine/env": ["./packages/env"],
+      "@affine/utils": ["./packages/utils"]
     }
   },
   "references": [
