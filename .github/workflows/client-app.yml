@@ -79,18 +79,11 @@ jobs:
           workspaces: |
             apps/desktop/src-tauri
 
-      - name: Build Affine
-        run: |
-          pnpm --filter @affine/client-app build:preload
-          pnpm --filter @affine/client-app build:affine
-        env:
-          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload to release on git tag Or output artifact path on nightly
         uses: tauri-apps/tauri-action@v0
         id: tauri-action
         env:
+          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
