@@ -1,7 +1,5 @@
-import type {
-  PlaywrightTestConfig,
-  PlaywrightWorkerOptions,
-} from '@playwright/test';
+import { defineConfig, PlaywrightWorkerOptions } from '@playwright/test';
+
 // import { devices } from '@playwright/test';
 
 /**
@@ -13,11 +11,12 @@ import type {
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-const config: PlaywrightTestConfig = {
+const config = defineConfig({
   testDir: './tests',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {
+    baseURL: 'http://localhost:8080/',
     browserName:
       (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
       'chromium',
@@ -61,7 +60,7 @@ const config: PlaywrightTestConfig = {
       },
     },
   ],
-};
+});
 
 if (process.env.CI) {
   config.retries = 3;
