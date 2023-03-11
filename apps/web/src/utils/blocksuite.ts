@@ -1,8 +1,7 @@
 import { DebugLogger } from '@affine/debug';
+import markdown from '@affine/templates/Welcome-to-AFFiNE.md';
 import { EditorContainer } from '@blocksuite/editor';
 import { Page } from '@blocksuite/store';
-
-import markdown from '../templates/Welcome-to-AFFiNE.md';
 
 const demoTitle = markdown
   .split('\n')

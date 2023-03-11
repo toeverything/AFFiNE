@@ -71,7 +71,8 @@
       "@storybook/components": "^7.0.0-rc.1",
       "@storybook/core-events": "^7.0.0-rc.1",
       "@storybook/global": "^5.0.0",
-      "@storybook/theming": "^7.0.0-rc.1"
+      "@storybook/theming": "^7.0.0-rc.1",
+      "jest-mock": "^29.5.0"
     }
   },
   "packageManager": "pnpm@7.28.0"
