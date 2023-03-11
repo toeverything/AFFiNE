@@ -48,6 +48,7 @@ importers:
       react-dom: ^18.2.0
       typescript: ^4.9.5
       vite: ^4.1.2
+      vite-plugin-istanbul: ^4.0.1
       vitest: ^0.28.5
       vitest-fetch-mock: ^0.2.2
     devDependencies:
@@ -80,6 +81,7 @@ importers:
       react-dom: 18.2.0_react@18.2.0
       typescript: 4.9.5
       vite: 4.1.4_@types+node@18.14.4
+      vite-plugin-istanbul: 4.0.1_vite@4.1.4
       vitest: 0.28.5_oscpa7jhv6f2pwrg7t4qxe6ngi
       vitest-fetch-mock: 0.2.2_vitest@0.28.5
 
@@ -14355,6 +14357,20 @@ packages:
       - sugarss
       - supports-color
       - terser
+    dev: true
+
+  /vite-plugin-istanbul/4.0.1_vite@4.1.4:
+    resolution: {integrity: sha512-1fUCJyYvt/vkDQWR/15knwCk+nWmNbVbmZTXf/X4XD0dcdmJsYrZF5JQo7ttYxFyflGH2SVu+XRlpN06CakKPQ==}
+    peerDependencies:
+      vite: '>=2.9.1 <= 5'
+    dependencies:
+      '@istanbuljs/load-nyc-config': 1.1.0
+      istanbul-lib-instrument: 5.2.1
+      picocolors: 1.0.0
+      test-exclude: 6.0.0
+      vite: 4.1.4_@types+node@18.14.4
+    transitivePeerDependencies:
+      - supports-color
     dev: true
 
   /vite/4.1.4:
