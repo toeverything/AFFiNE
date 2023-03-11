@@ -10,6 +10,8 @@
   We **AFFiNE** hold a vision of shaping a world semantically connected through block components in modern applications.
   We're open for Fullstack Engineer positions across the BlockSuite sub-team. The **BlockSuite** team works on creating the best **block-editor** and **open-block** protocol for use in AFFiNE. Paving the way for a new generation of SaaS software and developers.
 
+  ## Fullstack Engineer
+
   ### This position is for
 
   - Developing AFFiNE **the open source way**, including coding and community engagement.
@@ -61,6 +63,8 @@
   ## What we do
 
   We, `AFFiNE` believe in shaping a world semantically connected through block components in modern applications. We're open for Fullstack Engineer positions across the OctoBase sub-team. OctoBase is an offline, scalable, and self-contained collaborative database. It provides a data collaboration engine for AFFiNE and BlockSuite. It can either run on the server as a service or be embedded in our client to offer a complete offline computing capacity.
+
+  ## Fullstack Engineer
 
   ### This position is for
 
