@@ -41,9 +41,9 @@ const config: PlaywrightTestConfig = {
 
   webServer: [
     {
-      command: 'pnpm build && pnpm start',
+      command: 'pnpm build && pnpm start -p 8080',
       port: 8080,
-      timeout: 120 * 1000,
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
@@ -53,7 +53,7 @@ const config: PlaywrightTestConfig = {
     {
       command: 'pnpm run build:storybook && pnpm run start:storybook',
       port: 6006,
-      timeout: 120 * 1000,
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
