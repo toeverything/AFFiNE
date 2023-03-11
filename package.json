@@ -13,7 +13,7 @@
     "build": "pnpm --filter @affine/web build",
     "build:e2e": "run-p build build:storybook",
     "build:client": "pnpm --filter @affine/client-app build:app",
-    "build:storybook": "pnpm -r build-storybook",
+    "build:storybook": "pnpm --filter @affine/component build-storybook",
     "export": "pnpm --filter @affine/web export",
     "start": "pnpm --filter @affine/web start",
     "start:storybook": "pnpm exec serve packages/component/storybook-static -l 6006",

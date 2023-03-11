@@ -3,12 +3,15 @@ import { expect, Page } from '@playwright/test';
 import { test } from '../../libs/playwright';
 
 async function openStorybook(page: Page, storyName?: string) {
-  return page.goto(`http://localhost:6006/?path=/story/${storyName}`);
+  return page.goto(`http://localhost:6006`);
 }
 
 test.describe('Button', () => {
   test('Basic', async ({ page }) => {
-    await openStorybook(page, 'affine-button--test');
+    await openStorybook(page);
+    await page.click('#storybook-explorer-tree >> #affine-button');
+    await page.click('#affine-button--test');
+
     const iframe = page.frameLocator('iframe');
     await iframe
       .locator('input[data-testid="test-input"]')
