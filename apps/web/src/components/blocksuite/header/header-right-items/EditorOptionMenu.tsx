@@ -12,7 +12,7 @@ import {
   FavoriteIcon,
   MoreVerticalIcon,
 } from '@blocksuite/icons';
-import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
+import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
 import { useState } from 'react';
@@ -64,7 +64,7 @@ export const EditorOptionMenu = () => {
         {favorite ? t('Remove from favorites') : t('Add to Favorites')}
       </MenuItem>
       <MenuItem
-        icon={mode === 'page' ? <EdgelessIcon /> : <PaperIcon />}
+        icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
         iconSize={[20, 20]}
         data-testid="editor-option-menu-edgeless"
         onClick={() => {
@@ -77,6 +77,7 @@ export const EditorOptionMenu = () => {
         {mode === 'page' ? t('Edgeless') : t('Page')}
       </MenuItem>
       <Menu
+        width={248}
         placement="left-start"
         content={
           <>
@@ -124,6 +125,7 @@ export const EditorOptionMenu = () => {
     <>
       <FlexWrapper alignItems="center" justifyContent="center">
         <Menu
+          width={276}
           content={EditMenu}
           placement="bottom-end"
           disablePortal={true}

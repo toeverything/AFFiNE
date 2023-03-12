@@ -1,13 +1,14 @@
-import { displayFlex, styled } from '@affine/component';
+import { displayFlex, styled, textEllipsis } from '@affine/component';
 
 export const StyledContent = styled('div')(({ theme }) => {
   return {
-    minHeight: '220px',
-    maxHeight: '55vh',
+    minHeight: '280px',
+    maxHeight: '70vh',
     width: '100%',
     overflow: 'auto',
     marginBottom: '10px',
-    ...displayFlex('center', 'flex-start'),
+    ...displayFlex('flex-start', 'flex-start'),
+    flexDirection: 'column',
     color: theme.colors.textColor,
     transition: 'all 0.15s',
     letterSpacing: '0.06em',
@@ -67,8 +68,7 @@ export const StyledInputContent = styled('div')(({ theme }) => {
       fontSize: theme.font.base,
       ...displayFlex('space-between', 'center'),
       letterSpacing: '0.06em',
-      color: theme.colors.popoverColor,
-
+      color: theme.colors.textColor,
       '::placeholder': {
         color: theme.colors.placeHolderColor,
       },
@@ -91,12 +91,11 @@ export const StyledLabel = styled('label')(({ theme }) => {
   };
 });
 
-export const StyledModalHeader = styled('div')(({ theme }) => {
+export const StyledModalHeader = styled('div')(() => {
   return {
     height: '48px',
     margin: '12px 24px 0px 24px',
     ...displayFlex('space-between', 'center'),
-    color: theme.colors.popoverColor,
   };
 });
 export const StyledModalDivider = styled('div')(({ theme }) => {
@@ -116,8 +115,8 @@ export const StyledModalFooter = styled('div')(({ theme }) => {
     lineHeight: '22px',
     marginBottom: '8px',
     textAlign: 'center',
+    color: theme.colors.textColor,
     ...displayFlex('center', 'center'),
-    color: theme.colors.popoverColor,
     '[aria-selected="true"]': {
       transition: 'background .15s, color .15s',
       borderRadius: '5px',
@@ -153,6 +152,9 @@ export const StyledListItem = styled('button')(({ theme }) => {
     borderRadius: '5px',
     transition: 'background .15s, color .15s',
     ...displayFlex('flex-start', 'center'),
+    span: {
+      ...textEllipsis(1),
+    },
     '>svg': {
       fontSize: '20px',
       marginRight: '12px',

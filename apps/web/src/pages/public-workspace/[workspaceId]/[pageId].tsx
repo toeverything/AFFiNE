@@ -5,7 +5,7 @@ import {
   styled,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { PaperIcon } from '@blocksuite/icons';
+import { PageIcon } from '@blocksuite/icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -23,6 +23,7 @@ import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-w
 import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
 import { WorkspaceLayout } from '../../../layouts';
 import { NextPageWithLayout } from '../../../shared';
+import { initPage } from '../../../utils/blocksuite';
 
 export const NavContainer = styled('div')(({ theme }) => {
   return {
@@ -47,7 +48,6 @@ export const StyledBreadcrumbs = styled(Link)(({ theme }) => {
     ':hover': { color: theme.colors.primaryColor },
     transition: 'all .15s',
     ':visited': {
-      color: theme.colors.popoverColor,
       ':hover': { color: theme.colors.primaryColor },
     },
   };
@@ -86,6 +86,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
           const { page } = editor;
           page.awarenessStore.setReadonly(page, true);
         }}
+        onInit={initPage}
         header={
           <NavContainer>
             <Breadcrumbs>
@@ -98,7 +99,7 @@ const PublicWorkspaceDetailPageInner: React.FC<{
               <StyledBreadcrumbs
                 href={`/public-workspace/${blockSuiteWorkspace.id}/${pageId}`}
               >
-                <PaperIcon fontSize={24} />
+                <PageIcon fontSize={24} />
                 <span>{pageTitle ? pageTitle : t('Untitled')}</span>
               </StyledBreadcrumbs>
             </Breadcrumbs>

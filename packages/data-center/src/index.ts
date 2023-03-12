@@ -27,6 +27,7 @@ export const getDataCenter = _initializeDataCenter();
 
 export type { DataCenter };
 export * from './message';
+export { messages } from './message/code';
 export { AffineProvider } from './provider/affine';
 export * from './provider/affine/apis';
 export { getAuthorizer, GoogleAuth } from './provider/affine/apis/google';

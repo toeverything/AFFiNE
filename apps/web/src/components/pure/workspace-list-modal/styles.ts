@@ -5,7 +5,7 @@ export const StyledSplitLine = styled('div')(({ theme }) => {
     width: '1px',
     height: '20px',
     background: theme.colors.borderColor,
-    marginRight: '24px',
+    marginRight: '12px',
   };
 });
 
@@ -14,7 +14,6 @@ export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
     marginLeft: '15px',
     width: '202px',
     p: {
-      color: theme.colors.popoverColor,
       height: '20px',
       fontSize: theme.font.sm,
       ...displayFlex('flex-start', 'center'),
@@ -60,6 +59,25 @@ export const StyledCard = styled('div')<{
     background: theme.palette.mode === 'light' ? '#FFF' : '#2C2C2C',
     ':hover': {
       background: theme.colors.cardHoverBackground,
+    },
+  };
+});
+
+export const StyledCreateWorkspaceCard = styled('div')(({ theme }) => {
+  return {
+    width: '310px',
+    height: '124px',
+    cursor: 'pointer',
+    padding: '16px',
+    boxShadow: '0px 0px 8px rgba(0, 0, 0, 0.1)',
+    borderRadius: '12px',
+    transition: 'all .1s',
+    ...displayFlex('flex-start', 'flex-start'),
+    color: theme.colors.secondaryTextColor,
+
+    ':hover': {
+      background: theme.colors.cardHoverBackground,
+      color: theme.colors.textColor,
       '.add-icon': {
         borderColor: theme.colors.primaryColor,
         color: theme.colors.primaryColor,
@@ -110,6 +128,7 @@ export const StyleWorkspaceAdd = styled('div')(() => {
     background: '#f4f5fa',
     border: '1.5px dashed #f4f5fa',
     transition: 'background .2s',
+    fontSize: '24px',
     ...displayFlex('center', 'center'),
   };
 });

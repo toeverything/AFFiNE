@@ -19,7 +19,6 @@ export const Tooltip = (props: PopperProps & Omit<TooltipProps, 'title'>) => {
   return (
     <Popper
       {...props}
-      showArrow={false}
       content={<StyledTooltip placement={placement}>{content}</StyledTooltip>}
     >
       {children}

@@ -11,14 +11,13 @@ export const StyledModalWrapper = styled('div')(({ theme }) => {
   };
 });
 
-export const StyledModalHeader = styled('div')(({ theme }) => {
+export const StyledModalHeader = styled('div')(() => {
   return {
     margin: '44px 0px 12px 0px',
     width: '560px',
     fontWeight: '600',
     fontSize: '20px;',
     textAlign: 'center',
-    color: theme.colors.popoverColor,
   };
 });
 

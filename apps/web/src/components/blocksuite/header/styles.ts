@@ -1,4 +1,9 @@
-import { displayFlex, styled } from '@affine/component';
+import {
+  absoluteCenter,
+  displayFlex,
+  styled,
+  textEllipsis,
+} from '@affine/component';
 
 export const StyledHeaderContainer = styled('div')<{ hasWarning: boolean }>(
   ({ hasWarning }) => {
@@ -13,23 +18,31 @@ export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
       height: '64px',
       width: '100%',
       padding: '0 28px',
-      ...displayFlex('flex-end', 'center'),
+      ...displayFlex('space-between', 'center'),
       background: theme.colors.pageBackground,
       transition: 'background-color 0.5s',
       zIndex: 99,
+      position: 'relative',
     };
   }
 );
 
-export const StyledTitle = styled('div')(({ theme }) => ({
+export const StyledTitleContainer = styled('div')(({ theme }) => ({
   width: '720px',
   height: '100%',
 
   margin: 'auto',
-
+  ...absoluteCenter({ horizontal: true, position: { top: 0 } }),
   ...displayFlex('center', 'center'),
   fontSize: theme.font.base,
 }));
+
+export const StyledTitle = styled('div')(() => {
+  return {
+    maxWidth: '620px',
+    ...textEllipsis(1),
+  };
+});
 
 export const StyledTitleWrapper = styled('div')({
   maxWidth: '720px',
@@ -107,9 +120,31 @@ export const StyledPageListTittleWrapper = styled(StyledTitle)(({ theme }) => {
   return {
     fontSize: theme.font.base,
     color: theme.colors.textColor,
+    ...displayFlex('center', 'center'),
     '>svg': {
       fontSize: '20px',
       marginRight: '12px',
     },
+  };
+});
+export const StyledQuickSearchTipButton = styled('div')(({ theme }) => {
+  return {
+    ...displayFlex('center', 'center'),
+    marginTop: '12px',
+    color: '#FFFFFF',
+    width: '60px',
+    height: ' 26px',
+    fontSize: theme.font.sm,
+    lineHeight: '22px',
+    background: theme.colors.primaryColor,
+    borderRadius: '8px',
+    textAlign: 'center',
+    cursor: 'pointer',
+  };
+});
+export const StyledQuickSearchTipContent = styled('div')(() => {
+  return {
+    ...displayFlex('center', 'flex-end'),
+    flexDirection: 'column',
   };
 });

@@ -2,7 +2,8 @@ import { MuiAvatar, textEllipsis } from '@affine/component';
 import { styled } from '@affine/component';
 export const SelectorWrapper = styled('div')(({ theme }) => {
   return {
-    height: '64px',
+    marginTop: '4px',
+    height: '56px',
     display: 'flex',
     alignItems: 'center',
     padding: '0 44px 0 12px',

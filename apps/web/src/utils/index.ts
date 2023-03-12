@@ -1,5 +1,5 @@
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
-import type { BlobOptionsGetter } from '@blocksuite/store';
+import type { BlobOptionsGetter, Generator } from '@blocksuite/store';
 
 import { BlockSuiteWorkspace } from '../shared';
 
@@ -27,7 +27,8 @@ export function stringToColour(str: string) {
 const hashMap = new Map<string, BlockSuiteWorkspace>();
 export const createEmptyBlockSuiteWorkspace = (
   id: string,
-  blobOptionsGetter?: BlobOptionsGetter
+  blobOptionsGetter?: BlobOptionsGetter,
+  idGenerator?: Generator
 ): BlockSuiteWorkspace => {
   if (hashMap.has(id)) {
     return hashMap.get(id) as BlockSuiteWorkspace;
@@ -36,6 +37,7 @@ export const createEmptyBlockSuiteWorkspace = (
     id,
     isSSR: typeof window === 'undefined',
     blobOptionsGetter,
+    idGenerator,
   })
     .register(builtInSchemas)
     .register(__unstableSchemas);

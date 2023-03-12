@@ -8,6 +8,7 @@ export const StyledTable = styled('table')<{ tableLayout: 'auto' | 'fixed' }>(
       color: theme.colors.textColor,
       tableLayout,
       width: '100%',
+      minWidth: '600px',
       borderCollapse: 'separate',
       borderSpacing: '0',
     };

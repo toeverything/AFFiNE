@@ -1,4 +1,3 @@
-// export * from './components/BlockSuiteEditor';
 export * from './components/ListSkeleton';
 export * from './styles';
 export * from './ui/breadcrumbs';
@@ -45,8 +44,6 @@ declare module '@mui/material/styles' {
       linkVisitedColor: string;
       iconColor: string;
       handleColor: string;
-      popoverColor: string;
-      inputColor: string;
       tooltipColor: string;
       codeColor: string;
       quoteColor: string;
@@ -120,8 +117,6 @@ declare module '@mui/material/styles' {
       linkVisitedColor: string;
       iconColor: string;
       handleColor: string;
-      popoverColor: string;
-      inputColor: string;
       tooltipColor: string;
       codeColor: string;
       quoteColor: string;

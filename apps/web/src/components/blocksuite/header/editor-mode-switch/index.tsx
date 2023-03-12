@@ -1,5 +1,4 @@
 import { toast } from '@affine/component';
-import { EdgelessIcon, PaperIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { CSSProperties } from 'react';
 
@@ -8,7 +7,8 @@ import {
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../../../../shared';
-import { StyledEditorModeSwitch, StyledSwitchItem } from './style';
+import { StyledEditorModeSwitch } from './style';
+import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 
 export type EditorModeSwitchProps = {
   // todo(himself65): combine these two properties
@@ -35,7 +35,7 @@ export const EditorModeSwitch = ({
       switchLeft={mode === 'page'}
       showAlone={trash}
     >
-      <StyledSwitchItem
+      <PageSwitchItem
         data-testid="switch-page-mode-button"
         active={mode === 'page'}
         hide={trash && mode !== 'page'}
@@ -43,10 +43,8 @@ export const EditorModeSwitch = ({
           setPageMeta(pageId, { mode: 'page' });
           toast('Page mode');
         }}
-      >
-        <PaperIcon />
-      </StyledSwitchItem>
-      <StyledSwitchItem
+      />
+      <EdgelessSwitchItem
         data-testid="switch-edgeless-mode-button"
         active={mode === 'edgeless'}
         hide={trash && mode !== 'edgeless'}
@@ -54,9 +52,7 @@ export const EditorModeSwitch = ({
           setPageMeta(pageId, { mode: 'edgeless' });
           toast('Edgeless mode');
         }}
-      >
-        <EdgelessIcon />
-      </StyledSwitchItem>
+      />
     </StyledEditorModeSwitch>
   );
 };

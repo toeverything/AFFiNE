@@ -26,6 +26,7 @@ import {
   LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../shared';
+import { useIsFirstLoad, useOpenTips } from '../affine/use-is-first-load';
 import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
@@ -41,6 +42,13 @@ import {
   useSyncRouterWithCurrentWorkspaceAndPage,
 } from '../use-sync-router-with-current-workspace-and-page';
 import { useWorkspaces, useWorkspacesHelper } from '../use-workspaces';
+
+vi.mock(
+  '../../components/blocksuite/header/editor-mode-switch/CustomLottie',
+  () => ({
+    default: (props: React.PropsWithChildren) => <>{props.children}</>,
+  })
+);
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 beforeAll(() => {
@@ -312,5 +320,23 @@ describe('useRecentlyViewed', () => {
         mode: 'page',
       },
     ]);
+  });
+});
+describe('useIsFirstLoad', () => {
+  test('basic', async () => {
+    const firstLoad = renderHook(() => useIsFirstLoad());
+    const setFirstLoad = firstLoad.result.current[1];
+    expect(firstLoad.result.current[0]).toEqual(true);
+    setFirstLoad(false);
+    firstLoad.rerender();
+    expect(firstLoad.result.current[0]).toEqual(false);
+  });
+  test('useOpenTips', async () => {
+    const openTips = renderHook(() => useOpenTips());
+    const setOpenTips = openTips.result.current[1];
+    expect(openTips.result.current[0]).toEqual(false);
+    setOpenTips(true);
+    openTips.rerender();
+    expect(openTips.result.current[0]).toEqual(true);
   });
 });

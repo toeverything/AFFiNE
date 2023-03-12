@@ -199,10 +199,9 @@ const MemberIcon = styled('div')(({ theme }) => {
   };
 });
 
-const Email = styled('div')(({ theme }) => {
+const Email = styled('div')(() => {
   return {
     flex: '1',
-    color: theme.colors.popoverColor,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
