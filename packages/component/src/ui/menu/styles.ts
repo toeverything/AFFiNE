@@ -39,7 +39,7 @@ export const StyledMenuItem = styled('button')<{
     cursor: isDir ? 'pointer' : '',
     position: 'relative',
     backgroundColor: 'transparent',
-
+    color: theme.colors.textColor,
     ':hover': {
       color: theme.colors.primaryColor,
       backgroundColor: theme.colors.hoverBackground,
