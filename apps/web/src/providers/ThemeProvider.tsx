@@ -38,7 +38,7 @@ const ThemeInjector = React.memo<{
 
 const ThemeProviderInner = memo<React.PropsWithChildren>(
   function ThemeProviderInner({ children }) {
-    const { theme } = useTheme();
+    const { resolvedTheme: theme } = useTheme();
     const [currentWorkspace] = useCurrentWorkspace();
     const currentPage = useCurrentPage();
     const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
@@ -71,9 +71,10 @@ const themes = ['dark', 'light'];
 
 export const ThemeProvider = ({
   children,
+  ...props
 }: PropsWithChildren<ThemeProviderProps>) => {
   return (
-    <NextThemeProvider themes={themes}>
+    <NextThemeProvider themes={themes} enableSystem={true} {...props}>
       <ThemeProviderInner>{children}</ThemeProviderInner>
     </NextThemeProvider>
   );

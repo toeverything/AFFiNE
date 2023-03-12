@@ -196,7 +196,7 @@ export const StyledButton = styled('button', {
         ? {
             cursor: 'not-allowed',
             pointerEvents: 'none',
-            color: theme.colors.borderColor,
+            color: theme.colors.disableColor,
           }
         : {}),
       transition: 'background .15s',
