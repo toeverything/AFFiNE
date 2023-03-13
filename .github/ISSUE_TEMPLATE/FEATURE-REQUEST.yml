@@ -1,0 +1,36 @@
+name: Feature Request
+description: Suggest a feature or improvement
+title: "feat: TITLE"
+labels: ["feat", "product-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature suggestion!
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What would you like to see added to AFFiNE?
+      placeholder: Please explain in details the feature and improvements you'd like to see.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Use case
+      description: |
+        How might this feature be used and who might use it.
+  - type: textarea
+    attributes:
+      label: Anything else?
+      description: |
+        Links? References? Anything that will give us more context about the idea you have!
+        Tip: You can attach images here
+  - type: checkboxes
+    attributes:
+      label: Are you willing to submit a PR?
+      description: >
+        (Optional) We encourage you to submit a [Pull Request](https://github.com/toeverything/affine/pulls) (PR) to help improve AFFiNE for everyone, especially if you have a good understanding of how to implement a fix or feature.
+        See the AFFiNE [Contributing Guide](https://github.com/toeverything/affine/blob/master/CONTRIBUTING.md) to get started.
+      options:
+        - label: Yes I'd like to help by submitting a PR!
