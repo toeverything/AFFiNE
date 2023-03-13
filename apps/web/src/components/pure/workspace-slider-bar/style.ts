@@ -54,9 +54,10 @@ export const StyledListItem = styled('div')<{
         }
       : {}),
 
-    '>svg': {
+    '> svg': {
       fontSize: '20px',
       marginRight: '12px',
+      color: active ? theme.colors.primaryColor : theme.colors.iconColor,
     },
     ':hover:not([disabled])': {
       color: theme.colors.primaryColor,
@@ -65,7 +66,7 @@ export const StyledListItem = styled('div')<{
   };
 });
 
-export const StyledLink = styled(Link)(() => {
+export const StyledLink = styled(Link)(({ theme }) => {
   return {
     flexGrow: 1,
     textAlign: 'left',
@@ -77,6 +78,7 @@ export const StyledLink = styled(Link)(() => {
     '>svg': {
       fontSize: '20px',
       marginRight: '12px',
+      color: theme.colors.iconColor,
     },
   };
 });

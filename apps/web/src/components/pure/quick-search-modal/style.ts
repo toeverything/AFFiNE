@@ -155,7 +155,7 @@ export const StyledListItem = styled('button')(({ theme }) => {
     span: {
       ...textEllipsis(1),
     },
-    '>svg': {
+    '> svg': {
       fontSize: '20px',
       marginRight: '12px',
     },
