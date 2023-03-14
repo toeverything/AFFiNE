@@ -1,6 +1,6 @@
 name: Feature Request
 description: Suggest a feature or improvement
-title: 'feat:'
+title: '\u200b'
 labels: ['feat']
 body:
   - type: markdown
