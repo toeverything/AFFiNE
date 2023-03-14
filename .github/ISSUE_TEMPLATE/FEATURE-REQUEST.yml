@@ -1,7 +1,7 @@
 name: Feature Request
 description: Suggest a feature or improvement
 title: "\u200b"
-labels: ['feat']
+labels: ['feat', 'story']
 body:
   - type: markdown
     attributes:
