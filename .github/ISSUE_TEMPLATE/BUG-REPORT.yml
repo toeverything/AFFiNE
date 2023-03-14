@@ -1,7 +1,7 @@
 name: Bug Report
 description: File a bug report
-title: "bug: TITLE"
-labels: ["bug", "product-review"]
+title: 'TITLE'
+labels: ['bug', 'product-review']
 body:
   - type: markdown
     attributes:
@@ -52,7 +52,7 @@ body:
     attributes:
       label: Are you willing to submit a PR?
       description: >
-          (Optional) We encourage you to submit a [Pull Request](https://github.com/toeverything/affine/pulls) (PR) to help improve AFFiNE for everyone, especially if you have a good understanding of how to implement a fix or feature.
-          See the AFFiNE [Contributing Guide](https://github.com/toeverything/affine/blob/master/CONTRIBUTING.md) to get started.
+        (Optional) We encourage you to submit a [Pull Request](https://github.com/toeverything/affine/pulls) (PR) to help improve AFFiNE for everyone, especially if you have a good understanding of how to implement a fix or feature.
+        See the AFFiNE [Contributing Guide](https://github.com/toeverything/affine/blob/master/CONTRIBUTING.md) to get started.
       options:
         - label: Yes I'd like to help by submitting a PR!
