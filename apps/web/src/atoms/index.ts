@@ -1,4 +1,3 @@
-import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/store';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
@@ -90,8 +89,6 @@ export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
   }
 );
 
-export const editorRefAtom = atom<{ current: EditorContainer | null }>({
+export const editorHeaderRefAtom = atom<{ current: HTMLDivElement | null }>({
   current: null,
 });
-
-// export const editorAtom = atom(get => get(editorRefAtom).current);
