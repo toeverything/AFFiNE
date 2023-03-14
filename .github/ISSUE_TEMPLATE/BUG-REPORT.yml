@@ -1,6 +1,6 @@
 name: Bug Report
 description: File a bug report
-title: '\u200b'
+title: "\u200b"
 labels: ['bug']
 body:
   - type: markdown
