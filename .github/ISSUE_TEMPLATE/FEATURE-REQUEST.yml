@@ -1,7 +1,7 @@
 name: Feature Request
 description: Suggest a feature or improvement
-title: ''
-labels: ['feat', 'product-review']
+title: 'feat:'
+labels: ['feat']
 body:
   - type: markdown
     attributes:
