@@ -1,6 +1,13 @@
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
-import React, { PropsWithChildren, useEffect, useMemo, useState } from 'react';
+import React, {
+  forwardRef,
+  HTMLAttributes,
+  PropsWithChildren,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
@@ -51,50 +58,57 @@ export type HeaderProps = PropsWithChildren<{
   rightItems?: HeaderRightItemNames[];
 }>;
 
-export const Header: React.FC<HeaderProps> = ({
-  rightItems = ['syncUser', 'themeModeSwitch'],
-  children,
-}) => {
-  const [showWarning, setShowWarning] = useState(false);
-  useEffect(() => {
-    setShowWarning(shouldShowWarning());
-  }, []);
-  const [open] = useSidebarStatus();
-  const { t } = useTranslation();
+export const Header = forwardRef<
+  HTMLDivElement,
+  HeaderProps & HTMLAttributes<HTMLDivElement>
+>(
+  (
+    { rightItems = ['syncUser', 'themeModeSwitch'], children, ...props },
+    ref
+  ) => {
+    const [showWarning, setShowWarning] = useState(false);
+    useEffect(() => {
+      setShowWarning(shouldShowWarning());
+    }, []);
+    const [open] = useSidebarStatus();
+    const { t } = useTranslation();
 
-  return (
-    <StyledHeaderContainer hasWarning={showWarning}>
-      <BrowserWarning
-        show={showWarning}
-        onClose={() => {
-          setShowWarning(false);
-        }}
-      />
-      <StyledHeader
-        hasWarning={showWarning}
-        data-testid="editor-header-items"
-        data-tauri-drag-region
-      >
-        <SidebarSwitch
-          visible={!open}
-          tooltipContent={t('Expand sidebar')}
-          testid="sliderBar-arrowButton-expand"
+    return (
+      <StyledHeaderContainer ref={ref} hasWarning={showWarning} {...props}>
+        <BrowserWarning
+          show={showWarning}
+          onClose={() => {
+            setShowWarning(false);
+          }}
         />
+        <StyledHeader
+          hasWarning={showWarning}
+          data-testid="editor-header-items"
+          data-tauri-drag-region
+        >
+          <SidebarSwitch
+            visible={!open}
+            tooltipContent={t('Expand sidebar')}
+            testid="sliderBar-arrowButton-expand"
+          />
 
-        {children}
-        <StyledHeaderRightSide>
-          {useMemo(
-            () =>
-              rightItems.map(itemName => {
-                const Item = HeaderRightItems[itemName];
-                return <Item key={itemName} />;
-              }),
-            [rightItems]
-          )}
-        </StyledHeaderRightSide>
-      </StyledHeader>
-    </StyledHeaderContainer>
-  );
-};
+          {children}
+          <StyledHeaderRightSide>
+            {useMemo(
+              () =>
+                rightItems.map(itemName => {
+                  const Item = HeaderRightItems[itemName];
+                  return <Item key={itemName} />;
+                }),
+              [rightItems]
+            )}
+          </StyledHeaderRightSide>
+        </StyledHeader>
+      </StyledHeaderContainer>
+    );
+  }
+);
+
+Header.displayName = 'Header';
 
 export default Header;
