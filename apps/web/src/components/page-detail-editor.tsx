@@ -1,9 +1,11 @@
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists, Page } from '@blocksuite/store';
+import { useAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import React from 'react';
 
+import { editorRefAtom } from '../atoms';
 import { useBlockSuiteWorkspacePageTitle } from '../hooks/use-blocksuite-workspace-page-title';
 import { usePageMeta } from '../hooks/use-page-meta';
 import { BlockSuiteWorkspace } from '../shared';
@@ -37,6 +39,8 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   isPublic,
   isPreview,
 }) => {
+  // XXX: this is a set operation, because the `editorRefAtom` is a ref
+  const [editorRef] = useAtom(editorRefAtom);
   const page = blockSuiteWorkspace.getPage(pageId);
   if (!page) {
     throw new PageNotFoundError(blockSuiteWorkspace, pageId);
@@ -70,6 +74,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         page={page}
         onInit={onInit}
         onLoad={onLoad}
+        editorRef={editorRef}
       />
     </>
   );
