@@ -1,7 +1,7 @@
 name: Bug Report
 description: File a bug report
-title: 'bug:'
-labels: ['bug', 'product-review']
+title: '\u200b'
+labels: ['bug']
 body:
   - type: markdown
     attributes:
