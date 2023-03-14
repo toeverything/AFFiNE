@@ -1,7 +1,7 @@
 import { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page, Workspace } from '@blocksuite/store';
-import { CSSProperties, MutableRefObject, useEffect, useRef } from 'react';
+import { CSSProperties, useEffect, useRef } from 'react';
 
 export type EditorProps = {
   blockSuiteWorkspace: Workspace;
@@ -10,7 +10,6 @@ export type EditorProps = {
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => void;
   style?: CSSProperties;
-  editorRef?: MutableRefObject<EditorContainer | null>;
 };
 
 declare global {
@@ -24,9 +23,7 @@ declare global {
 
 export const BlockSuiteEditor = (props: EditorProps) => {
   const page = props.page;
-  const maybeEditorRef = props.editorRef;
-  const backupEditorRef = useRef<EditorContainer | null>(null);
-  const editorRef = maybeEditorRef ?? backupEditorRef;
+  const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
     editorRef.current = new EditorContainer();
