@@ -79,6 +79,11 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 
 ## Contributing
 
+|Bug Reports|Feature Requests|Questions/Discussions|AFFiNE Community|
+|-----------|-----------|-----------|-----------|
+|[Create a bug report](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=bug%2Cproduct-review&template=BUG-REPORT.yml&title=TITLE)|[Submit a feature request](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=feat%2Cproduct-review&template=FEATURE-REQUEST.yml&title=TITLE)|[Check GitHub Discussion](https://github.com/toeverything/AFFiNE/discussions)|[Vist the AFFiNE Community](https://community.affine.pro)
+|Something isn't working as expected|An idea for a new feature, or improvements|Discuss and ask questions|A place to ask, learn and engage with others
+
 Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to get stuck in to show us what you’re made of.
 
 **Before you start contributing, please make sure you have read and accepted our [Contributor License Agreement]. To indicate your agreement, simply edit this file and submit a pull request.**
