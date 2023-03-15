@@ -19,7 +19,7 @@ test.describe('Local first favorite items ui', () => {
     const cell = page.getByRole('cell', {
       name: 'this is a new page to favorite',
     });
-    expect(cell).not.toBeUndefined();
+    await expect(cell).toBeVisible();
     await cell.click();
     await clickPageMoreActions(page);
 

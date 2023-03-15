@@ -1,6 +1,6 @@
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { jotaiWorkspacesAtom, workspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
@@ -71,3 +71,25 @@ export function useWorkspacesHelper() {
     ),
   };
 }
+
+export const useElementResizeEffect = (
+  element: Element | null,
+  fn: () => void | (() => () => void),
+  // TODO: add throttle
+  throttle = 0
+) => {
+  useEffect(() => {
+    if (!element) {
+      return;
+    }
+    let dispose: void | (() => void);
+    const resizeObserver = new ResizeObserver(entries => {
+      dispose = fn();
+    });
+    resizeObserver.observe(element);
+    return () => {
+      dispose?.();
+      resizeObserver.disconnect();
+    };
+  }, [element, fn]);
+};
