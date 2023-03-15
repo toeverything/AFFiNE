@@ -8,7 +8,7 @@ import { forwardRef, HTMLAttributes, useCallback, useRef } from 'react';
 import { openQuickSearchModalAtom } from '../../../atoms';
 import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
 import { usePageMeta } from '../../../hooks/use-page-meta';
-import { useEditorResizeEffect } from '../../../hooks/use-workspaces';
+import { useElementResizeEffect } from '../../../hooks/use-workspaces';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { PageNotFoundError } from '../../affine/affine-error-eoundary';
 import { QuickSearchButton } from '../../pure/quick-search-button';
@@ -59,13 +59,14 @@ export const BlockSuiteEditorHeader = forwardRef<
 
     const popperRef: PopperProps['popperRef'] = useRef(null);
 
-    useEditorResizeEffect(
+    useElementResizeEffect(
+      document.querySelector('editor-container'),
       useCallback(() => {
-        if (!popperRef.current) {
+        if (!openTips || !popperRef.current) {
           return;
         }
         popperRef.current.update();
-      }, [])
+      }, [openTips])
     );
 
     const TipsContent = (

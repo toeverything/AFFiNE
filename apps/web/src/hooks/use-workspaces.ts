@@ -72,20 +72,24 @@ export function useWorkspacesHelper() {
   };
 }
 
-export const useEditorResizeEffect = (fn: () => void | (() => () => void)) => {
-  const editor = document.querySelector('editor-container');
+export const useElementResizeEffect = (
+  element: Element | null,
+  fn: () => void | (() => () => void),
+  // TODO: add throttle
+  throttle = 0
+) => {
   useEffect(() => {
-    if (!editor) {
+    if (!element) {
       return;
     }
     let dispose: void | (() => void);
     const resizeObserver = new ResizeObserver(entries => {
       dispose = fn();
     });
-    resizeObserver.observe(editor);
+    resizeObserver.observe(element);
     return () => {
       dispose?.();
       resizeObserver.disconnect();
     };
-  });
+  }, [element, fn]);
 };
