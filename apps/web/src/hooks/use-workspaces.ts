@@ -2,11 +2,7 @@ import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
-import {
-  editorHeaderRefAtom,
-  jotaiWorkspacesAtom,
-  workspacesAtom,
-} from '../atoms';
+import { jotaiWorkspacesAtom, workspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
 import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
@@ -77,7 +73,7 @@ export function useWorkspacesHelper() {
 }
 
 export const useEditorResizeEffect = (fn: () => void | (() => () => void)) => {
-  const editor = useAtomValue(editorHeaderRefAtom).current;
+  const editor = document.querySelector('editor-container');
   useEffect(() => {
     if (!editor) {
       return;

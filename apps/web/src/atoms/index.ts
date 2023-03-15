@@ -88,7 +88,3 @@ export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
     return record[id];
   }
 );
-
-export const editorHeaderRefAtom = atom<{ current: HTMLDivElement | null }>({
-  current: null,
-});

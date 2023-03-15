@@ -3,7 +3,7 @@ import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
-import { forwardRef, HTMLAttributes, useRef } from 'react';
+import { forwardRef, HTMLAttributes, useCallback, useRef } from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
 import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
@@ -59,12 +59,14 @@ export const BlockSuiteEditorHeader = forwardRef<
 
     const popperRef: PopperProps['popperRef'] = useRef(null);
 
-    useEditorResizeEffect(() => {
-      if (!popperRef.current) {
-        return;
-      }
-      popperRef.current.update();
-    });
+    useEditorResizeEffect(
+      useCallback(() => {
+        if (!popperRef.current) {
+          return;
+        }
+        popperRef.current.update();
+      }, [])
+    );
 
     const TipsContent = (
       <StyledQuickSearchTipContent>
