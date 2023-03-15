@@ -2,10 +2,10 @@ import { PopperProps, QuickSearchTips } from '@affine/component';
 import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { forwardRef, HTMLAttributes, useCallback, useRef } from 'react';
 
-import { openQuickSearchModalAtom } from '../../../atoms';
+import { currentEditorAtom, openQuickSearchModalAtom } from '../../../atoms';
 import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { useElementResizeEffect } from '../../../hooks/use-workspaces';
@@ -60,7 +60,7 @@ export const BlockSuiteEditorHeader = forwardRef<
     const popperRef: PopperProps['popperRef'] = useRef(null);
 
     useElementResizeEffect(
-      document.querySelector('editor-container'),
+      useAtomValue(currentEditorAtom),
       useCallback(() => {
         if (!openTips || !popperRef.current) {
           return;

@@ -1,3 +1,4 @@
+import { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/store';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
@@ -8,6 +9,8 @@ import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
 // workspace necessary atoms
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);
+export const currentEditorAtom = atom<Readonly<EditorContainer> | null>(null);
+
 // If the workspace is locked, it means that the user maybe updating the workspace
 //  from local to remote or vice versa
 export const workspaceLockAtom = atom(false);
