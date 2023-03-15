@@ -1,7 +1,9 @@
 import { Button } from '@affine/component';
 import { styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import React, { ChangeEvent, useRef } from 'react';
+import type { ChangeEvent } from 'react';
+import type React from 'react';
+import { useRef } from 'react';
 
 export type UploadProps = React.PropsWithChildren<{
   uploadType?: string;

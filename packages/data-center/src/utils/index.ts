@@ -1,8 +1,6 @@
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
-import {
-  StoreOptions,
-  Workspace as BlocksuiteWorkspace,
-} from '@blocksuite/store';
+import type { StoreOptions } from '@blocksuite/store';
+import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 
 export const createBlocksuiteWorkspace = (options: StoreOptions) => {
   return new BlocksuiteWorkspace({

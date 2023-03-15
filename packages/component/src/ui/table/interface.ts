@@ -1,4 +1,4 @@
-import { CSSProperties, HTMLAttributes, PropsWithChildren } from 'react';
+import type { CSSProperties, HTMLAttributes, PropsWithChildren } from 'react';
 
 export type TableCellProps = {
   align?: 'left' | 'right' | 'center';

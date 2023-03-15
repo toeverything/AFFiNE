@@ -2,7 +2,8 @@ import { Button, Menu, MenuItem, styled } from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useTranslation } from '@affine/i18n';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
-import React, { useCallback } from 'react';
+import type React from 'react';
+import { useCallback } from 'react';
 
 const LanguageMenuContent: React.FC = () => {
   const { i18n } = useTranslation();

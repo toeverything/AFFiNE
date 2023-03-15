@@ -1,10 +1,11 @@
 import { FlexWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
-import { AccessTokenMessage } from '@affine/datacenter';
+import type { AccessTokenMessage } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
-import React, { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
+import type React from 'react';
 
 import { stringToColour } from '../../../utils';
 import { StyledFooter, StyledSignInButton, StyleUserInfo } from './styles';

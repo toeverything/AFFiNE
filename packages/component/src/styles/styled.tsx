@@ -9,7 +9,7 @@ import {
 import type { PropsWithChildren } from 'react';
 import { useMemo } from 'react';
 
-import { AffineTheme } from './types';
+import type { AffineTheme } from './types';
 
 export { css, keyframes, styled };
 

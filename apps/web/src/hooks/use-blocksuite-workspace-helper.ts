@@ -1,7 +1,7 @@
 import { assertExists } from '@blocksuite/store';
 import { useMemo } from 'react';
 
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 export function useBlockSuiteWorkspaceHelper(
   blockSuiteWorkspace: BlockSuiteWorkspace | null

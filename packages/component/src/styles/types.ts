@@ -1,5 +1,5 @@
-import { EditorContainer } from '@blocksuite/editor';
-import { CSSProperties } from 'react';
+import type { EditorContainer } from '@blocksuite/editor';
+import type { CSSProperties } from 'react';
 
 export type Theme = 'light' | 'dark';
 export type ThemeMode = Theme | 'auto';

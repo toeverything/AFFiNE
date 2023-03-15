@@ -1,6 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import { initializeApp } from 'firebase/app';
-import { connectAuthEmulator, User } from 'firebase/auth';
+import type { User } from 'firebase/auth';
+import { connectAuthEmulator } from 'firebase/auth';
 import {
   type Auth as FirebaseAuth,
   getAuth as getFirebaseAuth,
@@ -9,7 +10,7 @@ import {
   signOut,
 } from 'firebase/auth';
 import { decode } from 'js-base64';
-import { KyInstance } from 'ky/distribution/types/ky';
+import type { KyInstance } from 'ky/distribution/types/ky';
 
 import { MessageCenter } from '../../../message';
 import { storage } from '../storage';

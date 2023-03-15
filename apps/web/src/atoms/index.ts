@@ -1,11 +1,11 @@
-import { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/store';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { unstable_batchedUpdates } from 'react-dom';
 
 import { WorkspacePlugins } from '../plugins';
-import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
+import type { RemWorkspace, RemWorkspaceFlavour } from '../shared';
 // workspace necessary atoms
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);

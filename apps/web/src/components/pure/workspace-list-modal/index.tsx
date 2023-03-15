@@ -4,11 +4,11 @@ import {
   ModalWrapper,
   Tooltip,
 } from '@affine/component';
-import { AccessTokenMessage } from '@affine/datacenter';
+import type { AccessTokenMessage } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 
-import { RemWorkspace } from '../../../shared';
+import type { RemWorkspace } from '../../../shared';
 import { Footer } from '../footer';
 import { WorkspaceCard } from '../workspace-card';
 import { LanguageMenu } from './language-menu';

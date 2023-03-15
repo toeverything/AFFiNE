@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
@@ -9,11 +10,8 @@ import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspac
 import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-sync-router-with-current-workspace-and-page';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import {
-  BlockSuiteWorkspace,
-  NextPageWithLayout,
-  RemWorkspaceFlavour,
-} from '../../../shared';
+import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
+import { RemWorkspaceFlavour } from '../../../shared';
 
 function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
   blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);

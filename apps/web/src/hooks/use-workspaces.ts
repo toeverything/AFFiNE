@@ -5,7 +5,8 @@ import { useCallback, useEffect } from 'react';
 import { jotaiWorkspacesAtom, workspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
-import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
+import type { LocalWorkspace, RemWorkspace } from '../shared';
+import { RemWorkspaceFlavour } from '../shared';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 
 export function useWorkspaces(): RemWorkspace[] {

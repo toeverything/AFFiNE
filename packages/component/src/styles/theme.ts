@@ -2,7 +2,7 @@ import '@emotion/react';
 
 import type { EditorContainer } from '@blocksuite/editor';
 
-import { AffineTheme, AffineThemeCSSVariables } from './types';
+import type { AffineTheme, AffineThemeCSSVariables } from './types';
 
 const basicFontFamily =
   'apple-system, BlinkMacSystemFont,Helvetica Neue, Tahoma, PingFang SC, Microsoft Yahei, Arial,Hiragino Sans GB, sans-serif, Apple Color Emoji, Segoe UI Emoji,Segoe UI Symbol, Noto Color Emoji';

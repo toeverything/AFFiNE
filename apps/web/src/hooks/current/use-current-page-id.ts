@@ -1,4 +1,4 @@
-import { Page } from '@blocksuite/store';
+import type { Page } from '@blocksuite/store';
 import { atom, useAtom, useAtomValue } from 'jotai';
 
 import { currentPageIdAtom } from '../../atoms';

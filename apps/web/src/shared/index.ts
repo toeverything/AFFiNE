@@ -1,7 +1,7 @@
-import { Workspace as RemoteWorkspace } from '@affine/datacenter';
+import type { Workspace as RemoteWorkspace } from '@affine/datacenter';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
-import { NextPage } from 'next';
-import { ReactElement, ReactNode } from 'react';
+import type { NextPage } from 'next';
+import type { ReactElement, ReactNode } from 'react';
 
 export { BlockSuiteWorkspace };
 

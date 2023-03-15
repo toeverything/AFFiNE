@@ -1,7 +1,9 @@
 'use client';
-import { EditorContainer } from '@blocksuite/editor';
-import { assertEquals, assertExists, Generator, Page } from '@blocksuite/store';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { EditorContainer } from '@blocksuite/editor';
+import type { Page } from '@blocksuite/store';
+import { assertEquals, assertExists, Generator } from '@blocksuite/store';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { createEmptyBlockSuiteWorkspace } from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';

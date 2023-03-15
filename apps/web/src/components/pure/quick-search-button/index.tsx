@@ -1,4 +1,5 @@
-import { IconButton, IconButtonProps } from '@affine/component';
+import type { IconButtonProps } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { styled } from '@affine/component';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 

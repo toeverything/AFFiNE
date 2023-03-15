@@ -1,7 +1,7 @@
-import { PageMeta } from '@blocksuite/store';
+import type { PageMeta } from '@blocksuite/store';
 import { useEffect, useMemo, useState } from 'react';
 
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 declare module '@blocksuite/store' {
   interface PageMeta {

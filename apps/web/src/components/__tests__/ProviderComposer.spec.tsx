@@ -2,7 +2,8 @@
  * @vitest-environment happy-dom
  */
 import { render } from '@testing-library/react';
-import React, { createContext, useContext } from 'react';
+import type React from 'react';
+import { createContext, useContext } from 'react';
 import { expect, test } from 'vitest';
 
 import { ProviderComposer } from '../provider-composer';

@@ -2,7 +2,7 @@ import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
 import { assertExists } from '@blocksuite/store';
 import { useCallback, useEffect, useState } from 'react';
 
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 export function useBlockSuiteWorkspaceName(
   blockSuiteWorkspace: BlockSuiteWorkspace | null

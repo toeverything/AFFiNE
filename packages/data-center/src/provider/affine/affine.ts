@@ -1,6 +1,6 @@
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import assert from 'assert';
-import { KyInstance } from 'ky/distribution/types/ky';
+import type { KyInstance } from 'ky/distribution/types/ky';
 
 import { MessageCenter } from '../../message';
 import type { User } from '../../types';
@@ -12,8 +12,8 @@ import type {
   ProviderConstructorParams,
 } from '../base';
 import { BaseProvider } from '../base';
-import type { Apis, WorkspaceDetail } from './apis';
-import { getApis, Workspace } from './apis';
+import type { Apis, Workspace, WorkspaceDetail } from './apis';
+import { getApis } from './apis';
 import { createGoogleAuth } from './apis/google';
 import { createAuthClient, createBareClient } from './apis/request';
 import { WebsocketClient } from './channel';

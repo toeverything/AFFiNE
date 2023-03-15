@@ -1,4 +1,5 @@
-import { uuidv4, Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import type { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import { uuidv4 } from '@blocksuite/store';
 import assert from 'assert';
 import { varStorage as storage } from 'lib0/storage';
 

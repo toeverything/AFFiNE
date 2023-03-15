@@ -4,7 +4,7 @@
 import 'fake-indexeddb/auto';
 
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
-import { Page } from '@blocksuite/store';
+import type { Page } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 

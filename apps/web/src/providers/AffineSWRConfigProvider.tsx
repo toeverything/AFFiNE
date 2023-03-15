@@ -1,5 +1,6 @@
 import React from 'react';
-import { SWRConfig, SWRConfiguration } from 'swr';
+import type { SWRConfiguration } from 'swr';
+import { SWRConfig } from 'swr';
 
 import { fetcher } from '../plugins/affine/fetcher';
 
