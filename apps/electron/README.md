@@ -1,4 +1,19 @@
-## AFFiNE Electron App
+# AFFiNE Electron App
+
+# ⚠️ NOTE ⚠️
+
+Due to PNPM related issues, this project is currently using **Yarn 1**.
+See https://github.com/electron/forge/issues/2633
+
+## Development
+
+```
+# in project root, start web app at :8080
+pnpm dev
+
+# in /apps/electron, start electron app
+pnpm dev
+```
 
 ## Credits
 
