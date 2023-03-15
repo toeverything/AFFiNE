@@ -12,7 +12,7 @@ export const ModalWrapper = styled('div')<{
     height,
     minHeight,
     backgroundColor: theme.colors.popoverBackground,
-    borderRadius: '24px',
+    borderRadius: '16px',
     position: 'relative',
     maxHeight: 'calc(100vh - 32px)',
   };

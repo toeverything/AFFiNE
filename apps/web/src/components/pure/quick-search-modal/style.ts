@@ -2,7 +2,7 @@ import { displayFlex, styled, textEllipsis } from '@affine/component';
 
 export const StyledContent = styled('div')(({ theme }) => {
   return {
-    minHeight: '280px',
+    minHeight: '290px',
     maxHeight: '70vh',
     width: '100%',
     overflow: 'auto',
@@ -12,6 +12,9 @@ export const StyledContent = styled('div')(({ theme }) => {
     color: theme.colors.textColor,
     transition: 'all 0.15s',
     letterSpacing: '0.06em',
+    '[cmdk-group]': {
+      width: '100%',
+    },
     '[cmdk-group-heading]': {
       ...displayFlex('start', 'center'),
       margin: '0 16px',
@@ -20,10 +23,15 @@ export const StyledContent = styled('div')(({ theme }) => {
       fontSize: theme.font.sm,
       color: theme.colors.secondaryTextColor,
     },
+    '[cmdk-item]': {
+      margin: '0 4px',
+    },
     '[aria-selected="true"]': {
-      borderRadius: '5px',
+      transition: 'all 0.15s',
+      borderRadius: '4px',
       color: theme.colors.primaryColor,
       backgroundColor: theme.colors.hoverBackground,
+      padding: '0 2px',
     },
   };
 });
@@ -44,11 +52,15 @@ export const StyledNotFound = styled('div')(({ theme }) => {
     width: '612px',
     ...displayFlex('center', 'center'),
     flexDirection: 'column',
-    padding: '5px 16px',
-    fontSize: theme.font.base,
+    padding: '0 16px',
+    fontSize: theme.font.sm,
+    lineHeight: '22px',
+    color: theme.colors.secondaryTextColor,
     span: {
+      ...displayFlex('flex-start', 'center'),
       width: '100%',
-      fontWeight: '500',
+      fontWeight: '400',
+      height: '36px',
     },
 
     '>svg': {
@@ -59,7 +71,6 @@ export const StyledNotFound = styled('div')(({ theme }) => {
 });
 export const StyledInputContent = styled('div')(({ theme }) => {
   return {
-    margin: '13px 0',
     ...displayFlex('space-between', 'center'),
     input: {
       width: '492px',
@@ -78,23 +89,24 @@ export const StyledInputContent = styled('div')(({ theme }) => {
 export const StyledShortcut = styled('div')(({ theme }) => {
   return {
     color: theme.colors.placeHolderColor,
-    fontSize: theme.font.base,
+    fontSize: theme.font.sm,
     whiteSpace: 'nowrap',
   };
 });
 
 export const StyledLabel = styled('label')(({ theme }) => {
   return {
-    width: '24px',
-    height: '24px',
+    width: '20px',
+    height: '20px',
     color: theme.colors.iconColor,
+    fontSize: '20px',
   };
 });
 
 export const StyledModalHeader = styled('div')(() => {
   return {
-    height: '48px',
-    margin: '12px 24px 0px 24px',
+    height: '36px',
+    margin: '12px 16px 0px 16px',
     ...displayFlex('space-between', 'center'),
   };
 });
@@ -102,7 +114,7 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
   return {
     width: 'auto',
     height: '0',
-    margin: '6px 16px 6.5px 16px',
+    margin: '6px 16px',
     position: 'relative',
     borderTop: `0.5px solid ${theme.colors.borderColor}`,
     transition: 'all 0.15s',
@@ -111,30 +123,38 @@ export const StyledModalDivider = styled('div')(({ theme }) => {
 
 export const StyledModalFooter = styled('div')(({ theme }) => {
   return {
-    fontSize: theme.font.base,
+    fontSize: 'inherit',
     lineHeight: '22px',
     marginBottom: '8px',
     textAlign: 'center',
     color: theme.colors.textColor,
     ...displayFlex('center', 'center'),
+    transition: 'all .15s',
+    '[cmdk-item]': {
+      margin: '0 4px',
+    },
     '[aria-selected="true"]': {
-      transition: 'background .15s, color .15s',
-      borderRadius: '5px',
+      transition: 'all 0.15s',
+      borderRadius: '4px',
       color: theme.colors.primaryColor,
       backgroundColor: theme.colors.hoverBackground,
+      'span,svg': {
+        transition: 'all 0.15s',
+        transform: 'scale(1.02)',
+      },
     },
   };
 });
 export const StyledModalFooterContent = styled('button')(({ theme }) => {
   return {
-    width: '612px',
+    width: '600px',
     height: '32px',
     fontSize: theme.font.base,
     lineHeight: '22px',
     textAlign: 'center',
     ...displayFlex('center', 'center'),
     color: 'inherit',
-    borderRadius: '5px',
+    borderRadius: '4px',
     transition: 'background .15s, color .15s',
     '>svg': {
       fontSize: '20px',
@@ -144,13 +164,13 @@ export const StyledModalFooterContent = styled('button')(({ theme }) => {
 });
 export const StyledListItem = styled('button')(({ theme }) => {
   return {
-    width: '612px',
+    // width: '612px',
     height: '32px',
-    fontSize: theme.font.base,
+    fontSize: 'inherit',
     color: 'inherit',
-    paddingLeft: '12px',
-    borderRadius: '5px',
-    transition: 'background .15s, color .15s',
+    padding: '0 12px',
+    borderRadius: '4px',
+    transition: 'all .15s',
     ...displayFlex('flex-start', 'center'),
     span: {
       ...textEllipsis(1),

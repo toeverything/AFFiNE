@@ -100,7 +100,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       data-testid="quickSearch"
     >
       <ModalWrapper
-        width={620}
+        width={608}
         style={{
           maxHeight: '80vh',
           minHeight: isPublicAndNoQuery() ? '72px' : '412px',
