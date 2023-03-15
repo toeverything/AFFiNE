@@ -12,6 +12,6 @@ const node = electronRelease.node.split('.')[0];
 const chrome = electronRelease.v8.split('.').splice(0, 2).join('');
 
 writeFileSync(
-  './.electron-vendors.cache.json',
+  './electron-vendors.autogen.json',
   JSON.stringify({ chrome, node })
 );

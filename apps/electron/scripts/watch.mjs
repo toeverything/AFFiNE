@@ -105,7 +105,7 @@ function setupPreloadPackageWatcher({ ws }) {
       // Generating exposedInMainWorld.d.ts when preload package is changed.
       generateAsync({
         input: 'layers/preload/src/**/*.ts',
-        output: 'layers/preload/exposedInMainWorld.d.ts',
+        output: 'layers/preload/preload.autogen.d.ts',
       });
 
       ws.send({

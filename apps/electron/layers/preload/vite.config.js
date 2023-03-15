@@ -1,6 +1,6 @@
 import { builtinModules } from 'module';
 
-import { chrome } from '../../.electron-vendors.cache.json';
+import { chrome } from '../../electron-vendors.autogen.json';
 
 const PACKAGE_ROOT = __dirname;
 

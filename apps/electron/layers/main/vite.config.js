@@ -1,6 +1,6 @@
 import { builtinModules } from 'module';
 
-import { node } from '../../.electron-vendors.cache.json';
+import { node } from '../../electron-vendors.autogen.json';
 
 const PACKAGE_ROOT = __dirname;
 
