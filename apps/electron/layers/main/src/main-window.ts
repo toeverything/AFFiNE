@@ -1,8 +1,18 @@
 import { BrowserWindow } from 'electron';
+import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 async function createWindow() {
+  const mainWindowState = electronWindowState({
+    defaultWidth: 1000,
+    defaultHeight: 800,
+  });
+
   const browserWindow = new BrowserWindow({
+    x: mainWindowState.x,
+    y: mainWindowState.y,
+    width: mainWindowState.width,
+    height: mainWindowState.height,
     show: false, // Use 'ready-to-show' event to show window
     webPreferences: {
       nodeIntegration: false,
@@ -13,6 +23,8 @@ async function createWindow() {
       preload: join(__dirname, '../../preload/dist/index.cjs'),
     },
   });
+
+  mainWindowState.manage(browserWindow);
 
   /**
    * If you install `show: true` then it can cause issues when trying to close the window.
@@ -26,6 +38,12 @@ async function createWindow() {
     if (import.meta.env.DEV) {
       browserWindow?.webContents.openDevTools();
     }
+  });
+
+  browserWindow.on('close', e => {
+    e.preventDefault();
+    browserWindow.destroy();
+    // TODO: gracefully close the app, for example, ask user to save unsaved changes
   });
 
   /**

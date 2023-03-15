@@ -12,6 +12,9 @@ const config = {
   mode: process.env.MODE,
   root: PACKAGE_ROOT,
   envDir: process.cwd(),
+  optimizeDeps: {
+    include: ['src/index.ts'],
+  },
   build: {
     sourcemap: 'inline',
     target: `chrome${chrome}`,

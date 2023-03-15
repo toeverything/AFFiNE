@@ -2,7 +2,7 @@ import './security-restrictions';
 
 import { app } from 'electron';
 
-import { restoreOrCreateWindow } from './mainWindow';
+import { restoreOrCreateWindow } from './main-window';
 
 /**
  * Prevent multiple instances
@@ -12,6 +12,7 @@ if (!isSingleInstance) {
   app.quit();
   process.exit(0);
 }
+
 app.on('second-instance', restoreOrCreateWindow);
 
 /**

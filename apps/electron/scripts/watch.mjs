@@ -50,6 +50,7 @@ const getWatcher = ({ name, configFile, writeBundle }) => {
  */
 function setupMainPackageWatcher({ config: { server } }) {
   // hard-coded for now:
+  // fixme(xp): report error if app is not running on port 8080
   process.env.VITE_DEV_SERVER_URL = `http://localhost:8080`;
 
   const logger = createLogger(LOG_LEVEL, {
