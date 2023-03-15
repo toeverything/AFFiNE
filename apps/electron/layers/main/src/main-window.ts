@@ -2,6 +2,8 @@ import { BrowserWindow } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
+const IS_DEV = process.env.NODE_ENV === 'development';
+
 async function createWindow() {
   const mainWindowState = electronWindowState({
     defaultWidth: 1000,
@@ -20,7 +22,7 @@ async function createWindow() {
       sandbox: false,
       webviewTag: false, // The webview tag is not recommended. Consider alternatives like iframe or Electron's BrowserView. https://www.electronjs.org/docs/latest/api/webview-tag#warning
       spellcheck: false, // FIXME: enable?
-      preload: join(__dirname, '../../preload/dist/index.cjs'),
+      preload: join(__dirname, '../../preload/dist/index.js'),
     },
   });
 
@@ -35,7 +37,7 @@ async function createWindow() {
   browserWindow.on('ready-to-show', () => {
     browserWindow?.show();
 
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       browserWindow?.webContents.openDevTools();
     }
   });
@@ -52,8 +54,8 @@ async function createWindow() {
    * `file://../renderer/index.html` for production and test
    */
   const pageUrl =
-    import.meta.env.DEV && import.meta.env.VITE_DEV_SERVER_URL !== undefined
-      ? import.meta.env.VITE_DEV_SERVER_URL
+    IS_DEV && process.env.VITE_DEV_SERVER_URL !== undefined
+      ? process.env.VITE_DEV_SERVER_URL
       : ''; // TODO(xp): Add production URL
 
   await browserWindow.loadURL(pageUrl);
