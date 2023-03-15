@@ -5,7 +5,8 @@ import { Input } from '@affine/component';
 import { MuiAvatar } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { EmailIcon } from '@blocksuite/icons';
-import React, { Suspense, useCallback, useState } from 'react';
+import type React from 'react';
+import { Suspense, useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../../hooks/affine/use-members';
 import { useUsersByEmail } from '../../../../../../hooks/affine/use-users-by-email';

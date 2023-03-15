@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '@affine/component';
 import { Button } from '@affine/component';
-import { Permission } from '@affine/datacenter';
+import type { Permission } from '@affine/datacenter';
 import {
   SucessfulDuotoneIcon,
   UnsucessfulDuotoneIcon,
@@ -16,7 +16,8 @@ import inviteSuccess from '../../../public/imgs/invite-success.svg';
 import { PageLoading } from '../../components/pure/loading';
 import { RouteLogic, useRouterHelper } from '../../hooks/use-router-helper';
 import { QueryKey } from '../../plugins/affine/fetcher';
-import { NextPageWithLayout, WorkspaceSubPath } from '../../shared';
+import type { NextPageWithLayout } from '../../shared';
+import { WorkspaceSubPath } from '../../shared';
 
 const InvitePage: NextPageWithLayout = () => {
   const router = useRouter();

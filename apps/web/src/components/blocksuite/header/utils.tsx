@@ -1,6 +1,7 @@
 import { getEnvironment } from '@affine/env';
 import { Trans, useTranslation } from '@affine/i18n';
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 
 const minimumChromeVersion = 102;
 

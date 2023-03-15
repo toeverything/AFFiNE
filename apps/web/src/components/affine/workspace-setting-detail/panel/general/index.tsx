@@ -1,6 +1,7 @@
 import { Button, FlexWrapper, MuiFade } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../../../../hooks/use-blocksuite-workspace-avatar-url';
@@ -13,7 +14,7 @@ import {
   LocalWorkspaceIcon,
 } from '../../../../pure/icons';
 import { WorkspaceAvatar } from '../../../../pure/workspace-avatar';
-import { PanelProps } from '../../index';
+import type { PanelProps } from '../../index';
 import { StyledRow, StyledSettingKey } from '../../style';
 import { WorkspaceDeleteModal } from './delete';
 import { CameraIcon } from './icons';

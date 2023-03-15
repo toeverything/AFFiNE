@@ -1,5 +1,5 @@
 import { styled } from '../../styles';
-import { ButtonProps } from './interface';
+import type { ButtonProps } from './interface';
 import { getButtonColors } from './utils';
 export const LoadingContainer = styled('div')<Pick<ButtonProps, 'type'>>(
   ({ theme, type = 'default' }) => {

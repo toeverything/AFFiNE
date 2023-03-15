@@ -1,12 +1,14 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
 import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
-import { EditorContainer } from '@blocksuite/editor';
-import { Page, Workspace } from '@blocksuite/store';
+import type { EditorContainer } from '@blocksuite/editor';
+import type { Page } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
-import { Meta, StoryFn } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import { useEffect, useState } from 'react';
 
-import { BlockSuiteEditor, EditorProps } from '.';
+import type { EditorProps } from '.';
+import { BlockSuiteEditor } from '.';
 
 function initPage(page: Page, editor: Readonly<EditorContainer>): void {
   // Add page block and surface block at root level

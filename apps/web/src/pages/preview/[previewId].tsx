@@ -1,4 +1,4 @@
-import {
+import type {
   GetStaticPaths,
   GetStaticProps,
   InferGetStaticPropsType,
@@ -14,7 +14,7 @@ import {
   StyledToolWrapper,
   StyledWrapper,
 } from '../../layouts/styles';
-import { BlockSuiteWorkspace } from '../../shared';
+import type { BlockSuiteWorkspace } from '../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
 export type PreviewPageProps = {

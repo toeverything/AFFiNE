@@ -10,14 +10,15 @@ import {
   SearchIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
-import { PageMeta } from '@blocksuite/store';
+import type { PageMeta } from '@blocksuite/store';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import React, { useCallback, useMemo, useState } from 'react';
+import type React from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
-import { RemWorkspace } from '../../../shared';
+import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import {
   StyledLink,

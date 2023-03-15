@@ -1,4 +1,4 @@
-import { KyInstance } from 'ky/distribution/types/ky';
+import type { KyInstance } from 'ky/distribution/types/ky';
 
 export interface GetUserByEmailParams {
   email: string;

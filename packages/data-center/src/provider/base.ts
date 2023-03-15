@@ -1,12 +1,12 @@
 import { DebugLogger } from '@affine/debug';
-import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import type { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 
-import { MessageCenter } from '../message';
-import { User } from '../types';
+import type { MessageCenter } from '../message';
+import type { User } from '../types';
 import type { WorkspaceUnit, WorkspaceUnitCtorParams } from '../workspace-unit';
 import type { WorkspaceUnitCollectionScope } from '../workspace-unit-collection';
-import { Member } from './affine/apis';
-import { Permission } from './affine/apis/workspace';
+import type { Member } from './affine/apis';
+import type { Permission } from './affine/apis/workspace';
 
 export interface ProviderConstructorParams {
   workspaces: WorkspaceUnitCollectionScope;

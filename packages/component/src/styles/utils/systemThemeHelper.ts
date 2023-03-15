@@ -1,4 +1,4 @@
-import { Theme } from '../types';
+import type { Theme } from '../types';
 
 export class SystemThemeHelper {
   media: MediaQueryList = window.matchMedia('(prefers-color-scheme: light)');

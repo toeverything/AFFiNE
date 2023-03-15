@@ -1,10 +1,5 @@
-import {
-  cloneElement,
-  forwardRef,
-  HTMLAttributes,
-  PropsWithChildren,
-  ReactElement,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
+import { cloneElement, forwardRef } from 'react';
 
 import { StyledArrow, StyledMenuItem } from './styles';
 export type IconMenuProps = PropsWithChildren<{

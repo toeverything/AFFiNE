@@ -1,4 +1,4 @@
-import { Member } from '@affine/datacenter';
+import type { Member } from '@affine/datacenter';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 

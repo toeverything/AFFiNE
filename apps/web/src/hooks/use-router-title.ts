@@ -1,4 +1,4 @@
-import { NextRouter } from 'next/router';
+import type { NextRouter } from 'next/router';
 import { useMemo } from 'react';
 
 import { WorkspaceSubPathName } from '../shared';

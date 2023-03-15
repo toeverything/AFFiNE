@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import useSWR from 'swr';
 
 import { QueryKey } from '../plugins/affine/fetcher';
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 export function useBlockSuiteWorkspaceAvatarUrl(
   // todo: remove `null` from type

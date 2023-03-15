@@ -1,7 +1,8 @@
-import { BlockHub } from '@blocksuite/blocks';
+import type { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import type { Page, Workspace } from '@blocksuite/store';
-import { CSSProperties, useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
+import { useEffect, useRef } from 'react';
 
 export type EditorProps = {
   blockSuiteWorkspace: Workspace;

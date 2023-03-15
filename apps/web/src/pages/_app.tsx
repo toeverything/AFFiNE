@@ -2,14 +2,15 @@ import '../styles/globals.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
-import { EmotionCache } from '@emotion/cache';
+import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
 import { useAtomsDebugValue } from 'jotai-devtools';
-import { AppProps } from 'next/app';
+import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { memo, ReactElement, Suspense, useEffect, useMemo } from 'react';
+import type { ReactElement } from 'react';
+import React, { memo, Suspense, useEffect, useMemo } from 'react';
 
 import { jotaiStore } from '../atoms';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
@@ -18,7 +19,7 @@ import { PageLoading } from '../components/pure/loading';
 import { MessageCenter } from '../components/pure/message-center';
 import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
-import { NextPageWithLayout } from '../shared';
+import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
 
 setupGlobal();

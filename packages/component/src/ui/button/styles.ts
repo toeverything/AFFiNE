@@ -1,7 +1,7 @@
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
 import { absoluteCenter, displayInlineFlex, styled } from '../../styles';
-import { ButtonProps } from './interface';
+import type { ButtonProps } from './interface';
 import { getButtonColors, getSize } from './utils';
 
 export const StyledIconButton = styled('button', {

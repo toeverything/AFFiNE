@@ -8,18 +8,19 @@ import {
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { Box } from '@mui/material';
-import React, { useCallback, useEffect, useState } from 'react';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
-import {
+import type {
   AffineOfficialWorkspace,
   AffineWorkspace,
   LocalWorkspace,
-  RemWorkspaceFlavour,
 } from '../../../../../shared';
+import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
-import { WorkspaceSettingDetailProps } from '../../index';
+import type { WorkspaceSettingDetailProps } from '../../index';
 
 export type PublishPanelProps = WorkspaceSettingDetailProps & {
   workspace: AffineOfficialWorkspace;

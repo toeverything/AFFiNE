@@ -1,8 +1,9 @@
 export type { Callback } from './google';
 
-import { KyInstance } from 'ky/distribution/types/ky';
+import type { KyInstance } from 'ky/distribution/types/ky';
 
-import { createGoogleAuth, getAuthorizer, GoogleAuth } from './google';
+import type { createGoogleAuth, GoogleAuth } from './google';
+import { getAuthorizer } from './google';
 import { createUserApis } from './user';
 import { createWorkspaceApis } from './workspace';
 

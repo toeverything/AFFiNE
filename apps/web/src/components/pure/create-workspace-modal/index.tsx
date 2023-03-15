@@ -3,8 +3,8 @@ import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
 import { Input } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import type { KeyboardEvent } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { KeyboardEvent } from 'react';
 
 interface ModalProps {
   open: boolean;
