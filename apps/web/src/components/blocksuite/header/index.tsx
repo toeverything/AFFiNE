@@ -1,15 +1,17 @@
-import { PopperProps, QuickSearchTips } from '@affine/component';
+import type { PopperProps } from '@affine/component';
+import { QuickSearchTips } from '@affine/component';
 import { getEnvironment } from '@affine/env';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { forwardRef, HTMLAttributes, useCallback, useRef } from 'react';
+import type { HTMLAttributes } from 'react';
+import { forwardRef, useCallback, useRef } from 'react';
 
 import { currentEditorAtom, openQuickSearchModalAtom } from '../../../atoms';
 import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { useElementResizeEffect } from '../../../hooks/use-workspaces';
-import { BlockSuiteWorkspace } from '../../../shared';
+import type { BlockSuiteWorkspace } from '../../../shared';
 import { PageNotFoundError } from '../../affine/affine-error-eoundary';
 import { QuickSearchButton } from '../../pure/quick-search-button';
 import { EditorModeSwitch } from './editor-mode-switch';

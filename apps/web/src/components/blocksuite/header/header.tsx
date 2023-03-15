@@ -1,13 +1,8 @@
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
-import React, {
-  forwardRef,
-  HTMLAttributes,
-  PropsWithChildren,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren } from 'react';
+import type React from 'react';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
