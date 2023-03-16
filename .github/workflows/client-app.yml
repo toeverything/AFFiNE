@@ -74,7 +74,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version-file: '.nvmrc'
+          node-version: 18
 
       - name: Install dependencies
         run: yarn install # that's right, yarn
@@ -102,7 +102,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-darwin-arm64-builds
+          name: affine-darwin-x64-builds
           path: builds
 
   build-macos-arm64:
@@ -112,7 +112,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version-file: '.nvmrc'
+          node-version: 18
 
       - name: Install dependencies
         run: yarn install # that's right, yarn
