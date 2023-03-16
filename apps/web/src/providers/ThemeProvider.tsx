@@ -1,4 +1,4 @@
-import { AffineTheme, ThemeProviderProps } from '@affine/component';
+import type { AffineTheme, ThemeProviderProps } from '@affine/component';
 import {
   getDarkTheme,
   getLightTheme,

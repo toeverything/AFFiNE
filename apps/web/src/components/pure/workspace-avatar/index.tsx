@@ -2,7 +2,7 @@ import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
 import React from 'react';
 
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-workspace-avatar-url';
-import { BlockSuiteWorkspace, RemWorkspace } from '../../../shared';
+import type { BlockSuiteWorkspace, RemWorkspace } from '../../../shared';
 import { stringToColour } from '../../../utils';
 
 interface AvatarProps {

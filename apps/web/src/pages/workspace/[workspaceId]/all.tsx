@@ -16,11 +16,11 @@ import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import {
+import type {
   LocalIndexedDBProvider,
   NextPageWithLayout,
-  RemWorkspaceFlavour,
 } from '../../../shared';
+import { RemWorkspaceFlavour } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();

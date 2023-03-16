@@ -1,18 +1,19 @@
 import { assertExists } from '@blocksuite/store';
+import type { Awareness } from 'y-protocols/awareness';
 import {
   applyAwarenessUpdate,
-  Awareness,
   encodeAwarenessUpdate,
 } from 'y-protocols/awareness';
 
-import { BlockSuiteWorkspace, BroadCastChannelProvider } from '../../../shared';
+import type { BroadCastChannelProvider } from '../../../shared';
+import { BlockSuiteWorkspace } from '../../../shared';
 import { providerLogger } from '../../logger';
-import {
+import type {
   AwarenessChanges,
   BroadcastChannelMessageEvent,
-  getClients,
   TypedBroadcastChannel,
 } from './type';
+import { getClients } from './type';
 
 export const createBroadCastChannelProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace

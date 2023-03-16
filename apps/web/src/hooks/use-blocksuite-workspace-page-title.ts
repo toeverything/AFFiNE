@@ -1,7 +1,7 @@
 import { assertExists } from '@blocksuite/store';
 import { useEffect, useState } from 'react';
 
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 export function useBlockSuiteWorkspacePageTitle(
   blockSuiteWorkspace: BlockSuiteWorkspace,

@@ -17,8 +17,9 @@ import {
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import { PageMeta } from '@blocksuite/store';
-import React, { useState } from 'react';
+import type { PageMeta } from '@blocksuite/store';
+import type React from 'react';
+import { useState } from 'react';
 
 export type OperationCellProps = {
   pageMeta: PageMeta;

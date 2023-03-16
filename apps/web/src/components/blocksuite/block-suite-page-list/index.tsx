@@ -1,6 +1,6 @@
-import React from 'react';
+import type React from 'react';
 
-import { BlockSuiteWorkspace } from '../../../shared';
+import type { BlockSuiteWorkspace } from '../../../shared';
 import PageList from './page-list';
 
 export type BlockSuitePageListProps = {

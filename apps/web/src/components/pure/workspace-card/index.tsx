@@ -1,10 +1,12 @@
 import { PermissionType } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { SettingsIcon } from '@blocksuite/icons';
-import React, { useCallback } from 'react';
+import type React from 'react';
+import { useCallback } from 'react';
 
 import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
-import { RemWorkspace, RemWorkspaceFlavour } from '../../../shared';
+import type { RemWorkspace } from '../../../shared';
+import { RemWorkspaceFlavour } from '../../../shared';
 import {
   CloudWorkspaceIcon,
   JoinedWorkspaceIcon,

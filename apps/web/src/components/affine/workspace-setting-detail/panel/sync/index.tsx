@@ -1,13 +1,13 @@
 import { Content, FlexWrapper, styled } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
-import React from 'react';
+import type React from 'react';
 
 import { useCurrentUser } from '../../../../../hooks/current/use-current-user';
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../../../../hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '../../../../../hooks/use-blocksuite-workspace-name';
 import { RemWorkspaceFlavour } from '../../../../../shared';
 import { WorkspaceAvatar } from '../../../../pure/footer';
-import { PanelProps } from '../../index';
+import type { PanelProps } from '../../index';
 
 export const StyledWorkspaceName = styled('span')(({ theme }) => {
   return {

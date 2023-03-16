@@ -1,7 +1,7 @@
-import { BlobStorage } from '@blocksuite/store';
+import type { BlobStorage } from '@blocksuite/store';
 import { useEffect, useState } from 'react';
 
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 export function useWorkspaceBlob(
   blockSuiteWorkspace: BlockSuiteWorkspace

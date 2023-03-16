@@ -12,7 +12,7 @@ import { createStore, Provider } from 'jotai';
 import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
-import React from 'react';
+import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
@@ -21,11 +21,8 @@ import {
   workspacesAtom,
 } from '../../atoms';
 import { LocalPlugin } from '../../plugins/local';
-import {
-  BlockSuiteWorkspace,
-  LocalWorkspace,
-  RemWorkspaceFlavour,
-} from '../../shared';
+import type { LocalWorkspace } from '../../shared';
+import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { useIsFirstLoad, useOpenTips } from '../affine/use-is-first-load';
 import {
   useRecentlyViewed,

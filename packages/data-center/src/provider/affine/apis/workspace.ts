@@ -1,8 +1,8 @@
-import { KyInstance } from 'ky/distribution/types/ky';
+import type { KyInstance } from 'ky/distribution/types/ky';
 
 import { MessageCenter } from '../../../message';
 import { createBlocksuiteWorkspace as _createBlocksuiteWorkspace } from '../../../utils';
-import { GoogleAuth } from './google';
+import type { GoogleAuth } from './google';
 import RequestError from './request-error';
 import type { User } from './user';
 const messageCenter = MessageCenter.getInstance();

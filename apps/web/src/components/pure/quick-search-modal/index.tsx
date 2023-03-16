@@ -2,8 +2,9 @@ import { Modal, ModalWrapper } from '@affine/component';
 import { getEnvironment } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { Command } from 'cmdk';
-import { NextRouter } from 'next/router';
-import React, {
+import type { NextRouter } from 'next/router';
+import type React from 'react';
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -12,7 +13,7 @@ import React, {
   useTransition,
 } from 'react';
 
-import { BlockSuiteWorkspace } from '../../../shared';
+import type { BlockSuiteWorkspace } from '../../../shared';
 import { Footer } from './Footer';
 import { PublishedResults } from './PublishedResults';
 import { Results } from './Results';
@@ -100,7 +101,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       data-testid="quickSearch"
     >
       <ModalWrapper
-        width={620}
+        width={608}
         style={{
           maxHeight: '80vh',
           minHeight: isPublicAndNoQuery() ? '72px' : '412px',

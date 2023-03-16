@@ -1,11 +1,7 @@
-import { Theme } from '@mui/material';
+import type { Theme } from '@mui/material';
 
-import {
-  ButtonProps,
-  SIZE_DEFAULT,
-  SIZE_MIDDLE,
-  SIZE_SMALL,
-} from './interface';
+import type { ButtonProps } from './interface';
+import { SIZE_DEFAULT, SIZE_MIDDLE, SIZE_SMALL } from './interface';
 
 // TODO: Designer is not sure about the size, Now, is just use default size
 export const SIZE_CONFIG = {

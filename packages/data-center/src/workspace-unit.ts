@@ -1,4 +1,4 @@
-import {
+import type {
   BlobOptionsGetter,
   Workspace as BlocksuiteWorkspace,
 } from '@blocksuite/store';

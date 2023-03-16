@@ -1,11 +1,11 @@
-import { GetBlob, PutBlob } from '../ipc/types/blob';
-import {
+import type { GetBlob, PutBlob } from '../ipc/types/blob';
+import type {
   GetDocumentParameter,
   GetDocumentResponse,
   YDocumentUpdate,
 } from '../ipc/types/document';
-import { CreateUser, GetUserParameters, User } from '../ipc/types/user';
-import {
+import type { CreateUser, GetUserParameters, User } from '../ipc/types/user';
+import type {
   CreateWorkspace,
   CreateWorkspaceResult,
   GetWorkspace,

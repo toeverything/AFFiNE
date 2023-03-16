@@ -7,7 +7,7 @@ import {
   currentWorkspaceIdAtom,
   workspacesAtom,
 } from '../../atoms';
-import { RemWorkspace } from '../../shared';
+import type { RemWorkspace } from '../../shared';
 
 export const currentWorkspaceAtom = atom<Promise<RemWorkspace | null>>(
   async get => {
