@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "prod": "NODE_ENV=production node scripts/dev.mjs",
-    "make": "zx scripts/make.mjs",
+    "before-make": "zx scripts/before-make.mjs",
+    "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs"
   },
   "config": {

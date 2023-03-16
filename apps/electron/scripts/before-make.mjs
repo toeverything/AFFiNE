@@ -40,11 +40,6 @@ await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 await buildLayers();
 console.log('Build layers done');
 
-// step 3
-cd(electronRootDir);
-await $`yarn electron-forge make`;
-console.log('Build electron done');
-
 /// --------
 /// --------
 /// --------

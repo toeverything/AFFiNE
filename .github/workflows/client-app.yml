@@ -19,6 +19,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: true
 
+env:
+  CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+  NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
@@ -26,7 +37,7 @@ jobs:
       release_id: ${{ steps.create-release.outputs.result }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: create release
         id: create-release
         uses: actions/github-script@v6
@@ -43,15 +54,9 @@ jobs:
             })
             return data.id
 
-  build-electron:
+  build-macos-arm64:
     needs: create-release
-    strategy:
-      fail-fast: false
-      matrix:
-        # platform: [macos-latest, ubuntu-latest, windows-latest]
-        platform: [macos-latest] # TODO: add other platforms
-
-    runs-on: ${{ matrix.platform }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
@@ -59,13 +64,27 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
+
+      # todo: cache yarn deps
       - name: Install dependencies
         run: yarn install # that's right, yarn
         working-directory: apps/electron
 
-      - name: Make Electron
+      - name: Prepare for make
         working-directory: apps/electron
-        env:
-          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn make
+        run: yarn before-make
+
+      - name: make build
+        run: yarn make-macos-arm64
+        working-directory: apps/electron
+
+      - name: Save arm64 artifacts
+        run: |
+          mkdir -p builds
+          mv static/out/make/AFFiNE.dmg ./builds/affine-darwin-arm64-${{ steps.ref.outputs.version }}.dmg
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-darwin-arm64-builds
+          path: builds
