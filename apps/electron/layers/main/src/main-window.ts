@@ -17,7 +17,6 @@ async function createWindow() {
     height: mainWindowState.height,
     show: false, // Use 'ready-to-show' event to show window
     webPreferences: {
-      nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,
       webviewTag: false, // The webview tag is not recommended. Consider alternatives like iframe or Electron's BrowserView. https://www.electronjs.org/docs/latest/api/webview-tag#warning
@@ -50,12 +49,10 @@ async function createWindow() {
 
   /**
    * URL for main window.
-   * Vite dev server for development.
-   * `file://../renderer/index.html` for production and test
    */
   const pageUrl =
-    IS_DEV && process.env.VITE_DEV_SERVER_URL !== undefined
-      ? process.env.VITE_DEV_SERVER_URL
+    IS_DEV && process.env.DEV_SERVER_URL !== undefined
+      ? process.env.DEV_SERVER_URL
       : 'file://./index.html'; // see protocol.ts
 
   await browserWindow.loadURL(pageUrl);

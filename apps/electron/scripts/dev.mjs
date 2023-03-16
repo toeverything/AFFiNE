@@ -19,7 +19,7 @@ const stderrFilterPatterns = [
 
 // hard-coded for now:
 // fixme(xp): report error if app is not running on port 8080
-process.env.VITE_DEV_SERVER_URL = `http://localhost:8080`;
+process.env.DEV_SERVER_URL = `http://localhost:8080`;
 
 /** @type {ChildProcessWithoutNullStreams | null} */
 let spawnProcess = null;
@@ -83,7 +83,7 @@ async function main() {
       ...mainConfig,
       define: {
         'process.env.NODE_ENV': `"${mode}"`,
-        'process.env.VITE_DEV_SERVER_URL': `"${process.env.VITE_DEV_SERVER_URL}"`,
+        'process.env.DEV_SERVER_URL': `"${process.env.DEV_SERVER_URL}"`,
       },
       plugins: [
         {

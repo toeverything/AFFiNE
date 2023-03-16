@@ -1,5 +1,3 @@
-/// <reference types="vite/client" />
-
 /**
  * Describes all existing environment variables and their types.
  * Required for Code completion and type checking
@@ -13,7 +11,7 @@ interface ImportMetaEnv {
   /**
    * The value of the variable is set in scripts/watch.js and depend on layers/main/vite.config.js
    */
-  readonly VITE_DEV_SERVER_URL: undefined | string;
+  readonly DEV_SERVER_URL: undefined | string;
 }
 
 interface ImportMeta {
