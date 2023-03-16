@@ -6,14 +6,21 @@ import {
 } from '@affine/datacenter';
 import { config } from '@affine/env';
 
+import { isValidIPAddress } from '../utils/is-valid-ip-address';
+
 let prefixUrl = '/';
 if (typeof window === 'undefined') {
   // SSR
-  if (config.serverAPI.startsWith('100')) {
+  const serverAPI = config.serverAPI;
+  if (isValidIPAddress(serverAPI)) {
     // This is for Server side rendering support
     prefixUrl = new URL('http://' + config.serverAPI + '/').origin;
   } else {
-    console.warn('serverAPI is not a valid URL', config.serverAPI);
+    try {
+      new URL(serverAPI);
+    } catch (e) {
+      console.warn('serverAPI is not a valid URL', config.serverAPI);
+    }
   }
 } else {
   const params = new URLSearchParams(window.location.search);
