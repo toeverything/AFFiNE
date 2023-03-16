@@ -43,7 +43,7 @@ jobs:
             })
             return data.id
 
-  build-tauri:
+  build-electron:
     needs: create-release
     strategy:
       fail-fast: false
@@ -59,10 +59,12 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
-      - run: yarn install # that's right, yarn
+      - name: Install dependencies
+        run: yarn install # that's right, yarn
         working-directory: apps/electron
 
       - name: Make Electron
+        working-directory: apps/electron
         env:
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
