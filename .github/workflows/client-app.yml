@@ -39,6 +39,9 @@ jobs:
         with:
           node-version: 18
           cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: apps/electron
 
       - name: before-make
         working-directory: apps/electron
