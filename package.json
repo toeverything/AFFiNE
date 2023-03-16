@@ -8,6 +8,7 @@
     "dev": "pnpm --filter @affine/app dev",
     "dev:ac": "NODE_API_SERVER=ac pnpm --filter @affine/app dev",
     "dev:local": "NODE_API_SERVER=local pnpm --filter @affine/app dev",
+    "dev:app": "pnpm --filter @affine/electron dev:app",
     "build": "pnpm --filter @affine/app build",
     "build:client": "pnpm --filter @affine/client-app build:app",
     "build:storybook": "pnpm -r build-storybook",
