@@ -1,5 +1,7 @@
 *.autogen.*
 
+resources/web-static
+
 # yarn (3)
 .pnp.*
 .yarn/*

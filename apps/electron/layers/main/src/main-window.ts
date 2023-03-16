@@ -56,7 +56,7 @@ async function createWindow() {
   const pageUrl =
     IS_DEV && process.env.VITE_DEV_SERVER_URL !== undefined
       ? process.env.VITE_DEV_SERVER_URL
-      : ''; // TODO(xp): Add production URL
+      : 'file://./index.html'; // see protocol.ts
 
   await browserWindow.loadURL(pageUrl);
 

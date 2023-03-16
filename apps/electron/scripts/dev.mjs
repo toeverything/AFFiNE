@@ -7,10 +7,7 @@ import * as esbuild from 'esbuild';
 import { mainConfig, preloadConfig } from './common.mjs';
 
 /** @type 'production' | 'development'' */
-const mode = (process.env.MODE = process.env.MODE || 'development');
-
-/** @type {import('vite').LogLevel} */
-const LOG_LEVEL = 'warn';
+const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
 
 /** Messages on stderr that match any of the contained patterns will be stripped from output */
 const stderrFilterPatterns = [

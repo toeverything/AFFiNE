@@ -3,6 +3,7 @@ import './security-restrictions';
 import { app } from 'electron';
 
 import { restoreOrCreateWindow } from './main-window';
+import { registerProtocol } from './protocol';
 
 /**
  * Prevent multiple instances
@@ -39,6 +40,7 @@ app.on('activate', restoreOrCreateWindow);
  */
 app
   .whenReady()
+  .then(registerProtocol)
   .then(restoreOrCreateWindow)
   .catch(e => console.error('Failed create window:', e));
 
