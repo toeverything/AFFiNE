@@ -29,19 +29,45 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: true
 
-env:
-  CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-  NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-  NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-
 jobs:
-  build-macos-arm64:
+  before-make:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Write environment variables to web (next.js) .env file
+        working-directory: apps/web
+        run: |
+          echo "NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" >> .env
+          echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" >> .env
+          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" >> .env
+          echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" >> .env
+          echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
+          echo "NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" >> .env
+          echo "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" >> .env
+
+      - name: before-make
+        working-directory: apps/electron
+        run: pnpm before-make
+
+      - name: Upload Artifact (web-static)
+        uses: actions/upload-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+
+      - name: Upload Artifact (electron dist)
+        uses: actions/upload-artifact@v3
+        with:
+          name: before-make-electron-dist
+          path: apps/electron/dist
+
+  build-macos-x64:
+    needs: before-make
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -49,16 +75,61 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: '.nvmrc'
-          cache: 'pnpm'
+          cache: 'yarn'
 
-      # todo: cache yarn deps
       - name: Install dependencies
         run: yarn install # that's right, yarn
         working-directory: apps/electron
 
-      - name: Prepare for make
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-electron-dist
+          path: apps/electron/dist
+
+      - name: make build
+        run: yarn make-macos-arm64
         working-directory: apps/electron
-        run: yarn before-make
+
+      - name: Save x64 artifacts
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/make/AFFiNE.dmg ./builds/affine-darwin-x64-${{ github.event.inputs.version }}.dmg
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-darwin-arm64-builds
+          path: builds
+
+  build-macos-arm64:
+    needs: before-make
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install # that's right, yarn
+        working-directory: apps/electron
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-electron-dist
+          path: apps/electron/dist
 
       - name: make build
         run: yarn make-macos-arm64
@@ -76,9 +147,15 @@ jobs:
           path: builds
 
   release:
-    needs: [build-macos-arm64]
+    needs: [build-macos-x64, build-macos-arm64]
     runs-on: ubuntu-latest
     steps:
+      - name: Download MacOS x64 Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-darwin-x64-builds
+          path: ./
+
       - name: Download MacOS arm64 Artifacts
         uses: actions/download-artifact@v3
         with:
@@ -90,7 +167,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Desktop/Android APP ${{ github.event.inputs.version }}
+          name: Desktop APP ${{ github.event.inputs.version }}
           body: 'TODO: Add release notes here'
           draft: ${{ github.event.inputs.is-draft }}
           prerelease: ${{ github.event.inputs.is-pre-release }}

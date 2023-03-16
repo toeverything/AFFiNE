@@ -1,4 +1,5 @@
 *.autogen.*
+dist
 
 resources/web-static
 

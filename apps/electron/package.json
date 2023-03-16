@@ -7,13 +7,14 @@
     "dev": "node scripts/dev.mjs",
     "prod": "NODE_ENV=production node scripts/dev.mjs",
     "before-make": "zx scripts/before-make.mjs",
+    "make": "electron-forge make",
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs"
   },
   "config": {
     "forge": "./forge.config.js"
   },
-  "main": "./layers/main/dist/index.js",
+  "main": "./dist/layers/main/index.js",
   "devDependencies": {
     "@electron-forge/cli": "^6.0.5",
     "@electron-forge/core": "^6.0.5",
