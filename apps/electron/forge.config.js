@@ -14,16 +14,16 @@ module.exports = {
     },
   ],
 
-  // publishers: [
-  //   {
-  //     name: '@electron-forge/publisher-github',
-  //     config: {
-  //       repository: {
-  //         owner: 'toeverything',
-  //         name: 'AFFiNE',
-  //       },
-  //       prerelease: true,
-  //     },
-  //   },
-  // ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'pengx17',
+          name: 'AFFiNE',
+        },
+        prerelease: true,
+      },
+    },
+  ],
 };
