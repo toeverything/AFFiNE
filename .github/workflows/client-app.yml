@@ -81,7 +81,7 @@ jobs:
       - name: Save arm64 artifacts
         run: |
           mkdir -p builds
-          mv static/out/make/AFFiNE.dmg ./builds/affine-darwin-arm64-${{ steps.ref.outputs.version }}.dmg
+          mv static/out/make/AFFiNE.dmg ./builds/affine-darwin-arm64-${{ needs.create-release.outputs.release_id }}.dmg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
