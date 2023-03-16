@@ -42,15 +42,16 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            ./vendor
-            ./.cargo/config
-            ./node_modules/.pnpm-store
+            ./.octobase/vendor
+            ./.octobase/.cargo/config
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
       - name: Cargo Vendor
         run: cargo vendor > .cargo/config
+        working-directory: .octobase
       - name: Build OctoBase
         run: cargo build -p affine-cloud
+        working-directory: .octobase
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
