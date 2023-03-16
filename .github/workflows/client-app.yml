@@ -40,12 +40,12 @@ jobs:
           node-version: 18
           cache: 'pnpm'
       - name: Install dependencies
-        run: pnpm install
+        run: yarn install
         working-directory: apps/electron
 
       - name: before-make
         working-directory: apps/electron
-        run: pnpm before-make
+        run: yarn before-make
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
