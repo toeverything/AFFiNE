@@ -5,8 +5,18 @@ on:
     inputs:
       version:
         description: App Version
-        required: false
+        required: true
         default: 0.1.0
+      is-draft:
+        description: 'Draft Release?'
+        type: boolean
+        required: true
+        default: true
+      is-pre-release:
+        description: 'Pre Release? (labeled as "PreRelease")'
+        type: boolean
+        required: true
+        default: true
 
 permissions:
   actions: write
@@ -31,31 +41,7 @@ env:
   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.create-release.outputs.result }}
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: create release
-        id: create-release
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { data } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: `affine-client-v${{ github.event.inputs.version }}`,
-              name: `AFFiNE Client v${{ github.event.inputs.version }}`,
-              body: 'Take a look at the assets to download and install this app.',
-              draft: true,
-              prerelease: false
-            })
-            return data.id
-
   build-macos-arm64:
-    needs: create-release
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -81,10 +67,39 @@ jobs:
       - name: Save arm64 artifacts
         run: |
           mkdir -p builds
-          mv static/out/make/AFFiNE.dmg ./builds/affine-darwin-arm64-${{ needs.create-release.outputs.release_id }}.dmg
+          mv apps/electron/out/make/AFFiNE.dmg ./builds/affine-darwin-arm64-${{ github.event.inputs.version }}.dmg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: affine-darwin-arm64-builds
           path: builds
+
+  release:
+    needs: [build-macos-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download MacOS arm64 Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-darwin-arm64-builds
+          path: ./
+
+      - name: Create Release Draft
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: Desktop/Android APP ${{ github.event.inputs.version }}
+          body: 'TODO: Add release notes here'
+          draft: ${{ github.event.inputs.is-draft }}
+          prerelease: ${{ github.event.inputs.is-pre-release }}
+          files: |
+            ./VERSION
+            ./*.zip
+            ./*.dmg
+            ./*.exe
+            ./*.nupkg
+            ./RELEASES
+            ./*.AppImage
+            ./*.apk
