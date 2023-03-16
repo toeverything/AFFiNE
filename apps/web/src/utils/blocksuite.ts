@@ -49,6 +49,9 @@ export function _initPageWithDemoMarkdown(
   page.addBlockByFlavour('affine:surface', {}, null);
   const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
   page.addBlockByFlavour('affine:paragraph', {}, frameId);
-  editor.clipboard.importMarkdown(demoText, frameId);
+  // Wait for editor connected
+  requestAnimationFrame(() => {
+    editor.contentParser.importMarkdown(demoText, frameId);
+  });
   page.workspace.setPageMeta(page.id, { demoTitle });
 }
