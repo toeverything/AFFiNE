@@ -75,7 +75,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: '.nvmrc'
-          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install # that's right, yarn
@@ -114,7 +113,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: '.nvmrc'
-          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install # that's right, yarn
