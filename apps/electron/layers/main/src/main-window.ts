@@ -35,10 +35,10 @@ async function createWindow() {
    * @see https://github.com/electron/electron/issues/25012
    */
   browserWindow.on('ready-to-show', () => {
-    browserWindow?.show();
+    browserWindow.show();
 
     if (IS_DEV) {
-      browserWindow?.webContents.openDevTools();
+      browserWindow.webContents.openDevTools();
     }
   });
 

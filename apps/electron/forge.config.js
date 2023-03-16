@@ -13,17 +13,4 @@ module.exports = {
       },
     },
   ],
-
-  publishers: [
-    {
-      name: '@electron-forge/publisher-github',
-      config: {
-        repository: {
-          owner: 'pengx17',
-          name: 'AFFiNE',
-        },
-        prerelease: true,
-      },
-    },
-  ],
 };
