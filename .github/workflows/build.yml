@@ -15,6 +15,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-octobase:
+    name: Build OctoBase
+    if: github.ref != 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: 'toeverything/OctoBase'
+          path: '.octobase'
+          ref: '9ffc9858365a0c2489167b07400c71199ec996a2'
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            ./vendor
+            ./.cargo/config
+            ./node_modules/.pnpm-store
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: Cargo Vendor
+        run: cargo vendor > .cargo/config
+      - name: Build OctoBase
+        run: cargo build -p affine-cloud
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: OctoBase
+          path: .octobase/target
+
   build:
     name: Build on Pull Request
     if: github.ref != 'refs/heads/master'
@@ -71,7 +113,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: build
+    needs: [build, build-octobase]
 
     steps:
       - uses: actions/checkout@v3
@@ -87,6 +129,11 @@ jobs:
         with:
           name: artifact
           path: ./apps/web/.next
+      - name: Download OctoBase
+        uses: actions/download-artifact@v3
+        with:
+          name: OctoBase
+          path: .octobase/target
 
       - name: Install playwright browsers
         run: npx playwright install chromium
@@ -94,6 +141,7 @@ jobs:
         run: pnpm test -- --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
+          OCTOBASE_CWD: ${{ $GITHUB_WORKSPACE }}/.octobase
 
       - name: Collect code coverage report
         run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov

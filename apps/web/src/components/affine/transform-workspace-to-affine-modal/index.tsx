@@ -36,6 +36,7 @@ export const TransformWorkspaceToAffineModal: React.FC<
           {/* <StyleTips>{t('Retain cached cloud data')}</StyleTips> */}
           <div>
             <StyleButton
+              data-testid="confirm-enable-cloud-button"
               shape="round"
               type="primary"
               onClick={async () => {

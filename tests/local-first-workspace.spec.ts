@@ -20,7 +20,7 @@ test.describe('Local first default workspace', () => {
 });
 test.describe('Language switch', () => {
   test('Open language switch menu', async ({ page }) => {
-    await page.getByTestId('current-workspace').click();
+    await clickSideBarCurrentWorkspaceBanner();
     const languageMenuButton = page.getByTestId('language-menu-button');
     await expect(languageMenuButton).toBeVisible();
     const actual = await languageMenuButton.innerText();

@@ -53,7 +53,8 @@ const AffineRemoteCollaborationPanel: React.FC<
         <ul>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>
-              {t('Users')} ({members.length})
+              {t('Users')} (
+              <span data-testid="member-length">{members.length}</span>)
             </StyledMemberNameContainer>
             <StyledMemberRoleContainer>
               {t('Access level')}
@@ -145,6 +146,7 @@ const AffineRemoteCollaborationPanel: React.FC<
               setIsInviteModalShow(true);
             }}
             type="primary"
+            data-testid="invite-members"
             shape="circle"
           >
             {t('Invite Members')}
@@ -176,6 +178,7 @@ const LocalCollaborationPanel: React.FC<
     <>
       <Wrapper marginBottom="42px">{t('Collaboration Description')}</Wrapper>
       <Button
+        data-testid="local-workspace-enable-cloud-button"
         type="light"
         shape="circle"
         onClick={() => {

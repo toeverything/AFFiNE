@@ -75,6 +75,7 @@ export const InviteMemberModal = ({
             <ContentTitle>{t('Invite Members')}</ContentTitle>
             <InviteBox>
               <Input
+                data-testid="invite-member-input"
                 width={360}
                 value={email}
                 onChange={inputChange}
@@ -95,6 +96,7 @@ export const InviteMemberModal = ({
           </Content>
           <Footer>
             <Button
+              data-testid="invite-member-button"
               disabled={!gmailReg.test(email)}
               shape="circle"
               type="primary"
