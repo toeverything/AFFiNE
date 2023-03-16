@@ -2,7 +2,7 @@
 
 # ⚠️ NOTE ⚠️
 
-Due to PNPM related issues, this project is currently using **Yarn 1**.
+Due to PNPM related issues, this project is currently using **yarn 3**.
 See https://github.com/electron/forge/issues/2633
 
 ## Development
