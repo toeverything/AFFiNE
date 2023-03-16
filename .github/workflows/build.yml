@@ -141,7 +141,7 @@ jobs:
         run: pnpm test -- --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
-          OCTOBASE_CWD: ${{ $GITHUB_WORKSPACE }}/.octobase
+          OCTOBASE_CWD: ${{ vars.GITHUB_WORKSPACE }}/.octobase
 
       - name: Collect code coverage report
         run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
