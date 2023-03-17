@@ -103,13 +103,6 @@ jobs:
           name: artifact
           path: ./apps/web/.next
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install playwright browsers
         run: npx playwright install chromium
       - name: Run playwright tests
