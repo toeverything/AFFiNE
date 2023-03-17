@@ -73,7 +73,7 @@ jobs:
     environment: development
     needs: build
     permissions:
-      packages: read
+      packages: write
     services:
       octobase:
         image: ghcr.io/toeverything/cloud:nightly-latest
