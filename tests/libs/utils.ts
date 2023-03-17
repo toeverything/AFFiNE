@@ -31,7 +31,14 @@ export async function createFakeUser(page: Page) {
             }),
           }),
         ]);
-        return Promise.all(response.map(res => res.json()));
+        return Promise.all(
+          response.map(res => {
+            if (!res.ok) {
+              throw new Error('User not found');
+            }
+            return res => res.json();
+          })
+        );
       } catch (e) {
         const response = await Promise.all([
           // Register user A
