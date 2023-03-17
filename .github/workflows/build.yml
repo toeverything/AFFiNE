@@ -66,9 +66,6 @@ jobs:
   e2e-test:
     name: E2E Test
     runs-on: ubuntu-latest
-    permissions:
-      packages: read
-      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -84,6 +81,10 @@ jobs:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
+        credentials:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v3
