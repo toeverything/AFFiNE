@@ -73,6 +73,7 @@ jobs:
     environment: development
     needs: build
     permissions:
+      contents: read
       packages: write
     services:
       octobase:
