@@ -77,7 +77,7 @@ jobs:
     needs: build
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: toeverything/cloud:nightly-latest
         ports:
           - 3000:3000
         env:
