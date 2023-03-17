@@ -71,9 +71,12 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
                 pageBlockId
               );
               page.addBlockByFlavour('affine:paragraph', {}, frameId);
-              editor.clipboard.importMarkdown(text, frameId).then(() => {
-                page.resetHistory();
-              });
+              setTimeout(() => {
+                // hotfix: contentParser.importMarkdown is not working in the first render
+                editor.contentParser.importMarkdown(text, frameId).then(() => {
+                  page.resetHistory();
+                });
+              }, 0);
             }}
           />
           <StyledToolWrapper>

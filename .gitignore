@@ -60,7 +60,3 @@ module-resolve.cjs
 # Cache
 .eslintcache
 next-env.d.ts
-
-# generated assets
-apps/desktop/public/affine-out
-apps/desktop/public/preload
