@@ -77,6 +77,10 @@ jobs:
         image: ghcr.io/toeverything/cloud:nightly-latest
         ports:
           - 3000:3000
+        env:
+          SIGN_KEY: 'test123'
+          RUST_LOG: 'debug'
+          JWST_DEV: '1'
 
     steps:
       - uses: actions/checkout@v3
