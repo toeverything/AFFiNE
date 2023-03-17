@@ -74,17 +74,15 @@ jobs:
     needs: build
     permissions:
       packages: read
-    container:
-      image: ghcr.io/toeverything/cloud:nightly-latest
-      ports:
-        - 3000:3000
-      env:
-        SIGN_KEY: 'test123'
-        RUST_LOG: 'debug'
-        JWST_DEV: '1'
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    services:
+      octobase:
+        image: ghcr.io/toeverything/cloud:nightly-latest
+        ports:
+          - 3000:3000
+        env:
+          SIGN_KEY: 'test123'
+          RUST_LOG: 'debug'
+          JWST_DEV: '1'
 
     steps:
       - uses: actions/checkout@v3
@@ -100,6 +98,13 @@ jobs:
         with:
           name: artifact
           path: ./apps/web/.next
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install playwright browsers
         run: npx playwright install chromium
