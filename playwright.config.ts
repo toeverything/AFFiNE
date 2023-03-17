@@ -47,7 +47,7 @@ const config: PlaywrightTestConfig = {
       command: 'cargo run -p affine-cloud',
       port: 3000,
       timeout: 10 * 1000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       cwd: process.env.OCTOBASE_CWD ?? resolve(process.cwd(), 'apps', 'server'),
       env: {
         SIGN_KEY: 'test123',
