@@ -66,7 +66,7 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
               data-testid={`favorite-list-item-${pageMeta.id}`}
               active={active}
               ref={ref => {
-                if (ref) {
+                if (ref && active) {
                   ref.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
