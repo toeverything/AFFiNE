@@ -12,7 +12,6 @@ test.describe('Local first delete page', () => {
     await newPage(page);
     await getBlockSuiteEditorTitle(page).click();
     await getBlockSuiteEditorTitle(page).fill('this is a new page to restore');
-    const originPageUrl = page.url();
     const newPageId = page.url().split('/').reverse()[0];
     await page.getByRole('link', { name: 'All pages' }).click();
     const cell = page.getByRole('cell', {
@@ -33,6 +32,7 @@ test.describe('Local first delete page', () => {
     await page.getByRole('button', { name: 'Delete' }).click();
 
     await page.getByRole('link', { name: 'Trash' }).click();
+    const trashPage = await page.url();
     // restore it
     await page
       .getByTestId('more-actions-' + newPageId)
@@ -40,9 +40,8 @@ test.describe('Local first delete page', () => {
       .first()
       .click();
 
-    // go to page detail
-    expect(page.url()).toBe(originPageUrl);
-
+    // stay in trash page
+    expect(page.url()).toBe(trashPage);
     await page.getByRole('link', { name: 'All pages' }).click();
     const restoreCell = page.getByRole('cell', {
       name: 'this is a new page to restore',

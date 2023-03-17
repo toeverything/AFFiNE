@@ -1,5 +1,6 @@
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
-import React from 'react';
+import type React from 'react';
+import { memo } from 'react';
 
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-workspace-avatar-url';
 import type { BlockSuiteWorkspace, RemWorkspace } from '../../../shared';
@@ -12,61 +13,65 @@ interface AvatarProps {
   style?: React.CSSProperties;
 }
 
-export const Avatar: React.FC<AvatarProps> = React.memo<AvatarProps>(
-  function Avatar({ size: _size, avatar_url, style, name, ...props }) {
-    const size = _size || 20;
-    const sizeStr = size + 'px';
+export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
+  size: _size,
+  avatar_url,
+  style,
+  name,
+  ...props
+}) {
+  const size = _size || 20;
+  const sizeStr = size + 'px';
 
-    return (
-      <>
-        {avatar_url ? (
-          <div
-            {...props}
-            style={{
-              ...style,
-              width: sizeStr,
-              height: sizeStr,
-              color: '#fff',
-              borderRadius: '50%',
-              overflow: 'hidden',
-              display: 'inline-block',
-              verticalAlign: 'middle',
-            }}
-          >
-            <picture>
-              <img
-                style={{ width: sizeStr, height: sizeStr }}
-                src={avatar_url}
-                alt=""
-                referrerPolicy="no-referrer"
-              />
-            </picture>
-          </div>
-        ) : (
-          <div
-            {...props}
-            style={{
-              ...style,
-              width: sizeStr,
-              height: sizeStr,
-              border: '1px solid #fff',
-              color: '#fff',
-              fontSize: Math.ceil(0.5 * size) + 'px',
-              background: stringToColour(name || 'AFFiNE'),
-              borderRadius: '50%',
-              display: 'inline-flex',
-              lineHeight: '1',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            {(name || 'AFFiNE').substring(0, 1)}
-          </div>
-        )}
-      </>
-    );
-  }
-);
+  return (
+    <>
+      {avatar_url ? (
+        <div
+          {...props}
+          style={{
+            ...style,
+            width: sizeStr,
+            height: sizeStr,
+            color: '#fff',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            display: 'inline-block',
+            verticalAlign: 'middle',
+          }}
+        >
+          <picture>
+            <img
+              style={{ width: sizeStr, height: sizeStr }}
+              src={avatar_url}
+              alt=""
+              referrerPolicy="no-referrer"
+            />
+          </picture>
+        </div>
+      ) : (
+        <div
+          {...props}
+          style={{
+            ...style,
+            width: sizeStr,
+            height: sizeStr,
+            border: '1px solid #fff',
+            color: '#fff',
+            fontSize: Math.ceil(0.5 * size) + 'px',
+            background: stringToColour(name || 'AFFiNE'),
+            borderRadius: '50%',
+            display: 'inline-flex',
+            lineHeight: '1',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          {(name || 'AFFiNE').substring(0, 1)}
+        </div>
+      )}
+    </>
+  );
+});
 
 export type WorkspaceUnitAvatarProps = {
   size?: number;

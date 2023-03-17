@@ -8,13 +8,14 @@ import {
 import { GlobalStyles } from '@mui/material';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
 import { useCurrentPage } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { usePageMeta } from '../hooks/use-page-meta';
 
-const ThemeInjector = React.memo<{
+const ThemeInjector = memo<{
   themeStyle: AffineTheme;
 }>(function ThemeInjector({ themeStyle }) {
   return (
