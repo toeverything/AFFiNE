@@ -15,7 +15,7 @@ import { createWorkspace } from '../libs/workspace-logic';
 test.describe('affine workspace', () => {
   test('should login with user A', async ({ page }) => {
     await openHomePage(page);
-    const [a] = await createFakeUser(page);
+    const [a] = await createFakeUser();
     await loginUser(page, a);
     await clickSideBarCurrentWorkspaceBanner(page);
     const footer = page.locator('[data-testid="workspace-list-modal-footer"]');
@@ -25,7 +25,7 @@ test.describe('affine workspace', () => {
 
   test('should enable affine workspace successfully', async ({ page }) => {
     await openHomePage(page);
-    const [a] = await createFakeUser(page);
+    const [a] = await createFakeUser();
     await loginUser(page, a);
     await createWorkspace({ name: 'test1' }, page);
     await page.waitForTimeout(50);
