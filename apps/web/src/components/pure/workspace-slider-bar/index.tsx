@@ -49,8 +49,15 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
     () => pageMeta.filter(p => p.favorite && !p.trash),
     [pageMeta]
   );
+
   return (
-    <MuiCollapse in={showList}>
+    <MuiCollapse
+      in={showList}
+      style={{
+        maxHeight: 300,
+        overflowY: 'auto',
+      }}
+    >
       {favoriteList.map((pageMeta, index) => {
         const active = router.query.pageId === pageMeta.id;
         return (
@@ -58,6 +65,11 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
             <StyledSubListItem
               data-testid={`favorite-list-item-${pageMeta.id}`}
               active={active}
+              ref={ref => {
+                if (ref && active) {
+                  ref.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
               onClick={() => {
                 if (active) {
                   return;
