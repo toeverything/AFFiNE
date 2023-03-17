@@ -93,7 +93,7 @@ jobs:
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v3
         with:
-          node-version-file: '.nvmrc'
+          node-version: 18
           cache: 'pnpm'
       - run: pnpm i
 
