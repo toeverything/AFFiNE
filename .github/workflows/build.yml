@@ -86,7 +86,7 @@ jobs:
           JWST_DEV: '1'
         credentials:
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
 
     steps:
       - uses: actions/checkout@v3
