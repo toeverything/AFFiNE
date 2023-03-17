@@ -10,22 +10,22 @@
   },
   "devDependencies": {
     "fake-indexeddb": "4.0.1",
-    "typescript": "^4.9.5"
+    "typescript": "^5.0.2"
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "@blocksuite/blocks": "0.5.0-20230313100532-099b92b",
-    "@blocksuite/store": "0.5.0-20230313100532-099b92b",
+    "@blocksuite/blocks": "0.5.0-20230317014705-a881b9c",
+    "@blocksuite/store": "0.5.0-20230317014705-a881b9c",
     "@tauri-apps/api": "^1.2.0",
     "encoding": "^0.1.13",
-    "firebase": "^9.17.1",
+    "firebase": "^9.18.0",
     "idb-keyval": "^6.2.0",
     "js-base64": "^3.7.5",
-    "ky": "^0.33.2",
+    "ky": "^0.33.3",
     "ky-universal": "^0.11.0",
-    "lib0": "^0.2.63",
+    "lib0": "^0.2.68",
     "lit": "^2.6.1",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.5.48"
+    "yjs": "^13.5.50"
   }
 }
