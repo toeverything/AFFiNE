@@ -52,6 +52,7 @@ const config: PlaywrightTestConfig = {
       env: {
         SIGN_KEY: 'test123',
         RUST_LOG: 'debug',
+        JWST_DEV: '1',
       },
     },
     {
