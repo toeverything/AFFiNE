@@ -4,7 +4,8 @@ on:
   push:
     branches: [master]
   pull_request_target:
-    branches: [master]
+    branches:
+      - master
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
