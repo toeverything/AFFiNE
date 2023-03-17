@@ -72,6 +72,8 @@ jobs:
         shard: [1, 2, 3, 4]
     environment: development
     needs: build
+    permissions:
+      packages: read
     services:
       octobase:
         image: ghcr.io/toeverything/cloud:nightly-latest
