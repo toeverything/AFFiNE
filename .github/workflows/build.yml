@@ -82,7 +82,6 @@ jobs:
           RUST_LOG: 'debug'
           JWST_DEV: '1'
         credentials:
-          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
