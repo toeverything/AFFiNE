@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 
+import userA from '../fixtures/userA.json';
 import { test } from '../libs/playwright';
 import { clickCollaborationPanel } from '../libs/setting';
 import {
@@ -8,7 +9,7 @@ import {
   clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
 } from '../libs/sidebar';
-import { createFakeUser, loginUser, openHomePage, userA } from '../libs/utils';
+import { createFakeUser, loginUser, openHomePage } from '../libs/utils';
 import { createWorkspace } from '../libs/workspace-logic';
 
 test.describe('affine workspace', () => {

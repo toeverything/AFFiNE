@@ -4,33 +4,36 @@ import userA from '../fixtures/userA.json';
 import userB from '../fixtures/userB.json';
 
 export async function createFakeUser(page: Page) {
-  return page.evaluate(async () => {
-    const response = await Promise.all([
-      // Register user A
-      fetch('http://localhost:3000/api/user/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'DebugCreateUser',
-          ...userA,
+  return page.evaluate(
+    async ([userA, userB]) => {
+      const response = await Promise.all([
+        // Register user A
+        fetch('http://localhost:3000/api/user/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'DebugCreateUser',
+            ...userA,
+          }),
         }),
-      }),
-      // Register user B
-      fetch('http://localhost:3000/api/user/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'DebugCreateUser',
-          ...userB,
+        // Register user B
+        fetch('http://localhost:3000/api/user/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'DebugCreateUser',
+            ...userB,
+          }),
         }),
-      }),
-    ]);
-    return Promise.all(response.map(res => res.json()));
-  });
+      ]);
+      return Promise.all(response.map(res => res.json()));
+    },
+    [userA, userB]
+  );
 }
 
 export async function loginUser(
