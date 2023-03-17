@@ -14,7 +14,7 @@ import type { PageMeta } from '@blocksuite/store';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
@@ -49,8 +49,20 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
     () => pageMeta.filter(p => p.favorite && !p.trash),
     [pageMeta]
   );
+  const activeItemRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (activeItemRef.current && activeItemRef.current.scrollIntoView) {
+      activeItemRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeItemRef.current]);
   return (
-    <MuiCollapse in={showList}>
+    <MuiCollapse
+      in={showList}
+      style={{
+        maxHeight: 300,
+        overflowY: 'auto',
+      }}
+    >
       {favoriteList.map((pageMeta, index) => {
         const active = router.query.pageId === pageMeta.id;
         return (
@@ -58,6 +70,7 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
             <StyledSubListItem
               data-testid={`favorite-list-item-${pageMeta.id}`}
               active={active}
+              ref={active ? activeItemRef : null}
               onClick={() => {
                 if (active) {
                   return;
