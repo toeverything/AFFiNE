@@ -84,6 +84,9 @@ jobs:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.github_token }}
 
     steps:
       - uses: actions/checkout@v3
