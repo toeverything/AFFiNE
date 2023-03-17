@@ -72,13 +72,28 @@ jobs:
         shard: [1, 2, 3, 4]
     environment: development
     needs: build
+    permissions:
+      contents: read
+      packages: write
+    services:
+      octobase:
+        image: ghcr.io/toeverything/cloud:nightly-latest
+        ports:
+          - 3000:3000
+        env:
+          SIGN_KEY: 'test123'
+          RUST_LOG: 'debug'
+          JWST_DEV: '1'
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
 
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v3
         with:
-          node-version-file: '.nvmrc'
+          node-version: 18
           cache: 'pnpm'
       - run: pnpm i
 

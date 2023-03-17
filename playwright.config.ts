@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import type {
   PlaywrightTestConfig,
   PlaywrightWorkerOptions,
@@ -18,6 +20,7 @@ const config: PlaywrightTestConfig = {
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {
+    baseURL: 'http://localhost:8080/',
     browserName:
       (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
       'chromium',
@@ -39,16 +42,31 @@ const config: PlaywrightTestConfig = {
   // See https://playwright.dev/docs/test-reporters#github-actions-annotations
   reporter: process.env.CI ? 'github' : 'list',
 
-  webServer: {
-    command: 'pnpm build && pnpm start -p 8080',
-    port: 8080,
-    timeout: 120 * 1000,
-    reuseExistingServer: !process.env.CI,
-    env: {
-      COVERAGE: process.env.COVERAGE || 'false',
-      ENABLE_DEBUG_PAGE: '1',
+  webServer: [
+    {
+      command: 'cargo run -p affine-cloud',
+      port: 3000,
+      timeout: 10 * 1000,
+      reuseExistingServer: true,
+      cwd: process.env.OCTOBASE_CWD ?? resolve(process.cwd(), 'apps', 'server'),
+      env: {
+        SIGN_KEY: 'test123',
+        RUST_LOG: 'debug',
+        JWST_DEV: '1',
+      },
     },
-  },
+    {
+      command: 'pnpm build && pnpm start -p 8080',
+      port: 8080,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+        NODE_API_SERVER: 'local',
+      },
+    },
+  ],
 };
 
 if (process.env.CI) {

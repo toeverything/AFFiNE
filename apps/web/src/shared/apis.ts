@@ -31,3 +31,12 @@ const bareAuth = createBareClient(prefixUrl);
 const googleAuth = new GoogleAuth(bareAuth);
 export const clientAuth = createAuthClient(bareAuth, googleAuth);
 export const apis = getApis(bareAuth, clientAuth, googleAuth);
+
+if (!globalThis.AFFINE_APIS) {
+  globalThis.AFFINE_APIS = apis;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var AFFINE_APIS: ReturnType<typeof getApis>;
+}

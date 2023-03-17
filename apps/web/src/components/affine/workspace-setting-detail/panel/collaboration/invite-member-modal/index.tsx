@@ -18,7 +18,8 @@ interface LoginModalProps {
   onInviteSuccess: () => void;
 }
 
-const gmailReg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/;
+const gmailReg =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(gmail|example)\.(com|org)$/;
 
 const Result: React.FC<{
   workspaceId: string;
@@ -75,6 +76,7 @@ export const InviteMemberModal = ({
             <ContentTitle>{t('Invite Members')}</ContentTitle>
             <InviteBox>
               <Input
+                data-testid="invite-member-input"
                 width={360}
                 value={email}
                 onChange={inputChange}
@@ -95,6 +97,7 @@ export const InviteMemberModal = ({
           </Content>
           <Footer>
             <Button
+              data-testid="invite-member-button"
               disabled={!gmailReg.test(email)}
               shape="circle"
               type="primary"

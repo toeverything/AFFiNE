@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 
 import { loadPage } from './libs/load-page';
 import { test } from './libs/playwright';
+import { clickSideBarAllPageButton } from './libs/sidebar';
 import { createWorkspace } from './libs/workspace-logic';
 loadPage();
 
@@ -32,8 +33,7 @@ test.describe('Local first workspace list', () => {
     //check page list length
     const closeWorkspaceModal = page.getByTestId('close-workspace-modal');
     await closeWorkspaceModal.click();
-    const allPageButton = page.getByTestId('all-pages');
-    await allPageButton.click();
+    await clickSideBarAllPageButton(page);
     await page.waitForTimeout(1000);
     const pageList = page.locator('[data-testid=page-list-item]');
     const result = await pageList.count();
