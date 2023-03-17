@@ -6,7 +6,7 @@ on:
       version:
         description: App Version
         required: true
-        default: 0.1.0
+        default: 0.0.0
       is-draft:
         description: 'Draft Release?'
         type: boolean
