@@ -3,7 +3,7 @@ name: Build & Test
 on:
   push:
     branches: [master]
-  pull_request:
+  pull_request_target:
     branches: [master]
 
 # Cancels all previous workflow runs for pull requests that have not completed.
