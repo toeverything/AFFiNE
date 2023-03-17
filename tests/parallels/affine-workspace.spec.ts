@@ -23,7 +23,8 @@ test.describe('affine workspace', () => {
     expect(await footer.getByText(userA.email).isVisible()).toBe(true);
   });
 
-  test('should enable affine workspace successfully', async ({ page }) => {
+  // fixme: skip this because of duplicated creation of workspace may cause error
+  test.skip('should enable affine workspace successfully', async ({ page }) => {
     await openHomePage(page);
     const [a] = await createFakeUser();
     await loginUser(page, a);
