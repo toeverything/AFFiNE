@@ -18,7 +18,8 @@ interface LoginModalProps {
   onInviteSuccess: () => void;
 }
 
-const gmailReg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/;
+const gmailReg =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@(gmail|example)\.(com|org)$/;
 
 const Result: React.FC<{
   workspaceId: string;
