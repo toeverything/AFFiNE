@@ -178,7 +178,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: affine-darwin-arm64-builds
+          name: affine-windows-x64-builds
           path: builds
 
   release:
