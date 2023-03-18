@@ -4,7 +4,6 @@ import { Button } from '@affine/component';
 import { Input } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import type { KeyboardEvent } from 'react';
-import { useEffect } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
 interface ModalProps {
@@ -20,13 +19,6 @@ export const CreateWorkspaceModal = ({
 }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
   const isComposition = useRef(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  useEffect(() => {
-    if (open && inputRef.current) {
-      inputRef.current.focus(); // Set focus on the input element
-      console.log('focus');
-    }
-  }, [open]);
 
   const handleCreateWorkspace = useCallback(() => {
     onCreate(workspaceName);
@@ -57,7 +49,11 @@ export const CreateWorkspaceModal = ({
             <ContentTitle>{t('New Workspace')}</ContentTitle>
             <p>{t('Workspace description')}</p>
             <Input
-              ref={inputRef}
+              ref={ref => {
+                if (ref) {
+                  setTimeout(() => ref.focus(), 0);
+                }
+              }}
               data-testid="create-workspace-input"
               onKeyDown={handleKeyDown}
               placeholder={t('Set a Workspace name')}

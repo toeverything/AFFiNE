@@ -1,5 +1,6 @@
 import type {
   FocusEventHandler,
+  ForwardedRef,
   HTMLAttributes,
   InputHTMLAttributes,
   KeyboardEventHandler,
@@ -36,7 +37,7 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
     onKeyDown,
     ...otherProps
   }: inputProps,
-  ref: React.ForwardedRef<HTMLInputElement>
+  ref: ForwardedRef<HTMLInputElement>
 ) {
   const [value, setValue] = useState<string>(valueProp || '');
   const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
