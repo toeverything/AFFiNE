@@ -12,5 +12,13 @@ module.exports = {
         name: 'AFFiNE',
       },
     },
+    {
+      name: '@electron-forge/maker-zip',
+      config: {
+        name: 'affine',
+        iconUrl: './resources/icons/icon.ico',
+        setupIcon: './resources/icons/icon.ico',
+      },
+    },
   ],
 };

@@ -91,7 +91,7 @@ jobs:
           path: apps/electron/dist
 
       - name: make build
-        run: yarn make-macos-arm64
+        run: yarn make-macos-x64
         working-directory: apps/electron
 
       - name: Save x64 artifacts
@@ -143,8 +143,46 @@ jobs:
           name: affine-darwin-arm64-builds
           path: builds
 
+  build-windows:
+    needs: before-make
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: yarn install # that's right, yarn
+        working-directory: apps/electron
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-web-static
+          path: apps/electron/resources/web-static
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: before-make-electron-dist
+          path: apps/electron/dist
+
+      - name: make build
+        run: yarn make-windows-x64
+        working-directory: apps/electron
+
+      - name: Save windows artifacts
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/make/zip/win32/x64/AFFiNE-win32-x64-0.0.0.zip ./builds/affine-windows-x64-${{ github.event.inputs.version }}.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-darwin-arm64-builds
+          path: builds
+
   release:
-    needs: [build-macos-x64, build-macos-arm64]
+    needs: [build-macos-x64, build-macos-arm64, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download MacOS x64 Artifacts
@@ -157,6 +195,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: affine-darwin-arm64-builds
+          path: ./
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: affine-windows-x64-builds
           path: ./
 
       - name: Create Release Draft
@@ -177,3 +220,4 @@ jobs:
             ./RELEASES
             ./*.AppImage
             ./*.apk
+            ./*.zip
