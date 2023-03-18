@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-
-const __dirname = new URL('.', import.meta.url).pathname;
-
+import * as url from 'node:url';
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
+// const __dirname = new URL('.', import.meta.url).pathname;
 const { node } = JSON.parse(
   fs.readFileSync(
     path.join(__dirname, '../electron-vendors.autogen.json'),
