@@ -52,7 +52,7 @@
     "dotenv": "^16.0.3",
     "eslint": "^8.36.0",
     "eslint-config-next": "^13.2.3",
-    "next": "=13.2.2",
+    "next": "=13.2.4",
     "next-debug-local": "^0.1.5",
     "next-router-mock": "^0.9.2",
     "raw-loader": "^4.0.2",
