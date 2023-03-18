@@ -55,12 +55,12 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    swcPlugins: [
-      process.env.COVERAGE === 'true' && ['swc-plugin-coverage-instrument', {}],
-      // fixme: uncomment in 13.2.5
-      // ['@swc-jotai/debug-label', {}],
-      // ['@swc-jotai/react-refresh', {}],
-    ].filter(Boolean),
+    // fixme: uncomment in 13.2.5
+    // swcPlugins: [
+    //   process.env.COVERAGE === 'true' && ['swc-plugin-coverage-instrument', {}],
+    //   ['@swc-jotai/debug-label', {}],
+    //   // ['@swc-jotai/react-refresh', {}],
+    // ].filter(Boolean),
   },
   reactStrictMode: true,
   transpilePackages: [
