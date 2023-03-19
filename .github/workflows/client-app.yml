@@ -173,7 +173,7 @@ jobs:
       - name: Save windows artifacts
         run: |
           mkdir -p builds
-          mv apps/electron/out/make/zip/win32/x64/AFFiNE-win32-x64-0.0.0.zip ./builds/affine-windows-x64-${{ github.event.inputs.version }}.zip
+          mv apps/electron/out/make/zip/win32/x64/AFFiNE-win32-x64-${{ github.event.inputs.version }}.zip ./builds/affine-windows-x64-${{ github.event.inputs.version }}.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
@@ -220,4 +220,3 @@ jobs:
             ./RELEASES
             ./*.AppImage
             ./*.apk
-            ./*.zip
