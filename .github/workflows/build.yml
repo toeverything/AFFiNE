@@ -104,7 +104,7 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-
+      - run: yarn install
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
