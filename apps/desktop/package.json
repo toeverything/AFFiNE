@@ -16,12 +16,12 @@
   "dependencies": {
     "@blocksuite/blocks": "0.5.0-20230320034723-8dfc65e",
     "@blocksuite/editor": "0.5.0-20230320034723-8dfc65e",
-    "@blocksuite/icons": "2.0.17",
+    "@blocksuite/icons": "2.0.23",
     "@blocksuite/store": "0.5.0-20230320034723-8dfc65e",
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@tauri-apps/api": "^1.2.0",
-    "json-schema-to-typescript": "^11.0.5",
+    "json-schema-to-typescript": "^12.0.0",
     "lib0": "^0.2.69",
     "next": "=13.2.3",
     "react": "^18.2.0",
@@ -34,13 +34,13 @@
     "@types/node": "^18.15.3",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
-    "esbuild": "^0.17.8",
+    "esbuild": "^0.17.12",
     "lit": "^2.6.1",
-    "prettier": "2.8.4",
-    "rimraf": "^4.1.3",
+    "prettier": "2.8.5",
+    "rimraf": "^4.4.0",
     "typescript": "^5.0.2",
     "typesync": "^0.10.0",
     "vite": "^4.2.0",
-    "zx": "^7.2.0"
+    "zx": "^7.2.1"
   }
 }
