@@ -1,4 +1,4 @@
-import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { StoreOptions } from '@blocksuite/store';
 import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 
@@ -8,7 +8,7 @@ export const createBlocksuiteWorkspace = (options: StoreOptions) => {
     isSSR: typeof window === 'undefined',
     ...options,
   })
-    .register(builtInSchemas)
+    .register(AffineSchemas)
     .register(__unstableSchemas);
 };
 

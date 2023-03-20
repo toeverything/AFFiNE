@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
-import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { createStore, Provider } from 'jotai';
@@ -76,7 +76,7 @@ async function getJotaiContext() {
 beforeEach(async () => {
   return new Promise<void>(resolve => {
     blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' })
-      .register(builtInSchemas)
+      .register(AffineSchemas)
       .register(__unstableSchemas);
     blockSuiteWorkspace.slots.pageAdded.on(pageId => {
       setTimeout(() => {
