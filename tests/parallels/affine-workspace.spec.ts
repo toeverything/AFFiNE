@@ -1,3 +1,4 @@
+import { uuidv4 } from '@blocksuite/store';
 import { expect } from '@playwright/test';
 
 import userA from '../fixtures/userA.json';
@@ -23,12 +24,12 @@ test.describe('affine workspace', () => {
     expect(await footer.getByText(userA.email).isVisible()).toBe(true);
   });
 
-  // fixme: skip this because of duplicated creation of workspace may cause error
-  test.skip('should enable affine workspace successfully', async ({ page }) => {
+  test('should enable affine workspace successfully', async ({ page }) => {
     await openHomePage(page);
     const [a] = await createFakeUser();
     await loginUser(page, a);
-    await createWorkspace({ name: 'test1' }, page);
+    const name = `test-${uuidv4()}`;
+    await createWorkspace({ name }, page);
     await page.waitForTimeout(50);
     await clickSideBarSettingButton(page);
     await page.waitForTimeout(50);
