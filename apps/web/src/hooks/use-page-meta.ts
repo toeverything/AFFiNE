@@ -29,7 +29,7 @@ export function usePageMeta(
   }
   useEffect(() => {
     if (blockSuiteWorkspace) {
-      const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
+      const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
         setPageMeta(blockSuiteWorkspace.meta.pageMetas);
       });
       return () => {
