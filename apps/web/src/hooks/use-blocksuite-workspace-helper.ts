@@ -1,3 +1,4 @@
+import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useMemo } from 'react';
 
@@ -8,20 +9,9 @@ export function useBlockSuiteWorkspaceHelper(
 ) {
   return useMemo(
     () => ({
-      createPage: (pageId: string, title?: string): Promise<string> => {
-        return new Promise(resolve => {
-          assertExists(blockSuiteWorkspace);
-          const dispose = blockSuiteWorkspace.slots.pageAdded.on(id => {
-            if (id === pageId) {
-              dispose.dispose();
-              // Fixme: https://github.com/toeverything/blocksuite/issues/1350
-              setTimeout(() => {
-                resolve(pageId);
-              }, 0);
-            }
-          });
-          blockSuiteWorkspace.createPage(pageId);
-        });
+      createPage: (pageId: string, title?: string): Page => {
+        assertExists(blockSuiteWorkspace);
+        return blockSuiteWorkspace.createPage(pageId);
       },
     }),
     [blockSuiteWorkspace]
