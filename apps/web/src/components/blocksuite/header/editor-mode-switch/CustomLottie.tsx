@@ -1,6 +1,8 @@
-import lottie from 'lottie-web';
+import { atom, useAtomValue } from 'jotai';
 import type { FC } from 'react';
 import { useEffect, useRef } from 'react';
+
+const lottieAtom = atom(async () => import('lottie-web').then(m => m.default));
 
 type CustomLottieProps = {
   options: {
@@ -26,6 +28,7 @@ const CustomLottie: FC<CustomLottieProps> = ({
 }) => {
   const element = useRef<HTMLDivElement>(null);
   const lottieInstance = useRef<any>();
+  const lottie = useAtomValue(lottieAtom);
 
   useEffect(() => {
     if (element.current) {
@@ -37,7 +40,7 @@ const CustomLottie: FC<CustomLottieProps> = ({
     return () => {
       lottieInstance.current?.destroy();
     };
-  }, [options]);
+  }, [lottie, options]);
 
   useEffect(() => {
     if (speed) {
