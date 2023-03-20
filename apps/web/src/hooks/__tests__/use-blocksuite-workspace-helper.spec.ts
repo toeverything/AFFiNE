@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 
 import { BlockSuiteWorkspace } from '../../shared';
 import { useBlockSuiteWorkspaceHelper } from '../use-blocksuite-workspace-helper';
@@ -40,10 +40,8 @@ describe('useBlockSuiteWorkspaceHelper', () => {
     const pageMetaHook = renderHook(() => usePageMeta(blockSuiteWorkspace));
     expect(pageMetaHook.result.current.length).toBe(3);
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
-    const callback = vi.fn(id => {
-      expect(id).toBe('page4');
-    });
-    helperHook.result.current.createPage('page4').then(callback);
+    const page = helperHook.result.current.createPage('page4');
+    expect(page.id).toBe('page4');
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
     pageMetaHook.rerender();
     expect(pageMetaHook.result.current.length).toBe(4);
