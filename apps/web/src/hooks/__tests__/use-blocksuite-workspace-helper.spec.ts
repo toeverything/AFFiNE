@@ -3,7 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
-import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -18,13 +18,13 @@ beforeEach(() => {
   blockSuiteWorkspace = new BlockSuiteWorkspace({
     id: 'test',
   })
-    .register(builtInSchemas)
+    .register(AffineSchemas)
     .register(__unstableSchemas);
   blockSuiteWorkspace.slots.pageAdded.on(pageId => {
     const page = blockSuiteWorkspace.getPage(pageId) as Page;
-    const pageBlockId = page.addBlockByFlavour('affine:page', { title: '' });
-    const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-    page.addBlockByFlavour('affine:paragraph', {}, frameId);
+    const pageBlockId = page.addBlock('affine:page', { title: '' });
+    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    page.addBlock('affine:paragraph', {}, frameId);
   });
   blockSuiteWorkspace.createPage('page0');
   blockSuiteWorkspace.createPage('page1');

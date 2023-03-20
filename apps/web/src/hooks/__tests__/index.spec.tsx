@@ -83,11 +83,11 @@ beforeEach(async () => {
         const page = blockSuiteWorkspace.getPage(pageId);
         expect(page).not.toBeNull();
         assertExists(page);
-        const pageBlockId = page.addBlockByFlavour('affine:page', {
+        const pageBlockId = page.addBlock('affine:page', {
           title: new page.Text(''),
         });
-        const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-        page.addBlockByFlavour('affine:paragraph', {}, frameId);
+        const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+        page.addBlock('affine:paragraph', {}, frameId);
         if (pageId === 'page2') {
           resolve();
         }

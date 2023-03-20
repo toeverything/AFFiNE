@@ -1,5 +1,5 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
-import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
@@ -12,12 +12,12 @@ import { BlockSuiteEditor } from '.';
 
 function initPage(page: Page, editor: Readonly<EditorContainer>): void {
   // Add page block and surface block at root level
-  const pageBlockId = page.addBlockByFlavour('affine:page', {
+  const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(''),
   });
-  page.addBlockByFlavour('affine:surface', {}, null);
-  const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-  page.addBlockByFlavour('affine:paragraph', {}, frameId);
+  page.addBlock('affine:surface', {}, null);
+  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, frameId);
   page.resetHistory();
 }
 
@@ -25,7 +25,7 @@ const blockSuiteWorkspace = new Workspace({
   id: 'test',
   blobOptionsGetter: () => void 0,
 });
-blockSuiteWorkspace.register(builtInSchemas).register(__unstableSchemas);
+blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
 const promise = new Promise<void>(resolve => {
   blockSuiteWorkspace.slots.pageAdded.once(() => {
     resolve();
