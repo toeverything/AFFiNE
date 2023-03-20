@@ -22,7 +22,7 @@ importers:
       '@perfsee/sdk': ^1.5.1
       '@playwright/test': ^1.31.2
       '@testing-library/react': ^14.0.0
-      '@types/eslint': ^8.21.2
+      '@types/eslint': ^8.21.3
       '@types/node': ^18.15.3
       '@typescript-eslint/eslint-plugin': ^5.55.0
       '@typescript-eslint/parser': ^5.55.0
@@ -53,7 +53,7 @@ importers:
       '@perfsee/sdk': 1.5.1
       '@playwright/test': 1.31.2
       '@testing-library/react': 14.0.0_biqbaboplfbrettd7655fr4n2y
-      '@types/eslint': 8.21.2
+      '@types/eslint': 8.21.3
       '@types/node': 18.15.3
       '@typescript-eslint/eslint-plugin': 5.55.0_qsnvknysi52qtaxqdyqyohkcku
       '@typescript-eslint/parser': 5.55.0_j4766f7ecgqbon3u7zlxn5zszu
@@ -278,7 +278,7 @@ importers:
       js-base64: ^3.7.5
       ky: ^0.33.3
       ky-universal: ^0.11.0
-      lib0: ^0.2.68
+      lib0: ^0.2.69
       lit: ^2.6.1
       typescript: ^5.0.2
       y-protocols: ^1.0.5
@@ -294,7 +294,7 @@ importers:
       js-base64: 3.7.5
       ky: 0.33.3
       ky-universal: 0.11.0_ky@0.33.3
-      lib0: 0.2.68
+      lib0: 0.2.69
       lit: 2.6.1
       y-protocols: 1.0.5
       yjs: 13.5.50
@@ -335,7 +335,7 @@ importers:
       '@affine/debug': workspace:*
       '@types/node': ^18.15.3
       '@types/prettier': ^2.7.2
-      i18next: ^22.4.11
+      i18next: ^22.4.12
       next: '=13.2.2'
       prettier: ^2.8.4
       react: ^18.2.0
@@ -345,9 +345,9 @@ importers:
       typescript: ^5.0.2
     dependencies:
       '@affine/debug': link:../debug
-      i18next: 22.4.11
+      i18next: 22.4.12
       react: 18.2.0
-      react-i18next: 12.2.0_nuvg7z3l7c7q3mgp6kac62miay
+      react-i18next: 12.2.0_ifcy7d6sq4oet2tbyvl27swb2m
     devDependencies:
       '@types/node': 18.15.3
       '@types/prettier': 2.7.2
@@ -685,7 +685,7 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
     dependencies:
-      '@babel/types': 7.21.3
+      '@babel/types': 7.21.2
     dev: true
 
   /@babel/plugin-bugfix-safari-id-destructuring-collision-in-function-expression/7.18.6_@babel+core@7.21.0:
@@ -4833,10 +4833,10 @@ packages:
   /@storybook/csf-tools/7.0.0-rc.4:
     resolution: {integrity: sha512-swMulWdpSObtcfDo3flmry50oLAPbGLn0YBU+tJhhxerng5RVDy5MPG0A5ZKd6hD1jvyTA1pkhbwzCrklbNhSw==}
     dependencies:
-      '@babel/generator': 7.21.3
+      '@babel/generator': 7.21.1
       '@babel/parser': 7.21.3
       '@babel/traverse': 7.21.3
-      '@babel/types': 7.21.3
+      '@babel/types': 7.21.2
       '@storybook/csf': 0.0.2-next.10
       '@storybook/types': 7.0.0-rc.4
       fs-extra: 11.1.0
@@ -5391,12 +5391,12 @@ packages:
   /@types/eslint-scope/3.7.4:
     resolution: {integrity: sha512-9K4zoImiZc3HlIp6AVUDE4CWYx22a+lhSZMYNpbjW04+YF0KWj4pJXnEMjdnFTiQibFFmElcsasJXDbdI/EPhA==}
     dependencies:
-      '@types/eslint': 8.21.2
+      '@types/eslint': 8.21.3
       '@types/estree': 0.0.51
     dev: true
 
-  /@types/eslint/8.21.2:
-    resolution: {integrity: sha512-EMpxUyystd3uZVByZap1DACsMXvb82ypQnGn89e1Y0a+LYu3JJscUd/gqhRsVFDkaD2MIiWo0MT8EfXr3DGRKw==}
+  /@types/eslint/8.21.3:
+    resolution: {integrity: sha512-fa7GkppZVEByMWGbTtE5MbmXWJTVbrjjaS8K6uQj+XtuuUv1fsuPAxhygfqLmsb/Ufb3CV8deFCpiMfAgi00Sw==}
     dependencies:
       '@types/estree': 0.0.51
       '@types/json-schema': 7.0.11
@@ -6382,7 +6382,7 @@ packages:
     engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
     dependencies:
       '@babel/template': 7.20.7
-      '@babel/types': 7.21.3
+      '@babel/types': 7.21.2
       '@types/babel__core': 7.20.0
       '@types/babel__traverse': 7.18.3
     dev: true
@@ -9200,8 +9200,8 @@ packages:
     hasBin: true
     dev: true
 
-  /i18next/22.4.11:
-    resolution: {integrity: sha512-ShfTzXVMjXdF2iPiT/wbizOrssLh9Ab6VpuVROihLCAu+u25KbZiEYVgsA0W6g0SgjPa/JmGWcUEV/g6cKzEjQ==}
+  /i18next/22.4.12:
+    resolution: {integrity: sha512-2lE+vRXxQ3lGLub1CVbwgO0IfkLHmUSDVOAVdPh22CsxttMXi+35n2qgxh2wZIkKl6t/NMzPfgFPRDiFQOmiCg==}
     dependencies:
       '@babel/runtime': 7.21.0
     dev: false
@@ -10543,20 +10543,12 @@ packages:
       type-check: 0.4.0
     dev: true
 
-  /lib0/0.2.68:
-    resolution: {integrity: sha512-VZPU3TFmS9mdNku3YmmPoiUQnhHK178p4nUh+BrtCDPT3r5GxE9XSx1yObTL7sH2xgAlAxFO/c/grh2zZMTJkw==}
-    engines: {node: '>=14'}
-    hasBin: true
-    dependencies:
-      isomorphic.js: 0.2.5
-
   /lib0/0.2.69:
     resolution: {integrity: sha512-mKB+JtVlYbLqSxp5Twm40LtagQfi1rATGjNvds9E5lKvYYOIjbDLU8vwLaJ7X0z2LX84Aj200fqSvNPQli2DKw==}
     engines: {node: '>=14'}
     hasBin: true
     dependencies:
       isomorphic.js: 0.2.5
-    dev: false
 
   /lilconfig/2.1.0:
     resolution: {integrity: sha512-utWOt/GHzuUxnLKxB6dk81RoOeoNeHgbrXiuGk4yyF5qlRz+iIVWu56E2fqGHFrXz0QNUhLB/8nKqvRH66JKGQ==}
@@ -11973,7 +11965,7 @@ packages:
       react-is: 18.2.0
     dev: true
 
-  /react-i18next/12.2.0_nuvg7z3l7c7q3mgp6kac62miay:
+  /react-i18next/12.2.0_ifcy7d6sq4oet2tbyvl27swb2m:
     resolution: {integrity: sha512-5XeVgSygaGfyFmDd2WcXvINRw2WEC1XviW1LXY/xLOEMzsCFRwKqfnHN+hUjla8ZipbVJR27GCMSuTr0BhBBBQ==}
     peerDependencies:
       i18next: '>= 19.0.0'
@@ -11988,7 +11980,7 @@ packages:
     dependencies:
       '@babel/runtime': 7.21.0
       html-parse-stringify: 3.0.1
-      i18next: 22.4.11
+      i18next: 22.4.12
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
     dev: false
@@ -14149,14 +14141,14 @@ packages:
     peerDependencies:
       yjs: ^13.0.0
     dependencies:
-      lib0: 0.2.68
+      lib0: 0.2.69
       yjs: 13.5.50
     dev: false
 
   /y-protocols/1.0.5:
     resolution: {integrity: sha512-Wil92b7cGk712lRHDqS4T90IczF6RkcvCwAD0A2OPg+adKmOe+nOiT/N2hvpQIWS3zfjmtL4CPaH5sIW1Hkm/A==}
     dependencies:
-      lib0: 0.2.68
+      lib0: 0.2.69
     dev: false
 
   /y-webrtc/10.2.5:
@@ -14270,7 +14262,7 @@ packages:
   /yjs/13.5.50:
     resolution: {integrity: sha512-Q2KVNfovwjtJV4Yxz+HaFYT6vTYBaFagOSpTL3jbPc7Sbv/My68fLTfPlYy9FmNO87pV8dMBd5XuVar+9WsAWg==}
     dependencies:
-      lib0: 0.2.68
+      lib0: 0.2.69
 
   /yn/3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
