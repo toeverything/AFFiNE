@@ -32,12 +32,11 @@
     "@electron/rebuild": "^3.2.10",
     "dts-for-context-bridge": "^0.7.1",
     "electron": "23.1.4",
-    "esbuild": "^0.17.8",
-    "zx": "^7.2.0"
+    "esbuild": "^0.17.12",
+    "zx": "^7.2.1"
   },
   "dependencies": {
     "cross-env": "7.0.3",
     "electron-window-state": "^5.0.3"
-  },
-  "packageManager": "yarn@3.4.1"
+  }
 }

@@ -27,7 +27,7 @@ pnpm dev:app
 
 ## Build
 
-To build the desktop client application, run `pnpm build:app` in `apps/desktop`.
+To build the desktop client application, run `yarn build:app` in `apps/desktop`.
 Once the build is complete, you can find the paths to the binaries in the terminal output.
 
 ```

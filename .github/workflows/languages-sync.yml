@@ -26,23 +26,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      - uses: actions/cache@v3
+        id: yarn-cache
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-      - run: pnpm i
-
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - run: yarn install
       - name: Check Language Key
         if: github.ref != 'refs/heads/master'
         working-directory: ./packages/i18n
-        run: pnpm run sync-languages:check
+        run: yarn run sync-languages:check
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}
 
       - name: Sync Languages
         if: github.ref == 'refs/heads/master'
         working-directory: ./packages/i18n
-        run: pnpm run sync-languages
+        run: yarn run sync-languages
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}

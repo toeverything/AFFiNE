@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsc --project ./tsconfig.json",
     "sync-languages": "NODE_OPTIONS=--experimental-fetch ts-node-esm src/scripts/sync.ts",
-    "sync-languages:check": "pnpm run sync-languages --check",
+    "sync-languages:check": "yarn run sync-languages --check",
     "download-resources": "NODE_OPTIONS=--experimental-fetch ts-node-esm src/scripts/download.ts"
   },
   "keywords": [],
@@ -35,7 +35,7 @@
     "@types/node": "^18.15.3",
     "@types/prettier": "^2.7.2",
     "next": "=13.2.3",
-    "prettier": "^2.8.4",
+    "prettier": "^2.8.5",
     "react-dom": "^18.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.2"

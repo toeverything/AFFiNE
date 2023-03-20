@@ -5,12 +5,11 @@ import { createI18n, I18nextProvider } from '@affine/i18n';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
-import { useAtomsDebugValue } from 'jotai-devtools';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
-import React, { memo, Suspense, useEffect, useMemo } from 'react';
+import React, { Suspense, useEffect, useMemo } from 'react';
 
 import { jotaiStore } from '../atoms';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
@@ -29,11 +28,6 @@ type AppPropsWithLayout = AppProps & {
 };
 
 const EmptyLayout = (page: ReactElement) => page;
-
-const DebugAtoms = memo(function DebugAtoms() {
-  useAtomsDebugValue();
-  return null;
-});
 
 const clientSideEmotionCache = createEmotionCache();
 const helmetContext = {};
@@ -58,7 +52,6 @@ const App = function App({
   return (
     <CacheProvider value={emotionCache}>
       <I18nextProvider i18n={i18n}>
-        <DebugAtoms />
         <MessageCenter />
         <AffineErrorBoundary router={useRouter()}>
           <Suspense fallback={<PageLoading key="RootPageLoading" />}>

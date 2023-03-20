@@ -4,26 +4,29 @@
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "pnpm --filter @affine/app dev",
-    "dev:ac": "NODE_API_SERVER=ac pnpm --filter @affine/app dev",
-    "dev:local": "NODE_API_SERVER=local pnpm --filter @affine/app dev",
-    "dev:app": "pnpm --filter @affine/electron dev:app",
-    "build": "pnpm --filter @affine/app build",
-    "build:client": "pnpm --filter @affine/client-app build:app",
-    "build:storybook": "pnpm -r build-storybook",
-    "export": "pnpm --filter @affine/app export",
-    "start": "pnpm --filter @affine/app start",
+    "dev": "yarn workspace @affine/app dev",
+    "dev:ac": "NODE_API_SERVER=ac yarn workspace @affine/app dev",
+    "dev:local": "NODE_API_SERVER=local yarn workspace @affine/app dev",
+    "dev:app": "yarn workspace @affine/electron dev:app",
+    "build": "yarn workspace @affine/app build",
+    "build:client": "yarn workspace @affine/client-app build:app",
+    "build:storybook": "yarn workspace @affine/component build-storybook",
+    "export": "yarn workspace @affine/app export",
+    "start": "yarn workspace @affine/app start",
     "lint": "eslint . --ext .js,mjs,.ts,.tsx",
-    "lint:fix": "pnpm lint --fix",
+    "lint:fix": "yarn lint --fix",
     "test": "playwright test",
-    "test:coverage": "COVERAGE=true pnpm test -- --forbid-only",
+    "test:coverage": "COVERAGE=true yarn test --forbid-only",
     "test:unit": "vitest --run",
     "test:unit:ui": "vitest --ui",
     "test:unit:coverage": "vitest run --coverage",
     "postinstall": "husky install",
-    "notify": "node scripts/notify.mjs",
-    "update:core": "pnpm up '@blocksuite/*@nightly' !@blocksuite/icons -r"
+    "notify": "node scripts/notify.mjs"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
@@ -38,7 +41,7 @@
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "@typescript-eslint/parser": "^5.55.0",
     "@vitejs/plugin-react": "^3.1.0",
-    "@vitest/coverage-istanbul": "^0.28.5",
+    "@vitest/coverage-istanbul": "^0.29.3",
     "@vitest/ui": "^0.29.3",
     "eslint": "^8.36.0",
     "eslint-config-prettier": "^8.7.0",
@@ -53,28 +56,13 @@
     "husky": "^8.0.3",
     "lint-staged": "^13.2.0",
     "nyc": "^15.1.0",
-    "prettier": "^2.8.4",
+    "prettier": "^2.8.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.0.2",
     "vite": "^4.2.0",
-    "vitest": "^0.28.5",
+    "vitest": "^0.29.3",
     "vitest-fetch-mock": "^0.2.2"
   },
-  "pnpm": {
-    "patchedDependencies": {
-      "@tauri-apps/api@1.2.0": "patches/@tauri-apps__api@1.2.0.patch"
-    },
-    "overrides": {
-      "react-is": "^18.2.0",
-      "@storybook/addons": "^7.0.0-rc.1",
-      "@storybook/api": "^7.0.0-rc.1",
-      "@storybook/components": "^7.0.0-rc.1",
-      "@storybook/core-events": "^7.0.0-rc.1",
-      "@storybook/global": "^5.0.0",
-      "@storybook/theming": "^7.0.0-rc.1",
-      "jest-mock": "^29.5.0"
-    }
-  },
-  "packageManager": "pnpm@7.28.0"
+  "packageManager": "yarn@3.5.0"
 }

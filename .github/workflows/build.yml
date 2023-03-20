@@ -23,28 +23,27 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v3
         with:
           node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Restore cache
-        uses: actions/cache@v3
+          cache: 'yarn'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      - uses: actions/cache@v3
+        id: yarn-cache
         with:
-          path: |
-            apps/web/.next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-yarn-
 
-      - run: pnpm i
-      - run: pnpm lint --max-warnings=0
+      - run: yarn install
+      - run: yarn lint --max-warnings=0
 
       - name: Build
-        run: pnpm i && pnpm build
+        run: yarn build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -55,7 +54,7 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
 
       - name: Export
-        run: pnpm export
+        run: yarn export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -90,13 +89,22 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'pnpm'
-      - run: pnpm i
-
+          cache: 'yarn'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      - uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - run: yarn install
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -106,12 +114,12 @@ jobs:
       - name: Install playwright browsers
         run: npx playwright install chromium
       - name: Run playwright tests
-        run: pnpm test -- --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
 
       - name: Collect code coverage report
-        run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
 
       - name: Upload e2e test coverage results
         uses: codecov/codecov-action@v3
@@ -138,13 +146,22 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v3
         with:
           node-version-file: '.nvmrc'
-          cache: 'pnpm'
-      - run: pnpm i
-
+          cache: 'yarn'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      - uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - run: yarn install
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -152,7 +169,7 @@ jobs:
           path: ./apps/web/.next
 
       - name: Unit Test
-        run: pnpm run test:unit:coverage
+        run: yarn run test:unit:coverage
 
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
@@ -171,33 +188,32 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v3
         with:
           node-version-file: '.nvmrc'
+          cache: 'yarn'
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
-          cache: 'pnpm'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      - uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
       - run: node scripts/module-resolve/ci.cjs
 
-      - name: Restore cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            .next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
-
-      - run: pnpm i --no-frozen-lockfile
+      - run: yarn install
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
       - name: Build
-        run: pnpm build
+        run: yarn build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -208,7 +224,7 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
 
       - name: Export
-        run: pnpm export
+        run: yarn export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -286,13 +302,22 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
         with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-      - run: pnpm i
-
+          node-version: 18
+          cache: 'yarn'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      - uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - run: yarn install
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -303,13 +328,13 @@ jobs:
         run: npx playwright install chromium
       - name: Run e2e & unit tests
         run: |
-          pnpm test -- --forbid-only
-          pnpm run test:unit:coverage
+          yarn test --forbid-only
+          yarn run test:unit:coverage
         env:
           COVERAGE: true
 
       - name: Collect code coverage report
-        run: pnpm exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
 
       - name: Upload e2e test coverage results
         uses: codecov/codecov-action@v3
