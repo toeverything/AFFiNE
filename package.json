@@ -64,5 +64,9 @@
     "vitest": "^0.28.5",
     "vitest-fetch-mock": "^0.2.2"
   },
+  "resolutions": {
+    "nanoid": "^4.0.1",
+    "react-is": "^18.2.0"
+  },
   "packageManager": "yarn@3.5.0"
 }
