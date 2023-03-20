@@ -114,7 +114,7 @@ jobs:
       - name: Install playwright browsers
         run: npx playwright install chromium
       - name: Run playwright tests
-        run: yarn test -- --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
 
@@ -328,7 +328,7 @@ jobs:
         run: npx playwright install chromium
       - name: Run e2e & unit tests
         run: |
-          yarn test -- --forbid-only
+          yarn test --forbid-only
           yarn run test:unit:coverage
         env:
           COVERAGE: true

@@ -21,7 +21,7 @@
     "lint": "eslint . --ext .js,mjs,.ts,.tsx",
     "lint:fix": "yarn lint --fix",
     "test": "playwright test",
-    "test:coverage": "COVERAGE=true yarn test -- --forbid-only",
+    "test:coverage": "COVERAGE=true yarn test --forbid-only",
     "test:unit": "vitest --run",
     "test:unit:ui": "vitest --ui",
     "test:unit:coverage": "vitest run --coverage",
