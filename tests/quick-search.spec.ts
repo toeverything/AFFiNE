@@ -99,7 +99,7 @@ test.describe('Search and select', () => {
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
     await page.waitForTimeout(50);
-    await assertResultList(page, ['test123456']);
+    await assertResultList(page, ["New 'test123456' page"]);
     await page.keyboard.press('Enter');
     await page.waitForTimeout(300);
     await assertTitle(page, 'test123456');
