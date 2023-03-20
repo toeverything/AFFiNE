@@ -41,7 +41,7 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
 ) {
   const [value, setValue] = useState<string>(valueProp || '');
   const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
-    const { value } = e.currentTarget;
+    const { value } = e.target;
     setValue(value);
     onChange && onChange(value);
   };
