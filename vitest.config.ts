@@ -1,4 +1,4 @@
-import path from 'node:path';
+import { resolve } from 'node:path';
 
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
@@ -9,7 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'next/router': 'next-router-mock',
-      'next/config': path.resolve('./scripts/vitest/next-config-mock.ts'),
+      'next/config': resolve('./scripts/vitest/next-config-mock.ts'),
     },
   },
   test: {
