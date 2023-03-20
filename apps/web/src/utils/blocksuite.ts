@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import markdown from '@affine/templates/Welcome-to-AFFiNE.md';
+import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 
@@ -30,12 +31,12 @@ export function initPage(page: Page, editor: Readonly<EditorContainer>): void {
 }
 
 export function _initEmptyPage(page: Page, _: Readonly<EditorContainer>) {
-  const pageBlockId = page.addBlockByFlavour('affine:page', {
+  const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(''),
   });
-  page.addBlockByFlavour('affine:surface', {}, null);
-  const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-  page.addBlockByFlavour('affine:paragraph', {}, frameId);
+  page.addBlock('affine:surface', {}, null);
+  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, frameId);
 }
 
 export function _initPageWithDemoMarkdown(
@@ -43,15 +44,13 @@ export function _initPageWithDemoMarkdown(
   editor: Readonly<EditorContainer>
 ): void {
   logger.debug('initPageWithDefaultMarkdown', page.id);
-  const pageBlockId = page.addBlockByFlavour('affine:page', {
+  const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(demoTitle),
   });
-  page.addBlockByFlavour('affine:surface', {}, null);
-  const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-  page.addBlockByFlavour('affine:paragraph', {}, frameId);
-  setTimeout(() => {
-    // hotfix: contentParser.importMarkdown is not working in the first render
-    editor.contentParser.importMarkdown(demoText, frameId);
-  }, 0);
+  page.addBlock('affine:surface', {}, null);
+  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, frameId);
+  const contentParser = new ContentParser(page);
+  contentParser.importMarkdown(demoText, frameId);
   page.workspace.setPageMeta(page.id, { demoTitle });
 }
