@@ -10,7 +10,7 @@ import {
   SearchIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { Page, PageMeta } from '@blocksuite/store';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -96,7 +96,7 @@ export type WorkSpaceSliderBarProps = {
   currentWorkspace: RemWorkspace | null;
   currentPageId: string | null;
   openPage: (pageId: string) => void;
-  createPage: () => Promise<string>;
+  createPage: () => Page;
   currentPath: string;
   paths: {
     all: (workspaceId: string) => string;
@@ -123,10 +123,8 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [sidebarOpen] = useSidebarStatus();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
-    const pageId = await createPage();
-    if (pageId) {
-      openPage(pageId);
-    }
+    const page = await createPage();
+    openPage(page.id);
   }, [createPage, openPage]);
   return (
     <>

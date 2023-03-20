@@ -148,7 +148,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
     },
     [currentWorkspace, isPublicWorkspace, jumpToPage, jumpToPublicWorkspacePage]
   );
-  const handleCreatePage = useCallback(async () => {
+  const handleCreatePage = useCallback(() => {
     return helper.createPage(nanoid());
   }, [helper]);
   const handleOpenWorkspaceListModal = useCallback(() => {

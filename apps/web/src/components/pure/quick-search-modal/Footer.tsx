@@ -38,13 +38,13 @@ export const Footer: React.FC<FooterProps> = ({
       onSelect={async () => {
         onClose();
         const id = nanoid();
-        const pageId = await createPage(id, query);
-        assertEquals(pageId, id);
-        await jumpToPage(blockSuiteWorkspace.id, pageId);
+        const page = await createPage(id, query);
+        assertEquals(page.id, id);
+        await jumpToPage(blockSuiteWorkspace.id, page.id);
         if (!query) {
           return;
         }
-        const newPage = blockSuiteWorkspace.getPage(pageId);
+        const newPage = blockSuiteWorkspace.getPage(page.id);
         if (newPage) {
           const block = newPage.getBlockByFlavour(
             'affine:page'
