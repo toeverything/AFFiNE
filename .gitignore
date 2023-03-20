@@ -1,4 +1,11 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
 # compiled output
 *dist

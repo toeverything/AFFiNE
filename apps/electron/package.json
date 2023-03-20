@@ -38,6 +38,5 @@
   "dependencies": {
     "cross-env": "7.0.3",
     "electron-window-state": "^5.0.3"
-  },
-  "packageManager": "yarn@3.4.1"
+  }
 }

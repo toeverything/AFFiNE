@@ -1,5 +1,5 @@
 {
-  "eslint.packageManager": "pnpm",
+  "eslint.packageManager": "yarn",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "file",
@@ -7,7 +7,7 @@
     "blocksuite",
     "datacenter",
     "livedemo",
-    "pnpm",
+    "yarn",
     "jwst",
     "testid",
     "octobase",

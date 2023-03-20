@@ -56,7 +56,7 @@ const config: PlaywrightTestConfig = {
       },
     },
     {
-      command: 'pnpm build && pnpm start -p 8080',
+      command: 'yarn build && yarn start -p 8080',
       port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,

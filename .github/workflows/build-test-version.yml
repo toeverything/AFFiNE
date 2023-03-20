@@ -24,40 +24,39 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v3
         with:
           node-version-file: '.nvmrc'
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
-          cache: 'pnpm'
+          cache: 'yarn'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
 
       - run: node scripts/module-resolve/ci.cjs
 
-      - name: Restore cache
-        uses: actions/cache@v3
+      - uses: actions/cache@v3
+        id: yarn-cache
         with:
-          path: |
-            .next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-yarn-
 
-      - run: pnpm i --no-frozen-lockfile
+      - run: yarn install
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
       - name: Lint
         run: |
-          pnpm lint --max-warnings=0
+          yarn lint --max-warnings=0
 
       # - name: Test
-      #   run: pnpm test
+      #   run: yarn test
 
       - name: Build
-        run: pnpm build
+        run: yarn build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -68,7 +67,7 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
 
       - name: Export
-        run: pnpm export
+        run: yarn export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
