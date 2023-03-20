@@ -58,10 +58,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
     if (!editor || !container || !page) {
       return;
     }
-    if (
-      page.awarenessStore.getFlag('enable_block_hub') &&
-      props.mode === 'page'
-    ) {
+    if (page.awarenessStore.getFlag('enable_block_hub')) {
       editor.createBlockHub().then(blockHub => {
         if (blockHubRef.current) {
           blockHubRef.current.remove();
