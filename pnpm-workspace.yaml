@@ -2,5 +2,6 @@ packages:
   # apps folder for multiple platform clients
   - 'apps/*'
   - '!apps/electron'
+  - '!apps/desktop'
   # all packages in direct subdirs of packages/
   - 'packages/*'
