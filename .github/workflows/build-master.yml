@@ -1,24 +1,14 @@
 name: Build & Test
 
 on:
-  pull_request_target:
+  push:
     branches: [master]
-  pull_request_target:
-    branches: [master]
-
-# Cancels all previous workflow runs for pull requests that have not completed.
-# See https://docs.github.com/en/actions/using-jobs/using-concurrency
-concurrency:
-  # The concurrency group contains the workflow name and the branch name for
-  # pull requests or the commit hash for any other events.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && github.head_ref || github.sha }}
-  cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build on Pull Request
+  build-frontend:
+    name: Build frontend
     runs-on: ubuntu-latest
-    environment: development
+    environment: production
 
     steps:
       - uses: actions/checkout@v3
@@ -27,6 +17,8 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
@@ -38,8 +30,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
+      - run: node scripts/module-resolve/ci.cjs
+
       - run: yarn install
-      - run: yarn lint --max-warnings=0
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
 
       - name: Build
         run: yarn build
@@ -58,21 +53,63 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: artifact
-          path: ./apps/web/.next
+          path: ./apps/web/out
 
-  e2e-test:
-    name: E2E Test
+  publish-frontend:
+    name: Push frontend image
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
-    environment: development
-    needs: build
+    needs: build-frontend
+
     permissions:
       contents: read
       packages: write
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: 'toeverything/affine-pathfinder'
+      IMAGE_TAG: canary-${{ github.sha }}
+      IMAGE_TAG_LATEST: nightly-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: apps/web/out/
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            ${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_TAG_LATEST }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          file: ./.github/deployment/Dockerfile
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    environment: development
+    needs: build-frontend
     services:
       octobase:
         image: ghcr.io/toeverything/cloud:nightly-latest
@@ -112,8 +149,10 @@ jobs:
 
       - name: Install playwright browsers
         run: npx playwright install chromium
-      - name: Run playwright tests
-        run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      - name: Run e2e & unit tests
+        run: |
+          yarn test --forbid-only
+          yarn run test:unit:coverage
         env:
           COVERAGE: true
 
@@ -129,47 +168,6 @@ jobs:
           name: affine
           fail_ci_if_error: true
 
-      - name: Upload test results
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-results-e2e
-          path: ./test-results
-          if-no-files-found: ignore
-
-  unit-test:
-    name: Unit Test
-    runs-on: ubuntu-latest
-    environment: development
-    needs: build
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn install
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: artifact
-          path: ./apps/web/.next
-
-      - name: Unit Test
-        run: yarn run test:unit:coverage
-
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
         with:
@@ -178,3 +176,11 @@ jobs:
           flags: unittest
           name: affine
           fail_ci_if_error: true
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results-e2e
+          path: ./test-results
+          if-no-files-found: ignore
