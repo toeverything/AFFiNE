@@ -1,12 +1,15 @@
 import type {
   FocusEventHandler,
+  ForwardedRef,
   HTMLAttributes,
   InputHTMLAttributes,
   KeyboardEventHandler,
 } from 'react';
+import { forwardRef } from 'react';
 import { useEffect, useState } from 'react';
 
 import { StyledInput } from './style';
+
 type inputProps = {
   value?: string;
   placeholder?: string;
@@ -19,19 +22,23 @@ type inputProps = {
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 } & Omit<HTMLAttributes<HTMLInputElement>, 'onChange'>;
-export const Input = ({
-  disabled,
-  value: valueProp,
-  placeholder,
-  maxLength,
-  minLength,
-  height,
-  width = 260,
-  onChange,
-  onBlur,
-  onKeyDown,
-  ...otherProps
-}: inputProps) => {
+
+export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
+  {
+    disabled,
+    value: valueProp,
+    placeholder,
+    maxLength,
+    minLength,
+    height,
+    width = 260,
+    onChange,
+    onBlur,
+    onKeyDown,
+    ...otherProps
+  }: inputProps,
+  ref: ForwardedRef<HTMLInputElement>
+) {
   const [value, setValue] = useState<string>(valueProp || '');
   const handleChange: InputHTMLAttributes<HTMLInputElement>['onChange'] = e => {
     const { value } = e.target;
@@ -51,6 +58,7 @@ export const Input = ({
   }, [valueProp]);
   return (
     <StyledInput
+      ref={ref}
       value={value}
       disabled={disabled}
       placeholder={placeholder}
@@ -64,4 +72,4 @@ export const Input = ({
       {...otherProps}
     ></StyledInput>
   );
-};
+});

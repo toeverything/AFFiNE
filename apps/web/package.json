@@ -2,10 +2,10 @@
   "name": "@affine/app",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 8080",
+    "dev": "node src/server.mjs",
     "build": "next build",
     "export": "next export",
-    "start": "next start",
+    "start": "NODE_ENV=production node src/server.mjs",
     "lint": "next lint"
   },
   "dependencies": {
@@ -52,7 +52,7 @@
     "dotenv": "^16.0.3",
     "eslint": "^8.36.0",
     "eslint-config-next": "^13.2.3",
-    "next": "=13.2.2",
+    "next": "=13.2.3",
     "next-debug-local": "^0.1.5",
     "next-router-mock": "^0.9.2",
     "raw-loader": "^4.0.2",

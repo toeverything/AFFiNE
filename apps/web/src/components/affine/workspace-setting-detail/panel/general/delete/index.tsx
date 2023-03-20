@@ -68,6 +68,11 @@ export const WorkspaceDeleteModal = ({
         )}
         <StyledInputContent>
           <Input
+            ref={ref => {
+              if (ref) {
+                setTimeout(() => ref.focus(), 0);
+              }
+            }}
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
             placeholder={t('Placeholder of delete workspace')}
