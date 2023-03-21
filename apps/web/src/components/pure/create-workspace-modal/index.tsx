@@ -3,8 +3,8 @@ import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
 import { Button } from '@affine/component';
 import { Input } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import type { KeyboardEvent } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { KeyboardEvent } from 'react';
 
 interface ModalProps {
   open: boolean;
@@ -19,6 +19,7 @@ export const CreateWorkspaceModal = ({
 }: ModalProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
   const isComposition = useRef(false);
+
   const handleCreateWorkspace = useCallback(() => {
     onCreate(workspaceName);
   }, [onCreate, workspaceName]);
@@ -48,6 +49,11 @@ export const CreateWorkspaceModal = ({
             <ContentTitle>{t('New Workspace')}</ContentTitle>
             <p>{t('Workspace description')}</p>
             <Input
+              ref={ref => {
+                if (ref) {
+                  setTimeout(() => ref.focus(), 0);
+                }
+              }}
               data-testid="create-workspace-input"
               onKeyDown={handleKeyDown}
               placeholder={t('Set a Workspace name')}

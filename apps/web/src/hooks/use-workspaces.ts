@@ -1,11 +1,12 @@
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { jotaiWorkspacesAtom, workspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
-import { LocalWorkspace, RemWorkspace, RemWorkspaceFlavour } from '../shared';
+import type { LocalWorkspace, RemWorkspace } from '../shared';
+import { RemWorkspaceFlavour } from '../shared';
 import { createEmptyBlockSuiteWorkspace } from '../utils';
 
 export function useWorkspaces(): RemWorkspace[] {
@@ -71,3 +72,25 @@ export function useWorkspacesHelper() {
     ),
   };
 }
+
+export const useElementResizeEffect = (
+  element: Element | null,
+  fn: () => void | (() => () => void),
+  // TODO: add throttle
+  throttle = 0
+) => {
+  useEffect(() => {
+    if (!element) {
+      return;
+    }
+    let dispose: void | (() => void);
+    const resizeObserver = new ResizeObserver(entries => {
+      dispose = fn();
+    });
+    resizeObserver.observe(element);
+    return () => {
+      dispose?.();
+      resizeObserver.disconnect();
+    };
+  }, [element, fn]);
+};

@@ -1,7 +1,7 @@
-import { PageMeta } from '@blocksuite/store';
+import type { PageMeta } from '@blocksuite/store';
 import { useEffect, useMemo, useState } from 'react';
 
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 declare module '@blocksuite/store' {
   interface PageMeta {
@@ -29,7 +29,7 @@ export function usePageMeta(
   }
   useEffect(() => {
     if (blockSuiteWorkspace) {
-      const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
+      const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
         setPageMeta(blockSuiteWorkspace.meta.pageMetas);
       });
       return () => {

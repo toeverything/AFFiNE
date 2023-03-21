@@ -1,4 +1,4 @@
-import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { BlobOptionsGetter, Generator } from '@blocksuite/store';
 
 import { BlockSuiteWorkspace } from '../shared';
@@ -39,7 +39,7 @@ export const createEmptyBlockSuiteWorkspace = (
     blobOptionsGetter,
     idGenerator,
   })
-    .register(builtInSchemas)
+    .register(AffineSchemas)
     .register(__unstableSchemas);
   hashMap.set(id, workspace);
   return workspace;

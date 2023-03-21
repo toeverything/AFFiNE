@@ -3,7 +3,7 @@ import useSWR from 'swr';
 
 import { jotaiStore, jotaiWorkspacesAtom } from '../../atoms';
 import { QueryKey } from '../../plugins/affine/fetcher';
-import { AffineWorkspace } from '../../shared';
+import type { AffineWorkspace } from '../../shared';
 import { apis } from '../../shared/apis';
 
 export function useToggleWorkspacePublish(workspace: AffineWorkspace) {

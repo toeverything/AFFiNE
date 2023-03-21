@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
-import { NextPageWithLayout } from '../../shared';
+import type { NextPageWithLayout } from '../../shared';
 import { initPage } from '../../utils/blocksuite';
 
 const Editor = dynamic(

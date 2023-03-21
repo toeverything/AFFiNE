@@ -1,6 +1,6 @@
 import { Children, cloneElement, forwardRef } from 'react';
 
-import { ButtonProps } from './interface';
+import type { ButtonProps } from './interface';
 import { StyledTextButton } from './styles';
 import { getSize } from './utils';
 export const TextButton = forwardRef<HTMLButtonElement, ButtonProps>(

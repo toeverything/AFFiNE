@@ -1,4 +1,5 @@
-import { cloneElement, FC, PropsWithChildren, ReactNode } from 'react';
+import type { FC, PropsWithChildren, ReactNode } from 'react';
+import { cloneElement } from 'react';
 
 export const ProviderComposer: FC<
   PropsWithChildren<{

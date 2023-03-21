@@ -8,8 +8,8 @@ import { PageNotFoundError } from '../../components/affine/affine-error-eoundary
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
+import type { AffineWorkspace } from '../../shared';
 import {
-  AffineWorkspace,
   BlockSuiteWorkspace,
   LoadPriority,
   RemWorkspaceFlavour,
@@ -17,7 +17,7 @@ import {
 import { apis, clientAuth } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { initPage } from '../../utils/blocksuite';
-import { WorkspacePlugin } from '..';
+import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
 
 const storage = createJSONStorage(() => localStorage);

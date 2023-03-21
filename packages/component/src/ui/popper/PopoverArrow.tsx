@@ -1,7 +1,8 @@
-import { CSSProperties, forwardRef } from 'react';
+import type { CSSProperties } from 'react';
+import { forwardRef } from 'react';
 
 import { styled } from '../../styles';
-import { PopperArrowProps } from './interface';
+import type { PopperArrowProps } from './interface';
 
 export const PopperArrow = forwardRef<HTMLElement, PopperArrowProps>(
   function PopperArrow({ placement }, ref) {

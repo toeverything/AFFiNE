@@ -1,5 +1,9 @@
-import { defineConfig, PlaywrightWorkerOptions } from '@playwright/test';
+import { resolve } from 'node:path';
 
+import type {
+  PlaywrightTestConfig,
+  PlaywrightWorkerOptions,
+} from '@playwright/test';
 // import { devices } from '@playwright/test';
 
 /**
@@ -11,7 +15,7 @@ import { defineConfig, PlaywrightWorkerOptions } from '@playwright/test';
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-const config = defineConfig({
+const config: PlaywrightTestConfig = {
   testDir: './tests',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
@@ -40,17 +44,19 @@ const config = defineConfig({
 
   webServer: [
     {
-      command: 'pnpm build && pnpm start -p 8080',
-      port: 8080,
-      timeout: 120 * 1000,
-      reuseExistingServer: !process.env.CI,
+      command: 'cargo run -p affine-cloud',
+      port: 3000,
+      timeout: 10 * 1000,
+      reuseExistingServer: true,
+      cwd: process.env.OCTOBASE_CWD ?? resolve(process.cwd(), 'apps', 'server'),
       env: {
-        COVERAGE: process.env.COVERAGE || 'false',
-        ENABLE_DEBUG_PAGE: '1',
+        SIGN_KEY: 'test123',
+        RUST_LOG: 'debug',
+        JWST_DEV: '1',
       },
     },
     {
-      command: 'pnpm run build:storybook && pnpm run start:storybook',
+      command: 'yarn run build:storybook && yarn run start:storybook',
       port: 6006,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
@@ -59,8 +65,19 @@ const config = defineConfig({
         ENABLE_DEBUG_PAGE: '1',
       },
     },
+    {
+      command: 'yarn build && yarn start -p 8080',
+      port: 8080,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+        NODE_API_SERVER: 'local',
+      },
+    },
   ],
-});
+};
 
 if (process.env.CI) {
   config.retries = 3;

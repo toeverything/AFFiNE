@@ -3,7 +3,8 @@ import { assertExists } from '@blocksuite/store';
 import { jotaiStore, workspacesAtom } from '../../atoms';
 import { createAffineProviders } from '../../blocksuite';
 import { Unreachable } from '../../components/affine/affine-error-eoundary';
-import { AffineWorkspace, RemWorkspaceFlavour } from '../../shared';
+import type { AffineWorkspace } from '../../shared';
+import { RemWorkspaceFlavour } from '../../shared';
 import { apis } from '../../shared/apis';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 

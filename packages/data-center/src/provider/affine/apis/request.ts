@@ -1,7 +1,7 @@
 import ky from 'ky-universal';
 
 import { MessageCenter } from '../../../message';
-import { GoogleAuth } from './google';
+import type { GoogleAuth } from './google';
 
 type KyInstance = typeof ky;
 

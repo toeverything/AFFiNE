@@ -7,40 +7,40 @@
   "module": "true",
   "scripts": {
     "dev:app": "NODE_ENV=development tauri dev",
-    "dev:web": "pnpm --filter @affine/web dev",
+    "dev:web": "yarn workspace @affine/app dev",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
     "build:affine": "zx scripts/buildAffine.mjs",
     "build:preload": "esbuild src/preload/index.ts --outdir=public/preload",
     "build:app": "tauri build"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.5.0-20230310095333-5202fb9",
-    "@blocksuite/editor": "0.5.0-20230310095333-5202fb9",
-    "@blocksuite/icons": "2.0.17",
-    "@blocksuite/store": "0.5.0-20230310095333-5202fb9",
+    "@blocksuite/blocks": "0.5.0-20230320164115-e612d17",
+    "@blocksuite/editor": "0.5.0-20230320164115-e612d17",
+    "@blocksuite/icons": "2.0.23",
+    "@blocksuite/store": "0.5.0-20230320164115-e612d17",
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@tauri-apps/api": "^1.2.0",
-    "json-schema-to-typescript": "^11.0.5",
-    "lib0": "^0.2.63",
-    "next": "13.1.0",
+    "json-schema-to-typescript": "^12.0.0",
+    "lib0": "^0.2.69",
+    "next": "=13.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.5.48"
+    "yjs": "^13.5.50"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.2.3",
-    "@types/node": "^18.14.4",
+    "@types/node": "^18.15.3",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
-    "esbuild": "^0.17.8",
+    "esbuild": "^0.17.12",
     "lit": "^2.6.1",
-    "prettier": "2.8.4",
-    "rimraf": "^4.1.3",
-    "typescript": "^4.9.5",
+    "prettier": "2.8.5",
+    "rimraf": "^4.4.0",
+    "typescript": "^5.0.2",
     "typesync": "^0.10.0",
-    "vite": "^4.1.4",
-    "zx": "^7.2.0"
+    "vite": "^4.2.0",
+    "zx": "^7.2.1"
   }
 }

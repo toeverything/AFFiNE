@@ -11,7 +11,7 @@ import {
 } from 'react';
 
 import { styled } from '../../styles';
-import { PopperProps, VirtualElement } from './interface';
+import type { PopperProps, VirtualElement } from './interface';
 import { PopperArrow } from './PopoverArrow';
 export const Popper = ({
   children,

@@ -5,7 +5,8 @@ import {
   FolderIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
-import { FC, SVGProps, useMemo } from 'react';
+import type { FC, SVGProps } from 'react';
+import { useMemo } from 'react';
 
 import { pathGenerator } from '../../../shared';
 export const useSwitchToConfig = (

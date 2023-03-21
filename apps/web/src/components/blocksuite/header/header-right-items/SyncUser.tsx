@@ -11,11 +11,11 @@ import React, { useEffect, useState } from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useTransformWorkspace } from '../../../../hooks/use-transform-workspace';
-import {
+import type {
   AffineOfficialWorkspace,
   LocalWorkspace,
-  RemWorkspaceFlavour,
 } from '../../../../shared';
+import { RemWorkspaceFlavour } from '../../../../shared';
 import { apis } from '../../../../shared/apis';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 

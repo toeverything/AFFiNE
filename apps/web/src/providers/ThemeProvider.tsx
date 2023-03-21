@@ -1,4 +1,4 @@
-import { AffineTheme, ThemeProviderProps } from '@affine/component';
+import type { AffineTheme, ThemeProviderProps } from '@affine/component';
 import {
   getDarkTheme,
   getLightTheme,
@@ -8,13 +8,14 @@ import {
 import { GlobalStyles } from '@mui/material';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
 import { useCurrentPage } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { usePageMeta } from '../hooks/use-page-meta';
 
-const ThemeInjector = React.memo<{
+const ThemeInjector = memo<{
   themeStyle: AffineTheme;
 }>(function ThemeInjector({ themeStyle }) {
   return (
@@ -38,7 +39,7 @@ const ThemeInjector = React.memo<{
 
 const ThemeProviderInner = memo<React.PropsWithChildren>(
   function ThemeProviderInner({ children }) {
-    const { theme } = useTheme();
+    const { resolvedTheme: theme } = useTheme();
     const [currentWorkspace] = useCurrentWorkspace();
     const currentPage = useCurrentPage();
     const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
@@ -71,9 +72,10 @@ const themes = ['dark', 'light'];
 
 export const ThemeProvider = ({
   children,
+  ...props
 }: PropsWithChildren<ThemeProviderProps>) => {
   return (
-    <NextThemeProvider themes={themes}>
+    <NextThemeProvider themes={themes} enableSystem={true} {...props}>
       <ThemeProviderInner>{children}</ThemeProviderInner>
     </NextThemeProvider>
   );

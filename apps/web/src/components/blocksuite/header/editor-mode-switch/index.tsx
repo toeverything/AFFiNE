@@ -1,12 +1,12 @@
 import { toast } from '@affine/component';
 import { assertExists } from '@blocksuite/store';
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
 import {
   usePageMeta,
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
-import { BlockSuiteWorkspace } from '../../../../shared';
+import type { BlockSuiteWorkspace } from '../../../../shared';
 import { StyledEditorModeSwitch } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 

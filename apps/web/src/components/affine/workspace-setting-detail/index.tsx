@@ -1,23 +1,17 @@
 import { useTranslation } from '@affine/i18n';
-import React, {
-  MouseEvent,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import type { MouseEvent } from 'react';
+import type React from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { preload } from 'swr';
 
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
-import {
+import type {
   AffineOfficialWorkspace,
   FlavourToWorkspace,
-  RemWorkspaceFlavour,
   SettingPanel,
-  settingPanel,
 } from '../../../shared';
+import { RemWorkspaceFlavour, settingPanel } from '../../../shared';
 import { CollaborationPanel } from './panel/collaboration';
 import { ExportPanel } from './panel/export';
 import { GeneralPanel } from './panel/general';

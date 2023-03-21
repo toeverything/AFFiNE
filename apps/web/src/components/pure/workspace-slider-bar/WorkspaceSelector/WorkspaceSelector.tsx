@@ -1,7 +1,7 @@
-import React from 'react';
+import type React from 'react';
 
 import { useBlockSuiteWorkspaceName } from '../../../../hooks/use-blocksuite-workspace-name';
-import { RemWorkspace } from '../../../../shared';
+import type { RemWorkspace } from '../../../../shared';
 import { WorkspaceAvatar } from '../../workspace-avatar';
 import { SelectorWrapper, WorkspaceName } from './styles';
 

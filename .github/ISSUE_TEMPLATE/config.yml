@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Something else?
+    url: https://github.com/toeverything/AFFiNE/discussions
+    about: Feel free to ask and answer questions over in GitHub Discussions
+  - name: AFFiNE Community Support
+    url: https://community.affine.pro
+    about: AFFiNE Community - a place to ask, learn and engage with others

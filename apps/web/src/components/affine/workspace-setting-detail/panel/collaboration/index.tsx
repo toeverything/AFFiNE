@@ -13,17 +13,15 @@ import {
   EmailIcon,
   MoreVerticalIcon,
 } from '@blocksuite/icons';
-import React, { useCallback, useState } from 'react';
+import type React from 'react';
+import { useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../hooks/affine/use-members';
-import {
-  AffineWorkspace,
-  LocalWorkspace,
-  RemWorkspaceFlavour,
-} from '../../../../../shared';
+import type { AffineWorkspace, LocalWorkspace } from '../../../../../shared';
+import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';
-import { PanelProps } from '../../index';
+import type { PanelProps } from '../../index';
 import { InviteMemberModal } from './invite-member-modal';
 import {
   StyledMemberAvatar,
@@ -55,7 +53,8 @@ const AffineRemoteCollaborationPanel: React.FC<
         <ul>
           <StyledMemberTitleContainer>
             <StyledMemberNameContainer>
-              {t('Users')} ({members.length})
+              {t('Users')} (
+              <span data-testid="member-length">{members.length}</span>)
             </StyledMemberNameContainer>
             <StyledMemberRoleContainer>
               {t('Access level')}
@@ -147,6 +146,7 @@ const AffineRemoteCollaborationPanel: React.FC<
               setIsInviteModalShow(true);
             }}
             type="primary"
+            data-testid="invite-members"
             shape="circle"
           >
             {t('Invite Members')}
@@ -178,6 +178,7 @@ const LocalCollaborationPanel: React.FC<
     <>
       <Wrapper marginBottom="42px">{t('Collaboration Description')}</Wrapper>
       <Button
+        data-testid="local-workspace-enable-cloud-button"
         type="light"
         shape="circle"
         onClick={() => {

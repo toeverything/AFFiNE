@@ -4,7 +4,8 @@ import { Box } from '@mui/material';
 import { useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import React, { Suspense, useCallback, useEffect } from 'react';
+import type React from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import { currentWorkspaceIdAtom, openQuickSearchModalAtom } from '../../atoms';
 import {
@@ -18,7 +19,7 @@ import { PageLoading } from '../../components/pure/loading';
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '../../hooks/use-blocksuite-workspace-name';
 import { WorkspaceLayout } from '../../layouts';
-import { NextPageWithLayout } from '../../shared';
+import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
 const BlockSuitePublicPageList = dynamic(

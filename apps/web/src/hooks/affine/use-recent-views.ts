@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from 'jotai';
-import { NextRouter } from 'next/router';
+import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import {

@@ -1,5 +1,5 @@
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
 import { displayFlex, styled } from '../../styles';
 import StyledPopperContainer from '../shared/Container';
@@ -39,7 +39,7 @@ export const StyledMenuItem = styled('button')<{
     cursor: isDir ? 'pointer' : '',
     position: 'relative',
     backgroundColor: 'transparent',
-
+    color: theme.colors.textColor,
     ':hover': {
       color: theme.colors.primaryColor,
       backgroundColor: theme.colors.hoverBackground,

@@ -1,5 +1,6 @@
 import { useSetAtom } from 'jotai';
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type React from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
 import Header from '../../blocksuite/header/header';

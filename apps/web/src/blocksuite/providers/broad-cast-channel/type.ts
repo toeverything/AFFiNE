@@ -1,4 +1,4 @@
-import { Awareness as YAwareness } from 'y-protocols/awareness';
+import type { Awareness as YAwareness } from 'y-protocols/awareness';
 
 export type ClientId = YAwareness['clientID'];
 // eslint-disable-next-line @typescript-eslint/ban-types

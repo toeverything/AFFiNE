@@ -6,7 +6,8 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { Suspense, useCallback, useEffect } from 'react';
+import type React from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import {
   currentWorkspaceIdAtom,
@@ -147,7 +148,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
     },
     [currentWorkspace, isPublicWorkspace, jumpToPage, jumpToPublicWorkspacePage]
   );
-  const handleCreatePage = useCallback(async () => {
+  const handleCreatePage = useCallback(() => {
     return helper.createPage(nanoid());
   }, [helper]);
   const handleOpenWorkspaceListModal = useCallback(() => {

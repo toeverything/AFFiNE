@@ -7,7 +7,8 @@ import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { createStore, getDefaultStore, Provider } from 'jotai';
 import { useRouter } from 'next/router';
-import React, { useCallback } from 'react';
+import type React from 'react';
+import { useCallback } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { workspacesAtom } from '../../atoms';

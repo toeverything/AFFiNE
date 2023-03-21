@@ -57,7 +57,7 @@ const nextConfig = {
   experimental: {
     swcPlugins: [
       process.env.COVERAGE === 'true' && ['swc-plugin-coverage-instrument', {}],
-      ['@swc-jotai/debug-label', {}],
+      // ['@swc-jotai/debug-label', {}],
       // ['@swc-jotai/react-refresh', {}],
     ].filter(Boolean),
   },

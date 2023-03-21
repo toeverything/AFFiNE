@@ -2,10 +2,11 @@ import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { Command } from 'cmdk';
 import { useRouter } from 'next/router';
-import React, { useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { usePageMeta } from '../../../hooks/use-page-meta';
-import { BlockSuiteWorkspace } from '../../../shared';
+import type { BlockSuiteWorkspace } from '../../../shared';
 import { NoResultSVG } from './NoResultSVG';
 import { StyledListItem, StyledNotFound } from './style';
 

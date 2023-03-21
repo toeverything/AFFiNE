@@ -3,13 +3,13 @@
   "private": true,
   "main": "./src/index.ts",
   "devDependencies": {
-    "next": "^13.2.3",
+    "next": "=13.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zod": "^3.21.3"
+    "zod": "^3.21.4"
   },
   "dependencies": {
-    "@blocksuite/global": "0.5.0-20230310095333-5202fb9",
+    "@blocksuite/global": "0.5.0-20230320164115-e612d17",
     "lit": "^2.6.1"
   }
 }

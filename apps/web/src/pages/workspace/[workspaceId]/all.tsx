@@ -1,6 +1,6 @@
 import { useTranslation } from '@affine/i18n';
 import { FolderIcon } from '@blocksuite/icons';
-import { assertExists, nanoid } from '@blocksuite/store';
+import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect } from 'react';
@@ -16,11 +16,11 @@ import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import {
+import type {
   LocalIndexedDBProvider,
   NextPageWithLayout,
-  RemWorkspaceFlavour,
 } from '../../../shared';
+import { RemWorkspaceFlavour } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
@@ -44,14 +44,12 @@ const AllPage: NextPageWithLayout = () => {
         if (currentWorkspace.blockSuiteWorkspace.isEmpty) {
           // this is a new workspace, so we should redirect to the new page
           const pageId = nanoid();
-          currentWorkspace.blockSuiteWorkspace.slots.pageAdded.once(id => {
-            currentWorkspace.blockSuiteWorkspace.setPageMeta(id, {
-              init: true,
-            });
-            assertExists(pageId, id);
-            jumpToPage(currentWorkspace.id, pageId);
+          const page = currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+          assertEquals(page.id, pageId);
+          currentWorkspace.blockSuiteWorkspace.setPageMeta(page.id, {
+            init: true,
           });
-          currentWorkspace.blockSuiteWorkspace.createPage(pageId);
+          jumpToPage(currentWorkspace.id, pageId);
         }
       };
       provider.callbacks.add(callback);

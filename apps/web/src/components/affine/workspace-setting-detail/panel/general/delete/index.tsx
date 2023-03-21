@@ -3,10 +3,8 @@ import { Trans, useTranslation } from '@affine/i18n';
 import { useCallback, useState } from 'react';
 
 import { useBlockSuiteWorkspaceName } from '../../../../../../hooks/use-blocksuite-workspace-name';
-import {
-  AffineOfficialWorkspace,
-  RemWorkspaceFlavour,
-} from '../../../../../../shared';
+import type { AffineOfficialWorkspace } from '../../../../../../shared';
+import { RemWorkspaceFlavour } from '../../../../../../shared';
 import {
   StyledButtonContent,
   StyledInputContent,
@@ -70,6 +68,11 @@ export const WorkspaceDeleteModal = ({
         )}
         <StyledInputContent>
           <Input
+            ref={ref => {
+              if (ref) {
+                setTimeout(() => ref.focus(), 0);
+              }
+            }}
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
             placeholder={t('Placeholder of delete workspace')}

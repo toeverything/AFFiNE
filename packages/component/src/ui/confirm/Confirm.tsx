@@ -1,7 +1,8 @@
 import { useTranslation } from '@affine/i18n';
 
 import { Button } from '../button';
-import { Modal, ModalCloseButton, ModalProps } from '../modal';
+import type { ModalProps } from '../modal';
+import { Modal, ModalCloseButton } from '../modal';
 import {
   StyledColumnButtonWrapper,
   StyledConfirmContent,

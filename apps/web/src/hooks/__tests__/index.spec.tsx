@@ -5,14 +5,15 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
-import { __unstableSchemas, builtInSchemas } from '@blocksuite/blocks/models';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { render, renderHook } from '@testing-library/react';
 import { createStore, Provider } from 'jotai';
 import { useRouter } from 'next/router';
 import routerMock from 'next-router-mock';
 import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
-import React from 'react';
+import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
@@ -21,11 +22,8 @@ import {
   workspacesAtom,
 } from '../../atoms';
 import { LocalPlugin } from '../../plugins/local';
-import {
-  BlockSuiteWorkspace,
-  LocalWorkspace,
-  RemWorkspaceFlavour,
-} from '../../shared';
+import type { LocalWorkspace } from '../../shared';
+import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
 import { useIsFirstLoad, useOpenTips } from '../affine/use-is-first-load';
 import {
   useRecentlyViewed,
@@ -77,29 +75,21 @@ async function getJotaiContext() {
 }
 
 beforeEach(async () => {
-  return new Promise<void>(resolve => {
-    blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' })
-      .register(builtInSchemas)
-      .register(__unstableSchemas);
-    blockSuiteWorkspace.slots.pageAdded.on(pageId => {
-      setTimeout(() => {
-        const page = blockSuiteWorkspace.getPage(pageId);
-        expect(page).not.toBeNull();
-        assertExists(page);
-        const pageBlockId = page.addBlockByFlavour('affine:page', {
-          title: new page.Text(''),
-        });
-        const frameId = page.addBlockByFlavour('affine:frame', {}, pageBlockId);
-        page.addBlockByFlavour('affine:paragraph', {}, frameId);
-        if (pageId === 'page2') {
-          resolve();
-        }
-      });
+  blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' })
+    .register(AffineSchemas)
+    .register(__unstableSchemas);
+  const initPage = (page: Page) => {
+    expect(page).not.toBeNull();
+    assertExists(page);
+    const pageBlockId = page.addBlock('affine:page', {
+      title: new page.Text(''),
     });
-    blockSuiteWorkspace.createPage('page0');
-    blockSuiteWorkspace.createPage('page1');
-    blockSuiteWorkspace.createPage('page2');
-  });
+    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+    page.addBlock('affine:paragraph', {}, frameId);
+  };
+  initPage(blockSuiteWorkspace.createPage('page0'));
+  initPage(blockSuiteWorkspace.createPage('page1'));
+  initPage(blockSuiteWorkspace.createPage('page2'));
 });
 
 describe('usePageMetas', async () => {

@@ -10,14 +10,15 @@ import {
   SearchIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
-import { PageMeta } from '@blocksuite/store';
+import type { Page, PageMeta } from '@blocksuite/store';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import React, { useCallback, useMemo, useState } from 'react';
+import type React from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
-import { RemWorkspace } from '../../../shared';
+import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import {
   StyledLink,
@@ -48,8 +49,15 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
     () => pageMeta.filter(p => p.favorite && !p.trash),
     [pageMeta]
   );
+
   return (
-    <MuiCollapse in={showList}>
+    <MuiCollapse
+      in={showList}
+      style={{
+        maxHeight: 300,
+        overflowY: 'auto',
+      }}
+    >
       {favoriteList.map((pageMeta, index) => {
         const active = router.query.pageId === pageMeta.id;
         return (
@@ -57,6 +65,11 @@ const FavoriteList: React.FC<FavoriteListProps> = ({
             <StyledSubListItem
               data-testid={`favorite-list-item-${pageMeta.id}`}
               active={active}
+              ref={ref => {
+                if (ref && active) {
+                  ref.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
               onClick={() => {
                 if (active) {
                   return;
@@ -83,7 +96,7 @@ export type WorkSpaceSliderBarProps = {
   currentWorkspace: RemWorkspace | null;
   currentPageId: string | null;
   openPage: (pageId: string) => void;
-  createPage: () => Promise<string>;
+  createPage: () => Page;
   currentPath: string;
   paths: {
     all: (workspaceId: string) => string;
@@ -110,10 +123,8 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [sidebarOpen] = useSidebarStatus();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
-    const pageId = await createPage();
-    if (pageId) {
-      openPage(pageId);
-    }
+    const page = await createPage();
+    openPage(page.id);
   }, [createPage, openPage]);
   return (
     <>

@@ -8,19 +8,19 @@ import {
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { Box } from '@mui/material';
-import React, { useCallback, useEffect, useState } from 'react';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
-import {
+import type {
   AffineOfficialWorkspace,
   AffineWorkspace,
   LocalWorkspace,
-  RemWorkspaceFlavour,
 } from '../../../../../shared';
-import { apis } from '../../../../../shared/apis';
+import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
-import { WorkspaceSettingDetailProps } from '../../index';
+import type { WorkspaceSettingDetailProps } from '../../index';
 
 export type PublishPanelProps = WorkspaceSettingDetailProps & {
   workspace: AffineOfficialWorkspace;
@@ -48,8 +48,6 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
     navigator.clipboard.writeText(shareUrl);
     toast(t('Copied link to clipboard'));
   }, [shareUrl, t]);
-
-  const [open, setOpen] = useState(false);
 
   if (workspace.public) {
     return (
@@ -89,27 +87,13 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
       <Wrapper marginBottom="42px">{t('Publishing Description')}</Wrapper>
       <Button
         onClick={() => {
-          setOpen(true);
+          publishWorkspace(true);
         }}
         type="light"
         shape="circle"
       >
         {t('Publish to web')}
       </Button>
-      <EnableAffineCloudModal
-        open={open}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onConfirm={() => {
-          if (!apis.auth.isLogin) {
-            toast(t('Please login first'));
-          } else {
-            publishWorkspace(true);
-            setOpen(false);
-          }
-        }}
-      />
     </>
   );
 };

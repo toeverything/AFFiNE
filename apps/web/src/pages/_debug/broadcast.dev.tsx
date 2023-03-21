@@ -2,12 +2,13 @@ import { Button, toast } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { nanoid } from '@blocksuite/store';
 import { Typography } from '@mui/material';
-import React, { useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { createBroadCastChannelProvider } from '../../blocksuite/providers';
 import PageList from '../../components/blocksuite/block-suite-page-list/page-list';
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
-import { BroadCastChannelProvider } from '../../shared';
+import type { BroadCastChannelProvider } from '../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
 const logger = new DebugLogger('broadcast');

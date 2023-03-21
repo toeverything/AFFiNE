@@ -17,8 +17,9 @@ import {
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import { PageMeta } from '@blocksuite/store';
-import React, { useState } from 'react';
+import type { PageMeta } from '@blocksuite/store';
+import type React from 'react';
+import { useState } from 'react';
 
 export type OperationCellProps = {
   pageMeta: PageMeta;
@@ -117,7 +118,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
   pageMeta,
   onPermanentlyDeletePage,
   onRestorePage,
-  onOpenPage,
 }) => {
   const { id, title } = pageMeta;
   const { t } = useTranslation();
@@ -131,7 +131,6 @@ export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
           onClick={() => {
             onRestorePage(id);
             toast(t('restored', { title: title || 'Untitled' }));
-            onOpenPage(id);
           }}
         >
           <ResetIcon />

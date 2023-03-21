@@ -84,7 +84,7 @@ export const EditorOptionMenu = () => {
             <MenuItem
               onClick={() => {
                 // @ts-expect-error
-                globalThis.editor.contentParser.onExportHtml();
+                globalThis.currentEditor.contentParser.onExportHtml();
               }}
               icon={<ExportToHtmlIcon />}
               iconSize={[20, 20]}
@@ -94,7 +94,7 @@ export const EditorOptionMenu = () => {
             <MenuItem
               onClick={() => {
                 // @ts-expect-error
-                globalThis.editor.contentParser.onExportMarkdown();
+                globalThis.currentEditor.contentParser.onExportMarkdown();
               }}
               icon={<ExportToMarkdownIcon />}
               iconSize={[20, 20]}

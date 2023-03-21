@@ -1,5 +1,5 @@
 import { styled, textEllipsis } from '../../styles';
-import { TableCellProps } from './interface';
+import type { TableCellProps } from './interface';
 
 export const StyledTable = styled('table')<{ tableLayout: 'auto' | 'fixed' }>(
   ({ theme, tableLayout }) => {

@@ -1,4 +1,5 @@
-import {
+import { ContentParser } from '@blocksuite/blocks/content-parser';
+import type {
   GetStaticPaths,
   GetStaticProps,
   InferGetStaticPropsType,
@@ -14,7 +15,7 @@ import {
   StyledToolWrapper,
   StyledWrapper,
 } from '../../layouts/styles';
-import { BlockSuiteWorkspace } from '../../shared';
+import type { BlockSuiteWorkspace } from '../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
 export type PreviewPageProps = {
@@ -61,17 +62,14 @@ const PreviewPage: NextPage<PreviewPageProps> = ({
             pageId="preview"
             onInit={(page, editor) => {
               blockSuiteWorkspace.setPageMeta(page.id, { title });
-              const pageBlockId = page.addBlockByFlavour('affine:page', {
+              const pageBlockId = page.addBlock('affine:page', {
                 title: new page.Text(title),
               });
-              page.addBlockByFlavour('affine:surface', {}, null);
-              const frameId = page.addBlockByFlavour(
-                'affine:frame',
-                {},
-                pageBlockId
-              );
-              page.addBlockByFlavour('affine:paragraph', {}, frameId);
-              editor.clipboard.importMarkdown(text, frameId).then(() => {
+              page.addBlock('affine:surface', {}, null);
+              const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+              page.addBlock('affine:paragraph', {}, frameId);
+              const contentParser = new ContentParser(page);
+              contentParser.importMarkdown(text, frameId).then(() => {
                 page.resetHistory();
               });
             }}

@@ -1,13 +1,13 @@
 import { invoke } from '@tauri-apps/api';
 
-import { GetBlob, PutBlob } from './types/blob';
-import {
+import type { GetBlob, PutBlob } from './types/blob';
+import type {
   GetDocumentParameter,
   GetDocumentResponse,
   YDocumentUpdate,
 } from './types/document';
-import { CreateUser, GetUserParameters } from './types/user';
-import {
+import type { CreateUser, GetUserParameters } from './types/user';
+import type {
   CreateWorkspace,
   CreateWorkspaceResult,
   GetWorkspace,

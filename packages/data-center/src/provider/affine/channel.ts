@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import * as url from 'lib0/url';
 import * as websocket from 'lib0/websocket';
 
-import { GoogleAuth } from './apis/google';
+import type { GoogleAuth } from './apis/google';
 
 const RECONNECT_INTERVAL_TIME = 500;
 const MAX_RECONNECT_TIMES = 50;

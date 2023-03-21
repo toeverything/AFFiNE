@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 
 import { jotaiWorkspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
-import { FlavourToWorkspace, RemWorkspaceFlavour } from '../shared';
+import type { FlavourToWorkspace, RemWorkspaceFlavour } from '../shared';
 
 /**
  * Transform workspace from one flavour to another

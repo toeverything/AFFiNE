@@ -25,28 +25,48 @@ install [Node LTS version](https://nodejs.org/en/download)
 install [nvm](https://github.com/nvm-sh/nvm)
 
 ```sh
-nvm install --lts
-nvm use --lts
+nvm install 18
+nvm use 18
 ```
 
 ## Setup Environment
 
 ```sh
 # install dependencies
-pnpm install
+yarn install
 ```
 
 ## Start Development Server
 
-```sh
-pnpm dev
+### Option 1: Local OctoBase
+
+```shell
+# Run OctoBase container in background
+docker pull ghcr.io/toeverything/cloud:nightly-latest
+docker run --env=SIGN_KEY=test123 --env=RUST_LOG=debug --env=JWST_DEV=1 --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --workdir=/app -p 3000:3000 --runtime=runc -d ghcr.io/toeverything/cloud:nightly-latest
 ```
 
-The playground page should work at [http://localhost:8080/](http://localhost:8080/)
+```shell
+# Run AFFiNE Web in development mode
+yarn dev:local
+```
+
+### Option 2: Remote OctoBase
+
+```shell
+yarn dev
+```
+
+you might need set environment variables in `.env.local` file.
+See our [template](../apps/web/.env.local.template).
+
+Then, the playground page should work at [http://localhost:8080/](http://localhost:8080/)
 
 For more details, see [apps/web/README.md](../apps/web/README.md)
 
 ## Testing
+
+> Local OctoBase is required for testing. Otherwise, the affine part of the tests will fail.
 
 Adding test cases is strongly encouraged when you contribute new features and bug fixes.
 
@@ -56,5 +76,5 @@ To test locally, please make sure browser binaries are already installed via `np
 
 ```sh
 # run tests in headless mode in another terminal window
-pnpm test
+yarn test
 ```

@@ -1,4 +1,4 @@
-import { NextRouter } from 'next/router';
+import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import { useCurrentWorkspace } from './current/use-current-workspace';

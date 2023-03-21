@@ -1,12 +1,16 @@
 import type { EditorContainer } from '@blocksuite/editor';
-import { assertExists, Page } from '@blocksuite/store';
+import type { Page } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/store';
+import { useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
-import React from 'react';
+import type React from 'react';
+import { useCallback } from 'react';
 
+import { currentEditorAtom } from '../atoms';
 import { useBlockSuiteWorkspacePageTitle } from '../hooks/use-blocksuite-workspace-page-title';
 import { usePageMeta } from '../hooks/use-page-meta';
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 import { PageNotFoundError } from './affine/affine-error-eoundary';
 import { BlockSuiteEditorHeader } from './blocksuite/header';
 
@@ -45,6 +49,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   const meta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  const setEditor = useSetAtom(currentEditorAtom);
   assertExists(meta);
   return (
     <>
@@ -68,7 +73,13 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         // fixme: remove mode from meta
         mode={isPublic ? 'page' : meta.mode ?? 'page'}
         page={page}
-        onInit={onInit}
+        onInit={useCallback(
+          (page: Page, editor: Readonly<EditorContainer>) => {
+            setEditor(editor);
+            onInit(page, editor);
+          },
+          [onInit, setEditor]
+        )}
         onLoad={onLoad}
       />
     </>

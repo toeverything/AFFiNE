@@ -10,15 +10,15 @@ import { PageNotFoundError } from '../../components/affine/affine-error-eoundary
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
+import type { LocalWorkspace } from '../../shared';
 import {
   BlockSuiteWorkspace,
   LoadPriority,
-  LocalWorkspace,
   RemWorkspaceFlavour,
 } from '../../shared';
 import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { initPage } from '../../utils/blocksuite';
-import { WorkspacePlugin } from '..';
+import type { WorkspacePlugin } from '..';
 
 const getStorage = () => createJSONStorage(() => localStorage);
 

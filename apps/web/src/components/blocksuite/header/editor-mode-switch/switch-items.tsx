@@ -1,4 +1,6 @@
-import React, { cloneElement, HTMLAttributes, useState } from 'react';
+import type { HTMLAttributes } from 'react';
+import type React from 'react';
+import { cloneElement, useState } from 'react';
 
 import Lottie from './CustomLottie';
 import { StyledSwitchItem } from './style';

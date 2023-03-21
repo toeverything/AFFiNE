@@ -1,7 +1,8 @@
 import { toast } from '@affine/component';
-import { MessageCode } from '@affine/datacenter';
+import type { MessageCode } from '@affine/datacenter';
 import { messages } from '@affine/datacenter';
-import React, { useEffect } from 'react';
+import type React from 'react';
+import { useEffect } from 'react';
 
 declare global {
   interface DocumentEventMap {

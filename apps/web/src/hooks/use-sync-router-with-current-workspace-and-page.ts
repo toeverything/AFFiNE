@@ -1,8 +1,9 @@
-import { NextRouter } from 'next/router';
+import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import { currentPageIdAtom, jotaiStore } from '../atoms';
-import { RemWorkspace, RemWorkspaceFlavour } from '../shared';
+import type { RemWorkspace } from '../shared';
+import { RemWorkspaceFlavour } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
 import { useCurrentWorkspace } from './current/use-current-workspace';
 import { useWorkspaces } from './use-workspaces';

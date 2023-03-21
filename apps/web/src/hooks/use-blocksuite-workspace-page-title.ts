@@ -1,7 +1,7 @@
 import { assertExists } from '@blocksuite/store';
 import { useEffect, useState } from 'react';
 
-import { BlockSuiteWorkspace } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 
 export function useBlockSuiteWorkspacePageTitle(
   blockSuiteWorkspace: BlockSuiteWorkspace,
@@ -12,7 +12,7 @@ export function useBlockSuiteWorkspacePageTitle(
   useEffect(() => {
     const page = blockSuiteWorkspace.getPage(pageId);
     setTitle(page?.meta.title || 'AFFiNE');
-    const dispose = blockSuiteWorkspace.meta.pagesUpdated.on(() => {
+    const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
       const page = blockSuiteWorkspace.getPage(pageId);
       assertExists(page);
       setTitle(page?.meta.title || 'AFFiNE');

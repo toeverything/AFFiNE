@@ -1,5 +1,7 @@
-import React from 'react';
-import { SWRConfig, SWRConfiguration } from 'swr';
+import type React from 'react';
+import { memo } from 'react';
+import type { SWRConfiguration } from 'swr';
+import { SWRConfig } from 'swr';
 
 import { fetcher } from '../plugins/affine/fetcher';
 
@@ -8,7 +10,7 @@ const config: SWRConfiguration = {
   fetcher,
 };
 
-export const AffineSWRConfigProvider = React.memo<React.PropsWithChildren>(
+export const AffineSWRConfigProvider = memo<React.PropsWithChildren>(
   function AffineSWRConfigProvider({ children }) {
     return <SWRConfig value={config}>{children}</SWRConfig>;
   }

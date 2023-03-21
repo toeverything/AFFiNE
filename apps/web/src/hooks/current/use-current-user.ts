@@ -1,4 +1,4 @@
-import { AccessTokenMessage } from '@affine/datacenter';
+import type { AccessTokenMessage } from '@affine/datacenter';
 import useSWR from 'swr';
 
 import { QueryKey } from '../../plugins/affine/fetcher';

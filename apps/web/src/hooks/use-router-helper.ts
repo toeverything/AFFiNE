@@ -1,7 +1,7 @@
-import { NextRouter } from 'next/router';
+import type { NextRouter } from 'next/router';
 import { useMemo } from 'react';
 
-import { WorkspaceSubPath } from '../shared';
+import type { WorkspaceSubPath } from '../shared';
 
 export const enum RouteLogic {
   REPLACE = 'replace',

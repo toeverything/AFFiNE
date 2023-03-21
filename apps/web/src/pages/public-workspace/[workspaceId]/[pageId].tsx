@@ -9,7 +9,8 @@ import { PageIcon } from '@blocksuite/icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import React, { Suspense, useEffect } from 'react';
+import type React from 'react';
+import { Suspense, useEffect } from 'react';
 
 import {
   publicBlockSuiteAtom,
@@ -22,7 +23,7 @@ import { PageLoading } from '../../../components/pure/loading';
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
 import { WorkspaceLayout } from '../../../layouts';
-import { NextPageWithLayout } from '../../../shared';
+import type { NextPageWithLayout } from '../../../shared';
 import { initPage } from '../../../utils/blocksuite';
 
 export const NavContainer = styled('div')(({ theme }) => {

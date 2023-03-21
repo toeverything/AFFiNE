@@ -2,7 +2,7 @@ import { WebsocketProvider } from '@affine/datacenter';
 import { assertExists } from '@blocksuite/store';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
-import {
+import type {
   AffineWebSocketProvider,
   BlockSuiteWorkspace,
   LocalIndexedDBProvider,

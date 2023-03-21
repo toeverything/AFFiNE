@@ -1,5 +1,5 @@
 import ModalUnstyled from '@mui/base/ModalUnstyled';
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
 import { styled } from '../../styles';
 import { Wrapper } from '../layout';

@@ -7,8 +7,8 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "AFFiNE",
-    "version": "0.0.2"
+    "productName": "Affine",
+    "version": "0.1.0"
   },
   "tauri": {
     "allowlist": {

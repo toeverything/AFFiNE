@@ -1,5 +1,5 @@
-import { TooltipProps } from '@mui/material';
-import { CSSProperties } from 'react';
+import type { TooltipProps } from '@mui/material';
+import type { CSSProperties } from 'react';
 
 import { Popper, type PopperProps } from '../popper';
 import { StyledMenuWrapper } from './styles';

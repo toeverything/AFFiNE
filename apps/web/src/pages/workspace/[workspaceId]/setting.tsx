@@ -16,11 +16,13 @@ import { useTransformWorkspace } from '../../../hooks/use-transform-workspace';
 import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import {
+import type {
   FlavourToWorkspace,
   NextPageWithLayout,
-  RemWorkspaceFlavour,
   SettingPanel,
+} from '../../../shared';
+import {
+  RemWorkspaceFlavour,
   settingPanel,
   settingPanelValues,
 } from '../../../shared';

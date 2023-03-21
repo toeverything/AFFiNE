@@ -13,19 +13,20 @@ import {
   FavoriteIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import { PageMeta } from '@blocksuite/store';
+import type { PageMeta } from '@blocksuite/store';
 import {
   useMediaQuery,
   useTheme as useMuiTheme,
   useTheme,
 } from '@mui/material';
-import React, { useMemo } from 'react';
+import type React from 'react';
+import { useMemo } from 'react';
 
 import {
   usePageMeta,
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
-import { BlockSuiteWorkspace } from '../../../../shared';
+import type { BlockSuiteWorkspace } from '../../../../shared';
 import DateCell from './DateCell';
 import Empty from './Empty';
 import { OperationCell, TrashOperationCell } from './OperationCell';

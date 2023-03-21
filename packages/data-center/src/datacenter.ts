@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
+import type { Workspace as BlocksuiteWorkspace } from '@blocksuite/store';
 import assert from 'assert';
 
 import { MessageCenter } from './message';

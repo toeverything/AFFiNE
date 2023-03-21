@@ -1,7 +1,7 @@
 import { IconButton, Modal, ModalWrapper } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
-import React from 'react';
+import type React from 'react';
 
 import { useCurrentUser } from '../../../hooks/current/use-current-user';
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';

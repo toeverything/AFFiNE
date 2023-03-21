@@ -1,12 +1,12 @@
-import React from 'react';
+import type React from 'react';
 
-import {
+import type {
   BlockSuiteWorkspace,
   FlavourToWorkspace,
   LoadPriority,
-  RemWorkspaceFlavour,
   SettingPanel,
 } from '../shared';
+import { RemWorkspaceFlavour } from '../shared';
 import { AffinePlugin } from './affine';
 import { LocalPlugin } from './local';
 

@@ -8,6 +8,7 @@
 //   memberCount: number;
 //   provider: string;
 // };
+import type { DebugLogger } from '@affine/debug';
 
 declare global {
   interface Window {
@@ -24,8 +25,7 @@ export type User = {
 };
 
 // export type WorkspaceMeta = Pick<WorkspaceInfo, 'name' | 'avatar'>;
-
-export type Logger = typeof import('@affine/debug').DebugLogger;
+export type Logger = DebugLogger;
 
 export type Message = {
   code: number;
