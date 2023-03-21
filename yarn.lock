@@ -107,7 +107,7 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230320164115-e612d17
     "@blocksuite/editor": 0.5.0-20230320164115-e612d17
-    "@blocksuite/global": 0.5.0-20230320034723-8dfc65e
+    "@blocksuite/global": 0.5.0-20230320164115-e612d17
     "@blocksuite/icons": 2.0.23
     "@blocksuite/store": 0.5.0-20230320164115-e612d17
     "@emotion/cache": ^11.10.5
@@ -202,7 +202,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@blocksuite/global": 0.5.0-20230320034723-8dfc65e
+    "@blocksuite/global": 0.5.0-20230320164115-e612d17
     lit: ^2.6.1
     next: =13.2.3
     react: ^18.2.0
@@ -1772,21 +1772,6 @@ __metadata:
     "@blocksuite/blocks": 0.5.0-20230320164115-e612d17
     "@blocksuite/store": 0.5.0-20230320164115-e612d17
   checksum: 8e797059cd2df4ae3f17d9c39ae3b8493d40cb26303a0aee53113a6dc5d60943fc7bea008f8928543267e2883fb729230aedb90a142b5c01c330d044befbb0a3
-  languageName: node
-  linkType: hard
-
-"@blocksuite/global@npm:0.5.0-20230320034723-8dfc65e":
-  version: 0.5.0-20230320034723-8dfc65e
-  resolution: "@blocksuite/global@npm:0.5.0-20230320034723-8dfc65e"
-  dependencies:
-    ansi-colors: ^4.1.3
-    zod: ^3.21.4
-  peerDependencies:
-    lit: ^2.6
-  peerDependenciesMeta:
-    lit:
-      optional: true
-  checksum: 9f07c7e31d1967fd66760f3faed539127e57d3538ea46eb99880fed9812e279f02ca9967f90153d7e03e5dfd5061b4c0db3a104e28af4c90eeb19f93bc7939c9
   languageName: node
   linkType: hard
 
