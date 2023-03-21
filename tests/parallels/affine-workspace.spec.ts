@@ -1,5 +1,5 @@
-import { uuidv4 } from '@blocksuite/store';
 import { expect } from '@playwright/test';
+import { nanoid } from 'nanoid';
 
 import userA from '../fixtures/userA.json';
 import { test } from '../libs/playwright';
@@ -28,7 +28,7 @@ test.describe('affine workspace', () => {
     await openHomePage(page);
     const [a] = await createFakeUser();
     await loginUser(page, a);
-    const name = `test-${uuidv4()}`;
+    const name = `test-${nanoid()}`;
     await createWorkspace({ name }, page);
     await page.waitForTimeout(50);
     await clickSideBarSettingButton(page);
