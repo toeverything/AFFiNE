@@ -72,6 +72,15 @@ export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
   {}
 );
 
+export type PreferredModeRecord = Record<
+  RemWorkspace['id'],
+  'page' | 'edgeless'
+>;
+export const workspacePreferredModeAtom = atomWithStorage<PreferredModeRecord>(
+  'preferredMode',
+  {}
+);
+
 export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
   null,
   (get, set, id, value) => {
