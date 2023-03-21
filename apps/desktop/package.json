@@ -7,7 +7,7 @@
   "module": "true",
   "scripts": {
     "dev:app": "NODE_ENV=development tauri dev",
-    "dev:web": "pnpm --filter @affine/app dev",
+    "dev:web": "yarn workspace @affine/app dev",
     "build:rs-types": "zx scripts/generateTsTypingsFromJsonSchema.mjs",
     "build:affine": "zx scripts/buildAffine.mjs",
     "build:preload": "esbuild src/preload/index.ts --outdir=public/preload",
