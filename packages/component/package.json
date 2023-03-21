@@ -19,7 +19,6 @@
     "@blocksuite/editor": "0.5.0-20230320164115-e612d17",
     "@blocksuite/global": "0.5.0-20230320034723-8dfc65e",
     "@blocksuite/icons": "2.0.23",
-    "@blocksuite/react": "0.5.0-20230320034723-8dfc65e",
     "@blocksuite/store": "0.5.0-20230320164115-e612d17",
     "@emotion/cache": "^11.10.5",
     "@emotion/react": "^11.10.6",

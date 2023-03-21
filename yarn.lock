@@ -24,7 +24,6 @@ __metadata:
     "@blocksuite/blocks": 0.5.0-20230320164115-e612d17
     "@blocksuite/editor": 0.5.0-20230320164115-e612d17
     "@blocksuite/icons": 2.0.23
-    "@blocksuite/react": 0.5.0-20230320034723-8dfc65e
     "@blocksuite/store": 0.5.0-20230320164115-e612d17
     "@emotion/cache": ^11.10.5
     "@emotion/react": ^11.10.6
@@ -110,7 +109,6 @@ __metadata:
     "@blocksuite/editor": 0.5.0-20230320164115-e612d17
     "@blocksuite/global": 0.5.0-20230320034723-8dfc65e
     "@blocksuite/icons": 2.0.23
-    "@blocksuite/react": 0.5.0-20230320034723-8dfc65e
     "@blocksuite/store": 0.5.0-20230320164115-e612d17
     "@emotion/cache": ^11.10.5
     "@emotion/react": ^11.10.6
@@ -1828,22 +1826,6 @@ __metadata:
     nanoid: ^4
     yjs: ^13
   checksum: 06fb6d531aa84838cbcaf0b5ddb0e1da40a98da165e570ac70348e76e459a6a9c93ee71bd4b536b05e4dd51e89bf243d96eb6add755ffda20d2dcd6e497bd2fa
-  languageName: node
-  linkType: hard
-
-"@blocksuite/react@npm:0.5.0-20230320034723-8dfc65e":
-  version: 0.5.0-20230320034723-8dfc65e
-  resolution: "@blocksuite/react@npm:0.5.0-20230320034723-8dfc65e"
-  dependencies:
-    "@blocksuite/global": 0.5.0-20230320034723-8dfc65e
-    zustand: ^4.3.6
-  peerDependencies:
-    "@blocksuite/blocks": 0.5.0-20230320034723-8dfc65e
-    "@blocksuite/editor": 0.5.0-20230320034723-8dfc65e
-    "@blocksuite/store": 0.5.0-20230320034723-8dfc65e
-    react: ">=18.0.0"
-    react-dom: ">=18.0.0"
-  checksum: c972b68946d83160297ab94f33c13335826d5b8c80d591288dd2dd74b18e8ca0ffe134ac5044b88f5f685c575382a2edcff232655f67c61a5dcac25909431c12
   languageName: node
   linkType: hard
 
@@ -19704,7 +19686,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"use-sync-external-store@npm:1.2.0, use-sync-external-store@npm:^1.2.0":
+"use-sync-external-store@npm:^1.2.0":
   version: 1.2.0
   resolution: "use-sync-external-store@npm:1.2.0"
   peerDependencies:
@@ -20616,23 +20598,6 @@ __metadata:
   version: 3.21.4
   resolution: "zod@npm:3.21.4"
   checksum: f185ba87342ff16f7a06686767c2b2a7af41110c7edf7c1974095d8db7a73792696bcb4a00853de0d2edeb34a5b2ea6a55871bc864227dace682a0a28de33e1f
-  languageName: node
-  linkType: hard
-
-"zustand@npm:^4.3.6":
-  version: 4.3.6
-  resolution: "zustand@npm:4.3.6"
-  dependencies:
-    use-sync-external-store: 1.2.0
-  peerDependencies:
-    immer: ">=9.0"
-    react: ">=16.8"
-  peerDependenciesMeta:
-    immer:
-      optional: true
-    react:
-      optional: true
-  checksum: 4d3cec03526f04ff3de6dc45b6f038c47f091836af9660fbf5f682cae1628221102882df20e4048dfe699a43f67424e5d6afc1116f3838a80eea5dd4f95ddaed
   languageName: node
   linkType: hard
 
