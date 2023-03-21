@@ -3,6 +3,9 @@ name: Build & Test
 on:
   pull_request_target:
     branches: [master]
+    types:
+      - labeled
+      - unlabeled
     paths-ignore:
       - '.husky'
       - '.vscode'
@@ -19,10 +22,13 @@ jobs:
   build:
     name: Build on Pull Request
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     environment: development
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Use Node.js LTS
         uses: actions/setup-node@v3
         with:
@@ -148,6 +154,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Use Node.js LTS
         uses: actions/setup-node@v3
         with:
