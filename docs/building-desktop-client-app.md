@@ -19,9 +19,9 @@ To run AFFiNE Desktop Client Application locally, run the following commands in 
 
 ```sh
 
-pnpm install
-pnpm build:preload
-pnpm dev:app
+yarn install
+yarn build:preload
+yarn dev:app
 
 ```
 

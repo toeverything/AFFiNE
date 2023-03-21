@@ -3,8 +3,11 @@ name: Build & Test
 on:
   pull_request_target:
     branches: [master]
-
-# Cancels all previous workflow runs for pull requests that have not completed.
+    paths-ignore:
+      - '.husky'
+      - '.vscode'
+      - 'docs/**'
+      - 'README.md'
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
 concurrency:
   # The concurrency group contains the workflow name and the branch name for
