@@ -21,6 +21,7 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/i18n": "workspace:*"
+    "@affine/templates": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230320164115-e612d17
     "@blocksuite/editor": 0.5.0-20230320164115-e612d17
     "@blocksuite/icons": 2.0.23
@@ -63,6 +64,17 @@ __metadata:
     y-protocols: ^1.0.5
     yjs: ^13.5.50
     zod: ^3.21.4
+  languageName: unknown
+  linkType: soft
+
+"@affine/cli@workspace:*, @affine/cli@workspace:packages/cli":
+  version: 0.0.0-use.local
+  resolution: "@affine/cli@workspace:packages/cli"
+  dependencies:
+    "@clack/core": ^0.3.2
+    "@clack/prompts": ^0.6.3
+  bin:
+    dev-web: ./src/dev.mjs
   languageName: unknown
   linkType: soft
 
@@ -229,7 +241,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/templates@workspace:packages/templates":
+"@affine/templates@workspace:*, @affine/templates@workspace:packages/templates":
   version: 0.0.0-use.local
   resolution: "@affine/templates@workspace:packages/templates"
   languageName: unknown
@@ -1847,6 +1859,28 @@ __metadata:
     lit: ^2
     yjs: ^13
   checksum: 3e9154f4abe501f5a880a4c2fed45077451b55bbf6386cb1cd8fb7efd4e621818961b9cdcadcd1f00d1b97760b6b509557b866addd9b18fab0f8410f7ac9139c
+  languageName: node
+  linkType: hard
+
+"@clack/core@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "@clack/core@npm:0.3.2"
+  dependencies:
+    picocolors: ^1.0.0
+    sisteransi: ^1.0.5
+  checksum: a4b6708d47b9df9d2899f5ec60e34b4ae7831e951da136dadb690ccc8d21ba5c8465e24fb6d9c2c510ef388774d509dcf44f3d5ff9a1c28b9474a541ac07efce
+  languageName: node
+  linkType: hard
+
+"@clack/prompts@npm:^0.6.3":
+  version: 0.6.3
+  resolution: "@clack/prompts@npm:0.6.3"
+  dependencies:
+    "@clack/core": ^0.3.2
+    is-unicode-supported: "*"
+    picocolors: ^1.0.0
+    sisteransi: ^1.0.5
+  checksum: 6943e46b4c37c62ca7734459f68b60f819db0c3da6dfdfacfadbf8f4abefc22b177884469c6f2b6a2906ac2d03baff59b72fc9c0802f34255e29ab541111e6d9
   languageName: node
   linkType: hard
 
@@ -7350,6 +7384,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "AFFiNE@workspace:."
   dependencies:
+    "@affine/cli": "workspace:*"
     "@perfsee/sdk": ^1.5.1
     "@playwright/test": ^1.31.2
     "@testing-library/react": ^14.0.0
@@ -13222,6 +13257,13 @@ __metadata:
   version: 1.0.0
   resolution: "is-typedarray@npm:1.0.0"
   checksum: 3508c6cd0a9ee2e0df2fa2e9baabcdc89e911c7bd5cf64604586697212feec525aa21050e48affb5ffc3df20f0f5d2e2cf79b08caa64e1ccc9578e251763aef7
+  languageName: node
+  linkType: hard
+
+"is-unicode-supported@npm:*":
+  version: 1.3.0
+  resolution: "is-unicode-supported@npm:1.3.0"
+  checksum: 20a1fc161afafaf49243551a5ac33b6c4cf0bbcce369fcd8f2951fbdd000c30698ce320de3ee6830497310a8f41880f8066d440aa3eb0a853e2aa4836dd89abc
   languageName: node
   linkType: hard
 
