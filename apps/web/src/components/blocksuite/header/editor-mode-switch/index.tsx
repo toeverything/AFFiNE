@@ -41,7 +41,7 @@ export const EditorModeSwitch = ({
         active={currentMode === 'page'}
         hide={trash && currentMode !== 'page'}
         onClick={() => {
-          setMode(mode => ({ ...mode, [blockSuiteWorkspace.id]: 'page' }));
+          setMode(mode => ({ ...mode, [pageMeta.id]: 'page' }));
           toast('Page mode');
         }}
       />
@@ -50,7 +50,7 @@ export const EditorModeSwitch = ({
         active={currentMode === 'edgeless'}
         hide={trash && currentMode !== 'edgeless'}
         onClick={() => {
-          setMode(mode => ({ ...mode, [blockSuiteWorkspace.id]: 'edgeless' }));
+          setMode(mode => ({ ...mode, [pageMeta.id]: 'edgeless' }));
           toast('Edgeless mode');
         }}
       />

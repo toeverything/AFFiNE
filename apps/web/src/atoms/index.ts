@@ -1,4 +1,5 @@
 import type { EditorContainer } from '@blocksuite/editor';
+import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
@@ -72,10 +73,7 @@ export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
   {}
 );
 
-export type PreferredModeRecord = Record<
-  RemWorkspace['id'],
-  'page' | 'edgeless'
->;
+export type PreferredModeRecord = Record<Page['id'], 'page' | 'edgeless'>;
 export const workspacePreferredModeAtom = atomWithStorage<PreferredModeRecord>(
   'preferredMode',
   {}
