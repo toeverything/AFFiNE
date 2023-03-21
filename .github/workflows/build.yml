@@ -3,6 +3,9 @@ name: Build & Test
 on:
   pull_request_target:
     branches: [master]
+    types:
+      - labeled
+      - unlabeled
     paths-ignore:
       - '.husky'
       - '.vscode'
@@ -19,6 +22,7 @@ jobs:
   build:
     name: Build on Pull Request
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     environment: development
 
     steps:
