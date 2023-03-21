@@ -86,6 +86,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
