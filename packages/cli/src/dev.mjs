@@ -15,11 +15,19 @@ const dev = await p.group(
         message: `Select dev server`,
         initialValue: 'local',
         options: [
-          { value: 'dev', label: 'dev - 100.84.105.99:11001' },
           {
             value: 'local',
             label: 'local - 127.0.0.1:3000',
             hint: 'recommend',
+          },
+          { value: 'dev', label: 'dev - 100.84.105.99:11001' },
+          {
+            value: 'ac',
+            label: 'ac - 100.85.73.88:12001',
+          },
+          {
+            value: 'test',
+            label: 'test - 100.84.105.99:11001',
           },
         ],
       }),
