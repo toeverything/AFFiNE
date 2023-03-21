@@ -1,0 +1,15 @@
+{
+  "name": "@affine/cli",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "dev-web": "./src/dev.mjs"
+  },
+  "scripts": {
+    "start": "node ./src/dev.mjs"
+  },
+  "devDependencies": {
+    "@clack/core": "^0.3.2",
+    "@clack/prompts": "^0.6.3"
+  }
+}
