@@ -16,6 +16,7 @@
     "build": "yarn workspace @affine/app build",
     "build:client": "yarn workspace @affine/client-app build:app",
     "build:storybook": "yarn workspace @affine/component build-storybook",
+    "bump:nightly": "./scripts/bump-blocksuite.sh",
     "export": "yarn workspace @affine/app export",
     "start": "yarn workspace @affine/app start",
     "lint": "eslint . --ext .js,mjs,.ts,.tsx",
