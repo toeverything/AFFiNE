@@ -18,9 +18,6 @@ jobs:
     environment: development
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/github-script@v6
         with:
           script: |
@@ -52,6 +49,9 @@ jobs:
               })
               throw new Error('not allowed')
             }
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Use Node.js LTS
         uses: actions/setup-node@v3
         with:
