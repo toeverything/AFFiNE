@@ -15,8 +15,10 @@ import {
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
+import { useAtom } from 'jotai';
 import { useState } from 'react';
 
+import { workspacePreferredModeAtom } from '../../../../atoms';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import {
@@ -37,8 +39,10 @@ export const EditorOptionMenu = () => {
   const pageMeta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  const [record, set] = useAtom(workspacePreferredModeAtom);
+  const mode = record[pageId] ?? 'page';
   assertExists(pageMeta);
-  const { mode = 'page', favorite, trash } = pageMeta;
+  const { favorite, trash } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [open, setOpen] = useState(false);
 
@@ -68,9 +72,10 @@ export const EditorOptionMenu = () => {
         iconSize={[20, 20]}
         data-testid="editor-option-menu-edgeless"
         onClick={() => {
-          setPageMeta(pageId, {
-            mode: mode === 'page' ? 'edgeless' : 'page',
-          });
+          set(record => ({
+            ...record,
+            [pageId]: mode === 'page' ? 'edgeless' : 'page',
+          }));
         }}
       >
         {t('Convert to ')}
