@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import * as p from '@clack/prompts';
-
+import os from 'os';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -46,11 +46,13 @@ if (dev.server === 'local') {
 
 const env = {
   NODE_API_SERVER: dev.server,
+  PATH: process.env.PATH,
 };
 
-const cwd = path.resolve(__dirname, '..', '..', '..', 'apps', 'web');
+const root = path.resolve(__dirname, '..', '..', '..');
+const cwd = path.resolve(root, 'apps', 'web');
 
-const process = spawn('yarn', ['dev'], {
+spawn('yarn', ['dev'], {
   env,
   cwd,
   stdio: 'inherit',
