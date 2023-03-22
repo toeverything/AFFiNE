@@ -50,6 +50,12 @@
     },
     {
       "path": "./packages/env"
+    },
+    {
+      "path": "./packages/debug"
+    },
+    {
+      "path": "./packages/cli"
     }
   ],
   "files": [],
