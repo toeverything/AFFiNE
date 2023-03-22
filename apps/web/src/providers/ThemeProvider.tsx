@@ -6,14 +6,12 @@ import {
   ThemeProvider as AffineThemeProvider,
 } from '@affine/component';
 import { GlobalStyles } from '@mui/material';
-import { useAtomValue } from 'jotai';
 import { ThemeProvider as NextThemeProvider, useTheme } from 'next-themes';
 import type { PropsWithChildren } from 'react';
 import type React from 'react';
 import { memo, useEffect, useMemo, useState } from 'react';
 
-import { workspacePreferredModeAtom } from '../atoms';
-import { useCurrentPage } from '../hooks/current/use-current-page-id';
+import { useCurrentMode } from '../hooks/current/use-current-mode';
 
 const ThemeInjector = memo<{
   themeStyle: AffineTheme;
@@ -40,9 +38,7 @@ const ThemeInjector = memo<{
 const ThemeProviderInner = memo<React.PropsWithChildren>(
   function ThemeProviderInner({ children }) {
     const { resolvedTheme: theme } = useTheme();
-    const currentPage = useCurrentPage();
-    const record = useAtomValue(workspacePreferredModeAtom);
-    const editorMode = currentPage ? record[currentPage.id] ?? 'page' : 'page';
+    const editorMode = useCurrentMode();
     const themeStyle = useMemo(() => getLightTheme(editorMode), [editorMode]);
     const darkThemeStyle = useMemo(
       () => getDarkTheme(editorMode),
