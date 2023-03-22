@@ -4,13 +4,6 @@ on:
   issue_comment:
     types: [created]
 
-# See https://docs.github.com/en/actions/using-jobs/using-concurrency
-concurrency:
-  # The concurrency group contains the workflow name and the branch name for
-  # pull requests or the commit hash for any other events.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && github.head_ref || github.sha }}
-  cancel-in-progress: true
-
 env:
   BUILD_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
