@@ -1,16 +1,8 @@
 name: Build & Test
 
 on:
-  pull_request_target:
-    branches: [master]
-    types:
-      - labeled
-      - unlabeled
-    paths-ignore:
-      - '.husky'
-      - '.vscode'
-      - 'docs/**'
-      - 'README.md'
+  issue_comment:
+    types: [created]
 # See https://docs.github.com/en/actions/using-jobs/using-concurrency
 concurrency:
   # The concurrency group contains the workflow name and the branch name for
@@ -22,10 +14,41 @@ jobs:
   build:
     name: Build on Pull Request
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
+    if: github.repository == 'toeverything/AFFiNE' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/test run')
     environment: development
 
     steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const user = context.payload.sender.login
+            console.log(`Validate user: ${user}`)
+            let isAffineMember = false
+            try {
+              const { status } = await github.rest.orgs.checkMembershipForUser({
+                org: 'toeverything',
+                username: user
+              });
+              isAffineMember = (status === 204)
+            } catch (e) {}
+            if (isAffineMember) {
+              console.log('Allowed')
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: '+1',
+              })
+            } else {
+              console.log('Not allowed')
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: '-1',
+              })
+              throw new Error('not allowed')
+            }
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
