@@ -20416,7 +20416,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"y-indexeddb@npm:^9.0.9":
+"y-indexeddb@npm:9.0.9":
   version: 9.0.9
   resolution: "y-indexeddb@npm:9.0.9"
   dependencies:
@@ -20424,6 +20424,17 @@ __metadata:
   peerDependencies:
     yjs: ^13.0.0
   checksum: 77196c29f8fd0e738694a8991f9568ea1782e1e9d5354479bba42d7a007e9d4a65d7274671e035217201a9dea5e0d3169a8dad1be0943e3d55f8fdf94588fb5a
+  languageName: node
+  linkType: hard
+
+"y-indexeddb@patch:y-indexeddb@npm%3A9.0.9#./.yarn/patches/y-indexeddb-npm-9.0.9-6bd9b26461.patch::locator=AFFiNE%40workspace%3A.":
+  version: 9.0.9
+  resolution: "y-indexeddb@patch:y-indexeddb@npm%3A9.0.9#./.yarn/patches/y-indexeddb-npm-9.0.9-6bd9b26461.patch::version=9.0.9&hash=4f03bc&locator=AFFiNE%40workspace%3A."
+  dependencies:
+    lib0: ^0.2.35
+  peerDependencies:
+    yjs: ^13.0.0
+  checksum: 35079412e049c75359bbcd760d881b495db2386fb8acdc3f2b70dabdccf4f1ec43ab4b7958ea619cdb8a55b57ae26b3aad305daff38b3d9b56db79840892143b
   languageName: node
   linkType: hard
 
