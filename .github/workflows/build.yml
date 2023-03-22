@@ -100,6 +100,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      checks: write
     services:
       octobase:
         image: ghcr.io/toeverything/cloud:nightly-latest
