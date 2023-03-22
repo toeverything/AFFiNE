@@ -20,7 +20,7 @@ import {
   useTheme,
 } from '@mui/material';
 import type React from 'react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
   usePageMeta,
@@ -85,9 +85,13 @@ type PageListProps = {
 };
 
 const filter = {
-  all: (pageMeta: PageMeta) => !pageMeta.trash,
-  trash: (pageMeta: PageMeta) => pageMeta.trash,
-  favorite: (pageMeta: PageMeta) => pageMeta.favorite,
+  all: (pageMeta: PageMeta, allMetas: PageMeta[]) => !pageMeta.trash,
+  trash: (pageMeta: PageMeta, allMetas: PageMeta[]) => {
+    const parentMeta = allMetas.find(m => m.subpageIds?.includes(pageMeta.id));
+    return !parentMeta?.trash && pageMeta.trash;
+  },
+  favorite: (pageMeta: PageMeta, allMetas: PageMeta[]) =>
+    pageMeta.favorite && !pageMeta.trash,
 };
 
 export const PageList: React.FC<PageListProps> = ({
@@ -103,8 +107,25 @@ export const PageList: React.FC<PageListProps> = ({
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
   const isTrash = listType === 'trash';
   const list = useMemo(
-    () => pageList.filter(filter[listType ?? 'all']),
+    () =>
+      pageList.filter(pageMeta =>
+        filter[listType ?? 'all'](pageMeta, pageList)
+      ),
     [pageList, listType]
+  );
+  const restorePage = useCallback(
+    (pageMeta: PageMeta, allMetas: PageMeta[]) => {
+      helper.setPageMeta(pageMeta.id, {
+        trash: false,
+      });
+
+      allMetas
+        .filter(m => pageMeta?.subpageIds.includes(m.id))
+        .forEach(m => {
+          restorePage(m, allMetas);
+        });
+    },
+    [helper]
   );
   if (list.length === 0) {
     return <Empty listType={listType} />;
@@ -191,9 +212,7 @@ export const PageList: React.FC<PageListProps> = ({
                               blockSuiteWorkspace.removePage(pageId);
                             }}
                             onRestorePage={() => {
-                              helper.setPageMeta(pageMeta.id, {
-                                trash: false,
-                              });
+                              restorePage(pageMeta, pageList);
                             }}
                             onOpenPage={pageId => {
                               onClickPage(pageId, false);

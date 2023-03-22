@@ -20,6 +20,7 @@ import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
+import { Pivot } from './pivot';
 import {
   StyledLink,
   StyledListItem,
@@ -168,6 +169,15 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <span data-testid="all-pages">{t('All pages')}</span>
             </StyledListItem>
           </Link>
+
+          {!!currentWorkspace && (
+            <Pivot
+              currentWorkspace={currentWorkspace}
+              openPage={openPage}
+              allMetas={pageMeta}
+            />
+          )}
+
           <StyledListItem
             active={
               currentPath ===

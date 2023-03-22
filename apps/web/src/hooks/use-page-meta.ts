@@ -7,6 +7,7 @@ declare module '@blocksuite/store' {
   interface PageMeta {
     mode?: 'page' | 'edgeless';
     favorite?: boolean;
+    subpageIds: string[];
     trash?: boolean;
     trashDate?: number;
     // whether to create the page with the default template
@@ -45,6 +46,9 @@ export function usePageMetaHelper(blockSuiteWorkspace: BlockSuiteWorkspace) {
     () => ({
       setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
         blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);
+      },
+      getPageMeta: (pageId: string) => {
+        return blockSuiteWorkspace.meta.getPageMeta(pageId);
       },
     }),
     [blockSuiteWorkspace]
