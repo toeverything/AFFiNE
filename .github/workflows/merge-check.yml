@@ -21,7 +21,7 @@ jobs:
               repo: context.repo.repo,
               ref: context.payload.merge_group.head_ref,
             })
-            const names = data.check_runs.map((run) => run.name)
+            const names = data.check_suites.map((run) => run.name)
             assert(names.includes('E2E Test (1/4)'), 'E2E Test (1/4) not found')
             assert(names.includes('E2E Test (2/4)'), 'E2E Test (2/4) not found')
             assert(names.includes('E2E Test (3/4)'), 'E2E Test (3/4) not found')
