@@ -6,8 +6,8 @@ import type { TreeViewProps } from './types';
 export const TreeView = <N,>({ data, ...otherProps }: TreeViewProps<N>) => {
   return (
     <DndProvider backend={HTML5Backend}>
-      {data.map(node => (
-        <TreeNode key={node.id} node={node} {...otherProps} />
+      {data.map((node, index) => (
+        <TreeNode key={node.id} index={index} node={node} {...otherProps} />
       ))}
     </DndProvider>
   );

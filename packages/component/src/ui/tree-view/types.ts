@@ -18,11 +18,21 @@ export type Node<N> = {
 type CommonProps<N> = {
   onAdd?: (node: Node<N>) => void;
   onDelete?: (node: Node<N>) => void;
-  onDrop?: (dragNode: Node<N>, dropNode: Node<N>, dropUnder: boolean) => void;
+  onDrop?: (
+    dragNode: Node<N>,
+    dropNode: Node<N>,
+    position: {
+      topLine: boolean;
+      bottomLine: boolean;
+      internal: boolean;
+    }
+  ) => void;
 };
 
 export type TreeNodeProps<N> = {
   node: Node<N>;
+  index: number;
+  allDrop?: boolean;
 } & CommonProps<N>;
 
 export type TreeViewProps<N> = {
@@ -31,4 +41,5 @@ export type TreeViewProps<N> = {
 
 export type NodeLIneProps<N> = {
   allowDrop: boolean;
+  isTop?: boolean;
 } & Pick<TreeNodeProps<N>, 'node' | 'onDrop'>;

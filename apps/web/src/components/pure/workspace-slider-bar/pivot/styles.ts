@@ -31,15 +31,17 @@ export const StyledPivotItem = styled('div')<{ active: boolean }>(
   }
 );
 
-export const StyledCollapsedButton = styled(IconButton)<{ show: boolean }>(
-  ({ show }) => {
-    return {
-      display: show ? 'block' : 'none',
-      position: 'absolute',
-      left: '0px',
-      top: '0px',
-      bottom: '0px',
-      margin: 'auto',
-    };
-  }
-);
+export const StyledCollapsedButton = styled(IconButton, {
+  shouldForwardProp: prop => {
+    return !['show'].includes(prop as string);
+  },
+})<{ show: boolean }>(({ show }) => {
+  return {
+    display: show ? 'block' : 'none',
+    position: 'absolute',
+    left: '0px',
+    top: '0px',
+    bottom: '0px',
+    margin: 'auto',
+  };
+});

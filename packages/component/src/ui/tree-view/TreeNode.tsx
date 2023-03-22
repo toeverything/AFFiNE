@@ -9,7 +9,12 @@ import {
 } from './styles';
 import type { Node, NodeLIneProps, TreeNodeProps } from './types';
 
-const NodeLine = <N,>({ node, onDrop, allowDrop = true }: NodeLIneProps<N>) => {
+const NodeLine = <N,>({
+  node,
+  onDrop,
+  allowDrop = true,
+  isTop = false,
+}: NodeLIneProps<N>) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: 'node',
@@ -18,20 +23,29 @@ const NodeLine = <N,>({ node, onDrop, allowDrop = true }: NodeLIneProps<N>) => {
         if (didDrop) {
           return;
         }
-        onDrop?.(item, node, true);
+        onDrop?.(item, node, {
+          internal: false,
+          topLine: isTop,
+          bottomLine: !isTop,
+        });
       },
       collect: monitor => ({
         isOver: monitor.isOver(),
-        canDrop: monitor.canDrop() && allowDrop,
+        canDrop: monitor.canDrop(),
       }),
     }),
     [onDrop]
   );
 
-  return <StyledNodeLine ref={drop} show={isOver && allowDrop} />;
+  return <StyledNodeLine ref={drop} show={isOver && allowDrop} isTop={isTop} />;
 };
 
-export const TreeNode = <N,>({ node, ...otherProps }: TreeNodeProps<N>) => {
+export const TreeNode = <N,>({
+  node,
+  index,
+  allDrop = true,
+  ...otherProps
+}: TreeNodeProps<N>) => {
   const { onAdd, onDelete, onDrop } = otherProps;
   const [collapsed, setCollapsed] = useState(false);
 
@@ -48,46 +62,66 @@ export const TreeNode = <N,>({ node, ...otherProps }: TreeNodeProps<N>) => {
       accept: 'node',
       drop: (item: Node<N>, monitor) => {
         const didDrop = monitor.didDrop();
-        if (didDrop || item.id === node.id) {
+        if (didDrop || item.id === node.id || !allDrop) {
           return;
         }
-        onDrop?.(item, node, false);
+        onDrop?.(item, node, {
+          internal: true,
+          topLine: false,
+          bottomLine: false,
+        });
       },
       collect: monitor => ({
         isOver: monitor.isOver(),
         canDrop: monitor.canDrop(),
       }),
     }),
-    [onDrop]
+    [onDrop, allDrop]
   );
 
   return (
-    <>
-      <StyledTreeNodeContainer
+    <StyledTreeNodeContainer ref={drag} isDragging={isDragging}>
+      <StyledTreeNodeItem
         ref={drop}
         isOver={isOver && !isDragging}
         canDrop={canDrop}
       >
-        <StyledTreeNodeItem ref={drag} isDragging={isDragging}>
-          {node.render?.(node, {
-            onAdd: () => onAdd?.(node),
-            onDelete: () => onDelete?.(node),
-            collapsed,
-            setCollapsed,
-          })}
-        </StyledTreeNodeItem>
-        {(!node.children?.length || collapsed) && (
-          <NodeLine node={node} {...otherProps} allowDrop={!isDragging} />
+        {index === 0 && (
+          <NodeLine
+            node={node}
+            {...otherProps}
+            allowDrop={!isDragging && allDrop}
+            isTop={true}
+          />
         )}
-      </StyledTreeNodeContainer>
+        {node.render?.(node, {
+          onAdd: () => onAdd?.(node),
+          onDelete: () => onDelete?.(node),
+          collapsed,
+          setCollapsed,
+        })}
+        {(!node.children?.length || collapsed) && (
+          <NodeLine
+            node={node}
+            {...otherProps}
+            allowDrop={!isDragging && allDrop}
+          />
+        )}
+      </StyledTreeNodeItem>
 
       <StyledCollapse in={!collapsed}>
         {node.children &&
-          node.children.map(childNode => (
-            <TreeNode key={childNode.id} node={childNode} {...otherProps} />
+          node.children.map((childNode, index) => (
+            <TreeNode
+              key={childNode.id}
+              node={childNode}
+              index={index}
+              allDrop={isDragging ? false : allDrop}
+              {...otherProps}
+            />
           ))}
       </StyledCollapse>
-    </>
+    </StyledTreeNodeContainer>
   );
 };
 

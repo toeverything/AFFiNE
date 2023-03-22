@@ -61,33 +61,56 @@ export const PivotInternal = ({
   );
 
   const handleDrop = useCallback(
-    (dragNode: TreeNode, dropNode: TreeNode, dropUnder: boolean) => {
-      logger.info('handleDrop', { dragNode, dropNode, dropUnder, allMetas });
+    (
+      dragNode: TreeNode,
+      dropNode: TreeNode,
+      position: {
+        topLine: boolean;
+        bottomLine: boolean;
+        internal: boolean;
+      }
+    ) => {
+      const { topLine, bottomLine } = position;
+      logger.info('handleDrop', { dragNode, dropNode, bottomLine, allMetas });
 
       const dragParentMeta = allMetas.find(meta =>
         meta.subpageIds?.includes(dragNode.id)
       );
-      // drop into the line
-      if (dropUnder) {
+      if (bottomLine || topLine) {
+        const insertOffset = bottomLine ? 1 : 0;
         const dropParentMeta = allMetas.find(m =>
           m.subpageIds?.includes(dropNode.id)
         );
 
         // FIXME: should support resort root meta
-        if (!dropParentMeta && dragParentMeta) {
+        if (!dropParentMeta) {
           // drop into root
           logger.info('drop into root and resort');
 
-          const deleteIndex = dragParentMeta.subpageIds?.findIndex(
-            id => id === dragNode.id
-          );
-          const newSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
-          newSubpageIds.splice(deleteIndex, 1);
+          if (dragParentMeta) {
+            const newSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
+
+            const deleteIndex = dragParentMeta.subpageIds?.findIndex(
+              id => id === dragNode.id
+            );
+            newSubpageIds.splice(deleteIndex, 1);
+            // FIXME: remove ts-ignore after blocksuite update
+            // @ts-ignore
+            setPageMeta(dragParentMeta.id, {
+              subpageIds: newSubpageIds,
+            });
+          }
+
+          logger.info('resort root meta');
+          const insertIndex =
+            allMetas.findIndex(m => m.id === dropNode.id) + insertOffset;
           // FIXME: remove ts-ignore after blocksuite update
           // @ts-ignore
-          setPageMeta(dragParentMeta.id, {
-            subpageIds: newSubpageIds,
-          });
+          currentWorkspace.blockSuiteWorkspace.movePage(
+            dragNode.id,
+            insertIndex
+          );
+
           return;
         }
 
@@ -104,7 +127,7 @@ export const PivotInternal = ({
           newSubpageIds.splice(deleteIndex, 1);
 
           const insertIndex =
-            newSubpageIds.findIndex(id => id === dropNode.id) + 1;
+            newSubpageIds.findIndex(id => id === dropNode.id) + insertOffset;
           newSubpageIds.splice(insertIndex, 0, dragNode.id);
           // FIXME: remove ts-ignore after blocksuite update
           // @ts-ignore

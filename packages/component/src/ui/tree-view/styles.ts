@@ -7,7 +7,7 @@ export const StyledCollapse = styled(MuiCollapse)(() => {
     paddingLeft: '12px',
   };
 });
-export const StyledTreeNodeContainer = styled('div')<{
+export const StyledTreeNodeItem = styled('div')<{
   isOver?: boolean;
   canDrop?: boolean;
 }>(({ isOver, canDrop, theme }) => {
@@ -16,7 +16,7 @@ export const StyledTreeNodeContainer = styled('div')<{
     position: 'relative',
   };
 });
-export const StyledTreeNodeItem = styled('div')<{ isDragging: boolean }>(
+export const StyledTreeNodeContainer = styled('div')<{ isDragging: boolean }>(
   ({ isDragging, theme }) => {
     return {
       background: isDragging ? theme.colors.hoverBackground : '',
@@ -24,16 +24,17 @@ export const StyledTreeNodeItem = styled('div')<{ isDragging: boolean }>(
   }
 );
 
-export const StyledNodeLine = styled('div')<{ show: boolean }>(
-  ({ show, theme }) => {
+export const StyledNodeLine = styled('div')<{ show: boolean; isTop?: boolean }>(
+  ({ show, isTop = false, theme }) => {
     return {
       position: 'absolute',
       left: '0',
-      bottom: '0',
+      ...(isTop ? { top: '0' } : { bottom: '0' }),
       width: '100%',
       paddingTop: '3px',
       borderBottom: '3px solid',
       borderColor: show ? theme.colors.primaryColor : 'transparent',
+      zIndex: 1,
     };
   }
 );
