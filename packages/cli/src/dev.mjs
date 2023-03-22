@@ -52,6 +52,7 @@ const dev = await p.group(
 const env = {
   NODE_API_SERVER: dev.server,
   PATH: process.env.PATH,
+  NODE_ENV: 'development',
 };
 
 if (dev.debugBlockSuite) {

@@ -13,7 +13,7 @@ import type React from 'react';
 import { memo, useEffect, useMemo, useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../atoms';
-import { useCurrentPage } from '../hooks/current/use-current-page-id';
+import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 
 const ThemeInjector = memo<{
   themeStyle: AffineTheme;
@@ -40,9 +40,9 @@ const ThemeInjector = memo<{
 const ThemeProviderInner = memo<React.PropsWithChildren>(
   function ThemeProviderInner({ children }) {
     const { resolvedTheme: theme } = useTheme();
-    const currentPage = useCurrentPage();
+    const [pageId] = useCurrentPageId();
     const record = useAtomValue(workspacePreferredModeAtom);
-    const editorMode = currentPage ? record[currentPage.id] ?? 'page' : 'page';
+    const editorMode = pageId ? record[pageId] ?? 'page' : 'page';
     const themeStyle = useMemo(() => getLightTheme(editorMode), [editorMode]);
     const darkThemeStyle = useMemo(
       () => getDarkTheme(editorMode),
