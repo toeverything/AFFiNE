@@ -50,7 +50,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
     meta => meta.id === pageId
   );
   const currentMode =
-    useAtomValue(workspacePreferredModeAtom)[blockSuiteWorkspace.id] ?? 'page';
+    useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
   const setEditor = useSetAtom(currentEditorAtom);
   assertExists(meta);
   return (

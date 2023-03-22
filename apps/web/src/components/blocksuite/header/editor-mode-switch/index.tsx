@@ -22,7 +22,7 @@ export const EditorModeSwitch = ({
   pageId,
 }: EditorModeSwitchProps) => {
   const currentMode =
-    useAtomValue(workspacePreferredModeAtom)[blockSuiteWorkspace.id] ?? 'page';
+    useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
   const setMode = useSetAtom(workspacePreferredModeAtom);
   const pageMeta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
