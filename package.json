@@ -9,7 +9,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "yarn workspace @affine/app dev",
+    "dev": "dev-web",
     "dev:ac": "NODE_API_SERVER=ac yarn workspace @affine/app dev",
     "dev:local": "NODE_API_SERVER=local yarn workspace @affine/app dev",
     "dev:app": "yarn workspace @affine/electron dev:app",
@@ -34,6 +34,7 @@
     "*.{ts,tsx,js,jsx}": "eslint --cache --fix"
   },
   "devDependencies": {
+    "@affine/cli": "workspace:*",
     "@perfsee/sdk": "^1.5.1",
     "@playwright/test": "^1.31.2",
     "@testing-library/react": "^14.0.0",

@@ -19,9 +19,11 @@ import {
   useTheme as useMuiTheme,
   useTheme,
 } from '@mui/material';
+import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useMemo } from 'react';
 
+import { workspacePreferredModeAtom } from '../../../../atoms';
 import {
   usePageMeta,
   usePageMetaHelper,
@@ -102,6 +104,7 @@ export const PageList: React.FC<PageListProps> = ({
   const theme = useMuiTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
   const isTrash = listType === 'trash';
+  const record = useAtomValue(workspacePreferredModeAtom);
   const list = useMemo(
     () => pageList.filter(filter[listType ?? 'all']),
     [pageList, listType]
@@ -141,7 +144,7 @@ export const PageList: React.FC<PageListProps> = ({
                 >
                   <StyledTitleWrapper>
                     <StyledTitleLink>
-                      {pageMeta.mode === 'edgeless' ? (
+                      {record[pageMeta.id] === 'edgeless' ? (
                         <EdgelessIcon />
                       ) : (
                         <PageIcon />
