@@ -73,6 +73,7 @@ __metadata:
   dependencies:
     "@clack/core": ^0.3.2
     "@clack/prompts": ^0.6.3
+    dotenv: ^16.0.3
   bin:
     dev-web: ./src/dev.mjs
   languageName: unknown

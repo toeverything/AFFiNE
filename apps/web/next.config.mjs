@@ -14,6 +14,10 @@ console.info('Runtime Preset', preset);
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
 
+if (enableDebugLocal) {
+  console.info('Debugging local blocksuite');
+}
+
 const profileTarget = {
   ac: '100.85.73.88:12001',
   dev: '100.84.105.99:11001',
