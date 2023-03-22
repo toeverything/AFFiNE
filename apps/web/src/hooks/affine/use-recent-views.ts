@@ -3,6 +3,7 @@ import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import {
+  workspacePreferredModeAtom,
   workspaceRecentViewsAtom,
   workspaceRecentViresWriteAtom,
 } from '../../atoms';
@@ -27,13 +28,16 @@ export function useSyncRecentViewsWithRouter(router: NextRouter) {
   const meta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  const currentMode = useAtomValue(workspacePreferredModeAtom)[
+    pageId as string
+  ];
   useEffect(() => {
     if (!workspaceId) return;
     if (pageId && meta) {
       set(workspaceId, {
         id: pageId as string,
-        mode: meta.mode || 'page',
+        mode: currentMode ?? 'page',
       });
     }
-  }, [pageId, meta, workspaceId, set]);
+  }, [pageId, meta, workspaceId, set, currentMode]);
 }

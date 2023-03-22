@@ -5,7 +5,6 @@ import type { BlockSuiteWorkspace } from '../shared';
 
 declare module '@blocksuite/store' {
   interface PageMeta {
-    mode?: 'page' | 'edgeless';
     favorite?: boolean;
     trash?: boolean;
     trashDate?: number;
