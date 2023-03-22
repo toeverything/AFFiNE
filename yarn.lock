@@ -6769,6 +6769,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^18.15.5":
+  version: 18.15.5
+  resolution: "@types/node@npm:18.15.5"
+  checksum: 5fbf3453bd5ce1402bb2964e55d928fc8a8a7de5451b1b0fe66587fecb8a3eb86854ca9cefa5076a5971e2cff00e1773ceeb5d872a54f6c6ddfbbc1064b4e91a
+  languageName: node
+  linkType: hard
+
 "@types/normalize-package-data@npm:^2.4.0":
   version: 2.4.1
   resolution: "@types/normalize-package-data@npm:2.4.1"
@@ -7390,7 +7397,7 @@ __metadata:
     "@playwright/test": ^1.31.2
     "@testing-library/react": ^14.0.0
     "@types/eslint": ^8.21.3
-    "@types/node": ^18.15.3
+    "@types/node": ^18.15.5
     "@typescript-eslint/eslint-plugin": ^5.55.0
     "@typescript-eslint/parser": ^5.55.0
     "@vitejs/plugin-react": ^3.1.0

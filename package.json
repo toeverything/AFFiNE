@@ -39,7 +39,7 @@
     "@playwright/test": "^1.31.2",
     "@testing-library/react": "^14.0.0",
     "@types/eslint": "^8.21.3",
-    "@types/node": "^18.15.3",
+    "@types/node": "^18.15.5",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "@typescript-eslint/parser": "^5.55.0",
     "@vitejs/plugin-react": "^3.1.0",
