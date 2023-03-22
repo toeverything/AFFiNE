@@ -125,15 +125,20 @@ jobs:
           debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
           result-encoding: string
           script: |
-            const { id } = await github.rest.checks.create({
+            const { data: pull_request } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              head_sha: context.sha,
+              pull_number: context.issue.number,
+            });
+            const { data: check } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: pull_request.head.sha,
               name: "E2E Test ${{ matrix.shard }}/${{ strategy.job-total }}",
               status: "in_progress",
               details_url: process.env.BUILD_URL
             });
-            return id;
+            return check.id;
       - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
@@ -163,29 +168,34 @@ jobs:
         env:
           COVERAGE: true
 
-      - name: Update Check
+      - name: Set Failure Check
         uses: actions/github-script@v6
-        if: ${{ always() }}
+        if: ${{ failure() }}
         with:
           debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
           result-encoding: string
           script: |
-            const { conclusion } = context;
-            const conclusionMap = {
-              success: "success",
-              failure: "failure",
-              cancelled: "cancelled",
-              skipped: "neutral",
-              timed_out: "timed_out",
-              action_required: "action_required",
-            };
-            const checkConclusion = conclusionMap[conclusion] || "failure";
             await github.rest.checks.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               check_run_id: ${{ steps.create-check.outputs.result }},
               status: "completed",
-              conclusion: checkConclusion,
+              conclusion: "failure",
+              completed_at: new Date().toISOString(),
+            });
+      - name: Set Success Check
+        uses: actions/github-script@v6
+        if: ${{ success() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "success",
               completed_at: new Date().toISOString(),
             });
 
