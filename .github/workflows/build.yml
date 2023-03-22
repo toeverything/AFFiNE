@@ -134,7 +134,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               head_sha: pull_request.head.sha,
-              name: "E2E Test ${{ matrix.shard }}/${{ strategy.job-total }}",
+              name: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
               status: "in_progress",
               details_url: process.env.BUILD_URL
             });
