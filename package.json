@@ -31,7 +31,7 @@
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
-    "*.{ts,tsx,js,jsx}": "eslint --cache --fix"
+    "*.{ts,tsx,mjs,js,jsx}": "eslint --cache --fix"
   },
   "devDependencies": {
     "@affine/cli": "workspace:*",
