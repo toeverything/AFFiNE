@@ -131,6 +131,13 @@ const withDebugLocal = debugLocal(
       'src',
       'std'
     ),
+    '@blocksuite/blocks/content-parser': path.resolve(
+      baseDir,
+      'packages',
+      'blocks',
+      'src',
+      'content-parser'
+    ),
     '@blocksuite/blocks': path.resolve(baseDir, 'packages', 'blocks'),
     '@blocksuite/store': path.resolve(baseDir, 'packages', 'store'),
   },
