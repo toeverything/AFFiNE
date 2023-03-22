@@ -52,7 +52,7 @@ export const PivotInternal = ({
         setPageMeta(pageMeta.id, { trash: true, trashDate: +new Date() });
         subpageIds.forEach(id => {
           const subpageMeta = getPageMeta(id);
-          removeToTrash(subpageMeta);
+          subpageMeta && removeToTrash(subpageMeta);
         });
       };
       removeToTrash(node as PageMeta);

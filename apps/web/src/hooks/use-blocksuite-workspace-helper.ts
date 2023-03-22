@@ -9,9 +9,9 @@ export function useBlockSuiteWorkspaceHelper(
 ) {
   return useMemo(
     () => ({
-      createPage: (pageId: string, title?: string): Page => {
+      createPage: (pageId: string, parentId?: string): Page => {
         assertExists(blockSuiteWorkspace);
-        return blockSuiteWorkspace.createPage(pageId);
+        return blockSuiteWorkspace.createPage(pageId, parentId);
       },
     }),
     [blockSuiteWorkspace]
