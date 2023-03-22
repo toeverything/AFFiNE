@@ -3,12 +3,9 @@ name: Build & Test
 on:
   issue_comment:
     types: [created]
-# See https://docs.github.com/en/actions/using-jobs/using-concurrency
-concurrency:
-  # The concurrency group contains the workflow name and the branch name for
-  # pull requests or the commit hash for any other events.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && github.head_ref || github.sha }}
-  cancel-in-progress: true
+
+env:
+  BUILD_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
 jobs:
   build:
@@ -120,6 +117,28 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: 'Create E2E test check'
+        uses: actions/github-script@v6
+        id: create-check
+        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            const { data: pull_request } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const { data: check } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: pull_request.head.sha,
+              name: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
+              status: "in_progress",
+              details_url: process.env.BUILD_URL
+            });
+            return check.id;
       - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
@@ -148,6 +167,37 @@ jobs:
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
+
+      - name: Set Failure Check
+        uses: actions/github-script@v6
+        if: ${{ failure() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "failure",
+              completed_at: new Date().toISOString(),
+            });
+      - name: Set Success Check
+        uses: actions/github-script@v6
+        if: ${{ success() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "success",
+              completed_at: new Date().toISOString(),
+            });
 
       - name: Collect code coverage report
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
