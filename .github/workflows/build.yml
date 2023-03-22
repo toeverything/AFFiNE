@@ -46,6 +46,28 @@ jobs:
               })
               throw new Error('not allowed')
             }
+      - name: 'Create Build check'
+        uses: actions/github-script@v6
+        id: create-check
+        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            const { data: pull_request } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const { data: check } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: pull_request.head.sha,
+              name: "Build on Pull Request",
+              status: "in_progress",
+              details_url: process.env.BUILD_URL
+            });
+            return check.id;
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -81,6 +103,37 @@ jobs:
 
       - name: Export
         run: yarn export
+
+      - name: Set Failure Check
+        uses: actions/github-script@v6
+        if: ${{ failure() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "failure",
+              completed_at: new Date().toISOString(),
+            });
+      - name: Set Success Check
+        uses: actions/github-script@v6
+        if: ${{ success() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "success",
+              completed_at: new Date().toISOString(),
+            });
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -230,6 +283,28 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: 'Create Unit test check'
+        uses: actions/github-script@v6
+        id: create-check
+        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            const { data: pull_request } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const { data: check } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: pull_request.head.sha,
+              name: "Unit Test",
+              status: "in_progress",
+              details_url: process.env.BUILD_URL
+            });
+            return check.id;
       - name: Use Node.js LTS
         uses: actions/setup-node@v3
         with:
@@ -254,6 +329,37 @@ jobs:
 
       - name: Unit Test
         run: yarn run test:unit:coverage
+
+      - name: Set Failure Check
+        uses: actions/github-script@v6
+        if: ${{ failure() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "failure",
+              completed_at: new Date().toISOString(),
+            });
+      - name: Set Success Check
+        uses: actions/github-script@v6
+        if: ${{ success() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "success",
+              completed_at: new Date().toISOString(),
+            });
 
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
