@@ -11,6 +11,7 @@ export default function getConfig() {
       enableIndexedDBProvider: true,
       prefetchWorkspace: false,
       exposeInternal: true,
+      enableSubpage: true,
     },
   };
 }
