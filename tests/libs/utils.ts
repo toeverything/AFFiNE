@@ -1,7 +1,9 @@
 import type { Page } from '@playwright/test';
 
-import userA from '../fixtures/userA.json';
-import userB from '../fixtures/userB.json';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const userA = require('../fixtures/userA.json');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const userB = require('../fixtures/userB.json');
 
 export async function createFakeUser() {
   try {

@@ -110,10 +110,10 @@ const SettingPage: NextPageWithLayout = () => {
       to: To,
       workspace: FlavourToWorkspace[From]
     ): Promise<void> => {
-      if (to === RemWorkspaceFlavour.AFFINE && !apis.auth.isLogin) {
+      const needRefresh =
+        to === RemWorkspaceFlavour.AFFINE && !apis.auth.isLogin;
+      if (needRefresh) {
         await apis.signInWithGoogle();
-        router.reload();
-        return;
       }
       const workspaceId = await transformWorkspace(from, to, workspace);
       await router.replace({
@@ -123,6 +123,9 @@ const SettingPage: NextPageWithLayout = () => {
           workspaceId,
         },
       });
+      if (needRefresh) {
+        router.reload();
+      }
     },
     [router, transformWorkspace]
   );

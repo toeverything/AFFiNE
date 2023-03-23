@@ -3,6 +3,7 @@ import { expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
 import { test } from './libs/playwright';
 import { clickSideBarSettingButton } from './libs/sidebar';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 
 loadPage();
 
@@ -23,5 +24,6 @@ test.describe('Local first delete workspace', () => {
     expect(await page.getByTestId('workspace-card').count()).toBe(0);
     await page.mouse.click(1, 1);
     expect(await page.getByTestId('workspace-card').count()).toBe(0);
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });
