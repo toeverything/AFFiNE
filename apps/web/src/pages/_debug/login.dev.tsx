@@ -11,7 +11,15 @@ import {
 } from '@affine/workspace/affine/login';
 import { useAtom } from 'jotai';
 import type { NextPage } from 'next';
+import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
+
+const Viewer = dynamic(
+  () => import('@rich-data/viewer').then(m => ({ default: m.JsonViewer })),
+  { ssr: false }
+);
+
+import { useTheme } from 'next-themes';
 
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 
@@ -69,7 +77,10 @@ const LoginDevPage: NextPage = () => {
         >
           Reset Storage
         </Button>
-        {user && JSON.stringify(user)}
+        <Viewer
+          theme={useTheme().resolvedTheme === 'light' ? 'light' : 'dark'}
+          value={user}
+        />
       </StyledWrapper>
     </StyledPage>
   );
