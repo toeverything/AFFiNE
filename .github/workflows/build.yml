@@ -79,7 +79,7 @@ jobs:
               head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "Build on Pull Request",
               status: "in_progress",
-              details_url: ${{ env.BUILD_URL }},
+              details_url: "${{ env.BUILD_URL }}",
               output: {
                 title: "Build on Pull Request",
                 summary: "Please check the build result ${{ env.BUILD_URL }}",
@@ -203,7 +203,7 @@ jobs:
               head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
               status: "in_progress",
-              details_url: ${{ env.BUILD_URL }},
+              details_url: "${{ env.BUILD_URL }}",
               output: {
                 title: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
                 summary: "Please check the e2e test result ${{ env.BUILD_URL }}",
@@ -314,7 +314,7 @@ jobs:
               head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "Unit Test",
               status: "in_progress",
-              details_url: ${{ env.BUILD_URL }},
+              details_url: "${{ env.BUILD_URL }}",
               output: {
                 title: "Unit Test",
                 summary: "Please check the unit test result ${{ env.BUILD_URL }}",
