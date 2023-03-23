@@ -28,8 +28,14 @@ import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
+import type { RemWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var currentWorkspace: RemWorkspace;
+}
 
 const QuickSearchModal = dynamic(
   () => import('../components/pure/quick-search-modal')
@@ -94,8 +100,14 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const workspaces = useWorkspaces();
 
   useEffect(() => {
-    console.log(workspaces);
+    logger.info('workspaces: ', workspaces);
   }, [workspaces]);
+
+  useEffect(() => {
+    if (currentWorkspace) {
+      globalThis.currentWorkspace = currentWorkspace;
+    }
+  }, [currentWorkspace]);
 
   useEffect(() => {
     const providers = workspaces.flatMap(workspace =>

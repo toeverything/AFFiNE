@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
 import { test } from './libs/playwright';
 import { clickSideBarAllPageButton } from './libs/sidebar';
-import { createWorkspace } from './libs/workspace-logic';
+import { createWorkspace } from './libs/workspace';
 loadPage();
 
 test.describe('Local first workspace list', () => {
