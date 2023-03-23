@@ -113,7 +113,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/component@workspace:*, @affine/component@workspace:^, @affine/component@workspace:packages/component":
+"@affine/component@workspace:*, @affine/component@workspace:packages/component":
   version: 0.0.0-use.local
   resolution: "@affine/component@workspace:packages/component"
   dependencies:
@@ -183,7 +183,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/debug@workspace:*, @affine/debug@workspace:^, @affine/debug@workspace:packages/debug":
+"@affine/debug@workspace:*, @affine/debug@workspace:packages/debug":
   version: 0.0.0-use.local
   resolution: "@affine/debug@workspace:packages/debug"
   dependencies:
@@ -215,7 +215,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/env@workspace:*, @affine/env@workspace:^, @affine/env@workspace:packages/env":
+"@affine/env@workspace:*, @affine/env@workspace:packages/env":
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
@@ -256,9 +256,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/workspace@workspace:packages/workspace"
   dependencies:
-    "@affine/component": "workspace:^"
-    "@affine/debug": "workspace:^"
-    "@affine/env": "workspace:^"
+    "@affine/component": "workspace:*"
+    "@affine/debug": "workspace:*"
+    "@affine/env": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230320164115-e612d17
     "@blocksuite/store": 0.5.0-20230320164115-e612d17
     firebase: ^9.18.0
