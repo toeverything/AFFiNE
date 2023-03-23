@@ -2,6 +2,7 @@ import './security-restrictions';
 
 import { app } from 'electron';
 
+import { registerHandlers } from './app-state';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 
@@ -41,6 +42,7 @@ app.on('activate', restoreOrCreateWindow);
 app
   .whenReady()
   .then(registerProtocol)
+  .then(registerHandlers)
   .then(restoreOrCreateWindow)
   .catch(e => console.error('Failed create window:', e));
 

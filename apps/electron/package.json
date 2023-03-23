@@ -14,13 +14,14 @@
     "make-macos-arm64": "electron-forge make --platform=darwin --arch=arm64",
     "make-macos-x64": "electron-forge make --platform=darwin --arch=x64",
     "make-windows-x64": "electron-forge make --platform=win32 --arch=x64",
-    "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs"
+    "postinstall": "ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs && yarn workspace @affine/octobase-node build"
   },
   "config": {
     "forge": "./forge.config.js"
   },
   "main": "./dist/layers/main/index.js",
   "devDependencies": {
+    "@affine/octobase-node": "workspace:*",
     "@electron-forge/cli": "^6.0.5",
     "@electron-forge/core": "^6.0.5",
     "@electron-forge/core-utils": "^6.0.5",
@@ -37,6 +38,7 @@
   },
   "dependencies": {
     "cross-env": "7.0.3",
-    "electron-window-state": "^5.0.3"
+    "electron-window-state": "^5.0.3",
+    "fs-extra": "^11.1.1"
   }
 }
