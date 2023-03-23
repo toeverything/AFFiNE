@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { newPage } from './libs/page-logic';
-import { test } from './libs/playwright';
-import { assertCurrentWorkspaceFlavour } from './libs/workspace';
+import { loadPage } from '../libs/load-page';
+import { newPage } from '../libs/page-logic';
+import { test } from '../libs/playwright';
+import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 loadPage();
 

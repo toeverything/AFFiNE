@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { test } from './libs/playwright';
-import { createWorkspace } from './libs/workspace';
+import { loadPage } from '../libs/load-page';
+import { test } from '../libs/playwright';
+import { createWorkspace } from '../libs/workspace';
 
 loadPage();
 

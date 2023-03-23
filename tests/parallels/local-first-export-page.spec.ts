@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
+import { loadPage } from '../libs/load-page';
 import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
-} from './libs/page-logic';
-import { test } from './libs/playwright';
-import { assertCurrentWorkspaceFlavour } from './libs/workspace';
+} from '../libs/page-logic';
+import { test } from '../libs/playwright';
+import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 loadPage();
 
 test.describe('Local first export page', () => {
