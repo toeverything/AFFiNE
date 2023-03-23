@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { initializeApp } from 'firebase/app';
+import type { AuthProvider } from 'firebase/auth';
 import {
   type Auth as FirebaseAuth,
   connectAuthEmulator,
@@ -121,32 +122,38 @@ export function createAffineAuth() {
       if (!auth) {
         throw new Error('Failed to initialize firebase');
       }
-      if (method === SignMethod.Google) {
-        const provider = new GoogleAuthProvider();
-        try {
-          const response = await signInWithPopup(auth, provider);
-          const idToken = await response.user.getIdToken();
-          logger.debug(idToken);
-          return fetch('/api/user/token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              type: 'Google',
-              token: idToken,
-            }),
-          }).then(r => r.json()) as Promise<LoginResponse>;
-        } catch (error) {
-          if (error instanceof Error && 'code' in error) {
-            if (error.code === 'auth/popup-closed-by-user') {
-              return null;
-            }
+      let provider: AuthProvider;
+      switch (method) {
+        case SignMethod.Google:
+          provider = new GoogleAuthProvider();
+          break;
+        case SignMethod.GitHub:
+          provider = new GithubAuthProvider();
+          break;
+        default:
+          throw new Error('Unsupported sign method');
+      }
+      try {
+        const response = await signInWithPopup(auth, provider);
+        const idToken = await response.user.getIdToken();
+        logger.debug(idToken);
+        return fetch('/api/user/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'Google',
+            token: idToken,
+          }),
+        }).then(r => r.json()) as Promise<LoginResponse>;
+      } catch (error) {
+        if (error instanceof Error && 'code' in error) {
+          if (error.code === 'auth/popup-closed-by-user') {
+            return null;
           }
-          logger.error('Failed to sign in', error);
         }
-      } else if (method === SignMethod.GitHub) {
-        const provider = new GithubAuthProvider();
+        logger.error('Failed to sign in', error);
       }
       return null;
     },
