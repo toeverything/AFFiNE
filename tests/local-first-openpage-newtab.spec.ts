@@ -3,6 +3,7 @@ import { expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
 import { getBlockSuiteEditorTitle, newPage } from './libs/page-logic';
 import { test } from './libs/playwright';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 loadPage();
 
 test.describe('local first new page', () => {
@@ -26,5 +27,6 @@ test.describe('local first new page', () => {
     ]);
 
     expect(newTabPage.url()).toBe(newPageUrl);
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });

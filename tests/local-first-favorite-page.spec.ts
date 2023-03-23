@@ -7,6 +7,7 @@ import {
   newPage,
 } from './libs/page-logic';
 import { test } from './libs/playwright';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 loadPage();
 
 test.describe('Local first favorite and cancel favorite  page', () => {
@@ -24,6 +25,7 @@ test.describe('Local first favorite and cancel favorite  page', () => {
     await clickPageMoreActions(page);
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();
+    await assertCurrentWorkspaceFlavour('local', page);
   });
   test('Cancel favorite', async ({ page }) => {
     await newPage(page);
@@ -66,5 +68,6 @@ test.describe('Local first favorite and cancel favorite  page', () => {
         'Tips: Click Add to Favorites/Trash and the page will appear here.'
       )
     ).not.toBeUndefined();
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });

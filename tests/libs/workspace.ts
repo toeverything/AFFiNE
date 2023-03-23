@@ -1,4 +1,6 @@
 import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
+
 interface CreateWorkspaceParams {
   name: string;
 }
@@ -19,4 +21,13 @@ export async function createWorkspace(
 
   // click create button
   return page.getByRole('button', { name: 'Create' }).click();
+}
+
+export async function assertCurrentWorkspaceFlavour(
+  flavour: 'affine' | 'local',
+  page: Page
+) {
+  // @ts-expect-error type globalThis.currentWorkspace is not defined in playwright context
+  const actual = await page.evaluate(() => globalThis.currentWorkspace.flavour);
+  expect(actual).toBe(flavour);
 }
