@@ -10,6 +10,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import { decode } from 'js-base64';
+import { z } from 'zod';
 // Connect emulators based on env vars
 const envConnectEmulators = process.env.REACT_APP_FIREBASE_EMULATORS === 'true';
 
@@ -27,12 +28,12 @@ export type LoginParams = {
   token: string;
 };
 
-export type LoginResponse = {
-  // access token, expires in a very short time
-  token: string;
-  // Refresh token
-  refresh: string;
-};
+export const loginResponseSchema = z.object({
+  token: z.string(),
+  refresh: z.string(),
+});
+
+export type LoginResponse = z.infer<typeof loginResponseSchema>;
 
 const logger = new DebugLogger('token');
 

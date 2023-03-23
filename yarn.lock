@@ -12,6 +12,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@affine-test/fixtures@workspace:^, @affine-test/fixtures@workspace:tests/fixtures":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/fixtures@workspace:tests/fixtures"
+  languageName: unknown
+  linkType: soft
+
 "@affine/app@workspace:apps/web":
   version: 0.0.0-use.local
   resolution: "@affine/app@workspace:apps/web"
@@ -167,6 +173,7 @@ __metadata:
   dependencies:
     "@affine/debug": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230323085636-3110abb
+    "@blocksuite/global": 0.5.0-20230323085636-3110abb
     "@blocksuite/store": 0.5.0-20230323085636-3110abb
     "@tauri-apps/api": ^1.2.0
     encoding: ^0.1.13
@@ -257,6 +264,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/workspace@workspace:packages/workspace"
   dependencies:
+    "@affine-test/fixtures": "workspace:^"
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
@@ -268,6 +276,7 @@ __metadata:
     ky: ^0.33.3
     react: ^18.2.0
     react-dom: ^18.2.0
+    zod: ^3.21.4
   languageName: unknown
   linkType: soft
 

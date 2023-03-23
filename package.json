@@ -6,7 +6,8 @@
   "license": "MPL-2.0",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tests/fixtures"
   ],
   "scripts": {
     "dev": "dev-web",
