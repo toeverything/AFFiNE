@@ -13,7 +13,7 @@ import { loginResponseSchema, setLoginStorage } from '../login';
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
 
 beforeAll(() => {
-  workspaceApis = createWorkspaceApis('http://localhost:3000');
+  workspaceApis = createWorkspaceApis('http://localhost:3000/');
 });
 
 beforeEach(async () => {
