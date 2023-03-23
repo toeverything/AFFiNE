@@ -1,15 +1,15 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { getBlockSuiteEditorTitle, newPage } from './libs/page-logic';
-import { test } from './libs/playwright';
-import { assertCurrentWorkspaceFlavour } from './libs/workspace';
-loadPage();
+import { openHomePage } from '../libs/load-page';
+import { getBlockSuiteEditorTitle, newPage } from '../libs/page-logic';
+import { test } from '../libs/playwright';
+import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test.describe('Local first delete page', () => {
   test('New a page , then delete it in all pages, restore it', async ({
     page,
   }) => {
+    await openHomePage(page);
     await newPage(page);
     await getBlockSuiteEditorTitle(page).click();
     await getBlockSuiteEditorTitle(page).fill('this is a new page to restore');
@@ -33,7 +33,8 @@ test.describe('Local first delete page', () => {
     await page.getByRole('button', { name: 'Delete' }).click();
 
     await page.getByRole('link', { name: 'Trash' }).click();
-    const trashPage = await page.url();
+    await page.waitForTimeout(50);
+    const trashPage = page.url();
     // restore it
     await page
       .getByTestId('more-actions-' + newPageId)

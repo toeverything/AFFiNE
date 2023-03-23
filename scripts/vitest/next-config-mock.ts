@@ -9,6 +9,7 @@ export default function getConfig() {
       serverAPI: 'http://localhost:3000/api',
       enableBroadCastChannelProvider: true,
       enableIndexedDBProvider: true,
+      enableDebugPage: true,
       prefetchWorkspace: false,
       exposeInternal: true,
       enableSubpage: true,

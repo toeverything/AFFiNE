@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { test } from './libs/playwright';
-import { clickSideBarAllPageButton } from './libs/sidebar';
-import { createWorkspace } from './libs/workspace';
-loadPage();
+import { openHomePage } from '../libs/load-page';
+import { test } from '../libs/playwright';
+import { clickSideBarAllPageButton } from '../libs/sidebar';
+import { createWorkspace } from '../libs/workspace';
 
 test.describe('Local first workspace list', () => {
   test('just one item in the workspace list at first', async ({ page }) => {
+    await openHomePage(page);
     const workspaceName = page.getByTestId('workspace-name');
     await workspaceName.click();
     expect(
@@ -19,6 +19,7 @@ test.describe('Local first workspace list', () => {
   });
 
   test('create one workspace in the workspace list', async ({ page }) => {
+    await openHomePage(page);
     const newWorkspaceNameStr = 'New Workspace';
     await createWorkspace({ name: newWorkspaceNameStr }, page);
 
@@ -46,6 +47,7 @@ test.describe('Local first workspace list', () => {
   });
 
   test('create multi workspace in the workspace list', async ({ page }) => {
+    await openHomePage(page);
     await createWorkspace({ name: 'New Workspace 2' }, page);
     await createWorkspace({ name: 'New Workspace 3' }, page);
 

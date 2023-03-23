@@ -1,10 +1,9 @@
 import { expect, type Page } from '@playwright/test';
 
-import { withCtrlOrMeta } from './libs/keyboard';
-import { loadPage } from './libs/load-page';
-import { newPage } from './libs/page-logic';
-import { test } from './libs/playwright';
-loadPage();
+import { withCtrlOrMeta } from '../libs/keyboard';
+import { openHomePage } from '../libs/load-page';
+import { newPage } from '../libs/page-logic';
+import { test } from '../libs/playwright';
 
 const openQuickSearchByShortcut = async (page: Page) =>
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
@@ -32,6 +31,7 @@ async function titleIsFocused(page: Page) {
 
 test.describe('Open quick search', () => {
   test('Click slider bar button', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     const quickSearchButton = page.locator(
       '[data-testid=slider-bar-quick-search-button]'
@@ -42,6 +42,7 @@ test.describe('Open quick search', () => {
   });
 
   test('Click arrowDown icon after title', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     const quickSearchButton = page.locator(
       '[data-testid=slider-bar-quick-search-button]'
@@ -52,6 +53,7 @@ test.describe('Open quick search', () => {
   });
 
   test('Press the shortcut key cmd+k', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     const quickSearch = page.locator('[data-testid=quickSearch]');
@@ -61,6 +63,7 @@ test.describe('Open quick search', () => {
 
 test.describe('Add new page in quick search', () => {
   test('Create a new page without keyword', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
@@ -70,6 +73,7 @@ test.describe('Add new page in quick search', () => {
   });
 
   test('Create a new page with keyword', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
@@ -82,6 +86,7 @@ test.describe('Add new page in quick search', () => {
 
 test.describe('Search and select', () => {
   test('Enter a keyword to search for', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
@@ -89,6 +94,7 @@ test.describe('Search and select', () => {
     expect(actual).toBe('test123456');
   });
   test('Create a new page and search this page', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.insertText('test123456');
@@ -119,6 +125,7 @@ test.describe('Disable search on 404 page', () => {
 });
 test.describe('Open quick search on the published page', () => {
   test('Open quick search on local page', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     const publishedSearchResults = page.locator('[publishedSearchResults]');
@@ -128,6 +135,7 @@ test.describe('Open quick search on the published page', () => {
 
 test.describe('Focus event for quick search', () => {
   test('Autofocus input after opening quick search', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     const locator = page.locator('[cmdk-input]');
@@ -135,6 +143,7 @@ test.describe('Focus event for quick search', () => {
     await expect(locator).toBeFocused();
   });
   test('Autofocus input after select', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     await page.keyboard.press('ArrowUp');
@@ -143,6 +152,7 @@ test.describe('Focus event for quick search', () => {
     await expect(locator).toBeFocused();
   });
   test('Focus title after creating a new page', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await openQuickSearchByShortcut(page);
     const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
@@ -154,6 +164,7 @@ test.describe('Novice guidance for quick search', () => {
   test('When opening the website for the first time, the first folding sidebar will appear novice guide', async ({
     page,
   }) => {
+    await openHomePage(page);
     const quickSearchTips = page.locator('[data-testid=quick-search-tips]');
     await expect(quickSearchTips).not.toBeVisible();
     await page.getByTestId('sliderBar-arrowButton-collapse').click();

@@ -1,33 +1,41 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
+import { openHomePage } from '../libs/load-page';
 import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
-} from './libs/page-logic';
-import { test } from './libs/playwright';
-import { assertCurrentWorkspaceFlavour } from './libs/workspace';
-loadPage();
+} from '../libs/page-logic';
+import { test } from '../libs/playwright';
+import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
-test.describe('Local first favorite and cancel favorite  page', () => {
-  test('New a page and open it ,then favorite it', async ({ page }) => {
+test.describe('Local first favorite items ui', () => {
+  test('Show favorite items in sidebar', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await getBlockSuiteEditorTitle(page).click();
     await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
+    const newPageId = page.url().split('/').reverse()[0];
     await page.getByRole('link', { name: 'All pages' }).click();
     const cell = page.getByRole('cell', {
       name: 'this is a new page to favorite',
     });
-    expect(cell).not.toBeUndefined();
-
+    await expect(cell).toBeVisible();
     await cell.click();
     await clickPageMoreActions(page);
+
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();
-    await assertCurrentWorkspaceFlavour('local', page);
+    const favoriteListItemInSidebar = page.getByTestId(
+      'favorite-list-item-' + newPageId
+    );
+    expect(await favoriteListItemInSidebar.textContent()).toBe(
+      'this is a new page to favorite'
+    );
   });
-  test('Cancel favorite', async ({ page }) => {
+
+  test('Show favorite items in favorite list', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await getBlockSuiteEditorTitle(page).click();
     await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
@@ -36,38 +44,23 @@ test.describe('Local first favorite and cancel favorite  page', () => {
       name: 'this is a new page to favorite',
     });
     expect(cell).not.toBeUndefined();
-
     await cell.click();
     await clickPageMoreActions(page);
 
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();
 
-    // expect it in favorite list
     await page.getByRole('link', { name: 'Favorites' }).click();
     expect(
       page.getByRole('cell', { name: 'this is a new page to favorite' })
     ).not.toBeUndefined();
 
-    // cancel favorite
-
-    await page.getByRole('link', { name: 'All pages' }).click();
-
-    const box = await page
-      .getByRole('cell', { name: 'this is a new page to favorite' })
-      .boundingBox();
-    //hover table record
-    await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
-
-    await page.getByTestId('favorited-icon').click();
-
-    // expect it not in favorite list
-    await page.getByRole('link', { name: 'Favorites' }).click();
+    await page.getByRole('cell').getByRole('button').nth(0).click();
     expect(
-      page.getByText(
-        'Tips: Click Add to Favorites/Trash and the page will appear here.'
-      )
-    ).not.toBeUndefined();
+      await page
+        .getByText('Click Add to Favorites and the page will appear here.')
+        .isVisible()
+    ).toBe(true);
     await assertCurrentWorkspaceFlavour('local', page);
   });
 });

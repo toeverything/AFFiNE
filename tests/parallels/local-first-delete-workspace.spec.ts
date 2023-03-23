@@ -1,16 +1,15 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { test } from './libs/playwright';
-import { clickSideBarSettingButton } from './libs/sidebar';
-import { assertCurrentWorkspaceFlavour } from './libs/workspace';
-
-loadPage();
+import { openHomePage } from '../libs/load-page';
+import { test } from '../libs/playwright';
+import { clickSideBarSettingButton } from '../libs/sidebar';
+import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test.describe('Local first delete workspace', () => {
   test('New a workspace , then delete it in all workspaces, permanently delete it', async ({
     page,
   }) => {
+    await openHomePage(page);
     await clickSideBarSettingButton(page);
     await page.getByTestId('delete-workspace-button').click();
     const workspaceNameDom = await page.getByTestId('workspace-name');

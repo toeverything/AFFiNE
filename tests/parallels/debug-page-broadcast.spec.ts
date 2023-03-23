@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-import { test } from './libs/playwright';
+import { test } from '../libs/playwright';
 
 test.describe('Debug page broadcast', () => {
   test('should broadcast a message to all debug pages', async ({

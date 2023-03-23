@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { getBlockSuiteEditorTitle, newPage } from './libs/page-logic';
-import { test } from './libs/playwright';
-import { assertCurrentWorkspaceFlavour } from './libs/workspace';
-loadPage();
+import { openHomePage } from '../libs/load-page';
+import { getBlockSuiteEditorTitle, newPage } from '../libs/page-logic';
+import { test } from '../libs/playwright';
+import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test.describe('local first new page', () => {
   test('click btn new page', async ({ page }) => {
+    await openHomePage(page);
     const originPageId = page.url().split('/').reverse()[0];
     await newPage(page);
     const newPageId = page.url().split('/').reverse()[0];
@@ -16,6 +16,7 @@ test.describe('local first new page', () => {
   });
 
   test('click btn bew page and find it in all pages', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await getBlockSuiteEditorTitle(page).click();
     await getBlockSuiteEditorTitle(page).fill('this is a new page');

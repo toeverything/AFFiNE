@@ -1,12 +1,11 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { test } from './libs/playwright';
-
-loadPage();
+import { openHomePage } from '../libs/load-page';
+import { test } from '../libs/playwright';
 
 test.describe('Shortcuts Modal', () => {
   test('Open shortcuts modal', async ({ page }) => {
+    await openHomePage(page);
     await page.locator('[data-testid=help-island]').click();
 
     const shortcutsIcon = page.locator('[data-testid=shortcuts-icon]');

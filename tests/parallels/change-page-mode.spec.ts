@@ -1,12 +1,12 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { clickPageMoreActions } from './libs/page-logic';
-import { test } from './libs/playwright';
-loadPage();
+import { openHomePage } from '../libs/load-page';
+import { clickPageMoreActions } from '../libs/page-logic';
+import { test } from '../libs/playwright';
 
 test.describe('Change page mode(Page or Edgeless)', () => {
   test('Switch to edgeless by switch edgeless item', async ({ page }) => {
+    await openHomePage(page);
     const btn = await page.getByTestId('switch-edgeless-mode-button');
     await btn.click();
 
@@ -15,6 +15,7 @@ test.describe('Change page mode(Page or Edgeless)', () => {
   });
 
   test('Convert to edgeless by editor header items', async ({ page }) => {
+    await openHomePage(page);
     await clickPageMoreActions(page);
     const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
     await menusEdgelessItem.click({ delay: 100 });

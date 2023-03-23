@@ -1,9 +1,7 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from './libs/load-page';
-import { test } from './libs/playwright';
-
-loadPage();
+import { openHomePage } from '../libs/load-page';
+import { test } from '../libs/playwright';
 
 test.describe('Change Theme', () => {
   // default could be anything according to the system
@@ -12,9 +10,7 @@ test.describe('Change Theme', () => {
       colorScheme: 'light',
     });
     const page = await context.newPage();
-    await page.goto('http://localhost:8080');
-    // waiting for page loading end
-    await page.waitForSelector('#__next');
+    await openHomePage(page);
     await page.waitForSelector('html');
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>
