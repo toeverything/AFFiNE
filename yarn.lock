@@ -212,6 +212,9 @@ __metadata:
     electron-window-state: ^5.0.3
     esbuild: ^0.17.12
     zx: ^7.2.1
+  dependenciesMeta:
+    electron:
+      built: false
   languageName: unknown
   linkType: soft
 

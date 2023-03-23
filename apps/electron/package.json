@@ -38,5 +38,10 @@
   "dependencies": {
     "cross-env": "7.0.3",
     "electron-window-state": "^5.0.3"
+  },
+  "dependenciesMeta": {
+    "electron": {
+      "built": false
+    }
   }
 }
