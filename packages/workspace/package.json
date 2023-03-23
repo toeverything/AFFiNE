@@ -4,7 +4,8 @@
   "exports": {
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
-    "./affine/*": "./src/affine/*.ts"
+    "./affine/*": "./src/affine/*.ts",
+    "./affine/api": "./src/affine/api/index.ts"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:^",

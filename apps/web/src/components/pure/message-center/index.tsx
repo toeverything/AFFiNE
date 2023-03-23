@@ -4,7 +4,7 @@ import { messages } from '@affine/datacenter';
 import type React from 'react';
 import { memo, useEffect, useState } from 'react';
 
-import { useOnGoogleLogout } from '../../../hooks/use-on-google-logout';
+import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
 import { apis } from '../../../shared/apis';
 
 declare global {
@@ -17,7 +17,7 @@ declare global {
 
 export const MessageCenter: React.FC = memo(function MessageCenter() {
   const [popup, setPopup] = useState(false);
-  const onLogout = useOnGoogleLogout();
+  const onLogout = useAffineLogOut();
   useEffect(() => {
     const listener = (
       event: CustomEvent<{
