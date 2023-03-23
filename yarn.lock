@@ -22,6 +22,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/templates": "workspace:*"
+    "@affine/workspace": "workspace:^"
     "@blocksuite/blocks": 0.5.0-20230320164115-e612d17
     "@blocksuite/editor": 0.5.0-20230320164115-e612d17
     "@blocksuite/icons": 2.0.23
@@ -245,6 +246,15 @@ __metadata:
 "@affine/templates@workspace:*, @affine/templates@workspace:packages/templates":
   version: 0.0.0-use.local
   resolution: "@affine/templates@workspace:packages/templates"
+  languageName: unknown
+  linkType: soft
+
+"@affine/workspace@workspace:^, @affine/workspace@workspace:packages/workspace":
+  version: 0.0.0-use.local
+  resolution: "@affine/workspace@workspace:packages/workspace"
+  dependencies:
+    "@blocksuite/blocks": 0.5.0-20230320164115-e612d17
+    "@blocksuite/store": 0.5.0-20230320164115-e612d17
   languageName: unknown
   linkType: soft
 

@@ -1,3 +1,4 @@
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
 
 import { jotaiStore, workspacesAtom } from '../../atoms';
@@ -6,7 +7,6 @@ import { Unreachable } from '../../components/affine/affine-error-eoundary';
 import type { AffineWorkspace } from '../../shared';
 import { RemWorkspaceFlavour } from '../../shared';
 import { apis } from '../../shared/apis';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
 type Query = (typeof QueryKey)[keyof typeof QueryKey];
 

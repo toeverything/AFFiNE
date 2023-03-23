@@ -1,4 +1,5 @@
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
@@ -16,7 +17,6 @@ import {
   LoadPriority,
   RemWorkspaceFlavour,
 } from '../../shared';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { initPage } from '../../utils/blocksuite';
 import type { WorkspacePlugin } from '..';
 

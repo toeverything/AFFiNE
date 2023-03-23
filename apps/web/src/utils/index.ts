@@ -1,8 +1,3 @@
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import type { BlobOptionsGetter, Generator } from '@blocksuite/store';
-
-import { BlockSuiteWorkspace } from '../shared';
-
 export function stringToColour(str: string) {
   str = str || 'affine';
   let colour = '#';
@@ -23,24 +18,3 @@ export function stringToColour(str: string) {
 
   return colour;
 }
-
-const hashMap = new Map<string, BlockSuiteWorkspace>();
-export const createEmptyBlockSuiteWorkspace = (
-  id: string,
-  blobOptionsGetter?: BlobOptionsGetter,
-  idGenerator?: Generator
-): BlockSuiteWorkspace => {
-  if (hashMap.has(id)) {
-    return hashMap.get(id) as BlockSuiteWorkspace;
-  }
-  const workspace = new BlockSuiteWorkspace({
-    id,
-    isSSR: typeof window === 'undefined',
-    blobOptionsGetter,
-    idGenerator,
-  })
-    .register(AffineSchemas)
-    .register(__unstableSchemas);
-  hashMap.set(id, workspace);
-  return workspace;
-};

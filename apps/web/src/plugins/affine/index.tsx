@@ -1,3 +1,4 @@
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
 import { mutate } from 'swr';
@@ -15,7 +16,6 @@ import {
   RemWorkspaceFlavour,
 } from '../../shared';
 import { apis, clientAuth } from '../../shared/apis';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { initPage } from '../../utils/blocksuite';
 import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
