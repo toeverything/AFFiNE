@@ -12,6 +12,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@affine-test/fixtures@workspace:^, @affine-test/fixtures@workspace:tests/fixtures":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/fixtures@workspace:tests/fixtures"
+  languageName: unknown
+  linkType: soft
+
 "@affine/app@workspace:apps/web":
   version: 0.0.0-use.local
   resolution: "@affine/app@workspace:apps/web"
@@ -34,6 +40,7 @@ __metadata:
     "@mui/material": ^5.11.13
     "@perfsee/webpack": ^1.5.0
     "@redux-devtools/extension": ^3.2.5
+    "@rich-data/viewer": ^2.2.4
     "@swc-jotai/debug-label": ^0.0.9
     "@swc-jotai/react-refresh": ^0.0.7
     "@types/react": ^18.0.28
@@ -166,6 +173,7 @@ __metadata:
   dependencies:
     "@affine/debug": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230323085636-3110abb
+    "@blocksuite/global": 0.5.0-20230323085636-3110abb
     "@blocksuite/store": 0.5.0-20230323085636-3110abb
     "@tauri-apps/api": ^1.2.0
     encoding: ^0.1.13
@@ -256,6 +264,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/workspace@workspace:packages/workspace"
   dependencies:
+    "@affine-test/fixtures": "workspace:^"
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
@@ -267,6 +276,7 @@ __metadata:
     ky: ^0.33.3
     react: ^18.2.0
     react-dom: ^18.2.0
+    zod: ^3.21.4
   languageName: unknown
   linkType: soft
 
@@ -4682,6 +4692,22 @@ __metadata:
   peerDependencies:
     redux: ^3.1.0 || ^4.0.0
   checksum: c89680e1af8bd47a0250478b491a79a55bc0d71206f5ab95a83fd05c7d815bdaef5703defb7b571f07fc8bd2c6d4e8da6fc0cfd09e7fe03e994f9070c15fd08d
+  languageName: node
+  linkType: hard
+
+"@rich-data/viewer@npm:^2.2.4":
+  version: 2.14.1
+  resolution: "@rich-data/viewer@npm:2.14.1"
+  dependencies:
+    "@mui/material": ^5.11.13
+    copy-to-clipboard: ^3.3.3
+    zustand: ^4.3.6
+  peerDependencies:
+    "@emotion/react": ^11.10
+    "@emotion/styled": ^11.10
+    react: ^17 || ^18
+    react-dom: ^17 || ^18
+  checksum: a3fa1748eff116d5377ed2a3ecd24db3f6b0147d0663df66791ad9f065126ee77d2cd8b1158570be546b8735ae6db64f39081ad8f6dacda6c47455230aaefe54
   languageName: node
   linkType: hard
 
@@ -9337,6 +9363,15 @@ __metadata:
   version: 0.4.2
   resolution: "cookie@npm:0.4.2"
   checksum: a00833c998bedf8e787b4c342defe5fa419abd96b32f4464f718b91022586b8f1bafbddd499288e75c037642493c83083da426c6a9080d309e3bd90fd11baa9b
+  languageName: node
+  linkType: hard
+
+"copy-to-clipboard@npm:^3.3.3":
+  version: 3.3.3
+  resolution: "copy-to-clipboard@npm:3.3.3"
+  dependencies:
+    toggle-selection: ^1.0.6
+  checksum: e0a325e39b7615108e6c1c8ac110ae7b829cdc4ee3278b1df6a0e4228c490442cc86444cd643e2da344fbc424b3aab8909e2fec82f8bc75e7e5b190b7c24eecf
   languageName: node
   linkType: hard
 
@@ -19499,6 +19534,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"toggle-selection@npm:^1.0.6":
+  version: 1.0.6
+  resolution: "toggle-selection@npm:1.0.6"
+  checksum: a90dc80ed1e7b18db8f4e16e86a5574f87632dc729cfc07d9ea3ced50021ad42bb4e08f22c0913e0b98e3837b0b717e0a51613c65f30418e21eb99da6556a74c
+  languageName: node
+  linkType: hard
+
 "toidentifier@npm:1.0.1":
   version: 1.0.1
   resolution: "toidentifier@npm:1.0.1"
@@ -20077,7 +20119,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"use-sync-external-store@npm:^1.2.0":
+"use-sync-external-store@npm:1.2.0, use-sync-external-store@npm:^1.2.0":
   version: 1.2.0
   resolution: "use-sync-external-store@npm:1.2.0"
   peerDependencies:
@@ -21013,6 +21055,23 @@ __metadata:
   version: 3.21.4
   resolution: "zod@npm:3.21.4"
   checksum: f185ba87342ff16f7a06686767c2b2a7af41110c7edf7c1974095d8db7a73792696bcb4a00853de0d2edeb34a5b2ea6a55871bc864227dace682a0a28de33e1f
+  languageName: node
+  linkType: hard
+
+"zustand@npm:^4.3.6":
+  version: 4.3.6
+  resolution: "zustand@npm:4.3.6"
+  dependencies:
+    use-sync-external-store: 1.2.0
+  peerDependencies:
+    immer: ">=9.0"
+    react: ">=16.8"
+  peerDependenciesMeta:
+    immer:
+      optional: true
+    react:
+      optional: true
+  checksum: 4d3cec03526f04ff3de6dc45b6f038c47f091836af9660fbf5f682cae1628221102882df20e4048dfe699a43f67424e5d6afc1116f3838a80eea5dd4f95ddaed
   languageName: node
   linkType: hard
 

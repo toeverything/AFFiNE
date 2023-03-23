@@ -15,6 +15,7 @@
   "dependencies": {
     "@affine/debug": "workspace:*",
     "@blocksuite/blocks": "0.5.0-20230323085636-3110abb",
+    "@blocksuite/global": "0.5.0-20230323085636-3110abb",
     "@blocksuite/store": "0.5.0-20230323085636-3110abb",
     "@tauri-apps/api": "^1.2.0",
     "encoding": "^0.1.13",

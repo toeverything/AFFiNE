@@ -4,9 +4,11 @@
   "exports": {
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
-    "./affine/*": "./src/affine/*.ts"
+    "./affine/*": "./src/affine/*.ts",
+    "./affine/api": "./src/affine/api/index.ts"
   },
   "dependencies": {
+    "@affine-test/fixtures": "workspace:^",
     "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
@@ -17,6 +19,7 @@
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "zod": "^3.21.4"
   }
 }

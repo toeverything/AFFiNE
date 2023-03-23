@@ -44,6 +44,7 @@
   "devDependencies": {
     "@perfsee/webpack": "^1.5.0",
     "@redux-devtools/extension": "^3.2.5",
+    "@rich-data/viewer": "^2.2.4",
     "@swc-jotai/debug-label": "^0.0.9",
     "@swc-jotai/react-refresh": "^0.0.7",
     "@types/react": "^18.0.28",

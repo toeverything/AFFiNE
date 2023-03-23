@@ -1,13 +1,14 @@
+import { clearLoginStorage } from '@affine/workspace/affine/login';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
-import { jotaiWorkspacesAtom } from '../atoms';
-import { WorkspacePlugins } from '../plugins';
-import { apis } from '../shared/apis';
+import { jotaiWorkspacesAtom } from '../../atoms';
+import { WorkspacePlugins } from '../../plugins';
+import { apis } from '../../shared/apis';
 
-export function useOnGoogleLogout() {
+export function useAffineLogOut() {
   const set = useSetAtom(jotaiWorkspacesAtom);
   const router = useRouter();
   return useCallback(() => {
@@ -18,6 +19,7 @@ export function useOnGoogleLogout() {
       )
     );
     WorkspacePlugins[WorkspaceFlavour.AFFINE].cleanup?.();
+    clearLoginStorage();
     router.reload();
   }, [router, set]);
 }

@@ -19,6 +19,7 @@ import {
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
+import { useAffineRefreshAuthToken } from '../hooks/affine/use-affine-refresh-auth-token';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
@@ -91,6 +92,11 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
       </NoSsr>
     );
   };
+
+function AffineWorkspaceEffect() {
+  useAffineRefreshAuthToken();
+  return null;
+}
 
 export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   children,
@@ -196,6 +202,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
         <StyledWrapper>
+          <AffineWorkspaceEffect />
           {children}
           <StyledToolWrapper>
             {/* fixme(himself65): remove this */}
