@@ -4,7 +4,7 @@
   "exports": {
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
-    "./affine/login": "./src/affine/login.ts"
+    "./affine/*": "./src/affine/*.ts"
   },
   "dependencies": {
     "@affine/component": "workspace:^",
@@ -13,6 +13,7 @@
     "@blocksuite/blocks": "0.5.0-20230320164115-e612d17",
     "@blocksuite/store": "0.5.0-20230320164115-e612d17",
     "firebase": "^9.18.0",
+    "jotai": "^2.0.3",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "react": "^18.2.0",

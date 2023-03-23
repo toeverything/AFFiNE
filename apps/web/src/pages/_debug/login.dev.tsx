@@ -1,4 +1,5 @@
 import { Button, toast } from '@affine/component';
+import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
   createAffineAuth,
@@ -12,7 +13,6 @@ import { useAtom } from 'jotai';
 import type { NextPage } from 'next';
 import { useMemo } from 'react';
 
-import { currentAffineUserAtom } from '../../atoms/affine';
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 
 const LoginDevPage: NextPage = () => {
