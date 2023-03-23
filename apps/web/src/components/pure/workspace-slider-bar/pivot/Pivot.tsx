@@ -25,7 +25,7 @@ export const PivotInternal = ({
   const { createPage } = useBlockSuiteWorkspaceHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const { getPageMeta, setPageMeta } = usePageMetaHelper(
+  const { getPageMeta, setPageMeta, shiftPageMeta } = usePageMetaHelper(
     currentWorkspace.blockSuiteWorkspace
   );
 
@@ -106,10 +106,7 @@ export const PivotInternal = ({
             allMetas.findIndex(m => m.id === dropNode.id) + insertOffset;
           // FIXME: remove ts-ignore after blocksuite update
           // @ts-ignore
-          currentWorkspace.blockSuiteWorkspace.movePage(
-            dragNode.id,
-            insertIndex
-          );
+          shiftPageMeta(dragNode.id, insertIndex);
 
           return;
         }

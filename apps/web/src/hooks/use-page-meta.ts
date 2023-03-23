@@ -49,6 +49,9 @@ export function usePageMetaHelper(blockSuiteWorkspace: BlockSuiteWorkspace) {
       getPageMeta: (pageId: string) => {
         return blockSuiteWorkspace.meta.getPageMeta(pageId);
       },
+      shiftPageMeta: (pageId: string, index: number) => {
+        return blockSuiteWorkspace.meta.shiftPageMeta(pageId, index);
+      },
     }),
     [blockSuiteWorkspace]
   );

@@ -1,5 +1,6 @@
 import { MuiCollapse } from '@affine/component';
 import { IconButton } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import {
   ArrowDownSmallIcon,
@@ -170,7 +171,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             </StyledListItem>
           </Link>
 
-          {!!currentWorkspace && (
+          {config.enableSubpage && !!currentWorkspace && (
             <Pivot
               currentWorkspace={currentWorkspace}
               openPage={openPage}
