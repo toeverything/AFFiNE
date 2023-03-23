@@ -1,12 +1,12 @@
 import { Button, FlexWrapper, MuiFade } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import type React from 'react';
 import { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../../../../hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '../../../../../hooks/use-blocksuite-workspace-name';
-import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Upload } from '../../../../pure/file-upload';
 import {
   CloudWorkspaceIcon,
@@ -161,7 +161,7 @@ export const GeneralPanel: React.FC<PanelProps> = ({
       <StyledRow>
         <StyledSettingKey>{t('Workspace Type')}</StyledSettingKey>
         {isOwner ? (
-          workspace.flavour === RemWorkspaceFlavour.LOCAL ? (
+          workspace.flavour === WorkspaceFlavour.LOCAL ? (
             <StyledWorkspaceInfo>
               <LocalWorkspaceIcon />
               <span>{t('Local Workspace')}</span>

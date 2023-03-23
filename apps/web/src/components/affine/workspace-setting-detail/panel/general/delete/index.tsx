@@ -1,10 +1,10 @@
 import { Button, Input, Modal, ModalCloseButton } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useCallback, useState } from 'react';
 
 import { useBlockSuiteWorkspaceName } from '../../../../../../hooks/use-blocksuite-workspace-name';
 import type { AffineOfficialWorkspace } from '../../../../../../shared';
-import { RemWorkspaceFlavour } from '../../../../../../shared';
 import {
   StyledButtonContent,
   StyledInputContent,
@@ -43,7 +43,7 @@ export const WorkspaceDeleteModal = ({
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
         <StyledModalHeader>{t('Delete Workspace')}?</StyledModalHeader>
-        {workspace.flavour === RemWorkspaceFlavour.LOCAL ? (
+        {workspace.flavour === WorkspaceFlavour.LOCAL ? (
           <StyledTextContent>
             <Trans i18nKey="Delete Workspace Description">
               Deleting (

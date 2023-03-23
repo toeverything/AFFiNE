@@ -1,3 +1,4 @@
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
 
@@ -5,7 +6,6 @@ import { jotaiStore, workspacesAtom } from '../../atoms';
 import { createAffineProviders } from '../../blocksuite';
 import { Unreachable } from '../../components/affine/affine-error-eoundary';
 import type { AffineWorkspace } from '../../shared';
-import { RemWorkspaceFlavour } from '../../shared';
 import { apis } from '../../shared/apis';
 
 type Query = (typeof QueryKey)[keyof typeof QueryKey];
@@ -73,7 +73,7 @@ export const fetcher = async (
           );
           const remWorkspace: AffineWorkspace = {
             ...workspace,
-            flavour: RemWorkspaceFlavour.AFFINE,
+            flavour: WorkspaceFlavour.AFFINE,
             blockSuiteWorkspace,
             providers: [...createAffineProviders(blockSuiteWorkspace)],
           };

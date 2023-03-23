@@ -1,4 +1,5 @@
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useAtom } from 'jotai';
@@ -21,11 +22,7 @@ import type {
   NextPageWithLayout,
   SettingPanel,
 } from '../../../shared';
-import {
-  RemWorkspaceFlavour,
-  settingPanel,
-  settingPanelValues,
-} from '../../../shared';
+import { settingPanel, settingPanelValues } from '../../../shared';
 import { apis } from '../../../shared/apis';
 
 const settingPanelAtom = atomWithStorage<SettingPanel>(
@@ -105,13 +102,12 @@ const SettingPage: NextPageWithLayout = () => {
   }, [currentWorkspace, helper]);
   const transformWorkspace = useTransformWorkspace();
   const onTransformWorkspace = useCallback(
-    async <From extends RemWorkspaceFlavour, To extends RemWorkspaceFlavour>(
+    async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
       to: To,
       workspace: FlavourToWorkspace[From]
     ): Promise<void> => {
-      const needRefresh =
-        to === RemWorkspaceFlavour.AFFINE && !apis.auth.isLogin;
+      const needRefresh = to === WorkspaceFlavour.AFFINE && !apis.auth.isLogin;
       if (needRefresh) {
         await apis.signInWithGoogle();
       }
@@ -135,7 +131,7 @@ const SettingPage: NextPageWithLayout = () => {
     return <PageLoading />;
   } else if (settingPanelValues.indexOf(currentTab as SettingPanel) === -1) {
     return <PageLoading />;
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const Setting =
       WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
     return (
@@ -155,7 +151,7 @@ const SettingPage: NextPageWithLayout = () => {
         />
       </>
     );
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const Setting =
       WorkspacePlugins[currentWorkspace.flavour].UI.SettingsDetail;
     return (

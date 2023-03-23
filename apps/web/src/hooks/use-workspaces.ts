@@ -1,3 +1,4 @@
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -7,7 +8,6 @@ import { jotaiWorkspacesAtom, workspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
 import type { LocalWorkspace, RemWorkspace } from '../shared';
-import { RemWorkspaceFlavour } from '../shared';
 
 export function useWorkspaces(): RemWorkspace[] {
   return useAtomValue(workspacesAtom);
@@ -43,7 +43,7 @@ export function useWorkspacesHelper() {
           ...workspaces,
           {
             id,
-            flavour: RemWorkspaceFlavour.LOCAL,
+            flavour: WorkspaceFlavour.LOCAL,
           },
         ]);
         return id;

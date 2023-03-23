@@ -3,7 +3,7 @@
   "private": true,
   "exports": {
     "./utils": "./src/utils.ts",
-    "./message-center": "./src/message-center.tsx"
+    "./type": "./src/type.ts"
   },
   "dependencies": {
     "@affine/component": "workspace:^",

@@ -1,4 +1,5 @@
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { MouseEvent } from 'react';
 import type React from 'react';
 import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
@@ -11,7 +12,7 @@ import type {
   FlavourToWorkspace,
   SettingPanel,
 } from '../../../shared';
-import { RemWorkspaceFlavour, settingPanel } from '../../../shared';
+import { settingPanel } from '../../../shared';
 import { CollaborationPanel } from './panel/collaboration';
 import { ExportPanel } from './panel/export';
 import { GeneralPanel } from './panel/general';
@@ -31,8 +32,8 @@ export type WorkspaceSettingDetailProps = {
   onChangeTab: (tab: SettingPanel) => void;
   onDeleteWorkspace: () => void;
   onTransferWorkspace: <
-    From extends RemWorkspaceFlavour,
-    To extends RemWorkspaceFlavour
+    From extends WorkspaceFlavour,
+    To extends WorkspaceFlavour
   >(
     from: From,
     to: To,
@@ -49,8 +50,7 @@ const panelMap = {
   },
   [settingPanel.Sync]: {
     name: 'Sync',
-    enable: (flavour: RemWorkspaceFlavour) =>
-      flavour === RemWorkspaceFlavour.AFFINE,
+    enable: (flavour: WorkspaceFlavour) => flavour === WorkspaceFlavour.AFFINE,
     ui: SyncPanel,
   },
   [settingPanel.Collaboration]: {
@@ -68,7 +68,7 @@ const panelMap = {
 } satisfies {
   [Key in SettingPanel]: {
     name: string;
-    enable?: (flavour: RemWorkspaceFlavour) => boolean;
+    enable?: (flavour: WorkspaceFlavour) => boolean;
     ui: React.FC<PanelProps>;
   };
 };

@@ -1,9 +1,10 @@
+import type { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { jotaiWorkspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
-import type { FlavourToWorkspace, RemWorkspaceFlavour } from '../shared';
+import type { FlavourToWorkspace } from '../shared';
 
 /**
  * Transform workspace from one flavour to another
@@ -13,7 +14,7 @@ import type { FlavourToWorkspace, RemWorkspaceFlavour } from '../shared';
 export function useTransformWorkspace() {
   const set = useSetAtom(jotaiWorkspacesAtom);
   return useCallback(
-    async <From extends RemWorkspaceFlavour, To extends RemWorkspaceFlavour>(
+    async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
       to: To,
       workspace: FlavourToWorkspace[From]

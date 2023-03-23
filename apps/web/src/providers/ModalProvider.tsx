@@ -1,3 +1,4 @@
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
@@ -15,7 +16,7 @@ import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
-import { RemWorkspaceFlavour, WorkspaceSubPath } from '../shared';
+import { WorkspaceSubPath } from '../shared';
 import { apis } from '../shared/apis';
 
 const WorkspaceListModal = dynamic(
@@ -80,10 +81,10 @@ export function Modals() {
           apis.auth.clear();
           set(workspaces =>
             workspaces.filter(
-              workspace => workspace.flavour !== RemWorkspaceFlavour.AFFINE
+              workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
             )
           );
-          WorkspacePlugins[RemWorkspaceFlavour.AFFINE].cleanup?.();
+          WorkspacePlugins[WorkspaceFlavour.AFFINE].cleanup?.();
           router.reload();
         }, [router, set])}
         onCreateWorkspace={useCallback(() => {

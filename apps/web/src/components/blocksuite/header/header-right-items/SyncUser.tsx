@@ -1,5 +1,6 @@
 import { displayFlex, IconButton, styled, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   CloudWorkspaceIcon,
   LocalWorkspaceIcon,
@@ -15,7 +16,6 @@ import type {
   AffineOfficialWorkspace,
   LocalWorkspace,
 } from '../../../../shared';
-import { RemWorkspaceFlavour } from '../../../../shared';
 import { apis } from '../../../../shared/apis';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
@@ -117,10 +117,10 @@ export const SyncUser = () => {
               router.reload();
               return;
             }
-            assertEquals(workspace.flavour, RemWorkspaceFlavour.LOCAL);
+            assertEquals(workspace.flavour, WorkspaceFlavour.LOCAL);
             const id = await transformWorkspace(
-              RemWorkspaceFlavour.LOCAL,
-              RemWorkspaceFlavour.AFFINE,
+              WorkspaceFlavour.LOCAL,
+              WorkspaceFlavour.AFFINE,
               workspace as LocalWorkspace
             );
             // fixme(himself65): refactor this
