@@ -7549,6 +7549,10 @@ __metadata:
   dependenciesMeta:
     "@affine/electron":
       built: false
+    electron:
+      built: false
+    electron-winstaller:
+      built: false
   languageName: unknown
   linkType: soft
 

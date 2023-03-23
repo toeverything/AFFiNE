@@ -75,6 +75,12 @@
   "dependenciesMeta": {
     "@affine/electron": {
       "built": false
+    },
+    "electron": {
+      "built": false
+    },
+    "electron-winstaller": {
+      "built": false
     }
   }
 }
