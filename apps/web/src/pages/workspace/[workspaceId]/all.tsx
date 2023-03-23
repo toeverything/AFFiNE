@@ -1,4 +1,5 @@
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import Head from 'next/head';
@@ -20,7 +21,6 @@ import type {
   LocalIndexedDBProvider,
   NextPageWithLayout,
 } from '../../../shared';
-import { RemWorkspaceFlavour } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();
@@ -78,7 +78,7 @@ const AllPage: NextPageWithLayout = () => {
   if (currentWorkspace === null) {
     return <PageLoading />;
   }
-  if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>
@@ -92,7 +92,7 @@ const AllPage: NextPageWithLayout = () => {
         />
       </>
     );
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const PageList = WorkspacePlugins[currentWorkspace.flavour].UI.PageList;
     return (
       <>

@@ -8,11 +8,30 @@ env:
   BUILD_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
 jobs:
+  pull_request:
+    name: Get Pull Request SHA
+    runs-on: ubuntu-latest
+    outputs:
+      pr_sha: ${{ steps.get-pr.outputs.result }}
+    steps:
+      - uses: actions/github-script@v6
+        id: get-pr
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            const { data: pull_request } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            return pull_request.head.sha;
   build:
     name: Build on Pull Request
     runs-on: ubuntu-latest
     if: github.repository == 'toeverything/AFFiNE' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/test run')
     environment: development
+    needs: [pull_request]
 
     steps:
       - uses: actions/github-script@v6
@@ -54,15 +73,10 @@ jobs:
           debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
           result-encoding: string
           script: |
-            const { data: pull_request } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
             const { data: check } = await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              head_sha: pull_request.head.sha,
+              head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "Build on Pull Request",
               status: "in_progress",
               details_url: process.env.BUILD_URL
@@ -70,7 +84,7 @@ jobs:
             return check.id;
       - uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.pull_request.outputs.pr_sha }}
       - name: Use Node.js LTS
         uses: actions/setup-node@v3
         with:
@@ -149,7 +163,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: build
+    needs: [build, pull_request]
     permissions:
       contents: read
       packages: write
@@ -170,7 +184,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.pull_request.outputs.pr_sha }}
       - name: 'Create E2E test check'
         uses: actions/github-script@v6
         id: create-check
@@ -179,15 +193,10 @@ jobs:
           debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
           result-encoding: string
           script: |
-            const { data: pull_request } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
             const { data: check } = await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              head_sha: pull_request.head.sha,
+              head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
               status: "in_progress",
               details_url: process.env.BUILD_URL
@@ -277,12 +286,12 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    needs: build
+    needs: [build, pull_request]
 
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.pull_request.outputs.pr_sha }}
       - name: 'Create Unit test check'
         uses: actions/github-script@v6
         id: create-check
@@ -291,15 +300,10 @@ jobs:
           debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
           result-encoding: string
           script: |
-            const { data: pull_request } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
             const { data: check } = await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              head_sha: pull_request.head.sha,
+              head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "Unit Test",
               status: "in_progress",
               details_url: process.env.BUILD_URL

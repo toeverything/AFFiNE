@@ -5,6 +5,7 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -23,7 +24,7 @@ import {
 } from '../../atoms';
 import { LocalPlugin } from '../../plugins/local';
 import type { LocalWorkspace } from '../../shared';
-import { BlockSuiteWorkspace, RemWorkspaceFlavour } from '../../shared';
+import { BlockSuiteWorkspace } from '../../shared';
 import { useIsFirstLoad, useOpenTips } from '../affine/use-is-first-load';
 import {
   useRecentlyViewed,
@@ -181,7 +182,7 @@ describe('useWorkspaces', () => {
     expect(result2.current.length).toEqual(1);
     const firstWorkspace = result2.current[0];
     expect(firstWorkspace.flavour).toBe('local');
-    assert(firstWorkspace.flavour === RemWorkspaceFlavour.LOCAL);
+    assert(firstWorkspace.flavour === WorkspaceFlavour.LOCAL);
     expect(firstWorkspace.blockSuiteWorkspace.meta.name).toBe('test');
   });
 });
@@ -266,12 +267,12 @@ describe('useRecentlyViewed', () => {
     store.set(jotaiWorkspacesAtom, [
       {
         id: workspaceId,
-        flavour: RemWorkspaceFlavour.LOCAL,
+        flavour: WorkspaceFlavour.LOCAL,
       },
     ]);
     LocalPlugin.CRUD.get = vi.fn().mockResolvedValue({
       id: workspaceId,
-      flavour: RemWorkspaceFlavour.LOCAL,
+      flavour: WorkspaceFlavour.LOCAL,
       blockSuiteWorkspace,
       providers: [],
     } satisfies LocalWorkspace);

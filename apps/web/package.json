@@ -15,6 +15,7 @@
     "@affine/env": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/templates": "workspace:*",
+    "@affine/workspace": "workspace:*",
     "@blocksuite/blocks": "0.5.0-20230323085636-3110abb",
     "@blocksuite/editor": "0.5.0-20230323085636-3110abb",
     "@blocksuite/icons": "2.0.23",

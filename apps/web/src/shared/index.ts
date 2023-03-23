@@ -1,4 +1,5 @@
 import type { Workspace as RemoteWorkspace } from '@affine/datacenter';
+import type { WorkspaceFlavour } from '@affine/workspace/type';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { NextPage } from 'next';
 import type { ReactElement, ReactNode } from 'react';
@@ -11,25 +12,15 @@ declare global {
   }
 }
 
-export const enum RemWorkspaceFlavour {
-  AFFINE = 'affine',
-  LOCAL = 'local',
-}
-
-export interface FlavourToWorkspace {
-  [RemWorkspaceFlavour.AFFINE]: AffineWorkspace;
-  [RemWorkspaceFlavour.LOCAL]: LocalWorkspace;
-}
-
 export interface AffineWorkspace extends RemoteWorkspace {
-  flavour: RemWorkspaceFlavour.AFFINE;
+  flavour: WorkspaceFlavour.AFFINE;
   // empty
   blockSuiteWorkspace: BlockSuiteWorkspace;
   providers: Provider[];
 }
 
 export interface LocalWorkspace {
-  flavour: RemWorkspaceFlavour.LOCAL;
+  flavour: WorkspaceFlavour.LOCAL;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
   providers: Provider[];
@@ -89,16 +80,6 @@ export const enum WorkspaceSubPath {
   TRASH = 'trash',
 }
 
-export const settingPanel = {
-  General: 'general',
-  Collaboration: 'collaboration',
-  Publish: 'publish',
-  Export: 'export',
-  Sync: 'sync',
-} as const;
-export const settingPanelValues = [...Object.values(settingPanel)] as const;
-export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
-
 export const WorkspaceSubPathName = {
   [WorkspaceSubPath.ALL]: 'All Pages',
   [WorkspaceSubPath.FAVORITE]: 'Favorites',
@@ -125,9 +106,3 @@ export const publicPathGenerator = {
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
 };
-
-export const enum LoadPriority {
-  HIGH = 1,
-  MEDIUM = 2,
-  LOW = 3,
-}

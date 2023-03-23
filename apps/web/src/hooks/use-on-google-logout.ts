@@ -1,10 +1,10 @@
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { jotaiWorkspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
-import { RemWorkspaceFlavour } from '../shared';
 import { apis } from '../shared/apis';
 
 export function useOnGoogleLogout() {
@@ -14,10 +14,10 @@ export function useOnGoogleLogout() {
     apis.auth.clear();
     set(workspaces =>
       workspaces.filter(
-        workspace => workspace.flavour !== RemWorkspaceFlavour.AFFINE
+        workspace => workspace.flavour !== WorkspaceFlavour.AFFINE
       )
     );
-    WorkspacePlugins[RemWorkspaceFlavour.AFFINE].cleanup?.();
+    WorkspacePlugins[WorkspaceFlavour.AFFINE].cleanup?.();
     router.reload();
   }, [router, set]);
 }

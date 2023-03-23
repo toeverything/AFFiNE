@@ -1,9 +1,9 @@
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import { currentPageIdAtom, jotaiStore } from '../atoms';
 import type { RemWorkspace } from '../shared';
-import { RemWorkspaceFlavour } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
 import { useCurrentWorkspace } from './current/use-current-workspace';
 import { useWorkspaces } from './use-workspaces';
@@ -13,7 +13,7 @@ export function findSuitablePageId(
   targetId: string
 ): string | null {
   switch (workspace.flavour) {
-    case RemWorkspaceFlavour.AFFINE: {
+    case WorkspaceFlavour.AFFINE: {
       return (
         workspace.blockSuiteWorkspace.meta.pageMetas.find(
           page => page.id === targetId
@@ -22,7 +22,7 @@ export function findSuitablePageId(
         null
       );
     }
-    case RemWorkspaceFlavour.LOCAL: {
+    case WorkspaceFlavour.LOCAL: {
       return (
         workspace.blockSuiteWorkspace.meta.pageMetas.find(
           page => page.id === targetId
