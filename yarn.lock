@@ -7546,6 +7546,9 @@ __metadata:
     vite: ^4.2.0
     vitest: ^0.29.3
     vitest-fetch-mock: ^0.2.2
+  dependenciesMeta:
+    "@affine/electron":
+      built: false
   languageName: unknown
   linkType: soft
 

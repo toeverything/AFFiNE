@@ -72,7 +72,9 @@
   "resolutions": {
     "y-indexeddb@^9.0.9": "patch:y-indexeddb@npm%3A9.0.9#./.yarn/patches/y-indexeddb-npm-9.0.9-6bd9b26461.patch"
   },
-  "peerDependenciesMeta": {
-    "@affine/electron": {}
+  "dependenciesMeta": {
+    "@affine/electron": {
+      "built": false
+    }
   }
 }
