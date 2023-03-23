@@ -88,7 +88,7 @@ export const PivotInternal = ({
           logger.info('drop into root and resort');
 
           if (dragParentMeta) {
-            const newSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
+            const newSubpageIds = [...(dragParentMeta.subpageIds ?? [])];
 
             const deleteIndex = dragParentMeta.subpageIds?.findIndex(
               id => id === dragNode.id
@@ -118,7 +118,7 @@ export const PivotInternal = ({
         ) {
           logger.info('drop to resort');
           // need to resort
-          const newSubpageIds = [...(dragParentMeta?.subpageIds ?? [])];
+          const newSubpageIds = [...(dragParentMeta.subpageIds ?? [])];
 
           const deleteIndex = newSubpageIds.findIndex(id => id === dragNode.id);
           newSubpageIds.splice(deleteIndex, 1);
