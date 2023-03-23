@@ -7,6 +7,7 @@ import {
   newPage,
 } from './libs/page-logic';
 import { test } from './libs/playwright';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 loadPage();
 
 test.describe('Local first delete page', () => {
@@ -26,6 +27,7 @@ test.describe('Local first delete page', () => {
     await deleteBtn.click();
     const confirmTip = page.getByText('Delete page?');
     expect(confirmTip).not.toBeUndefined();
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 
   test('New a page ,then go to all pages and show delete modal', async ({
@@ -50,5 +52,6 @@ test.describe('Local first delete page', () => {
     await deleteBtn.click();
     const confirmTip = page.getByText('Delete page?');
     expect(confirmTip).not.toBeUndefined();
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });

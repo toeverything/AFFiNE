@@ -3,6 +3,7 @@ import { expect } from '@playwright/test';
 import { loadPage } from './libs/load-page';
 import { getBlockSuiteEditorTitle, newPage } from './libs/page-logic';
 import { test } from './libs/playwright';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 loadPage();
 
 test.describe('Local first delete page', () => {
@@ -47,5 +48,6 @@ test.describe('Local first delete page', () => {
       name: 'this is a new page to restore',
     });
     expect(restoreCell).not.toBeUndefined();
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });

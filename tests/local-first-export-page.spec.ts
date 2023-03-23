@@ -7,6 +7,7 @@ import {
   newPage,
 } from './libs/page-logic';
 import { test } from './libs/playwright';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 loadPage();
 
 test.describe('Local first export page', () => {
@@ -65,5 +66,6 @@ test.describe('Local first export page', () => {
     expect(download.suggestedFilename()).toBe(
       'this is a new page to export markdown content.md'
     );
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });

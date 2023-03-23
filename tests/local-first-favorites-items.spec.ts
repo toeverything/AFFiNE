@@ -7,6 +7,7 @@ import {
   newPage,
 } from './libs/page-logic';
 import { test } from './libs/playwright';
+import { assertCurrentWorkspaceFlavour } from './libs/workspace';
 loadPage();
 
 test.describe('Local first favorite items ui', () => {
@@ -59,5 +60,6 @@ test.describe('Local first favorite items ui', () => {
         .getByText('Click Add to Favorites and the page will appear here.')
         .isVisible()
     ).toBe(true);
+    await assertCurrentWorkspaceFlavour('local', page);
   });
 });
