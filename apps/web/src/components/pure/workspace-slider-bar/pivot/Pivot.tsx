@@ -37,8 +37,6 @@ export const PivotInternal = ({
   const handleAdd = useCallback(
     (node: TreeNode) => {
       const id = nanoid();
-      // FIXME: remove ts-ignore after blocksuite update
-      // @ts-ignore
       createPage(id, node.id);
       openPage(id);
     },
@@ -82,7 +80,6 @@ export const PivotInternal = ({
           m.subpageIds?.includes(dropNode.id)
         );
 
-        // FIXME: should support resort root meta
         if (!dropParentMeta) {
           // drop into root
           logger.info('drop into root and resort');
@@ -94,8 +91,6 @@ export const PivotInternal = ({
               id => id === dragNode.id
             );
             newSubpageIds.splice(deleteIndex, 1);
-            // FIXME: remove ts-ignore after blocksuite update
-            // @ts-ignore
             setPageMeta(dragParentMeta.id, {
               subpageIds: newSubpageIds,
             });
@@ -104,8 +99,6 @@ export const PivotInternal = ({
           logger.info('resort root meta');
           const insertIndex =
             allMetas.findIndex(m => m.id === dropNode.id) + insertOffset;
-          // FIXME: remove ts-ignore after blocksuite update
-          // @ts-ignore
           shiftPageMeta(dragNode.id, insertIndex);
 
           return;
@@ -126,8 +119,6 @@ export const PivotInternal = ({
           const insertIndex =
             newSubpageIds.findIndex(id => id === dropNode.id) + insertOffset;
           newSubpageIds.splice(insertIndex, 0, dragNode.id);
-          // FIXME: remove ts-ignore after blocksuite update
-          // @ts-ignore
           setPageMeta(dropParentMeta.id, {
             subpageIds: newSubpageIds,
           });
@@ -142,8 +133,6 @@ export const PivotInternal = ({
           );
           const newSubpageIds = [...dragParentMeta.subpageIds];
           newSubpageIds.splice(metaIndex, 1);
-          // FIXME: remove ts-ignore after blocksuite update
-          // @ts-ignore
           setPageMeta(dragParentMeta.id, {
             subpageIds: newSubpageIds,
           });
@@ -152,8 +141,6 @@ export const PivotInternal = ({
         const insertIndex =
           newSubpageIds.findIndex(id => id === dropNode.id) + 1;
         newSubpageIds.splice(insertIndex, 0, dragNode.id);
-        // FIXME: remove ts-ignore after blocksuite update
-        // @ts-ignore
         setPageMeta(dropParentMeta.id, {
           subpageIds: newSubpageIds,
         });
@@ -172,21 +159,17 @@ export const PivotInternal = ({
         );
         const newSubpageIds = [...dragParentMeta.subpageIds];
         newSubpageIds.splice(metaIndex, 1);
-        // FIXME: remove ts-ignore after blocksuite update
-        // @ts-ignore
         setPageMeta(dragParentMeta.id, {
           subpageIds: newSubpageIds,
         });
       }
       const dropMeta = allMetas.find(meta => meta.id === dropNode.id)!;
       const newSubpageIds = [dragNode.id, ...(dropMeta.subpageIds ?? [])];
-      // FIXME: remove ts-ignore after blocksuite update
-      // @ts-ignore
       setPageMeta(dropMeta.id, {
         subpageIds: newSubpageIds,
       });
     },
-    [allMetas, setPageMeta]
+    [allMetas, setPageMeta, shiftPageMeta]
   );
 
   return (
