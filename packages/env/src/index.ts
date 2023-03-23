@@ -112,6 +112,7 @@ export const publicRuntimeConfigSchema = z.object({
   prefetchWorkspace: z.boolean(),
   // expose internal api to globalThis, **development only**
   exposeInternal: z.boolean(),
+  enableSubpage: z.boolean(),
 });
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
