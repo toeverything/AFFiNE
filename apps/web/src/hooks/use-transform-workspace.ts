@@ -1,10 +1,10 @@
 import type { WorkspaceFlavour } from '@affine/workspace/type';
+import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { jotaiWorkspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
-import type { FlavourToWorkspace } from '../shared';
 
 /**
  * Transform workspace from one flavour to another
@@ -17,7 +17,7 @@ export function useTransformWorkspace() {
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
       to: To,
-      workspace: FlavourToWorkspace[From]
+      workspace: WorkspaceRegistry[From]
     ): Promise<string> => {
       await WorkspacePlugins[from].CRUD.delete(workspace as any);
       const newId = await WorkspacePlugins[to].CRUD.create(

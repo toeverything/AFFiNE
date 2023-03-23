@@ -1,17 +1,22 @@
-import type { LoadPriority } from '@affine/workspace/type';
+import type {
+  LoadPriority,
+  WorkspaceCRUD,
+  WorkspaceRegistry,
+} from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type React from 'react';
 
 import type {
+  AffineWorkspace,
   BlockSuiteWorkspace,
-  FlavourToWorkspace,
+  LocalWorkspace,
   SettingPanel,
 } from '../shared';
 import { AffinePlugin } from './affine';
 import { LocalPlugin } from './local';
 
 type UIBaseProps<Flavour extends WorkspaceFlavour> = {
-  currentWorkspace: FlavourToWorkspace[Flavour];
+  currentWorkspace: WorkspaceRegistry[Flavour];
 };
 
 type SettingProps<Flavour extends WorkspaceFlavour> = UIBaseProps<Flavour> & {
@@ -24,7 +29,7 @@ type SettingProps<Flavour extends WorkspaceFlavour> = UIBaseProps<Flavour> & {
   >(
     from: From,
     to: To,
-    workspace: FlavourToWorkspace[From]
+    workspace: WorkspaceRegistry[From]
   ) => void;
 };
 
@@ -43,6 +48,13 @@ type SideBarMenuProps<Flavour extends WorkspaceFlavour> =
     setSideBarOpen: (open: boolean) => void;
   };
 
+declare module '@affine/workspace/type' {
+  interface WorkspaceRegistry {
+    [WorkspaceFlavour.AFFINE]: AffineWorkspace;
+    [WorkspaceFlavour.LOCAL]: LocalWorkspace;
+  }
+}
+
 export interface WorkspacePlugin<Flavour extends WorkspaceFlavour> {
   flavour: Flavour;
   // Plugin will be loaded according to the priority
@@ -50,14 +62,7 @@ export interface WorkspacePlugin<Flavour extends WorkspaceFlavour> {
   // fixme: this is a hack
   cleanup?: () => void;
   // Fetch necessary data for the first render
-  CRUD: {
-    create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;
-    delete: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
-    get: (workspaceId: string) => Promise<FlavourToWorkspace[Flavour] | null>;
-    // not supported yet
-    // update: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
-    list: () => Promise<FlavourToWorkspace[Flavour][]>;
-  };
+  CRUD: WorkspaceCRUD<Flavour>;
   UI: {
     PageDetail: React.FC<PageDetailProps<Flavour>>;
     PageList: React.FC<PageListProps<Flavour>>;

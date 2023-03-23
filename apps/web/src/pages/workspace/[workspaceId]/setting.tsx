@@ -1,4 +1,5 @@
 import { useTranslation } from '@affine/i18n';
+import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
@@ -17,11 +18,7 @@ import { useTransformWorkspace } from '../../../hooks/use-transform-workspace';
 import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import type {
-  FlavourToWorkspace,
-  NextPageWithLayout,
-  SettingPanel,
-} from '../../../shared';
+import type { NextPageWithLayout, SettingPanel } from '../../../shared';
 import { settingPanel, settingPanelValues } from '../../../shared';
 import { apis } from '../../../shared/apis';
 
@@ -105,7 +102,7 @@ const SettingPage: NextPageWithLayout = () => {
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
       to: To,
-      workspace: FlavourToWorkspace[From]
+      workspace: WorkspaceRegistry[From]
     ): Promise<void> => {
       const needRefresh = to === WorkspaceFlavour.AFFINE && !apis.auth.isLogin;
       if (needRefresh) {

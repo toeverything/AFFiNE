@@ -12,11 +12,6 @@ declare global {
   }
 }
 
-export interface FlavourToWorkspace {
-  [WorkspaceFlavour.AFFINE]: AffineWorkspace;
-  [WorkspaceFlavour.LOCAL]: LocalWorkspace;
-}
-
 export interface AffineWorkspace extends RemoteWorkspace {
   flavour: WorkspaceFlavour.AFFINE;
   // empty

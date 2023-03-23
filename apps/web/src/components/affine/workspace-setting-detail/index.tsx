@@ -1,4 +1,5 @@
 import { useTranslation } from '@affine/i18n';
+import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { MouseEvent } from 'react';
 import type React from 'react';
@@ -7,11 +8,7 @@ import { preload } from 'swr';
 
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { fetcher, QueryKey } from '../../../plugins/affine/fetcher';
-import type {
-  AffineOfficialWorkspace,
-  FlavourToWorkspace,
-  SettingPanel,
-} from '../../../shared';
+import type { AffineOfficialWorkspace, SettingPanel } from '../../../shared';
 import { settingPanel } from '../../../shared';
 import { CollaborationPanel } from './panel/collaboration';
 import { ExportPanel } from './panel/export';
@@ -37,7 +34,7 @@ export type WorkspaceSettingDetailProps = {
   >(
     from: From,
     to: To,
-    workspace: FlavourToWorkspace[From]
+    workspace: WorkspaceRegistry[From]
   ) => void;
 };
 
