@@ -1,6 +1,10 @@
 import { useTranslation } from '@affine/i18n';
-import type { WorkspaceRegistry } from '@affine/workspace/type';
-import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { SettingPanel, WorkspaceRegistry } from '@affine/workspace/type';
+import {
+  settingPanel,
+  settingPanelValues,
+  WorkspaceFlavour,
+} from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useAtom } from 'jotai';
@@ -18,8 +22,7 @@ import { useTransformWorkspace } from '../../../hooks/use-transform-workspace';
 import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import type { NextPageWithLayout, SettingPanel } from '../../../shared';
-import { settingPanel, settingPanelValues } from '../../../shared';
+import type { NextPageWithLayout } from '../../../shared';
 import { apis } from '../../../shared/apis';
 
 const settingPanelAtom = atomWithStorage<SettingPanel>(

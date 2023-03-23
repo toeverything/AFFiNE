@@ -80,16 +80,6 @@ export const enum WorkspaceSubPath {
   TRASH = 'trash',
 }
 
-export const settingPanel = {
-  General: 'general',
-  Collaboration: 'collaboration',
-  Publish: 'publish',
-  Export: 'export',
-  Sync: 'sync',
-} as const;
-export const settingPanelValues = [...Object.values(settingPanel)] as const;
-export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
-
 export const WorkspaceSubPathName = {
   [WorkspaceSubPath.ALL]: 'All Pages',
   [WorkspaceSubPath.FAVORITE]: 'Favorites',
