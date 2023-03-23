@@ -22,7 +22,6 @@ declare global {
     callback: Set<() => void>;
   };
 }
-
 if (!globalThis.featureFlag) {
   globalThis.featureFlag = featureFlag;
 }

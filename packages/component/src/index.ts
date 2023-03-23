@@ -15,6 +15,7 @@ export * from './ui/shared/Container';
 export * from './ui/table';
 export * from './ui/toast';
 export * from './ui/tooltip';
+export * from './ui/tree-view';
 
 declare module '@mui/material/styles' {
   interface Theme {
