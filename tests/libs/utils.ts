@@ -82,5 +82,6 @@ export async function loginUser(
 }
 
 export async function openHomePage(page: Page) {
-  return page.goto('http://localhost:8080');
+  await page.goto('http://localhost:8080');
+  await page.waitForSelector('#__next');
 }
