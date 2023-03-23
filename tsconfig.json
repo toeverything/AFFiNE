@@ -26,7 +26,9 @@
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/debug": ["./packages/debug"],
       "@affine/env": ["./packages/env"],
-      "@affine/utils": ["./packages/utils"]
+      "@affine/env/*": ["./packages/env/src/*"],
+      "@affine/utils": ["./packages/utils"],
+      "@affine/workspace/*": ["./packages/workspace/src/*"]
     }
   },
   "references": [
@@ -55,7 +57,7 @@
       "path": "./packages/debug"
     },
     {
-      "path": "./packages/cli"
+      "path": "./packages/workspace"
     }
   ],
   "files": [],

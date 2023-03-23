@@ -2,11 +2,16 @@
   "name": "@affine/env",
   "private": true,
   "main": "./src/index.ts",
+  "module": "./src/index.ts",
   "devDependencies": {
     "next": "=13.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zod": "^3.21.4"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./constant": "./src/constant.ts"
   },
   "dependencies": {
     "@blocksuite/global": "0.5.0-20230323085636-3110abb",

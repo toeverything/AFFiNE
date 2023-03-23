@@ -1,8 +1,8 @@
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { atom } from 'jotai/index';
 
 import { BlockSuiteWorkspace } from '../../shared';
 import { apis } from '../../shared/apis';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
 
 export const publicWorkspaceIdAtom = atom<string | null>(null);
 export const publicBlockSuiteAtom = atom<Promise<BlockSuiteWorkspace>>(

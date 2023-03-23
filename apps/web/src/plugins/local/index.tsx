@@ -1,4 +1,6 @@
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
+import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
@@ -11,12 +13,7 @@ import { WorkspaceSettingDetail } from '../../components/affine/workspace-settin
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import type { LocalWorkspace } from '../../shared';
-import {
-  BlockSuiteWorkspace,
-  LoadPriority,
-  RemWorkspaceFlavour,
-} from '../../shared';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
+import { BlockSuiteWorkspace } from '../../shared';
 import { initPage } from '../../utils/blocksuite';
 import type { WorkspacePlugin } from '..';
 
@@ -25,8 +22,8 @@ const getStorage = () => createJSONStorage(() => localStorage);
 export const kStoreKey = 'affine-local-workspace';
 const schema = z.array(z.string());
 
-export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
-  flavour: RemWorkspaceFlavour.LOCAL,
+export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
+  flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   CRUD: {
     get: async workspaceId => {
@@ -44,7 +41,7 @@ export const LocalPlugin: WorkspacePlugin<RemWorkspaceFlavour.LOCAL> = {
       );
       const workspace: LocalWorkspace = {
         id,
-        flavour: RemWorkspaceFlavour.LOCAL,
+        flavour: WorkspaceFlavour.LOCAL,
         blockSuiteWorkspace: blockSuiteWorkspace,
         providers: [...createLocalProviders(blockSuiteWorkspace)],
       };

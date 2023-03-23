@@ -1,3 +1,5 @@
+import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
 import { mutate } from 'swr';
@@ -9,13 +11,8 @@ import { WorkspaceSettingDetail } from '../../components/affine/workspace-settin
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import type { AffineWorkspace } from '../../shared';
-import {
-  BlockSuiteWorkspace,
-  LoadPriority,
-  RemWorkspaceFlavour,
-} from '../../shared';
+import { BlockSuiteWorkspace } from '../../shared';
 import { apis, clientAuth } from '../../shared/apis';
-import { createEmptyBlockSuiteWorkspace } from '../../utils';
 import { initPage } from '../../utils/blocksuite';
 import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
@@ -46,7 +43,7 @@ const getPersistenceAllWorkspace = () => {
         );
         const affineWorkspace: AffineWorkspace = {
           ...item,
-          flavour: RemWorkspaceFlavour.AFFINE,
+          flavour: WorkspaceFlavour.AFFINE,
           blockSuiteWorkspace,
           providers: [...createAffineProviders(blockSuiteWorkspace)],
         };
@@ -57,8 +54,8 @@ const getPersistenceAllWorkspace = () => {
   return allWorkspaces;
 };
 
-export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
-  flavour: RemWorkspaceFlavour.AFFINE,
+export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
+  flavour: WorkspaceFlavour.AFFINE,
   loadPriority: LoadPriority.HIGH,
   cleanup: () => {
     storage.removeItem(kAffineLocal);
@@ -167,7 +164,7 @@ export const AffinePlugin: WorkspacePlugin<RemWorkspaceFlavour.AFFINE> = {
 
               const affineWorkspace: AffineWorkspace = {
                 ...workspace,
-                flavour: RemWorkspaceFlavour.AFFINE,
+                flavour: WorkspaceFlavour.AFFINE,
                 blockSuiteWorkspace,
                 providers: [...createAffineProviders(blockSuiteWorkspace)],
               };
