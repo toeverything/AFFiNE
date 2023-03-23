@@ -77,6 +77,20 @@ const LoginDevPage: NextPage = () => {
         >
           Reset Storage
         </Button>
+        <Button
+          onClick={async () => {
+            const status = await fetch('/api/workspace', {
+              method: 'GET',
+              headers: {
+                'Cache-Control': 'no-cache',
+                Authorization: getLoginStorage()?.token ?? '',
+              },
+            }).then(r => r.status);
+            toast(`Response Status: ${status}`);
+          }}
+        >
+          Check Permission
+        </Button>
         <Viewer
           theme={useTheme().resolvedTheme === 'light' ? 'light' : 'dark'}
           value={user}

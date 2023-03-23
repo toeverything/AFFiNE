@@ -1,4 +1,7 @@
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
-import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
-export const currentAffineUserAtom = atom<AccessTokenMessage | null>(null);
+export const currentAffineUserAtom = atomWithStorage<AccessTokenMessage | null>(
+  'affine-user-atom',
+  null
+);
