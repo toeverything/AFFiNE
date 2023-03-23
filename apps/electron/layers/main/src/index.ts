@@ -1,10 +1,22 @@
 import './security-restrictions';
 
-import { app } from 'electron';
+import { app, BrowserWindow } from 'electron';
+import path from 'path';
+import { parse } from 'url';
 
+import { exchangeToken, startAuthListener } from '../../auth';
 import { restoreOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
-
+startAuthListener();
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('affine', process.execPath, [
+      path.resolve(process.argv[1]),
+    ]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('affine');
+}
 /**
  * Prevent multiple instances
  */
@@ -14,7 +26,20 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-app.on('second-instance', restoreOrCreateWindow);
+app.on('second-instance', (event, argv) => {
+  restoreOrCreateWindow();
+});
+
+app.on('open-url', async (_, url) => {
+  const mainWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
+  const urlObj = parse(url, true);
+  console.log('window-open', url);
+  if (!mainWindow || !urlObj.query.code) return;
+  const token = (await exchangeToken(urlObj.query.code as string)) as {
+    id_token: string;
+  };
+  mainWindow.webContents.send('send-token', token.id_token);
+});
 
 /**
  * Disable Hardware Acceleration for more power-save
@@ -43,7 +68,6 @@ app
   .then(registerProtocol)
   .then(restoreOrCreateWindow)
   .catch(e => console.error('Failed create window:', e));
-
 /**
  * Check new app version in production mode only
  */

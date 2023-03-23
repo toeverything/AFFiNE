@@ -6,6 +6,7 @@ import {
   type Auth as FirebaseAuth,
   getAuth as getFirebaseAuth,
   GoogleAuthProvider,
+  signInWithCredential,
   signInWithPopup,
   signOut,
 } from 'firebase/auth';
@@ -273,6 +274,17 @@ export const getAuthorizer = (googleAuth: GoogleAuth) => {
     return loginUser;
   };
 
+  const signInWithOauthCode = async (token: string) => {
+    const firebaseAuth = getAuth();
+    let loginUser: AccessTokenMessage | null = null;
+    if (firebaseAuth) {
+      const credential = GoogleAuthProvider.credential(token);
+      const user = await signInWithCredential(firebaseAuth, credential);
+      const idToken = await user.user.getIdToken();
+      loginUser = await googleAuth.initToken(idToken);
+    }
+    return loginUser;
+  };
   const onAuthStateChanged = (callback: (user: User | null) => void) => {
     getAuth()?.onAuthStateChanged(callback);
   };
@@ -284,5 +296,10 @@ export const getAuthorizer = (googleAuth: GoogleAuth) => {
     }
   };
 
-  return [signInWithGoogle, onAuthStateChanged, signOutFirebase] as const;
+  return [
+    signInWithGoogle,
+    onAuthStateChanged,
+    signOutFirebase,
+    signInWithOauthCode,
+  ] as const;
 };

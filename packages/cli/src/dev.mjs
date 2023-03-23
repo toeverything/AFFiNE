@@ -58,7 +58,7 @@ const env = {
 if (dev.debugBlockSuite) {
   const { config } = await import('dotenv');
   const envLocal = config({
-    path: path.resolve(cwd, '.env.local'),
+    path: path.resolve(cwd, '.env.local.now'),
   });
 
   const localBlockSuite = await p.text({

@@ -27,6 +27,7 @@ import { useRouterHelper } from '../hooks/use-router-helper';
 import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
+import { ElectronOauthProvider } from '../providers/ElectronOauthProvider';
 import { ModalProvider } from '../providers/ModalProvider';
 import type { RemWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
@@ -218,6 +219,9 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           router={router}
         />
       )}
+      <NoSsr>
+        <ElectronOauthProvider />
+      </NoSsr>
     </>
   );
 };

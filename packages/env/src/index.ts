@@ -2,7 +2,7 @@ import { assertEquals } from '@blocksuite/global/utils';
 import getConfig from 'next/config';
 import { z } from 'zod';
 
-import { getUaHelper } from './ua-helper';
+import { getUaHelper, isElectron } from './ua-helper';
 
 type BrowserBase = {
   isDesktop: false;
@@ -161,5 +161,5 @@ export function setupGlobal() {
   globalThis.$AFFINE_SETUP = true;
 }
 
-export { config };
+export { config, isElectron };
 export * from './constant';

@@ -20,6 +20,7 @@ export type Apis = Prettify<
       signInWithGoogle: ReturnType<typeof getAuthorizer>[0];
       onAuthStateChanged: ReturnType<typeof getAuthorizer>[1];
       signOutFirebase: ReturnType<typeof getAuthorizer>[2];
+      signInWithOauthCode: ReturnType<typeof getAuthorizer>[3];
     } & { auth: ReturnType<typeof createGoogleAuth> }
 >;
 
@@ -28,8 +29,12 @@ export const getApis = (
   authClient: KyInstance,
   googleAuth: GoogleAuth
 ): Apis => {
-  const [signInWithGoogle, onAuthStateChanged, signOutFirebase] =
-    getAuthorizer(googleAuth);
+  const [
+    signInWithGoogle,
+    onAuthStateChanged,
+    signOutFirebase,
+    signInWithOauthCode,
+  ] = getAuthorizer(googleAuth);
   return {
     ...createUserApis(bareClient, authClient),
     ...createWorkspaceApis(bareClient, authClient, googleAuth),
@@ -37,6 +42,7 @@ export const getApis = (
     signOutFirebase,
     onAuthStateChanged,
     auth: googleAuth,
+    signInWithOauthCode,
   };
 };
 

@@ -26,7 +26,6 @@ if (typeof window === 'undefined') {
   const params = new URLSearchParams(window.location.search);
   params.get('prefixUrl') && (prefixUrl = params.get('prefixUrl') as string);
 }
-
 const bareAuth = createBareClient(prefixUrl);
 const googleAuth = new GoogleAuth(bareAuth);
 export const clientAuth = createAuthClient(bareAuth, googleAuth);

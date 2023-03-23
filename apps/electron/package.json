@@ -30,13 +30,27 @@
     "@electron-forge/maker-zip": "^6.0.5",
     "@electron-forge/shared-types": "^6.0.5",
     "@electron/rebuild": "^3.2.10",
+    "@electron/remote": "2.0.9",
     "dts-for-context-bridge": "^0.7.1",
     "electron": "23.1.4",
     "esbuild": "^0.17.12",
     "zx": "^7.2.1"
   },
   "dependencies": {
+    "@nosferatu500/electron-google-oauth2": "3.1.0",
     "cross-env": "7.0.3",
-    "electron-window-state": "^5.0.3"
+    "electron-window-state": "^5.0.3",
+    "firebase": "^9.18.0",
+    "node-fetch": "3.3.1"
+  },
+  "build": {
+    "protocols": [
+      {
+        "name": "affine",
+        "schemes": [
+          "affine"
+        ]
+      }
+    ]
   }
 }

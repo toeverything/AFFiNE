@@ -2,8 +2,10 @@
  * @module preload
  */
 
-import { contextBridge } from 'electron';
+import * as remote from '@electron/remote';
+import { contextBridge, ipcRenderer } from 'electron';
 
+import { myApiOauth } from '../../auth';
 import { sha256sum } from './sha256sum';
 
 // Expose version number to renderer
@@ -31,3 +33,30 @@ contextBridge.exposeInMainWorld('yerba', { version: 0.1 });
  * window.nodeCrypto('data')
  */
 contextBridge.exposeInMainWorld('nodeCrypto', { sha256sum });
+
+contextBridge.exposeInMainWorld('electron', {
+  signIn: () => {
+    myApiOauth.openAuthWindowAndGetTokens();
+  },
+  ipcRenderer: {
+    on: (channel: string, listener: (event: any, ...args: any[]) => void) => {
+      const validChannels = ['send-token'];
+      if (validChannels.includes(channel)) {
+        // Deliberately strip event as it includes `sender` and is a security risk
+        // @ts-ignore
+        ipcRenderer.on(channel, (event, ...args) => listener(...args));
+      }
+    },
+    off: (channel: string) => {
+      ipcRenderer.removeAllListeners(channel);
+    },
+  },
+  reload: () => {
+    // const remote.BrowserWindow.getAllWindows();
+    const mainWindow = remote.BrowserWindow.getAllWindows().find(
+      w => !w.isDestroyed()
+    );
+    if (!mainWindow) return;
+    mainWindow.webContents.reload();
+  },
+});

@@ -1,3 +1,4 @@
+import { isElectron } from '@affine/env';
 import { useAtom, useAtomValue } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
@@ -70,6 +71,11 @@ export function Modals() {
           [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
         onClickLogin={useCallback(() => {
+          if (isElectron()) {
+            //@ts-ignore
+            window.electron.signIn();
+            return;
+          }
           apis.signInWithGoogle().then(() => {
             router.reload();
           });
