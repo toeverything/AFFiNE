@@ -1,13 +1,13 @@
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import { useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import type React from 'react';
 import { useCallback } from 'react';
 
-import { currentEditorAtom } from '../atoms';
+import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
 import { useBlockSuiteWorkspacePageTitle } from '../hooks/use-blocksuite-workspace-page-title';
 import { usePageMeta } from '../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../shared';
@@ -49,6 +49,8 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
   const meta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  const currentMode =
+    useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
   const setEditor = useSetAtom(currentEditorAtom);
   assertExists(meta);
   return (
@@ -70,8 +72,7 @@ export const PageDetailEditor: React.FC<PageDetailEditorProps> = ({
         }}
         key={pageId}
         blockSuiteWorkspace={blockSuiteWorkspace}
-        // fixme: remove mode from meta
-        mode={isPublic ? 'page' : meta.mode ?? 'page'}
+        mode={isPublic ? 'page' : currentMode}
         page={page}
         onInit={useCallback(
           (page: Page, editor: Readonly<EditorContainer>) => {

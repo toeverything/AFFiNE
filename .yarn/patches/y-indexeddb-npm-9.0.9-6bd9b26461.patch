@@ -1,0 +1,13 @@
+diff --git a/src/y-indexeddb.js b/src/y-indexeddb.js
+index 68b7b1b2f71239fbd0c89e50a94931965661d651..186b35323e256808b2535c02d9a4830794a1649d 100644
+--- a/src/y-indexeddb.js
++++ b/src/y-indexeddb.js
+@@ -95,7 +95,7 @@ export class IndexeddbPersistence extends Observable {
+      * @param {any} origin
+      */
+     this._storeUpdate = (update, origin) => {
+-      if (this.db && origin !== this) {
++      if (this.db && !(origin instanceof IndexeddbPersistence)) {
+         const [updatesStore] = idb.transact(/** @type {IDBDatabase} */ (this.db), [updatesStoreName])
+         idb.addAutoKey(updatesStore, update)
+         if (++this._dbsize >= PREFERRED_TRIM_SIZE) {

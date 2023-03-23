@@ -1,28 +1,76 @@
 name: Build & Test
 
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  issue_comment:
+    types: [created]
 
-# Cancels all previous workflow runs for pull requests that have not completed.
-# See https://docs.github.com/en/actions/using-jobs/using-concurrency
-concurrency:
-  # The concurrency group contains the workflow name and the branch name for
-  # pull requests or the commit hash for any other events.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
-  cancel-in-progress: true
+env:
+  BUILD_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
 jobs:
   build:
     name: Build on Pull Request
-    if: github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
+    if: github.repository == 'toeverything/AFFiNE' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/test run')
     environment: development
 
     steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const user = context.payload.sender.login
+            console.log(`Validate user: ${user}`)
+            let isAffineMember = false
+            try {
+              const { status } = await github.rest.orgs.checkMembershipForUser({
+                org: 'toeverything',
+                username: user
+              });
+              isAffineMember = (status === 204)
+            } catch (e) {}
+            if (isAffineMember) {
+              console.log('Allowed')
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: '+1',
+              })
+            } else {
+              console.log('Not allowed')
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: '-1',
+              })
+              throw new Error('not allowed')
+            }
+      - name: 'Create Build check'
+        uses: actions/github-script@v6
+        id: create-check
+        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            const { data: pull_request } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const { data: check } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: pull_request.head.sha,
+              name: "Build on Pull Request",
+              status: "in_progress",
+              details_url: process.env.BUILD_URL
+            });
+            return check.id;
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Use Node.js LTS
         uses: actions/setup-node@v3
         with:
@@ -56,6 +104,37 @@ jobs:
       - name: Export
         run: yarn export
 
+      - name: Set Failure Check
+        uses: actions/github-script@v6
+        if: ${{ failure() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "failure",
+              completed_at: new Date().toISOString(),
+            });
+      - name: Set Success Check
+        uses: actions/github-script@v6
+        if: ${{ success() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "success",
+              completed_at: new Date().toISOString(),
+            });
+
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
@@ -74,6 +153,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      checks: write
     services:
       octobase:
         image: ghcr.io/toeverything/cloud:nightly-latest
@@ -89,6 +169,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: 'Create E2E test check'
+        uses: actions/github-script@v6
+        id: create-check
+        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            const { data: pull_request } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const { data: check } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: pull_request.head.sha,
+              name: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
+              status: "in_progress",
+              details_url: process.env.BUILD_URL
+            });
+            return check.id;
       - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
@@ -118,6 +222,37 @@ jobs:
         env:
           COVERAGE: true
 
+      - name: Set Failure Check
+        uses: actions/github-script@v6
+        if: ${{ failure() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "failure",
+              completed_at: new Date().toISOString(),
+            });
+      - name: Set Success Check
+        uses: actions/github-script@v6
+        if: ${{ success() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "success",
+              completed_at: new Date().toISOString(),
+            });
+
       - name: Collect code coverage report
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
 
@@ -146,6 +281,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: 'Create Unit test check'
+        uses: actions/github-script@v6
+        id: create-check
+        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            const { data: pull_request } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const { data: check } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: pull_request.head.sha,
+              name: "Unit Test",
+              status: "in_progress",
+              details_url: process.env.BUILD_URL
+            });
+            return check.id;
       - name: Use Node.js LTS
         uses: actions/setup-node@v3
         with:
@@ -171,193 +330,42 @@ jobs:
       - name: Unit Test
         run: yarn run test:unit:coverage
 
-      - name: Upload unit test coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./.coverage/store/lcov.info
-          flags: unittest
-          name: affine
-          fail_ci_if_error: true
-
-  build-frontend:
-    name: Build frontend
-    if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    environment: production
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: https://npm.pkg.github.com
-          scope: '@toeverything'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - run: node scripts/module-resolve/ci.cjs
-
-      - run: yarn install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
-
-      - name: Build
-        run: yarn build
-        env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-
-      - name: Export
-        run: yarn export
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          path: ./apps/web/out
-
-  publish-frontend:
-    name: Push frontend image
-    if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    needs: build-frontend
-
-    permissions:
-      contents: read
-      packages: write
-
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: 'toeverything/affine-pathfinder'
-      IMAGE_TAG: canary-${{ github.sha }}
-      IMAGE_TAG_LATEST: nightly-latest
-
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
-
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: artifact
-          path: apps/web/out/
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            ${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE_TAG_LATEST }}
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          file: ./.github/deployment/Dockerfile
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  test-frontend:
-    name: Test Frontend
-    runs-on: ubuntu-latest
-    environment: development
-    needs: build-frontend
-    services:
-      octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
-        ports:
-          - 3000:3000
-        env:
-          SIGN_KEY: 'test123'
-          RUST_LOG: 'debug'
-          JWST_DEV: '1'
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn install
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: artifact
-          path: ./apps/web/.next
-
-      - name: Install playwright browsers
-        run: npx playwright install chromium
-      - name: Run e2e & unit tests
-        run: |
-          yarn test --forbid-only
-          yarn run test:unit:coverage
-        env:
-          COVERAGE: true
-
-      - name: Collect code coverage report
-        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
-
-      - name: Upload e2e test coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./.coverage/lcov.info
-          flags: e2etest
-          name: affine
-          fail_ci_if_error: true
-
-      - name: Upload unit test coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./.coverage/store/lcov.info
-          flags: unittest
-          name: affine
-          fail_ci_if_error: true
-
-      - name: Upload test results
+      - name: Set Failure Check
+        uses: actions/github-script@v6
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
         with:
-          name: test-results-e2e
-          path: ./test-results
-          if-no-files-found: ignore
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "failure",
+              completed_at: new Date().toISOString(),
+            });
+      - name: Set Success Check
+        uses: actions/github-script@v6
+        if: ${{ success() }}
+        with:
+          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
+          result-encoding: string
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: ${{ steps.create-check.outputs.result }},
+              status: "completed",
+              conclusion: "success",
+              completed_at: new Date().toISOString(),
+            });
+
+      - name: Upload unit test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/store/lcov.info
+          flags: unittest
+          name: affine
+          fail_ci_if_error: true

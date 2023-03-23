@@ -1,11 +1,10 @@
 import { toast } from '@affine/component';
 import { assertExists } from '@blocksuite/store';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties } from 'react';
 
-import {
-  usePageMeta,
-  usePageMetaHelper,
-} from '../../../../hooks/use-page-meta';
+import { workspacePreferredModeAtom } from '../../../../atoms';
+import { usePageMeta } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import { StyledEditorModeSwitch } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
@@ -22,34 +21,36 @@ export const EditorModeSwitch = ({
   blockSuiteWorkspace,
   pageId,
 }: EditorModeSwitchProps) => {
-  const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const currentMode =
+    useAtomValue(workspacePreferredModeAtom)[pageId] ?? 'page';
+  const setMode = useSetAtom(workspacePreferredModeAtom);
   const pageMeta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
   assertExists(pageMeta);
-  const { trash, mode = 'page' } = pageMeta;
+  const { trash } = pageMeta;
 
   return (
     <StyledEditorModeSwitch
       style={style}
-      switchLeft={mode === 'page'}
+      switchLeft={currentMode === 'page'}
       showAlone={trash}
     >
       <PageSwitchItem
         data-testid="switch-page-mode-button"
-        active={mode === 'page'}
-        hide={trash && mode !== 'page'}
+        active={currentMode === 'page'}
+        hide={trash && currentMode !== 'page'}
         onClick={() => {
-          setPageMeta(pageId, { mode: 'page' });
+          setMode(mode => ({ ...mode, [pageMeta.id]: 'page' }));
           toast('Page mode');
         }}
       />
       <EdgelessSwitchItem
         data-testid="switch-edgeless-mode-button"
-        active={mode === 'edgeless'}
-        hide={trash && mode !== 'edgeless'}
+        active={currentMode === 'edgeless'}
+        hide={trash && currentMode !== 'edgeless'}
         onClick={() => {
-          setPageMeta(pageId, { mode: 'edgeless' });
+          setMode(mode => ({ ...mode, [pageMeta.id]: 'edgeless' }));
           toast('Edgeless mode');
         }}
       />

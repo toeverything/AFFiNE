@@ -9,13 +9,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "yarn workspace @affine/app dev",
+    "dev": "dev-web",
     "dev:ac": "NODE_API_SERVER=ac yarn workspace @affine/app dev",
     "dev:local": "NODE_API_SERVER=local yarn workspace @affine/app dev",
     "dev:app": "yarn workspace @affine/electron dev:app",
     "build": "yarn workspace @affine/app build",
     "build:client": "yarn workspace @affine/client-app build:app",
     "build:storybook": "yarn workspace @affine/component build-storybook",
+    "bump:nightly": "./scripts/bump-blocksuite.sh",
     "export": "yarn workspace @affine/app export",
     "start": "yarn workspace @affine/app start",
     "lint": "eslint . --ext .js,mjs,.ts,.tsx",
@@ -30,21 +31,22 @@
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown",
-    "*.{ts,tsx,js,jsx}": "eslint --cache --fix"
+    "*.{ts,tsx,mjs,js,jsx}": "eslint --cache --fix"
   },
   "devDependencies": {
+    "@affine/cli": "workspace:*",
     "@perfsee/sdk": "^1.5.1",
     "@playwright/test": "^1.31.2",
     "@testing-library/react": "^14.0.0",
     "@types/eslint": "^8.21.3",
-    "@types/node": "^18.15.3",
+    "@types/node": "^18.15.5",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "@typescript-eslint/parser": "^5.55.0",
     "@vitejs/plugin-react": "^3.1.0",
     "@vitest/coverage-istanbul": "^0.29.3",
     "@vitest/ui": "^0.29.3",
     "eslint": "^8.36.0",
-    "eslint-config-prettier": "^8.7.0",
+    "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-react": "^7.32.2",
@@ -55,6 +57,7 @@
     "happy-dom": "^8.9.0",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.0",
+    "nanoid": "^4.0.1",
     "nyc": "^15.1.0",
     "prettier": "^2.8.5",
     "react": "^18.2.0",
@@ -64,5 +67,8 @@
     "vitest": "^0.29.3",
     "vitest-fetch-mock": "^0.2.2"
   },
-  "packageManager": "yarn@3.5.0"
+  "packageManager": "yarn@3.5.0",
+  "resolutions": {
+    "y-indexeddb@^9.0.9": "patch:y-indexeddb@npm%3A9.0.9#./.yarn/patches/y-indexeddb-npm-9.0.9-6bd9b26461.patch"
+  }
 }

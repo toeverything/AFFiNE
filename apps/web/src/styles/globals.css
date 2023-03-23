@@ -155,13 +155,6 @@ body {
   background: #fff;
   overflow: hidden;
 }
-a,
-a:hover {
-  color: var(--affine-link-color);
-}
-a:visited {
-  color: var(--affine-link-visited-color);
-}
 
 input {
   border: none;
