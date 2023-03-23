@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-import { loadPage } from '../libs/load-page';
+import { openHomePage } from '../libs/load-page';
 import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
@@ -8,10 +8,10 @@ import {
 } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
-loadPage();
 
 test.describe('Local first export page', () => {
   test.skip('New a page ,then open it and export html', async ({ page }) => {
+    await openHomePage(page);
     await newPage(page);
     await getBlockSuiteEditorTitle(page).click();
     await page
