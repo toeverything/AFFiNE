@@ -11,6 +11,7 @@ jobs:
   pull_request:
     name: Get Pull Request SHA
     runs-on: ubuntu-latest
+    if: github.repository == 'toeverything/AFFiNE' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/test run')
     outputs:
       pr_sha: ${{ steps.get-pr.outputs.result }}
     steps:
@@ -29,7 +30,6 @@ jobs:
   build:
     name: Build on Pull Request
     runs-on: ubuntu-latest
-    if: github.repository == 'toeverything/AFFiNE' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/test run')
     environment: development
     needs: [pull_request]
 
@@ -79,7 +79,11 @@ jobs:
               head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "Build on Pull Request",
               status: "in_progress",
-              details_url: process.env.BUILD_URL
+              details_url: ${{ env.BUILD_URL }},
+              output: {
+                title: "Build on Pull Request",
+                summary: "Please check the build result ${{ env.BUILD_URL }}",
+              },
             });
             return check.id;
       - uses: actions/checkout@v3
@@ -199,7 +203,11 @@ jobs:
               head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
               status: "in_progress",
-              details_url: process.env.BUILD_URL
+              details_url: ${{ env.BUILD_URL }},
+              output: {
+                title: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
+                summary: "Please check the e2e test result ${{ env.BUILD_URL }}",
+              },
             });
             return check.id;
       - name: Use Node.js 18
@@ -306,7 +314,11 @@ jobs:
               head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
               name: "Unit Test",
               status: "in_progress",
-              details_url: process.env.BUILD_URL
+              details_url: ${{ env.BUILD_URL }},
+              output: {
+                title: "Unit Test",
+                summary: "Please check the unit test result ${{ env.BUILD_URL }}",
+              },
             });
             return check.id;
       - name: Use Node.js LTS
