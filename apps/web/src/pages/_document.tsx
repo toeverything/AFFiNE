@@ -51,7 +51,6 @@ export default class AppDocument extends Document<{
           />
           <link rel="icon" sizes="192x192" href="/chrome-192x192.png" />
           <meta name="emotion-insertion-point" content="" />
-          <meta name="viewport" content="initial-scale=1, width=device-width" />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:url" content="https://app.affine.pro/" />
           <meta

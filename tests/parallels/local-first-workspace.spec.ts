@@ -9,6 +9,7 @@ test.describe('Local first default workspace', () => {
   test('preset workspace name', async ({ page }) => {
     await openHomePage(page);
     const workspaceName = page.getByTestId('workspace-name');
+    await page.waitForTimeout(1000);
     expect(await workspaceName.textContent()).toBe('Demo Workspace');
     await assertCurrentWorkspaceFlavour('local', page);
   });

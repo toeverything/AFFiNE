@@ -67,6 +67,10 @@ const App = function App({
             >
               <Head>
                 <title>AFFiNE</title>
+                <meta
+                  name="viewport"
+                  content="initial-scale=1, width=device-width"
+                />
               </Head>
               {getLayout(<Component {...pageProps} />)}
             </ProviderComposer>
