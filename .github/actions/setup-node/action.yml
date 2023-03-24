@@ -9,6 +9,10 @@ inputs:
     description: 'Run the install step.'
     required: false
     default: 'true'
+  npm-token:
+    description: 'The NPM token to use for private packages.'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -31,14 +35,14 @@ runs:
       shell: bash
       run: yarn install ${{ inputs.extra-flags }}
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
 
     - name: yarn install (try again)
       if: ${{ steps.install.outcome == 'failure' }}
       shell: bash
       run: yarn install ${{ inputs.extra-flags }}
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
 
     - name: Get installed Playwright version
       id: playwright-version

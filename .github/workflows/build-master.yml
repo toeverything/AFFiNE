@@ -106,6 +106,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          npm-token: ${{ secrets.NPM_GITHUB_AUTH_TOKEN }}
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
