@@ -4,15 +4,23 @@
 import 'fake-indexeddb/auto';
 
 import userA from '@affine-test/fixtures/userA.json';
+import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { createWorkspaceApis, createWorkspaceResponseSchema } from '../api';
-import { loginResponseSchema, setLoginStorage } from '../login';
+import {
+  createAffineAuth,
+  getLoginStorage,
+  loginResponseSchema,
+  setLoginStorage,
+} from '../login';
 
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
+let affineAuth: ReturnType<typeof createAffineAuth>;
 
 beforeAll(() => {
+  affineAuth = createAffineAuth('http://localhost:3000/');
   workspaceApis = createWorkspaceApis('http://localhost:3000/');
 });
 
@@ -49,6 +57,12 @@ beforeEach(async () => {
 });
 
 describe('api', () => {
+  test('refresh token', async () => {
+    const storage = getLoginStorage();
+    assertExists(storage);
+    loginResponseSchema.parse(await affineAuth.refreshToken(storage));
+  });
+
   test(
     'create workspace',
     async () => {
