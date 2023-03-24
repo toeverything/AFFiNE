@@ -34,13 +34,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - name: Install dependencies
-        run: yarn install
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - name: before-make
         working-directory: apps/electron
@@ -71,13 +66,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: yarn install # that's right, yarn
-        working-directory: apps/electron
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - uses: actions/download-artifact@v3
         with:
@@ -109,13 +99,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: yarn install # that's right, yarn
-        working-directory: apps/electron
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - uses: actions/download-artifact@v3
         with:
@@ -147,13 +132,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: yarn install # that's right, yarn
-        working-directory: apps/electron
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
       - uses: actions/download-artifact@v3
         with:

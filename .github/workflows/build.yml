@@ -89,11 +89,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ needs.pull_request.outputs.pr_sha }}
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
       # To prevent tampering with Yarn’s binary file
       - name: Check yarn releases
         run: |
@@ -204,12 +201,8 @@ jobs:
               },
             });
             return check.id;
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - run: yarn install
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -321,12 +314,8 @@ jobs:
               },
             });
             return check.id;
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - run: yarn install
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:

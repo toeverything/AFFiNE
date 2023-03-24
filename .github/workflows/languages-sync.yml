@@ -26,12 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - run: yarn install
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
       - name: Check Language Key
         if: github.ref != 'refs/heads/master'
         working-directory: ./packages/i18n
