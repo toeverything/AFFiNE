@@ -89,22 +89,13 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ needs.pull_request.outputs.pr_sha }}
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      # To prevent tampering with Yarn’s binary file
+      - name: Check yarn releases
+        run: |
+          yarn set version self
+          git diff --exit-code
       - run: yarn install
       - run: yarn lint --max-warnings=0
 
@@ -210,22 +201,8 @@ jobs:
               },
             });
             return check.id;
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn install
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -337,22 +314,8 @@ jobs:
               },
             });
             return check.id;
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn install
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
