@@ -201,7 +201,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           currentPath={router.asPath}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <StyledWrapper>
+        <StyledWrapper className="main-container">
           <AffineWorkspaceEffect />
           {children}
           <StyledToolWrapper>
