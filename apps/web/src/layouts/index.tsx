@@ -19,6 +19,7 @@ import {
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
+import { useAffineRefreshAuthToken } from '../hooks/affine/use-affine-refresh-auth-token';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
@@ -28,8 +29,14 @@ import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
+import type { RemWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var currentWorkspace: RemWorkspace;
+}
 
 const QuickSearchModal = dynamic(
   () => import('../components/pure/quick-search-modal')
@@ -86,6 +93,11 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
     );
   };
 
+function AffineWorkspaceEffect() {
+  useAffineRefreshAuthToken();
+  return null;
+}
+
 export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
@@ -94,8 +106,14 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const workspaces = useWorkspaces();
 
   useEffect(() => {
-    console.log(workspaces);
+    logger.info('workspaces: ', workspaces);
   }, [workspaces]);
+
+  useEffect(() => {
+    if (currentWorkspace) {
+      globalThis.currentWorkspace = currentWorkspace;
+    }
+  }, [currentWorkspace]);
 
   useEffect(() => {
     const providers = workspaces.flatMap(workspace =>
@@ -184,6 +202,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
         <StyledWrapper>
+          <AffineWorkspaceEffect />
           {children}
           <StyledToolWrapper>
             {/* fixme(himself65): remove this */}

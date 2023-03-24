@@ -1,4 +1,4 @@
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import type React from 'react';
@@ -6,17 +6,16 @@ import { useCallback } from 'react';
 
 import {
   currentWorkspaceIdAtom,
-  jotaiWorkspacesAtom,
   openCreateWorkspaceModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
+import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
+import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
-import { WorkspacePlugins } from '../plugins';
-import { RemWorkspaceFlavour, WorkspaceSubPath } from '../shared';
-import { apis } from '../shared/apis';
+import { WorkspaceSubPath } from '../shared';
 
 const WorkspaceListModal = dynamic(
   async () =>
@@ -43,7 +42,6 @@ export function Modals() {
   const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
   const [, setCurrentWorkspace] = useCurrentWorkspace();
   const { createLocalWorkspace } = useWorkspacesHelper();
-  const set = useSetAtom(jotaiWorkspacesAtom);
 
   return (
     <>
@@ -71,21 +69,8 @@ export function Modals() {
           },
           [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
-        onClickLogin={useCallback(() => {
-          apis.signInWithGoogle().then(() => {
-            router.reload();
-          });
-        }, [router])}
-        onClickLogout={useCallback(() => {
-          apis.auth.clear();
-          set(workspaces =>
-            workspaces.filter(
-              workspace => workspace.flavour !== RemWorkspaceFlavour.AFFINE
-            )
-          );
-          WorkspacePlugins[RemWorkspaceFlavour.AFFINE].cleanup?.();
-          router.reload();
-        }, [router, set])}
+        onClickLogin={useAffineLogIn()}
+        onClickLogout={useAffineLogOut()}
         onCreateWorkspace={useCallback(() => {
           setOpenCreateWorkspaceModal(true);
         }, [setOpenCreateWorkspaceModal])}

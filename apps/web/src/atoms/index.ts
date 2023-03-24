@@ -1,11 +1,13 @@
+import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { EditorContainer } from '@blocksuite/editor';
+import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom, createStore } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { unstable_batchedUpdates } from 'react-dom';
 
 import { WorkspacePlugins } from '../plugins';
-import type { RemWorkspace, RemWorkspaceFlavour } from '../shared';
+import type { RemWorkspace } from '../shared';
 // workspace necessary atoms
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);
@@ -36,7 +38,7 @@ export const jotaiStore = createStore();
 
 type JotaiWorkspace = {
   id: string;
-  flavour: RemWorkspaceFlavour;
+  flavour: WorkspaceFlavour;
 };
 
 export const jotaiWorkspacesAtom = atomWithStorage<JotaiWorkspace[]>(
@@ -69,6 +71,12 @@ export type WorkspaceRecentViews = Record<string, View[]>;
 
 export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
   'recentViews',
+  {}
+);
+
+export type PreferredModeRecord = Record<Page['id'], 'page' | 'edgeless'>;
+export const workspacePreferredModeAtom = atomWithStorage<PreferredModeRecord>(
+  'preferredMode',
   {}
 );
 

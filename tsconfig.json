@@ -26,7 +26,10 @@
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/debug": ["./packages/debug"],
       "@affine/env": ["./packages/env"],
-      "@affine/utils": ["./packages/utils"]
+      "@affine/env/*": ["./packages/env/src/*"],
+      "@affine/utils": ["./packages/utils"],
+      "@affine/workspace/*": ["./packages/workspace/src/*"],
+      "@affine-test/fixtures/*": ["./tests/fixtures/*"]
     }
   },
   "references": [
@@ -50,6 +53,15 @@
     },
     {
       "path": "./packages/env"
+    },
+    {
+      "path": "./packages/debug"
+    },
+    {
+      "path": "./packages/workspace"
+    },
+    {
+      "path": "./tests/fixtures"
     }
   ],
   "files": [],

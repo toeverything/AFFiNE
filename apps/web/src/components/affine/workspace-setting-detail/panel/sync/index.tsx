@@ -1,11 +1,11 @@
 import { Content, FlexWrapper, styled } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import type React from 'react';
 
 import { useCurrentUser } from '../../../../../hooks/current/use-current-user';
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../../../../hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '../../../../../hooks/use-blocksuite-workspace-name';
-import { RemWorkspaceFlavour } from '../../../../../shared';
 import { WorkspaceAvatar } from '../../../../pure/footer';
 import type { PanelProps } from '../../index';
 
@@ -17,7 +17,7 @@ export const StyledWorkspaceName = styled('span')(({ theme }) => {
 });
 
 export const SyncPanel: React.FC<PanelProps> = ({ workspace }) => {
-  if (workspace.flavour !== RemWorkspaceFlavour.AFFINE) {
+  if (workspace.flavour !== WorkspaceFlavour.AFFINE) {
     throw new TypeError('SyncPanel can only be used with Affine workspace');
   }
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);

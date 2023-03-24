@@ -1,12 +1,12 @@
 import { PermissionType } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import type React from 'react';
 import { useCallback } from 'react';
 
 import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
 import type { RemWorkspace } from '../../../shared';
-import { RemWorkspaceFlavour } from '../../../shared';
 import {
   CloudWorkspaceIcon,
   JoinedWorkspaceIcon,
@@ -28,13 +28,13 @@ export type WorkspaceTypeProps = {
 const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
   const { t } = useTranslation();
   let isOwner = true;
-  if (workspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  if (workspace.flavour === WorkspaceFlavour.AFFINE) {
     isOwner = workspace.permission === PermissionType.Owner;
-  } else if (workspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (workspace.flavour === WorkspaceFlavour.LOCAL) {
     isOwner = true;
   }
 
-  if (workspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  if (workspace.flavour === WorkspaceFlavour.LOCAL) {
     return (
       <p title={t('Local Workspace')}>
         <LocalWorkspaceIcon />
@@ -85,19 +85,18 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
       <StyleWorkspaceInfo>
         <StyleWorkspaceTitle>{name}</StyleWorkspaceTitle>
         <WorkspaceType workspace={workspace} />
-        {workspace.flavour === RemWorkspaceFlavour.LOCAL && (
+        {workspace.flavour === WorkspaceFlavour.LOCAL && (
           <p title={t('Available Offline')}>
             <LocalDataIcon />
             <span>{t('Available Offline')}</span>
           </p>
         )}
-        {workspace.flavour === RemWorkspaceFlavour.AFFINE &&
-          workspace.public && (
-            <p title={t('Published to Web')}>
-              <PublishIcon />
-              <span>{t('Published to Web')}</span>
-            </p>
-          )}
+        {workspace.flavour === WorkspaceFlavour.AFFINE && workspace.public && (
+          <p title={t('Published to Web')}>
+            <PublishIcon />
+            <span>{t('Published to Web')}</span>
+          </p>
+        )}
       </StyleWorkspaceInfo>
       <StyledSettingLink
         className="setting-entry"

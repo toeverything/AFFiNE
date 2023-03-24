@@ -11,9 +11,7 @@ import type { PropsWithChildren } from 'react';
 import type React from 'react';
 import { memo, useEffect, useMemo, useState } from 'react';
 
-import { useCurrentPage } from '../hooks/current/use-current-page-id';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { usePageMeta } from '../hooks/use-page-meta';
+import { useCurrentMode } from '../hooks/current/use-current-mode';
 
 const ThemeInjector = memo<{
   themeStyle: AffineTheme;
@@ -40,11 +38,7 @@ const ThemeInjector = memo<{
 const ThemeProviderInner = memo<React.PropsWithChildren>(
   function ThemeProviderInner({ children }) {
     const { resolvedTheme: theme } = useTheme();
-    const [currentWorkspace] = useCurrentWorkspace();
-    const currentPage = useCurrentPage();
-    const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
-    const editorMode =
-      pageMeta.find(page => page.id === currentPage?.id)?.mode ?? 'page';
+    const editorMode = useCurrentMode();
     const themeStyle = useMemo(() => getLightTheme(editorMode), [editorMode]);
     const darkThemeStyle = useMemo(
       () => getDarkTheme(editorMode),

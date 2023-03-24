@@ -110,8 +110,10 @@ export const publicRuntimeConfigSchema = z.object({
   enableIndexedDBProvider: z.boolean(),
   enableBroadCastChannelProvider: z.boolean(),
   prefetchWorkspace: z.boolean(),
+  enableDebugPage: z.boolean(),
   // expose internal api to globalThis, **development only**
   exposeInternal: z.boolean(),
+  enableSubpage: z.boolean(),
 });
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;

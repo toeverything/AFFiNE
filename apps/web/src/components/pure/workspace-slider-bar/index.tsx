@@ -1,5 +1,6 @@
 import { MuiCollapse } from '@affine/component';
 import { IconButton } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import {
   ArrowDownSmallIcon,
@@ -20,6 +21,7 @@ import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
+import { Pivot } from './pivot';
 import {
   StyledLink,
   StyledListItem,
@@ -168,6 +170,15 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <span data-testid="all-pages">{t('All pages')}</span>
             </StyledListItem>
           </Link>
+
+          {config.enableSubpage && !!currentWorkspace && (
+            <Pivot
+              currentWorkspace={currentWorkspace}
+              openPage={openPage}
+              allMetas={pageMeta}
+            />
+          )}
+
           <StyledListItem
             active={
               currentPath ===

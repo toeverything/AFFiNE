@@ -1,11 +1,11 @@
 'use client';
+import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { Generator } from '@blocksuite/store';
 import type React from 'react';
 import { useCallback, useRef } from 'react';
 
-import { createEmptyBlockSuiteWorkspace } from '../../../utils';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 
 const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(

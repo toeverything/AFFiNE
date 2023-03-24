@@ -7,6 +7,7 @@ import {
   Wrapper,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { Box } from '@mui/material';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -17,7 +18,6 @@ import type {
   AffineWorkspace,
   LocalWorkspace,
 } from '../../../../../shared';
-import { RemWorkspaceFlavour } from '../../../../../shared';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from '../../index';
@@ -133,8 +133,8 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
         }}
         onConfirm={() => {
           onTransferWorkspace(
-            RemWorkspaceFlavour.LOCAL,
-            RemWorkspaceFlavour.AFFINE,
+            WorkspaceFlavour.LOCAL,
+            WorkspaceFlavour.AFFINE,
             workspace
           );
           setOpen(false);
@@ -145,9 +145,9 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
 };
 
 export const PublishPanel: React.FC<PublishPanelProps> = props => {
-  if (props.workspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  if (props.workspace.flavour === WorkspaceFlavour.AFFINE) {
     return <PublishPanelAffine {...props} workspace={props.workspace} />;
-  } else if (props.workspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <PublishPanelLocal {...props} workspace={props.workspace} />;
   }
   throw new Unreachable();

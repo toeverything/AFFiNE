@@ -1,3 +1,4 @@
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useRouter } from 'next/router';
 import type React from 'react';
 import { useEffect } from 'react';
@@ -11,7 +12,6 @@ import { useSyncRouterWithCurrentWorkspaceAndPage } from '../../../hooks/use-syn
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import type { BlockSuiteWorkspace, NextPageWithLayout } from '../../../shared';
-import { RemWorkspaceFlavour } from '../../../shared';
 
 function enableFullFlags(blockSuiteWorkspace: BlockSuiteWorkspace) {
   blockSuiteWorkspace.awarenessStore.setFlag('enable_set_remote_flag', false);
@@ -38,12 +38,12 @@ const WorkspaceDetail: React.FC = () => {
   if (!pageId) {
     return <PageLoading />;
   }
-  if (currentWorkspace.flavour === RemWorkspaceFlavour.AFFINE) {
+  if (currentWorkspace.flavour === WorkspaceFlavour.AFFINE) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
       <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />
     );
-  } else if (currentWorkspace.flavour === RemWorkspaceFlavour.LOCAL) {
+  } else if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
     const PageDetail = WorkspacePlugins[currentWorkspace.flavour].UI.PageDetail;
     return (
       <PageDetail currentWorkspace={currentWorkspace} currentPageId={pageId} />

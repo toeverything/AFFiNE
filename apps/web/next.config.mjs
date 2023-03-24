@@ -14,6 +14,10 @@ console.info('Runtime Preset', preset);
 
 const enableDebugLocal = path.isAbsolute(process.env.LOCAL_BLOCK_SUITE ?? '');
 
+if (enableDebugLocal) {
+  console.info('Debugging local blocksuite');
+}
+
 const profileTarget = {
   ac: '100.85.73.88:12001',
   dev: '100.84.105.99:11001',
@@ -71,7 +75,7 @@ const nextConfig = {
     '@affine/templates',
   ],
   publicRuntimeConfig: {
-    PROJECT_NAME: process.env.npm_package_name,
+    PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
     BUILD_DATE: new Date().toISOString(),
     gitVersion: getGitVersion(),
     hash: getCommitHash(),
@@ -130,6 +134,13 @@ const withDebugLocal = debugLocal(
       'blocks',
       'src',
       'std'
+    ),
+    '@blocksuite/blocks/content-parser': path.resolve(
+      baseDir,
+      'packages',
+      'blocks',
+      'src',
+      'content-parser'
     ),
     '@blocksuite/blocks': path.resolve(baseDir, 'packages', 'blocks'),
     '@blocksuite/store': path.resolve(baseDir, 'packages', 'store'),
