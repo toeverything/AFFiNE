@@ -43,18 +43,22 @@ const config: PlaywrightTestConfig = {
   reporter: process.env.CI ? 'github' : 'list',
 
   webServer: [
-    {
-      command: 'cargo run -p affine-cloud',
-      port: 3000,
-      timeout: 10 * 1000,
-      reuseExistingServer: true,
-      cwd: process.env.OCTOBASE_CWD ?? resolve(process.cwd(), 'apps', 'server'),
-      env: {
-        SIGN_KEY: 'test123',
-        RUST_LOG: 'debug',
-        JWST_DEV: '1',
-      },
-    },
+    process.env.DISABLE_SERVER === 'true'
+      ? null
+      : {
+          command: 'cargo run -p affine-cloud',
+          port: 3000,
+          timeout: 10 * 1000,
+          reuseExistingServer: true,
+          cwd:
+            process.env.OCTOBASE_CWD ??
+            resolve(process.cwd(), 'apps', 'server'),
+          env: {
+            SIGN_KEY: 'test123',
+            RUST_LOG: 'debug',
+            JWST_DEV: '1',
+          },
+        },
     {
       command: 'yarn build && yarn start -p 8080',
       port: 8080,
@@ -66,7 +70,7 @@ const config: PlaywrightTestConfig = {
         NODE_API_SERVER: 'local',
       },
     },
-  ],
+  ].filter(Boolean),
 };
 
 if (process.env.CI) {

@@ -29,6 +29,8 @@ jobs:
         run: npx playwright install --with-deps
       - name: Run visual test
         run: yarn test:visual
+        env:
+          DISABLE_SERVER: true
       - name: Upload test results
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
