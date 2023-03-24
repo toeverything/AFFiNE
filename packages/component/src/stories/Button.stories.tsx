@@ -1,9 +1,9 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
-import { Meta, StoryFn } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
 import { Button } from '..';
-import { ButtonProps } from '../ui/button/interface';
+import type { ButtonProps } from '../ui/button/interface';
 
 export default {
   title: 'AFFiNE/Button',
