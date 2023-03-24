@@ -69,6 +69,7 @@
     "serve": "^14.2.0",
     "typescript": "^5.0.2",
     "vite": "^4.2.0",
+    "vite-plugin-istanbul": "^4.0.1",
     "vitest": "^0.29.3",
     "vitest-fetch-mock": "^0.2.2"
   },

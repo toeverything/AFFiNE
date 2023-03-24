@@ -1,6 +1,6 @@
 import type { StorybookConfig } from '@storybook/react-vite';
 import { mergeConfig } from 'vite';
-import path from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'url';
 import istanbul from 'vite-plugin-istanbul';
 
@@ -17,8 +17,8 @@ const config: Pick<StorybookConfig, 'viteFinal'> = {
       ],
       resolve: {
         alias: {
-          '@': path.resolve(fileURLToPath(new URL('../src', import.meta.url))),
-          '@affine/i18n': path.resolve(
+          '@': resolve(fileURLToPath(new URL('../src', import.meta.url))),
+          '@affine/i18n': resolve(
             fileURLToPath(new URL('../../i18n/src', import.meta.url))
           ),
         },

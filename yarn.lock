@@ -3374,7 +3374,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@istanbuljs/load-nyc-config@npm:^1.0.0":
+"@istanbuljs/load-nyc-config@npm:^1.0.0, @istanbuljs/load-nyc-config@npm:^1.1.0":
   version: 1.1.0
   resolution: "@istanbuljs/load-nyc-config@npm:1.1.0"
   dependencies:
@@ -7708,6 +7708,7 @@ __metadata:
     serve: ^14.2.0
     typescript: ^5.0.2
     vite: ^4.2.0
+    vite-plugin-istanbul: ^4.0.1
     vitest: ^0.29.3
     vitest-fetch-mock: ^0.2.2
   languageName: unknown
@@ -20620,6 +20621,20 @@ __metadata:
   bin:
     vite-node: vite-node.mjs
   checksum: 8bf0a5377d41276f2343819dca5638cab1fb23e55331d06915c5ea0edcc5d593ed295d4c1d1e874f3d7a6c980c25b1c08d9c83d1cff836681ec5778d39583e0b
+  languageName: node
+  linkType: hard
+
+"vite-plugin-istanbul@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "vite-plugin-istanbul@npm:4.0.1"
+  dependencies:
+    "@istanbuljs/load-nyc-config": ^1.1.0
+    istanbul-lib-instrument: ^5.1.0
+    picocolors: ^1.0.0
+    test-exclude: ^6.0.0
+  peerDependencies:
+    vite: ">=2.9.1 <= 5"
+  checksum: 96a457afc57828f3d9f4c9a9e6915b94d6fe3d337271c5b9f06dc8d616c6b4a6789155e5b8fa717f3d986a0f19c735fe01f909434cc34ffa797a34def5bcab9f
   languageName: node
   linkType: hard
 
