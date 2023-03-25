@@ -215,7 +215,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
           />
           <StyledListItem
             active={
-              currentPath ===
+              currentPath.split('?')[0] ===
               (currentWorkspaceId && paths.setting(currentWorkspaceId))
             }
             data-testid="slider-bar-workspace-setting-button"
