@@ -56,6 +56,16 @@ const config: PlaywrightTestConfig = {
       },
     },
     {
+      command: 'yarn run build:storybook && yarn run start:storybook',
+      port: 6006,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
+      },
+    },
+    {
       command: 'yarn build && yarn start -p 8080',
       port: 8080,
       timeout: 120 * 1000,
