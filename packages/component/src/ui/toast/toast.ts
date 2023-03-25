@@ -24,9 +24,9 @@ const htmlToElement = <T extends ChildNode>(html: string | TemplateResult) => {
   return template.content.firstChild as T;
 };
 
-const createToastContainer = () => {
+const createToastContainer = (portalQuery?: string) => {
   const styles = css`
-    position: fixed;
+    position: absolute;
     z-index: 9999;
     top: 16px;
     left: 16px;
@@ -39,12 +39,14 @@ const createToastContainer = () => {
   `;
   const template = html`<div style="${styles}"></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
-  document.body.appendChild(element);
+  const portal = portalQuery && document.querySelector(portalQuery);
+  (portal || document.body).appendChild(element);
   return element;
 };
 
 export type ToastOptions = {
   duration: number;
+  portalQuery?: string;
 };
 
 /**
@@ -55,10 +57,12 @@ export type ToastOptions = {
  */
 export const toast = (
   message: string,
-  { duration }: ToastOptions = { duration: 2500 }
+  { duration, portalQuery = '.main-container' }: ToastOptions = {
+    duration: 2500,
+  }
 ) => {
   if (!ToastContainer) {
-    ToastContainer = createToastContainer();
+    ToastContainer = createToastContainer(portalQuery);
   }
 
   const styles = css`

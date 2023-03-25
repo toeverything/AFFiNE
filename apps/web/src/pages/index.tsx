@@ -49,10 +49,13 @@ const IndexPageInner = () => {
           dispose.dispose();
         };
       }
+    } else {
+      // fixme: should create new workspace
+      jumpToSubPath('ERROR', WorkspaceSubPath.ALL, RouteLogic.REPLACE);
     }
   }, [jumpToPage, jumpToSubPath, lastWorkspaceId, router, workspaces]);
 
-  return <PageLoading />;
+  return <PageLoading key="IndexPageInfinitePageLoading" />;
 };
 
 const IndexPage: NextPage = () => {
