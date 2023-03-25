@@ -1,3 +1,5 @@
+import '@rich-data/viewer/theme/base.css';
+
 import { Button, toast } from '@affine/component';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
@@ -18,8 +20,6 @@ const Viewer = dynamic(
   () => import('@rich-data/viewer').then(m => ({ default: m.JsonViewer })),
   { ssr: false }
 );
-
-import { useTheme } from 'next-themes';
 
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 
@@ -91,10 +91,7 @@ const LoginDevPage: NextPage = () => {
         >
           Check Permission
         </Button>
-        <Viewer
-          theme={useTheme().resolvedTheme === 'light' ? 'light' : 'dark'}
-          value={user}
-        />
+        <Viewer value={user} />
       </StyledWrapper>
     </StyledPage>
   );

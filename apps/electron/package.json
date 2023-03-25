@@ -31,8 +31,8 @@
     "@electron-forge/shared-types": "^6.0.5",
     "@electron/rebuild": "^3.2.10",
     "dts-for-context-bridge": "^0.7.1",
-    "electron": "23.1.4",
-    "esbuild": "^0.17.12",
+    "electron": "23.2.0",
+    "esbuild": "^0.17.13",
     "zx": "^7.2.1"
   },
   "dependencies": {
