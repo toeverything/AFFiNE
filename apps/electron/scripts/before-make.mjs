@@ -31,9 +31,9 @@ console.log('Clean up done');
 
 // step 1: build web (nextjs) dist
 cd(repoRootDir);
-await $`pnpm i -r`;
-await $`pnpm build`;
-await $`pnpm export`;
+await $`yarn`;
+await $`yarn build`;
+await $`yarn export`;
 await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });
 
 // step 2: build electron resources

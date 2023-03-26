@@ -9,10 +9,10 @@ See https://github.com/electron/forge/issues/2633
 
 ```
 # in project root, start web app at :8080
-pnpm dev
+yarn dev
 
 # in /apps/electron, start electron app
-pnpm dev
+yarn dev
 ```
 
 ## Credits
