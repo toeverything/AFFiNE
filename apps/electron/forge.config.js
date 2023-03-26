@@ -21,16 +21,8 @@ module.exports = {
       },
     },
     {
-      name: '@electron-forge/maker-wix',
-      config: {
-        manufacturer: 'AFFiNE',
-        appUserModelId: 'affine',
-        icon: './resources/icons/icon.ico',
-        name: 'affine',
-        ui: {
-          chooseDirectory: true,
-        },
-      },
+      name: '@electron-forge/maker-squirrel',
+      config: {},
     },
   ],
 };
