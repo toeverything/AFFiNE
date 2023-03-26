@@ -7,6 +7,7 @@ export const StyledModalWrapper = styled(ModalWrapper)(() => {
     maxWidth: '560px',
     maxHeight: '292px',
     padding: '44px 84px 32px 84px',
+    overflow: 'auto',
   };
 });
 

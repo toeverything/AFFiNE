@@ -16,7 +16,7 @@ import type {
  * See https://playwright.dev/docs/test-configuration.
  */
 const config: PlaywrightTestConfig = {
-  testDir: './tests',
+  testDir: './tests/parallels',
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {
@@ -53,6 +53,16 @@ const config: PlaywrightTestConfig = {
         SIGN_KEY: 'test123',
         RUST_LOG: 'debug',
         JWST_DEV: '1',
+      },
+    },
+    {
+      command: 'yarn run build:storybook && yarn run start:storybook',
+      port: 6006,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        COVERAGE: process.env.COVERAGE || 'false',
+        ENABLE_DEBUG_PAGE: '1',
       },
     },
     {

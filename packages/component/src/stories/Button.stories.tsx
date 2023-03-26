@@ -1,5 +1,6 @@
 /* deepscan-disable USELESS_ARROW_FUNC_BIND */
 import type { Meta, StoryFn } from '@storybook/react';
+import { useState } from 'react';
 
 import { Button } from '..';
 import type { ButtonProps } from '../ui/button/interface';
@@ -44,3 +45,27 @@ Danger.args = {
   type: 'danger',
   children: 'This is a danger button',
 };
+
+export const Test: StoryFn<ButtonProps> = () => {
+  const [input, setInput] = useState('');
+  return (
+    <>
+      <input
+        type="text"
+        data-testid="test-input"
+        value={input}
+        onChange={e => setInput(e.target.value)}
+      />
+      <Button
+        onClick={() => {
+          setInput('');
+        }}
+        data-testid="clear-button"
+      >
+        clear
+      </Button>
+    </>
+  );
+};
+
+Test.storyName = 'Click Test';

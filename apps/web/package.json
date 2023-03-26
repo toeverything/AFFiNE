@@ -1,5 +1,5 @@
 {
-  "name": "@affine/app",
+  "name": "@affine/web",
   "private": true,
   "scripts": {
     "dev": "node src/server.mjs",
@@ -16,10 +16,10 @@
     "@affine/i18n": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/workspace": "workspace:*",
-    "@blocksuite/blocks": "0.5.0-20230323085636-3110abb",
-    "@blocksuite/editor": "0.5.0-20230323085636-3110abb",
+    "@blocksuite/blocks": "0.5.0-20230324040005-14417c2",
+    "@blocksuite/editor": "0.5.0-20230324040005-14417c2",
     "@blocksuite/icons": "2.0.23",
-    "@blocksuite/store": "0.5.0-20230323085636-3110abb",
+    "@blocksuite/store": "0.5.0-20230324040005-14417c2",
     "@emotion/cache": "^11.10.5",
     "@emotion/react": "^11.10.6",
     "@emotion/server": "^11.10.0",
@@ -44,6 +44,7 @@
   "devDependencies": {
     "@perfsee/webpack": "^1.5.0",
     "@redux-devtools/extension": "^3.2.5",
+    "@rich-data/viewer": "^2.2.4",
     "@swc-jotai/debug-label": "^0.0.9",
     "@swc-jotai/react-refresh": "^0.0.7",
     "@types/react": "^18.0.28",

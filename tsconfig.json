@@ -28,7 +28,8 @@
       "@affine/env": ["./packages/env"],
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],
-      "@affine/workspace/*": ["./packages/workspace/src/*"]
+      "@affine/workspace/*": ["./packages/workspace/src/*"],
+      "@affine-test/fixtures/*": ["./tests/fixtures/*"]
     }
   },
   "references": [
@@ -58,6 +59,9 @@
     },
     {
       "path": "./packages/workspace"
+    },
+    {
+      "path": "./tests/fixtures"
     }
   ],
   "files": [],

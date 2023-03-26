@@ -15,14 +15,21 @@ export default defineConfig({
   test: {
     include: [
       'packages/**/*.spec.ts',
+      'packages/**/*.spec.tsx',
       'apps/web/**/*.spec.ts',
       'apps/web/**/*.spec.tsx',
+      'tests/unit/**/*.spec.ts',
+      'tests/unit/**/*.spec.tsx',
     ],
     testTimeout: 5000,
     coverage: {
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],
       reportsDirectory: '.coverage/store',
+      exclude: [
+        // data center will be removed in the future
+        'packages/data-center',
+      ],
     },
   },
 });

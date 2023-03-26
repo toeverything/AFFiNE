@@ -10,6 +10,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import { decode } from 'js-base64';
+import { z } from 'zod';
 // Connect emulators based on env vars
 const envConnectEmulators = process.env.REACT_APP_FIREBASE_EMULATORS === 'true';
 
@@ -27,12 +28,12 @@ export type LoginParams = {
   token: string;
 };
 
-export type LoginResponse = {
-  // access token, expires in a very short time
-  token: string;
-  // Refresh token
-  refresh: string;
-};
+export const loginResponseSchema = z.object({
+  token: z.string(),
+  refresh: z.string(),
+});
+
+export type LoginResponse = z.infer<typeof loginResponseSchema>;
 
 const logger = new DebugLogger('token');
 
@@ -84,7 +85,7 @@ declare global {
   var firebaseAuthEmulatorStarted: boolean | undefined;
 }
 
-export function createAffineAuth() {
+export function createAffineAuth(prefix = '/') {
   let _firebaseAuth: FirebaseAuth | null = null;
   const getAuth = (): FirebaseAuth | null => {
     try {
@@ -137,7 +138,7 @@ export function createAffineAuth() {
         const response = await signInWithPopup(auth, provider);
         const idToken = await response.user.getIdToken();
         logger.debug(idToken);
-        return fetch('/api/user/token', {
+        return fetch(prefix + 'api/user/token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -160,7 +161,7 @@ export function createAffineAuth() {
     refreshToken: async (
       loginResponse: LoginResponse
     ): Promise<LoginResponse | null> => {
-      return fetch('/api/user/token', {
+      return fetch(prefix + 'api/user/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

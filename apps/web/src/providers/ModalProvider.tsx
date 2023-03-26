@@ -9,13 +9,13 @@ import {
   openCreateWorkspaceModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
+import { useAffineLogIn } from '../hooks/affine/use-affine-log-in';
+import { useAffineLogOut } from '../hooks/affine/use-affine-log-out';
 import { useCurrentUser } from '../hooks/current/use-current-user';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useOnGoogleLogout } from '../hooks/use-on-google-logout';
 import { useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces, useWorkspacesHelper } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
-import { apis } from '../shared/apis';
 
 const WorkspaceListModal = dynamic(
   async () =>
@@ -69,12 +69,8 @@ export function Modals() {
           },
           [jumpToSubPath, setCurrentWorkspace, setOpenWorkspacesModal]
         )}
-        onClickLogin={useCallback(() => {
-          apis.signInWithGoogle().then(() => {
-            router.reload();
-          });
-        }, [router])}
-        onClickLogout={useOnGoogleLogout()}
+        onClickLogin={useAffineLogIn()}
+        onClickLogout={useAffineLogOut()}
         onCreateWorkspace={useCallback(() => {
           setOpenCreateWorkspaceModal(true);
         }, [setOpenCreateWorkspaceModal])}

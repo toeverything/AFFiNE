@@ -75,7 +75,7 @@ const nextConfig = {
     '@affine/templates',
   ],
   publicRuntimeConfig: {
-    PROJECT_NAME: process.env.npm_package_name,
+    PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
     BUILD_DATE: new Date().toISOString(),
     gitVersion: getGitVersion(),
     hash: getCommitHash(),
