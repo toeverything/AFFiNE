@@ -20,5 +20,17 @@ module.exports = {
         setupIcon: './resources/icons/icon.ico',
       },
     },
+    {
+      name: '@electron-forge/maker-wix',
+      config: {
+        manufacturer: 'AFFiNE',
+        appUserModelId: 'affine',
+        icon: './resources/icons/icon.ico',
+        name: 'affine',
+        ui: {
+          chooseDirectory: true,
+        },
+      },
+    },
   ],
 };
