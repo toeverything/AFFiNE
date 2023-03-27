@@ -3,8 +3,11 @@ import {
   createUserApis,
   createWorkspaceApis,
 } from '@affine/workspace/affine/api';
-import { setLoginStorage } from '@affine/workspace/affine/login';
+import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
+import type { LoginResponse } from '@affine/workspace/affine/login';
+import { parseIdToken, setLoginStorage } from '@affine/workspace/affine/login';
 
+import { jotaiStore } from '../atoms';
 import { isValidIPAddress } from '../utils';
 
 let prefixUrl = '/';
@@ -33,7 +36,10 @@ Object.assign(affineApis, createWorkspaceApis(prefixUrl));
 
 if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_APIS = affineApis;
-  globalThis.setLogin = setLoginStorage;
+  globalThis.setLogin = (response: LoginResponse) => {
+    jotaiStore.set(currentAffineUserAtom, parseIdToken(response.token));
+    setLoginStorage(response);
+  };
 }
 
 declare global {
