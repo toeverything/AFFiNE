@@ -1,11 +1,4 @@
-import {
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  toast,
-  Wrapper,
-} from '@affine/component';
+import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
 import { PermissionType } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -19,6 +12,7 @@ import { useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../hooks/affine/use-members';
 import type { AffineWorkspace, LocalWorkspace } from '../../../../../shared';
+import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';
 import type { PanelProps } from '../../index';

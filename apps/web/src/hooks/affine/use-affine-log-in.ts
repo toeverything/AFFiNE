@@ -1,4 +1,3 @@
-import { toast } from '@affine/component';
 import {
   createAffineAuth,
   setLoginStorage,
@@ -8,6 +7,7 @@ import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
 import { apis } from '../../shared/apis';
+import { toast } from '../../utils';
 
 export const affineAuth = createAffineAuth();
 
