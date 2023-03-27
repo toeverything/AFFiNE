@@ -148,6 +148,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/electron@workspace:apps/electron"
   dependencies:
+    "@affine/octobase-node": "workspace:*"
     "@electron-forge/cli": ^6.0.5
     "@electron-forge/core": ^6.0.5
     "@electron-forge/core-utils": ^6.0.5
@@ -162,6 +163,7 @@ __metadata:
     electron: 23.1.4
     electron-window-state: ^5.0.3
     esbuild: ^0.17.12
+    fs-extra: ^11.1.1
     zx: ^7.2.1
   languageName: unknown
   linkType: soft
@@ -194,6 +196,15 @@ __metadata:
     react-i18next: ^12.2.0
     ts-node: ^10.9.1
     typescript: ^5.0.2
+  languageName: unknown
+  linkType: soft
+
+"@affine/octobase-node@workspace:*, @affine/octobase-node@workspace:packages/octobase-node":
+  version: 0.0.0-use.local
+  resolution: "@affine/octobase-node@workspace:packages/octobase-node"
+  dependencies:
+    "@napi-rs/cli": ^2.14.8
+    "@types/node": ^18.15.5
   languageName: unknown
   linkType: soft
 
@@ -4103,6 +4114,15 @@ __metadata:
   peerDependencies:
     react: ^17.0.0 || ^18.0.0
   checksum: 0f403f2635fd5cd39c013b9d4defa2cf1ecc023e35b8c9866d6123792480dcafe47207e43420c10b0d030e64df31e78adfdb8248e2476da27f07d80ed0b44927
+  languageName: node
+  linkType: hard
+
+"@napi-rs/cli@npm:^2.14.8":
+  version: 2.15.2
+  resolution: "@napi-rs/cli@npm:2.15.2"
+  bin:
+    napi: scripts/index.js
+  checksum: dedcbd339f634e4a4c442febbfaee7c0fd907f3b8082c1f3ddba18b0e02ae2f0e4bff75688763669db5fb1a0f5ab26a7200cb6c01fe8825effd0a70a44bcbbc7
   languageName: node
   linkType: hard
 
@@ -12154,7 +12174,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-extra@npm:^11.1.0":
+"fs-extra@npm:^11.1.0, fs-extra@npm:^11.1.1":
   version: 11.1.1
   resolution: "fs-extra@npm:11.1.1"
   dependencies:
