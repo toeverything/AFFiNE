@@ -72,13 +72,6 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: build octobase-node
-        run: yarn build:octobase-node
-        working-directory: apps/electron
-
-      - name: move octobase Binary
-        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
-
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
@@ -88,6 +81,13 @@ jobs:
         with:
           name: before-make-electron-dist
           path: apps/electron/dist
+
+      - name: build octobase-node
+        run: yarn build:octobase-node
+        working-directory: apps/electron
+
+      - name: move octobase Binary
+        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
       - name: make build
         run: yarn make-macos-x64
@@ -118,13 +118,6 @@ jobs:
       - name: add arm64 target
         run: rustup target add aarch64-apple-darwin
 
-      - name: build octobase-node
-        run: yarn build:octobase-node
-        working-directory: apps/electron
-
-      - name: move octobase Binary
-        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
-
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
@@ -134,6 +127,13 @@ jobs:
         with:
           name: before-make-electron-dist
           path: apps/electron/dist
+
+      - name: build octobase-node
+        run: yarn build:octobase-node
+        working-directory: apps/electron
+
+      - name: move octobase Binary
+        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
       - name: make build
         run: yarn make-macos-arm64
@@ -161,13 +161,6 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: build octobase-node
-        run: yarn build:octobase-node
-        working-directory: apps/electron
-
-      - name: move octobase Binary
-        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
-
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
@@ -177,6 +170,13 @@ jobs:
         with:
           name: before-make-electron-dist
           path: apps/electron/dist
+
+      - name: build octobase-node
+        run: yarn build:octobase-node
+        working-directory: apps/electron
+
+      - name: move octobase Binary
+        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
       - name: make build
         run: yarn make-windows-x64
