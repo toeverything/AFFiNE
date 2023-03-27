@@ -4,7 +4,7 @@ inputs:
   extra-flags:
     description: 'Extra flags to pass to the yarn install.'
     required: false
-    default: ''
+    default: '--immutable'
   package-install:
     description: 'Run the install step.'
     required: false

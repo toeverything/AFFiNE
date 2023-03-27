@@ -3,7 +3,6 @@ import {
   Content,
   FlexWrapper,
   Input,
-  toast,
   Wrapper,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
@@ -18,6 +17,7 @@ import type {
   AffineWorkspace,
   LocalWorkspace,
 } from '../../../../../shared';
+import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from '../../index';

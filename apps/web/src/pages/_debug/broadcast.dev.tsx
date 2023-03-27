@@ -1,4 +1,4 @@
-import { Button, toast } from '@affine/component';
+import { Button } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
@@ -10,6 +10,7 @@ import { createBroadCastChannelProvider } from '../../blocksuite/providers';
 import PageList from '../../components/blocksuite/block-suite-page-list/page-list';
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import type { BroadCastChannelProvider } from '../../shared';
+import { toast } from '../../utils';
 
 const logger = new DebugLogger('broadcast');
 

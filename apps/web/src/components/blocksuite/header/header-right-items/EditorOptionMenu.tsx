@@ -1,7 +1,6 @@
 // fixme(himself65): refactor this file
 import { Confirm, FlexWrapper, Menu, MenuItem } from '@affine/component';
 import { IconButton } from '@affine/component';
-import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
   DeleteTemporarilyIcon,
@@ -25,6 +24,7 @@ import {
   usePageMeta,
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
+import { toast } from '../../../../utils';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();

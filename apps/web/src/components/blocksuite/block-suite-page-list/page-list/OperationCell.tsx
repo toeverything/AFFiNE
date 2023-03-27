@@ -6,7 +6,6 @@ import {
   MenuItem,
   Tooltip,
 } from '@affine/component';
-import { toast } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
   DeletePermanentlyIcon,
@@ -20,6 +19,8 @@ import {
 import type { PageMeta } from '@blocksuite/store';
 import type React from 'react';
 import { useState } from 'react';
+
+import { toast } from '../../../../utils';
 
 export type OperationCellProps = {
   pageMeta: PageMeta;
