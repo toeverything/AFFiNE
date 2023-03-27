@@ -7,7 +7,7 @@ import { MessageCode } from '@affine/datacenter';
 import userA from '@affine-test/fixtures/userA.json';
 import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
   createWorkspaceApis,
@@ -24,7 +24,7 @@ import {
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
 let affineAuth: ReturnType<typeof createAffineAuth>;
 
-beforeAll(() => {
+beforeEach(() => {
   affineAuth = createAffineAuth('http://localhost:3000/');
   workspaceApis = createWorkspaceApis('http://localhost:3000/');
 });
@@ -84,13 +84,9 @@ describe('api', () => {
 
     document.addEventListener('affine-error', listener);
     expect(listener).toBeCalledTimes(0);
-    try {
-      await workspaceApis.getWorkspaces().catch(e => {
-        expect(e).toBeInstanceOf(RequestError);
-      });
-    } catch (e) {
+    await workspaceApis.getWorkspaces().catch(e => {
       expect(e).toBeInstanceOf(RequestError);
-    }
+    });
     expect(listener).toBeCalledTimes(1);
     document.removeEventListener('affine-error', listener);
   });
