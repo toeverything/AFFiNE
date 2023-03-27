@@ -3,6 +3,7 @@ import {
   createUserApis,
   createWorkspaceApis,
 } from '@affine/workspace/affine/api';
+import { setLoginStorage } from '@affine/workspace/affine/login';
 
 import { isValidIPAddress } from '../utils';
 
@@ -32,9 +33,12 @@ Object.assign(affineApis, createWorkspaceApis(prefixUrl));
 
 if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_APIS = affineApis;
+  globalThis.setLogin = setLoginStorage;
 }
 
 declare global {
+  // eslint-disable-next-line no-var
+  var setLogin: typeof setLoginStorage;
   // eslint-disable-next-line no-var
   var AFFINE_APIS:
     | undefined
