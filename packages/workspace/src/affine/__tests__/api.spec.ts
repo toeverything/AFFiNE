@@ -3,12 +3,17 @@
  */
 import 'fake-indexeddb/auto';
 
+import { MessageCode } from '@affine/datacenter';
 import userA from '@affine-test/fixtures/userA.json';
 import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
-import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { createWorkspaceApis, createWorkspaceResponseSchema } from '../api';
+import {
+  createWorkspaceApis,
+  createWorkspaceResponseSchema,
+  RequestError,
+} from '../api';
 import {
   createAffineAuth,
   getLoginStorage,
@@ -19,7 +24,7 @@ import {
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
 let affineAuth: ReturnType<typeof createAffineAuth>;
 
-beforeAll(() => {
+beforeEach(() => {
   affineAuth = createAffineAuth('http://localhost:3000/');
   workspaceApis = createWorkspaceApis('http://localhost:3000/');
 });
@@ -56,7 +61,36 @@ beforeEach(async () => {
   loginResponseSchema.parse(data);
 });
 
+declare global {
+  interface DocumentEventMap {
+    'affine-error': CustomEvent<{
+      code: MessageCode;
+    }>;
+  }
+}
+
 describe('api', () => {
+  test('failed', async () => {
+    workspaceApis = createWorkspaceApis('http://localhost:10086/404/');
+    const listener = vi.fn(
+      (
+        e: CustomEvent<{
+          code: MessageCode;
+        }>
+      ) => {
+        expect(e.detail.code).toBe(MessageCode.loadListFailed);
+      }
+    );
+
+    document.addEventListener('affine-error', listener);
+    expect(listener).toBeCalledTimes(0);
+    await workspaceApis.getWorkspaces().catch(e => {
+      expect(e).toBeInstanceOf(RequestError);
+    });
+    expect(listener).toBeCalledTimes(1);
+    document.removeEventListener('affine-error', listener);
+  });
+
   test('refresh token', async () => {
     const storage = getLoginStorage();
     assertExists(storage);

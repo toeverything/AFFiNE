@@ -1,7 +1,27 @@
+import { MessageCode, Messages } from '@affine/env';
 import { assertExists } from '@blocksuite/global/utils';
 import { z } from 'zod';
 
 import { getLoginStorage } from '../login';
+
+export class RequestError extends Error {
+  constructor(code: MessageCode, cause: unknown | null = null) {
+    super(Messages[code].message);
+    sendMessage(code);
+    this.name = 'RequestError';
+    this.cause = cause;
+  }
+}
+
+function sendMessage(code: MessageCode) {
+  document.dispatchEvent(
+    new CustomEvent('affine-error', {
+      detail: {
+        code,
+      },
+    })
+  );
+}
 
 export interface User {
   id: string;
@@ -139,7 +159,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
           Authorization: auth.token,
           'Cache-Control': 'no-cache',
         },
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.loadListFailed, e);
+        });
     },
     getWorkspaceDetail: async (
       params: GetWorkspaceDetailParams
@@ -151,7 +175,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
         headers: {
           Authorization: auth.token,
         },
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.loadListFailed, e);
+        });
     },
     getWorkspaceMembers: async (
       params: GetWorkspaceDetailParams
@@ -163,7 +191,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
         headers: {
           Authorization: auth.token,
         },
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.getMembersFailed, e);
+        });
     },
     createWorkspace: async (encodedYDoc: Blob): Promise<{ id: string }> => {
       const auth = getLoginStorage();
@@ -174,7 +206,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
         headers: {
           Authorization: auth.token,
         },
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.createWorkspaceFailed, e);
+        });
     },
     updateWorkspace: async (
       params: UpdateWorkspaceParams
@@ -190,7 +226,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
           'Content-Type': 'application/json',
           Authorization: auth.token,
         },
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.updateWorkspaceFailed, e);
+        });
     },
     deleteWorkspace: async (
       params: DeleteWorkspaceParams
@@ -202,7 +242,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
         headers: {
           Authorization: auth.token,
         },
-      }).then(r => r.ok);
+      })
+        .then(r => r.ok)
+        .catch(e => {
+          throw new RequestError(MessageCode.deleteWorkspaceFailed, e);
+        });
     },
 
     /**
@@ -220,7 +264,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
           'Content-Type': 'application/json',
           Authorization: auth.token,
         },
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.inviteMemberFailed, e);
+        });
     },
     removeMember: async (params: RemoveMemberParams): Promise<void> => {
       const auth = getLoginStorage();
@@ -230,14 +278,22 @@ export function createWorkspaceApis(prefixUrl = '/') {
         headers: {
           Authorization: auth.token,
         },
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.removeMemberFailed, e);
+        });
     },
     acceptInviting: async (
       params: AcceptInvitingParams
     ): Promise<Permission> => {
       return fetch(prefixUrl + `api/invitation/${params.invitingCode}`, {
         method: 'POST',
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.acceptInvitingFailed, e);
+        });
     },
     uploadBlob: async (params: { blob: Blob }): Promise<string> => {
       const auth = getLoginStorage();
@@ -258,7 +314,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
         headers: {
           Authorization: auth.token,
         },
-      }).then(r => r.arrayBuffer());
+      })
+        .then(r => r.arrayBuffer())
+        .catch(e => {
+          throw new RequestError(MessageCode.getBlobFailed, e);
+        });
     },
     leaveWorkspace: async ({ id }: LeaveWorkspaceParams) => {
       const auth = getLoginStorage();
@@ -268,7 +328,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
         headers: {
           Authorization: auth.token,
         },
-      }).then(r => r.json());
+      })
+        .then(r => r.json())
+        .catch(e => {
+          throw new RequestError(MessageCode.leaveWorkspaceFailed, e);
+        });
     },
     downloadWorkspace: async (
       workspaceId: string,
@@ -286,7 +350,11 @@ export function createWorkspaceApis(prefixUrl = '/') {
           headers: {
             Authorization: auth.token,
           },
-        }).then(r => r.arrayBuffer());
+        })
+          .then(r => r.arrayBuffer())
+          .catch(e => {
+            throw new RequestError(MessageCode.downloadWorkspaceFailed, e);
+          });
       }
     },
   } as const;
