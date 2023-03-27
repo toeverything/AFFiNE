@@ -104,12 +104,6 @@ const nextConfig = {
       }
     }
 
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@/': path.resolve('./', 'src/'),
-      // your aliases
-    };
-
     return config;
   },
   rewrites: async () => {
