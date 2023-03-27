@@ -45,7 +45,7 @@ const createToastContainer = (portal?: HTMLElement) => {
 };
 
 export type ToastOptions = {
-  duration: number;
+  duration?: number;
   portal?: HTMLElement;
 };
 

@@ -1,4 +1,4 @@
-import { Button, toast } from '@affine/component';
+import { Button } from '@affine/component';
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   clearLoginStorage,
@@ -13,6 +13,8 @@ import { useAtom } from 'jotai';
 import type { NextPage } from 'next';
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
+
+import { toast } from '../../utils';
 
 const Viewer = dynamic(
   () => import('@rich-data/viewer').then(m => ({ default: m.JsonViewer })),

@@ -1,4 +1,3 @@
-import { toast } from '@affine/component';
 import { MessageCode } from '@affine/datacenter';
 import { messages } from '@affine/datacenter';
 import type React from 'react';
@@ -6,6 +5,7 @@ import { memo, useEffect, useState } from 'react';
 
 import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
 import { apis } from '../../../shared/apis';
+import { toast } from '../../../utils';
 
 declare global {
   interface DocumentEventMap {

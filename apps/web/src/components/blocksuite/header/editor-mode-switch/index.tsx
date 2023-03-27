@@ -1,4 +1,3 @@
-import { toast } from '@affine/component';
 import { assertExists } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties } from 'react';
@@ -6,6 +5,7 @@ import type { CSSProperties } from 'react';
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import { usePageMeta } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
+import { toast } from '../../../../utils';
 import { StyledEditorModeSwitch } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 
