@@ -84,9 +84,13 @@ describe('api', () => {
 
     document.addEventListener('affine-error', listener);
     expect(listener).toBeCalledTimes(0);
-    await workspaceApis.getWorkspaces().catch(e => {
+    try {
+      await workspaceApis.getWorkspaces().catch(e => {
+        expect(e).toBeInstanceOf(RequestError);
+      });
+    } catch (e) {
       expect(e).toBeInstanceOf(RequestError);
-    });
+    }
     expect(listener).toBeCalledTimes(1);
     document.removeEventListener('affine-error', listener);
   });
