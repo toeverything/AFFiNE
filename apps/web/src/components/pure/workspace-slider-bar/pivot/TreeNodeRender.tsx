@@ -1,12 +1,18 @@
 import { IconButton } from '@affine/component';
 import {
   ArrowDownSmallIcon,
-  DeleteTemporarilyIcon,
-  PlusIcon,
+  EdgelessIcon,
+  // DeleteTemporarilyIcon,
+  // PlusIcon,
+  MoreVerticalIcon,
+  PageIcon,
 } from '@blocksuite/icons';
+import type { PageMeta } from '@blocksuite/store';
+import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 
-import { StyledCollapsedButton, StyledPivotItem } from './styles';
+import { workspacePreferredModeAtom } from '../../../../atoms';
+import { StyledCollapseButton, StyledCollapseItem } from '../shared-styles';
 import type { TreeNode } from './types';
 
 export const TreeNodeRender: TreeNode['render'] = (
@@ -14,12 +20,17 @@ export const TreeNodeRender: TreeNode['render'] = (
   { onAdd, onDelete, collapsed, setCollapsed },
   extendProps
 ) => {
-  const { openPage } = extendProps as { openPage: (pageId: string) => void };
+  const { openPage, pageMeta } = extendProps as {
+    openPage: (pageId: string) => void;
+    pageMeta: PageMeta;
+  };
+  const record = useAtomValue(workspacePreferredModeAtom);
 
   const router = useRouter();
   const active = router.query.pageId === node.id;
+
   return (
-    <StyledPivotItem
+    <StyledCollapseItem
       onClick={() => {
         if (active) {
           return;
@@ -28,42 +39,49 @@ export const TreeNodeRender: TreeNode['render'] = (
       }}
       active={active}
     >
-      <StyledCollapsedButton
+      <StyledCollapseButton
+        collapse={collapsed}
         show={!!node.children?.length}
         onClick={e => {
           e.stopPropagation();
           setCollapsed(!collapsed);
         }}
-        size="small"
       >
-        <ArrowDownSmallIcon
-          style={{
-            transform: `rotate(${collapsed ? '0' : '180'}deg)`,
-          }}
-        />
-      </StyledCollapsedButton>
+        <ArrowDownSmallIcon />
+      </StyledCollapseButton>
+      {record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
       <span>{node.title || 'Untitled'}</span>
       <IconButton
-        onClick={e => {
-          e.stopPropagation();
-          onAdd();
-        }}
         size="small"
-        className="pivot-item-button"
-      >
-        <PlusIcon />
-      </IconButton>
-      <IconButton
+        className="operation-button"
         onClick={e => {
           e.stopPropagation();
+        }}
+      >
+        <MoreVerticalIcon />
+      </IconButton>
 
-          onDelete();
-        }}
-        size="small"
-        className="pivot-item-button"
-      >
-        <DeleteTemporarilyIcon />
-      </IconButton>
-    </StyledPivotItem>
+      {/*<IconButton*/}
+      {/*  onClick={e => {*/}
+      {/*    e.stopPropagation();*/}
+      {/*    onAdd();*/}
+      {/*  }}*/}
+      {/*  size="small"*/}
+      {/*  className="operation-button"*/}
+      {/*>*/}
+      {/*  <PlusIcon />*/}
+      {/*</IconButton>*/}
+      {/*<IconButton*/}
+      {/*  onClick={e => {*/}
+      {/*    e.stopPropagation();*/}
+
+      {/*    onDelete();*/}
+      {/*  }}*/}
+      {/*  size="small"*/}
+      {/*  className="operation-button"*/}
+      {/*>*/}
+      {/*  <DeleteTemporarilyIcon />*/}
+      {/*</IconButton>*/}
+    </StyledCollapseItem>
   );
 };

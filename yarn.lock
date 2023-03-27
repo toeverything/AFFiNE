@@ -227,7 +227,7 @@ __metadata:
     "@affine/workspace": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230324040005-14417c2
     "@blocksuite/editor": 0.5.0-20230324040005-14417c2
-    "@blocksuite/icons": 2.0.23
+    "@blocksuite/icons": latest
     "@blocksuite/store": 0.5.0-20230324040005-14417c2
     "@emotion/cache": ^11.10.5
     "@emotion/react": ^11.10.6
@@ -1852,6 +1852,16 @@ __metadata:
     "@types/react": ^18.0.25
     react: ^18.2.0
   checksum: f35042b89b31dd83b56065a4b1ce725596ea2081516def15c5fce1919f7d073cdb4e9a3832b53cf03997230fea68d78a63443e47394b3e55ebaeb44babe386a2
+  languageName: node
+  linkType: hard
+
+"@blocksuite/icons@npm:latest":
+  version: 2.0.26
+  resolution: "@blocksuite/icons@npm:2.0.26"
+  peerDependencies:
+    "@types/react": ^18.0.25
+    react: ^18.2.0
+  checksum: bb0142cd503098ca1bd768401d7e4cc761027d7f60ac974f21bb368d3415e7ae2f13a128c83d4389d00aa18c523cd14bee53101e078c2a941186b98d6be7ba07
   languageName: node
   linkType: hard
 
