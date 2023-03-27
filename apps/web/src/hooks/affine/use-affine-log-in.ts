@@ -6,7 +6,6 @@ import {
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
-import { apis } from '../../shared/apis';
 import { toast } from '../../utils';
 
 export const affineAuth = createAffineAuth();
@@ -17,7 +16,6 @@ export function useAffineLogIn() {
     const response = await affineAuth.generateToken(SignMethod.Google);
     if (response) {
       setLoginStorage(response);
-      apis.auth.setLogin(response);
       router.reload();
     } else {
       toast('Login failed');

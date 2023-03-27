@@ -1,4 +1,9 @@
 import { useTranslation } from '@affine/i18n';
+import {
+  getLoginStorage,
+  setLoginStorage,
+  SignMethod,
+} from '@affine/workspace/affine/login';
 import type { SettingPanel, WorkspaceRegistry } from '@affine/workspace/type';
 import {
   settingPanel,
@@ -16,6 +21,7 @@ import React, { useCallback, useEffect } from 'react';
 import { Unreachable } from '../../../components/affine/affine-error-eoundary';
 import { PageLoading } from '../../../components/pure/loading';
 import { WorkspaceTitle } from '../../../components/pure/workspace-title';
+import { affineAuth } from '../../../hooks/affine/use-affine-log-in';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { useTransformWorkspace } from '../../../hooks/use-transform-workspace';
@@ -23,7 +29,6 @@ import { useWorkspacesHelper } from '../../../hooks/use-workspaces';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
 import type { NextPageWithLayout } from '../../../shared';
-import { apis } from '../../../shared/apis';
 
 const settingPanelAtom = atomWithStorage<SettingPanel>(
   'workspaceId',
@@ -107,9 +112,12 @@ const SettingPage: NextPageWithLayout = () => {
       to: To,
       workspace: WorkspaceRegistry[From]
     ): Promise<void> => {
-      const needRefresh = to === WorkspaceFlavour.AFFINE && !apis.auth.isLogin;
+      const needRefresh = to === WorkspaceFlavour.AFFINE && !getLoginStorage();
       if (needRefresh) {
-        await apis.signInWithGoogle();
+        const response = await affineAuth.generateToken(SignMethod.Google);
+        if (response) {
+          setLoginStorage(response);
+        }
       }
       const workspaceId = await transformWorkspace(from, to, workspace);
       await router.replace({

@@ -1,5 +1,5 @@
-import { PermissionType } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import { PermissionType } from '@affine/workspace/affine/api';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import type React from 'react';

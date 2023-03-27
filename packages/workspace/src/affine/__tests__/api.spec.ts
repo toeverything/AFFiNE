@@ -3,7 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
-import { MessageCode } from '@affine/datacenter';
+import { MessageCode } from '@affine/env/constant';
 import userA from '@affine-test/fixtures/userA.json';
 import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';

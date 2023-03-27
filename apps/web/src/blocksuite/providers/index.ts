@@ -1,4 +1,5 @@
-import { WebsocketProvider } from '@affine/datacenter';
+import { getLoginStorage } from '@affine/workspace/affine/login';
+import { WebsocketProvider } from '@affine/workspace/affine/sync';
 import { assertExists } from '@blocksuite/store';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
@@ -7,7 +8,6 @@ import type {
   BlockSuiteWorkspace,
   LocalIndexedDBProvider,
 } from '../../shared';
-import { apis } from '../../shared/apis';
 import { providerLogger } from '../logger';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 
@@ -32,7 +32,7 @@ const createAffineWebSocketProvider = (
         blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc,
         {
-          params: { token: apis.auth.refresh },
+          params: { token: getLoginStorage()?.token ?? '' },
           // @ts-expect-error ignore the type
           awareness: blockSuiteWorkspace.awarenessStore.awareness,
           // we maintain broadcast channel by ourselves

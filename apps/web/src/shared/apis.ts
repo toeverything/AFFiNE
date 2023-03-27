@@ -1,16 +1,10 @@
-import {
-  createAuthClient,
-  createBareClient,
-  getApis,
-  GoogleAuth,
-} from '@affine/datacenter';
 import { config } from '@affine/env';
 import {
   createUserApis,
   createWorkspaceApis,
 } from '@affine/workspace/affine/api';
 
-import { isValidIPAddress } from '../utils/is-valid-ip-address';
+import { isValidIPAddress } from '../utils';
 
 let prefixUrl = '/';
 if (typeof window === 'undefined') {
@@ -31,32 +25,21 @@ if (typeof window === 'undefined') {
   params.get('prefixUrl') && (prefixUrl = params.get('prefixUrl') as string);
 }
 
+const affineApis = {} as ReturnType<typeof createUserApis> &
+  ReturnType<typeof createWorkspaceApis>;
+Object.assign(affineApis, createUserApis(prefixUrl));
+Object.assign(affineApis, createWorkspaceApis(prefixUrl));
+
+if (!globalThis.AFFINE_APIS) {
+  globalThis.AFFINE_APIS = affineApis;
+}
+
 declare global {
   // eslint-disable-next-line no-var
-  var affineApis:
+  var AFFINE_APIS:
     | undefined
     | (ReturnType<typeof createUserApis> &
         ReturnType<typeof createWorkspaceApis>);
 }
 
-const affineApis = {} as ReturnType<typeof createUserApis> &
-  ReturnType<typeof createWorkspaceApis>;
-Object.assign(affineApis, createUserApis(prefixUrl));
-Object.assign(affineApis, createWorkspaceApis(prefixUrl));
-if (!globalThis.affineApis) {
-  globalThis.affineApis = affineApis;
-}
-
-const bareAuth = createBareClient(prefixUrl);
-const googleAuth = new GoogleAuth(bareAuth);
-export const clientAuth = createAuthClient(bareAuth, googleAuth);
-export const apis = getApis(bareAuth, clientAuth, googleAuth);
-
-if (!globalThis.AFFINE_APIS) {
-  globalThis.AFFINE_APIS = apis;
-}
-
-declare global {
-  // eslint-disable-next-line no-var
-  var AFFINE_APIS: ReturnType<typeof getApis>;
-}
+export { affineApis };

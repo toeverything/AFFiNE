@@ -7,7 +7,6 @@ import {
 } from '@affine/workspace/affine/login';
 import useSWR from 'swr';
 
-import { apis } from '../../shared/apis';
 import { affineAuth } from './use-affine-log-in';
 
 const logger = new DebugLogger('auth-token');
@@ -22,7 +21,6 @@ const revalidate = async () => {
       const response = await affineAuth.refreshToken(storage);
       if (response) {
         setLoginStorage(response);
-        apis.auth.setLogin(response);
       }
     }
   }

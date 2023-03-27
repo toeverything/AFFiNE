@@ -1,6 +1,6 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
-import { PermissionType } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import { PermissionType } from '@affine/workspace/affine/api';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,

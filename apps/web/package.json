@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
-    "@affine/datacenter": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/i18n": "workspace:*",

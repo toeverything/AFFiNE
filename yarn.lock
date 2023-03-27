@@ -110,30 +110,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/datacenter@workspace:*, @affine/datacenter@workspace:packages/data-center":
-  version: 0.0.0-use.local
-  resolution: "@affine/datacenter@workspace:packages/data-center"
-  dependencies:
-    "@affine/debug": "workspace:*"
-    "@blocksuite/blocks": 0.5.0-20230324040005-14417c2
-    "@blocksuite/global": 0.5.0-20230324040005-14417c2
-    "@blocksuite/store": 0.5.0-20230324040005-14417c2
-    "@tauri-apps/api": ^1.2.0
-    encoding: ^0.1.13
-    fake-indexeddb: 4.0.1
-    firebase: ^9.18.0
-    idb-keyval: ^6.2.0
-    js-base64: ^3.7.5
-    ky: ^0.33.3
-    ky-universal: ^0.11.0
-    lib0: ^0.2.69
-    lit: ^2.6.1
-    typescript: ^5.0.2
-    y-protocols: ^1.0.5
-    yjs: ^13.5.50
-  languageName: unknown
-  linkType: soft
-
 "@affine/debug@workspace:*, @affine/debug@workspace:packages/debug":
   version: 0.0.0-use.local
   resolution: "@affine/debug@workspace:packages/debug"
@@ -219,7 +195,6 @@ __metadata:
   resolution: "@affine/web@workspace:apps/web"
   dependencies:
     "@affine/component": "workspace:*"
-    "@affine/datacenter": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/i18n": "workspace:*"
@@ -285,6 +260,7 @@ __metadata:
     jotai: ^2.0.3
     js-base64: ^3.7.5
     ky: ^0.33.3
+    lib0: ^0.2.73
     react: ^18.2.0
     react-dom: ^18.2.0
     zod: ^3.21.4
@@ -7766,15 +7742,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"abort-controller@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "abort-controller@npm:3.0.0"
-  dependencies:
-    event-target-shim: ^5.0.0
-  checksum: 170bdba9b47b7e65906a28c8ce4f38a7a369d78e2271706f020849c1bfe0ee2067d4261df8bbb66eb84f79208fd5b710df759d64191db58cfba7ce8ef9c54b75
-  languageName: node
-  linkType: hard
-
 "accepts@npm:~1.3.5, accepts@npm:~1.3.8":
   version: 1.3.8
   resolution: "accepts@npm:1.3.8"
@@ -11458,13 +11425,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"event-target-shim@npm:^5.0.0":
-  version: 5.0.1
-  resolution: "event-target-shim@npm:5.0.1"
-  checksum: 1ffe3bb22a6d51bdeb6bf6f7cf97d2ff4a74b017ad12284cc9e6a279e727dc30a5de6bb613e5596ff4dc3e517841339ad09a7eec44266eccb1aa201a30448166
-  languageName: node
-  linkType: hard
-
 "events@npm:^3.2.0, events@npm:^3.3.0":
   version: 3.3.0
   resolution: "events@npm:3.3.0"
@@ -15007,22 +14967,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ky-universal@npm:^0.11.0":
-  version: 0.11.0
-  resolution: "ky-universal@npm:0.11.0"
-  dependencies:
-    abort-controller: ^3.0.0
-    node-fetch: ^3.2.10
-  peerDependencies:
-    ky: ">=0.31.4"
-    web-streams-polyfill: ">=3.2.1"
-  peerDependenciesMeta:
-    web-streams-polyfill:
-      optional: true
-  checksum: 42e4c91551a0d17465d6a117de2d1fa4efdf38c4e29dbd70af0c5b7ac0ee13994bceca9af2a0ac21a943d1cd22557ea664abe79f25e096d30a6baca0a0265a12
-  languageName: node
-  linkType: hard
-
 "ky@npm:^0.33.3":
   version: 0.33.3
   resolution: "ky@npm:0.33.3"
@@ -15084,7 +15028,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lib0@npm:^0.2.35, lib0@npm:^0.2.42, lib0@npm:^0.2.68, lib0@npm:^0.2.69, lib0@npm:^0.2.72":
+"lib0@npm:^0.2.35, lib0@npm:^0.2.42, lib0@npm:^0.2.68, lib0@npm:^0.2.69, lib0@npm:^0.2.72, lib0@npm:^0.2.73":
   version: 0.2.73
   resolution: "lib0@npm:0.2.73"
   dependencies:
@@ -16340,17 +16284,6 @@ __metadata:
     encoding:
       optional: true
   checksum: acb04f9ce7224965b2b59e71b33c639794d8991efd73855b0b250921382b38331ffc9d61bce502571f6cc6e11a8905ca9b1b6d4aeb586ab093e2756a1fd190d0
-  languageName: node
-  linkType: hard
-
-"node-fetch@npm:^3.2.10":
-  version: 3.3.1
-  resolution: "node-fetch@npm:3.3.1"
-  dependencies:
-    data-uri-to-buffer: ^4.0.0
-    fetch-blob: ^3.1.4
-    formdata-polyfill: ^4.0.10
-  checksum: 62145fd3ba4770a76110bc31fdc0054ab2f5442b5ce96e9c4b39fc9e94a3d305560eec76e1165d9259eab866e02a8eecf9301062bb5dfc9f08a4d08b69d223dd
   languageName: node
   linkType: hard
 

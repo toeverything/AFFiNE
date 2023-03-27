@@ -4,8 +4,8 @@ import {
   ModalWrapper,
   Tooltip,
 } from '@affine/component';
-import type { AccessTokenMessage } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { HelpIcon, PlusIcon } from '@blocksuite/icons';
 
 import type { RemWorkspace } from '../../../shared';

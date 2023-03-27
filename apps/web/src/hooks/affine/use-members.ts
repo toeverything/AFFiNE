@@ -1,9 +1,9 @@
-import type { Member } from '@affine/datacenter';
+import type { Member } from '@affine/workspace/affine/api';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 
 import { QueryKey } from '../../plugins/affine/fetcher';
-import { apis } from '../../shared/apis';
+import { affineApis } from '../../shared/apis';
 
 export function useMembers(workspaceId: string) {
   const { data, mutate } = useSWR<Member[]>(
@@ -15,7 +15,7 @@ export function useMembers(workspaceId: string) {
 
   const inviteMember = useCallback(
     async (email: string) => {
-      await apis.inviteMember({
+      await affineApis.inviteMember({
         id: workspaceId,
         email,
       });
@@ -26,8 +26,7 @@ export function useMembers(workspaceId: string) {
 
   const removeMember = useCallback(
     async (permissionId: number) => {
-      // fixme: what about the workspaceId?
-      await apis.removeMember({
+      await affineApis.removeMember({
         permissionId,
       });
       return mutate();
