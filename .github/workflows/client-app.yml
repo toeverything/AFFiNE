@@ -69,6 +69,14 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
 
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './packages/octobase-node -> target'
+
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
@@ -78,6 +86,13 @@ jobs:
         with:
           name: before-make-electron-dist
           path: apps/electron/dist
+
+      - name: build octobase-node
+        run: yarn build:octobase-node
+        working-directory: apps/electron
+
+      - name: move octobase Binary
+        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
       - name: make build
         run: yarn make-macos-x64
@@ -102,6 +117,17 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
 
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: add arm64 target
+        run: rustup target add aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './packages/octobase-node -> target'
+
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
@@ -111,6 +137,13 @@ jobs:
         with:
           name: before-make-electron-dist
           path: apps/electron/dist
+
+      - name: build octobase-node
+        run: yarn build:octobase-node
+        working-directory: apps/electron
+
+      - name: move octobase Binary
+        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
 
       - name: make build
         run: yarn make-macos-arm64
@@ -135,6 +168,9 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
 
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
@@ -144,6 +180,18 @@ jobs:
         with:
           name: before-make-electron-dist
           path: apps/electron/dist
+
+      - name: move octobase Binary
+        run: cp ./packages/octobase-node/octobase.*.node ./apps/electron/dist/layers/main/
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './packages/octobase-node -> target'
+
+      - name: build octobase-node
+        run: yarn build:octobase-node
+        working-directory: apps/electron
 
       - name: make build
         run: yarn make-windows-x64

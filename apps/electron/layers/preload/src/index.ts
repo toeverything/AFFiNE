@@ -2,7 +2,7 @@
  * @module preload
  */
 
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 import { sha256sum } from './sha256sum';
 
@@ -31,3 +31,11 @@ contextBridge.exposeInMainWorld('yerba', { version: 0.1 });
  * window.nodeCrypto('data')
  */
 contextBridge.exposeInMainWorld('nodeCrypto', { sha256sum });
+
+contextBridge.exposeInMainWorld('apis', {
+  workspaceSync: (id: string) => ipcRenderer.invoke('workspaceSync', id),
+});
+
+contextBridge.exposeInMainWorld('appInfo', {
+  electron: 1,
+});

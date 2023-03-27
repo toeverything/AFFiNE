@@ -5,7 +5,7 @@ import {
   TableHead,
   TableRow,
 } from '@affine/component';
-import { Content, IconButton, toast, Tooltip } from '@affine/component';
+import { Content, IconButton, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
   EdgelessIcon,
@@ -29,6 +29,7 @@ import {
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
+import { toast } from '../../../../utils';
 import DateCell from './DateCell';
 import Empty from './Empty';
 import { OperationCell, TrashOperationCell } from './OperationCell';
