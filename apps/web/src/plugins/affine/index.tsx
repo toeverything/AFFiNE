@@ -128,73 +128,65 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
     list: async () => {
       const allWorkspaces = getPersistenceAllWorkspace();
       try {
-        if (!getLoginStorage()) {
-          const workspaces = await affineApis
-            .getWorkspaces()
-            .then(workspaces => {
-              return workspaces.map(workspace => {
-                const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-                  workspace.id,
-                  (k: string) =>
-                    // fixme: token could be expired
-                    ({ api: '/api/workspace', token: getLoginStorage()?.token }[
-                      k
-                    ])
-                );
-                const dump = workspaces.map(workspace => {
-                  return {
-                    id: workspace.id,
-                    type: workspace.type,
-                    public: workspace.public,
-                    permission: workspace.permission,
-                  } satisfies z.infer<typeof schema>;
-                });
-                const old = storage.getItem(kAffineLocal);
-                if (
-                  Array.isArray(old) &&
-                  old.every(item => schema.safeParse(item).success)
-                ) {
-                  const data = [...dump];
-                  old.forEach((item: z.infer<typeof schema>) => {
-                    const has = dump.find(dump => dump.id === item.id);
-                    if (!has) {
-                      data.push(item);
-                    }
-                  });
-                  storage.setItem(kAffineLocal, [...data]);
-                }
-
-                const affineWorkspace: AffineWorkspace = {
-                  ...workspace,
-                  flavour: WorkspaceFlavour.AFFINE,
-                  blockSuiteWorkspace,
-                  providers: [...createAffineProviders(blockSuiteWorkspace)],
-                };
-                return affineWorkspace;
-              });
-            });
-          workspaces.forEach(workspace => {
-            const idx = allWorkspaces.findIndex(
-              ({ id }) => id === workspace.id
+        const workspaces = await affineApis.getWorkspaces().then(workspaces => {
+          return workspaces.map(workspace => {
+            const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+              workspace.id,
+              (k: string) =>
+                // fixme: token could be expired
+                ({ api: '/api/workspace', token: getLoginStorage()?.token }[k])
             );
-            if (idx !== -1) {
-              allWorkspaces.splice(idx, 1, workspace);
-            } else {
-              allWorkspaces.push(workspace);
+            const dump = workspaces.map(workspace => {
+              return {
+                id: workspace.id,
+                type: workspace.type,
+                public: workspace.public,
+                permission: workspace.permission,
+              } satisfies z.infer<typeof schema>;
+            });
+            const old = storage.getItem(kAffineLocal);
+            if (
+              Array.isArray(old) &&
+              old.every(item => schema.safeParse(item).success)
+            ) {
+              const data = [...dump];
+              old.forEach((item: z.infer<typeof schema>) => {
+                const has = dump.find(dump => dump.id === item.id);
+                if (!has) {
+                  data.push(item);
+                }
+              });
+              storage.setItem(kAffineLocal, [...data]);
             }
-          });
 
-          // only save data when login in
-          const dump = allWorkspaces.map(workspace => {
-            return {
-              id: workspace.id,
-              type: workspace.type,
-              public: workspace.public,
-              permission: workspace.permission,
-            } satisfies z.infer<typeof schema>;
+            const affineWorkspace: AffineWorkspace = {
+              ...workspace,
+              flavour: WorkspaceFlavour.AFFINE,
+              blockSuiteWorkspace,
+              providers: [...createAffineProviders(blockSuiteWorkspace)],
+            };
+            return affineWorkspace;
           });
-          storage.setItem(kAffineLocal, [...dump]);
-        }
+        });
+        workspaces.forEach(workspace => {
+          const idx = allWorkspaces.findIndex(({ id }) => id === workspace.id);
+          if (idx !== -1) {
+            allWorkspaces.splice(idx, 1, workspace);
+          } else {
+            allWorkspaces.push(workspace);
+          }
+        });
+
+        // only save data when login in
+        const dump = allWorkspaces.map(workspace => {
+          return {
+            id: workspace.id,
+            type: workspace.type,
+            public: workspace.public,
+            permission: workspace.permission,
+          } satisfies z.infer<typeof schema>;
+        });
+        storage.setItem(kAffineLocal, [...dump]);
       } catch (e) {
         console.error('fetch affine workspaces failed', e);
       }

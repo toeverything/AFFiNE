@@ -1,11 +1,7 @@
+import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import type { AccessTokenMessage } from '@affine/workspace/affine/login';
-import useSWR from 'swr';
-
-import { QueryKey } from '../../plugins/affine/fetcher';
+import { useAtomValue } from 'jotai';
 
 export function useCurrentUser(): AccessTokenMessage | null {
-  const { data } = useSWR<AccessTokenMessage | null>(QueryKey.getUser, {
-    fallbackData: null,
-  });
-  return data ?? null;
+  return useAtomValue(currentAffineUserAtom);
 }

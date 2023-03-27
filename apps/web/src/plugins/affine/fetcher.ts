@@ -1,4 +1,3 @@
-import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import { getLoginStorage } from '@affine/workspace/affine/login';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -19,9 +18,6 @@ export const fetcher = async (
     | [Query, string]
     | [Query, string, string]
 ) => {
-  if (query === QueryKey.getUser) {
-    return jotaiStore.get(currentAffineUserAtom) ?? null;
-  }
   if (Array.isArray(query)) {
     if (query[0] === QueryKey.downloadWorkspace) {
       if (typeof query[2] !== 'boolean') {
@@ -90,7 +86,6 @@ export const fetcher = async (
 export const QueryKey = {
   acceptInvite: 'acceptInvite',
   getImage: 'getImage',
-  getUser: 'getUser',
   getWorkspaces: 'getWorkspaces',
   downloadWorkspace: 'downloadWorkspace',
   getMembers: 'getMembers',

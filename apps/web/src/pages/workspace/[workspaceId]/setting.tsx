@@ -1,6 +1,8 @@
 import { useTranslation } from '@affine/i18n';
+import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import {
   getLoginStorage,
+  parseIdToken,
   setLoginStorage,
   SignMethod,
 } from '@affine/workspace/affine/login';
@@ -12,7 +14,7 @@ import {
 } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
-import { useAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -106,6 +108,7 @@ const SettingPage: NextPageWithLayout = () => {
     return helper.deleteWorkspace(workspaceId);
   }, [currentWorkspace, helper]);
   const transformWorkspace = useTransformWorkspace();
+  const setUser = useSetAtom(currentAffineUserAtom);
   const onTransformWorkspace = useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -117,6 +120,7 @@ const SettingPage: NextPageWithLayout = () => {
         const response = await affineAuth.generateToken(SignMethod.Google);
         if (response) {
           setLoginStorage(response);
+          setUser(parseIdToken(response.token));
         }
       }
       const workspaceId = await transformWorkspace(from, to, workspace);
@@ -127,11 +131,8 @@ const SettingPage: NextPageWithLayout = () => {
           workspaceId,
         },
       });
-      if (needRefresh) {
-        router.reload();
-      }
     },
-    [router, transformWorkspace]
+    [router, setUser, transformWorkspace]
   );
   if (!router.isReady) {
     return <PageLoading />;
