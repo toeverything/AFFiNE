@@ -114,8 +114,6 @@ jobs:
           name: artifact
           path: ./apps/web/.next
 
-      - name: Install playwright browsers
-        run: npx playwright install chromium
       - name: Run e2e & unit tests
         run: |
           yarn test --forbid-only
