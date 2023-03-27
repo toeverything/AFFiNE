@@ -35,7 +35,7 @@ export const StyledSlidebarWrapper = styled('div')(() => {
   };
 });
 
-export const StyledLink = styled(Link)(({ theme }) => {
+export const StyledLink = styled(Link)(() => {
   return {
     flexGrow: 1,
     textAlign: 'left',
@@ -43,11 +43,6 @@ export const StyledLink = styled(Link)(({ theme }) => {
     ...displayFlex('flex-start', 'center'),
     ':visited': {
       color: 'inherit',
-    },
-    '>svg': {
-      fontSize: '20px',
-      marginRight: '12px',
-      color: theme.colors.iconColor,
     },
   };
 });
