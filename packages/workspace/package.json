@@ -6,7 +6,7 @@
     "./type": "./src/type.ts",
     "./affine/*": "./src/affine/*.ts",
     "./affine/api": "./src/affine/api/index.ts",
-    "./affine/sync": "./src/affine/api/sync.js"
+    "./affine/sync": "./src/affine/sync.js"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:^",
