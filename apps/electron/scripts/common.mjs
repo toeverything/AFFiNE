@@ -17,7 +17,7 @@ export const mainConfig = {
   bundle: true,
   target: `node${node}`,
   platform: 'node',
-  external: ['electron', '@affine/octobase-node'],
+  external: ['electron'],
 };
 
 export const preloadConfig = {
