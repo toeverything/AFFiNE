@@ -46,7 +46,7 @@ export const TreeNode = <N,>({
   allDrop = true,
   ...otherProps
 }: TreeNodeProps<N>) => {
-  const { onAdd, onDelete, onDrop } = otherProps;
+  const { onAdd, onDelete, onDrop, indent } = otherProps;
   const [collapsed, setCollapsed] = useState(false);
 
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -109,7 +109,7 @@ export const TreeNode = <N,>({
         )}
       </StyledTreeNodeItem>
 
-      <StyledCollapse in={!collapsed}>
+      <StyledCollapse in={!collapsed} indent={indent}>
         {node.children &&
           node.children.map((childNode, index) => (
             <TreeNode

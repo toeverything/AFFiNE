@@ -1,5 +1,5 @@
 import type { CSSProperties, HTMLAttributes, ReactElement } from 'react';
-import { Children, cloneElement, forwardRef } from 'react';
+import { forwardRef } from 'react';
 
 import { StyledIconButton } from './styles';
 const SIZE_SMALL = 'small' as const;
@@ -9,7 +9,7 @@ const SIZE_NORMAL = 'normal' as const;
 const SIZE_CONFIG = {
   [SIZE_SMALL]: {
     iconSize: 16,
-    areaSize: 24,
+    areaSize: 20,
   },
   [SIZE_MIDDLE]: {
     iconSize: 20,
@@ -42,19 +42,14 @@ export type IconButtonProps = {
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   (
-    {
-      size = 'normal',
-      iconSize = 'normal',
-      disabled = false,
-      children,
-      ...props
-    },
+    { size = 'normal', iconSize, disabled = false, children, ...props },
     ref
   ) => {
+    iconSize = size;
     const [width, height] = Array.isArray(size)
       ? size
       : [SIZE_CONFIG[size]['areaSize'], SIZE_CONFIG[size]['areaSize']];
-    const [iconWidth, iconHeight] = Array.isArray(iconSize)
+    const [iconWidth] = Array.isArray(iconSize)
       ? iconSize
       : [SIZE_CONFIG[iconSize]['iconSize'], SIZE_CONFIG[iconSize]['iconSize']];
 
@@ -65,12 +60,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         width={width}
         height={height}
         borderRadius={iconWidth / 4}
+        fontSize={iconWidth}
         {...props}
       >
-        {cloneElement(Children.only(children), {
-          width: iconWidth,
-          height: iconHeight,
-        })}
+        {children}
       </StyledIconButton>
     );
   }

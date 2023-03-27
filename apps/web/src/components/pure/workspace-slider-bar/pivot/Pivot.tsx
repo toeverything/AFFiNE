@@ -1,5 +1,6 @@
-import { IconButton, MuiCollapse, TreeView } from '@affine/component';
+import { MuiCollapse, TreeView } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
+import { useTranslation } from '@affine/i18n';
 import { ArrowDownSmallIcon, FolderIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
@@ -8,7 +9,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useBlockSuiteWorkspaceHelper } from '../../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../../shared';
-import { StyledListItem } from '../style';
+import { StyledCollapseButton, StyledListItem } from '../shared-styles';
 import type { TreeNode } from './types';
 import { flattenToTree } from './utils';
 const logger = new DebugLogger('pivot');
@@ -178,6 +179,7 @@ export const PivotInternal = ({
       onAdd={handleAdd}
       onDelete={handleDelete}
       onDrop={handleDrop}
+      indent={16}
     />
   );
 };
@@ -191,32 +193,30 @@ export const Pivot = ({
   openPage: (pageId: string) => void;
   allMetas: PageMeta[];
 }) => {
+  const { t } = useTranslation();
+
   const [showPivot, setShowPivot] = useState(true);
 
   return (
     <>
       <StyledListItem>
-        <FolderIcon />
-        Pivot
-        <IconButton
-          darker={true}
+        <StyledCollapseButton
           onClick={useCallback(() => {
             setShowPivot(!showPivot);
           }, [showPivot])}
+          collapse={showPivot}
         >
-          <ArrowDownSmallIcon
-            style={{
-              transform: `rotate(${showPivot ? '180' : '0'}deg)`,
-            }}
-          />
-        </IconButton>
+          <ArrowDownSmallIcon />
+        </StyledCollapseButton>
+        <FolderIcon />
+        {t('Pivots')}
       </StyledListItem>
 
       <MuiCollapse
         in={showPivot}
         style={{
           maxHeight: 300,
-          paddingLeft: '12px',
+          paddingLeft: '16px',
           overflowY: 'auto',
         }}
       >

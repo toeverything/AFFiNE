@@ -56,7 +56,6 @@ const FavoriteTag: React.FC<FavoriteTagProps> = ({
       placement="top-start"
     >
       <IconButton
-        darker={true}
         iconSize={[20, 20]}
         onClick={e => {
           e.stopPropagation();
@@ -88,13 +87,12 @@ type PageListProps = {
 };
 
 const filter = {
-  all: (pageMeta: PageMeta, allMetas: PageMeta[]) => !pageMeta.trash,
+  all: (pageMeta: PageMeta) => !pageMeta.trash,
   trash: (pageMeta: PageMeta, allMetas: PageMeta[]) => {
     const parentMeta = allMetas.find(m => m.subpageIds?.includes(pageMeta.id));
     return !parentMeta?.trash && pageMeta.trash;
   },
-  favorite: (pageMeta: PageMeta, allMetas: PageMeta[]) =>
-    pageMeta.favorite && !pageMeta.trash,
+  favorite: (pageMeta: PageMeta) => pageMeta.favorite && !pageMeta.trash,
 };
 
 export const PageList: React.FC<PageListProps> = ({
