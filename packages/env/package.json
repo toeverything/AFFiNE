@@ -14,7 +14,7 @@
     "./constant": "./src/constant.ts"
   },
   "dependencies": {
-    "@blocksuite/global": "0.5.0-20230324040005-14417c2",
+    "@blocksuite/global": "0.5.0-20230326033652-70ca43c",
     "lit": "^2.7.0"
   }
 }
