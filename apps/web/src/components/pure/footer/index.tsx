@@ -1,8 +1,8 @@
 import { FlexWrapper } from '@affine/component';
 import { IconButton } from '@affine/component';
 import { Tooltip } from '@affine/component';
-import type { AccessTokenMessage } from '@affine/datacenter';
 import { useTranslation } from '@affine/i18n';
+import type { AccessTokenMessage } from '@affine/workspace/affine/login';
 import { CloudWorkspaceIcon, SignOutIcon } from '@blocksuite/icons';
 import type { CSSProperties } from 'react';
 import type React from 'react';

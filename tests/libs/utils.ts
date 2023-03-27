@@ -77,7 +77,7 @@ export async function loginUser(
 ) {
   await page.evaluate(async token => {
     // @ts-ignore
-    globalThis.AFFINE_APIS.auth.setLogin(token);
+    globalThis.setLogin(token);
   }, token);
 }
 

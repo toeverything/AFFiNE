@@ -1,4 +1,4 @@
-import { RequestError } from '@affine/datacenter';
+import { RequestError } from '@affine/workspace/affine/api';
 import type { NextRouter } from 'next/router';
 import type { ErrorInfo } from 'react';
 import type React from 'react';

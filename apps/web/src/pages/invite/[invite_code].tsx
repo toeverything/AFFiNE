@@ -1,6 +1,6 @@
 import { displayFlex, styled } from '@affine/component';
 import { Button } from '@affine/component';
-import type { Permission } from '@affine/datacenter';
+import type { Permission } from '@affine/workspace/affine/api';
 import {
   SucessfulDuotoneIcon,
   UnsucessfulDuotoneIcon,

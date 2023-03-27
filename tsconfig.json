@@ -22,7 +22,6 @@
         "./packages/component/src/components/block-suite-editor/index"
       ],
       "@affine/templates/*": ["./packages/templates/src/*"],
-      "@affine/datacenter": ["./packages/datacenter/src"],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/debug": ["./packages/debug"],
       "@affine/env": ["./packages/env"],
@@ -41,9 +40,6 @@
     },
     {
       "path": "./apps/desktop"
-    },
-    {
-      "path": "./packages/data-center"
     },
     {
       "path": "./packages/component"

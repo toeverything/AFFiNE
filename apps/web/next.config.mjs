@@ -68,7 +68,6 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [
     '@affine/component',
-    '@affine/datacenter',
     '@affine/i18n',
     '@affine/debug',
     '@affine/env',
