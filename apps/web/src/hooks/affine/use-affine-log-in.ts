@@ -26,5 +26,5 @@ export function useAffineLogIn() {
     } else {
       toast('Login failed');
     }
-  }, [router]);
+  }, [router, setUser]);
 }
