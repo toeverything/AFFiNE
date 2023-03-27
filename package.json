@@ -40,7 +40,7 @@
     "@affine/cli": "workspace:*",
     "@istanbuljs/schema": "^0.1.3",
     "@perfsee/sdk": "^1.5.1",
-    "@playwright/test": "^1.31.2",
+    "@playwright/test": "^1.32.1",
     "@testing-library/react": "^14.0.0",
     "@types/eslint": "^8.21.3",
     "@types/node": "^18.15.5",

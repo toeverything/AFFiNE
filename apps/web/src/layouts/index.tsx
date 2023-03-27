@@ -198,7 +198,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
           openPage={handleOpenPage}
           createPage={handleCreatePage}
-          currentPath={router.asPath}
+          currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
         <StyledWrapper className="main-container">
