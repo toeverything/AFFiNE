@@ -96,9 +96,7 @@ jobs:
         run: |
           yarn set version self
           git diff --exit-code
-      - run: yarn install
       - run: yarn lint --max-warnings=0
-
       - name: Build
         run: yarn build
         env:
@@ -209,8 +207,6 @@ jobs:
           name: artifact
           path: ./apps/web/.next
 
-      - name: Install playwright browsers
-        run: npx playwright install chromium
       - name: Run playwright tests
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
