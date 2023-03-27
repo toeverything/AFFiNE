@@ -1,35 +1,29 @@
-import { MuiCollapse } from '@affine/component';
-import { IconButton } from '@affine/component';
 import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import {
-  ArrowDownSmallIcon,
   DeleteTemporarilyIcon,
-  FavoriteIcon,
   FolderIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
 import type React from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback } from 'react';
 
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
+import Favorite from './favorite';
 import { Pivot } from './pivot';
+import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
-  StyledListItem,
   StyledNewPageButton,
-  StyledSidebarWrapper,
+  StyledSidebarSwitchWrapper,
+  StyledSlidebarWrapper,
   StyledSliderBar,
-  StyledSliderBarWrapper,
-  StyledSubListItem,
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector';
 
@@ -38,57 +32,6 @@ export type FavoriteListProps = {
   openPage: (pageId: string) => void;
   showList: boolean;
   pageMeta: PageMeta[];
-};
-
-const FavoriteList: React.FC<FavoriteListProps> = ({
-  pageMeta,
-  openPage,
-  showList,
-}) => {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const favoriteList = useMemo(
-    () => pageMeta.filter(p => p.favorite && !p.trash),
-    [pageMeta]
-  );
-
-  return (
-    <MuiCollapse
-      in={showList}
-      style={{
-        maxHeight: 300,
-        overflowY: 'auto',
-      }}
-    >
-      {favoriteList.map((pageMeta, index) => {
-        const active = router.query.pageId === pageMeta.id;
-        return (
-          <div key={`${pageMeta}-${index}`}>
-            <StyledSubListItem
-              data-testid={`favorite-list-item-${pageMeta.id}`}
-              active={active}
-              ref={ref => {
-                if (ref && active) {
-                  ref.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              onClick={() => {
-                if (active) {
-                  return;
-                }
-                openPage(pageMeta.id);
-              }}
-            >
-              {pageMeta.title || 'Untitled'}
-            </StyledSubListItem>
-          </div>
-        );
-      })}
-      {favoriteList.length === 0 && (
-        <StyledSubListItem disable={true}>{t('No item')}</StyledSubListItem>
-      )}
-    </MuiCollapse>
-  );
 };
 
 export type WorkSpaceSliderBarProps = {
@@ -120,7 +63,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   onOpenWorkspaceListModal,
 }) => {
   const currentWorkspaceId = currentWorkspace?.id || null;
-  const [showSubFavorite, setOpenSubFavorite] = useState(true);
   const { t } = useTranslation();
   const [sidebarOpen] = useSidebarStatus();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
@@ -131,15 +73,15 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   return (
     <>
       <StyledSliderBar show={isPublicWorkspace ? false : sidebarOpen}>
-        <StyledSidebarWrapper>
+        <StyledSidebarSwitchWrapper>
           <SidebarSwitch
             visible={sidebarOpen}
             tooltipContent={t('Collapse sidebar')}
             testid="sliderBar-arrowButton-collapse"
           />
-        </StyledSidebarWrapper>
+        </StyledSidebarSwitchWrapper>
 
-        <StyledSliderBarWrapper data-testid="sliderBar">
+        <StyledSlidebarWrapper data-testid="sliderBar">
           <WorkspaceSelector
             currentWorkspace={currentWorkspace}
             onClick={onOpenWorkspaceListModal}
@@ -147,7 +89,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
 
           <StyledListItem
             data-testid="slider-bar-quick-search-button"
-            style={{ cursor: 'pointer' }}
             onClick={useCallback(() => {
               onOpenQuickSearchModal();
             }, [onOpenQuickSearchModal])}
@@ -155,70 +96,16 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             <SearchIcon />
             {t('Quick search')}
           </StyledListItem>
-          <Link
-            href={{
-              pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
-            }}
-          >
-            <StyledListItem
-              active={
-                currentPath ===
-                (currentWorkspaceId && paths.all(currentWorkspaceId))
-              }
-            >
-              <FolderIcon />
-              <span data-testid="all-pages">{t('All pages')}</span>
-            </StyledListItem>
-          </Link>
 
-          {config.enableSubpage && !!currentWorkspace && (
-            <Pivot
-              currentWorkspace={currentWorkspace}
-              openPage={openPage}
-              allMetas={pageMeta}
-            />
-          )}
-
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.favorite(currentWorkspaceId))
-            }
-          >
-            <StyledLink
-              href={{
-                pathname:
-                  currentWorkspaceId && paths.favorite(currentWorkspaceId),
-              }}
-            >
-              <FavoriteIcon />
-              {t('Favorites')}
-            </StyledLink>
-            <IconButton
-              darker={true}
-              onClick={useCallback(() => {
-                setOpenSubFavorite(!showSubFavorite);
-              }, [showSubFavorite])}
-            >
-              <ArrowDownSmallIcon
-                style={{
-                  transform: `rotate(${showSubFavorite ? '180' : '0'}deg)`,
-                }}
-              />
-            </IconButton>
-          </StyledListItem>
-          <FavoriteList
-            currentPageId={currentPageId}
-            showList={showSubFavorite}
-            openPage={openPage}
-            pageMeta={pageMeta}
-          />
           <StyledListItem
             active={
               currentPath ===
               (currentWorkspaceId && paths.setting(currentWorkspaceId))
             }
             data-testid="slider-bar-workspace-setting-button"
+            style={{
+              marginBottom: '16px',
+            }}
           >
             <StyledLink
               href={{
@@ -231,42 +118,62 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             </StyledLink>
           </StyledListItem>
 
-          {/* <WorkspaceSetting
-            isShow={showWorkspaceSetting}
-            onClose={() => {
-              setOpenWorkspaceSetting(false);
-            }}
-          /> */}
-          {/* TODO: will finish the feature next version */}
-          {/* <StyledListItem
-            onClick={() => {
-              triggerImportModal();
-            }}
+          <StyledListItem
+            active={
+              currentPath ===
+              (currentWorkspaceId && paths.all(currentWorkspaceId))
+            }
           >
-            <ImportIcon /> {t('Import')}
-          </StyledListItem> */}
+            <StyledLink
+              href={{
+                pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
+              }}
+            >
+              <FolderIcon />
+              <span data-testid="all-pages">{t('All pages')}</span>
+            </StyledLink>
+          </StyledListItem>
 
-          <Link
-            href={{
-              pathname: currentWorkspaceId && paths.trash(currentWorkspaceId),
+          <Favorite
+            currentPath={currentPath}
+            paths={paths}
+            currentPageId={currentPageId}
+            openPage={openPage}
+            currentWorkspace={currentWorkspace}
+          />
+          {config.enableSubpage && !!currentWorkspace && (
+            <Pivot
+              currentWorkspace={currentWorkspace}
+              openPage={openPage}
+              allMetas={pageMeta}
+            />
+          )}
+
+          <StyledListItem
+            active={
+              currentPath ===
+              (currentWorkspaceId && paths.trash(currentWorkspaceId))
+            }
+            style={{
+              marginTop: '16px',
             }}
           >
-            <StyledListItem
-              active={
-                currentPath ===
-                (currentWorkspaceId && paths.trash(currentWorkspaceId))
-              }
+            <StyledLink
+              href={{
+                pathname: currentWorkspaceId && paths.trash(currentWorkspaceId),
+              }}
             >
               <DeleteTemporarilyIcon /> {t('Trash')}
-            </StyledListItem>
-          </Link>
-          <StyledNewPageButton
-            data-testid="new-page-button"
-            onClick={onClickNewPage}
-          >
-            <PlusIcon /> {t('New Page')}
-          </StyledNewPageButton>
-        </StyledSliderBarWrapper>
+            </StyledLink>
+          </StyledListItem>
+        </StyledSlidebarWrapper>
+
+        <StyledNewPageButton
+          data-testid="new-page-button"
+          onClick={onClickNewPage}
+        >
+          <PlusIcon /> {t('New Page')}
+        </StyledNewPageButton>
       </StyledSliderBar>
     </>
   );

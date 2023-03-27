@@ -1,10 +1,13 @@
 import MuiCollapse from '@mui/material/Collapse';
+import type { CSSProperties } from 'react';
 
 import { styled } from '../../styles';
 
-export const StyledCollapse = styled(MuiCollapse)(() => {
+export const StyledCollapse = styled(MuiCollapse)<{
+  indent?: CSSProperties['paddingLeft'];
+}>(({ indent = 12 }) => {
   return {
-    paddingLeft: '12px',
+    paddingLeft: indent,
   };
 });
 export const StyledTreeNodeItem = styled('div')<{

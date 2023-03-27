@@ -18,7 +18,7 @@
     "@affine/workspace": "workspace:*",
     "@blocksuite/blocks": "0.5.0-20230324040005-14417c2",
     "@blocksuite/editor": "0.5.0-20230324040005-14417c2",
-    "@blocksuite/icons": "2.0.23",
+    "@blocksuite/icons": "latest",
     "@blocksuite/store": "0.5.0-20230324040005-14417c2",
     "@emotion/cache": "^11.10.5",
     "@emotion/react": "^11.10.6",

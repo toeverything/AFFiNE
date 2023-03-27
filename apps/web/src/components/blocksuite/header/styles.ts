@@ -8,16 +8,16 @@ import {
 export const StyledHeaderContainer = styled('div')<{ hasWarning: boolean }>(
   ({ hasWarning }) => {
     return {
-      height: hasWarning ? '96px' : '60px',
+      height: hasWarning ? '96px' : '48px',
     };
   }
 );
 export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
   ({ theme }) => {
     return {
-      height: '64px',
+      height: '48px',
       width: '100%',
-      padding: '0 28px',
+      padding: '0 20px',
       ...displayFlex('space-between', 'center'),
       background: theme.colors.pageBackground,
       transition: 'background-color 0.5s',

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type Node<N> = {
   id: string;
@@ -16,6 +16,7 @@ export type Node<N> = {
 } & N;
 
 type CommonProps<N> = {
+  indent?: CSSProperties['paddingLeft'];
   onAdd?: (node: Node<N>) => void;
   onDelete?: (node: Node<N>) => void;
   onDrop?: (
