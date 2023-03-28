@@ -6,12 +6,13 @@ export type IconMenuProps = PropsWithChildren<{
   isDir?: boolean;
   icon?: ReactElement;
   iconSize?: [number, number];
+  disabled?: boolean;
 }> &
   HTMLAttributes<HTMLButtonElement>;
 
 export const MenuItem = forwardRef<HTMLButtonElement, IconMenuProps>(
   ({ isDir = false, icon, iconSize, children, ...props }, ref) => {
-    const [iconWidth, iconHeight] = iconSize || [16, 16];
+    const [iconWidth, iconHeight] = iconSize || [20, 20];
     return (
       <StyledMenuItem ref={ref} {...props}>
         {icon &&
@@ -19,7 +20,7 @@ export const MenuItem = forwardRef<HTMLButtonElement, IconMenuProps>(
             width: iconWidth,
             height: iconHeight,
             style: {
-              marginRight: 14,
+              marginRight: 12,
               ...icon.props?.style,
             },
           })}

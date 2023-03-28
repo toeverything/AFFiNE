@@ -1,6 +1,7 @@
 import ClickAwayListener from '@mui/base/ClickAwayListener';
 import PopperUnstyled from '@mui/base/PopperUnstyled';
 import Grow from '@mui/material/Grow';
+import type { CSSProperties, PointerEvent } from 'react';
 import {
   cloneElement,
   useEffect,
@@ -33,6 +34,8 @@ export const Popper = ({
   popperHandlerRef,
   onClick,
   onClickAway,
+  onPointerEnter,
+  onPointerLeave,
   ...popperProps
 }: PopperProps) => {
   const [anchorEl, setAnchorEl] = useState<VirtualElement>();
@@ -58,7 +61,8 @@ export const Popper = ({
     );
   }, [trigger]);
 
-  const onPointerEnterHandler = () => {
+  const onPointerEnterHandler = (e: PointerEvent<HTMLDivElement>) => {
+    onPointerEnter?.(e);
     if (!hasHoverTrigger || visibleControlledByParent) {
       return;
     }
@@ -69,7 +73,9 @@ export const Popper = ({
     }, pointerEnterDelay);
   };
 
-  const onPointerLeaveHandler = () => {
+  const onPointerLeaveHandler = (e: PointerEvent<HTMLDivElement>) => {
+    onPointerLeave?.(e);
+
     if (!hasHoverTrigger || visibleControlledByParent) {
       return;
     }
@@ -151,7 +157,7 @@ export const Popper = ({
                   onPointerLeave={onPointerLeaveHandler}
                   style={popoverStyle}
                   className={popoverClassName}
-                  onClick={e => {
+                  onClick={() => {
                     if (hasClickTrigger && !visibleControlledByParent) {
                       setVisible(false);
                     }
@@ -178,11 +184,11 @@ const Container = styled('div')({
   display: 'contents',
 });
 
-const BasicStyledPopper = styled(PopperUnstyled, {
+export const BasicStyledPopper = styled(PopperUnstyled, {
   shouldForwardProp: (propName: string) =>
     !['zIndex'].some(name => name === propName),
 })<{
-  zIndex?: number;
+  zIndex?: CSSProperties['zIndex'];
 }>(({ zIndex, theme }) => {
   return {
     zIndex: zIndex ?? theme.zIndex.popover,

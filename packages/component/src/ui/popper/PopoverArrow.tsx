@@ -11,7 +11,7 @@ export const PopperArrow = forwardRef<HTMLElement, PopperArrowProps>(
 );
 
 const getArrowStyle = (
-  placement: PopperArrowProps['placement'],
+  placement: PopperArrowProps['placement'] = 'bottom',
   backgroundColor: CSSProperties['backgroundColor']
 ) => {
   if (placement.indexOf('bottom') === 0) {
@@ -72,7 +72,7 @@ const getArrowStyle = (
 };
 
 const StyledArrow = styled('span')<{
-  placement: PopperArrowProps['placement'];
+  placement?: PopperArrowProps['placement'];
 }>(({ placement, theme }) => {
   return {
     position: 'absolute',

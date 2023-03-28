@@ -53,7 +53,7 @@ export const StyledCollapseButton = styled('button')<{
   };
 });
 
-export const StyledCollapseItem = styled('button')<{
+export const StyledCollapseItem = styled('div')<{
   disable?: boolean;
   active?: boolean;
   isOver?: boolean;
@@ -85,7 +85,7 @@ export const StyledCollapseItem = styled('button')<{
       color: active ? theme.colors.primaryColor : theme.colors.iconColor,
     },
     '.operation-button': {
-      display: 'none',
+      visibility: 'hidden',
     },
 
     ':hover': disable
@@ -93,7 +93,7 @@ export const StyledCollapseItem = styled('button')<{
       : {
           backgroundColor: theme.colors.hoverBackground,
           '.operation-button': {
-            display: 'flex',
+            visibility: 'visible',
           },
         },
   };
