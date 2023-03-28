@@ -24,6 +24,7 @@ export default defineConfig({
     testTimeout: 5000,
     coverage: {
       provider: 'istanbul', // or 'c8'
+      include: ['packages/**/src/**/*.{ts,tsx}', 'apps/web/src/**/*.{ts,tsx}'],
       reporter: ['lcov'],
       reportsDirectory: '.coverage/store',
     },
