@@ -32,6 +32,7 @@ jobs:
         with:
           name: storybook
           path: ./packages/component/storybook-static
+          if-no-files-found: error
 
   build:
     name: Build @affine/web
@@ -66,6 +67,7 @@ jobs:
         with:
           name: next-js
           path: ./apps/web/.next
+          if-no-files-found: error
 
   e2e-test:
     name: E2E Test
@@ -97,14 +99,12 @@ jobs:
         with:
           name: next-js
           path: ./apps/web/.next
-          if-no-files-found: error
 
       - name: Download storybook artifact
         uses: actions/download-artifact@v3
         with:
           name: storybook
           path: ./packages/component/storybook-static
-          if-no-files-found: error
 
       - name: Run playwright tests
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
