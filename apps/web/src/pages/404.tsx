@@ -28,7 +28,7 @@ export const NotfoundPage = () => {
   const router = useRouter();
   return (
     <StyledContainer data-testid="notFound">
-      <Image alt="404" src="/imgs/invite-error.svg"></Image>
+      <Image alt="404" src="/imgs/invite-error.svg" width={360} height={270} />
 
       <p>{t('404 - Page Not Found')}</p>
       <Button

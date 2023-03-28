@@ -29,7 +29,13 @@ const InvitePage: NextPageWithLayout = () => {
   if (inviteData?.accepted) {
     return (
       <StyledContainer>
-        <Image src="/imgs/invite-success.svg" alt="" />
+        <Image
+          src="/imgs/invite-success.svg"
+          alt=""
+          layout="fill"
+          width={300}
+          height={300}
+        />
         <Button
           type="primary"
           shape="round"
