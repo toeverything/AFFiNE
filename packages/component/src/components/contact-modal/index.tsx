@@ -6,7 +6,6 @@ import {
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 
-import logo from './affine-text-logo.png';
 import {
   DiscordIcon,
   DocIcon,
@@ -54,15 +53,17 @@ const linkList = [
   },
 ];
 
-type TransitionsModalProps = {
+export type ContactModalProps = {
   open: boolean;
   onClose: () => void;
+  logoSrc: string;
 };
 
 export const ContactModal = ({
   open,
   onClose,
-}: TransitionsModalProps): JSX.Element => {
+  logoSrc,
+}: ContactModalProps): JSX.Element => {
   const { t } = useTranslation();
   const topLinkList = [
     {
@@ -84,7 +85,7 @@ export const ContactModal = ({
     <Modal open={open} onClose={onClose} data-testid="contact-us-modal-content">
       <ModalWrapper width={720} height={436} style={{ letterSpacing: '1px' }}>
         <StyledModalHeader>
-          <StyledLogo src={logo.src} alt="" />
+          <StyledLogo src={logoSrc} alt="" />
 
           <ModalCloseButton
             onClick={() => {
@@ -124,10 +125,14 @@ export const ContactModal = ({
         <StyledModalFooter>
           <p>Copyright &copy; {year} Toeverything</p>
           <StyledPrivacyContainer>
-            <a href="https://affine.pro/terms" target="_blank">
+            <a href="https://affine.pro/terms" target="_blank" rel="noreferrer">
               Terms
             </a>
-            <a href="https://affine.pro/privacy" target="_blank">
+            <a
+              href="https://affine.pro/privacy"
+              target="_blank"
+              rel="noreferrer"
+            >
               Privacy
             </a>
           </StyledPrivacyContainer>
@@ -136,5 +141,3 @@ export const ContactModal = ({
     </Modal>
   );
 };
-
-export default ContactModal;
