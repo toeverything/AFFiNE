@@ -1,12 +1,14 @@
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
+import { waitMarkdownImported } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { createWorkspace } from '../libs/workspace';
 
 test.describe('Open AFFiNE', () => {
   test('Open last workspace when back to affine', async ({ page }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     await createWorkspace({ name: 'New Workspace 2' }, page);
     // FIXME: can not get when the new workspace is surely created, hack a timeout to wait
     // waiting for page loading end

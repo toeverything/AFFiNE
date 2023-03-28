@@ -51,6 +51,15 @@ export function _initPageWithDemoMarkdown(
   const frameId = page.addBlock('affine:frame', {}, pageBlockId);
   page.addBlock('affine:paragraph', {}, frameId);
   const contentParser = new ContentParser(page);
-  contentParser.importMarkdown(demoText, frameId);
+  contentParser.importMarkdown(demoText, frameId).then(() => {
+    document.dispatchEvent(
+      new CustomEvent('markdown:imported', {
+        detail: {
+          workspaceId: page.workspace.id,
+          pageId: page.id,
+        },
+      })
+    );
+  });
   page.workspace.setPageMeta(page.id, { demoTitle });
 }
