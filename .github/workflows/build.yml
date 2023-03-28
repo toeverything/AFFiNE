@@ -17,8 +17,25 @@ jobs:
         uses: ./.github/actions/setup-node
       - run: yarn lint --max-warnings=0
 
+  build-storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn build:storybook
+      - name: Upload storybook artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+          if-no-files-found: error
+
   build:
-    name: Build on Pull Request
+    name: Build @affine/web
     runs-on: ubuntu-latest
     environment: development
 
@@ -48,8 +65,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: artifact
+          name: next-js
           path: ./apps/web/.next
+          if-no-files-found: error
 
   e2e-test:
     name: E2E Test
@@ -59,7 +77,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: [build]
+    needs: [build, build-storybook]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -79,8 +97,14 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: artifact
+          name: next-js
           path: ./apps/web/.next
+
+      - name: Download storybook artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
 
       - name: Run playwright tests
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}

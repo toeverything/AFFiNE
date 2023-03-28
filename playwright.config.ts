@@ -56,7 +56,8 @@ const config: PlaywrightTestConfig = {
       },
     },
     {
-      command: 'yarn run build:storybook && yarn run start:storybook',
+      // Intentionally not building the storybook, reminds you to run it by yourself.
+      command: 'yarn run start:storybook',
       port: 6006,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
