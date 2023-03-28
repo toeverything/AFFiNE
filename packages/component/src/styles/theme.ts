@@ -32,7 +32,7 @@ export const getLightTheme = (
 
       textColor: '#424149',
       secondaryTextColor: '#8E8D91',
-      textEmphasisColor: '#424149',
+      textEmphasisColor: '#5438FF',
       edgelessTextColor: '#3A4C5C',
       iconColor: '#77757D',
       handleColor: '#c7c3d9',
