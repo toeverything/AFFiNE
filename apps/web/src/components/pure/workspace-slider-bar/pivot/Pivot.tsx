@@ -1,7 +1,7 @@
 import { MuiCollapse, TreeView } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { useTranslation } from '@affine/i18n';
-import { ArrowDownSmallIcon, FolderIcon } from '@blocksuite/icons';
+import { ArrowDownSmallIcon, PivotsIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import { useCallback, useMemo, useState } from 'react';
@@ -214,7 +214,7 @@ export const Pivot = ({
         >
           <ArrowDownSmallIcon />
         </StyledCollapseButton>
-        <FolderIcon />
+        <PivotsIcon />
         {t('Pivots')}
       </StyledListItem>
 
