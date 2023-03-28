@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 
 import {
   StyledCollapse,
   StyledNodeLine,
   StyledTreeNodeContainer,
-  StyledTreeNodeItem,
+  StyledTreeNodeWrapper,
 } from './styles';
-import type { Node, NodeLIneProps, TreeNodeProps } from './types';
+import type {
+  Node,
+  NodeLIneProps,
+  TreeNodeItemProps,
+  TreeNodeProps,
+} from './types';
 
 const NodeLine = <N,>({
   node,
@@ -39,30 +44,21 @@ const NodeLine = <N,>({
 
   return <StyledNodeLine ref={drop} show={isOver && allowDrop} isTop={isTop} />;
 };
-
-export const TreeNode = <N,>({
+const TreeNodeItem = <N,>({
   node,
-  index,
-  allDrop = true,
+  allowDrop,
+  collapsed,
+  setCollapsed,
   ...otherProps
-}: TreeNodeProps<N>) => {
-  const { onAdd, onDelete, onDrop, indent } = otherProps;
-  const [collapsed, setCollapsed] = useState(false);
-
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'node',
-    item: node,
-    collect: monitor => ({
-      isDragging: monitor.isDragging(),
-    }),
-  }));
+}: TreeNodeItemProps<N>) => {
+  const { onAdd, onDelete, onDrop } = otherProps;
 
   const [{ canDrop, isOver }, drop] = useDrop(
     () => ({
       accept: 'node',
       drop: (item: Node<N>, monitor) => {
         const didDrop = monitor.didDrop();
-        if (didDrop || item.id === node.id || !allDrop) {
+        if (didDrop || item.id === node.id || !allowDrop) {
           return;
         }
         onDrop?.(item, node, {
@@ -73,42 +69,75 @@ export const TreeNode = <N,>({
       },
       collect: monitor => ({
         isOver: monitor.isOver(),
-        canDrop: monitor.canDrop(),
+        canDrop: monitor.canDrop() && allowDrop,
       }),
     }),
-    [onDrop, allDrop]
+    [onDrop, allowDrop]
   );
+
+  useEffect(() => {
+    if (isOver && canDrop) {
+      setCollapsed(false);
+    }
+  }, [isOver, canDrop]);
+
+  return (
+    <div ref={drop}>
+      {node.render?.(node, {
+        isOver: !!(isOver && canDrop),
+        onAdd: () => onAdd?.(node),
+        onDelete: () => onDelete?.(node),
+        collapsed,
+        setCollapsed,
+      })}
+    </div>
+  );
+};
+
+export const TreeNode = <N,>({
+  node,
+  index,
+  allowDrop = true,
+  ...otherProps
+}: TreeNodeProps<N>) => {
+  const { indent } = otherProps;
+  const [collapsed, setCollapsed] = useState(false);
+
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'node',
+    item: node,
+    collect: monitor => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
 
   return (
     <StyledTreeNodeContainer ref={drag} isDragging={isDragging}>
-      <StyledTreeNodeItem
-        ref={drop}
-        isOver={isOver && !isDragging}
-        canDrop={canDrop}
-      >
+      <StyledTreeNodeWrapper>
         {index === 0 && (
           <NodeLine
             node={node}
             {...otherProps}
-            allowDrop={!isDragging && allDrop}
+            allowDrop={!isDragging && allowDrop}
             isTop={true}
           />
         )}
-        {node.render?.(node, {
-          onAdd: () => onAdd?.(node),
-          onDelete: () => onDelete?.(node),
-          collapsed,
-          setCollapsed,
-        })}
+        <TreeNodeItem
+          node={node}
+          index={index}
+          allowDrop={allowDrop}
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          {...otherProps}
+        />
         {(!node.children?.length || collapsed) && (
           <NodeLine
             node={node}
             {...otherProps}
-            allowDrop={!isDragging && allDrop}
+            allowDrop={!isDragging && allowDrop}
           />
         )}
-      </StyledTreeNodeItem>
-
+      </StyledTreeNodeWrapper>
       <StyledCollapse in={!collapsed} indent={indent}>
         {node.children &&
           node.children.map((childNode, index) => (
@@ -116,7 +145,7 @@ export const TreeNode = <N,>({
               key={childNode.id}
               node={childNode}
               index={index}
-              allDrop={isDragging ? false : allDrop}
+              allowDrop={isDragging ? false : allowDrop}
               {...otherProps}
             />
           ))}
