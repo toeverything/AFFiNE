@@ -13,6 +13,10 @@ inputs:
     description: 'Run the install step for the electron workspace.'
     required: false
     default: 'false'
+  playwright-install:
+    description: 'Run the install step for Playwright.'
+    required: false
+    default: 'false'
   npm-token:
     description: 'The NPM token to use for private packages.'
     required: false
@@ -89,8 +93,9 @@ runs:
 
     - name: Get installed Playwright version
       id: playwright-version
+      if: ${{ inputs.playwright-install == 'true' }}
       shell: bash
-      run: echo "::set-output name=version::$(yarn why --json @playwright/test | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://')"
+      run: echo "{version}=$(yarn why --json @playwright/test | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://')" >> GITHUB_OUTPUT
 
       # Attempt to restore the correct Playwright browser binaries based on the
       # currently installed version of Playwright (The browser binary versions
@@ -100,6 +105,7 @@ runs:
       # it out for us.
     - uses: actions/cache@v3
       id: playwright-cache
+      if: ${{ inputs.playwright-install == 'true' }}
       with:
         path: '~/.cache/ms-playwright'
         key: '${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}'
@@ -118,5 +124,5 @@ runs:
     # paywright to install everything for us.
     - name: Install Playwright's dependencies
       shell: bash
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      if: inputs.playwright-install == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
       run: yarn playwright install --with-deps
