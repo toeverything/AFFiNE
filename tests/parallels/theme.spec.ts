@@ -19,6 +19,8 @@ test.describe('Change Theme', () => {
     expect(themeMode).toBe('light');
 
     const lightButton = page.locator('[data-testid=change-theme-dark]');
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(50);
     expect(await lightButton.isVisible()).toBe(false);
   });
 
