@@ -26,10 +26,6 @@ export default defineConfig({
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],
       reportsDirectory: '.coverage/store',
-      exclude: [
-        // data center will be removed in the future
-        'packages/data-center',
-      ],
     },
   },
 });

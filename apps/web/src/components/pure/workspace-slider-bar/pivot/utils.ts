@@ -32,7 +32,11 @@ export const flattenToTree = (
       const returnedMeta: TreeNode = {
         ...internalMeta,
         children: helper(childrenMetas),
-        render: (node, props) => TreeNodeRender!(node, props, renderProps),
+        render: (node, props) =>
+          TreeNodeRender!(node, props, {
+            pageMeta: internalMeta,
+            ...renderProps,
+          }),
       };
       // @ts-ignore
       returnedMetas.push(returnedMeta);

@@ -4,13 +4,13 @@ import useSWR from 'swr';
 import { jotaiStore, jotaiWorkspacesAtom } from '../../atoms';
 import { QueryKey } from '../../plugins/affine/fetcher';
 import type { AffineWorkspace } from '../../shared';
-import { apis } from '../../shared/apis';
+import { affineApis } from '../../shared/apis';
 
 export function useToggleWorkspacePublish(workspace: AffineWorkspace) {
   const { mutate } = useSWR(QueryKey.getWorkspaces);
   return useCallback(
     async (isPublish: boolean) => {
-      await apis.updateWorkspace({
+      await affineApis.updateWorkspace({
         id: workspace.id,
         public: isPublish,
       });

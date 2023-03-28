@@ -5,7 +5,8 @@
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
     "./affine/*": "./src/affine/*.ts",
-    "./affine/api": "./src/affine/api/index.ts"
+    "./affine/api": "./src/affine/api/index.ts",
+    "./affine/sync": "./src/affine/sync.js"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:^",
@@ -18,6 +19,7 @@
     "jotai": "^2.0.3",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
+    "lib0": "^0.2.73",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zod": "^3.21.4"

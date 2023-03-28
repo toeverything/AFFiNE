@@ -2,7 +2,7 @@ import { assertExists } from '@blocksuite/store';
 
 import type { AffineDownloadProvider } from '../../../shared';
 import { BlockSuiteWorkspace } from '../../../shared';
-import { apis } from '../../../shared/apis';
+import { affineApis } from '../../../shared/apis';
 import { providerLogger } from '../../logger';
 
 const hashMap = new Map<string, ArrayBuffer>();
@@ -25,7 +25,7 @@ export const createAffineDownloadProvider = (
         );
         return;
       }
-      apis.downloadWorkspace(id, false).then(binary => {
+      affineApis.downloadWorkspace(id, false).then(binary => {
         hashMap.set(id, binary);
         providerLogger.debug('applyUpdate');
         BlockSuiteWorkspace.Y.applyUpdate(

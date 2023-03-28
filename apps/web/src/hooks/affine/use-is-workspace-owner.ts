@@ -1,4 +1,4 @@
-import { PermissionType } from '@affine/datacenter';
+import { PermissionType } from '@affine/workspace/affine/api';
 
 import type { AffineOfficialWorkspace } from '../../shared';
 

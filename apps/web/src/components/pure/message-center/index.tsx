@@ -1,10 +1,10 @@
-import { MessageCode } from '@affine/datacenter';
-import { messages } from '@affine/datacenter';
+import { MessageCode, Messages } from '@affine/env/constant';
+import { setLoginStorage, SignMethod } from '@affine/workspace/affine/login';
 import type React from 'react';
 import { memo, useEffect, useState } from 'react';
 
+import { affineAuth } from '../../../hooks/affine/use-affine-log-in';
 import { useAffineLogOut } from '../../../hooks/affine/use-affine-log-out';
-import { apis } from '../../../shared/apis';
 import { toast } from '../../../utils';
 
 declare global {
@@ -33,9 +33,12 @@ export const MessageCenter: React.FC = memo(function MessageCenter() {
           event.detail.code === MessageCode.loginError)
       ) {
         setPopup(true);
-        apis
-          .signInWithGoogle()
-          .then(() => {
+        affineAuth
+          .generateToken(SignMethod.Google)
+          .then(response => {
+            if (response) {
+              setLoginStorage(response);
+            }
             setPopup(false);
           })
           .catch(() => {
@@ -43,7 +46,7 @@ export const MessageCenter: React.FC = memo(function MessageCenter() {
             onLogout();
           });
       } else {
-        toast(messages[event.detail.code].message);
+        toast(Messages[event.detail.code].message);
       }
     };
 

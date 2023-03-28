@@ -10,6 +10,16 @@ const { node } = JSON.parse(
   )
 );
 
+const nativeNodeModulesPlugin = {
+  name: 'native-node-modules',
+  setup(build) {
+    // Mark native Node.js modules as external
+    build.onResolve({ filter: /\.node$/, namespace: 'file' }, args => {
+      return { path: args.path, external: true };
+    });
+  },
+};
+
 /** @type {import('esbuild').BuildOptions} */
 export const mainConfig = {
   entryPoints: ['layers/main/src/index.ts'],
@@ -18,6 +28,7 @@ export const mainConfig = {
   target: `node${node}`,
   platform: 'node',
   external: ['electron'],
+  plugins: [nativeNodeModulesPlugin],
 };
 
 export const preloadConfig = {

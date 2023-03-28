@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 export async function newPage(page: Page) {
   await page.waitForSelector('v-line');
   // fixme(himself65): if too fast, the page will crash
-  await page.getByTestId('sliderBar').getByText('New Page').click({
+  await page.getByTestId('new-page-button').click({
     delay: 100,
   });
   await page.waitForSelector('v-line');

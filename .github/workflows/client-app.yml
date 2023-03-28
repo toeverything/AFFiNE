@@ -139,7 +139,7 @@ jobs:
           path: apps/electron/dist
 
       - name: build octobase-node
-        run: yarn build:octobase-node
+        run: yarn build:octobase-node --target=aarch64-apple-darwin
         working-directory: apps/electron
 
       - name: move octobase Binary

@@ -54,6 +54,7 @@ async function main() {
     const preloadBuild = await esbuild.context({
       ...preloadConfig,
       plugins: [
+        ...(preloadConfig.plugins ?? []),
         {
           name: 'affine-dev:reload-app-on-preload-change',
           setup(build) {
@@ -86,6 +87,7 @@ async function main() {
         'process.env.DEV_SERVER_URL': `"${process.env.DEV_SERVER_URL}"`,
       },
       plugins: [
+        ...(mainConfig.plugins ?? []),
         {
           name: 'affine-dev:reload-app-on-main-change',
           setup(build) {

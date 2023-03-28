@@ -1,3 +1,4 @@
+import { getLoginStorage } from '@affine/workspace/affine/login';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { createJSONStorage } from 'jotai/utils';
@@ -12,8 +13,8 @@ import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import type { AffineWorkspace } from '../../shared';
 import { BlockSuiteWorkspace } from '../../shared';
-import { apis, clientAuth } from '../../shared/apis';
-import { initPage } from '../../utils/blocksuite';
+import { affineApis } from '../../shared/apis';
+import { initPage } from '../../utils';
 import type { WorkspacePlugin } from '..';
 import { QueryKey } from './fetcher';
 
@@ -39,7 +40,7 @@ const getPersistenceAllWorkspace = () => {
           item.id,
           (k: string) =>
             // fixme: token could be expired
-            ({ api: '/api/workspace', token: apis.auth.token }[k])
+            ({ api: '/api/workspace', token: getLoginStorage()?.token }[k])
         );
         const affineWorkspace: AffineWorkspace = {
           ...item,
@@ -65,7 +66,9 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(
         blockSuiteWorkspace.doc
       );
-      const { id } = await apis.createWorkspace(new Blob([binary.buffer]));
+      const { id } = await affineApis.createWorkspace(
+        new Blob([binary.buffer])
+      );
       // fixme: syncing images
       const newWorkspaceId = id;
 
@@ -77,12 +80,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           const url = await blobs.get(id);
           if (url) {
             const blob = await fetch(url).then(res => res.blob());
-            await clientAuth.put(`api/workspace/${newWorkspaceId}/blob`, {
-              body: blob,
-              headers: {
-                'Content-Type': blob.type,
-              },
-            });
+            await affineApis.uploadBlob(newWorkspaceId, blob);
           }
         }
       }
@@ -103,14 +101,14 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           items.filter(item => item.id !== workspace.id)
         );
       }
-      await apis.deleteWorkspace({
+      await affineApis.deleteWorkspace({
         id: workspace.id,
       });
       await mutate(matcher => matcher === QueryKey.getWorkspaces);
     },
     get: async workspaceId => {
       try {
-        if (!apis.auth.isLogin) {
+        if (!getLoginStorage()) {
           const workspaces = getPersistenceAllWorkspace();
           return (
             workspaces.find(workspace => workspace.id === workspaceId) ?? null
@@ -130,69 +128,65 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
     list: async () => {
       const allWorkspaces = getPersistenceAllWorkspace();
       try {
-        if (apis.auth.isLogin) {
-          const workspaces = await apis.getWorkspaces().then(workspaces => {
-            return workspaces.map(workspace => {
-              const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-                workspace.id,
-                (k: string) =>
-                  // fixme: token could be expired
-                  ({ api: '/api/workspace', token: apis.auth.token }[k])
-              );
-              const dump = workspaces.map(workspace => {
-                return {
-                  id: workspace.id,
-                  type: workspace.type,
-                  public: workspace.public,
-                  permission: workspace.permission,
-                } satisfies z.infer<typeof schema>;
-              });
-              const old = storage.getItem(kAffineLocal);
-              if (
-                Array.isArray(old) &&
-                old.every(item => schema.safeParse(item).success)
-              ) {
-                const data = [...dump];
-                old.forEach((item: z.infer<typeof schema>) => {
-                  const has = dump.find(dump => dump.id === item.id);
-                  if (!has) {
-                    data.push(item);
-                  }
-                });
-                storage.setItem(kAffineLocal, [...data]);
-              }
-
-              const affineWorkspace: AffineWorkspace = {
-                ...workspace,
-                flavour: WorkspaceFlavour.AFFINE,
-                blockSuiteWorkspace,
-                providers: [...createAffineProviders(blockSuiteWorkspace)],
-              };
-              return affineWorkspace;
-            });
-          });
-          workspaces.forEach(workspace => {
-            const idx = allWorkspaces.findIndex(
-              ({ id }) => id === workspace.id
+        const workspaces = await affineApis.getWorkspaces().then(workspaces => {
+          return workspaces.map(workspace => {
+            const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
+              workspace.id,
+              (k: string) =>
+                // fixme: token could be expired
+                ({ api: '/api/workspace', token: getLoginStorage()?.token }[k])
             );
-            if (idx !== -1) {
-              allWorkspaces.splice(idx, 1, workspace);
-            } else {
-              allWorkspaces.push(workspace);
+            const dump = workspaces.map(workspace => {
+              return {
+                id: workspace.id,
+                type: workspace.type,
+                public: workspace.public,
+                permission: workspace.permission,
+              } satisfies z.infer<typeof schema>;
+            });
+            const old = storage.getItem(kAffineLocal);
+            if (
+              Array.isArray(old) &&
+              old.every(item => schema.safeParse(item).success)
+            ) {
+              const data = [...dump];
+              old.forEach((item: z.infer<typeof schema>) => {
+                const has = dump.find(dump => dump.id === item.id);
+                if (!has) {
+                  data.push(item);
+                }
+              });
+              storage.setItem(kAffineLocal, [...data]);
             }
-          });
 
-          // only save data when login in
-          const dump = allWorkspaces.map(workspace => {
-            return {
-              id: workspace.id,
-              type: workspace.type,
-              public: workspace.public,
-              permission: workspace.permission,
-            } satisfies z.infer<typeof schema>;
+            const affineWorkspace: AffineWorkspace = {
+              ...workspace,
+              flavour: WorkspaceFlavour.AFFINE,
+              blockSuiteWorkspace,
+              providers: [...createAffineProviders(blockSuiteWorkspace)],
+            };
+            return affineWorkspace;
           });
-          storage.setItem(kAffineLocal, [...dump]);
-        }
+        });
+        workspaces.forEach(workspace => {
+          const idx = allWorkspaces.findIndex(({ id }) => id === workspace.id);
+          if (idx !== -1) {
+            allWorkspaces.splice(idx, 1, workspace);
+          } else {
+            allWorkspaces.push(workspace);
+          }
+        });
+
+        // only save data when login in
+        const dump = allWorkspaces.map(workspace => {
+          return {
+            id: workspace.id,
+            type: workspace.type,
+            public: workspace.public,
+            permission: workspace.permission,
+          } satisfies z.infer<typeof schema>;
+        });
+        storage.setItem(kAffineLocal, [...dump]);
       } catch (e) {
         console.error('fetch affine workspaces failed', e);
       }

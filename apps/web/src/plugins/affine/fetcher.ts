@@ -1,3 +1,4 @@
+import { getLoginStorage } from '@affine/workspace/affine/login';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
@@ -6,7 +7,7 @@ import { jotaiStore, workspacesAtom } from '../../atoms';
 import { createAffineProviders } from '../../blocksuite';
 import { Unreachable } from '../../components/affine/affine-error-eoundary';
 import type { AffineWorkspace } from '../../shared';
-import { apis } from '../../shared/apis';
+import { affineApis } from '../../shared/apis';
 
 type Query = (typeof QueryKey)[keyof typeof QueryKey];
 
@@ -17,24 +18,21 @@ export const fetcher = async (
     | [Query, string]
     | [Query, string, string]
 ) => {
-  if (query === QueryKey.getUser) {
-    return apis.auth.user ?? null;
-  }
   if (Array.isArray(query)) {
     if (query[0] === QueryKey.downloadWorkspace) {
       if (typeof query[2] !== 'boolean') {
         throw new Unreachable();
       }
-      return apis.downloadWorkspace(query[1], query[2]);
+      return affineApis.downloadWorkspace(query[1], query[2]);
     } else if (query[0] === QueryKey.getMembers) {
-      return apis.getWorkspaceMembers({
+      return affineApis.getWorkspaceMembers({
         id: query[1],
       });
     } else if (query[0] === QueryKey.getUserByEmail) {
       if (typeof query[2] !== 'string') {
         throw new Unreachable();
       }
-      return apis.getUserByEmail({
+      return affineApis.getUserByEmail({
         workspace_id: query[1],
         email: query[2],
       });
@@ -57,19 +55,19 @@ export const fetcher = async (
       if (typeof invitingCode !== 'string') {
         throw new TypeError('invitingCode must be a string');
       }
-      return apis.acceptInviting({
+      return affineApis.acceptInviting({
         invitingCode,
       });
     }
   } else {
     if (query === QueryKey.getWorkspaces) {
-      return apis.getWorkspaces().then(workspaces => {
+      return affineApis.getWorkspaces().then(workspaces => {
         return workspaces.map(workspace => {
           const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
             workspace.id,
             (k: string) =>
               // fixme: token could be expired
-              ({ api: '/api/workspace', token: apis.auth.token }[k])
+              ({ api: '/api/workspace', token: getLoginStorage()?.token }[k])
           );
           const remWorkspace: AffineWorkspace = {
             ...workspace,
@@ -81,14 +79,13 @@ export const fetcher = async (
         });
       });
     }
-    return (apis as any)[query]();
+    return (affineApis as any)[query]();
   }
 };
 
 export const QueryKey = {
   acceptInvite: 'acceptInvite',
   getImage: 'getImage',
-  getUser: 'getUser',
   getWorkspaces: 'getWorkspaces',
   downloadWorkspace: 'downloadWorkspace',
   getMembers: 'getMembers',

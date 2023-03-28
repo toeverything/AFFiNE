@@ -1,4 +1,4 @@
-import type { Workspace as RemoteWorkspace } from '@affine/datacenter';
+import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { NextPage } from 'next';

@@ -16,6 +16,10 @@ import {
   openWorkspacesModalAtom,
   workspaceLockAtom,
 } from '../atoms';
+import {
+  publicBlockSuiteAtom,
+  publicWorkspaceIdAtom,
+} from '../atoms/public-workspace';
 import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
@@ -41,6 +45,48 @@ declare global {
 const QuickSearchModal = dynamic(
   () => import('../components/pure/quick-search-modal')
 );
+
+export const PublicQuickSearch: React.FC = () => {
+  const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
+  const router = useRouter();
+  const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
+    openQuickSearchModalAtom
+  );
+  return (
+    <QuickSearchModal
+      blockSuiteWorkspace={blockSuiteWorkspace}
+      open={openQuickSearchModal}
+      setOpen={setOpenQuickSearchModalAtom}
+      router={router}
+    />
+  );
+};
+
+export const QuickSearch: React.FC = () => {
+  const [currentWorkspace] = useCurrentWorkspace();
+  const router = useRouter();
+  const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
+    openQuickSearchModalAtom
+  );
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const isPublicWorkspace =
+    router.pathname.split('/')[1] === 'public-workspace';
+  const publicWorkspaceId = useAtomValue(publicWorkspaceIdAtom);
+  if (!blockSuiteWorkspace) {
+    if (isPublicWorkspace && publicWorkspaceId) {
+      return <PublicQuickSearch />;
+    }
+    return null;
+  }
+  return (
+    <QuickSearchModal
+      blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
+      open={openQuickSearchModal}
+      setOpen={setOpenQuickSearchModalAtom}
+      router={router}
+    />
+  );
+};
 
 const logger = new DebugLogger('workspace-layout');
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
@@ -217,14 +263,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           </StyledToolWrapper>
         </StyledWrapper>
       </StyledPage>
-      {currentWorkspace?.blockSuiteWorkspace && (
-        <QuickSearchModal
-          blockSuiteWorkspace={currentWorkspace?.blockSuiteWorkspace}
-          open={openQuickSearchModal}
-          setOpen={setOpenQuickSearchModalAtom}
-          router={router}
-        />
-      )}
+      <QuickSearch />
     </>
   );
 };
