@@ -91,7 +91,7 @@ const nextConfig = {
     });
     config.resolve.alias['yjs'] = require.resolve('yjs');
 
-    if (!isServer && !dev) {
+    if (!isServer && !dev && process.env.PERFSEE_TOKEN) {
       config.devtool = 'hidden-nosources-source-map';
       const perfsee = new PerfseePlugin({
         project: 'affine-toeverything',
