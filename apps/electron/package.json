@@ -6,6 +6,10 @@
   "author": "affine",
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
+  "workspaces": [
+    "../../packages/*",
+    "../../tests/fixtures"
+  ],
   "scripts": {
     "dev": "cross-env NODE_ENV=development node scripts/dev.mjs",
     "prod": "cross-env NODE_ENV=production node scripts/dev.mjs",
@@ -42,9 +46,5 @@
     "electron-window-state": "^5.0.3",
     "fs-extra": "^11.1.1"
   },
-  "dependenciesMeta": {
-    "electron": {
-      "built": false
-    }
-  }
+  "packageManager": "yarn@3.5.0"
 }
