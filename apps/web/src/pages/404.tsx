@@ -1,11 +1,9 @@
 import { Button, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import Head from 'next/head';
-import Image from 'next/image';
+import Image from 'next/legacy/image';
 import { useRouter } from 'next/router';
 import React from 'react';
-
-import ErrorImg from '../../public/imgs/invite-error.svg';
 
 export const StyledContainer = styled('div')(() => {
   return {
@@ -30,7 +28,7 @@ export const NotfoundPage = () => {
   const router = useRouter();
   return (
     <StyledContainer data-testid="notFound">
-      <Image alt="404" src={ErrorImg}></Image>
+      <Image alt="404" src="/imgs/invite-error.svg"></Image>
 
       <p>{t('404 - Page Not Found')}</p>
       <Button
