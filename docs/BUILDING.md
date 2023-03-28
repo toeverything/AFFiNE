@@ -42,8 +42,8 @@ yarn install
 
 ```shell
 # Run OctoBase container in background
-docker pull ghcr.io/toeverything/cloud:nightly-latest
-docker run --env=SIGN_KEY=test123 --env=RUST_LOG=debug --env=JWST_DEV=1 --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --workdir=/app -p 3000:3000 --runtime=runc -d ghcr.io/toeverything/cloud:nightly-latest
+docker pull ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+docker run --env=SIGN_KEY=test123 --env=RUST_LOG=debug --env=JWST_DEV=1 --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --workdir=/app -p 3000:3000 --runtime=runc -d ghcr.io/toeverything/cloud-self-hosted:nightly-latest
 ```
 
 ```shell

@@ -163,7 +163,7 @@ jobs:
       checks: write
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
         ports:
           - 3000:3000
         env:
@@ -274,7 +274,7 @@ jobs:
       checks: write
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
         ports:
           - 3000:3000
         env:
@@ -358,5 +358,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./.coverage/store/lcov.info
           flags: unittest
+          override_pr: ${{ github.event.issue.id }}
           name: affine
           fail_ci_if_error: true
