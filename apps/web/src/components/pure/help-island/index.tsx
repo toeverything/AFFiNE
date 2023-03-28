@@ -4,6 +4,15 @@ import { CloseIcon } from '@blocksuite/icons';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
+import { ShortcutsModal } from '../shortcuts-modal';
+import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
+import {
+  StyledAnimateWrapper,
+  StyledIconWrapper,
+  StyledIsland,
+  StyledTriggerWrapper,
+} from './style';
+
 const ContactModal = dynamic(
   () =>
     import('@affine/component/contact-modal').then(({ ContactModal }) => ({
@@ -13,14 +22,6 @@ const ContactModal = dynamic(
     ssr: true,
   }
 );
-import { ShortcutsModal } from '../shortcuts-modal';
-import { ContactIcon, HelpIcon, KeyboardIcon } from './Icons';
-import {
-  StyledAnimateWrapper,
-  StyledIconWrapper,
-  StyledIsland,
-  StyledTriggerWrapper,
-} from './style';
 
 export type IslandItemNames = 'contact' | 'shortcuts';
 export const HelpIsland = ({
