@@ -52,6 +52,12 @@ runs:
         restore-keys: |
           yarn-download-cache-
 
+    - name: Restore node_modules cache
+      uses: actions/cache@v3
+      with:
+        path: '**/node_modules'
+        key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
     - name: Restore yarn install state
       id: yarn-install-state-cache
       uses: actions/cache@v3
