@@ -72,6 +72,17 @@ runs:
         YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
         HUSKY: '0'
 
+    - name: yarn install (electron)
+      if: ${{ inputs.package-install == 'true' }}
+      shell: bash
+      run: yarn install ${{ inputs.extra-flags }}
+      working-directory: packages/electron
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+        YARN_ENABLE_GLOBAL_CACHE: 'false'
+        YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
+        HUSKY: '0'
+
     - name: Get installed Playwright version
       id: playwright-version
       shell: bash

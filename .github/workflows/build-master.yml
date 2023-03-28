@@ -95,7 +95,7 @@ jobs:
     needs: build-frontend
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
         ports:
           - 3000:3000
         env:
@@ -148,7 +148,7 @@ jobs:
     needs: build-frontend
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
         ports:
           - 3000:3000
         env:
