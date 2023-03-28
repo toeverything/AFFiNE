@@ -17,7 +17,7 @@ import type { TreeNode } from './types';
 
 export const TreeNodeRender: TreeNode['render'] = (
   node,
-  { onAdd, onDelete, collapsed, setCollapsed },
+  { isOver, onAdd, onDelete, collapsed, setCollapsed },
   extendProps
 ) => {
   const { openPage, pageMeta } = extendProps as {
@@ -37,6 +37,7 @@ export const TreeNodeRender: TreeNode['render'] = (
         }
         openPage(node.id);
       }}
+      isOver={isOver}
       active={active}
     >
       <StyledCollapseButton
