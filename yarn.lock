@@ -141,6 +141,9 @@ __metadata:
     esbuild: ^0.17.12
     fs-extra: ^11.1.1
     zx: ^7.2.1
+  dependenciesMeta:
+    electron:
+      built: false
   languageName: unknown
   linkType: soft
 
