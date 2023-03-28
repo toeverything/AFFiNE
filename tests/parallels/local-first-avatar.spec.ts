@@ -1,13 +1,14 @@
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
-import { newPage } from '../libs/page-logic';
+import { newPage, waitMarkdownImported } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 
 test.describe('Local first create page', () => {
   test('should create a page with a local first avatar', async ({ page }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     await newPage(page);
     await page.getByTestId('workspace-name').click();
     await page.getByTestId('new-workspace').click({ delay: 50 });
