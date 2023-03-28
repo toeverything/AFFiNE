@@ -1,7 +1,7 @@
 import { Button, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import Head from 'next/head';
-import Image from 'next/image';
+import Image from 'next/legacy/image';
 import { useRouter } from 'next/router';
 import React from 'react';
 
