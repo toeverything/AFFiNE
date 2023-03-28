@@ -11,6 +11,8 @@ test.describe('Change Theme', () => {
     });
     const page = await context.newPage();
     await openHomePage(page);
+    // wait for the introduction page to load
+    await page.waitForSelector('v-line');
     await page.waitForSelector('html');
     const root = page.locator('html');
     const themeMode = await root.evaluate(element =>
