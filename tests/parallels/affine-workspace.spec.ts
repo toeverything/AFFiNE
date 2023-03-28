@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test';
 
+import { waitMarkdownImported } from '../libs/page-logic';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const userA = require('../fixtures/userA.json');
 import { test } from '../libs/playwright';
@@ -19,6 +21,7 @@ import {
 test.describe('affine workspace', () => {
   test('should login with user A', async ({ page }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     const [a] = await createFakeUser();
     await loginUser(page, a);
     await clickSideBarCurrentWorkspaceBanner(page);
@@ -30,6 +33,7 @@ test.describe('affine workspace', () => {
 
   test('should enable affine workspace successfully', async ({ page }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     const [a] = await createFakeUser();
     await loginUser(page, a);
     const name = `test-${Date.now()}`;

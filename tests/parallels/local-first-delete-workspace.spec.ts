@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
+import { waitMarkdownImported } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { clickSideBarSettingButton } from '../libs/sidebar';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
@@ -10,6 +11,7 @@ test.describe('Local first delete workspace', () => {
     page,
   }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     await clickSideBarSettingButton(page);
     await page.getByTestId('delete-workspace-button').click();
     const workspaceNameDom = await page.getByTestId('workspace-name');

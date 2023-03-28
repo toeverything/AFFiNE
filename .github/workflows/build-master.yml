@@ -95,7 +95,7 @@ jobs:
     needs: build-frontend
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
         ports:
           - 3000:3000
         env:
@@ -110,6 +110,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -148,7 +150,7 @@ jobs:
     needs: build-frontend
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
         ports:
           - 3000:3000
         env:

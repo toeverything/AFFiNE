@@ -5,6 +5,7 @@ import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
+  waitMarkdownImported,
 } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
@@ -12,6 +13,7 @@ import { assertCurrentWorkspaceFlavour } from '../libs/workspace';
 test.describe('Local first favorite items ui', () => {
   test('Show favorite items in sidebar', async ({ page }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     await newPage(page);
     await getBlockSuiteEditorTitle(page).click();
     await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
@@ -36,6 +38,7 @@ test.describe('Local first favorite items ui', () => {
 
   test('Show favorite items in favorite list', async ({ page }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     await newPage(page);
     await getBlockSuiteEditorTitle(page).click();
     await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');

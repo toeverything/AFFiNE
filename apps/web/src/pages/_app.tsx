@@ -30,7 +30,6 @@ type AppPropsWithLayout = AppProps & {
 const EmptyLayout = (page: ReactElement) => page;
 
 const clientSideEmotionCache = createEmotionCache();
-const helmetContext = {};
 
 const App = function App({
   Component,

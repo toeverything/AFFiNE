@@ -57,6 +57,7 @@ export function getUaHelper() {
       public isFireFox = false;
       public isMobile = false;
       public isChrome = false;
+      public isIOS = false;
 
       getChromeVersion = (): number => {
         const raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
@@ -81,6 +82,7 @@ export function getUaHelper() {
         this.isFireFox = this.checkUseragent('firefox');
         this.isMobile = this.checkUseragent('mobile');
         this.isChrome = this.checkUseragent('chrome');
+        this.isIOS = this.checkUseragent('ios');
       }
     }
     uaHelper = new UaHelper();
