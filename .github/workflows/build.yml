@@ -358,5 +358,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./.coverage/store/lcov.info
           flags: unittest
+          override_pr: ${{ github.event.issue.id }}
           name: affine
           fail_ci_if_error: true
