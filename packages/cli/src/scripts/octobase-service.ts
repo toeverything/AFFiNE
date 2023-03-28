@@ -1,4 +1,3 @@
-#!/usr/bin/env ts-node-esm
 import { spawn } from 'node:child_process';
 
 import * as p from '@clack/prompts';
