@@ -4,7 +4,7 @@ inputs:
   extra-flags:
     description: 'Extra flags to pass to the yarn install.'
     required: false
-    default: '--immutable'
+    default: '--immutable --inline-builds'
   package-install:
     description: 'Run the install step.'
     required: false
@@ -29,18 +29,27 @@ runs:
       shell: bash
       run: node scripts/module-resolve/ci.cjs
 
-    - name: Get yarn cache directory path
-      id: yarn-cache-dir-path
+    - name: Expose yarn config as "$GITHUB_OUTPUT"
+      id: yarn-config
       shell: bash
-      run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      run: |
+        echo "CACHE_FOLDER=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
-    - uses: actions/cache@v3
-      id: yarn-cache
+    - name: Restore yarn cache
+      uses: actions/cache@v3
+      id: yarn-download-cache
       with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        path: ${{ steps.yarn-config.outputs.CACHE_FOLDER }}
+        key: yarn-download-cache-${{ hashFiles('yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-yarn-
+          yarn-download-cache-
+
+    - name: Restore yarn install state
+      id: yarn-install-state-cache
+      uses: actions/cache@v3
+      with:
+        path: .yarn/ci-cache/
+        key: ${{ runner.os }}-yarn-install-state-cache-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
 
     - name: yarn install
       if: ${{ inputs.package-install == 'true' }}
@@ -49,6 +58,9 @@ runs:
       run: yarn install ${{ inputs.extra-flags }}
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+        YARN_ENABLE_GLOBAL_CACHE: 'false'
+        YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
+        HUSKY: '0'
 
     - name: yarn install (try again)
       if: ${{ steps.install.outcome == 'failure' }}
@@ -56,6 +68,9 @@ runs:
       run: yarn install ${{ inputs.extra-flags }}
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+        YARN_ENABLE_GLOBAL_CACHE: 'false'
+        YARN_INSTALL_STATE_PATH: .yarn/ci-cache/install-state.gz
+        HUSKY: '0'
 
     - name: Get installed Playwright version
       id: playwright-version
