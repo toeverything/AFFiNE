@@ -88,7 +88,7 @@ export class AffineErrorBoundary extends Component<
               <span> Page error </span>
               <span>
                 Cannot find page {error.pageId} in workspace{' '}
-                {error.workspace.meta.name}
+                {error.workspace.id}
               </span>
               <button
                 onClick={() => {

@@ -15,7 +15,7 @@ export const StyledHeaderContainer = styled('div')<{ hasWarning: boolean }>(
 export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
   ({ theme }) => {
     return {
-      height: '48px',
+      height: '60px',
       width: '100%',
       padding: '0 20px',
       ...displayFlex('space-between', 'center'),

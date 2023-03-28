@@ -18,7 +18,7 @@ import { WorkspaceAvatar } from '../../components/pure/footer';
 import { PageLoading } from '../../components/pure/loading';
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '../../hooks/use-blocksuite-workspace-name';
-import { WorkspaceLayout } from '../../layouts';
+import { PublicWorkspaceLayout } from '../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../shared';
 import { NavContainer, StyledBreadcrumbs } from './[workspaceId]/[pageId]';
 
@@ -59,7 +59,7 @@ const ListPageInner: React.FC<{
   }
   return (
     <>
-      <NavContainer>
+      <NavContainer sx={{ px: '20px' }}>
         <Breadcrumbs>
           <StyledBreadcrumbs
             href={`/public-workspace/${blockSuiteWorkspace.id}`}
@@ -123,5 +123,5 @@ const ListPage: NextPageWithLayout = () => {
 export default ListPage;
 
 ListPage.getLayout = page => {
-  return <WorkspaceLayout>{page}</WorkspaceLayout>;
+  return <PublicWorkspaceLayout>{page}</PublicWorkspaceLayout>;
 };
