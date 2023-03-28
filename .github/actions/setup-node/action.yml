@@ -95,7 +95,7 @@ runs:
       id: playwright-version
       if: ${{ inputs.playwright-install == 'true' }}
       shell: bash
-      run: echo "{version}=$(yarn why --json @playwright/test | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://')" >> GITHUB_OUTPUT
+      run: echo "PLAYWRIGHT_VERSION=$(node -e "process.stdout.write(require('@playwright/test/package.json').version)")" >> $GITHUB_OUTPUT
 
       # Attempt to restore the correct Playwright browser binaries based on the
       # currently installed version of Playwright (The browser binary versions
@@ -108,7 +108,7 @@ runs:
       if: ${{ inputs.playwright-install == 'true' }}
       with:
         path: '~/.cache/ms-playwright'
-        key: '${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}'
+        key: '${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}'
         # As a fallback, if the Playwright version has changed, try use the
         # most recently cached version. There's a good chance that at least one
         # of the browser binary versions haven't been updated, so Playwright can
