@@ -13,6 +13,7 @@ type BrowserBase = {
   // browser special properties
   isLinux: boolean;
   isMacOs: boolean;
+  isIOS: boolean;
   isSafari: boolean;
   isWindows: boolean;
   isFireFox: boolean;
@@ -83,8 +84,10 @@ export function getEnvironment() {
       isFireFox: uaHelper.isFireFox,
       isMobile: uaHelper.isMobile,
       isChrome: uaHelper.isChrome,
+      isIOS: uaHelper.isIOS,
     } as Browser;
-    if (environment.isChrome === true) {
+    // Chrome on iOS is still Safari
+    if (environment.isChrome && !environment.isIOS) {
       assertEquals(environment.isSafari, false);
       assertEquals(environment.isFireFox, false);
       environment = {
