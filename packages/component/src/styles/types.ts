@@ -27,6 +27,8 @@ export interface AffineTheme {
     tooltipBackground: string;
     hoverBackground: string;
     innerHoverBackground: string;
+    // Use for the quick search tips background
+    backgroundTertiaryColor: string;
     codeBackground: string;
     codeBlockBackground: string;
     // Use for blockHub and slide bar background
@@ -37,6 +39,7 @@ export interface AffineTheme {
     // Use for the page`s text
     textColor: string;
     secondaryTextColor: string;
+    textEmphasisColor: string;
     // Use for the editor`s text, because in edgeless mode text is different form other
     edgelessTextColor: string;
     linkColor: string;

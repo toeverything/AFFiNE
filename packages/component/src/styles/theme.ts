@@ -20,6 +20,7 @@ export const getLightTheme = (
       pageBackground: '#fff',
       hoverBackground: 'rgba(0,0,0,.04)',
       innerHoverBackground: '#E9E9EC',
+      backgroundTertiaryColor: '#E9E9EC',
       popoverBackground: '#fff',
       tooltipBackground: '#261499',
       codeBackground: '#f2f5f9',
@@ -31,6 +32,7 @@ export const getLightTheme = (
 
       textColor: '#424149',
       secondaryTextColor: '#8E8D91',
+      textEmphasisColor: '#5438FF',
       edgelessTextColor: '#3A4C5C',
       iconColor: '#77757D',
       handleColor: '#c7c3d9',
@@ -99,6 +101,7 @@ export const getDarkTheme = (
       pageBackground: '#2c2c2c',
       hoverBackground: 'rgba(0,0,0,.04)',
       innerHoverBackground: '#5A5A5A',
+      backgroundTertiaryColor: '#1E1E1E',
       popoverBackground: '#1F2021',
       tooltipBackground: '#0C0A15',
       codeBackground:
@@ -113,6 +116,7 @@ export const getDarkTheme = (
 
       textColor: '#fff',
       secondaryTextColor: '#8E8D91',
+      textEmphasisColor: '#D0CDDC',
       edgelessTextColor: '#3A4C5C',
       iconColor: '#77757D',
       handleColor: '#c7c3d9',
