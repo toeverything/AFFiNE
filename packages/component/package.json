@@ -10,7 +10,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./block-suite-editor": "./src/components/block-suite-editor/index.tsx"
+    "./*": "./src/components/*/index.tsx"
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
