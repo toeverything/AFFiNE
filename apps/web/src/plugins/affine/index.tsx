@@ -80,7 +80,11 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
           const url = await blobs.get(id);
           if (url) {
             const blob = await fetch(url).then(res => res.blob());
-            await affineApis.uploadBlob(newWorkspaceId, blob);
+            await affineApis.uploadBlob(
+              newWorkspaceId,
+              await blob.arrayBuffer(),
+              blob.type
+            );
           }
         }
       }
