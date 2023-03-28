@@ -18,6 +18,9 @@ const config: Pick<StorybookConfig, 'viteFinal'> = {
       resolve: {
         alias: {
           '@': resolve(fileURLToPath(new URL('../src', import.meta.url))),
+          '@affine/component': resolve(
+            fileURLToPath(new URL('../src/index.ts', import.meta.url))
+          ),
           '@affine/i18n': resolve(
             fileURLToPath(new URL('../../i18n/src', import.meta.url))
           ),
