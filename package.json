@@ -5,7 +5,7 @@
   "author": "toeverything",
   "license": "MPL-2.0",
   "workspaces": [
-    "apps/(!electron)",
+    "apps/!(electron)",
     "packages/*",
     "tests/fixtures"
   ],
