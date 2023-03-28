@@ -208,3 +208,15 @@ affine-block-hub {
 .block-hub-menu-container {
   position: unset !important;
 }
+
+@media (max-width: 768px) {
+  .affine-default-page-block-title-container {
+    margin-top: 24px;
+  }
+
+  .editor-wrapper {
+    width: 100%;
+    height: 100%;
+    padding: 0 0.75rem;
+  }
+}

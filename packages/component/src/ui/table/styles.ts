@@ -11,6 +11,9 @@ export const StyledTable = styled('table')<{ tableLayout: 'auto' | 'fixed' }>(
       minWidth: '600px',
       borderCollapse: 'separate',
       borderSpacing: '0',
+      [theme.breakpoints.down('sm')]: {
+        minWidth: 'unset',
+      },
     };
   }
 );
