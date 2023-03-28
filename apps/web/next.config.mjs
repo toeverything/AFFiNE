@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { PerfseePlugin } from '@perfsee/webpack';
+import { withSentryConfig } from '@sentry/nextjs';
 import debugLocal from 'next-debug-local';
 
 import preset from './preset.config.mjs';
@@ -45,6 +46,9 @@ const getRedirectConfig = profile => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  sentry: {
+    hideSourceMaps: true,
+  },
   productionBrowserSourceMaps: true,
   compiler: {
     styledComponents: true,
@@ -158,4 +162,14 @@ const detectFirebaseConfig = () => {
 };
 detectFirebaseConfig();
 
-export default withDebugLocal(nextConfig);
+let config = withDebugLocal(nextConfig);
+
+if (process.env.SENTRY_AUTH_TOKEN) {
+  config = withSentryConfig(config, {
+    silent: true,
+  });
+} else {
+  console.log('Sentry not enabled, please set SENTRY_AUTH_TOKEN to enable it');
+}
+
+export default config;
