@@ -25,8 +25,9 @@ install [Node LTS version](https://nodejs.org/en/download)
 install [nvm](https://github.com/nvm-sh/nvm)
 
 ```sh
-nvm install 18
-nvm use 18
+nvm use
+# > Found '/path/to/AFFiNE/.nvmrc' with version <18>
+# > Now using node v18.15.0 (npm v9.5.0)
 ```
 
 ## Setup Environment
@@ -38,20 +39,9 @@ yarn install
 
 ## Start Development Server
 
-### Option 1: Local OctoBase
-
 ```shell
-# Run OctoBase container in background
-docker pull ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-docker run --env=SIGN_KEY=test123 --env=RUST_LOG=debug --env=JWST_DEV=1 --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --workdir=/app -p 3000:3000 --runtime=runc -d ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+yarn octobase-service
 ```
-
-```shell
-# Run AFFiNE Web in development mode
-yarn dev:local
-```
-
-### Option 2: Remote OctoBase
 
 ```shell
 yarn dev
