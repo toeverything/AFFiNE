@@ -57,7 +57,7 @@ export type ToastOptions = {
  */
 export const toast = (
   message: string,
-  { duration, portal }: ToastOptions = {
+  { duration = 2500, portal }: ToastOptions = {
     duration: 2500,
   }
 ) => {
@@ -107,8 +107,9 @@ export const toast = (
     element.style.margin = '0';
     element.style.padding = '0';
     // wait for transition
-    await sleep(230);
-    element.remove();
+    element.addEventListener('transitionend', () => {
+      element.remove();
+    });
   }, duration);
   return element;
 };

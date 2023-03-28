@@ -17,6 +17,9 @@ export const StyledSliderBar = styled('div')<{ show: boolean }>(
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
+      [theme.breakpoints.down('sm')]: {
+        position: 'absolute',
+      },
     };
   }
 );
