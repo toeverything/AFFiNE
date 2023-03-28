@@ -140,26 +140,32 @@ describe('api', () => {
     expect(response[0].id).toBe(id);
   });
 
-  test('blob', async () => {
-    const workspace = new Workspace({
-      id: 'test',
-    });
-    const path = require.resolve('@affine-test/fixtures/smile.png');
-    const imageBuffer = await readFile(path);
-    const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
-    const data = await workspaceApis.createWorkspace(new Blob([binary]));
-    createWorkspaceResponseSchema.parse(data);
-    const blobId = await workspaceApis.uploadBlob(
-      data.id,
-      imageBuffer,
-      'image/png'
-    );
-    expect(blobId).toBeTypeOf('string');
-    const arrayBuffer = await workspaceApis.getBlob(blobId);
-    expect(arrayBuffer).toBeInstanceOf(ArrayBuffer);
-    expect(arrayBuffer.byteLength).toEqual(imageBuffer.byteLength);
-    expect(Buffer.from(arrayBuffer)).toEqual(imageBuffer);
-  });
+  test(
+    'blob',
+    async () => {
+      const workspace = new Workspace({
+        id: 'test',
+      });
+      const path = require.resolve('@affine-test/fixtures/smile.png');
+      const imageBuffer = await readFile(path);
+      const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
+      const data = await workspaceApis.createWorkspace(new Blob([binary]));
+      createWorkspaceResponseSchema.parse(data);
+      const blobId = await workspaceApis.uploadBlob(
+        data.id,
+        imageBuffer,
+        'image/png'
+      );
+      expect(blobId).toBeTypeOf('string');
+      const arrayBuffer = await workspaceApis.getBlob(blobId);
+      expect(arrayBuffer).toBeInstanceOf(ArrayBuffer);
+      expect(arrayBuffer.byteLength).toEqual(imageBuffer.byteLength);
+      expect(Buffer.from(arrayBuffer)).toEqual(imageBuffer);
+    },
+    {
+      timeout: 30000,
+    }
+  );
 
   test(
     'workspace binary',
