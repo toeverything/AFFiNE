@@ -6,6 +6,7 @@ export type Node<N> = {
   render?: (
     node: Node<N>,
     eventsAndStatus: {
+      isOver: boolean;
       onAdd: () => void;
       onDelete: () => void;
       collapsed: boolean;
@@ -33,8 +34,13 @@ type CommonProps<N> = {
 export type TreeNodeProps<N> = {
   node: Node<N>;
   index: number;
-  allDrop?: boolean;
+  allowDrop?: boolean;
 } & CommonProps<N>;
+
+export type TreeNodeItemProps<N> = {
+  collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
+} & TreeNodeProps<N>;
 
 export type TreeViewProps<N> = {
   data: Node<N>[];

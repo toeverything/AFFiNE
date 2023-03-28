@@ -16,6 +16,7 @@ export const StyledSliderBar = styled('div')<{ show: boolean }>(
       flexShrink: 0,
       display: 'flex',
       flexDirection: 'column',
+      overflow: 'hidden',
     };
   }
 );

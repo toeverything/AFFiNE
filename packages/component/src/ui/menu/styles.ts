@@ -28,7 +28,8 @@ export const StyledArrow = styled(ArrowRightSmallIcon)({
 
 export const StyledMenuItem = styled('button')<{
   isDir?: boolean;
-}>(({ theme, isDir = false }) => {
+  disabled?: boolean;
+}>(({ theme, isDir = false, disabled = false }) => {
   return {
     width: '100%',
     borderRadius: '5px',
@@ -39,10 +40,25 @@ export const StyledMenuItem = styled('button')<{
     cursor: isDir ? 'pointer' : '',
     position: 'relative',
     backgroundColor: 'transparent',
-    color: theme.colors.textColor,
-    ':hover': {
-      color: theme.colors.primaryColor,
-      backgroundColor: theme.colors.hoverBackground,
+    color: disabled ? theme.colors.disableColor : theme.colors.textColor,
+    svg: {
+      color: disabled ? theme.colors.disableColor : theme.colors.iconColor,
     },
+    ...(disabled
+      ? {
+          cursor: 'not-allowed',
+          pointerEvents: 'none',
+        }
+      : {}),
+
+    ':hover': disabled
+      ? {}
+      : {
+          color: theme.colors.primaryColor,
+          backgroundColor: theme.colors.hoverBackground,
+          svg: {
+            color: theme.colors.primaryColor,
+          },
+        },
   };
 });

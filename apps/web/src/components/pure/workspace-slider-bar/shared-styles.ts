@@ -1,4 +1,4 @@
-import { displayFlex, styled, textEllipsis } from '@affine/component';
+import { alpha, displayFlex, styled, textEllipsis } from '@affine/component';
 
 export const StyledListItem = styled('div')<{
   active?: boolean;
@@ -53,10 +53,11 @@ export const StyledCollapseButton = styled('button')<{
   };
 });
 
-export const StyledCollapseItem = styled('button')<{
+export const StyledCollapseItem = styled('div')<{
   disable?: boolean;
   active?: boolean;
-}>(({ disable = false, active = false, theme }) => {
+  isOver?: boolean;
+}>(({ disable = false, active = false, theme, isOver }) => {
   return {
     width: '100%',
     height: '32px',
@@ -70,6 +71,7 @@ export const StyledCollapseItem = styled('button')<{
       ? theme.colors.primaryColor
       : theme.colors.textColor,
     cursor: disable ? 'not-allowed' : 'pointer',
+    background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
 
     span: {
       flexGrow: '1',
@@ -83,7 +85,7 @@ export const StyledCollapseItem = styled('button')<{
       color: active ? theme.colors.primaryColor : theme.colors.iconColor,
     },
     '.operation-button': {
-      display: 'none',
+      visibility: 'hidden',
     },
 
     ':hover': disable
@@ -91,7 +93,7 @@ export const StyledCollapseItem = styled('button')<{
       : {
           backgroundColor: theme.colors.hoverBackground,
           '.operation-button': {
-            display: 'flex',
+            visibility: 'visible',
           },
         },
   };

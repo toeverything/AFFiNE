@@ -1,23 +1,16 @@
-import { IconButton } from '@affine/component';
-import {
-  ArrowDownSmallIcon,
-  EdgelessIcon,
-  // DeleteTemporarilyIcon,
-  // PlusIcon,
-  MoreVerticalIcon,
-  PageIcon,
-} from '@blocksuite/icons';
+import { ArrowDownSmallIcon, EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import { StyledCollapseButton, StyledCollapseItem } from '../shared-styles';
+import { OperationButton } from './OperationButton';
 import type { TreeNode } from './types';
 
 export const TreeNodeRender: TreeNode['render'] = (
   node,
-  { onAdd, onDelete, collapsed, setCollapsed },
+  { isOver, onAdd, onDelete, collapsed, setCollapsed },
   extendProps
 ) => {
   const { openPage, pageMeta } = extendProps as {
@@ -37,6 +30,7 @@ export const TreeNodeRender: TreeNode['render'] = (
         }
         openPage(node.id);
       }}
+      isOver={isOver}
       active={active}
     >
       <StyledCollapseButton
@@ -51,37 +45,7 @@ export const TreeNodeRender: TreeNode['render'] = (
       </StyledCollapseButton>
       {record[pageMeta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
       <span>{node.title || 'Untitled'}</span>
-      <IconButton
-        size="small"
-        className="operation-button"
-        onClick={e => {
-          e.stopPropagation();
-        }}
-      >
-        <MoreVerticalIcon />
-      </IconButton>
-
-      {/*<IconButton*/}
-      {/*  onClick={e => {*/}
-      {/*    e.stopPropagation();*/}
-      {/*    onAdd();*/}
-      {/*  }}*/}
-      {/*  size="small"*/}
-      {/*  className="operation-button"*/}
-      {/*>*/}
-      {/*  <PlusIcon />*/}
-      {/*</IconButton>*/}
-      {/*<IconButton*/}
-      {/*  onClick={e => {*/}
-      {/*    e.stopPropagation();*/}
-
-      {/*    onDelete();*/}
-      {/*  }}*/}
-      {/*  size="small"*/}
-      {/*  className="operation-button"*/}
-      {/*>*/}
-      {/*  <DeleteTemporarilyIcon />*/}
-      {/*</IconButton>*/}
+      <OperationButton onAdd={onAdd} onDelete={onDelete} />
     </StyledCollapseItem>
   );
 };
