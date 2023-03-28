@@ -96,7 +96,6 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [build]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
