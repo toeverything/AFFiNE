@@ -1,5 +1,4 @@
 import { MuiCollapse } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
@@ -8,13 +7,13 @@ import { useMemo } from 'react';
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import type { FavoriteListProps } from '../index';
 import { StyledCollapseItem } from '../shared-styles';
+import EmptyItem from './empty-item';
 export const FavoriteList = ({
   pageMeta,
   openPage,
   showList,
 }: FavoriteListProps) => {
   const router = useRouter();
-  const { t } = useTranslation();
   const record = useAtomValue(workspacePreferredModeAtom);
 
   const favoriteList = useMemo(
@@ -60,9 +59,7 @@ export const FavoriteList = ({
           </div>
         );
       })}
-      {favoriteList.length === 0 && (
-        <StyledCollapseItem disable={true}>{t('No item')}</StyledCollapseItem>
-      )}
+      {favoriteList.length === 0 && <EmptyItem />}
     </MuiCollapse>
   );
 };
