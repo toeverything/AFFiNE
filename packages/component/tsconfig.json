@@ -1,4 +1,9 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src", "./.storybook/*.ts"]
+  "include": ["./src", "./.storybook/*.ts"],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }
