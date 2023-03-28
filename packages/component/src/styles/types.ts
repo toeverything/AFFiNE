@@ -27,6 +27,8 @@ export interface AffineTheme {
     tooltipBackground: string;
     hoverBackground: string;
     innerHoverBackground: string;
+    // Use for the quick search tips background
+    backgroundTertiaryColor: string;
     codeBackground: string;
     codeBlockBackground: string;
     // Use for blockHub and slide bar background
