@@ -36,6 +36,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          electron-workspace-install: true
 
       - name: before-make
         working-directory: apps/electron
