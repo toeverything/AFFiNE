@@ -25,7 +25,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![affine-app-logo]](https://app.affine.pro)
 [![stars-icon]](https://github.com/toeverything/AFFiNE)
 [![All Contributors][all-contributors-badge]](#contributors)
-![codecov]
+[![codecov]](https://codecov.io/gh/toeverything/AFFiNE)
 [![Node-version-icon]](https://www.typescriptlang.org/)
 [![TypeScript-version-icon]](https://www.typescriptlang.org/)
 [![React-version-icon]](https://reactjs.org/)
