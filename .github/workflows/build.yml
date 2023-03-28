@@ -6,6 +6,17 @@ on:
       - master
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn lint --max-warnings=0
+
   build:
     name: Build on Pull Request
     runs-on: ubuntu-latest
@@ -15,7 +26,14 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - run: yarn lint --max-warnings=0
+      - name: Cache Next.js
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
       - name: Build
         run: yarn build
         env:
@@ -26,9 +44,6 @@ jobs:
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
           NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-
-      - name: Export
-        run: yarn export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3

@@ -5,6 +5,17 @@ on:
     branches: [master]
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn lint --max-warnings=0
+
   build-frontend:
     name: Build frontend
     runs-on: ubuntu-latest
@@ -14,6 +25,14 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Cache Next.js
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}-
 
       - name: Build
         run: yarn build
