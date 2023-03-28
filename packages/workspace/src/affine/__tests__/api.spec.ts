@@ -3,10 +3,12 @@
  */
 import 'fake-indexeddb/auto';
 
+import { readFile } from 'node:fs/promises';
+
 import { MessageCode } from '@affine/env/constant';
-import userA from '@affine-test/fixtures/userA.json';
 import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
+import { faker } from '@faker-js/faker';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
@@ -24,40 +26,36 @@ import {
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
 let affineAuth: ReturnType<typeof createAffineAuth>;
 
+const mockUser = {
+  name: faker.name.fullName(),
+  email: faker.internet.email(),
+  password: faker.internet.password(),
+};
+
+beforeEach(() => {
+  // create a new user for each test, so that each test can be run independently
+  mockUser.name = faker.name.fullName();
+  mockUser.email = faker.internet.email();
+  mockUser.password = faker.internet.password();
+});
+
 beforeEach(() => {
   affineAuth = createAffineAuth('http://localhost:3000/');
   workspaceApis = createWorkspaceApis('http://localhost:3000/');
 });
 
 beforeEach(async () => {
-  let data;
-  // first step: try to log in
-  const response = await fetch('http://localhost:3000/api/user/token', {
+  const data = await fetch('http://localhost:3000/api/user/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      type: 'DebugLoginUser',
-      email: userA.email,
-      password: userA.password,
+      type: 'DebugCreateUser',
+      ...mockUser,
     }),
-  });
-  if (!response.ok) {
-    data = await fetch('http://localhost:3000/api/user/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        type: 'DebugCreateUser',
-        ...userA,
-      }),
-    }).then(r => r.json());
-    setLoginStorage(data);
-  } else {
-    setLoginStorage((data = await response.json()));
-  }
+  }).then(r => r.json());
+  setLoginStorage(data);
   loginResponseSchema.parse(data);
 });
 
@@ -67,6 +65,18 @@ declare global {
       code: MessageCode;
     }>;
   }
+}
+
+async function createWorkspace(
+  workspaceApi: typeof workspaceApis
+): Promise<string> {
+  const workspace = new Workspace({
+    id: faker.datatype.uuid(),
+  });
+  const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
+  const data = await workspaceApi.createWorkspace(new Blob([binary]));
+  createWorkspaceResponseSchema.parse(data);
+  return data.id;
 }
 
 describe('api', () => {
@@ -100,12 +110,8 @@ describe('api', () => {
   test(
     'create workspace',
     async () => {
-      const workspace = new Workspace({
-        id: 'test',
-      });
-      const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
-      const data = await workspaceApis.createWorkspace(new Blob([binary]));
-      createWorkspaceResponseSchema.parse(data);
+      const id = await createWorkspace(workspaceApis);
+      expect(id).toBeTypeOf('string');
     },
     {
       timeout: 30000,
@@ -115,17 +121,65 @@ describe('api', () => {
   test(
     'delete workspace',
     async () => {
-      const workspace = new Workspace({
-        id: 'test',
-      });
-      const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
-      const data = await workspaceApis.createWorkspace(new Blob([binary]));
-      createWorkspaceResponseSchema.parse(data);
-      const id = data.id;
+      const id = await createWorkspace(workspaceApis);
       const response = await workspaceApis.deleteWorkspace({
         id,
       });
       expect(response).toBe(true);
+    },
+    {
+      timeout: 30000,
+    }
+  );
+
+  test('get workspaces', async () => {
+    const id = await createWorkspace(workspaceApis);
+    const response = await workspaceApis.getWorkspaces();
+    expect(response).toBeInstanceOf(Array);
+    expect(response.length).toBe(1);
+    expect(response[0].id).toBe(id);
+  });
+
+  test(
+    'blob',
+    async () => {
+      const workspace = new Workspace({
+        id: 'test',
+      });
+      const path = require.resolve('@affine-test/fixtures/smile.png');
+      const imageBuffer = await readFile(path);
+      const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
+      const data = await workspaceApis.createWorkspace(new Blob([binary]));
+      createWorkspaceResponseSchema.parse(data);
+      const blobId = await workspaceApis.uploadBlob(
+        data.id,
+        imageBuffer,
+        'image/png'
+      );
+      expect(blobId).toBeTypeOf('string');
+      const arrayBuffer = await workspaceApis.getBlob(blobId);
+      expect(arrayBuffer).toBeInstanceOf(ArrayBuffer);
+      expect(arrayBuffer.byteLength).toEqual(imageBuffer.byteLength);
+      expect(Buffer.from(arrayBuffer)).toEqual(imageBuffer);
+    },
+    {
+      timeout: 30000,
+    }
+  );
+
+  test(
+    'workspace binary',
+    async () => {
+      const id = await createWorkspace(workspaceApis);
+      await workspaceApis.updateWorkspace({
+        id,
+        public: true,
+      });
+      const binary = await workspaceApis.downloadWorkspace(id, false);
+      const publicBinary = await workspaceApis.downloadWorkspace(id, true);
+      expect(binary).toBeInstanceOf(ArrayBuffer);
+      expect(publicBinary).toBeInstanceOf(ArrayBuffer);
+      expect(binary.byteLength).toEqual(publicBinary.byteLength);
     },
     {
       timeout: 30000,

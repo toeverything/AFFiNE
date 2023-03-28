@@ -295,22 +295,26 @@ export function createWorkspaceApis(prefixUrl = '/') {
           throw new RequestError(MessageCode.acceptInvitingFailed, e);
         });
     },
-    uploadBlob: async (workspaceId: string, blob: Blob): Promise<string> => {
+    uploadBlob: async (
+      workspaceId: string,
+      arrayBuffer: ArrayBuffer,
+      type: string
+    ): Promise<string> => {
       const auth = getLoginStorage();
       assertExists(auth);
       return fetch(prefixUrl + 'api/blob', {
         method: 'PUT',
-        body: blob,
+        body: arrayBuffer,
         headers: {
-          'Content-Type': blob.type,
+          'Content-Type': type,
           Authorization: auth.token,
         },
       }).then(r => r.text());
     },
-    getBlob: async (params: { blobId: string }): Promise<ArrayBuffer> => {
+    getBlob: async (blobId: string): Promise<ArrayBuffer> => {
       const auth = getLoginStorage();
       assertExists(auth);
-      return fetch(prefixUrl + `api/blob/${params.blobId}`, {
+      return fetch(prefixUrl + `api/blob/${blobId}`, {
         method: 'GET',
         headers: {
           Authorization: auth.token,

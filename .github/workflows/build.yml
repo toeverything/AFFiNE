@@ -96,7 +96,6 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [build]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -111,11 +110,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: artifact
-          path: ./apps/web/.next
 
       - name: Unit Test
         run: yarn run test:unit:coverage
