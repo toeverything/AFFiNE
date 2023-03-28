@@ -76,7 +76,7 @@ runs:
       if: ${{ inputs.package-install == 'true' }}
       shell: bash
       run: yarn install ${{ inputs.extra-flags }}
-      working-directory: packages/electron
+      working-directory: apps/electron
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
         YARN_ENABLE_GLOBAL_CACHE: 'false'
