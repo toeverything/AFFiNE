@@ -1,11 +1,13 @@
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
+import { waitMarkdownImported } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 
 test.describe('Open contact us', () => {
   test('Click right-bottom corner contact icon', async ({ page }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     await page.locator('[data-testid=help-island]').click();
     const rightBottomContactUs = page.locator(
       '[data-testid=right-bottom-contact-us-icon]'

@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 
 import { openHomePage } from '../libs/load-page';
+import { waitMarkdownImported } from '../libs/page-logic';
 import { test } from '../libs/playwright';
 import { clickSideBarSettingButton } from '../libs/sidebar';
 
@@ -9,6 +10,7 @@ test.describe('Local first setting page', () => {
     page,
   }) => {
     await openHomePage(page);
+    await waitMarkdownImported(page);
     const element = await page.getByTestId(
       'slider-bar-workspace-setting-button'
     );
