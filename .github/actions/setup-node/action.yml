@@ -47,7 +47,7 @@ runs:
     - name: Get installed Playwright version
       id: playwright-version
       shell: bash
-      run: echo "::set-output name=version::$(yarn why --json @playwright/test | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://')"
+      run: echo "version=$(yarn why --json @playwright/test | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://')" >> $GITHUB_OUTPUT
 
       # Attempt to restore the correct Playwright browser binaries based on the
       # currently installed version of Playwright (The browser binary versions
