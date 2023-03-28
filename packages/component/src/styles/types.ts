@@ -39,6 +39,7 @@ export interface AffineTheme {
     // Use for the page`s text
     textColor: string;
     secondaryTextColor: string;
+    textEmphasisColor: string;
     // Use for the editor`s text, because in edgeless mode text is different form other
     edgelessTextColor: string;
     linkColor: string;

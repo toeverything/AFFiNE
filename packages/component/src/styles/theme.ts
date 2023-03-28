@@ -32,6 +32,7 @@ export const getLightTheme = (
 
       textColor: '#424149',
       secondaryTextColor: '#8E8D91',
+      textEmphasisColor: '#424149',
       edgelessTextColor: '#3A4C5C',
       iconColor: '#77757D',
       handleColor: '#c7c3d9',
@@ -115,6 +116,7 @@ export const getDarkTheme = (
 
       textColor: '#fff',
       secondaryTextColor: '#8E8D91',
+      textEmphasisColor: '#D0CDDC',
       edgelessTextColor: '#3A4C5C',
       iconColor: '#77757D',
       handleColor: '#c7c3d9',
