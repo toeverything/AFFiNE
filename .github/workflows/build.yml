@@ -1,101 +1,20 @@
 name: Build & Test
 
 on:
-  issue_comment:
-    types: [created]
-
-env:
-  BUILD_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+  pull_request:
+    branches:
+      - master
 
 jobs:
-  pull_request:
-    name: Get Pull Request SHA
-    runs-on: ubuntu-latest
-    if: github.repository == 'toeverything/AFFiNE' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/test run')
-    outputs:
-      pr_sha: ${{ steps.get-pr.outputs.result }}
-    steps:
-      - uses: actions/github-script@v6
-        id: get-pr
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            const { data: pull_request } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-            return pull_request.head.sha;
   build:
     name: Build on Pull Request
     runs-on: ubuntu-latest
     environment: development
-    needs: [pull_request]
 
     steps:
-      - uses: actions/github-script@v6
-        with:
-          script: |
-            const user = context.payload.sender.login
-            console.log(`Validate user: ${user}`)
-            let isAffineMember = false
-            try {
-              const { status } = await github.rest.orgs.checkMembershipForUser({
-                org: 'toeverything',
-                username: user
-              });
-              isAffineMember = (status === 204)
-            } catch (e) {}
-            if (isAffineMember) {
-              console.log('Allowed')
-              await github.rest.reactions.createForIssueComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: context.payload.comment.id,
-                content: '+1',
-              })
-            } else {
-              console.log('Not allowed')
-              await github.rest.reactions.createForIssueComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: context.payload.comment.id,
-                content: '-1',
-              })
-              throw new Error('not allowed')
-            }
-      - name: 'Create Build check'
-        uses: actions/github-script@v6
-        id: create-check
-        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            const { data: check } = await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
-              name: "Build on Pull Request",
-              status: "in_progress",
-              details_url: "${{ env.BUILD_URL }}",
-              output: {
-                title: "Build on Pull Request",
-                summary: "Please check the build result ${{ env.BUILD_URL }}",
-              },
-            });
-            return check.id;
       - uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.pull_request.outputs.pr_sha }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      # To prevent tampering with Yarn’s binary file
-      - name: Check yarn releases
-        run: |
-          yarn set version self
-          git diff --exit-code
       - run: yarn lint --max-warnings=0
       - name: Build
         run: yarn build
@@ -111,37 +30,6 @@ jobs:
       - name: Export
         run: yarn export
 
-      - name: Set Failure Check
-        uses: actions/github-script@v6
-        if: ${{ failure() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "failure",
-              completed_at: new Date().toISOString(),
-            });
-      - name: Set Success Check
-        uses: actions/github-script@v6
-        if: ${{ success() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "success",
-              completed_at: new Date().toISOString(),
-            });
-
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
@@ -156,11 +44,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: [build, pull_request]
-    permissions:
-      contents: read
-      packages: write
-      checks: write
+    needs: [build]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -170,35 +54,9 @@ jobs:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.pull_request.outputs.pr_sha }}
-      - name: 'Create E2E test check'
-        uses: actions/github-script@v6
-        id: create-check
-        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            const { data: check } = await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
-              name: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
-              status: "in_progress",
-              details_url: "${{ env.BUILD_URL }}",
-              output: {
-                title: "E2E Test (${{ matrix.shard }}/${{ strategy.job-total }})",
-                summary: "Please check the e2e test result ${{ env.BUILD_URL }}",
-              },
-            });
-            return check.id;
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Download artifact
@@ -211,37 +69,6 @@ jobs:
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           COVERAGE: true
-
-      - name: Set Failure Check
-        uses: actions/github-script@v6
-        if: ${{ failure() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "failure",
-              completed_at: new Date().toISOString(),
-            });
-      - name: Set Success Check
-        uses: actions/github-script@v6
-        if: ${{ success() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "success",
-              completed_at: new Date().toISOString(),
-            });
 
       - name: Collect code coverage report
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
@@ -267,11 +94,7 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [build, pull_request]
-    permissions:
-      contents: read
-      packages: write
-      checks: write
+    needs: [build]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -281,35 +104,9 @@ jobs:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
           JWST_DEV: '1'
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.pull_request.outputs.pr_sha }}
-      - name: 'Create Unit test check'
-        uses: actions/github-script@v6
-        id: create-check
-        # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            const { data: check } = await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head_sha: "${{ needs.pull_request.outputs.pr_sha }}",
-              name: "Unit Test",
-              status: "in_progress",
-              details_url: "${{ env.BUILD_URL }}",
-              output: {
-                title: "Unit Test",
-                summary: "Please check the unit test result ${{ env.BUILD_URL }}",
-              },
-            });
-            return check.id;
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Download artifact
@@ -321,43 +118,11 @@ jobs:
       - name: Unit Test
         run: yarn run test:unit:coverage
 
-      - name: Set Failure Check
-        uses: actions/github-script@v6
-        if: ${{ failure() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "failure",
-              completed_at: new Date().toISOString(),
-            });
-      - name: Set Success Check
-        uses: actions/github-script@v6
-        if: ${{ success() }}
-        with:
-          debug: ${{ secrets.ACTIONS_STEP_DEBUG || false }}
-          result-encoding: string
-          script: |
-            await github.rest.checks.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              check_run_id: ${{ steps.create-check.outputs.result }},
-              status: "completed",
-              conclusion: "success",
-              completed_at: new Date().toISOString(),
-            });
-
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./.coverage/store/lcov.info
           flags: unittest
-          override_pr: ${{ github.event.issue.id }}
           name: affine
           fail_ci_if_error: true
