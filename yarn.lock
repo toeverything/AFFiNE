@@ -25,8 +25,10 @@ __metadata:
     "@clack/core": ^0.3.2
     "@clack/prompts": ^0.6.3
     dotenv: ^16.0.3
+    ts-node: ^10.9.1
   bin:
     dev-web: ./src/dev.mjs
+    octobase-service: ./src/octobase-service.mjs
   languageName: unknown
   linkType: soft
 

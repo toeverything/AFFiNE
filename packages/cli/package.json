@@ -3,14 +3,16 @@
   "type": "module",
   "private": true,
   "bin": {
-    "dev-web": "./src/dev.mjs"
+    "dev-web": "./src/dev.mjs",
+    "octobase-service": "./src/octobase-service.mjs"
   },
   "scripts": {
     "start": "node ./src/dev.mjs"
   },
   "devDependencies": {
     "@clack/core": "^0.3.2",
-    "@clack/prompts": "^0.6.3"
+    "@clack/prompts": "^0.6.3",
+    "ts-node": "^10.9.1"
   },
   "dependencies": {
     "dotenv": "^16.0.3"

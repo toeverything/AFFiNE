@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "dev": "dev-web",
+    "octobase-service": "octobase-service",
     "dev:ac": "NODE_API_SERVER=ac yarn workspace @affine/web dev",
     "dev:local": "NODE_API_SERVER=local yarn workspace @affine/web dev",
     "dev:app": "yarn workspace @affine/electron dev:app",
