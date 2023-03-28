@@ -212,7 +212,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: artifact
+          name: next-js
           path: ./apps/web/.next
 
       - name: Unit Test
