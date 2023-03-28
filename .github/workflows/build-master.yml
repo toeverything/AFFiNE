@@ -16,6 +16,22 @@ jobs:
         uses: ./.github/actions/setup-node
       - run: yarn lint --max-warnings=0
 
+  build-storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - run: yarn build:storybook
+      - name: Upload storybook artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+
   build-frontend:
     name: Build frontend
     runs-on: ubuntu-latest
@@ -51,6 +67,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
+          name: next-js
           path: ./apps/web/out
 
   publish-frontend:
@@ -75,8 +92,9 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: artifact
-          path: apps/web/out/
+          name: next-js
+          path: ./apps/web/out
+          if-no-files-found: error
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -111,7 +129,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     environment: development
-    needs: build-frontend
+    needs: [build-frontend, build-storybook]
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
@@ -134,8 +152,16 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: artifact
+          name: next-js
           path: ./apps/web/.next
+          if-no-files-found: error
+
+      - name: Download storybook artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+          if-no-files-found: error
 
       - name: Run playwright tests
         run: yarn test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
