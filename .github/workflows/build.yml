@@ -34,7 +34,7 @@ jobs:
           path: ./packages/component/storybook-static
 
   build:
-    name: Build on Pull Request
+    name: Build `@affine/web`
     runs-on: ubuntu-latest
     environment: development
 
