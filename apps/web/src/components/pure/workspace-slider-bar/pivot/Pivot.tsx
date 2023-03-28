@@ -9,6 +9,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useBlockSuiteWorkspaceHelper } from '../../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../../shared';
+import EmptyItem from '../favorite/empty-item';
 import { StyledCollapseButton, StyledListItem } from '../shared-styles';
 import type { TreeNode } from './types';
 import { flattenToTree } from './utils';
@@ -197,6 +198,11 @@ export const Pivot = ({
 
   const [showPivot, setShowPivot] = useState(true);
 
+  const isPivotEmpty = useMemo(
+    () => allMetas.filter(meta => !meta.trash).length === 0,
+    [allMetas]
+  );
+
   return (
     <>
       <StyledListItem>
@@ -220,11 +226,15 @@ export const Pivot = ({
           overflowY: 'auto',
         }}
       >
-        <PivotInternal
-          currentWorkspace={currentWorkspace}
-          openPage={openPage}
-          allMetas={allMetas}
-        />
+        {isPivotEmpty ? (
+          <EmptyItem />
+        ) : (
+          <PivotInternal
+            currentWorkspace={currentWorkspace}
+            openPage={openPage}
+            allMetas={allMetas}
+          />
+        )}
       </MuiCollapse>
     </>
   );
