@@ -25,7 +25,7 @@ export const NavContainer = styled('div')(({ theme }) => {
   return {
     width: '100vw',
     height: '60px',
-    ...displayFlex('start', 'center'),
+    ...displayFlex('space-between', 'center'),
     backgroundColor: theme.colors.pageBackground,
   };
 });
