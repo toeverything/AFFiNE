@@ -25,6 +25,7 @@ import {
   StyledSlidebarWrapper,
   StyledSliderBar,
 } from './style';
+import { WhatIsNew } from './whatIsNew';
 import { WorkspaceSelector } from './WorkspaceSelector';
 
 export type FavoriteListProps = {
@@ -86,7 +87,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             currentWorkspace={currentWorkspace}
             onClick={onOpenWorkspaceListModal}
           />
-
+          <WhatIsNew />
           <StyledListItem
             data-testid="slider-bar-quick-search-button"
             onClick={useCallback(() => {
@@ -117,7 +118,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               {t('Workspace Settings')}
             </StyledLink>
           </StyledListItem>
-
           <StyledListItem
             active={
               currentPath ===
@@ -133,7 +133,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <span data-testid="all-pages">{t('All pages')}</span>
             </StyledLink>
           </StyledListItem>
-
           <Favorite
             currentPath={currentPath}
             paths={paths}
@@ -148,7 +147,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               allMetas={pageMeta}
             />
           )}
-
           <StyledListItem
             active={
               currentPath ===
