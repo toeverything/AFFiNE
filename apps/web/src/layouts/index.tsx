@@ -257,7 +257,9 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
             </div>
             {!isPublicWorkspace && (
               <HelpIsland
-                showList={router.query.pageId ? undefined : ['contact']}
+                showList={
+                  router.query.pageId ? undefined : ['whatNew', 'contact']
+                }
               />
             )}
           </StyledToolWrapper>
