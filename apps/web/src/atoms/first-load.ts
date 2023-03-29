@@ -1,47 +1,12 @@
-import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-export type FirstLoad = {
-  version: string;
-  openTips: boolean;
-  showWhatsNew: boolean;
-};
+export type Visibility = Record<string, boolean>;
 
-export const isFirstLoadAtom = atomWithStorage<FirstLoad>('isFirstLoad', {
-  version: '0.0.0',
-  openTips: false,
-  showWhatsNew: false,
-});
+export const lastVersionAtom = atomWithStorage('lastVersion', '0.0.0');
 
-export const versionAtom = atom(
-  get => {
-    const firstLoad = get(isFirstLoadAtom);
-    return firstLoad.version;
-  },
-  (get, set, value: string) => {
-    const firstLoad = get(isFirstLoadAtom);
-    set(isFirstLoadAtom, { ...firstLoad, version: value });
-  }
-);
+export const guideHiddenAtom = atomWithStorage<Visibility>('guideHidden', {});
 
-export const openTipsAtom = atom(
-  get => {
-    const firstLoad = get(isFirstLoadAtom);
-    return firstLoad.openTips;
-  },
-  (get, set, value: boolean) => {
-    const firstLoad = get(isFirstLoadAtom);
-    set(isFirstLoadAtom, { ...firstLoad, openTips: value });
-  }
-);
-
-export const showWhatsNewAtom = atom(
-  get => {
-    const firstLoad = get(isFirstLoadAtom);
-    return firstLoad.showWhatsNew;
-  },
-  (get, set, value: boolean) => {
-    const firstLoad = get(isFirstLoadAtom);
-    set(isFirstLoadAtom, { ...firstLoad, showWhatsNew: value });
-  }
+export const guideHiddenUntilNextUpdateAtom = atomWithStorage<Visibility>(
+  'guideHiddenUntilNextUpdate',
+  {}
 );

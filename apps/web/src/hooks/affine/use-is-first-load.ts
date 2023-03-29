@@ -1,25 +1,24 @@
 import { useAtom } from 'jotai';
 
 import {
-  isFirstLoadAtom,
-  openTipsAtom,
-  showWhatsNewAtom,
-  versionAtom,
+  guideHiddenAtom,
+  guideHiddenUntilNextUpdateAtom,
+  lastVersionAtom,
 } from '../../atoms/first-load';
 
-export function useIsFirstLoad() {
-  const [isFirstLoad, setIsFirstLoad] = useAtom(isFirstLoadAtom);
-  return [isFirstLoad, setIsFirstLoad] as const;
+export function useLastVersion() {
+  const [lastVersion, setLastVersion] = useAtom(lastVersionAtom);
+  return { lastVersion, setLastVersion };
 }
-export function useFirstLoadVersion() {
-  const [version, setVersion] = useAtom(versionAtom);
-  return [version, setVersion] as const;
+
+export function useGuideHidden() {
+  const [guideHidden, setGuideHidden] = useAtom(guideHiddenAtom);
+  return { guideHidden, setGuideHidden };
 }
-export function useOpenTips() {
-  const [openTips, setOpenTips] = useAtom(openTipsAtom);
-  return [openTips, setOpenTips] as const;
-}
-export function useShowWhatsNew() {
-  const [showWhatsNew, setShowWhatsNews] = useAtom(showWhatsNewAtom);
-  return [showWhatsNew, setShowWhatsNews] as const;
+
+export function useGuideHiddenUntilNextUpdate() {
+  const [hiddenUntilNextUpdate, setHiddenUntilNextUpdate] = useAtom(
+    guideHiddenUntilNextUpdateAtom
+  );
+  return { hiddenUntilNextUpdate, setHiddenUntilNextUpdate };
 }
