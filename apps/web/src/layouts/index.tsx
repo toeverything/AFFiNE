@@ -35,7 +35,12 @@ import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
 import type { RemWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
-import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
+import {
+  MainContainer,
+  StyledPage,
+  StyledToolWrapper,
+  StyledWrapper,
+} from './styles';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -247,20 +252,22 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <StyledWrapper className="main-container">
-          <AffineWorkspaceEffect />
-          {children}
-          <StyledToolWrapper>
-            {/* fixme(himself65): remove this */}
-            <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-              {/* Slot for block hub */}
-            </div>
-            {!isPublicWorkspace && (
-              <HelpIsland
-                showList={router.query.pageId ? undefined : ['contact']}
-              />
-            )}
-          </StyledToolWrapper>
+        <StyledWrapper>
+          <MainContainer className="main-container">
+            <AffineWorkspaceEffect />
+            {children}
+            <StyledToolWrapper>
+              {/* fixme(himself65): remove this */}
+              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+                {/* Slot for block hub */}
+              </div>
+              {!isPublicWorkspace && (
+                <HelpIsland
+                  showList={router.query.pageId ? undefined : ['contact']}
+                />
+              )}
+            </StyledToolWrapper>
+          </MainContainer>
         </StyledWrapper>
       </StyledPage>
       <QuickSearch />

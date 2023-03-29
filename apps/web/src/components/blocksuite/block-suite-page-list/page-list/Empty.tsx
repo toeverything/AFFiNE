@@ -18,7 +18,7 @@ export const PageListEmpty = (props: { listType?: string }) => {
   };
 
   return (
-    <div style={{ height: 'calc(100% - 60px)' }}>
+    <div style={{ height: 'calc(100% - 48px)' }}>
       <Empty description={getEmptyDescription()} />
     </div>
   );

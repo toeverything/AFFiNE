@@ -8,10 +8,15 @@ import {
   SettingsIcon,
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
+import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
 import { useCallback } from 'react';
 
-import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
+import {
+  useSidebarResizing,
+  useSidebarStatus,
+  useSidebarWidth,
+} from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
@@ -24,6 +29,8 @@ import {
   StyledSidebarSwitchWrapper,
   StyledSlidebarWrapper,
   StyledSliderBar,
+  StyledSliderModalBackground,
+  StyledSliderResizer,
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector';
 
@@ -64,15 +71,31 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
 }) => {
   const currentWorkspaceId = currentWorkspace?.id || null;
   const { t } = useTranslation();
-  const [sidebarOpen] = useSidebarStatus();
+  const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
   const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
     const page = await createPage();
     openPage(page.id);
   }, [createPage, openPage]);
+  const theme = useTheme();
+  const floatingSlider = useMediaQuery(theme.breakpoints.down('md'));
+  const [sliderWidth, setSliderWidth] = useSidebarWidth();
+  const [isResizing, setIsResizing] = useSidebarResizing();
+  const show = isPublicWorkspace ? false : sidebarOpen;
   return (
     <>
-      <StyledSliderBar show={isPublicWorkspace ? false : sidebarOpen}>
+      <StyledSliderBar
+        resizing={isResizing}
+        floating={floatingSlider}
+        style={{
+          width: show
+            ? floatingSlider
+              ? 'calc(10vw + 400px)'
+              : sliderWidth
+            : 0,
+        }}
+        show={show}
+      >
         <StyledSidebarSwitchWrapper>
           <SidebarSwitch
             visible={sidebarOpen}
@@ -174,7 +197,31 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         >
           <PlusIcon /> {t('New Page')}
         </StyledNewPageButton>
+        {!floatingSlider && (
+          <StyledSliderResizer
+            isResizing={isResizing}
+            onMouseDown={() => {
+              function onMouseMove(e: MouseEvent) {
+                const width = e.clientX;
+                setSliderWidth(Math.min(480, Math.max(width, 256)));
+                setIsResizing(true);
+              }
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener(
+                'mouseup',
+                () => {
+                  setIsResizing(false);
+                  document.removeEventListener('mousemove', onMouseMove);
+                },
+                { once: true }
+              );
+            }}
+          />
+        )}
       </StyledSliderBar>
+      {floatingSlider && sidebarOpen && (
+        <StyledSliderModalBackground onClick={() => setSidebarOpen(false)} />
+      )}
     </>
   );
 };

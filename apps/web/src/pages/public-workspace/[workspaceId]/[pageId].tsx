@@ -24,7 +24,7 @@ import { initPage } from '../../../utils';
 export const NavContainer = styled('div')(({ theme }) => {
   return {
     width: '100vw',
-    height: '60px',
+    height: '48px',
     ...displayFlex('space-between', 'center'),
     backgroundColor: theme.colors.pageBackground,
   };

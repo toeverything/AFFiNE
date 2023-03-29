@@ -3,8 +3,8 @@ import { TableRow } from '@affine/component';
 
 export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
-    height: 'calc(100vh - 60px)',
-    padding: '78px 72px',
+    height: 'calc(100vh - 48px)',
+    padding: '78px 0',
     overflowY: 'auto',
     [theme.breakpoints.down('sm')]: {
       padding: '12px 24px',
