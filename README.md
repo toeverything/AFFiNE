@@ -228,6 +228,6 @@ See [LICENSE] for details.
 [rust-version-icon]: https://img.shields.io/badge/Rust-1.67-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
-[node-version-icon]: https://img.shields.io/badge/node->=18.0-success
-[typescript-version-icon]: https://img.shields.io/badge/TypeScript-4.9-3178c6
-[react-version-icon]: https://img.shields.io/badge/React-18-61dafb
+[node-version-icon]: https://img.shields.io/badge/node-%3E=18.15.0-success
+[typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
+[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/react?color=rgb%2897%2C%20218%2C%20251%29
