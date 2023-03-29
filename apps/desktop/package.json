@@ -22,25 +22,25 @@
     "@emotion/styled": "^11.10.6",
     "@tauri-apps/api": "^1.2.0",
     "json-schema-to-typescript": "^12.0.0",
-    "lib0": "^0.2.69",
+    "lib0": "^0.2.73",
     "next": "=13.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.5.50"
+    "yjs": "^13.5.51"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.2.3",
-    "@types/node": "^18.15.3",
-    "@types/react": "^18.0.28",
+    "@types/node": "^18.15.11",
+    "@types/react": "^18.0.31",
     "@types/react-dom": "^18.0.11",
-    "esbuild": "^0.17.12",
-    "lit": "^2.6.1",
-    "prettier": "2.8.5",
-    "rimraf": "^4.4.0",
+    "esbuild": "^0.17.14",
+    "lit": "^2.7.0",
+    "prettier": "2.8.7",
+    "rimraf": "^4.4.1",
     "typescript": "^5.0.2",
     "typesync": "^0.10.0",
-    "vite": "^4.2.0",
+    "vite": "^4.2.1",
     "zx": "^7.2.1"
   }
 }
