@@ -1,9 +1,12 @@
 import type { Node } from '@affine/component';
 import type { PageMeta } from '@blocksuite/store';
+import type { MouseEvent } from 'react';
 
-export type ExtendRenderProps = {
-  // pageMeta: PageMeta;
-  openPage: (pageId: string) => void;
+export type RenderProps = {
+  onClick?: (e: MouseEvent<HTMLDivElement>, node: TreeNode) => void;
   showOperationButton?: boolean;
 };
-export type TreeNode = Node<PageMeta, ExtendRenderProps>;
+
+export type InternalRenderProps = RenderProps & { pageMeta: PageMeta };
+
+export type TreeNode = Node<InternalRenderProps>;

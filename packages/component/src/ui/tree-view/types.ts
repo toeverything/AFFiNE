@@ -1,10 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-export type Node<N, ExtendRenderProps> = {
+export type Node<RenderProps = unknown> = {
   id: string;
-  children?: Node<N, ExtendRenderProps>[];
-  render?: (
-    node: Node<N, ExtendRenderProps>,
+  children?: Node<RenderProps>[];
+  render: (
+    node: Node<RenderProps>,
     eventsAndStatus: {
       isOver: boolean;
       onAdd: () => void;
@@ -12,17 +12,17 @@ export type Node<N, ExtendRenderProps> = {
       collapsed: boolean;
       setCollapsed: (collapsed: boolean) => void;
     },
-    extendProps: ExtendRenderProps
+    extendProps?: RenderProps
   ) => ReactNode;
-} & N;
+};
 
-type CommonProps<N, ExtendRenderProps> = {
+type CommonProps<RenderProps = unknown> = {
   indent?: CSSProperties['paddingLeft'];
-  onAdd?: (node: Node<N, ExtendRenderProps>) => void;
-  onDelete?: (node: Node<N, ExtendRenderProps>) => void;
+  onAdd?: (node: Node<RenderProps>) => void;
+  onDelete?: (node: Node<RenderProps>) => void;
   onDrop?: (
-    dragNode: Node<N, ExtendRenderProps>,
-    dropNode: Node<N, ExtendRenderProps>,
+    dragNode: Node<RenderProps>,
+    dropNode: Node<RenderProps>,
     position: {
       topLine: boolean;
       bottomLine: boolean;
@@ -31,22 +31,22 @@ type CommonProps<N, ExtendRenderProps> = {
   ) => void;
 };
 
-export type TreeNodeProps<N, ExtendRenderProps> = {
-  node: Node<N, ExtendRenderProps>;
+export type TreeNodeProps<RenderProps = unknown> = {
+  node: Node<RenderProps>;
   index: number;
   allowDrop?: boolean;
-} & CommonProps<N, ExtendRenderProps>;
+} & CommonProps<RenderProps>;
 
-export type TreeNodeItemProps<N, ExtendRenderProps> = {
+export type TreeNodeItemProps<RenderProps = unknown> = {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
-} & TreeNodeProps<N, ExtendRenderProps>;
+} & TreeNodeProps<RenderProps>;
 
-export type TreeViewProps<N, ExtendRenderProps> = {
-  data: Node<N, ExtendRenderProps>[];
-} & CommonProps<N, ExtendRenderProps>;
+export type TreeViewProps<RenderProps = unknown> = {
+  data: Node<RenderProps>[];
+} & CommonProps<RenderProps>;
 
-export type NodeLIneProps<N, ExtendRenderProps> = {
+export type NodeLIneProps<RenderProps = unknown> = {
   allowDrop: boolean;
   isTop?: boolean;
-} & Pick<TreeNodeProps<N, ExtendRenderProps>, 'node' | 'onDrop'>;
+} & Pick<TreeNodeProps<RenderProps>, 'node' | 'onDrop'>;

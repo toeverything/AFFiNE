@@ -14,16 +14,16 @@ import type {
   TreeNodeProps,
 } from './types';
 
-const NodeLine = <N,>({
+const NodeLine = <RenderProps,>({
   node,
   onDrop,
   allowDrop = true,
   isTop = false,
-}: NodeLIneProps<N>) => {
+}: NodeLIneProps<RenderProps>) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: 'node',
-      drop: (item: Node<N>, monitor) => {
+      drop: (item: Node<RenderProps>, monitor) => {
         const didDrop = monitor.didDrop();
         if (didDrop) {
           return;
@@ -44,19 +44,19 @@ const NodeLine = <N,>({
 
   return <StyledNodeLine ref={drop} show={isOver && allowDrop} isTop={isTop} />;
 };
-const TreeNodeItem = <N,>({
+const TreeNodeItem = <RenderProps,>({
   node,
   allowDrop,
   collapsed,
   setCollapsed,
   ...otherProps
-}: TreeNodeItemProps<N>) => {
+}: TreeNodeItemProps<RenderProps>) => {
   const { onAdd, onDelete, onDrop } = otherProps;
 
   const [{ canDrop, isOver }, drop] = useDrop(
     () => ({
       accept: 'node',
-      drop: (item: Node<N>, monitor) => {
+      drop: (item: Node<RenderProps>, monitor) => {
         const didDrop = monitor.didDrop();
         if (didDrop || item.id === node.id || !allowDrop) {
           return;
@@ -94,12 +94,12 @@ const TreeNodeItem = <N,>({
   );
 };
 
-export const TreeNode = <N,>({
+export const TreeNode = <RenderProps,>({
   node,
   index,
   allowDrop = true,
   ...otherProps
-}: TreeNodeProps<N>) => {
+}: TreeNodeProps<RenderProps>) => {
   const { indent } = otherProps;
   const [collapsed, setCollapsed] = useState(false);
 

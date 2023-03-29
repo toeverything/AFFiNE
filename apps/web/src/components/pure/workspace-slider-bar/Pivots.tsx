@@ -2,9 +2,11 @@ import { MuiCollapse, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { ArrowDownSmallIcon, PivotsIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
+import type { MouseEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import type { RemWorkspace } from '../../../shared';
+import type { TreeNode } from '../../affine/pivots';
 import {
   PivotRender,
   usePivotData,
@@ -22,18 +24,32 @@ export const PivotInternal = ({
   openPage: (pageId: string) => void;
   allMetas: PageMeta[];
 }) => {
+  const handlePivotClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>, node: TreeNode) => {
+      openPage(node.id);
+    },
+    [openPage]
+  );
+  const onAdd = useCallback(
+    (id: string) => {
+      openPage(id);
+    },
+    [openPage]
+  );
+
   const { data } = usePivotData({
     allMetas,
     pivotRender: PivotRender,
-    extendRenderProps: { openPage, showOperationButton: true },
+    renderProps: {
+      onClick: handlePivotClick,
+      showOperationButton: true,
+    },
   });
 
   const { handleAdd, handleDelete, handleDrop } = usePivotHandler({
     currentWorkspace,
     allMetas,
-    onAdd: node => {
-      openPage(node.id);
-    },
+    onAdd,
   });
 
   return (

@@ -1,12 +1,12 @@
 import type { PageMeta } from '@blocksuite/store';
 import { useMemo } from 'react';
 
-import type { ExtendRenderProps, TreeNode } from '../types';
+import type { RenderProps, TreeNode } from '../types';
 
 const flattenToTree = (
   handleMetas: PageMeta[],
-  render: TreeNode['render'],
-  extendRenderProps: ExtendRenderProps
+  pivotRender: TreeNode['render'],
+  renderProps: RenderProps
 ): TreeNode[] => {
   // Compatibility process: the old data not has `subpageIds`, it is a root page
   const metas = JSON.parse(JSON.stringify(handleMetas)) as PageMeta[];
@@ -29,17 +29,16 @@ const flattenToTree = (
       const childrenMetas = subpageIds
         .map(id => metas.find(m => m.id === id)!)
         .filter(meta => !meta.trash);
-      // FIXME: remove ts-ignore after blocksuite update
       // @ts-ignore
       const returnedMeta: TreeNode = {
         ...internalMeta,
         children: helper(childrenMetas),
         render: (node, props) =>
-          render!(node, props, {
-            ...extendRenderProps,
+          pivotRender(node, props, {
+            ...renderProps,
+            pageMeta: internalMeta,
           }),
       };
-      // @ts-ignore
       returnedMetas.push(returnedMeta);
       return returnedMetas;
     }, []);
@@ -50,15 +49,15 @@ const flattenToTree = (
 export const usePivotData = ({
   allMetas,
   pivotRender,
-  extendRenderProps,
+  renderProps,
 }: {
   allMetas: PageMeta[];
   pivotRender: TreeNode['render'];
-  extendRenderProps: ExtendRenderProps;
+  renderProps: RenderProps;
 }) => {
   const data = useMemo(
-    () => flattenToTree(allMetas, pivotRender, extendRenderProps),
-    [allMetas, extendRenderProps, pivotRender]
+    () => flattenToTree(allMetas, pivotRender, renderProps),
+    [allMetas, renderProps, pivotRender]
   );
 
   return {

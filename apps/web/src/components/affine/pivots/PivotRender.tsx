@@ -10,9 +10,9 @@ import type { TreeNode } from './types';
 export const PivotRender: TreeNode['render'] = (
   node,
   { isOver, onAdd, onDelete, collapsed, setCollapsed },
-  extendProps
+  renderProps
 ) => {
-  const { openPage, showOperationButton = false } = extendProps;
+  const { onClick, showOperationButton = false, pageMeta } = renderProps || {};
   const record = useAtomValue(workspacePreferredModeAtom);
 
   const router = useRouter();
@@ -20,11 +20,8 @@ export const PivotRender: TreeNode['render'] = (
 
   return (
     <StyledPivot
-      onClick={() => {
-        if (active) {
-          return;
-        }
-        openPage(node.id);
+      onClick={e => {
+        onClick?.(e, node);
       }}
       isOver={isOver}
       active={active}
@@ -40,7 +37,7 @@ export const PivotRender: TreeNode['render'] = (
         <ArrowDownSmallIcon />
       </StyledCollapsedButton>
       {record[node.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
-      <span>{node.title || 'Untitled'}</span>
+      <span>{pageMeta?.title || 'Untitled'}</span>
       {showOperationButton && (
         <OperationButton onAdd={onAdd} onDelete={onDelete} />
       )}

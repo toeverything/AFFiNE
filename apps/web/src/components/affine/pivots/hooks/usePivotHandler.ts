@@ -7,7 +7,8 @@ import { useCallback } from 'react';
 import { useBlockSuiteWorkspaceHelper } from '../../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../../shared';
-import type { ExtendRenderProps, TreeNode } from '../types';
+import type { InternalRenderProps, TreeNode } from '../types';
+
 const logger = new DebugLogger('pivot');
 
 export const usePivotHandler = ({
@@ -19,9 +20,9 @@ export const usePivotHandler = ({
 }: {
   currentWorkspace: RemWorkspace;
   allMetas: PageMeta[];
-  onAdd?: TreeViewProps<TreeNode, ExtendRenderProps>['onAdd'];
-  onDelete?: TreeViewProps<TreeNode, ExtendRenderProps>['onDelete'];
-  onDrop?: TreeViewProps<TreeNode, ExtendRenderProps>['onDrop'];
+  onAdd?: (id: string, parentNode: TreeNode) => void;
+  onDelete?: TreeViewProps<InternalRenderProps>['onDelete'];
+  onDrop?: TreeViewProps<InternalRenderProps>['onDrop'];
 }) => {
   const { createPage } = useBlockSuiteWorkspaceHelper(
     currentWorkspace.blockSuiteWorkspace
@@ -34,7 +35,7 @@ export const usePivotHandler = ({
     (node: TreeNode) => {
       const id = nanoid();
       createPage(id, node.id);
-      onAdd?.(node);
+      onAdd?.(id, node);
     },
     [createPage, onAdd]
   );
@@ -49,10 +50,10 @@ export const usePivotHandler = ({
           subpageMeta && removeToTrash(subpageMeta);
         });
       };
-      removeToTrash(node as PageMeta);
+      removeToTrash(allMetas.find(m => m.id === node.id)!);
       onDelete?.(node);
     },
-    [getPageMeta, onDelete, setPageMeta]
+    [allMetas, getPageMeta, onDelete, setPageMeta]
   );
 
   const handleDrop = useCallback(
