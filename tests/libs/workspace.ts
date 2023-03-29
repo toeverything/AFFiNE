@@ -27,7 +27,6 @@ export async function assertCurrentWorkspaceFlavour(
   flavour: 'affine' | 'local',
   page: Page
 ) {
-  // @ts-expect-error type globalThis.currentWorkspace is not defined in playwright context
   const actual = await page.evaluate(() => globalThis.currentWorkspace.flavour);
   expect(actual).toBe(flavour);
 }

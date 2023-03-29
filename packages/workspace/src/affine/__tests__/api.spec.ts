@@ -7,6 +7,8 @@ import { readFile } from 'node:fs/promises';
 
 import { MessageCode } from '@affine/env/constant';
 import { createStatusApis } from '@affine/workspace/affine/api/status';
+import user1 from '@affine-test/fixtures/built-in-user1.json';
+import user2 from '@affine-test/fixtures/built-in-user2.json';
 import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
@@ -87,6 +89,33 @@ async function createWorkspace(
 }
 
 describe('api', () => {
+  test('built-in mock user', async () => {
+    const data = await fetch('http://localhost:3000/api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'DebugLoginUser',
+        email: user1.email,
+        password: user1.password,
+      }),
+    }).then(r => r.json());
+    loginResponseSchema.parse(data);
+    const data2 = await fetch('http://localhost:3000/api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'DebugLoginUser',
+        email: user2.email,
+        password: user2.password,
+      }),
+    }).then(r => r.json());
+    loginResponseSchema.parse(data2);
+  });
+
   test('failed', async () => {
     workspaceApis = createWorkspaceApis('http://localhost:10086/404/');
     const listener = vi.fn(
