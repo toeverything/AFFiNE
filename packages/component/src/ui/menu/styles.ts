@@ -6,9 +6,11 @@ import StyledPopperContainer from '../shared/Container';
 
 export const StyledMenuWrapper = styled(StyledPopperContainer)<{
   width?: CSSProperties['width'];
-}>(({ theme, width }) => {
+  height?: CSSProperties['height'];
+}>(({ theme, width, height }) => {
   return {
     width,
+    height,
     background: theme.colors.popoverBackground,
     padding: '8px 4px',
     fontSize: '14px',

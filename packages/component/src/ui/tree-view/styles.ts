@@ -15,8 +15,8 @@ export const StyledTreeNodeWrapper = styled('div')(() => {
     position: 'relative',
   };
 });
-export const StyledTreeNodeContainer = styled('div')<{ isDragging: boolean }>(
-  ({ isDragging, theme }) => {
+export const StyledTreeNodeContainer = styled('div')<{ isDragging?: boolean }>(
+  ({ isDragging = false, theme }) => {
     return {
       background: isDragging ? theme.colors.hoverBackground : '',
       // opacity: isDragging ? 0.4 : 1,

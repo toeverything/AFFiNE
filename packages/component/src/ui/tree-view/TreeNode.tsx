@@ -44,10 +44,9 @@ const NodeLine = <RenderProps,>({
 
   return <StyledNodeLine ref={drop} show={isOver && allowDrop} isTop={isTop} />;
 };
-const TreeNodeItem = <RenderProps,>({
+const TreeNodeItemWithDnd = <RenderProps,>({
   node,
   allowDrop,
-  collapsed,
   setCollapsed,
   ...otherProps
 }: TreeNodeItemProps<RenderProps>) => {
@@ -82,39 +81,74 @@ const TreeNodeItem = <RenderProps,>({
   }, [isOver, canDrop]);
 
   return (
-    <div ref={drop}>
+    <TreeNodeItem
+      dropRef={drop}
+      onAdd={onAdd}
+      onDelete={onDelete}
+      node={node}
+      allowDrop={allowDrop}
+      setCollapsed={setCollapsed}
+      isOver={isOver}
+      canDrop={canDrop}
+      {...otherProps}
+    />
+  );
+};
+
+const TreeNodeItem = <RenderProps,>({
+  node,
+  collapsed,
+  setCollapsed,
+  selectedId,
+  isOver = false,
+  canDrop = false,
+  onAdd,
+  onDelete,
+  dropRef,
+}: TreeNodeItemProps<RenderProps>) => {
+  return (
+    <div ref={dropRef}>
       {node.render?.(node, {
-        isOver: !!(isOver && canDrop),
+        isOver: isOver && canDrop,
         onAdd: () => onAdd?.(node),
         onDelete: () => onDelete?.(node),
         collapsed,
         setCollapsed,
+        isSelected: selectedId === node.id,
       })}
     </div>
   );
 };
 
-export const TreeNode = <RenderProps,>({
-  node,
-  index,
-  allowDrop = true,
-  ...otherProps
-}: TreeNodeProps<RenderProps>) => {
-  const { indent } = otherProps;
-  const [collapsed, setCollapsed] = useState(false);
-
+export const TreeNodeWithDnd = <RenderProps,>(
+  props: TreeNodeProps<RenderProps>
+) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'node',
-    item: node,
+    item: props.node,
     collect: monitor => ({
       isDragging: monitor.isDragging(),
     }),
   }));
 
+  return <TreeNode dragRef={drag} isDragging={isDragging} {...props} />;
+};
+
+export const TreeNode = <RenderProps,>({
+  node,
+  index,
+  isDragging = false,
+  allowDrop = true,
+  dragRef,
+  ...otherProps
+}: TreeNodeProps<RenderProps>) => {
+  const { indent, enableDnd } = otherProps;
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
-    <StyledTreeNodeContainer ref={drag} isDragging={isDragging}>
+    <StyledTreeNodeContainer ref={dragRef} isDragging={isDragging}>
       <StyledTreeNodeWrapper>
-        {index === 0 && (
+        {enableDnd && index === 0 && (
           <NodeLine
             node={node}
             {...otherProps}
@@ -122,15 +156,27 @@ export const TreeNode = <RenderProps,>({
             isTop={true}
           />
         )}
-        <TreeNodeItem
-          node={node}
-          index={index}
-          allowDrop={allowDrop}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-          {...otherProps}
-        />
-        {(!node.children?.length || collapsed) && (
+        {enableDnd ? (
+          <TreeNodeItemWithDnd
+            node={node}
+            index={index}
+            allowDrop={allowDrop}
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+            {...otherProps}
+          />
+        ) : (
+          <TreeNodeItem
+            node={node}
+            index={index}
+            allowDrop={allowDrop}
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+            {...otherProps}
+          />
+        )}
+
+        {enableDnd && (!node.children?.length || collapsed) && (
           <NodeLine
             node={node}
             {...otherProps}
@@ -140,18 +186,26 @@ export const TreeNode = <RenderProps,>({
       </StyledTreeNodeWrapper>
       <StyledCollapse in={!collapsed} indent={indent}>
         {node.children &&
-          node.children.map((childNode, index) => (
-            <TreeNode
-              key={childNode.id}
-              node={childNode}
-              index={index}
-              allowDrop={isDragging ? false : allowDrop}
-              {...otherProps}
-            />
-          ))}
+          node.children.map((childNode, index) =>
+            enableDnd ? (
+              <TreeNodeWithDnd
+                key={childNode.id}
+                node={childNode}
+                index={index}
+                allowDrop={isDragging ? false : allowDrop}
+                {...otherProps}
+              />
+            ) : (
+              <TreeNode
+                key={childNode.id}
+                node={childNode}
+                index={index}
+                allowDrop={false}
+                {...otherProps}
+              />
+            )
+          )}
       </StyledCollapse>
     </StyledTreeNodeContainer>
   );
 };
-
-export default TreeNode;

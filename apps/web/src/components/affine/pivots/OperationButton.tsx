@@ -1,36 +1,36 @@
-import {
-  IconButton,
-  MenuItem,
-  MuiClickAwayListener,
-  PureMenu,
-} from '@affine/component';
+import { IconButton, MuiClickAwayListener } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import {
-  CopyIcon,
-  DeleteTemporarilyIcon,
-  MoreVerticalIcon,
-  MoveToIcon,
-  PenIcon,
-  PlusIcon,
-} from '@blocksuite/icons';
+import { MoreVerticalIcon } from '@blocksuite/icons';
+import type { PageMeta } from '@blocksuite/store';
+import { useTheme } from '@mui/material';
 import { useRouter } from 'next/router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { toast } from '../../../utils';
+import { OperationMenu } from './OperationMenu';
+import { PivotsMenu } from './PivotsMenu';
 
 export const OperationButton = ({
   onAdd,
   onDelete,
+  allMetas,
 }: {
   onAdd: () => void;
   onDelete: () => void;
+  allMetas: PageMeta[];
 }) => {
+  const {
+    zIndex: { modal: modalIndex },
+  } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [operationOpen, setOperationOpen] = useState(false);
+  const [pivotsMenuOpen, setPivotsMenuOpen] = useState(false);
 
-  const [open, setOpen] = useState(false);
+  const menuIndex = useMemo(() => modalIndex + 1, [modalIndex]);
+
   const copyUrl = useCallback(() => {
     const workspaceId = router.query.workspaceId;
     navigator.clipboard.writeText(window.location.href);
@@ -40,7 +40,8 @@ export const OperationButton = ({
   return (
     <MuiClickAwayListener
       onClickAway={() => {
-        setOpen(false);
+        setOperationOpen(false);
+        setPivotsMenuOpen(false);
       }}
     >
       <div
@@ -48,62 +49,48 @@ export const OperationButton = ({
           e.stopPropagation();
         }}
         onMouseLeave={() => {
-          setOpen(false);
+          setOperationOpen(false);
+          setPivotsMenuOpen(false);
         }}
       >
         <IconButton
           ref={ref => setAnchorEl(ref)}
           size="small"
           className="operation-button"
-          onClick={event => {
-            event.stopPropagation();
-            setOpen(!open);
+          onClick={() => {
+            setOperationOpen(!operationOpen);
           }}
         >
           <MoreVerticalIcon />
         </IconButton>
-        <PureMenu
+        <OperationMenu
           anchorEl={anchorEl}
+          open={operationOpen}
           placement="bottom-start"
-          open={open && anchorEl !== null}
-          zIndex={11111}
-        >
-          <MenuItem
-            icon={<PlusIcon />}
-            onClick={() => {
-              onAdd();
-              setOpen(false);
-            }}
-          >
-            {t('Add a subpage inside')}
-          </MenuItem>
-          <MenuItem icon={<MoveToIcon />} disabled={true}>
-            {t('Move to')}
-          </MenuItem>
-          <MenuItem icon={<PenIcon />} disabled={true}>
-            {t('Rename')}
-          </MenuItem>
-          <MenuItem
-            icon={<DeleteTemporarilyIcon />}
-            onClick={() => {
-              onDelete();
-              setOpen(false);
-            }}
-          >
-            {t('Move to Trash')}
-          </MenuItem>
-          <MenuItem
-            icon={<CopyIcon />}
-            disabled={true}
-            // onClick={() => {
-            //   const workspaceId = router.query.workspaceId;
-            //   navigator.clipboard.writeText(window.location.href);
-            //   toast(t('Copied link to clipboard'));
-            // }}
-          >
-            {t('Copy Link')}
-          </MenuItem>
-        </PureMenu>
+          zIndex={menuIndex}
+          onSelect={type => {
+            switch (type) {
+              case 'add':
+                onAdd();
+                break;
+              case 'move':
+                setPivotsMenuOpen(true);
+                break;
+              case 'delete':
+                onDelete();
+                break;
+            }
+            setOperationOpen(false);
+          }}
+        />
+
+        <PivotsMenu
+          anchorEl={anchorEl}
+          open={pivotsMenuOpen}
+          placement="bottom-start"
+          zIndex={menuIndex}
+          allMetas={allMetas}
+        />
       </div>
     </MuiClickAwayListener>
   );

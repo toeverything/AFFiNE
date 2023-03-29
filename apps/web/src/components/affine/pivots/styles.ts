@@ -67,3 +67,17 @@ export const StyledPivot = styled('div')<{
         },
   };
 });
+
+export const StyledSearchContainer = styled('div')(({ theme }) => {
+  return {
+    width: 'calc(100% - 24px)',
+    margin: '0 auto',
+    ...displayFlex('flex-start', 'center'),
+    borderBottom: `1px solid ${theme.colors.borderColor}`,
+    label: {
+      color: theme.colors.iconColor,
+      fontSize: '20px',
+      height: '20px',
+    },
+  };
+});

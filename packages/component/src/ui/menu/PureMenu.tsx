@@ -6,11 +6,13 @@ import { StyledMenuWrapper } from './styles';
 
 export type PureMenuProps = PurePopperProps & {
   width?: CSSProperties['width'];
+  height?: CSSProperties['height'];
 };
 export const PureMenu = ({
   children,
   placement,
   width,
+  height,
   ...otherProps
 }: PureMenuProps) => {
   return (

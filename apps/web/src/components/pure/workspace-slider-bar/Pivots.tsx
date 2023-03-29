@@ -43,6 +43,7 @@ export const PivotInternal = ({
     renderProps: {
       onClick: handlePivotClick,
       showOperationButton: true,
+      allMetas,
     },
   });
 

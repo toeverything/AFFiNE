@@ -1,8 +1,12 @@
-import { styled } from '@affine/component';
-import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
-import { Button } from '@affine/component';
-import { Input } from '@affine/component';
-import { MuiAvatar } from '@affine/component';
+import {
+  Button,
+  Input,
+  Modal,
+  ModalCloseButton,
+  ModalWrapper,
+  MuiAvatar,
+  styled,
+} from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { EmailIcon } from '@blocksuite/icons';
 import type React from 'react';
@@ -87,7 +91,7 @@ export const InviteMemberModal = ({
                   setShowMemberPreview(false);
                 }, [])}
                 placeholder={t('Invite placeholder')}
-              ></Input>
+              />
               {showMemberPreview && gmailReg.test(email) && (
                 <Suspense fallback="loading...">
                   <Result workspaceId={workspaceId} queryEmail={email} />
