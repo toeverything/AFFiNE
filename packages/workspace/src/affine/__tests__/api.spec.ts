@@ -6,6 +6,7 @@ import 'fake-indexeddb/auto';
 import { readFile } from 'node:fs/promises';
 
 import { MessageCode } from '@affine/env/constant';
+import { createStatusApis } from '@affine/workspace/affine/api/status';
 import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
@@ -25,6 +26,7 @@ import {
 
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
 let affineAuth: ReturnType<typeof createAffineAuth>;
+let statusApis: ReturnType<typeof createStatusApis>;
 
 const mockUser = {
   name: faker.name.fullName(),
@@ -42,6 +44,11 @@ beforeEach(() => {
 beforeEach(() => {
   affineAuth = createAffineAuth('http://localhost:3000/');
   workspaceApis = createWorkspaceApis('http://localhost:3000/');
+  statusApis = createStatusApis('http://localhost:3000/');
+});
+
+beforeEach(async () => {
+  expect(await statusApis.healthz(), 'health check').toBe(true);
 });
 
 beforeEach(async () => {
