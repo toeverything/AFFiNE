@@ -58,7 +58,12 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
           <Content weight="500">{t('Share with link')}</Content>
         </Wrapper>
         <FlexWrapper>
-          <Input width={582} value={shareUrl} disabled={true}></Input>
+          <Input
+            data-testid="share-url"
+            width={582}
+            value={shareUrl}
+            disabled={true}
+          ></Input>
           <Button
             onClick={copyUrl}
             type="light"
@@ -86,6 +91,7 @@ const PublishPanelAffine: React.FC<PublishPanelAffineProps> = ({
     <>
       <Wrapper marginBottom="42px">{t('Publishing Description')}</Wrapper>
       <Button
+        data-testid="publish-to-web-button"
         onClick={() => {
           publishWorkspace(true);
         }}
@@ -118,6 +124,7 @@ const PublishPanelLocal: React.FC<PublishPanelLocalProps> = ({
         {t('Publishing')}
       </Box>
       <Button
+        data-testid="publish-enable-affine-cloud-button"
         type="light"
         shape="circle"
         onClick={() => {
