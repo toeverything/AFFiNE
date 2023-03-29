@@ -1,4 +1,4 @@
-import { config } from '@affine/env/index';
+import { config } from '@affine/env';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useEffect } from 'react';
 
