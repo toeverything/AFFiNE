@@ -101,19 +101,20 @@ describe('api', () => {
     document.removeEventListener('affine-error', listener);
   });
 
-  test('blob too large', async () => {
-    let called = false;
-    try {
-      await workspaceApis.uploadBlob(
-        'test',
-        new ArrayBuffer(1024 * 1024 * 1024 + 1),
-        'image/png'
-      );
-    } catch (e) {
-      called = true;
+  test('no permission', async () => {
+    await workspaceApis.downloadWorkspace('not-exist').catch(e => {
       expect(e).toBeInstanceOf(RequestError);
-    }
-    expect(called, 'throw error').toBe(true);
+      expect(e.code).toBe(MessageCode.noPermission);
+    });
+  });
+
+  test('blob too large', async () => {
+    await workspaceApis
+      .uploadBlob('test', new ArrayBuffer(1024 * 1024 * 1024 + 1), 'image/png')
+      .catch(e => {
+        expect(e).toBeInstanceOf(RequestError);
+        expect(e.code).toBe(MessageCode.blobTooLarge);
+      });
   });
 
   test('refresh token', async () => {
