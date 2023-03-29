@@ -22,6 +22,14 @@ export const StyledWrapper = styled('div')(() => {
   };
 });
 
+export const MainContainerWrapper = styled('div')(({ theme }) => {
+  return {
+    display: 'flex',
+    flexGrow: 1,
+    position: 'relative',
+  };
+});
+
 export const MainContainer = styled('div')(({ theme }) => {
   return {
     position: 'relative',

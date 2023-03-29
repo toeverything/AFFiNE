@@ -37,9 +37,9 @@ import type { RemWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import {
   MainContainer,
+  MainContainerWrapper,
   StyledPage,
   StyledToolWrapper,
-  StyledWrapper,
 } from './styles';
 
 declare global {
@@ -252,7 +252,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <StyledWrapper>
+        <MainContainerWrapper>
           <MainContainer className="main-container">
             <AffineWorkspaceEffect />
             {children}
@@ -268,7 +268,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
               )}
             </StyledToolWrapper>
           </MainContainer>
-        </StyledWrapper>
+        </MainContainerWrapper>
       </StyledPage>
       <QuickSearch />
     </>
