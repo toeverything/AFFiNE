@@ -27,6 +27,8 @@ export const MainContainerWrapper = styled('div')(({ theme }) => {
     display: 'flex',
     flexGrow: 1,
     position: 'relative',
+    maxWidth: '100vw',
+    overflow: 'auto',
   };
 });
 
