@@ -15,7 +15,7 @@ test.describe('affine public workspace', () => {
     await loginUser(page, a);
     const name = `test-${Date.now()}`;
     await createWorkspace({ name }, page);
-    await page.waitForTimeout(50);
+    await waitMarkdownImported(page);
     await clickSideBarSettingButton(page);
     await page.waitForTimeout(50);
     await clickPublishPanel(page);
