@@ -1,22 +1,22 @@
 import { expect } from '@playwright/test';
 
-import { waitMarkdownImported } from '../libs/page-logic';
+import { waitMarkdownImported } from '../../libs/page-logic';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const userA = require('../fixtures/userA.json');
-import { test } from '../libs/playwright';
-import { clickCollaborationPanel } from '../libs/setting';
+const userA = require('../../fixtures/userA.json');
+import { test } from '../../libs/playwright';
+import { clickCollaborationPanel } from '../../libs/setting';
 import {
   clickNewPageButton,
   clickSideBarAllPageButton,
   clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
-} from '../libs/sidebar';
-import { createFakeUser, loginUser, openHomePage } from '../libs/utils';
+} from '../../libs/sidebar';
+import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
 import {
   assertCurrentWorkspaceFlavour,
   createWorkspace,
-} from '../libs/workspace';
+} from '../../libs/workspace';
 
 test.describe('affine workspace', () => {
   test('should login with user A', async ({ page }) => {
