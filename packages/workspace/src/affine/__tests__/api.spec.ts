@@ -87,6 +87,33 @@ async function createWorkspace(
 }
 
 describe('api', () => {
+  test('built-in mock user', async () => {
+    const data = await fetch('http://localhost:3000/api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'DebugLoginUser',
+        email: 'debug1@toeverything.info',
+        password: 'debug1',
+      }),
+    }).then(r => r.json());
+    loginResponseSchema.parse(data);
+    const data2 = await fetch('http://localhost:3000/api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'DebugLoginUser',
+        email: 'debug2@toeverything.info',
+        password: 'debug2',
+      }),
+    }).then(r => r.json());
+    loginResponseSchema.parse(data2);
+  });
+
   test('failed', async () => {
     workspaceApis = createWorkspaceApis('http://localhost:10086/404/');
     const listener = vi.fn(
