@@ -178,13 +178,14 @@ describe('api', () => {
       const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
       const data = await workspaceApis.createWorkspace(new Blob([binary]));
       createWorkspaceResponseSchema.parse(data);
+      const workspaceId = data.id;
       const blobId = await workspaceApis.uploadBlob(
-        data.id,
+        workspaceId,
         imageBuffer,
         'image/png'
       );
       expect(blobId).toBeTypeOf('string');
-      const arrayBuffer = await workspaceApis.getBlob(blobId);
+      const arrayBuffer = await workspaceApis.getBlob(workspaceId, blobId);
       expect(arrayBuffer).toBeInstanceOf(ArrayBuffer);
       expect(arrayBuffer.byteLength).toEqual(imageBuffer.byteLength);
       expect(Buffer.from(arrayBuffer)).toEqual(imageBuffer);
@@ -226,7 +227,7 @@ describe('api', () => {
         imageBuffer,
         'image/png'
       );
-      const buffer = await workspaceApis.getBlob(blobId);
+      const buffer = await workspaceApis.getBlob(id, blobId);
       expect(buffer.byteLength).toEqual(imageBuffer.byteLength);
       const newUsageResponse = await userApis.getUsage();
       usageResponseSchema.parse(newUsageResponse);
