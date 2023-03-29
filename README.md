@@ -26,7 +26,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![stars-icon]](https://github.com/toeverything/AFFiNE)
 [![All Contributors][all-contributors-badge]](#contributors)
 [![codecov]](https://codecov.io/gh/toeverything/AFFiNE)
-[![Node-version-icon]](https://www.typescriptlang.org/)
+[![Node-version-icon]](https://nodejs.org/)
 [![TypeScript-version-icon]](https://www.typescriptlang.org/)
 [![React-version-icon]](https://reactjs.org/)
 [![Rust-version-icon]](https://www.rust-lang.org/)
@@ -225,7 +225,7 @@ See [LICENSE] for details.
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/master/.github/CLA.md
 [affine-app-logo]: https://img.shields.io/static/v1?label=Try%20Online&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAhpJREFUWEdjZEACtnl3MxgY/0YzMjAaMzAwcCLLUYH9/T/D/7MM/5mXHp6kPANmHiOI4Zx9Xfg3C+tKBob/zlSwiAgjGPey/vkdvneq5luwA+zy7+yhn+Vwv+89NFHFhREU7IyM/6YT4WyqK/n/nymT0Tb/1mFGBkYbqptOhIH/Gf4fYbTLv/2NBgmOCOvBSr6DHPCfWNW0UEe2A2x1uRlakiXBbtpx6jND+7KXZLmPbAdURokzeJjxwi31rrzH8OX7P5IdQbYDtnUoMXBzMMEt7Fj2imH7qU/0cQBy8MNsPHL5K0P13Of0cQB68MNsJScaSI4CHk4mhq3tSnCf3n36k0FZmh3Mn7L+DcPqgx9ICgWSHeBpxsdQESUGtgRk+eqDH+H8O09/MiR3P6atA1qTJRlsdLnhPgYlPOQQCW96wPDi3R+iHUFSCKAHP8wydEeREg0kOQA9+JOgwR1qL8CQEygC9jWp0UCSA+aVysIT3JqDHxgmr38DtlRCiIVhZZ0CPNhB6QDkEGIA0Q4gZAkuxxFyBNEOQA7ml+/+MIQ1PUAxG1kelAhB6YMYQLQDCPmQUAjhcgxRDiDWcEKOxOYIohyQGyjCEGIvANaPLfhhBiNHA6hmBBXNhABRDgCV/aBQAAFQpYMrn4PUgNTCACiXEMoNRDmAkC8okR8UDhjYRumAN8sHvGMCSkAD2jUDOWDAO6ewbDQQ3XMAy/oxKownQR0AAAAASUVORK5CYII=&color=orange&message=%E2%86%92
-[rust-version-icon]: https://img.shields.io/badge/Rust-1.67-dea584
+[rust-version-icon]: https://img.shields.io/badge/Rust-1.70.0-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.15.0-success
