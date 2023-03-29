@@ -302,6 +302,10 @@ export function createWorkspaceApis(prefixUrl = '/') {
     ): Promise<string> => {
       const auth = getLoginStorage();
       assertExists(auth);
+      const mb = arrayBuffer.byteLength / 1048576;
+      if (mb > 10) {
+        throw new RequestError(MessageCode.blobTooLarge);
+      }
       return fetch(prefixUrl + 'api/blob', {
         method: 'PUT',
         body: arrayBuffer,

@@ -17,6 +17,7 @@ export const enum MessageCode {
   leaveWorkspaceFailed,
   downloadWorkspaceFailed,
   refreshTokenError,
+  blobTooLarge,
 }
 
 export const Messages = {
@@ -65,4 +66,11 @@ export const Messages = {
   [MessageCode.refreshTokenError]: {
     message: 'Refresh token failed',
   },
-} as const;
+  [MessageCode.blobTooLarge]: {
+    message: 'Blob too large',
+  },
+} as const satisfies {
+  [key in MessageCode]: {
+    message: string;
+  };
+};
