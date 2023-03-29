@@ -1,4 +1,6 @@
-import { useAtom } from 'jotai';
+import { config } from '@affine/env/index';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useEffect } from 'react';
 
 import {
   guideHiddenAtom,
@@ -7,18 +9,66 @@ import {
 } from '../../atoms/first-load';
 
 export function useLastVersion() {
-  const [lastVersion, setLastVersion] = useAtom(lastVersionAtom);
-  return { lastVersion, setLastVersion };
+  return useAtom(lastVersionAtom);
 }
 
 export function useGuideHidden() {
-  const [guideHidden, setGuideHidden] = useAtom(guideHiddenAtom);
-  return { guideHidden, setGuideHidden };
+  return useAtom(guideHiddenAtom);
 }
 
 export function useGuideHiddenUntilNextUpdate() {
-  const [hiddenUntilNextUpdate, setHiddenUntilNextUpdate] = useAtom(
+  return useAtom(guideHiddenUntilNextUpdateAtom);
+}
+
+const TIPS = {
+  quickSearchTips: true,
+  changeLog: true,
+};
+
+export function useTipsDisplayStatus() {
+  const permanentlyHiddenTips = useAtomValue(guideHiddenAtom);
+  const hiddenUntilNextUpdateTips = useAtomValue(
     guideHiddenUntilNextUpdateAtom
   );
-  return { hiddenUntilNextUpdate, setHiddenUntilNextUpdate };
+
+  return {
+    quickSearchTips: {
+      permanentlyHidden: permanentlyHiddenTips.quickSearchTips || true,
+      hiddenUntilNextUpdate: hiddenUntilNextUpdateTips.quickSearchTips || true,
+    },
+    changeLog: {
+      permanentlyHidden: permanentlyHiddenTips.changeLog || true,
+      hiddenUntilNextUpdate: hiddenUntilNextUpdateTips.changeLog || true,
+    },
+  };
+}
+
+export function useUpdateTipsOnVersionChange() {
+  const [lastVersion, setLastVersion] = useLastVersion();
+  const currentVersion = config.gitVersion;
+  const tipsDisplayStatus = useTipsDisplayStatus();
+  const setPermanentlyHiddenTips = useSetAtom(guideHiddenAtom);
+  const setHiddenUntilNextUpdateTips = useSetAtom(
+    guideHiddenUntilNextUpdateAtom
+  );
+
+  useEffect(() => {
+    if (lastVersion !== currentVersion) {
+      setLastVersion(currentVersion);
+      const newHiddenUntilNextUpdateTips = { ...TIPS };
+      const newPermanentlyHiddenTips = { ...TIPS, changeLog: false };
+      Object.keys(tipsDisplayStatus).forEach(tipKey => {
+        newHiddenUntilNextUpdateTips[tipKey as keyof typeof TIPS] = false;
+      });
+      setHiddenUntilNextUpdateTips(newHiddenUntilNextUpdateTips);
+      setPermanentlyHiddenTips(newPermanentlyHiddenTips);
+    }
+  }, [
+    currentVersion,
+    lastVersion,
+    setLastVersion,
+    setPermanentlyHiddenTips,
+    setHiddenUntilNextUpdateTips,
+    tipsDisplayStatus,
+  ]);
 }
