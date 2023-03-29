@@ -1,28 +1,27 @@
-import { MuiCollapse, TreeView } from '@affine/component';
+import type { TreeViewProps } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
-import { useTranslation } from '@affine/i18n';
-import { ArrowDownSmallIcon, PivotsIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback } from 'react';
 
 import { useBlockSuiteWorkspaceHelper } from '../../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../../shared';
-import EmptyItem from '../favorite/empty-item';
-import { StyledCollapseButton, StyledListItem } from '../shared-styles';
-import type { TreeNode } from './types';
-import { flattenToTree } from './utils';
+import type { ExtendRenderProps, TreeNode } from '../types';
 const logger = new DebugLogger('pivot');
 
-export const PivotInternal = ({
+export const usePivotHandler = ({
   currentWorkspace,
-  openPage,
   allMetas,
+  onAdd,
+  onDelete,
+  onDrop,
 }: {
   currentWorkspace: RemWorkspace;
-  openPage: (pageId: string) => void;
   allMetas: PageMeta[];
+  onAdd?: TreeViewProps<TreeNode, ExtendRenderProps>['onAdd'];
+  onDelete?: TreeViewProps<TreeNode, ExtendRenderProps>['onDelete'];
+  onDrop?: TreeViewProps<TreeNode, ExtendRenderProps>['onDrop'];
 }) => {
   const { createPage } = useBlockSuiteWorkspaceHelper(
     currentWorkspace.blockSuiteWorkspace
@@ -31,18 +30,13 @@ export const PivotInternal = ({
     currentWorkspace.blockSuiteWorkspace
   );
 
-  const treeData = useMemo(
-    () => flattenToTree(allMetas, { openPage }),
-    [allMetas, openPage]
-  );
-
   const handleAdd = useCallback(
     (node: TreeNode) => {
       const id = nanoid();
       createPage(id, node.id);
-      openPage(id);
+      onAdd?.(node);
     },
-    [createPage, openPage]
+    [createPage, onAdd]
   );
 
   const handleDelete = useCallback(
@@ -56,8 +50,9 @@ export const PivotInternal = ({
         });
       };
       removeToTrash(node as PageMeta);
+      onDelete?.(node);
     },
-    [getPageMeta, setPageMeta]
+    [getPageMeta, onDelete, setPageMeta]
   );
 
   const handleDrop = useCallback(
@@ -102,8 +97,7 @@ export const PivotInternal = ({
           const insertIndex =
             allMetas.findIndex(m => m.id === dropNode.id) + insertOffset;
           shiftPageMeta(dragNode.id, insertIndex);
-
-          return;
+          return onDrop?.(dragNode, dropNode, position);
         }
 
         if (
@@ -124,7 +118,8 @@ export const PivotInternal = ({
           setPageMeta(dropParentMeta.id, {
             subpageIds: newSubpageIds,
           });
-          return;
+
+          return onDrop?.(dragNode, dropNode, position);
         }
 
         logger.info('drop into drop node parent and resort');
@@ -146,7 +141,8 @@ export const PivotInternal = ({
         setPageMeta(dropParentMeta.id, {
           subpageIds: newSubpageIds,
         });
-        return;
+
+        return onDrop?.(dragNode, dropNode, position);
       }
 
       logger.info('drop into the drop node');
@@ -171,72 +167,14 @@ export const PivotInternal = ({
         subpageIds: newSubpageIds,
       });
     },
-    [allMetas, setPageMeta, shiftPageMeta]
+    [allMetas, onDrop, setPageMeta, shiftPageMeta]
   );
 
-  return (
-    <TreeView
-      data={treeData}
-      onAdd={handleAdd}
-      onDelete={handleDelete}
-      onDrop={handleDrop}
-      indent={16}
-    />
-  );
+  return {
+    handleDrop,
+    handleAdd,
+    handleDelete,
+  };
 };
 
-export const Pivot = ({
-  currentWorkspace,
-  openPage,
-  allMetas,
-}: {
-  currentWorkspace: RemWorkspace;
-  openPage: (pageId: string) => void;
-  allMetas: PageMeta[];
-}) => {
-  const { t } = useTranslation();
-
-  const [showPivot, setShowPivot] = useState(true);
-
-  const isPivotEmpty = useMemo(
-    () => allMetas.filter(meta => !meta.trash).length === 0,
-    [allMetas]
-  );
-
-  return (
-    <>
-      <StyledListItem>
-        <StyledCollapseButton
-          onClick={useCallback(() => {
-            setShowPivot(!showPivot);
-          }, [showPivot])}
-          collapse={showPivot}
-        >
-          <ArrowDownSmallIcon />
-        </StyledCollapseButton>
-        <PivotsIcon />
-        {t('Pivots')}
-      </StyledListItem>
-
-      <MuiCollapse
-        in={showPivot}
-        style={{
-          maxHeight: 300,
-          paddingLeft: '16px',
-          overflowY: 'auto',
-        }}
-      >
-        {isPivotEmpty ? (
-          <EmptyItem />
-        ) : (
-          <PivotInternal
-            currentWorkspace={currentWorkspace}
-            openPage={openPage}
-            allMetas={allMetas}
-          />
-        )}
-      </MuiCollapse>
-    </>
-  );
-};
-export default Pivot;
+export default usePivotHandler;

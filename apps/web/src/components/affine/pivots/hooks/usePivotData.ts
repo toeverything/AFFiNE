@@ -1,10 +1,12 @@
 import type { PageMeta } from '@blocksuite/store';
+import { useMemo } from 'react';
 
-import { TreeNodeRender } from './TreeNodeRender';
-import type { TreeNode } from './types';
-export const flattenToTree = (
+import type { ExtendRenderProps, TreeNode } from '../types';
+
+const flattenToTree = (
   handleMetas: PageMeta[],
-  renderProps: { openPage: (pageId: string) => void }
+  render: TreeNode['render'],
+  extendRenderProps: ExtendRenderProps
 ): TreeNode[] => {
   // Compatibility process: the old data not has `subpageIds`, it is a root page
   const metas = JSON.parse(JSON.stringify(handleMetas)) as PageMeta[];
@@ -33,9 +35,8 @@ export const flattenToTree = (
         ...internalMeta,
         children: helper(childrenMetas),
         render: (node, props) =>
-          TreeNodeRender!(node, props, {
-            pageMeta: internalMeta,
-            ...renderProps,
+          render!(node, props, {
+            ...extendRenderProps,
           }),
       };
       // @ts-ignore
@@ -45,3 +46,24 @@ export const flattenToTree = (
   };
   return helper(rootMetas);
 };
+
+export const usePivotData = ({
+  allMetas,
+  pivotRender,
+  extendRenderProps,
+}: {
+  allMetas: PageMeta[];
+  pivotRender: TreeNode['render'];
+  extendRenderProps: ExtendRenderProps;
+}) => {
+  const data = useMemo(
+    () => flattenToTree(allMetas, pivotRender, extendRenderProps),
+    [allMetas, extendRenderProps, pivotRender]
+  );
+
+  return {
+    data,
+  };
+};
+
+export default usePivotData;

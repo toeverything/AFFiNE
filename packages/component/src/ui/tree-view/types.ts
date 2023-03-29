@@ -1,10 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-export type Node<N> = {
+export type Node<N, ExtendRenderProps> = {
   id: string;
-  children?: Node<N>[];
+  children?: Node<N, ExtendRenderProps>[];
   render?: (
-    node: Node<N>,
+    node: Node<N, ExtendRenderProps>,
     eventsAndStatus: {
       isOver: boolean;
       onAdd: () => void;
@@ -12,17 +12,17 @@ export type Node<N> = {
       collapsed: boolean;
       setCollapsed: (collapsed: boolean) => void;
     },
-    extendProps?: unknown
+    extendProps: ExtendRenderProps
   ) => ReactNode;
 } & N;
 
-type CommonProps<N> = {
+type CommonProps<N, ExtendRenderProps> = {
   indent?: CSSProperties['paddingLeft'];
-  onAdd?: (node: Node<N>) => void;
-  onDelete?: (node: Node<N>) => void;
+  onAdd?: (node: Node<N, ExtendRenderProps>) => void;
+  onDelete?: (node: Node<N, ExtendRenderProps>) => void;
   onDrop?: (
-    dragNode: Node<N>,
-    dropNode: Node<N>,
+    dragNode: Node<N, ExtendRenderProps>,
+    dropNode: Node<N, ExtendRenderProps>,
     position: {
       topLine: boolean;
       bottomLine: boolean;
@@ -31,22 +31,22 @@ type CommonProps<N> = {
   ) => void;
 };
 
-export type TreeNodeProps<N> = {
-  node: Node<N>;
+export type TreeNodeProps<N, ExtendRenderProps> = {
+  node: Node<N, ExtendRenderProps>;
   index: number;
   allowDrop?: boolean;
-} & CommonProps<N>;
+} & CommonProps<N, ExtendRenderProps>;
 
-export type TreeNodeItemProps<N> = {
+export type TreeNodeItemProps<N, ExtendRenderProps> = {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
-} & TreeNodeProps<N>;
+} & TreeNodeProps<N, ExtendRenderProps>;
 
-export type TreeViewProps<N> = {
-  data: Node<N>[];
-} & CommonProps<N>;
+export type TreeViewProps<N, ExtendRenderProps> = {
+  data: Node<N, ExtendRenderProps>[];
+} & CommonProps<N, ExtendRenderProps>;
 
-export type NodeLIneProps<N> = {
+export type NodeLIneProps<N, ExtendRenderProps> = {
   allowDrop: boolean;
   isTop?: boolean;
-} & Pick<TreeNodeProps<N>, 'node' | 'onDrop'>;
+} & Pick<TreeNodeProps<N, ExtendRenderProps>, 'node' | 'onDrop'>;

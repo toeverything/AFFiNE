@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'next/router';
 import { useCallback, useState } from 'react';
 
-import { toast } from '../../../../utils';
+import { toast } from '../../../utils';
 
 export const OperationButton = ({
   onAdd,
