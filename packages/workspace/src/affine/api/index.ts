@@ -5,9 +5,12 @@ import { z } from 'zod';
 import { getLoginStorage } from '../login';
 
 export class RequestError extends Error {
+  public readonly code: MessageCode;
+
   constructor(code: MessageCode, cause: unknown | null = null) {
     super(Messages[code].message);
     sendMessage(code);
+    this.code = code;
     this.name = 'RequestError';
     this.cause = cause;
   }
@@ -360,8 +363,16 @@ export function createWorkspaceApis(prefixUrl = '/') {
             Authorization: auth.token,
           },
         })
+          .then(r =>
+            r.status === 403
+              ? Promise.reject(new RequestError(MessageCode.noPermission))
+              : r
+          )
           .then(r => r.arrayBuffer())
           .catch(e => {
+            if (e instanceof RequestError) {
+              throw e;
+            }
             throw new RequestError(MessageCode.downloadWorkspaceFailed, e);
           });
       }
