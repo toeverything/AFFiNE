@@ -7,6 +7,8 @@ import { readFile } from 'node:fs/promises';
 
 import { MessageCode } from '@affine/env/constant';
 import { createStatusApis } from '@affine/workspace/affine/api/status';
+import user1 from '@affine-test/fixtures/built-in-user1.json';
+import user2 from '@affine-test/fixtures/built-in-user2.json';
 import { assertExists } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
@@ -95,8 +97,8 @@ describe('api', () => {
       },
       body: JSON.stringify({
         type: 'DebugLoginUser',
-        email: 'debug1@toeverything.info',
-        password: 'debug1',
+        email: user1.email,
+        password: user1.password,
       }),
     }).then(r => r.json());
     loginResponseSchema.parse(data);
@@ -107,8 +109,8 @@ describe('api', () => {
       },
       body: JSON.stringify({
         type: 'DebugLoginUser',
-        email: 'debug2@toeverything.info',
-        password: 'debug2',
+        email: user2.email,
+        password: user2.password,
       }),
     }).then(r => r.json());
     loginResponseSchema.parse(data2);
