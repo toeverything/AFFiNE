@@ -58,7 +58,7 @@
     "next-router-mock": "^0.9.3",
     "raw-loader": "^4.0.2",
     "redux": "^4.2.1",
-    "swc-plugin-coverage-instrument": "^0.0.15",
+    "swc-plugin-coverage-instrument": "=0.0.14",
     "typescript": "^5.0.2",
     "webpack": "^5.76.3"
   }
