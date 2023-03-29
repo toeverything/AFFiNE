@@ -3,8 +3,9 @@ import { useTranslation } from '@affine/i18n';
 import { useCallback, useState } from 'react';
 
 import {
-  useIsFirstLoad,
-  useOpenTips,
+  useGuideHidden,
+  useGuideHiddenUntilNextUpdate,
+  useUpdateTipsOnVersionChange,
 } from '../../../hooks/affine/use-is-first-load';
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { SidebarSwitchIcon } from './icons';
@@ -19,10 +20,12 @@ export const SidebarSwitch = ({
   tooltipContent,
   testid = '',
 }: SidebarSwitchProps) => {
+  useUpdateTipsOnVersionChange();
   const [open, setOpen] = useSidebarStatus();
   const [tooltipVisible, setTooltipVisible] = useState(false);
-  const [isFirstLoad, setIsFirstLoad] = useIsFirstLoad();
-  const [, setOpenTips] = useOpenTips();
+  const [guideHidden, setGuideHidden] = useGuideHidden();
+  const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
+    useGuideHiddenUntilNextUpdate();
   const { t } = useTranslation();
   tooltipContent =
     tooltipContent || (open ? t('Collapse sidebar') : t('Expand sidebar'));
@@ -41,13 +44,23 @@ export const SidebarSwitch = ({
         onClick={useCallback(() => {
           setOpen(!open);
           setTooltipVisible(false);
-          if (isFirstLoad) {
-            setIsFirstLoad(false);
+          if (guideHiddenUntilNextUpdate['quickSearchTips'] === false) {
+            setGuideHiddenUntilNextUpdate({
+              ...guideHiddenUntilNextUpdate,
+              quickSearchTips: true,
+            });
             setTimeout(() => {
-              setOpenTips(true);
+              setGuideHidden({ ...guideHidden, quickSearchTips: false });
             }, 200);
           }
-        }, [isFirstLoad, open, setIsFirstLoad, setOpen, setOpenTips])}
+        }, [
+          guideHidden,
+          guideHiddenUntilNextUpdate,
+          open,
+          setGuideHidden,
+          setGuideHiddenUntilNextUpdate,
+          setOpen,
+        ])}
         onMouseEnter={useCallback(() => {
           setTooltipVisible(true);
         }, [])}
