@@ -234,6 +234,7 @@ describe('api', () => {
       expect(usageResponse.blob_usage.usage).not.equals(
         newUsageResponse.blob_usage.usage
       );
+      expect(newUsageResponse.blob_usage.usage).equals(96);
     },
     {
       timeout: 30000,
