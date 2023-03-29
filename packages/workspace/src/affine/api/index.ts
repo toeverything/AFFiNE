@@ -39,8 +39,27 @@ export interface GetUserByEmailParams {
   workspace_id: string;
 }
 
+export const usageResponseSchema = z.object({
+  blob_usage: z.object({
+    usage: z.number(),
+    max_usage: z.number(),
+  }),
+});
+
+export type UsageResponse = z.infer<typeof usageResponseSchema>;
+
 export function createUserApis(prefixUrl = '/') {
   return {
+    getUsage: async (): Promise<UsageResponse> => {
+      const auth = getLoginStorage();
+      assertExists(auth);
+      return fetch(prefixUrl + 'api/resource/usage', {
+        method: 'GET',
+        headers: {
+          Authorization: auth.token,
+        },
+      }).then(r => r.json());
+    },
     getUserByEmail: async (
       params: GetUserByEmailParams
     ): Promise<User[] | null> => {
