@@ -6,6 +6,7 @@
 /* eslint-env browser */
 
 // import * as Y from 'yjs'; // eslint-disable-line
+import { toast } from '@affine/component';
 import * as bc from 'lib0/broadcastchannel';
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
@@ -127,6 +128,11 @@ const readMessage = (provider, buf, emitSynced) => {
  * @param {WebsocketProvider} provider
  */
 const setupWS = provider => {
+  // failed too many times to reconnect
+  if (provider.wsUnsuccessfulReconnects >= 5) {
+    toast('Unable to connect to server. Please try again later.');
+    provider.shouldConnect = false;
+  }
   if (provider.shouldConnect && provider.ws === null) {
     const websocket = new provider._WS(provider.url);
     websocket.binaryType = 'arraybuffer';
