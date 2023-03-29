@@ -1,6 +1,5 @@
 import { Breadcrumbs, IconButton, ListSkeleton } from '@affine/component';
 import { SearchIcon } from '@blocksuite/icons';
-import { Box } from '@mui/material';
 import { useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
@@ -68,11 +67,6 @@ const ListPageInner: React.FC<{
             <span>{name}</span>
           </StyledBreadcrumbs>
         </Breadcrumbs>
-        <Box
-          sx={{
-            flex: 1,
-          }}
-        />
         <IconButton onClick={handleOpen}>
           <SearchIcon />
         </IconButton>

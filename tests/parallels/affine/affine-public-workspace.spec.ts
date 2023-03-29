@@ -8,7 +8,7 @@ import { createFakeUser, loginUser, openHomePage } from '../../libs/utils';
 import { createWorkspace } from '../../libs/workspace';
 
 test.describe('affine public workspace', () => {
-  test('enable public workspace', async ({ page }) => {
+  test('enable public workspace', async ({ page, context }) => {
     await openHomePage(page);
     await waitMarkdownImported(page);
     const [a] = await createFakeUser();
@@ -32,5 +32,9 @@ test.describe('affine public workspace', () => {
     expect(url.startsWith('http://localhost:8080/public-workspace/')).toBe(
       true
     );
+    const page2 = await context.newPage();
+    await page2.goto(url);
+    await page2.waitForSelector('thead');
+    await page2.getByText('Welcome to AFFiNE').click();
   });
 });
