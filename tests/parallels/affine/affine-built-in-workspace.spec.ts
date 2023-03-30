@@ -20,7 +20,6 @@ test.describe('affine built in workspace', () => {
     await page.getByText('Cloud Workspace').click();
     const page2 = await context.newPage();
     await openHomePage(page2);
-    await waitMarkdownImported(page2);
     await loginUser(page2, b);
     await page2.reload();
     await clickSideBarCurrentWorkspaceBanner(page2);
