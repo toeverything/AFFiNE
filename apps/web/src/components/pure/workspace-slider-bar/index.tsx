@@ -89,6 +89,28 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
       ? 'calc(10vw + 400px)'
       : sliderWidth
     : 0;
+  const onResizeStart = useCallback(() => {
+    let resized = false;
+    function onMouseMove(e: MouseEvent) {
+      const newWidth = Math.min(480, Math.max(e.clientX, 256));
+      setSliderWidth(newWidth);
+      setIsResizing(true);
+      resized = true;
+    }
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener(
+      'mouseup',
+      () => {
+        // if not resized, toggle sidebar
+        if (!resized) {
+          setSidebarOpen(o => !o);
+        }
+        setIsResizing(false);
+        document.removeEventListener('mousemove', onMouseMove);
+      },
+      { once: true }
+    );
+  }, [setIsResizing, setSidebarOpen, setSliderWidth]);
   return (
     <>
       <StyledSliderBarWrapper>
@@ -201,25 +223,10 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             <PlusIcon /> {t('New Page')}
           </StyledNewPageButton>
         </StyledSliderBar>
-        {!floatingSlider && (
+        {!floatingSlider && sidebarOpen && (
           <StyledSliderResizer
             isResizing={isResizing}
-            onMouseDown={() => {
-              function onMouseMove(e: MouseEvent) {
-                const width = e.clientX;
-                setSliderWidth(Math.min(480, Math.max(width, 256)));
-                setIsResizing(true);
-              }
-              document.addEventListener('mousemove', onMouseMove);
-              document.addEventListener(
-                'mouseup',
-                () => {
-                  setIsResizing(false);
-                  document.removeEventListener('mousemove', onMouseMove);
-                },
-                { once: true }
-              );
-            }}
+            onMouseDown={onResizeStart}
           >
             <StyledSliderResizerInner isResizing={isResizing} />
           </StyledSliderResizer>
