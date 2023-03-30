@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@affine-test/fixtures": "workspace:^",
+    "@affine-test/fixtures": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
