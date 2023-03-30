@@ -33,13 +33,13 @@ test.describe('Open AFFiNE', () => {
 test.describe('AFFiNE change log', () => {
   test('Open affine in first time after updated', async ({ page }) => {
     await openHomePage(page);
-    const changeLogItem = page.getByTestId('change-log');
-    expect(await changeLogItem.isVisible()).toBe(true);
-    const closeButton = page.getByTestId('change-log-close-button');
+    const changeLogItem = page.locator('[data-testid=change-log]');
+    await expect(changeLogItem).toBeVisible();
+    const closeButton = page.locator('[data-testid=change-log-close-button]');
     await closeButton.click();
-    expect(await changeLogItem.isVisible()).toBe(false);
+    await expect(changeLogItem).not.toBeVisible();
     await page.goto('http://localhost:8080');
-    const currentChangeLogItem = page.getByTestId('change-log');
-    expect(await currentChangeLogItem.isVisible()).toBe(false);
+    const currentChangeLogItem = page.locator('[data-testid=change-log]');
+    await expect(currentChangeLogItem).not.toBeVisible();
   });
 });
