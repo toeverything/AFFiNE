@@ -6,8 +6,8 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import type * as Y from 'yjs';
 
-import { handler, Message } from './handler.js';
-import { readMessage } from './processor.js';
+import { handler, Message } from './handler';
+import { readMessage } from './processor';
 
 // @todo - this should depend on awareness.outdatedTime
 const messageReconnectTimeout = 30000;
