@@ -1,5 +1,14 @@
 import { displayFlex, styled } from '@affine/component';
 import Link from 'next/link';
+
+export const StyledSliderBarWrapper = styled('div')(() => {
+  return {
+    height: '100%',
+    width: 'auto',
+    position: 'relative',
+  };
+});
+
 export const StyledSliderBar = styled('div')<{
   resizing: boolean;
   show: boolean;
@@ -18,6 +27,7 @@ export const StyledSliderBar = styled('div')<{
     flexDirection: 'column',
     overflow: 'hidden',
     position: floating ? 'absolute' : 'relative',
+    maxWidth: 'calc(100vw - 698px)',
   };
 });
 export const StyledSidebarSwitchWrapper = styled('div')(() => {
@@ -68,32 +78,49 @@ export const StyledNewPageButton = styled('button')(({ theme }) => {
     },
   };
 });
-export const StyledSliderModalBackground = styled('div')(({ theme }) => {
-  return {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: theme.zIndex.modal - 1,
-    // ?: add background?
-  };
-});
+export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
+  ({ theme, active }) => {
+    return {
+      transition: 'opacity .15s',
+      pointerEvents: active ? 'auto' : 'none',
+      opacity: active ? 1 : 0,
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: theme.zIndex.modal - 1,
+      background: theme.colors.modalBackground,
+    };
+  }
+);
 export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
-  ({ theme, isResizing }) => {
+  ({ theme }) => {
     return {
       position: 'absolute',
       top: 0,
       right: 0,
       bottom: 0,
-      width: '4px',
-      cursor: 'ew-resize',
+      width: '12px',
+      transform: 'translateX(50%)',
+      cursor: 'col-resize',
       zIndex: theme.zIndex.modal + 1,
       userSelect: 'none',
-      transition: 'background .15s .1s',
-      ':hover': {
+      ':hover > *': {
         background: theme.colors.primaryColor,
       },
+    };
+  }
+);
+export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
+  ({ theme, isResizing }) => {
+    return {
+      transition: 'background .15s .1s',
+      position: 'absolute',
+      top: 0,
+      right: '4px',
+      bottom: 0,
+      width: '4px',
       background: isResizing ? theme.colors.primaryColor : 'transparent',
     };
   }

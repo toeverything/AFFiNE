@@ -12,10 +12,7 @@ export const StyledBackdrop = styled('div')(({ theme }) => {
     bottom: '0',
     top: '0',
     left: '0',
-    backgroundColor:
-      theme.palette.mode === 'light'
-        ? 'rgba(58, 76, 92, 0.2)'
-        : 'rgba(34, 34, 34, 0.6)',
+    backgroundColor: theme.colors.modalBackground,
   };
 });
 

@@ -29,6 +29,7 @@ export const getLightTheme = (
       cardHoverBackground: '#f8f9ff',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
+      modalBackground: 'rgba(0, 0, 0, 0.6)',
 
       textColor: '#424149',
       secondaryTextColor: '#8E8D91',
@@ -122,6 +123,7 @@ export const getDarkTheme = (
       cardHoverBackground: '#363636',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
+      modalBackground: 'rgba(0, 0, 0, 0.8)',
 
       textColor: '#fff',
       secondaryTextColor: '#8E8D91',

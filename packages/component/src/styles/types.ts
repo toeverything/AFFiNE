@@ -27,6 +27,7 @@ export interface AffineTheme {
     tooltipBackground: string;
     hoverBackground: string;
     innerHoverBackground: string;
+    modalBackground: string;
     // Use for the quick search tips background
     backgroundTertiaryColor: string;
     codeBackground: string;

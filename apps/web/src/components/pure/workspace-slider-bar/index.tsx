@@ -29,8 +29,10 @@ import {
   StyledSidebarSwitchWrapper,
   StyledSlidebarWrapper,
   StyledSliderBar,
+  StyledSliderBarWrapper,
   StyledSliderModalBackground,
   StyledSliderResizer,
+  StyledSliderResizerInner,
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector';
 
@@ -82,121 +84,123 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const [sliderWidth, setSliderWidth] = useSidebarWidth();
   const [isResizing, setIsResizing] = useSidebarResizing();
   const show = isPublicWorkspace ? false : sidebarOpen;
+  const actualWidth = show
+    ? floatingSlider
+      ? 'calc(10vw + 400px)'
+      : sliderWidth
+    : 0;
   return (
     <>
-      <StyledSliderBar
-        resizing={isResizing}
-        floating={floatingSlider}
-        style={{
-          width: show
-            ? floatingSlider
-              ? 'calc(10vw + 400px)'
-              : sliderWidth
-            : 0,
-        }}
-        show={show}
-      >
-        <StyledSidebarSwitchWrapper>
-          <SidebarSwitch
-            visible={sidebarOpen}
-            tooltipContent={t('Collapse sidebar')}
-            testid="sliderBar-arrowButton-collapse"
-          />
-        </StyledSidebarSwitchWrapper>
-
-        <StyledSlidebarWrapper data-testid="sliderBar">
-          <WorkspaceSelector
-            currentWorkspace={currentWorkspace}
-            onClick={onOpenWorkspaceListModal}
-          />
-
-          <StyledListItem
-            data-testid="slider-bar-quick-search-button"
-            onClick={useCallback(() => {
-              onOpenQuickSearchModal();
-            }, [onOpenQuickSearchModal])}
-          >
-            <SearchIcon />
-            {t('Quick search')}
-          </StyledListItem>
-
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.setting(currentWorkspaceId))
-            }
-            data-testid="slider-bar-workspace-setting-button"
-            style={{
-              marginBottom: '16px',
-            }}
-          >
-            <StyledLink
-              href={{
-                pathname:
-                  currentWorkspaceId && paths.setting(currentWorkspaceId),
-              }}
-            >
-              <SettingsIcon />
-              {t('Workspace Settings')}
-            </StyledLink>
-          </StyledListItem>
-
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.all(currentWorkspaceId))
-            }
-          >
-            <StyledLink
-              href={{
-                pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
-              }}
-            >
-              <FolderIcon />
-              <span data-testid="all-pages">{t('All pages')}</span>
-            </StyledLink>
-          </StyledListItem>
-
-          <Favorite
-            currentPath={currentPath}
-            paths={paths}
-            currentPageId={currentPageId}
-            openPage={openPage}
-            currentWorkspace={currentWorkspace}
-          />
-          {config.enableSubpage && !!currentWorkspace && (
-            <Pivot
-              currentWorkspace={currentWorkspace}
-              openPage={openPage}
-              allMetas={pageMeta}
-            />
-          )}
-
-          <StyledListItem
-            active={
-              currentPath ===
-              (currentWorkspaceId && paths.trash(currentWorkspaceId))
-            }
-            style={{
-              marginTop: '16px',
-            }}
-          >
-            <StyledLink
-              href={{
-                pathname: currentWorkspaceId && paths.trash(currentWorkspaceId),
-              }}
-            >
-              <DeleteTemporarilyIcon /> {t('Trash')}
-            </StyledLink>
-          </StyledListItem>
-        </StyledSlidebarWrapper>
-
-        <StyledNewPageButton
-          data-testid="new-page-button"
-          onClick={onClickNewPage}
+      <StyledSliderBarWrapper>
+        <StyledSliderBar
+          resizing={isResizing}
+          floating={floatingSlider}
+          style={{ width: actualWidth }}
+          show={show}
         >
-          <PlusIcon /> {t('New Page')}
-        </StyledNewPageButton>
+          <StyledSidebarSwitchWrapper>
+            <SidebarSwitch
+              visible={sidebarOpen}
+              tooltipContent={t('Collapse sidebar')}
+              testid="sliderBar-arrowButton-collapse"
+            />
+          </StyledSidebarSwitchWrapper>
+
+          <StyledSlidebarWrapper data-testid="sliderBar">
+            <WorkspaceSelector
+              currentWorkspace={currentWorkspace}
+              onClick={onOpenWorkspaceListModal}
+            />
+
+            <StyledListItem
+              data-testid="slider-bar-quick-search-button"
+              onClick={useCallback(() => {
+                onOpenQuickSearchModal();
+              }, [onOpenQuickSearchModal])}
+            >
+              <SearchIcon />
+              {t('Quick search')}
+            </StyledListItem>
+
+            <StyledListItem
+              active={
+                currentPath ===
+                (currentWorkspaceId && paths.setting(currentWorkspaceId))
+              }
+              data-testid="slider-bar-workspace-setting-button"
+              style={{
+                marginBottom: '16px',
+              }}
+            >
+              <StyledLink
+                href={{
+                  pathname:
+                    currentWorkspaceId && paths.setting(currentWorkspaceId),
+                }}
+              >
+                <SettingsIcon />
+                {t('Workspace Settings')}
+              </StyledLink>
+            </StyledListItem>
+
+            <StyledListItem
+              active={
+                currentPath ===
+                (currentWorkspaceId && paths.all(currentWorkspaceId))
+              }
+            >
+              <StyledLink
+                href={{
+                  pathname: currentWorkspaceId && paths.all(currentWorkspaceId),
+                }}
+              >
+                <FolderIcon />
+                <span data-testid="all-pages">{t('All pages')}</span>
+              </StyledLink>
+            </StyledListItem>
+
+            <Favorite
+              currentPath={currentPath}
+              paths={paths}
+              currentPageId={currentPageId}
+              openPage={openPage}
+              currentWorkspace={currentWorkspace}
+            />
+            {config.enableSubpage && !!currentWorkspace && (
+              <Pivot
+                currentWorkspace={currentWorkspace}
+                openPage={openPage}
+                allMetas={pageMeta}
+              />
+            )}
+
+            <StyledListItem
+              active={
+                currentPath ===
+                (currentWorkspaceId && paths.trash(currentWorkspaceId))
+              }
+              style={{
+                marginTop: '16px',
+              }}
+            >
+              <StyledLink
+                href={{
+                  pathname:
+                    currentWorkspaceId && paths.trash(currentWorkspaceId),
+                }}
+              >
+                <DeleteTemporarilyIcon /> {t('Trash')}
+              </StyledLink>
+            </StyledListItem>
+          </StyledSlidebarWrapper>
+
+          <StyledNewPageButton
+            data-testid="new-page-button"
+            onClick={onClickNewPage}
+          >
+            <PlusIcon /> {t('New Page')}
+          </StyledNewPageButton>
+        </StyledSliderBar>
         {!floatingSlider && (
           <StyledSliderResizer
             isResizing={isResizing}
@@ -216,12 +220,15 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 { once: true }
               );
             }}
-          />
+          >
+            <StyledSliderResizerInner isResizing={isResizing} />
+          </StyledSliderResizer>
         )}
-      </StyledSliderBar>
-      {floatingSlider && sidebarOpen && (
-        <StyledSliderModalBackground onClick={() => setSidebarOpen(false)} />
-      )}
+      </StyledSliderBarWrapper>
+      <StyledSliderModalBackground
+        active={floatingSlider && sidebarOpen}
+        onClick={() => setSidebarOpen(false)}
+      />
     </>
   );
 };

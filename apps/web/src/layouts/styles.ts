@@ -1,18 +1,21 @@
 import { styled } from '@affine/component';
 
-export const StyledPage = styled('div')(({ theme }) => {
-  return {
-    height: '100vh',
-    backgroundColor: theme.colors.pageBackground,
-    transition: 'background-color .5s',
-    display: 'flex',
-    flexGrow: '1',
-    '--affine-editor-width': '686px',
-    [theme.breakpoints.down('sm')]: {
-      '--affine-editor-width': '550px',
-    },
-  };
-});
+export const StyledPage = styled('div')<{ resizing: boolean }>(
+  ({ theme, resizing }) => {
+    return {
+      cursor: resizing ? 'col-resize' : 'default',
+      height: '100vh',
+      backgroundColor: theme.colors.pageBackground,
+      transition: 'background-color .5s',
+      display: 'flex',
+      flexGrow: '1',
+      '--affine-editor-width': '686px',
+      [theme.breakpoints.down('sm')]: {
+        '--affine-editor-width': '550px',
+      },
+    };
+  }
+);
 
 export const StyledWrapper = styled('div')(() => {
   return {
