@@ -15,9 +15,11 @@ import { faker } from '@faker-js/faker';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
+  createUserApis,
   createWorkspaceApis,
   createWorkspaceResponseSchema,
   RequestError,
+  usageResponseSchema,
 } from '../api';
 import {
   createAffineAuth,
@@ -27,6 +29,7 @@ import {
 } from '../login';
 
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
+let userApis: ReturnType<typeof createUserApis>;
 let affineAuth: ReturnType<typeof createAffineAuth>;
 let statusApis: ReturnType<typeof createStatusApis>;
 
@@ -45,6 +48,7 @@ beforeEach(() => {
 
 beforeEach(() => {
   affineAuth = createAffineAuth('http://localhost:3000/');
+  userApis = createUserApis('http://localhost:3000/');
   workspaceApis = createWorkspaceApis('http://localhost:3000/');
   statusApis = createStatusApis('http://localhost:3000/');
 });
@@ -203,13 +207,14 @@ describe('api', () => {
       const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
       const data = await workspaceApis.createWorkspace(new Blob([binary]));
       createWorkspaceResponseSchema.parse(data);
+      const workspaceId = data.id;
       const blobId = await workspaceApis.uploadBlob(
-        data.id,
+        workspaceId,
         imageBuffer,
         'image/png'
       );
       expect(blobId).toBeTypeOf('string');
-      const arrayBuffer = await workspaceApis.getBlob(blobId);
+      const arrayBuffer = await workspaceApis.getBlob(workspaceId, blobId);
       expect(arrayBuffer).toBeInstanceOf(ArrayBuffer);
       expect(arrayBuffer.byteLength).toEqual(imageBuffer.byteLength);
       expect(Buffer.from(arrayBuffer)).toEqual(imageBuffer);
@@ -232,6 +237,33 @@ describe('api', () => {
       expect(binary).toBeInstanceOf(ArrayBuffer);
       expect(publicBinary).toBeInstanceOf(ArrayBuffer);
       expect(binary.byteLength).toEqual(publicBinary.byteLength);
+    },
+    {
+      timeout: 30000,
+    }
+  );
+
+  test(
+    'usage',
+    async () => {
+      const usageResponse = await userApis.getUsage();
+      usageResponseSchema.parse(usageResponse);
+      const id = await createWorkspace(workspaceApis);
+      const path = require.resolve('@affine-test/fixtures/smile.png');
+      const imageBuffer = await readFile(path);
+      const blobId = await workspaceApis.uploadBlob(
+        id,
+        imageBuffer,
+        'image/png'
+      );
+      const buffer = await workspaceApis.getBlob(id, blobId);
+      expect(buffer.byteLength).toEqual(imageBuffer.byteLength);
+      const newUsageResponse = await userApis.getUsage();
+      usageResponseSchema.parse(newUsageResponse);
+      expect(usageResponse.blob_usage.usage).not.equals(
+        newUsageResponse.blob_usage.usage
+      );
+      expect(newUsageResponse.blob_usage.usage).equals(96);
     },
     {
       timeout: 30000,
