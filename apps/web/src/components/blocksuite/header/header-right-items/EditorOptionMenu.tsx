@@ -39,7 +39,7 @@ export const EditorOptionMenu = () => {
   const pageMeta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  const allMetas = usePageMeta(workspace?.blockSuiteWorkspace ?? null);
+  const allMetas = usePageMeta(blockSuiteWorkspace);
   const [record, set] = useAtom(workspacePreferredModeAtom);
   const mode = record[pageId] ?? 'page';
   assertExists(pageMeta);
@@ -83,12 +83,12 @@ export const EditorOptionMenu = () => {
       <MoveTo
         metas={allMetas}
         currentMeta={pageMeta}
-        blockSuiteWorkspace={workspace?.blockSuiteWorkspace}
+        blockSuiteWorkspace={blockSuiteWorkspace}
       />
       <MoveToTrash
         testId="editor-option-menu-delete"
         currentMeta={pageMeta}
-        blockSuiteWorkspace={workspace?.blockSuiteWorkspace}
+        blockSuiteWorkspace={blockSuiteWorkspace}
       />
     </>
   );
