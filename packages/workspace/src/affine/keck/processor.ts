@@ -1,12 +1,11 @@
 import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
 
-import type { BroadcastProvider } from './broadcast.js';
+import type { KeckProvider } from '.';
 import type { Message } from './handler.js';
-import type { KeckProvider } from './keck.js';
 
 export const readMessage = (
-  provider: KeckProvider | BroadcastProvider,
+  provider: KeckProvider,
   buf: Uint8Array,
   emitSynced: boolean
 ): encoding.Encoder => {
