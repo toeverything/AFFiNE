@@ -1,6 +1,6 @@
 import { config } from '@affine/env';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { useHydrateAtoms } from 'jotai/utils';
+import { useEffect } from 'react';
 
 import {
   guideHiddenAtom,
@@ -44,23 +44,31 @@ export function useTipsDisplayStatus() {
 }
 
 export function useUpdateTipsOnVersionChange() {
-  const currentVersion = config.gitVersion;
-  useHydrateAtoms([[lastVersionAtom, currentVersion]]);
   const [lastVersion, setLastVersion] = useLastVersion();
+  const currentVersion = config.gitVersion;
   const tipsDisplayStatus = useTipsDisplayStatus();
   const setPermanentlyHiddenTips = useSetAtom(guideHiddenAtom);
   const setHiddenUntilNextUpdateTips = useSetAtom(
     guideHiddenUntilNextUpdateAtom
   );
 
-  if (lastVersion !== currentVersion) {
-    setLastVersion(currentVersion);
-    const newHiddenUntilNextUpdateTips = { ...TIPS };
-    const newPermanentlyHiddenTips = { ...TIPS, changeLog: false };
-    Object.keys(tipsDisplayStatus).forEach(tipKey => {
-      newHiddenUntilNextUpdateTips[tipKey as keyof typeof TIPS] = false;
-    });
-    setHiddenUntilNextUpdateTips(newHiddenUntilNextUpdateTips);
-    setPermanentlyHiddenTips(newPermanentlyHiddenTips);
-  }
+  useEffect(() => {
+    if (lastVersion !== currentVersion) {
+      setLastVersion(currentVersion);
+      const newHiddenUntilNextUpdateTips = { ...TIPS };
+      const newPermanentlyHiddenTips = { ...TIPS, changeLog: false };
+      Object.keys(tipsDisplayStatus).forEach(tipKey => {
+        newHiddenUntilNextUpdateTips[tipKey as keyof typeof TIPS] = false;
+      });
+      setHiddenUntilNextUpdateTips(newHiddenUntilNextUpdateTips);
+      setPermanentlyHiddenTips(newPermanentlyHiddenTips);
+    }
+  }, [
+    currentVersion,
+    lastVersion,
+    setLastVersion,
+    setPermanentlyHiddenTips,
+    setHiddenUntilNextUpdateTips,
+    tipsDisplayStatus,
+  ]);
 }
