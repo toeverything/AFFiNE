@@ -180,7 +180,7 @@ test.describe('Novice guidance for quick search', () => {
     const quickSearchTips = page.locator('[data-testid=quick-search-tips]');
     await expect(quickSearchTips).not.toBeVisible();
     await page.getByTestId('sliderBar-arrowButton-collapse').click();
-    const sliderBarArea = page.getByTestId('sliderBar');
+    const sliderBarArea = page.getByTestId('sliderBar-inner');
     await expect(sliderBarArea).not.toBeVisible();
     await expect(quickSearchTips).toBeVisible();
     await page.locator('[data-testid=quick-search-got-it]').click();

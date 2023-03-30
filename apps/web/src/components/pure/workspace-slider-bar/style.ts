@@ -39,7 +39,7 @@ export const StyledSidebarSwitchWrapper = styled('div')(() => {
     ...displayFlex('flex-start', 'center'),
   };
 });
-export const StyledSlidebarWrapper = styled('div')(() => {
+export const StyledSliderBarInnerWrapper = styled('div')(() => {
   return {
     flexGrow: 1,
     overflowX: 'hidden',
@@ -85,6 +85,7 @@ export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
       transition: 'opacity .15s',
       pointerEvents: active ? 'auto' : 'none',
       opacity: active ? 1 : 0,
+      display: active ? 'block' : 'none',
       position: 'fixed',
       top: 0,
       left: 0,

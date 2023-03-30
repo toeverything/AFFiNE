@@ -27,8 +27,8 @@ import {
   StyledLink,
   StyledNewPageButton,
   StyledSidebarSwitchWrapper,
-  StyledSlidebarWrapper,
   StyledSliderBar,
+  StyledSliderBarInnerWrapper,
   StyledSliderBarWrapper,
   StyledSliderModalBackground,
   StyledSliderResizer,
@@ -113,7 +113,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   }, [setIsResizing, setSidebarOpen, setSliderWidth]);
   return (
     <>
-      <StyledSliderBarWrapper>
+      <StyledSliderBarWrapper data-testid="sliderBar-root">
         <StyledSliderBar
           resizing={isResizing}
           floating={floatingSlider}
@@ -128,7 +128,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             />
           </StyledSidebarSwitchWrapper>
 
-          <StyledSlidebarWrapper data-testid="sliderBar">
+          <StyledSliderBarInnerWrapper data-testid="sliderBar-inner">
             <WorkspaceSelector
               currentWorkspace={currentWorkspace}
               onClick={onOpenWorkspaceListModal}
@@ -214,7 +214,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 <DeleteTemporarilyIcon /> {t('Trash')}
               </StyledLink>
             </StyledListItem>
-          </StyledSlidebarWrapper>
+          </StyledSliderBarInnerWrapper>
 
           <StyledNewPageButton
             data-testid="new-page-button"
@@ -225,6 +225,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         </StyledSliderBar>
         {!floatingSlider && sidebarOpen && (
           <StyledSliderResizer
+            data-testid="sliderBar-resizer"
             isResizing={isResizing}
             onMouseDown={onResizeStart}
           >
@@ -233,6 +234,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
         )}
       </StyledSliderBarWrapper>
       <StyledSliderModalBackground
+        data-testid="sliderBar-modalBackground"
         active={floatingSlider && sidebarOpen}
         onClick={() => setSidebarOpen(false)}
       />
