@@ -1,13 +1,13 @@
 import { KeckProvider } from '@affine/workspace/affine/keck';
 import { getLoginStorage } from '@affine/workspace/affine/login';
+import type {
+  AffineWebSocketProvider,
+  LocalIndexedDBProvider,
+} from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
-import type {
-  AffineWebSocketProvider,
-  BlockSuiteWorkspace,
-  LocalIndexedDBProvider,
-} from '../../shared';
+import type { BlockSuiteWorkspace } from '../../shared';
 import { providerLogger } from '../logger';
 import { createBroadCastChannelProvider } from './broad-cast-channel';
 

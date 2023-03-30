@@ -2,6 +2,7 @@
   "name": "@affine/workspace",
   "private": true,
   "exports": {
+    "./atom": "./src/atom.ts",
     "./utils": "./src/utils.ts",
     "./type": "./src/type.ts",
     "./affine/*": "./src/affine/*.ts",

@@ -1,15 +1,17 @@
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
-import { jotaiWorkspacesAtom, workspacesAtom } from '../atoms';
+import { workspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 import { LocalPlugin } from '../plugins/local';
-import type { LocalWorkspace, RemWorkspace } from '../shared';
+import type { AllWorkspace } from '../shared';
 
-export function useWorkspaces(): RemWorkspace[] {
+export function useWorkspaces(): AllWorkspace[] {
   return useAtomValue(workspacesAtom);
 }
 

@@ -1,5 +1,8 @@
 import { DebugLogger } from '@affine/debug';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
+import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import { WorkspaceFlavour } from '@affine/workspace/type';
 import { assertExists, nanoid } from '@blocksuite/store';
 import { NoSsr } from '@mui/material';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -11,7 +14,6 @@ import { Suspense, useCallback, useEffect } from 'react';
 
 import {
   currentWorkspaceIdAtom,
-  jotaiWorkspacesAtom,
   openQuickSearchModalAtom,
   openWorkspacesModalAtom,
   workspaceLockAtom,
@@ -33,13 +35,13 @@ import { useRouterTitle } from '../hooks/use-router-title';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
-import type { RemWorkspace } from '../shared';
+import type { AllWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
 import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
 
 declare global {
   // eslint-disable-next-line no-var
-  var currentWorkspace: RemWorkspace;
+  var currentWorkspace: AllWorkspace;
 }
 
 const QuickSearchModal = dynamic(
@@ -89,6 +91,10 @@ export const QuickSearch: React.FC = () => {
 };
 
 const logger = new DebugLogger('workspace-layout');
+
+const affineGlobalChannel = createAffineGlobalChannel(
+  WorkspacePlugins[WorkspaceFlavour.AFFINE].CRUD
+);
 export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     const { i18n } = useTranslation();
@@ -105,6 +111,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
       const lists = Object.values(WorkspacePlugins)
         .sort((a, b) => a.loadPriority - b.loadPriority)
         .map(({ CRUD }) => CRUD.list);
+
       async function fetch() {
         const items = [];
         for (const list of lists) {
@@ -121,6 +128,7 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
         set([...items]);
         logger.info('mount first data:', items);
       }
+
       fetch();
       return () => {
         controller.abort();
@@ -128,6 +136,19 @@ export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
       };
     }, [set]);
     const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
+    const jotaiWorkspaces = useAtomValue(jotaiWorkspacesAtom);
+
+    useEffect(() => {
+      const flavour = jotaiWorkspaces.find(
+        x => x.id === currentWorkspaceId
+      )?.flavour;
+      if (flavour === WorkspaceFlavour.AFFINE) {
+        affineGlobalChannel.connect();
+        return () => {
+          affineGlobalChannel.disconnect();
+        };
+      }
+    }, [currentWorkspaceId, jotaiWorkspaces]);
     return (
       <NoSsr>
         {/* fixme(himself65): don't re-render whole modals */}

@@ -7,9 +7,9 @@ import {
   currentWorkspaceIdAtom,
   workspacesAtom,
 } from '../../atoms';
-import type { RemWorkspace } from '../../shared';
+import type { AllWorkspace } from '../../shared';
 
-export const currentWorkspaceAtom = atom<Promise<RemWorkspace | null>>(
+export const currentWorkspaceAtom = atom<Promise<AllWorkspace | null>>(
   async get => {
     const id = get(currentWorkspaceIdAtom);
     const workspaces = await get(workspacesAtom);
@@ -23,7 +23,7 @@ export const lastWorkspaceIdAtom = atomWithStorage<string | null>(
 );
 
 export function useCurrentWorkspace(): [
-  RemWorkspace | null,
+  AllWorkspace | null,
   (id: string | null) => void
 ] {
   const currentWorkspace = useAtomValue(currentWorkspaceAtom);

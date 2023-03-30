@@ -1,9 +1,9 @@
+import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import type { AffineWorkspace } from '@affine/workspace/type';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 
-import { jotaiStore, jotaiWorkspacesAtom } from '../../atoms';
 import { QueryKey } from '../../plugins/affine/fetcher';
-import type { AffineWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
 
 export function useToggleWorkspacePublish(workspace: AffineWorkspace) {

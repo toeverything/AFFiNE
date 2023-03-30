@@ -5,16 +5,8 @@ import type {
 } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 
-import type { AffineWorkspace, LocalWorkspace } from '../shared';
 import { AffinePlugin } from './affine';
 import { LocalPlugin } from './local';
-
-declare module '@affine/workspace/type' {
-  interface WorkspaceRegistry {
-    [WorkspaceFlavour.AFFINE]: AffineWorkspace;
-    [WorkspaceFlavour.LOCAL]: LocalWorkspace;
-  }
-}
 
 export interface WorkspacePlugin<Flavour extends WorkspaceFlavour> {
   flavour: Flavour;

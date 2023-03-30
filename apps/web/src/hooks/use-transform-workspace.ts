@@ -1,9 +1,9 @@
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import type { WorkspaceRegistry } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { jotaiWorkspacesAtom } from '../atoms';
 import { WorkspacePlugins } from '../plugins';
 
 /**

@@ -6,7 +6,7 @@ import type React from 'react';
 import { useCallback } from 'react';
 
 import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
-import type { RemWorkspace } from '../../../shared';
+import type { AllWorkspace } from '../../../shared';
 import {
   CloudWorkspaceIcon,
   JoinedWorkspaceIcon,
@@ -22,7 +22,7 @@ import {
   StyleWorkspaceTitle,
 } from './styles';
 export type WorkspaceTypeProps = {
-  workspace: RemWorkspace;
+  workspace: AllWorkspace;
 };
 
 const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
@@ -58,9 +58,9 @@ const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
 
 export type WorkspaceCardProps = {
   currentWorkspaceId: string | null;
-  workspace: RemWorkspace;
-  onClick: (workspace: RemWorkspace) => void;
-  onSettingClick: (workspace: RemWorkspace) => void;
+  workspace: AllWorkspace;
+  onClick: (workspace: AllWorkspace) => void;
+  onSettingClick: (workspace: AllWorkspace) => void;
 };
 
 export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({

@@ -6,8 +6,8 @@ import {
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { parseIdToken, setLoginStorage } from '@affine/workspace/affine/login';
+import { jotaiStore } from '@affine/workspace/atom';
 
-import { jotaiStore } from '../atoms';
 import { isValidIPAddress } from '../utils';
 
 let prefixUrl = '/';
