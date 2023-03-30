@@ -1,6 +1,6 @@
 import { styled } from '@affine/component';
 
-export const StyledPage = styled('div')<{ resizing: boolean }>(
+export const StyledPage = styled('div')<{ resizing?: boolean }>(
   ({ theme, resizing }) => {
     return {
       cursor: resizing ? 'col-resize' : 'default',
