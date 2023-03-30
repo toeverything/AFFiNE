@@ -9,7 +9,7 @@ import {
 } from '../../../../hooks/affine/use-is-first-load';
 import { StyledListItem } from '../shared-styles';
 import { StyledLink } from '../style';
-export const WhatIsNew = () => {
+export const ChangeLog = () => {
   const [guideHidden, setGuideHidden] = useGuideHidden();
   const [guideHiddenUntilNextUpdate, setGuideHiddenUntilNextUpdate] =
     useGuideHiddenUntilNextUpdate();
@@ -31,7 +31,7 @@ export const WhatIsNew = () => {
   }
   return (
     <>
-      <StyledListItem>
+      <StyledListItem data-testid="change-log">
         <StyledLink href={'https://affine.pro'} target="_blank">
           <DoneIcon />
           {t("Discover what's new!")}
@@ -40,6 +40,7 @@ export const WhatIsNew = () => {
           onClick={() => {
             onCloseWhatsNew();
           }}
+          data-testid="change-log-close-button"
         >
           <CloseIcon />
         </IconButton>
@@ -48,4 +49,4 @@ export const WhatIsNew = () => {
   );
 };
 
-export default WhatIsNew;
+export default ChangeLog;

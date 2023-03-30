@@ -15,6 +15,7 @@ import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
+import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
 import { Pivot } from './pivot';
 import { StyledListItem } from './shared-styles';
@@ -25,7 +26,6 @@ import {
   StyledSlidebarWrapper,
   StyledSliderBar,
 } from './style';
-import { WhatIsNew } from './whatIsNew';
 import { WorkspaceSelector } from './WorkspaceSelector';
 
 export type FavoriteListProps = {
@@ -87,7 +87,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             currentWorkspace={currentWorkspace}
             onClick={onOpenWorkspaceListModal}
           />
-          <WhatIsNew />
+          <ChangeLog />
           <StyledListItem
             data-testid="slider-bar-quick-search-button"
             onClick={useCallback(() => {
