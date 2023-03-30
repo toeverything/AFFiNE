@@ -1,6 +1,6 @@
 import { getLoginStorage } from '@affine/workspace/affine/login';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
-import { atom } from 'jotai/index';
+import { atom } from 'jotai';
 
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';

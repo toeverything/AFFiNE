@@ -12,7 +12,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@affine-test/fixtures@workspace:^, @affine-test/fixtures@workspace:tests/fixtures":
+"@affine-test/fixtures@workspace:*, @affine-test/fixtures@workspace:tests/fixtures":
   version: 0.0.0-use.local
   resolution: "@affine-test/fixtures@workspace:tests/fixtures"
   languageName: unknown
@@ -170,6 +170,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/web@workspace:apps/web"
   dependencies:
+    "@affine-test/fixtures": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
@@ -227,7 +228,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/workspace@workspace:packages/workspace"
   dependencies:
-    "@affine-test/fixtures": "workspace:^"
+    "@affine-test/fixtures": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
