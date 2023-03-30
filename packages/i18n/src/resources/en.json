@@ -198,5 +198,8 @@
   "Add a subpage inside": "Add a subpage inside",
   "Rename": "Rename",
   "Move to": "Move to",
+  "Move page to...": "Move page to...",
+  "Remove from Pivots": "Remove from Pivots",
+  "RFP": "Pages can be freely added/removed from pivots, remaining accessible from \"All Pages\".",
   "Discover what's new!": "Discover what's new!"
 }

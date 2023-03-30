@@ -1,13 +1,14 @@
 import type { PageMeta } from '@blocksuite/store';
+import { useMemo } from 'react';
 
-import { TreeNodeRender } from './TreeNodeRender';
-import type { TreeNode } from './types';
-export const flattenToTree = (
-  handleMetas: PageMeta[],
-  renderProps: { openPage: (pageId: string) => void }
+import type { RenderProps, TreeNode } from '../types';
+
+const flattenToTree = (
+  metas: PageMeta[],
+  pivotRender: TreeNode['render'],
+  renderProps: RenderProps
 ): TreeNode[] => {
   // Compatibility process: the old data not has `subpageIds`, it is a root page
-  const metas = JSON.parse(JSON.stringify(handleMetas)) as PageMeta[];
   const rootMetas = metas
     .filter(meta => {
       if (meta.subpageIds) {
@@ -19,29 +20,55 @@ export const flattenToTree = (
       }
       return true;
     })
-    .filter(meta => !meta.trash);
+    .filter(meta => meta.isPivots === true);
 
   const helper = (internalMetas: PageMeta[]): TreeNode[] => {
     return internalMetas.reduce<TreeNode[]>((returnedMetas, internalMeta) => {
       const { subpageIds = [] } = internalMeta;
       const childrenMetas = subpageIds
         .map(id => metas.find(m => m.id === id)!)
-        .filter(meta => !meta.trash);
-      // FIXME: remove ts-ignore after blocksuite update
+        .filter(m => m);
       // @ts-ignore
       const returnedMeta: TreeNode = {
         ...internalMeta,
         children: helper(childrenMetas),
         render: (node, props) =>
-          TreeNodeRender!(node, props, {
-            pageMeta: internalMeta,
+          pivotRender(node, props, {
             ...renderProps,
+            currentMeta: internalMeta,
+            metas,
           }),
       };
-      // @ts-ignore
       returnedMetas.push(returnedMeta);
       return returnedMetas;
     }, []);
   };
   return helper(rootMetas);
 };
+
+export const usePivotData = ({
+  metas,
+  pivotRender,
+  blockSuiteWorkspace,
+  onClick,
+  showOperationButton,
+}: {
+  metas: PageMeta[];
+  pivotRender: TreeNode['render'];
+} & RenderProps) => {
+  const data = useMemo(
+    () =>
+      flattenToTree(metas, pivotRender, {
+        blockSuiteWorkspace,
+        onClick,
+        showOperationButton,
+      }),
+    [blockSuiteWorkspace, metas, onClick, pivotRender, showOperationButton]
+  );
+
+  return {
+    data,
+  };
+};
+
+export default usePivotData;

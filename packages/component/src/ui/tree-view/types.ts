@@ -1,52 +1,71 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, Ref } from 'react';
 
-export type Node<N> = {
+export type DropPosition = {
+  topLine: boolean;
+  bottomLine: boolean;
+  internal: boolean;
+};
+export type OnDrop = (
+  dragId: string,
+  dropId: string,
+  position: DropPosition
+) => void;
+
+export type Node<RenderProps = unknown> = {
   id: string;
-  children?: Node<N>[];
-  render?: (
-    node: Node<N>,
+  children?: Node<RenderProps>[];
+  render: (
+    node: Node<RenderProps>,
     eventsAndStatus: {
       isOver: boolean;
       onAdd: () => void;
       onDelete: () => void;
       collapsed: boolean;
-      setCollapsed: (collapsed: boolean) => void;
+      setCollapsed: (id: string, collapsed: boolean) => void;
+      isSelected: boolean;
     },
-    extendProps?: unknown
+    renderProps?: RenderProps
   ) => ReactNode;
-} & N;
-
-type CommonProps<N> = {
-  indent?: CSSProperties['paddingLeft'];
-  onAdd?: (node: Node<N>) => void;
-  onDelete?: (node: Node<N>) => void;
-  onDrop?: (
-    dragNode: Node<N>,
-    dropNode: Node<N>,
-    position: {
-      topLine: boolean;
-      bottomLine: boolean;
-      internal: boolean;
-    }
-  ) => void;
 };
 
-export type TreeNodeProps<N> = {
-  node: Node<N>;
+type CommonProps<RenderProps = unknown> = {
+  enableDnd?: boolean;
+  enableKeyboardSelection?: boolean;
+  indent?: CSSProperties['paddingLeft'];
+  onAdd?: (node: Node<RenderProps>) => void;
+  onDelete?: (node: Node<RenderProps>) => void;
+  onDrop?: OnDrop;
+  // Only trigger when the enableKeyboardSelection is true
+  onSelect?: (id: string) => void;
+};
+
+export type TreeNodeProps<RenderProps = unknown> = {
+  node: Node<RenderProps>;
   index: number;
+  collapsedIds: string[];
+  setCollapsed: (id: string, collapsed: boolean) => void;
   allowDrop?: boolean;
-} & CommonProps<N>;
+  selectedId?: string;
+  isDragging?: boolean;
+  dragRef?: Ref<HTMLDivElement>;
+} & CommonProps<RenderProps>;
 
-export type TreeNodeItemProps<N> = {
+export type TreeNodeItemProps<RenderProps = unknown> = {
   collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
-} & TreeNodeProps<N>;
+  setCollapsed: (id: string, collapsed: boolean) => void;
 
-export type TreeViewProps<N> = {
-  data: Node<N>[];
-} & CommonProps<N>;
+  isOver?: boolean;
+  canDrop?: boolean;
 
-export type NodeLIneProps<N> = {
+  dropRef?: Ref<HTMLDivElement>;
+} & TreeNodeProps<RenderProps>;
+
+export type TreeViewProps<RenderProps = unknown> = {
+  data: Node<RenderProps>[];
+  initialCollapsedIds?: string[];
+} & CommonProps<RenderProps>;
+
+export type NodeLIneProps<RenderProps = unknown> = {
   allowDrop: boolean;
   isTop?: boolean;
-} & Pick<TreeNodeProps<N>, 'node' | 'onDrop'>;
+} & Pick<TreeNodeProps<RenderProps>, 'node' | 'onDrop'>;

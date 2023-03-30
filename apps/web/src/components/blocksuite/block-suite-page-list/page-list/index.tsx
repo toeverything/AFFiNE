@@ -1,11 +1,13 @@
 import {
+  Content,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
 } from '@affine/component';
-import { Content, IconButton, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
   EdgelessIcon,
@@ -223,6 +225,8 @@ export const PageList: React.FC<PageListProps> = ({
                         ) : (
                           <OperationCell
                             pageMeta={pageMeta}
+                            metas={pageList}
+                            blockSuiteWorkspace={blockSuiteWorkspace}
                             onOpenPageInNewTab={pageId => {
                               onClickPage(pageId, true);
                             }}

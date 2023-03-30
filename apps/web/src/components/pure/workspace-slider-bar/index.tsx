@@ -17,7 +17,7 @@ import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
-import { Pivot } from './pivot';
+import { Pivots } from './Pivots';
 import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
@@ -141,7 +141,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             currentWorkspace={currentWorkspace}
           />
           {config.enableSubpage && !!currentWorkspace && (
-            <Pivot
+            <Pivots
               currentWorkspace={currentWorkspace}
               openPage={openPage}
               allMetas={pageMeta}
