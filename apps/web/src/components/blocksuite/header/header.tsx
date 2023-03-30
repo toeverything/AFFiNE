@@ -2,7 +2,7 @@ import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
 import type React from 'react';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { forwardRef, Suspense, useEffect, useMemo, useState } from 'react';
 
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
@@ -81,11 +81,13 @@ export const Header = forwardRef<
           data-testid="editor-header-items"
           data-tauri-drag-region
         >
-          <SidebarSwitch
-            visible={!open}
-            tooltipContent={t('Expand sidebar')}
-            testid="sliderBar-arrowButton-expand"
-          />
+          <Suspense>
+            <SidebarSwitch
+              visible={!open}
+              tooltipContent={t('Expand sidebar')}
+              testid="sliderBar-arrowButton-expand"
+            />
+          </Suspense>
 
           {children}
           <StyledHeaderRightSide>
