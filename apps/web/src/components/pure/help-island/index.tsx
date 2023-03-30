@@ -65,6 +65,7 @@ export const HelpIsland = ({
           {showList.includes('whatNew') && (
             <Tooltip content={t("Discover what's new")} placement="left-end">
               <StyledIconWrapper
+                data-testid="right-bottom-change-log-icon"
                 onClick={() => {
                   window.open('https://affine.pro', '_blank');
                 }}

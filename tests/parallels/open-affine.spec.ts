@@ -42,4 +42,18 @@ test.describe('AFFiNE change log', () => {
     const currentChangeLogItem = page.locator('[data-testid=change-log]');
     await expect(currentChangeLogItem).not.toBeVisible();
   });
+  test('Click right-bottom corner change log icon', async ({ page }) => {
+    await openHomePage(page);
+    await waitMarkdownImported(page);
+    await page.locator('[data-testid=help-island]').click();
+    const editorRightBottomChangeLog = page.locator(
+      '[data-testid=right-bottom-change-log-icon]'
+    );
+    expect(await editorRightBottomChangeLog.isVisible()).toEqual(true);
+    await page.getByRole('link', { name: 'All pages' }).click();
+    const normalRightBottomChangeLog = page.locator(
+      '[data-testid=right-bottom-change-log-icon]'
+    );
+    expect(await normalRightBottomChangeLog.isVisible()).toEqual(true);
+  });
 });
