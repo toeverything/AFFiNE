@@ -1,6 +1,7 @@
 import { Button, IconButton, Menu, MenuItem, Wrapper } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { PermissionType } from '@affine/workspace/affine/api';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   DeleteTemporarilyIcon,
@@ -11,7 +12,6 @@ import type React from 'react';
 import { useCallback, useState } from 'react';
 
 import { useMembers } from '../../../../../hooks/affine/use-members';
-import type { AffineWorkspace, LocalWorkspace } from '../../../../../shared';
 import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { TransformWorkspaceToAffineModal } from '../../../transform-workspace-to-affine-modal';

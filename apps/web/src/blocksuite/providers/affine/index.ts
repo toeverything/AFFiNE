@@ -1,6 +1,6 @@
+import type { AffineDownloadProvider } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
 
-import type { AffineDownloadProvider } from '../../../shared';
 import { BlockSuiteWorkspace } from '../../../shared';
 import { affineApis } from '../../../shared/apis';
 import { providerLogger } from '../../logger';

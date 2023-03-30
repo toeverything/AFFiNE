@@ -2,6 +2,7 @@ import '../styles/globals.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
+import { jotaiStore } from '@affine/workspace/atom';
 import type { EmotionCache } from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { Provider } from 'jotai';
@@ -11,7 +12,6 @@ import { useRouter } from 'next/router';
 import type { ReactElement } from 'react';
 import React, { Suspense, useEffect, useMemo } from 'react';
 
-import { jotaiStore } from '../atoms';
 import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary';
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';

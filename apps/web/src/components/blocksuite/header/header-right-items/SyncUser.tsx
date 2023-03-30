@@ -5,6 +5,7 @@ import {
   setLoginStorage,
   SignMethod,
 } from '@affine/workspace/affine/login';
+import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import {
   CloudWorkspaceIcon,
@@ -18,10 +19,7 @@ import React, { useEffect, useState } from 'react';
 import { affineAuth } from '../../../../hooks/affine/use-affine-log-in';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useTransformWorkspace } from '../../../../hooks/use-transform-workspace';
-import type {
-  AffineOfficialWorkspace,
-  LocalWorkspace,
-} from '../../../../shared';
+import type { AffineOfficialWorkspace } from '../../../../shared';
 import { TransformWorkspaceToAffineModal } from '../../../affine/transform-workspace-to-affine-modal';
 
 const IconWrapper = styled('div')(({ theme }) => {

@@ -1,4 +1,5 @@
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
+import type { LocalWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
@@ -12,9 +13,8 @@ import { PageNotFoundError } from '../../components/affine/affine-error-eoundary
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import type { LocalWorkspace } from '../../shared';
 import { BlockSuiteWorkspace } from '../../shared';
-import { initPage } from '../../utils/blocksuite';
+import { initPage } from '../../utils';
 import type { WorkspacePlugin } from '..';
 
 const getStorage = () => createJSONStorage(() => localStorage);

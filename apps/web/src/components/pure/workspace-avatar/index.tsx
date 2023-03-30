@@ -3,7 +3,7 @@ import type React from 'react';
 import { memo } from 'react';
 
 import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-workspace-avatar-url';
-import type { BlockSuiteWorkspace, RemWorkspace } from '../../../shared';
+import type { AllWorkspace, BlockSuiteWorkspace } from '../../../shared';
 import { stringToColour } from '../../../utils';
 
 interface AvatarProps {
@@ -75,7 +75,7 @@ export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
 
 export type WorkspaceUnitAvatarProps = {
   size?: number;
-  workspace: RemWorkspace | null;
+  workspace: AllWorkspace | null;
   style?: React.CSSProperties;
 };
 

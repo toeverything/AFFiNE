@@ -1,11 +1,11 @@
 import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import { clearLoginStorage } from '@affine/workspace/affine/login';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useSetAtom } from 'jotai';
 import { useRouter } from 'next/router';
 import { useCallback } from 'react';
 
-import { jotaiWorkspacesAtom } from '../../atoms';
 import { WorkspacePlugins } from '../../plugins';
 
 export function useAffineLogOut() {

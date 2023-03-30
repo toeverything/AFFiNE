@@ -3,7 +3,7 @@ import type React from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceName } from '../../../../hooks/use-blocksuite-workspace-name';
-import type { RemWorkspace } from '../../../../shared';
+import type { AllWorkspace } from '../../../../shared';
 import { WorkspaceAvatar } from '../../workspace-avatar';
 import {
   StyledSelectorContainer,
@@ -13,7 +13,7 @@ import {
 } from './styles';
 
 export type WorkspaceSelectorProps = {
-  currentWorkspace: RemWorkspace | null;
+  currentWorkspace: AllWorkspace | null;
   onClick: () => void;
 };
 

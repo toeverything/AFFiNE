@@ -94,17 +94,30 @@ export enum PermissionType {
   Owner = 99,
 }
 
-export interface Workspace {
-  id: string;
-  type: WorkspaceType;
-  public: boolean;
-  permission: PermissionType;
-}
+export const userSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  avatar_url: z.string(),
+  create_at: z.string(),
+});
 
-export interface WorkspaceDetail extends Workspace {
-  owner: User;
-  member_count: number;
-}
+export const workspaceSchema = z.object({
+  id: z.string(),
+  type: z.nativeEnum(WorkspaceType),
+  public: z.boolean(),
+  permission: z.nativeEnum(PermissionType),
+});
+
+export type Workspace = z.infer<typeof workspaceSchema>;
+
+export const workspaceDetailSchema = z.object({
+  ...workspaceSchema.shape,
+  owner: userSchema,
+  member_count: z.number(),
+});
+
+export type WorkspaceDetail = z.infer<typeof workspaceDetailSchema>;
 
 export interface Permission {
   id: string;

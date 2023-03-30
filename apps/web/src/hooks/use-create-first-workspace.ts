@@ -1,11 +1,11 @@
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
 import { useAtom } from 'jotai';
 import { useEffect } from 'react';
 
-import { jotaiWorkspacesAtom } from '../atoms';
 import { LocalPlugin } from '../plugins/local';
 
 export function useCreateFirstWorkspace() {

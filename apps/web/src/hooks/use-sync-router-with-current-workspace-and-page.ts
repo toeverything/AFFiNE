@@ -1,9 +1,10 @@
+import { jotaiStore } from '@affine/workspace/atom';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import type { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
-import { currentPageIdAtom, jotaiStore } from '../atoms';
-import type { RemWorkspace } from '../shared';
+import { currentPageIdAtom } from '../atoms';
+import type { AllWorkspace } from '../shared';
 import { WorkspaceSubPath } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
 import { useCurrentWorkspace } from './current/use-current-workspace';
@@ -11,7 +12,7 @@ import { RouteLogic, useRouterHelper } from './use-router-helper';
 import { useWorkspaces } from './use-workspaces';
 
 export function findSuitablePageId(
-  workspace: RemWorkspace,
+  workspace: AllWorkspace,
   targetId: string
 ): string | null {
   switch (workspace.flavour) {

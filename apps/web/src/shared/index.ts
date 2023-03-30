@@ -1,5 +1,4 @@
-import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
-import type { WorkspaceFlavour } from '@affine/workspace/type';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { NextPage } from 'next';
 import type { ReactElement, ReactNode } from 'react';
@@ -12,59 +11,9 @@ declare global {
   }
 }
 
-export interface AffineWorkspace extends RemoteWorkspace {
-  flavour: WorkspaceFlavour.AFFINE;
-  // empty
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-  providers: Provider[];
-}
-
-export interface LocalWorkspace {
-  flavour: WorkspaceFlavour.LOCAL;
-  id: string;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-  providers: Provider[];
-}
-
-export type BaseProvider = {
-  flavour: string;
-  // if this is true, we will connect the provider on the background
-  background: boolean;
-  connect: () => void;
-  disconnect: () => void;
-  // cleanup data when workspace is removed
-  cleanup: () => void;
-};
-
-export interface BackgroundProvider extends BaseProvider {
-  background: true;
-  callbacks: Set<() => void>;
-}
-
-export interface AffineDownloadProvider extends BaseProvider {
-  flavour: 'affine-download';
-}
-
-export interface BroadCastChannelProvider extends BaseProvider {
-  flavour: 'broadcast-channel';
-}
-
-export interface LocalIndexedDBProvider extends BackgroundProvider {
-  flavour: 'local-indexeddb';
-}
-
-export interface AffineWebSocketProvider extends BaseProvider {
-  flavour: 'affine-websocket';
-}
-
-export type Provider =
-  | LocalIndexedDBProvider
-  | AffineWebSocketProvider
-  | BroadCastChannelProvider;
-
 export type AffineOfficialWorkspace = AffineWorkspace | LocalWorkspace;
 
-export type RemWorkspace = AffineOfficialWorkspace;
+export type AllWorkspace = AffineOfficialWorkspace;
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<
   P,

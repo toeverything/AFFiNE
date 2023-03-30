@@ -1,4 +1,5 @@
 import { useTranslation } from '@affine/i18n';
+import type { LocalIndexedDBProvider } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { FolderIcon } from '@blocksuite/icons';
 import { assertEquals, assertExists, nanoid } from '@blocksuite/store';
@@ -17,10 +18,7 @@ import { useRouterHelper } from '../../../hooks/use-router-helper';
 import { useSyncRouterWithCurrentWorkspace } from '../../../hooks/use-sync-router-with-current-workspace';
 import { WorkspaceLayout } from '../../../layouts';
 import { WorkspacePlugins } from '../../../plugins';
-import type {
-  LocalIndexedDBProvider,
-  NextPageWithLayout,
-} from '../../../shared';
+import type { NextPageWithLayout } from '../../../shared';
 
 const AllPage: NextPageWithLayout = () => {
   const router = useRouter();

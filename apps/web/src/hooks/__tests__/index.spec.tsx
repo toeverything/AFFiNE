@@ -5,6 +5,8 @@ import 'fake-indexeddb/auto';
 
 import assert from 'node:assert';
 
+import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
+import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
@@ -17,13 +19,8 @@ import { createDynamicRouteParser } from 'next-router-mock/dynamic-routes';
 import type React from 'react';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import {
-  currentWorkspaceIdAtom,
-  jotaiWorkspacesAtom,
-  workspacesAtom,
-} from '../../atoms';
+import { currentWorkspaceIdAtom, workspacesAtom } from '../../atoms';
 import { LocalPlugin } from '../../plugins/local';
-import type { LocalWorkspace } from '../../shared';
 import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
 import {
   useGuideHidden,

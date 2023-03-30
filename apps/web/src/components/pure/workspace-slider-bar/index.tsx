@@ -13,7 +13,7 @@ import { useCallback } from 'react';
 
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
-import type { RemWorkspace } from '../../../shared';
+import type { AllWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
@@ -39,7 +39,7 @@ export type WorkSpaceSliderBarProps = {
   isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
   onOpenWorkspaceListModal: () => void;
-  currentWorkspace: RemWorkspace | null;
+  currentWorkspace: AllWorkspace | null;
   currentPageId: string | null;
   openPage: (pageId: string) => void;
   createPage: () => Page;

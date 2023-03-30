@@ -1,5 +1,56 @@
+import type { Workspace as RemoteWorkspace } from '@affine/workspace/affine/api';
 import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { FC } from 'react';
+
+export type BaseProvider = {
+  flavour: string;
+  // if this is true, we will connect the provider on the background
+  background: boolean;
+  connect: () => void;
+  disconnect: () => void;
+  // cleanup data when workspace is removed
+  cleanup: () => void;
+};
+
+export interface BackgroundProvider extends BaseProvider {
+  background: true;
+  callbacks: Set<() => void>;
+}
+
+export interface AffineDownloadProvider extends BaseProvider {
+  flavour: 'affine-download';
+}
+
+export interface BroadCastChannelProvider extends BaseProvider {
+  flavour: 'broadcast-channel';
+}
+
+export interface LocalIndexedDBProvider extends BackgroundProvider {
+  flavour: 'local-indexeddb';
+}
+
+export interface AffineWebSocketProvider extends BaseProvider {
+  flavour: 'affine-websocket';
+}
+
+export type Provider =
+  | LocalIndexedDBProvider
+  | AffineWebSocketProvider
+  | BroadCastChannelProvider;
+
+export interface AffineWorkspace extends RemoteWorkspace {
+  flavour: WorkspaceFlavour.AFFINE;
+  // empty
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+  providers: Provider[];
+}
+
+export interface LocalWorkspace {
+  flavour: WorkspaceFlavour.LOCAL;
+  id: string;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+  providers: Provider[];
+}
 
 export const enum LoadPriority {
   HIGH = 1,
@@ -11,6 +62,7 @@ export const enum WorkspaceFlavour {
   AFFINE = 'affine',
   LOCAL = 'local',
 }
+
 export const settingPanel = {
   General: 'general',
   Collaboration: 'collaboration',
@@ -21,8 +73,11 @@ export const settingPanel = {
 export const settingPanelValues = [...Object.values(settingPanel)] as const;
 export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface WorkspaceRegistry {}
+// built-in workspaces
+export interface WorkspaceRegistry {
+  [WorkspaceFlavour.AFFINE]: AffineWorkspace;
+  [WorkspaceFlavour.LOCAL]: LocalWorkspace;
+}
 
 export interface WorkspaceCRUD<Flavour extends keyof WorkspaceRegistry> {
   create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;

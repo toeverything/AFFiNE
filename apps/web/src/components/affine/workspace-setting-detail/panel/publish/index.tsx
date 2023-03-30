@@ -6,17 +6,14 @@ import {
   Wrapper,
 } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { Box } from '@mui/material';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useToggleWorkspacePublish } from '../../../../../hooks/affine/use-toggle-workspace-publish';
-import type {
-  AffineOfficialWorkspace,
-  AffineWorkspace,
-  LocalWorkspace,
-} from '../../../../../shared';
+import type { AffineOfficialWorkspace } from '../../../../../shared';
 import { toast } from '../../../../../utils';
 import { Unreachable } from '../../../affine-error-eoundary';
 import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
