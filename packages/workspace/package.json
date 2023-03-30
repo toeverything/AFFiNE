@@ -9,7 +9,7 @@
     "./affine/sync": "./src/affine/sync.js"
   },
   "dependencies": {
-    "@affine-test/fixtures": "workspace:^",
+    "@affine-test/fixtures": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
