@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 
 import {
@@ -28,7 +28,7 @@ const NodeLine = <RenderProps,>({
         if (didDrop) {
           return;
         }
-        onDrop?.(item, node, {
+        onDrop?.(item.id, node.id, {
           internal: false,
           topLine: isTop,
           bottomLine: !isTop,
@@ -60,7 +60,7 @@ const TreeNodeItemWithDnd = <RenderProps,>({
         if (didDrop || item.id === node.id || !allowDrop) {
           return;
         }
-        onDrop?.(item, node, {
+        onDrop?.(item.id, node.id, {
           internal: true,
           topLine: false,
           bottomLine: false,
@@ -76,7 +76,7 @@ const TreeNodeItemWithDnd = <RenderProps,>({
 
   useEffect(() => {
     if (isOver && canDrop) {
-      setCollapsed(false);
+      setCollapsed(node.id, false);
     }
   }, [isOver, canDrop]);
 
@@ -142,8 +142,8 @@ export const TreeNode = <RenderProps,>({
   dragRef,
   ...otherProps
 }: TreeNodeProps<RenderProps>) => {
-  const { indent, enableDnd } = otherProps;
-  const [collapsed, setCollapsed] = useState(false);
+  const { indent, enableDnd, collapsedIds } = otherProps;
+  const collapsed = collapsedIds.includes(node.id);
 
   return (
     <StyledTreeNodeContainer ref={dragRef} isDragging={isDragging}>
@@ -162,7 +162,6 @@ export const TreeNode = <RenderProps,>({
             index={index}
             allowDrop={allowDrop}
             collapsed={collapsed}
-            setCollapsed={setCollapsed}
             {...otherProps}
           />
         ) : (
@@ -171,7 +170,6 @@ export const TreeNode = <RenderProps,>({
             index={index}
             allowDrop={allowDrop}
             collapsed={collapsed}
-            setCollapsed={setCollapsed}
             {...otherProps}
           />
         )}

@@ -1,4 +1,10 @@
-import { alpha, displayFlex, styled, textEllipsis } from '@affine/component';
+import {
+  alpha,
+  displayFlex,
+  IconButton,
+  styled,
+  textEllipsis,
+} from '@affine/component';
 
 export const StyledCollapsedButton = styled('button')<{
   collapse: boolean;
@@ -41,7 +47,7 @@ export const StyledPivot = styled('div')<{
       : theme.colors.textColor,
     cursor: disable ? 'not-allowed' : 'pointer',
     background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
-
+    fontSize: theme.font.base,
     span: {
       flexGrow: '1',
       textAlign: 'left',
@@ -53,20 +59,20 @@ export const StyledPivot = styled('div')<{
       flexShrink: '0',
       color: active ? theme.colors.primaryColor : theme.colors.iconColor,
     },
-    '.operation-button': {
-      visibility: 'hidden',
-    },
 
-    ':hover': disable
-      ? {}
-      : {
-          backgroundColor: theme.colors.hoverBackground,
-          '.operation-button': {
-            visibility: 'visible',
-          },
-        },
+    ':hover': {
+      backgroundColor: disable ? '' : theme.colors.hoverBackground,
+    },
   };
 });
+
+export const StyledOperationButton = styled(IconButton)<{ visible: boolean }>(
+  ({ visible }) => {
+    return {
+      visibility: visible ? 'visible' : 'hidden',
+    };
+  }
+);
 
 export const StyledSearchContainer = styled('div')(({ theme }) => {
   return {
@@ -78,6 +84,34 @@ export const StyledSearchContainer = styled('div')(({ theme }) => {
       color: theme.colors.iconColor,
       fontSize: '20px',
       height: '20px',
+    },
+  };
+});
+export const StyledMenuContent = styled('div')(() => {
+  return {
+    height: '266px',
+    overflow: 'auto',
+  };
+});
+export const StyledMenuSubTitle = styled('div')(({ theme }) => {
+  return {
+    color: theme.colors.secondaryTextColor,
+    lineHeight: '36px',
+    padding: '0 12px',
+  };
+});
+
+export const StyledMenuFooter = styled('div')(({ theme }) => {
+  return {
+    width: 'calc(100% - 24px)',
+    margin: '0 auto',
+    borderTop: `1px solid ${theme.colors.borderColor}`,
+    padding: '6px 0',
+
+    p: {
+      paddingLeft: '44px',
+      color: theme.colors.secondaryTextColor,
+      fontSize: '14px',
     },
   };
 });

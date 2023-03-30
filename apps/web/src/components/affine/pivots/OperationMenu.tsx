@@ -1,17 +1,17 @@
 import type { PureMenuProps } from '@affine/component';
 import { MenuItem, PureMenu } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import {
-  CopyIcon,
-  DeleteTemporarilyIcon,
-  MoveToIcon,
-  PenIcon,
-  PlusIcon,
-} from '@blocksuite/icons';
+import { MoveToIcon, PenIcon, PlusIcon } from '@blocksuite/icons';
+import type { PageMeta } from '@blocksuite/store';
 import type { ReactElement } from 'react';
+
+import type { BlockSuiteWorkspace } from '../../../shared';
+import { CopyLink, MoveToTrash } from '../operation-menu-items';
 
 export type OperationMenuProps = {
   onSelect: (type: OperationMenuItems['type']) => void;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+  currentMeta: PageMeta;
 } & PureMenuProps;
 
 export type OperationMenuItems = {
@@ -38,31 +38,24 @@ const menuItems: OperationMenuItems[] = [
     type: 'rename',
     disabled: true,
   },
-  {
-    label: 'Move to Trash',
-    icon: <DeleteTemporarilyIcon />,
-    type: 'delete',
-  },
-  {
-    label: 'Copy Link',
-    icon: <CopyIcon />,
-    type: 'copy',
-    disabled: true,
-  },
 ];
+
 export const OperationMenu = ({
-  ...operationMenuProps
+  onSelect,
+  blockSuiteWorkspace,
+  currentMeta,
+  ...menuProps
 }: OperationMenuProps) => {
   const { t } = useTranslation();
 
   return (
-    <PureMenu width={256} {...operationMenuProps}>
+    <PureMenu width={256} {...menuProps}>
       {menuItems.map((item, index) => {
         return (
           <MenuItem
             key={index}
             onClick={() => {
-              operationMenuProps.onSelect(item.type);
+              onSelect(item.type);
             }}
             icon={item.icon}
             disabled={!!item.disabled}
@@ -71,6 +64,11 @@ export const OperationMenu = ({
           </MenuItem>
         );
       })}
+      <MoveToTrash
+        currentMeta={currentMeta}
+        blockSuiteWorkspace={blockSuiteWorkspace}
+      />
+      <CopyLink />
     </PureMenu>
   );
 };

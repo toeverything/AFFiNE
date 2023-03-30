@@ -3,7 +3,7 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import { TreeNode, TreeNodeWithDnd } from './TreeNode';
-import type { TreeViewProps } from './types';
+import type { TreeNodeProps, TreeViewProps } from './types';
 import { flattenIds } from './utils';
 
 export const TreeView = <RenderProps,>({
@@ -11,9 +11,13 @@ export const TreeView = <RenderProps,>({
   enableKeyboardSelection,
   onSelect,
   enableDnd = true,
+  initialCollapsedIds = [],
   ...otherProps
 }: TreeViewProps<RenderProps>) => {
   const [selectedId, setSelectedId] = useState<string>();
+  // TODO: should record collapsedIds in localStorage
+  const [collapsedIds, setCollapsedIds] =
+    useState<string[]>(initialCollapsedIds);
 
   useEffect(() => {
     if (!enableKeyboardSelection) {
@@ -57,6 +61,14 @@ export const TreeView = <RenderProps,>({
     };
   }, [data, selectedId]);
 
+  const setCollapsed: TreeNodeProps['setCollapsed'] = (id, collapsed) => {
+    if (collapsed) {
+      setCollapsedIds(ids => [...ids, id]);
+    } else {
+      setCollapsedIds(ids => ids.filter(i => i !== id));
+    }
+  };
+
   if (enableDnd) {
     return (
       <DndProvider backend={HTML5Backend}>
@@ -64,6 +76,8 @@ export const TreeView = <RenderProps,>({
           <TreeNodeWithDnd
             key={node.id}
             index={index}
+            collapsedIds={collapsedIds}
+            setCollapsed={setCollapsed}
             node={node}
             selectedId={selectedId}
             enableDnd={enableDnd}
@@ -80,6 +94,8 @@ export const TreeView = <RenderProps,>({
         <TreeNode
           key={node.id}
           index={index}
+          collapsedIds={collapsedIds}
+          setCollapsed={setCollapsed}
           node={node}
           selectedId={selectedId}
           enableDnd={enableDnd}

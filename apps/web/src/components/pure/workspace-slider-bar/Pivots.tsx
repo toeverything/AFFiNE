@@ -38,18 +38,17 @@ export const PivotInternal = ({
   );
 
   const { data } = usePivotData({
-    allMetas,
+    metas: allMetas.filter(meta => !meta.trash),
     pivotRender: PivotRender,
-    renderProps: {
-      onClick: handlePivotClick,
-      showOperationButton: true,
-      allMetas,
-    },
+    blockSuiteWorkspace: currentWorkspace.blockSuiteWorkspace,
+    onClick: handlePivotClick,
+    showOperationButton: true,
   });
 
   const { handleAdd, handleDelete, handleDrop } = usePivotHandler({
-    currentWorkspace,
-    allMetas,
+    blockSuiteWorkspace: currentWorkspace.blockSuiteWorkspace,
+
+    metas: allMetas,
     onAdd,
   });
 

@@ -2,12 +2,17 @@ import type { Node } from '@affine/component';
 import type { PageMeta } from '@blocksuite/store';
 import type { MouseEvent } from 'react';
 
+import type { BlockSuiteWorkspace } from '../../../shared';
+
 export type RenderProps = {
+  blockSuiteWorkspace: BlockSuiteWorkspace;
   onClick?: (e: MouseEvent<HTMLDivElement>, node: TreeNode) => void;
   showOperationButton?: boolean;
-  allMetas: PageMeta[];
 };
 
-export type InternalRenderProps = RenderProps & { pageMeta: PageMeta };
+export type NodeRenderProps = RenderProps & {
+  metas: PageMeta[];
+  currentMeta: PageMeta;
+};
 
-export type TreeNode = Node<InternalRenderProps>;
+export type TreeNode = Node<NodeRenderProps>;

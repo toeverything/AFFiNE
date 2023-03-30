@@ -11,6 +11,8 @@ declare module '@blocksuite/store' {
     trashDate?: number;
     // whether to create the page with the default template
     init?: boolean;
+    // use for subpage
+    isPivots?: boolean;
   }
 }
 

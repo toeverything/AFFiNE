@@ -4,12 +4,11 @@ import { useMemo } from 'react';
 import type { RenderProps, TreeNode } from '../types';
 
 const flattenToTree = (
-  handleMetas: PageMeta[],
+  metas: PageMeta[],
   pivotRender: TreeNode['render'],
   renderProps: RenderProps
 ): TreeNode[] => {
   // Compatibility process: the old data not has `subpageIds`, it is a root page
-  const metas = JSON.parse(JSON.stringify(handleMetas)) as PageMeta[];
   const rootMetas = metas
     .filter(meta => {
       if (meta.subpageIds) {
@@ -21,14 +20,14 @@ const flattenToTree = (
       }
       return true;
     })
-    .filter(meta => !meta.trash);
+    .filter(meta => meta.isPivots === true);
 
   const helper = (internalMetas: PageMeta[]): TreeNode[] => {
     return internalMetas.reduce<TreeNode[]>((returnedMetas, internalMeta) => {
       const { subpageIds = [] } = internalMeta;
       const childrenMetas = subpageIds
         .map(id => metas.find(m => m.id === id)!)
-        .filter(meta => !meta.trash);
+        .filter(m => m);
       // @ts-ignore
       const returnedMeta: TreeNode = {
         ...internalMeta,
@@ -36,7 +35,8 @@ const flattenToTree = (
         render: (node, props) =>
           pivotRender(node, props, {
             ...renderProps,
-            pageMeta: internalMeta,
+            currentMeta: internalMeta,
+            metas,
           }),
       };
       returnedMetas.push(returnedMeta);
@@ -47,17 +47,23 @@ const flattenToTree = (
 };
 
 export const usePivotData = ({
-  allMetas,
+  metas,
   pivotRender,
-  renderProps,
+  blockSuiteWorkspace,
+  onClick,
+  showOperationButton,
 }: {
-  allMetas: PageMeta[];
+  metas: PageMeta[];
   pivotRender: TreeNode['render'];
-  renderProps: RenderProps;
-}) => {
+} & RenderProps) => {
   const data = useMemo(
-    () => flattenToTree(allMetas, pivotRender, renderProps),
-    [allMetas, renderProps, pivotRender]
+    () =>
+      flattenToTree(metas, pivotRender, {
+        blockSuiteWorkspace,
+        onClick,
+        showOperationButton,
+      }),
+    [blockSuiteWorkspace, metas, onClick, pivotRender, showOperationButton]
   );
 
   return {

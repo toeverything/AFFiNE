@@ -1,41 +1,41 @@
-import { IconButton, MuiClickAwayListener } from '@affine/component';
-import { useTranslation } from '@affine/i18n';
+import { MuiClickAwayListener } from '@affine/component';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
-import { useRouter } from 'next/router';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { toast } from '../../../utils';
+import type { BlockSuiteWorkspace } from '../../../shared';
 import { OperationMenu } from './OperationMenu';
-import { PivotsMenu } from './PivotsMenu';
+import { PivotsMenu } from './PivotsMenu/PivotsMenu';
+import { StyledOperationButton } from './styles';
 
+export type OperationButtonProps = {
+  onAdd: () => void;
+  onDelete: () => void;
+  metas: PageMeta[];
+  currentMeta: PageMeta;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+  isHover: boolean;
+  onMenuClose?: () => void;
+};
 export const OperationButton = ({
   onAdd,
   onDelete,
-  allMetas,
-}: {
-  onAdd: () => void;
-  onDelete: () => void;
-  allMetas: PageMeta[];
-}) => {
+  metas,
+  currentMeta,
+  blockSuiteWorkspace,
+  isHover,
+  onMenuClose,
+}: OperationButtonProps) => {
   const {
     zIndex: { modal: modalIndex },
   } = useTheme();
-  const { t } = useTranslation();
-  const router = useRouter();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [operationOpen, setOperationOpen] = useState(false);
   const [pivotsMenuOpen, setPivotsMenuOpen] = useState(false);
 
   const menuIndex = useMemo(() => modalIndex + 1, [modalIndex]);
-
-  const copyUrl = useCallback(() => {
-    const workspaceId = router.query.workspaceId;
-    navigator.clipboard.writeText(window.location.href);
-    toast(t('Copied link to clipboard'));
-  }, [router.query.workspaceId, t]);
 
   return (
     <MuiClickAwayListener
@@ -53,16 +53,16 @@ export const OperationButton = ({
           setPivotsMenuOpen(false);
         }}
       >
-        <IconButton
+        <StyledOperationButton
           ref={ref => setAnchorEl(ref)}
           size="small"
-          className="operation-button"
           onClick={() => {
             setOperationOpen(!operationOpen);
           }}
+          visible={isHover}
         >
           <MoreVerticalIcon />
-        </IconButton>
+        </StyledOperationButton>
         <OperationMenu
           anchorEl={anchorEl}
           open={operationOpen}
@@ -81,7 +81,10 @@ export const OperationButton = ({
                 break;
             }
             setOperationOpen(false);
+            onMenuClose?.();
           }}
+          currentMeta={currentMeta}
+          blockSuiteWorkspace={blockSuiteWorkspace}
         />
 
         <PivotsMenu
@@ -89,7 +92,10 @@ export const OperationButton = ({
           open={pivotsMenuOpen}
           placement="bottom-start"
           zIndex={menuIndex}
-          allMetas={allMetas}
+          metas={metas}
+          currentMeta={currentMeta}
+          blockSuiteWorkspace={blockSuiteWorkspace}
+          showRemovePivots={true}
         />
       </div>
     </MuiClickAwayListener>

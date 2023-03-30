@@ -1,5 +1,16 @@
 import type { CSSProperties, ReactNode, Ref } from 'react';
 
+export type DropPosition = {
+  topLine: boolean;
+  bottomLine: boolean;
+  internal: boolean;
+};
+export type OnDrop = (
+  dragId: string,
+  dropId: string,
+  position: DropPosition
+) => void;
+
 export type Node<RenderProps = unknown> = {
   id: string;
   children?: Node<RenderProps>[];
@@ -10,10 +21,10 @@ export type Node<RenderProps = unknown> = {
       onAdd: () => void;
       onDelete: () => void;
       collapsed: boolean;
-      setCollapsed: (collapsed: boolean) => void;
+      setCollapsed: (id: string, collapsed: boolean) => void;
       isSelected: boolean;
     },
-    extendProps?: RenderProps
+    renderProps?: RenderProps
   ) => ReactNode;
 };
 
@@ -23,15 +34,7 @@ type CommonProps<RenderProps = unknown> = {
   indent?: CSSProperties['paddingLeft'];
   onAdd?: (node: Node<RenderProps>) => void;
   onDelete?: (node: Node<RenderProps>) => void;
-  onDrop?: (
-    dragNode: Node<RenderProps>,
-    dropNode: Node<RenderProps>,
-    position: {
-      topLine: boolean;
-      bottomLine: boolean;
-      internal: boolean;
-    }
-  ) => void;
+  onDrop?: OnDrop;
   // Only trigger when the enableKeyboardSelection is true
   onSelect?: (id: string) => void;
 };
@@ -39,6 +42,8 @@ type CommonProps<RenderProps = unknown> = {
 export type TreeNodeProps<RenderProps = unknown> = {
   node: Node<RenderProps>;
   index: number;
+  collapsedIds: string[];
+  setCollapsed: (id: string, collapsed: boolean) => void;
   allowDrop?: boolean;
   selectedId?: string;
   isDragging?: boolean;
@@ -47,7 +52,7 @@ export type TreeNodeProps<RenderProps = unknown> = {
 
 export type TreeNodeItemProps<RenderProps = unknown> = {
   collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
+  setCollapsed: (id: string, collapsed: boolean) => void;
 
   isOver?: boolean;
   canDrop?: boolean;
@@ -57,6 +62,7 @@ export type TreeNodeItemProps<RenderProps = unknown> = {
 
 export type TreeViewProps<RenderProps = unknown> = {
   data: Node<RenderProps>[];
+  initialCollapsedIds?: string[];
 } & CommonProps<RenderProps>;
 
 export type NodeLIneProps<RenderProps = unknown> = {

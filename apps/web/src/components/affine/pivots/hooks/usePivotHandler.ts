@@ -6,77 +6,95 @@ import { useCallback } from 'react';
 
 import { useBlockSuiteWorkspaceHelper } from '../../../../hooks/use-blocksuite-workspace-helper';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
-import type { RemWorkspace } from '../../../../shared';
-import type { InternalRenderProps, TreeNode } from '../types';
+import type { BlockSuiteWorkspace } from '../../../../shared';
+import type { NodeRenderProps, TreeNode } from '../types';
 
 const logger = new DebugLogger('pivot');
 
+const findRootIds = (metas: PageMeta[], id: string): string[] => {
+  const parentMeta = metas.find(m => m.subpageIds?.includes(id));
+  if (!parentMeta) {
+    return [id];
+  }
+  return [parentMeta.id, ...findRootIds(metas, parentMeta.id)];
+};
 export const usePivotHandler = ({
-  currentWorkspace,
-  allMetas,
+  blockSuiteWorkspace,
+  metas,
   onAdd,
   onDelete,
   onDrop,
 }: {
-  currentWorkspace: RemWorkspace;
-  allMetas: PageMeta[];
-  onAdd?: (id: string, parentNode: TreeNode) => void;
-  onDelete?: TreeViewProps<InternalRenderProps>['onDelete'];
-  onDrop?: TreeViewProps<InternalRenderProps>['onDrop'];
+  blockSuiteWorkspace: BlockSuiteWorkspace;
+  metas: PageMeta[];
+  onAdd?: (addedId: string, parentId: string) => void;
+  onDelete?: TreeViewProps<NodeRenderProps>['onDelete'];
+  onDrop?: TreeViewProps<NodeRenderProps>['onDrop'];
 }) => {
-  const { createPage } = useBlockSuiteWorkspaceHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
-  const { getPageMeta, setPageMeta, shiftPageMeta } = usePageMetaHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+  const { getPageMeta, setPageMeta, shiftPageMeta } =
+    usePageMetaHelper(blockSuiteWorkspace);
 
   const handleAdd = useCallback(
     (node: TreeNode) => {
       const id = nanoid();
       createPage(id, node.id);
-      onAdd?.(id, node);
+      onAdd?.(id, node.id);
     },
     [createPage, onAdd]
   );
 
   const handleDelete = useCallback(
     (node: TreeNode) => {
-      const removeToTrash = (pageMeta: PageMeta) => {
-        const { subpageIds = [] } = pageMeta;
-        setPageMeta(pageMeta.id, { trash: true, trashDate: +new Date() });
+      const removeToTrash = (currentMeta: PageMeta) => {
+        const { subpageIds = [] } = currentMeta;
+        setPageMeta(currentMeta.id, {
+          trash: true,
+          trashDate: +new Date(),
+        });
         subpageIds.forEach(id => {
-          const subpageMeta = getPageMeta(id);
-          subpageMeta && removeToTrash(subpageMeta);
+          const subcurrentMeta = getPageMeta(id);
+          subcurrentMeta && removeToTrash(subcurrentMeta);
         });
       };
-      removeToTrash(allMetas.find(m => m.id === node.id)!);
+      removeToTrash(metas.find(m => m.id === node.id)!);
       onDelete?.(node);
     },
-    [allMetas, getPageMeta, onDelete, setPageMeta]
+    [metas, getPageMeta, onDelete, setPageMeta]
   );
 
   const handleDrop = useCallback(
     (
-      dragNode: TreeNode,
-      dropNode: TreeNode,
+      dragId: string,
+      dropId: string,
       position: {
         topLine: boolean;
         bottomLine: boolean;
         internal: boolean;
       }
     ) => {
-      const { topLine, bottomLine } = position;
-      logger.info('handleDrop', { dragNode, dropNode, bottomLine, allMetas });
+      if (dragId === dropId) {
+        return;
+      }
+      const dropRootIds = findRootIds(metas, dropId);
+      if (dropRootIds.includes(dragId)) {
+        return;
+      }
 
-      const dragParentMeta = allMetas.find(meta =>
-        meta.subpageIds?.includes(dragNode.id)
+      const { topLine, bottomLine } = position;
+      logger.info('handleDrop', {
+        dragId,
+        dropId,
+        bottomLine,
+        metas,
+      });
+
+      const dragParentMeta = metas.find(meta =>
+        meta.subpageIds?.includes(dragId)
       );
       if (bottomLine || topLine) {
         const insertOffset = bottomLine ? 1 : 0;
-        const dropParentMeta = allMetas.find(m =>
-          m.subpageIds?.includes(dropNode.id)
-        );
+        const dropParentMeta = metas.find(m => m.subpageIds?.includes(dropId));
 
         if (!dropParentMeta) {
           // drop into root
@@ -86,7 +104,7 @@ export const usePivotHandler = ({
             const newSubpageIds = [...(dragParentMeta.subpageIds ?? [])];
 
             const deleteIndex = dragParentMeta.subpageIds?.findIndex(
-              id => id === dragNode.id
+              id => id === dragId
             );
             newSubpageIds.splice(deleteIndex, 1);
             setPageMeta(dragParentMeta.id, {
@@ -96,38 +114,38 @@ export const usePivotHandler = ({
 
           logger.info('resort root meta');
           const insertIndex =
-            allMetas.findIndex(m => m.id === dropNode.id) + insertOffset;
-          shiftPageMeta(dragNode.id, insertIndex);
-          return onDrop?.(dragNode, dropNode, position);
+            metas.findIndex(m => m.id === dropId) + insertOffset;
+          shiftPageMeta(dragId, insertIndex);
+          return onDrop?.(dragId, dropId, position);
         }
 
         if (
           dragParentMeta &&
-          (dragParentMeta.id === dropNode.id ||
+          (dragParentMeta.id === dropId ||
             dragParentMeta.id === dropParentMeta!.id)
         ) {
           logger.info('drop to resort');
           // need to resort
           const newSubpageIds = [...(dragParentMeta.subpageIds ?? [])];
 
-          const deleteIndex = newSubpageIds.findIndex(id => id === dragNode.id);
+          const deleteIndex = newSubpageIds.findIndex(id => id === dragId);
           newSubpageIds.splice(deleteIndex, 1);
 
           const insertIndex =
-            newSubpageIds.findIndex(id => id === dropNode.id) + insertOffset;
-          newSubpageIds.splice(insertIndex, 0, dragNode.id);
+            newSubpageIds.findIndex(id => id === dropId) + insertOffset;
+          newSubpageIds.splice(insertIndex, 0, dragId);
           setPageMeta(dropParentMeta.id, {
             subpageIds: newSubpageIds,
           });
 
-          return onDrop?.(dragNode, dropNode, position);
+          return onDrop?.(dragId, dropId, position);
         }
 
         logger.info('drop into drop node parent and resort');
 
         if (dragParentMeta) {
           const metaIndex = dragParentMeta.subpageIds.findIndex(
-            id => id === dragNode.id
+            id => id === dragId
           );
           const newSubpageIds = [...dragParentMeta.subpageIds];
           newSubpageIds.splice(metaIndex, 1);
@@ -136,25 +154,24 @@ export const usePivotHandler = ({
           });
         }
         const newSubpageIds = [...(dropParentMeta!.subpageIds ?? [])];
-        const insertIndex =
-          newSubpageIds.findIndex(id => id === dropNode.id) + 1;
-        newSubpageIds.splice(insertIndex, 0, dragNode.id);
+        const insertIndex = newSubpageIds.findIndex(id => id === dropId) + 1;
+        newSubpageIds.splice(insertIndex, 0, dragId);
         setPageMeta(dropParentMeta.id, {
           subpageIds: newSubpageIds,
         });
 
-        return onDrop?.(dragNode, dropNode, position);
+        return onDrop?.(dragId, dropId, position);
       }
 
       logger.info('drop into the drop node');
 
       // drop into the node
-      if (dragParentMeta && dragParentMeta.id === dropNode.id) {
+      if (dragParentMeta && dragParentMeta.id === dropId) {
         return;
       }
       if (dragParentMeta) {
         const metaIndex = dragParentMeta.subpageIds.findIndex(
-          id => id === dragNode.id
+          id => id === dragId
         );
         const newSubpageIds = [...dragParentMeta.subpageIds];
         newSubpageIds.splice(metaIndex, 1);
@@ -162,13 +179,13 @@ export const usePivotHandler = ({
           subpageIds: newSubpageIds,
         });
       }
-      const dropMeta = allMetas.find(meta => meta.id === dropNode.id)!;
-      const newSubpageIds = [dragNode.id, ...(dropMeta.subpageIds ?? [])];
+      const dropMeta = metas.find(meta => meta.id === dropId)!;
+      const newSubpageIds = [dragId, ...(dropMeta.subpageIds ?? [])];
       setPageMeta(dropMeta.id, {
         subpageIds: newSubpageIds,
       });
     },
-    [allMetas, onDrop, setPageMeta, shiftPageMeta]
+    [metas, onDrop, setPageMeta, shiftPageMeta]
   );
 
   return {

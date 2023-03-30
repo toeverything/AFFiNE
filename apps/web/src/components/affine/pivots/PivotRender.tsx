@@ -1,6 +1,7 @@
 import { ArrowDownSmallIcon, EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { useAtomValue } from 'jotai';
 import { useRouter } from 'next/router';
+import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../atoms';
 import { OperationButton } from './OperationButton';
@@ -15,12 +16,15 @@ export const PivotRender: TreeNode['render'] = (
   const {
     onClick,
     showOperationButton = false,
-    pageMeta,
-    allMetas = [],
-  } = renderProps || {};
+    currentMeta,
+    metas = [],
+    blockSuiteWorkspace,
+  } = renderProps!;
   const record = useAtomValue(workspacePreferredModeAtom);
-
   const router = useRouter();
+
+  const [isHover, setIsHover] = useState(false);
+
   const active = router.query.pageId === node.id;
 
   return (
@@ -28,6 +32,8 @@ export const PivotRender: TreeNode['render'] = (
       onClick={e => {
         onClick?.(e, node);
       }}
+      onMouseEnter={() => setIsHover(true)}
+      onMouseLeave={() => setIsHover(false)}
       isOver={isOver || isSelected}
       active={active}
     >
@@ -36,18 +42,22 @@ export const PivotRender: TreeNode['render'] = (
         show={!!node.children?.length}
         onClick={e => {
           e.stopPropagation();
-          setCollapsed(!collapsed);
+          setCollapsed(node.id, !collapsed);
         }}
       >
         <ArrowDownSmallIcon />
       </StyledCollapsedButton>
       {record[node.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
-      <span>{pageMeta?.title || 'Untitled'}</span>
+      <span>{currentMeta?.title || 'Untitled'}</span>
       {showOperationButton && (
         <OperationButton
           onAdd={onAdd}
           onDelete={onDelete}
-          allMetas={allMetas}
+          metas={metas}
+          currentMeta={currentMeta!}
+          blockSuiteWorkspace={blockSuiteWorkspace!}
+          isHover={isHover}
+          onMenuClose={() => setIsHover(false)}
         />
       )}
     </StyledPivot>
