@@ -4,8 +4,10 @@ import { useEffect } from 'react';
 
 import { currentPageIdAtom, jotaiStore } from '../atoms';
 import type { RemWorkspace } from '../shared';
+import { WorkspaceSubPath } from '../shared';
 import { useCurrentPageId } from './current/use-current-page-id';
 import { useCurrentWorkspace } from './current/use-current-workspace';
+import { RouteLogic, useRouterHelper } from './use-router-helper';
 import { useWorkspaces } from './use-workspaces';
 
 export function findSuitablePageId(
@@ -39,6 +41,7 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
   const [currentWorkspace, setCurrentWorkspaceId] = useCurrentWorkspace();
   const [currentPageId, setCurrentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
+  const { jumpToSubPath } = useRouterHelper(router);
   useEffect(() => {
     const listener: Parameters<typeof router.events.on>[1] = (url: string) => {
       if (url.startsWith('/')) {
@@ -161,7 +164,8 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
                 }
               );
             const clearId = setTimeout(() => {
-              if (jotaiStore.get(currentPageIdAtom) === null) {
+              const pageId = jotaiStore.get(currentPageIdAtom);
+              if (pageId === null) {
                 const id =
                   currentWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
                 if (id) {
@@ -173,8 +177,15 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
                     },
                   });
                   setCurrentPageId(id);
+                  dispose.dispose();
+                  return;
                 }
               }
+              jumpToSubPath(
+                currentWorkspace.blockSuiteWorkspace.id,
+                WorkspaceSubPath.ALL,
+                RouteLogic.REPLACE
+              );
               dispose.dispose();
             }, REDIRECT_TIMEOUT);
             return () => {
@@ -194,5 +205,6 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
     setCurrentWorkspaceId,
     workspaces,
     router,
+    jumpToSubPath,
   ]);
 }
