@@ -89,7 +89,7 @@ describe('ydoc sync', () => {
       BlockSuiteWorkspace.Y.applyUpdate(workspace1.doc, new Uint8Array(binary));
       BlockSuiteWorkspace.Y.applyUpdate(workspace2.doc, new Uint8Array(binary));
       const provider1 = new KeckProvider(wsUrl, workspace1.id, workspace1.doc, {
-        params: { token: user1Token.refresh },
+        params: { token: user1Token.token },
         // @ts-expect-error ignore the type
         awareness: workspace1.awarenessStore.awareness,
         disableBc: true,
@@ -97,7 +97,7 @@ describe('ydoc sync', () => {
       });
 
       const provider2 = new KeckProvider(wsUrl, workspace2.id, workspace2.doc, {
-        params: { token: user2Token.refresh },
+        params: { token: user2Token.token },
         // @ts-expect-error ignore the type
         awareness: workspace2.awarenessStore.awareness,
         disableBc: true,
