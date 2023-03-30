@@ -28,11 +28,11 @@ let user1Token: LoginResponse;
 let user2Token: LoginResponse;
 
 beforeEach(() => {
-  workspaceApis = createWorkspaceApis('http://localhost:3000/');
+  workspaceApis = createWorkspaceApis('http://127.0.0.1:3000/');
 });
 
 beforeEach(async () => {
-  const data = await fetch('http://localhost:3000/api/user/token', {
+  const data = await fetch('http://127.0.0.1:3000/api/user/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ beforeEach(async () => {
   }).then(r => r.json());
   loginResponseSchema.parse(data);
   user1Token = data;
-  const data2 = await fetch('http://localhost:3000/api/user/token', {
+  const data2 = await fetch('http://127.0.0.1:3000/api/user/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ beforeEach(async () => {
   user2Token = data2;
 });
 
-const wsUrl = `ws://localhost:3000/api/sync/`;
+const wsUrl = `ws://127.0.0.1:3000/api/sync/`;
 
 describe('ydoc sync', () => {
   test(
