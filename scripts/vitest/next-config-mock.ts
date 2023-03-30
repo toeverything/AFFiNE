@@ -6,7 +6,7 @@ export default function getConfig() {
       gitVersion: 'UNKNOWN',
       hash: 'UNKNOWN',
       editorVersion: 'UNKNOWN',
-      serverAPI: 'http://localhost:3000/api',
+      serverAPI: 'http://localhost:3000/',
       enableBroadCastChannelProvider: true,
       enableIndexedDBProvider: true,
       enableDebugPage: true,

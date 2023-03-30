@@ -39,8 +39,27 @@ export interface GetUserByEmailParams {
   workspace_id: string;
 }
 
+export const usageResponseSchema = z.object({
+  blob_usage: z.object({
+    usage: z.number(),
+    max_usage: z.number(),
+  }),
+});
+
+export type UsageResponse = z.infer<typeof usageResponseSchema>;
+
 export function createUserApis(prefixUrl = '/') {
   return {
+    getUsage: async (): Promise<UsageResponse> => {
+      const auth = getLoginStorage();
+      assertExists(auth);
+      return fetch(prefixUrl + 'api/resource/usage', {
+        method: 'GET',
+        headers: {
+          Authorization: auth.token,
+        },
+      }).then(r => r.json());
+    },
     getUserByEmail: async (
       params: GetUserByEmailParams
     ): Promise<User[] | null> => {
@@ -309,7 +328,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
       if (mb > 10) {
         throw new RequestError(MessageCode.blobTooLarge);
       }
-      return fetch(prefixUrl + 'api/blob', {
+      return fetch(prefixUrl + `api/workspace/${workspaceId}/blob`, {
         method: 'PUT',
         body: arrayBuffer,
         headers: {
@@ -318,10 +337,13 @@ export function createWorkspaceApis(prefixUrl = '/') {
         },
       }).then(r => r.text());
     },
-    getBlob: async (blobId: string): Promise<ArrayBuffer> => {
+    getBlob: async (
+      workspaceId: string,
+      blobId: string
+    ): Promise<ArrayBuffer> => {
       const auth = getLoginStorage();
       assertExists(auth);
-      return fetch(prefixUrl + `api/blob/${blobId}`, {
+      return fetch(prefixUrl + `api/workspace/${workspaceId}/blob/${blobId}`, {
         method: 'GET',
         headers: {
           Authorization: auth.token,

@@ -5,6 +5,38 @@ const userA = require('../fixtures/userA.json');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const userB = require('../fixtures/userB.json');
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const user1 = require('@affine-test/fixtures/built-in-user1.json');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const user2 = require('@affine-test/fixtures/built-in-user2.json');
+
+export async function getBuiltInUser() {
+  return Promise.all([
+    fetch('http://localhost:3000/api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'DebugLoginUser',
+        email: user1.email,
+        password: user1.password,
+      }),
+    }).then(r => r.json()),
+    fetch('http://localhost:3000/api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'DebugLoginUser',
+        email: user2.email,
+        password: user2.password,
+      }),
+    }).then(r => r.json()),
+  ]);
+}
+
 export async function createFakeUser() {
   try {
     const response = await Promise.all([
