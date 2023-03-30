@@ -90,7 +90,7 @@ describe('ydoc sync', () => {
         {
           // @ts-expect-error ignore the error
           WebSocketPolyfill: WebSocket,
-          params: { token: user1Token.token },
+          params: { token: user1Token.refresh },
           // @ts-expect-error ignore the type
           awareness: workspace1.awarenessStore.awareness,
           disableBc: true,
@@ -105,7 +105,7 @@ describe('ydoc sync', () => {
         {
           // @ts-expect-error ignore the error
           WebSocketPolyfill: WebSocket,
-          params: { token: user2Token.token },
+          params: { token: user2Token.refresh },
           // @ts-expect-error ignore the type
           awareness: workspace2.awarenessStore.awareness,
           disableBc: true,
@@ -120,14 +120,6 @@ describe('ydoc sync', () => {
         return new Promise<void>(resolve => {
           provider.once('status', ({ status }: any) => {
             expect(status).toBe('connected');
-            resolve();
-          });
-        });
-      }
-
-      function waitForDisconnected(provider: WebsocketProvider) {
-        return new Promise<void>(resolve => {
-          provider.once('disconnected', () => {
             resolve();
           });
         });
@@ -152,10 +144,8 @@ describe('ydoc sync', () => {
         workspace1.doc.getMap(`space:${pageId}`).toJSON()
       );
 
-      await Promise.all([
-        waitForDisconnected(provider1),
-        waitForDisconnected(provider2),
-      ]);
+      provider1.disconnect();
+      provider2.disconnect();
     },
     {
       timeout: 30000,
