@@ -1,5 +1,5 @@
+import { KeckProvider } from '@affine/workspace/affine/keck';
 import { getLoginStorage } from '@affine/workspace/affine/login';
-import { WebsocketProvider } from '@affine/workspace/affine/sync';
 import { assertExists } from '@blocksuite/store';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
@@ -14,7 +14,7 @@ import { createBroadCastChannelProvider } from './broad-cast-channel';
 const createAffineWebSocketProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): AffineWebSocketProvider => {
-  let webSocketProvider: WebsocketProvider | null = null;
+  let webSocketProvider: KeckProvider | null = null;
   return {
     flavour: 'affine-websocket',
     background: false,
@@ -27,7 +27,7 @@ const createAffineWebSocketProvider = (
       const wsUrl = `${
         window.location.protocol === 'https:' ? 'wss' : 'ws'
       }://${window.location.host}/api/sync/`;
-      webSocketProvider = new WebsocketProvider(
+      webSocketProvider = new KeckProvider(
         wsUrl,
         blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc,
@@ -40,12 +40,12 @@ const createAffineWebSocketProvider = (
           connect: false,
         }
       );
-      providerLogger.info('connect', webSocketProvider.roomname);
+      providerLogger.info('connect', webSocketProvider.url);
       webSocketProvider.connect();
     },
     disconnect: () => {
       assertExists(webSocketProvider);
-      providerLogger.info('disconnect', webSocketProvider.roomname);
+      providerLogger.info('disconnect', webSocketProvider.url);
       webSocketProvider.destroy();
       webSocketProvider = null;
     },
