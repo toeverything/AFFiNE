@@ -15,6 +15,7 @@ import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import type { RemWorkspace } from '../../../shared';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
+import { ChangeLog } from './changeLog';
 import Favorite from './favorite';
 import { Pivots } from './Pivots';
 import { StyledListItem } from './shared-styles';
@@ -86,7 +87,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             currentWorkspace={currentWorkspace}
             onClick={onOpenWorkspaceListModal}
           />
-
+          <ChangeLog />
           <StyledListItem
             data-testid="slider-bar-quick-search-button"
             onClick={useCallback(() => {
@@ -117,7 +118,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               {t('Workspace Settings')}
             </StyledLink>
           </StyledListItem>
-
           <StyledListItem
             active={
               currentPath ===
@@ -133,7 +133,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               <span data-testid="all-pages">{t('All pages')}</span>
             </StyledLink>
           </StyledListItem>
-
           <Favorite
             currentPath={currentPath}
             paths={paths}
@@ -148,7 +147,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               allMetas={pageMeta}
             />
           )}
-
           <StyledListItem
             active={
               currentPath ===
