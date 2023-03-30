@@ -234,6 +234,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230324040005-14417c2
     "@blocksuite/store": 0.5.0-20230324040005-14417c2
+    "@types/ws": ^8.5.4
     firebase: ^9.18.0
     jotai: ^2.0.3
     js-base64: ^3.7.5
@@ -241,6 +242,7 @@ __metadata:
     lib0: ^0.2.73
     react: ^18.2.0
     react-dom: ^18.2.0
+    ws: ^8.13.0
     zod: ^3.21.4
   languageName: unknown
   linkType: soft
@@ -6739,6 +6741,15 @@ __metadata:
   version: 2.0.2
   resolution: "@types/which@npm:2.0.2"
   checksum: 8626a3c2f6db676c449142e1082e33ea0c9d88b8a2bd796366b944891e6da0088b2aa83d3fa9c79e6696f7381a851fc76d43bd353eb6c4d98a7775b4ae0a96a5
+  languageName: node
+  linkType: hard
+
+"@types/ws@npm:^8.5.4":
+  version: 8.5.4
+  resolution: "@types/ws@npm:8.5.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: fefbad20d211929bb996285c4e6f699b12192548afedbe4930ab4384f8a94577c9cd421acaad163cacd36b88649509970a05a0b8f20615b30c501ed5269038d1
   languageName: node
   linkType: hard
 
@@ -19256,7 +19267,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.2.3":
+"ws@npm:^8.13.0, ws@npm:^8.2.3":
   version: 8.13.0
   resolution: "ws@npm:8.13.0"
   peerDependencies:
