@@ -9,7 +9,7 @@ import {
 import { getBuiltInUser, loginUser, openHomePage } from '../../libs/utils';
 
 test.describe('affine built in workspace', () => {
-  test('collaborative', async ({ page, context }) => {
+  test('collaborative', async ({ page, browser }) => {
     await openHomePage(page);
     await waitMarkdownImported(page);
     const [a, b] = await getBuiltInUser();
@@ -18,7 +18,8 @@ test.describe('affine built in workspace', () => {
     await page.waitForTimeout(50);
     await clickSideBarCurrentWorkspaceBanner(page);
     await page.getByText('Cloud Workspace').click();
-    const page2 = await context.newPage();
+    const context2 = await browser.newContext();
+    const page2 = await context2.newPage();
     await openHomePage(page2);
     await loginUser(page2, b);
     await page2.reload();
@@ -31,9 +32,9 @@ test.describe('affine built in workspace', () => {
       delay: 50,
     });
     await page.waitForTimeout(100);
-    const title = await page
+    const title = (await page
       .locator('.affine-default-page-block-title-container')
-      .textContent();
+      .textContent()) as string;
     expect(title.trim()).toBe('hello');
   });
 });
