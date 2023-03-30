@@ -18,11 +18,7 @@ if (typeof window === 'undefined') {
     // This is for Server side rendering support
     prefixUrl = new URL('http://' + config.serverAPI + '/').origin;
   } else {
-    try {
-      new URL(serverAPI);
-    } catch (e) {
-      console.warn('serverAPI is not a valid URL', config.serverAPI);
-    }
+    prefixUrl = serverAPI;
   }
 } else {
   const params = new URLSearchParams(window.location.search);
@@ -40,43 +36,41 @@ if (!globalThis.AFFINE_APIS) {
     jotaiStore.set(currentAffineUserAtom, parseIdToken(response.token));
     setLoginStorage(response);
   };
-  if (process.env.NODE_ENV === 'development') {
-    const loginMockUser1 = async () => {
-      const user1 = await import('@affine-test/fixtures/built-in-user1.json');
-      const data = await fetch(prefixUrl + 'api/user/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'DebugLoginUser',
-          email: user1.email,
-          password: user1.password,
-        }),
-      }).then(r => r.json());
-      setLogin(data);
-    };
-    const loginMockUser2 = async () => {
-      const user2 = await import('@affine-test/fixtures/built-in-user2.json');
-      const data = await fetch(prefixUrl + 'api/user/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'DebugLoginUser',
-          email: user2.email,
-          password: user2.password,
-        }),
-      }).then(r => r.json());
-      setLogin(data);
-    };
+  const loginMockUser1 = async () => {
+    const user1 = await import('@affine-test/fixtures/built-in-user1.json');
+    const data = await fetch(prefixUrl + 'api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'DebugLoginUser',
+        email: user1.email,
+        password: user1.password,
+      }),
+    }).then(r => r.json());
+    setLogin(data);
+  };
+  const loginMockUser2 = async () => {
+    const user2 = await import('@affine-test/fixtures/built-in-user2.json');
+    const data = await fetch(prefixUrl + 'api/user/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'DebugLoginUser',
+        email: user2.email,
+        password: user2.password,
+      }),
+    }).then(r => r.json());
+    setLogin(data);
+  };
 
-    globalThis.AFFINE_DEBUG = {
-      loginMockUser1,
-      loginMockUser2,
-    };
-  }
+  globalThis.AFFINE_DEBUG = {
+    loginMockUser1,
+    loginMockUser2,
+  };
 }
 
 declare global {
