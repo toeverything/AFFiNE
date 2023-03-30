@@ -170,6 +170,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/web@workspace:apps/web"
   dependencies:
+    "@affine-test/fixtures": "workspace:^"
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
