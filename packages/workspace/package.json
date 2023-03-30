@@ -6,7 +6,8 @@
     "./type": "./src/type.ts",
     "./affine/*": "./src/affine/*.ts",
     "./affine/api": "./src/affine/api/index.ts",
-    "./affine/sync": "./src/affine/sync.js"
+    "./affine/sync": "./src/affine/sync.js",
+    "./affine/keck": "./src/affine/keck/index.ts"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
@@ -22,6 +23,8 @@
     "lib0": "^0.2.73",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "y-protocols": "^1.0.5",
+    "yjs": "^13.5.51",
     "zod": "^3.21.4"
   },
   "devDependencies": {
