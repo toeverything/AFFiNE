@@ -9,6 +9,8 @@ import { WebsocketProvider } from '@affine/workspace/affine/sync';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
+import type { ParagraphBlockModel } from '@blocksuite/blocks/models';
+import type { Page, Text } from '@blocksuite/store';
 import { uuidv4, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import WebSocket from 'ws';
@@ -137,11 +139,21 @@ describe('ydoc sync', () => {
       });
       page1.addBlock('affine:surface', {}, null);
       const frameId = page1.addBlock('affine:frame', {}, pageBlockId);
-      page1.addBlock('affine:paragraph', {}, frameId);
+      const paragraphId = page1.addBlock('affine:paragraph', {}, frameId);
       await new Promise(resolve => setTimeout(resolve, 1000));
       expect(workspace2.getPage(pageId)).toBeDefined();
       expect(workspace2.doc.getMap(`space:${pageId}`).toJSON()).toEqual(
         workspace1.doc.getMap(`space:${pageId}`).toJSON()
+      );
+      const page2 = workspace2.getPage(pageId) as Page;
+      page1.updateBlockById(paragraphId, {
+        text: new page1.Text('hello world'),
+      });
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const paragraph2 = page2.getBlockById(paragraphId) as ParagraphBlockModel;
+      const text = paragraph2.text as Text;
+      expect(text.toString()).toEqual(
+        page1.getBlockById(paragraphId)?.text?.toString()
       );
 
       provider1.disconnect();
