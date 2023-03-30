@@ -177,6 +177,8 @@ export function useSyncRouterWithCurrentWorkspaceAndPage(router: NextRouter) {
                     },
                   });
                   setCurrentPageId(id);
+                  dispose.dispose();
+                  return;
                 }
               }
               jumpToSubPath(
