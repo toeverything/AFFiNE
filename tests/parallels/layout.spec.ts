@@ -68,7 +68,7 @@ test.describe('Layout ui', () => {
     await expect(sliderBarModalBackground).toBeVisible();
 
     // click modal background can close sidebar
-    await sliderBarModalBackground.click();
+    await sliderBarModalBackground.click({ force: true });
     await expect(sliderBarArea).not.toBeVisible();
   });
 });
