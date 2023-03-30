@@ -5,9 +5,12 @@ import { z } from 'zod';
 import { getLoginStorage } from '../login';
 
 export class RequestError extends Error {
+  public readonly code: MessageCode;
+
   constructor(code: MessageCode, cause: unknown | null = null) {
     super(Messages[code].message);
     sendMessage(code);
+    this.code = code;
     this.name = 'RequestError';
     this.cause = cause;
   }
@@ -36,8 +39,27 @@ export interface GetUserByEmailParams {
   workspace_id: string;
 }
 
+export const usageResponseSchema = z.object({
+  blob_usage: z.object({
+    usage: z.number(),
+    max_usage: z.number(),
+  }),
+});
+
+export type UsageResponse = z.infer<typeof usageResponseSchema>;
+
 export function createUserApis(prefixUrl = '/') {
   return {
+    getUsage: async (): Promise<UsageResponse> => {
+      const auth = getLoginStorage();
+      assertExists(auth);
+      return fetch(prefixUrl + 'api/resource/usage', {
+        method: 'GET',
+        headers: {
+          Authorization: auth.token,
+        },
+      }).then(r => r.json());
+    },
     getUserByEmail: async (
       params: GetUserByEmailParams
     ): Promise<User[] | null> => {
@@ -306,7 +328,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
       if (mb > 10) {
         throw new RequestError(MessageCode.blobTooLarge);
       }
-      return fetch(prefixUrl + 'api/blob', {
+      return fetch(prefixUrl + `api/workspace/${workspaceId}/blob`, {
         method: 'PUT',
         body: arrayBuffer,
         headers: {
@@ -315,10 +337,13 @@ export function createWorkspaceApis(prefixUrl = '/') {
         },
       }).then(r => r.text());
     },
-    getBlob: async (blobId: string): Promise<ArrayBuffer> => {
+    getBlob: async (
+      workspaceId: string,
+      blobId: string
+    ): Promise<ArrayBuffer> => {
       const auth = getLoginStorage();
       assertExists(auth);
-      return fetch(prefixUrl + `api/blob/${blobId}`, {
+      return fetch(prefixUrl + `api/workspace/${workspaceId}/blob/${blobId}`, {
         method: 'GET',
         headers: {
           Authorization: auth.token,
@@ -360,8 +385,16 @@ export function createWorkspaceApis(prefixUrl = '/') {
             Authorization: auth.token,
           },
         })
+          .then(r =>
+            r.status === 403
+              ? Promise.reject(new RequestError(MessageCode.noPermission))
+              : r
+          )
           .then(r => r.arrayBuffer())
           .catch(e => {
+            if (e instanceof RequestError) {
+              throw e;
+            }
             throw new RequestError(MessageCode.downloadWorkspaceFailed, e);
           });
       }
