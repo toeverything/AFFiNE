@@ -35,6 +35,10 @@ const AllPage: NextPageWithLayout = () => {
     if (!currentWorkspace) {
       return;
     }
+    if (currentWorkspace.flavour !== WorkspaceFlavour.LOCAL) {
+      // only create a new page for local workspace
+      return;
+    }
     const localProvider = currentWorkspace.providers.find(
       provider => provider.flavour === 'local-indexeddb'
     );

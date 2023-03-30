@@ -21,7 +21,6 @@ test.describe('affine built in workspace', () => {
     const context2 = await browser.newContext();
     const page2 = await context2.newPage();
     await openHomePage(page2);
-    await waitMarkdownImported(page2);
     await loginUser(page2, b);
     await page2.reload();
     await clickSideBarCurrentWorkspaceBanner(page2);
