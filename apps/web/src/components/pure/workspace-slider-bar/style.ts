@@ -18,7 +18,6 @@ export const StyledSliderBar = styled('div')<{
     whiteSpace: 'nowrap',
     height: '100%',
     background: theme.colors.hubBackground,
-    boxShadow: theme.shadow.popover,
     zIndex: theme.zIndex.modal,
     transition: !resizing ? 'width .15s, padding .15s' : '',
     padding: show ? '0 4px' : '0',
@@ -27,7 +26,9 @@ export const StyledSliderBar = styled('div')<{
     flexDirection: 'column',
     overflow: 'hidden',
     position: floating ? 'absolute' : 'relative',
-    maxWidth: 'calc(100vw - 698px)',
+    maxWidth: floating ? undefined : 'calc(100vw - 698px)',
+    borderRight: '1px solid',
+    borderColor: theme.colors.borderColor,
   };
 });
 export const StyledSidebarSwitchWrapper = styled('div')(() => {
@@ -107,21 +108,22 @@ export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
       zIndex: theme.zIndex.modal + 1,
       userSelect: 'none',
       ':hover > *': {
-        background: theme.colors.primaryColor,
+        background: 'rgba(0, 0, 0, 0.1)',
       },
     };
   }
 );
 export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
-  ({ theme, isResizing }) => {
+  ({ isResizing }) => {
     return {
       transition: 'background .15s .1s',
       position: 'absolute',
       top: 0,
-      right: '4px',
+      right: '50%',
       bottom: 0,
-      width: '4px',
-      background: isResizing ? theme.colors.primaryColor : 'transparent',
+      transform: 'translateX(0.5px)',
+      width: '2px',
+      background: isResizing ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
     };
   }
 );
