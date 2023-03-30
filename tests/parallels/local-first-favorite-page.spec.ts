@@ -23,7 +23,7 @@ test.describe('Local first favorite and cancel favorite  page', () => {
     });
     expect(cell).not.toBeUndefined();
 
-    await cell.click();
+    await cell.dispatchEvent('click');
     await clickPageMoreActions(page);
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
     await favoriteBtn.click();
@@ -41,7 +41,7 @@ test.describe('Local first favorite and cancel favorite  page', () => {
     });
     expect(cell).not.toBeUndefined();
 
-    await cell.click();
+    await cell.dispatchEvent('click');
     await clickPageMoreActions(page);
 
     const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
