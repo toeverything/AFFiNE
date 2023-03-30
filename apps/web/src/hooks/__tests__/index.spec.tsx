@@ -24,13 +24,13 @@ import {
 } from '../../atoms';
 import { LocalPlugin } from '../../plugins/local';
 import type { LocalWorkspace } from '../../shared';
+import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
 import {
   useGuideHidden,
   useGuideHiddenUntilNextUpdate,
   useLastVersion,
   useTipsDisplayStatus,
 } from '../affine/use-is-first-load';
-import { BlockSuiteWorkspace, WorkspaceSubPath } from '../../shared';
 import {
   useRecentlyViewed,
   useSyncRecentViewsWithRouter,
