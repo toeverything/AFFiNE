@@ -3,9 +3,9 @@ import {
   createWorkspaceApis,
   PermissionType,
 } from '@affine/workspace/affine/api';
+import { KeckProvider } from '@affine/workspace/affine/keck';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { loginResponseSchema } from '@affine/workspace/affine/login';
-import { WebsocketProvider } from '@affine/workspace/affine/sync';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
@@ -13,7 +13,10 @@ import type { ParagraphBlockModel } from '@blocksuite/blocks/models';
 import type { Page, Text } from '@blocksuite/store';
 import { uuidv4, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import WebSocket from 'ws';
+import { WebSocket } from 'ws';
+
+// @ts-expect-error
+globalThis.WebSocket = WebSocket;
 
 const currentTokenRef = {
   current: null as LoginResponse | null,
@@ -85,40 +88,26 @@ describe('ydoc sync', () => {
       );
       BlockSuiteWorkspace.Y.applyUpdate(workspace1.doc, new Uint8Array(binary));
       BlockSuiteWorkspace.Y.applyUpdate(workspace2.doc, new Uint8Array(binary));
-      const provider1 = new WebsocketProvider(
-        wsUrl,
-        workspace1.id,
-        workspace1.doc,
-        {
-          // @ts-expect-error ignore the error
-          WebSocketPolyfill: WebSocket,
-          params: { token: user1Token.refresh },
-          // @ts-expect-error ignore the type
-          awareness: workspace1.awarenessStore.awareness,
-          disableBc: true,
-          connect: false,
-        }
-      );
+      const provider1 = new KeckProvider(wsUrl, workspace1.id, workspace1.doc, {
+        params: { token: user1Token.refresh },
+        // @ts-expect-error ignore the type
+        awareness: workspace1.awarenessStore.awareness,
+        disableBc: true,
+        connect: false,
+      });
 
-      const provider2 = new WebsocketProvider(
-        wsUrl,
-        workspace2.id,
-        workspace2.doc,
-        {
-          // @ts-expect-error ignore the error
-          WebSocketPolyfill: WebSocket,
-          params: { token: user2Token.refresh },
-          // @ts-expect-error ignore the type
-          awareness: workspace2.awarenessStore.awareness,
-          disableBc: true,
-          connect: false,
-        }
-      );
+      const provider2 = new KeckProvider(wsUrl, workspace2.id, workspace2.doc, {
+        params: { token: user2Token.refresh },
+        // @ts-expect-error ignore the type
+        awareness: workspace2.awarenessStore.awareness,
+        disableBc: true,
+        connect: false,
+      });
 
       provider1.connect();
       provider2.connect();
 
-      function waitForConnected(provider: WebsocketProvider) {
+      function waitForConnected(provider: KeckProvider) {
         return new Promise<void>(resolve => {
           provider.once('status', ({ status }: any) => {
             expect(status).toBe('connected');
