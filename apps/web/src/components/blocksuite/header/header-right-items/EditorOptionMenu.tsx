@@ -1,21 +1,16 @@
 // fixme(himself65): refactor this file
-import { Confirm, FlexWrapper, Menu, MenuItem } from '@affine/component';
-import { IconButton } from '@affine/component';
+import { FlexWrapper, IconButton, Menu, MenuItem } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import {
-  DeleteTemporarilyIcon,
-  ExportIcon,
-  ExportToHtmlIcon,
-  ExportToMarkdownIcon,
+  EdgelessIcon,
   FavoritedIcon,
   FavoriteIcon,
   MoreVerticalIcon,
+  PageIcon,
 } from '@blocksuite/icons';
-import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import { assertExists } from '@blocksuite/store';
 import { useTheme } from '@mui/material';
 import { useAtom } from 'jotai';
-import { useState } from 'react';
 
 import { workspacePreferredModeAtom } from '../../../../atoms';
 import { useCurrentPageId } from '../../../../hooks/current/use-current-page-id';
@@ -25,6 +20,11 @@ import {
   usePageMetaHelper,
 } from '../../../../hooks/use-page-meta';
 import { toast } from '../../../../utils';
+import {
+  Export,
+  MoveTo,
+  MoveToTrash,
+} from '../../../affine/operation-menu-items';
 
 export const EditorOptionMenu = () => {
   const { t } = useTranslation();
@@ -39,12 +39,12 @@ export const EditorOptionMenu = () => {
   const pageMeta = usePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
+  const allMetas = usePageMeta(workspace?.blockSuiteWorkspace ?? null);
   const [record, set] = useAtom(workspacePreferredModeAtom);
   const mode = record[pageId] ?? 'page';
   assertExists(pageMeta);
-  const { favorite, trash } = pageMeta;
+  const { favorite } = pageMeta;
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
-  const [open, setOpen] = useState(false);
 
   const EditMenu = (
     <>
@@ -56,7 +56,6 @@ export const EditorOptionMenu = () => {
             favorite ? t('Removed from Favorites') : t('Added to Favorites')
           );
         }}
-        iconSize={[20, 20]}
         icon={
           favorite ? (
             <FavoritedIcon style={{ color: theme.colors.primaryColor }} />
@@ -69,7 +68,6 @@ export const EditorOptionMenu = () => {
       </MenuItem>
       <MenuItem
         icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
-        iconSize={[20, 20]}
         data-testid="editor-option-menu-edgeless"
         onClick={() => {
           set(record => ({
@@ -81,48 +79,17 @@ export const EditorOptionMenu = () => {
         {t('Convert to ')}
         {mode === 'page' ? t('Edgeless') : t('Page')}
       </MenuItem>
-      <Menu
-        width={248}
-        placement="left-start"
-        content={
-          <>
-            <MenuItem
-              onClick={() => {
-                // @ts-expect-error
-                globalThis.currentEditor.contentParser.onExportHtml();
-              }}
-              icon={<ExportToHtmlIcon />}
-              iconSize={[20, 20]}
-            >
-              {t('Export to HTML')}
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                // @ts-expect-error
-                globalThis.currentEditor.contentParser.onExportMarkdown();
-              }}
-              icon={<ExportToMarkdownIcon />}
-              iconSize={[20, 20]}
-            >
-              {t('Export to Markdown')}
-            </MenuItem>
-          </>
-        }
-      >
-        <MenuItem icon={<ExportIcon />} iconSize={[20, 20]} isDir={true}>
-          {t('Export')}
-        </MenuItem>
-      </Menu>
-      <MenuItem
-        data-testid="editor-option-menu-delete"
-        onClick={() => {
-          setOpen(true);
-        }}
-        icon={<DeleteTemporarilyIcon />}
-        iconSize={[20, 20]}
-      >
-        {t('Delete')}
-      </MenuItem>
+      <Export />
+      <MoveTo
+        metas={allMetas}
+        currentMeta={pageMeta}
+        blockSuiteWorkspace={workspace?.blockSuiteWorkspace}
+      />
+      <MoveToTrash
+        testId="editor-option-menu-delete"
+        currentMeta={pageMeta}
+        blockSuiteWorkspace={workspace?.blockSuiteWorkspace}
+      />
     </>
   );
 
@@ -141,26 +108,6 @@ export const EditorOptionMenu = () => {
           </IconButton>
         </Menu>
       </FlexWrapper>
-      <Confirm
-        title={t('Delete page?')}
-        content={t('will be moved to Trash', {
-          title: pageMeta.title || 'Untitled',
-        })}
-        confirmText={t('Delete')}
-        confirmType="danger"
-        open={open}
-        onConfirm={() => {
-          toast(t('Moved to Trash'));
-          setOpen(false);
-          setPageMeta(pageId, { trash: !trash, trashDate: +new Date() });
-        }}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onCancel={() => {
-          setOpen(false);
-        }}
-      />
     </>
   );
 };

@@ -1,12 +1,12 @@
 import type {
+  CSSProperties,
   FocusEventHandler,
   ForwardedRef,
   HTMLAttributes,
   InputHTMLAttributes,
   KeyboardEventHandler,
 } from 'react';
-import { forwardRef } from 'react';
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 
 import { StyledInput } from './style';
 
@@ -14,13 +14,14 @@ type inputProps = {
   value?: string;
   placeholder?: string;
   disabled?: boolean;
-  width?: number;
-  height?: number;
+  width?: CSSProperties['width'];
+  height?: CSSProperties['height'];
   maxLength?: number;
   minLength?: number;
   onChange?: (value: string) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+  noBorder?: boolean;
 } & Omit<HTMLAttributes<HTMLInputElement>, 'onChange'>;
 
 export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
@@ -31,10 +32,11 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
     maxLength,
     minLength,
     height,
-    width = 260,
+    width,
     onChange,
     onBlur,
     onKeyDown,
+    noBorder = false,
     ...otherProps
   }: inputProps,
   ref: ForwardedRef<HTMLInputElement>
@@ -69,7 +71,8 @@ export const Input = forwardRef<HTMLInputElement, inputProps>(function Input(
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       height={height}
+      noBorder={noBorder}
       {...otherProps}
-    ></StyledInput>
+    />
   );
 });
