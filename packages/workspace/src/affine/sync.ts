@@ -14,7 +14,7 @@ const channelMessageSchema = z.object({
   ws_details: z.record(workspaceDetailSchema),
   metadata: z.record(
     z.object({
-      avatar: z.string(),
+      search_index: z.array(z.string()),
       name: z.string(),
     })
   ),
@@ -28,6 +28,7 @@ export function createAffineGlobalChannel(
   let client: WebsocketClient | null;
 
   async function handleMessage(channelMessage: ChannelMessage) {
+    console.log('channelMessage', channelMessage);
     const parseResult = channelMessageSchema.safeParse(channelMessage);
     if (!parseResult.success) {
       console.error(

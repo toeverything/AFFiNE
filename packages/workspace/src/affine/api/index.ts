@@ -99,7 +99,7 @@ export const userSchema = z.object({
   name: z.string(),
   email: z.string(),
   avatar_url: z.string(),
-  create_at: z.string(),
+  created_at: z.number(),
 });
 
 export const workspaceSchema = z.object({
@@ -113,6 +113,7 @@ export type Workspace = z.infer<typeof workspaceSchema>;
 
 export const workspaceDetailSchema = z.object({
   ...workspaceSchema.shape,
+  permission: z.undefined(),
   owner: userSchema,
   member_count: z.number(),
 });
