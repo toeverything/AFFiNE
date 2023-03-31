@@ -1,4 +1,6 @@
+import type { PageBlockModel } from '@blocksuite/blocks';
 import type { PageMeta } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/store';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
@@ -45,6 +47,19 @@ export function usePageMeta(
 export function usePageMetaHelper(blockSuiteWorkspace: BlockSuiteWorkspace) {
   return useMemo(
     () => ({
+      setPageTitle: (pageId: string, newTitle: string) => {
+        const page = blockSuiteWorkspace.getPage(pageId);
+        assertExists(page);
+        const pageBlock = page
+          .getBlockByFlavour('affine:page')
+          .at(0) as PageBlockModel;
+        assertExists(pageBlock);
+        page.transact(() => {
+          pageBlock.title.delete(0, pageBlock.title.length);
+          pageBlock.title.insert(newTitle, 0);
+        });
+        blockSuiteWorkspace.meta.setPageMeta(pageId, { title: newTitle });
+      },
       setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
         blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);
       },
