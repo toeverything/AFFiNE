@@ -5,7 +5,7 @@ import type {
   LocalIndexedDBProvider,
 } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
-import { IndexeddbPersistence } from 'y-indexeddb';
+import { createIndexedDBProvider as create } from '@toeverything/y-indexeddb';
 
 import type { BlockSuiteWorkspace } from '../../shared';
 import { providerLogger } from '../logger';
@@ -55,7 +55,7 @@ const createAffineWebSocketProvider = (
 const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBProvider => {
-  let indexeddbProvider: IndexeddbPersistence | null = null;
+  const indexeddbProvider = create(blockSuiteWorkspace);
   const callbacks = new Set<() => void>();
   return {
     flavour: 'local-indexeddb',
@@ -63,17 +63,12 @@ const createIndexedDBProvider = (
     // fixme: remove background long polling
     background: true,
     cleanup: () => {
-      assertExists(indexeddbProvider);
-      indexeddbProvider.clearData();
+      indexeddbProvider.cleanup();
       callbacks.clear();
-      indexeddbProvider = null;
     },
     connect: () => {
       providerLogger.info('connect indexeddb provider', blockSuiteWorkspace.id);
-      indexeddbProvider = new IndexeddbPersistence(
-        blockSuiteWorkspace.id,
-        blockSuiteWorkspace.doc
-      );
+      indexeddbProvider.connect();
       indexeddbProvider.whenSynced.then(() => {
         callbacks.forEach(cb => cb());
       });
@@ -84,8 +79,7 @@ const createIndexedDBProvider = (
         'disconnect indexeddb provider',
         blockSuiteWorkspace.id
       );
-      indexeddbProvider.destroy();
-      indexeddbProvider = null;
+      indexeddbProvider.disconnect();
     },
   };
 };

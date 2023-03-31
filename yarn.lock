@@ -217,7 +217,6 @@ __metadata:
     swr: ^2.1.1
     typescript: ^5.0.2
     webpack: ^5.76.3
-    y-indexeddb: ^9.0.9
     y-protocols: ^1.0.5
     yjs: ^13.5.51
     zod: ^3.21.4
@@ -13681,7 +13680,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lib0@npm:^0.2.35, lib0@npm:^0.2.42, lib0@npm:^0.2.68, lib0@npm:^0.2.72, lib0@npm:^0.2.73":
+"lib0@npm:^0.2.42, lib0@npm:^0.2.68, lib0@npm:^0.2.72, lib0@npm:^0.2.73":
   version: 0.2.73
   resolution: "lib0@npm:0.2.73"
   dependencies:
@@ -19322,28 +19321,6 @@ __metadata:
   version: 4.0.2
   resolution: "xtend@npm:4.0.2"
   checksum: ac5dfa738b21f6e7f0dd6e65e1b3155036d68104e67e5d5d1bde74892e327d7e5636a076f625599dc394330a731861e87343ff184b0047fef1360a7ec0a5a36a
-  languageName: node
-  linkType: hard
-
-"y-indexeddb@npm:9.0.9":
-  version: 9.0.9
-  resolution: "y-indexeddb@npm:9.0.9"
-  dependencies:
-    lib0: ^0.2.35
-  peerDependencies:
-    yjs: ^13.0.0
-  checksum: 77196c29f8fd0e738694a8991f9568ea1782e1e9d5354479bba42d7a007e9d4a65d7274671e035217201a9dea5e0d3169a8dad1be0943e3d55f8fdf94588fb5a
-  languageName: node
-  linkType: hard
-
-"y-indexeddb@patch:y-indexeddb@npm%3A9.0.9#./.yarn/patches/y-indexeddb-npm-9.0.9-6bd9b26461.patch::locator=AFFiNE%40workspace%3A.":
-  version: 9.0.9
-  resolution: "y-indexeddb@patch:y-indexeddb@npm%3A9.0.9#./.yarn/patches/y-indexeddb-npm-9.0.9-6bd9b26461.patch::version=9.0.9&hash=4f03bc&locator=AFFiNE%40workspace%3A."
-  dependencies:
-    lib0: ^0.2.35
-  peerDependencies:
-    yjs: ^13.0.0
-  checksum: 35079412e049c75359bbcd760d881b495db2386fb8acdc3f2b70dabdccf4f1ec43ab4b7958ea619cdb8a55b57ae26b3aad305daff38b3d9b56db79840892143b
   languageName: node
   linkType: hard
 

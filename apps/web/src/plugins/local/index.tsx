@@ -3,9 +3,9 @@ import type { LocalWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
+import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import React from 'react';
-import { IndexeddbPersistence } from 'y-indexeddb';
 import { z } from 'zod';
 
 import { createLocalProviders } from '../../blocksuite';
@@ -59,9 +59,10 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
         (_: string) => undefined
       );
       BlockSuiteWorkspace.Y.applyUpdateV2(blockSuiteWorkspace.doc, binary);
-      const persistence = new IndexeddbPersistence(id, blockSuiteWorkspace.doc);
+      const persistence = createIndexedDBProvider(blockSuiteWorkspace);
+      persistence.connect();
       await persistence.whenSynced.then(() => {
-        persistence.destroy();
+        persistence.disconnect();
       });
       storage.setItem(kStoreKey, [...data, id]);
       console.log('create', id, storage.getItem(kStoreKey));
