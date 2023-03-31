@@ -156,6 +156,7 @@ describe('usePageMetas', async () => {
     pageMetaHelperHook.result.current.setPageTitle('page0', 'test');
     rerender();
     const page = blockSuiteWorkspace.getPage('page0');
+    assertExists(page);
     const pageBlocks = page.getBlockByFlavour('affine:page');
     expect(pageBlocks.length).toBe(1);
     const pageBlock = pageBlocks[0] as PageBlockModel;
