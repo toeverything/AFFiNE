@@ -10,9 +10,9 @@ import { createWorkspace } from '../../libs/workspace';
 test.describe('affine public workspace', () => {
   test('enable public workspace', async ({ page, context }) => {
     await openHomePage(page);
-    await waitMarkdownImported(page);
     const [a] = await createFakeUser();
     await loginUser(page, a);
+    await waitMarkdownImported(page);
     const name = `test-${Date.now()}`;
     await createWorkspace({ name }, page);
     await waitMarkdownImported(page);
@@ -34,7 +34,9 @@ test.describe('affine public workspace', () => {
     );
     const page2 = await context.newPage();
     await page2.goto(url);
-    await page2.waitForSelector('thead');
+    await page2.waitForSelector('thead', {
+      timeout: 10000,
+    });
     await page2.getByText('Welcome to AFFiNE').click();
   });
 });
