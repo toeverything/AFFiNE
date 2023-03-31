@@ -5,6 +5,7 @@ import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 
 let mergeCount = 500;
+
 export function setMergeCount(count: number) {
   mergeCount = count;
 }
@@ -49,9 +50,17 @@ export interface BlockSuiteBinaryDB extends DBSchema {
   };
 }
 
+export interface OldYjsDB extends DBSchema {
+  updates: {
+    key: number;
+    value: Uint8Array;
+  };
+}
+
 export const createIndexedDBProvider = (
   blockSuiteWorkspace: Workspace
 ): IndexedDBProvider => {
+  let allDb: IDBDatabaseInfo[];
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
   let early = true;
@@ -122,7 +131,58 @@ export const createIndexedDBProvider = (
       connect = true;
       blockSuiteWorkspace.doc.on('update', handleUpdate);
       blockSuiteWorkspace.doc.on('destroy', handleDestroy);
+      // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
+      if (!allDb) {
+        const allDb = await indexedDB.databases();
+        // run the migration
+        await Promise.all(
+          allDb.map(meta => {
+            if (meta.name && meta.version === 1) {
+              const name = meta.name;
+              const version = meta.version;
+              return openDB<IDBPDatabase<OldYjsDB>>(name, version).then(
+                async oldDB => {
+                  if (!oldDB.objectStoreNames.contains('updates')) {
+                    return;
+                  }
+                  const t = oldDB
+                    .transaction('updates', 'readonly')
+                    .objectStore('updates');
+                  const updates = await t.getAll();
+                  if (
+                    !Array.isArray(updates) ||
+                    updates.every(update => update instanceof Uint8Array)
+                  ) {
+                    return;
+                  }
+                  const update = Workspace.Y.mergeUpdates(updates);
+                  const workspaceTransaction = db
+                    .transaction('workspace', 'readwrite')
+                    .objectStore('workspace');
+                  const data = await workspaceTransaction.get(name);
+                  if (!data) {
+                    await workspaceTransaction.put({
+                      id: name,
+                      updates: [
+                        {
+                          timestamp: Date.now(),
+                          update,
+                        },
+                      ],
+                    });
+                    Workspace.Y.applyUpdate(
+                      blockSuiteWorkspace.doc,
+                      update,
+                      indexeddbOrigin
+                    );
+                  }
+                }
+              );
+            }
+          })
+        );
+      }
       const store = db
         .transaction('workspace', 'readwrite')
         .objectStore('workspace');
