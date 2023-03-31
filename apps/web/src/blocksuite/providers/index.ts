@@ -58,7 +58,10 @@ const createAffineWebSocketProvider = (
 const createIndexedDBProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): LocalIndexedDBProvider => {
-  const indexeddbProvider = create(blockSuiteWorkspace);
+  const indexeddbProvider = create(
+    blockSuiteWorkspace.id,
+    blockSuiteWorkspace.doc
+  );
   const callbacks = new Set<() => void>();
   return {
     flavour: 'local-indexeddb',

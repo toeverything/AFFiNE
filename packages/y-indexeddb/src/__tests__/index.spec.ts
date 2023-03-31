@@ -36,7 +36,7 @@ beforeEach(() => {
 
 describe('indexeddb provider', () => {
   test('connect', async () => {
-    const provider = createIndexedDBProvider(workspace);
+    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
     provider.connect();
     await provider.whenSynced;
     const db = await openDB('affine-local', dbVersion);
@@ -79,7 +79,10 @@ describe('indexeddb provider', () => {
     })
       .register(AffineSchemas)
       .register(__unstableSchemas);
-    const provider2 = createIndexedDBProvider(secondWorkspace);
+    const provider2 = createIndexedDBProvider(
+      secondWorkspace.id,
+      secondWorkspace.doc
+    );
     provider2.connect();
     await provider2.whenSynced;
     expect(Workspace.Y.encodeStateAsUpdate(secondWorkspace.doc)).toEqual(
@@ -88,7 +91,7 @@ describe('indexeddb provider', () => {
   });
 
   test('disconnect suddenly', async () => {
-    const provider = createIndexedDBProvider(workspace);
+    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
     const fn = vi.fn();
     provider.connect();
     provider.disconnect();
@@ -98,7 +101,7 @@ describe('indexeddb provider', () => {
   });
 
   test('connect and disconnect', async () => {
-    const provider = createIndexedDBProvider(workspace);
+    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
     provider.connect();
     const p1 = provider.whenSynced;
     await provider.whenSynced;
@@ -126,7 +129,7 @@ describe('indexeddb provider', () => {
 
   test('merge', async () => {
     setMergeCount(5);
-    const provider = createIndexedDBProvider(workspace);
+    const provider = createIndexedDBProvider(workspace.id, workspace.doc);
     provider.connect();
     {
       const page = workspace.createPage('page0');

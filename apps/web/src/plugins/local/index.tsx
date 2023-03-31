@@ -58,7 +58,10 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
         (_: string) => undefined
       );
       BlockSuiteWorkspace.Y.applyUpdateV2(blockSuiteWorkspace.doc, binary);
-      const persistence = createIndexedDBProvider(blockSuiteWorkspace);
+      const persistence = createIndexedDBProvider(
+        blockSuiteWorkspace.id,
+        blockSuiteWorkspace.doc
+      );
       persistence.connect();
       await persistence.whenSynced.then(() => {
         persistence.disconnect();

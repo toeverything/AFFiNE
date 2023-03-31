@@ -1,6 +1,12 @@
-import { Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
+import {
+  applyUpdate,
+  diffUpdate,
+  Doc,
+  encodeStateAsUpdate,
+  mergeUpdates,
+} from 'yjs';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 
@@ -64,7 +70,8 @@ export interface OldYjsDB extends DBSchema {
 }
 
 export const createIndexedDBProvider = (
-  blockSuiteWorkspace: Workspace,
+  id: string,
+  doc: Doc,
   dbName = 'affine-local'
 ): IndexedDBProvider => {
   let allDb: IDBDatabaseInfo[];
@@ -85,7 +92,6 @@ export const createIndexedDBProvider = (
     const store = db
       .transaction('workspace', 'readwrite')
       .objectStore('workspace');
-    const id = blockSuiteWorkspace.id;
     let data = await store.get(id);
     if (!data) {
       data = {
@@ -99,11 +105,11 @@ export const createIndexedDBProvider = (
     });
     if (data.updates.length > mergeCount) {
       const updates = data.updates.map(({ update }) => update);
-      const doc = new Workspace.Y.Doc();
+      const doc = new Doc();
       updates.forEach(update => {
-        Workspace.Y.applyUpdate(doc, update, indexeddbOrigin);
+        applyUpdate(doc, update, indexeddbOrigin);
       });
-      const update = Workspace.Y.encodeStateAsUpdate(doc);
+      const update = encodeStateAsUpdate(doc);
       data = {
         id,
         updates: [
@@ -136,8 +142,8 @@ export const createIndexedDBProvider = (
         reject = _reject;
       });
       connect = true;
-      blockSuiteWorkspace.doc.on('update', handleUpdate);
-      blockSuiteWorkspace.doc.on('destroy', handleDestroy);
+      doc.on('update', handleUpdate);
+      doc.on('destroy', handleDestroy);
       // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
       if (!allDb) {
@@ -163,7 +169,7 @@ export const createIndexedDBProvider = (
                   ) {
                     return;
                   }
-                  const update = Workspace.Y.mergeUpdates(updates);
+                  const update = mergeUpdates(updates);
                   const workspaceTransaction = db
                     .transaction('workspace', 'readwrite')
                     .objectStore('workspace');
@@ -189,22 +195,19 @@ export const createIndexedDBProvider = (
       const store = db
         .transaction('workspace', 'readwrite')
         .objectStore('workspace');
-      const data = await store.get(blockSuiteWorkspace.id);
+      const data = await store.get(id);
       if (!connect) {
         return;
       }
       if (!data) {
         await db.put('workspace', {
-          id: blockSuiteWorkspace.id,
+          id,
           updates: [],
         });
       } else {
         const updates = data.updates.map(({ update }) => update);
-        const update = Workspace.Y.mergeUpdates(updates);
-        const newUpdate = Workspace.Y.diffUpdate(
-          Workspace.Y.encodeStateAsUpdate(blockSuiteWorkspace.doc),
-          update
-        );
+        const update = mergeUpdates(updates);
+        const newUpdate = diffUpdate(encodeStateAsUpdate(doc), update);
         await store.put({
           ...data,
           updates: [
@@ -215,9 +218,9 @@ export const createIndexedDBProvider = (
             },
           ],
         });
-        blockSuiteWorkspace.doc.transact(() => {
+        doc.transact(() => {
           updates.forEach(update => {
-            Workspace.Y.applyUpdate(blockSuiteWorkspace.doc, update);
+            applyUpdate(doc, update);
           });
         }, indexeddbOrigin as any);
       }
@@ -229,8 +232,8 @@ export const createIndexedDBProvider = (
       if (early) {
         reject(new EarlyDisconnectError());
       }
-      blockSuiteWorkspace.doc.off('update', handleUpdate);
-      blockSuiteWorkspace.doc.off('destroy', handleDestroy);
+      doc.off('update', handleUpdate);
+      doc.off('destroy', handleDestroy);
     },
     cleanup() {
       destroy = true;
