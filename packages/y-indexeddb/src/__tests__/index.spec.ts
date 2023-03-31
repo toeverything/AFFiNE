@@ -37,7 +37,7 @@ describe('indexeddb provider', () => {
     const provider = createIndexedDBProvider(workspace);
     provider.connect();
     await provider.whenSynced;
-    const db = await openDB(workspace.id, dbVersion);
+    const db = await openDB('affine-local', dbVersion);
     {
       const store = await db
         .transaction('workspace', 'readonly')
