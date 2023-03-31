@@ -59,5 +59,17 @@ describe('indexeddb provider', () => {
       const binary = Workspace.Y.encodeStateAsUpdate(testWorkspace.doc);
       expect(binary).toEqual(Workspace.Y.encodeStateAsUpdate(workspace.doc));
     }
+
+    const secondWorkspace = new Workspace({
+      id,
+    })
+      .register(AffineSchemas)
+      .register(__unstableSchemas);
+    const provider2 = createIndexedDBProvider(secondWorkspace);
+    provider2.connect();
+    await provider2.whenSynced;
+    expect(Workspace.Y.encodeStateAsUpdate(secondWorkspace.doc)).toEqual(
+      Workspace.Y.encodeStateAsUpdate(workspace.doc)
+    );
   });
 });
