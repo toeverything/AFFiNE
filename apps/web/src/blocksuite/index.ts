@@ -1,6 +1,7 @@
 import { config } from '@affine/env';
+import type { Provider } from '@affine/workspace/type';
 
-import type { BlockSuiteWorkspace, Provider } from '../shared';
+import type { BlockSuiteWorkspace } from '../shared';
 import {
   createAffineWebSocketProvider,
   createBroadCastChannelProvider,

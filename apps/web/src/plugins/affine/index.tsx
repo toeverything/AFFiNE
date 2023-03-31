@@ -1,4 +1,5 @@
 import { getLoginStorage } from '@affine/workspace/affine/login';
+import type { AffineWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { createJSONStorage } from 'jotai/utils';
@@ -11,7 +12,6 @@ import { PageNotFoundError } from '../../components/affine/affine-error-eoundary
 import { WorkspaceSettingDetail } from '../../components/affine/workspace-setting-detail';
 import { BlockSuitePageList } from '../../components/blocksuite/block-suite-page-list';
 import { PageDetailEditor } from '../../components/page-detail-editor';
-import type { AffineWorkspace } from '../../shared';
 import { BlockSuiteWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
 import { initPage } from '../../utils';

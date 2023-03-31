@@ -5,7 +5,7 @@ import type { PageMeta } from '@blocksuite/store';
 import type { MouseEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
-import type { RemWorkspace } from '../../../shared';
+import type { AllWorkspace } from '../../../shared';
 import type { TreeNode } from '../../affine/pivots';
 import {
   PivotRender,
@@ -20,7 +20,7 @@ export const PivotInternal = ({
   openPage,
   allMetas,
 }: {
-  currentWorkspace: RemWorkspace;
+  currentWorkspace: AllWorkspace;
   openPage: (pageId: string) => void;
   allMetas: PageMeta[];
 }) => {
@@ -68,7 +68,7 @@ export const Pivots = ({
   openPage,
   allMetas,
 }: {
-  currentWorkspace: RemWorkspace;
+  currentWorkspace: AllWorkspace;
   openPage: (pageId: string) => void;
   allMetas: PageMeta[];
 }) => {

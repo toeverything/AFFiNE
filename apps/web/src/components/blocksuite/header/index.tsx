@@ -8,7 +8,7 @@ import type { HTMLAttributes } from 'react';
 import { forwardRef, useCallback, useRef } from 'react';
 
 import { currentEditorAtom, openQuickSearchModalAtom } from '../../../atoms';
-import { useOpenTips } from '../../../hooks/affine/use-is-first-load';
+import { useGuideHidden } from '../../../hooks/affine/use-is-first-load';
 import { usePageMeta } from '../../../hooks/use-page-meta';
 import { useElementResizeEffect } from '../../../hooks/use-workspaces';
 import type { BlockSuiteWorkspace } from '../../../shared';
@@ -53,7 +53,7 @@ export const BlockSuiteEditorHeader = forwardRef<
     assertExists(pageMeta);
     const title = pageMeta.title;
     const { trash: isTrash } = pageMeta;
-    const [openTips, setOpenTips] = useOpenTips();
+    const [isTipsHidden, setTipsHidden] = useGuideHidden();
     const isMac = () => {
       const env = getEnvironment();
       return env.isBrowser && env.isMacOs;
@@ -64,11 +64,11 @@ export const BlockSuiteEditorHeader = forwardRef<
     useElementResizeEffect(
       useAtomValue(currentEditorAtom),
       useCallback(() => {
-        if (!openTips || !popperRef.current) {
+        if (isTipsHidden.quickSearchTips || !popperRef.current) {
           return;
         }
         popperRef.current.update();
-      }, [openTips])
+      }, [isTipsHidden.quickSearchTips])
     );
 
     const TipsContent = (
@@ -91,7 +91,9 @@ export const BlockSuiteEditorHeader = forwardRef<
         </div>
         <StyledQuickSearchTipButton
           data-testid="quick-search-got-it"
-          onClick={() => setOpenTips(false)}
+          onClick={() =>
+            setTipsHidden({ ...isTipsHidden, quickSearchTips: true })
+          }
         >
           Got it
         </StyledQuickSearchTipButton>
@@ -130,7 +132,7 @@ export const BlockSuiteEditorHeader = forwardRef<
                 content={TipsContent}
                 placement="bottom"
                 popperRef={popperRef}
-                open={openTips}
+                open={!isTipsHidden.quickSearchTips}
                 offset={[0, -5]}
               >
                 <StyledSearchArrowWrapper>

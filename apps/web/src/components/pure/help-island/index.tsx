@@ -1,6 +1,6 @@
 import { MuiFade, Tooltip } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { CloseIcon } from '@blocksuite/icons';
+import { CloseIcon, DoneIcon } from '@blocksuite/icons';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
@@ -23,9 +23,9 @@ const ContactModal = dynamic(
   }
 );
 
-export type IslandItemNames = 'contact' | 'shortcuts';
+export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 export const HelpIsland = ({
-  showList = ['contact', 'shortcuts'],
+  showList = ['whatNew', 'contact', 'shortcuts'],
 }: {
   showList?: IslandItemNames[];
 }) => {
@@ -62,6 +62,18 @@ export const HelpIsland = ({
         <StyledAnimateWrapper
           style={{ height: spread ? `${showList.length * 44}px` : 0 }}
         >
+          {showList.includes('whatNew') && (
+            <Tooltip content={t("Discover what's new")} placement="left-end">
+              <StyledIconWrapper
+                data-testid="right-bottom-change-log-icon"
+                onClick={() => {
+                  window.open('https://affine.pro', '_blank');
+                }}
+              >
+                <DoneIcon />
+              </StyledIconWrapper>
+            </Tooltip>
+          )}
           {showList.includes('contact') && (
             <Tooltip content={t('Contact Us')} placement="left-end">
               <StyledIconWrapper

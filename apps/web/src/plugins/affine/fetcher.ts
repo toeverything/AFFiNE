@@ -1,12 +1,13 @@
 import { getLoginStorage } from '@affine/workspace/affine/login';
+import { jotaiStore } from '@affine/workspace/atom';
+import type { AffineWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { assertExists } from '@blocksuite/store';
 
-import { jotaiStore, workspacesAtom } from '../../atoms';
+import { workspacesAtom } from '../../atoms';
 import { createAffineProviders } from '../../blocksuite';
 import { Unreachable } from '../../components/affine/affine-error-eoundary';
-import type { AffineWorkspace } from '../../shared';
 import { affineApis } from '../../shared/apis';
 
 type Query = (typeof QueryKey)[keyof typeof QueryKey];
