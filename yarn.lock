@@ -6094,6 +6094,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@toeverything/y-indexeddb@workspace:packages/y-indexeddb":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
+  dependencies:
+    "@blocksuite/blocks": 0.5.0-20230324040005-14417c2
+    "@blocksuite/store": 0.5.0-20230324040005-14417c2
+    idb: ^7.1.1
+    yjs: ^13.5.51
+  languageName: unknown
+  linkType: soft
+
 "@tootallnate/once@npm:2":
   version: 2.0.0
   resolution: "@tootallnate/once@npm:2.0.0"
@@ -11931,6 +11942,13 @@ __metadata:
   version: 7.0.1
   resolution: "idb@npm:7.0.1"
   checksum: 61526789562cc3518a1a030c7a06cc98edfcd62795700ff28c701d6f84c178aee4e98bedfc79e6c394ba26084aa4667d6594b1728e5868f305f9b34148662679
+  languageName: node
+  linkType: hard
+
+"idb@npm:^7.1.1":
+  version: 7.1.1
+  resolution: "idb@npm:7.1.1"
+  checksum: 1973c28d53c784b177bdef9f527ec89ec239ec7cf5fcbd987dae75a16c03f5b7dfcc8c6d3285716fd0309dd57739805390bd9f98ce23b1b7d8849a3b52de8d56
   languageName: node
   linkType: hard
 
