@@ -1,10 +1,18 @@
 import type { PureMenuProps } from '@affine/component';
-import { Input, PureMenu } from '@affine/component';
+import { FlexWrapper, Input, PureMenu } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
-import { RemoveIcon, SearchIcon } from '@blocksuite/icons';
+import {
+  EdgelessIcon,
+  PageIcon,
+  RemoveIcon,
+  SearchIcon,
+} from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
+import { useAtomValue } from 'jotai';
+import Image from 'next/legacy/image';
 import React, { useState } from 'react';
 
+import { workspacePreferredModeAtom } from '../../../../atoms';
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../../../../shared';
 import {
@@ -56,19 +64,7 @@ export const PivotsMenu = ({
       </StyledSearchContainer>
 
       <StyledMenuContent>
-        {isSearching && (
-          <>
-            <StyledMenuSubTitle>
-              {searchResult.length
-                ? t('Find results', { number: searchResult.length })
-                : t('Find 0 result')}
-            </StyledMenuSubTitle>
-            {searchResult.map(meta => {
-              return <StyledPivot key={meta.id}>{meta.title}</StyledPivot>;
-            })}
-          </>
-        )}
-
+        {isSearching && <SearchContent results={searchResult} />}
         {!isSearching && (
           <>
             <StyledMenuSubTitle>Suggested</StyledMenuSubTitle>
@@ -105,5 +101,46 @@ export const PivotsMenu = ({
         </StyledMenuFooter>
       )}
     </PureMenu>
+  );
+};
+
+const SearchContent = ({ results }: { results: PageMeta[] }) => {
+  const { t } = useTranslation();
+  const record = useAtomValue(workspacePreferredModeAtom);
+
+  if (results.length) {
+    return (
+      <>
+        <StyledMenuSubTitle>
+          {t('Find results', { number: results.length })}
+        </StyledMenuSubTitle>
+        {results.map(meta => {
+          return (
+            <StyledPivot key={meta.id}>
+              {record[meta.id] === 'edgeless' ? <EdgelessIcon /> : <PageIcon />}
+              {meta.title}
+            </StyledPivot>
+          );
+        })}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <StyledMenuSubTitle>{t('Find 0 result')}</StyledMenuSubTitle>
+      <FlexWrapper
+        alignItems="center"
+        justifyContent="center"
+        style={{ marginTop: 20 }}
+      >
+        <Image
+          src="/imgs/no-result.svg"
+          alt="no result"
+          width={150}
+          height={150}
+        />
+      </FlexWrapper>
+    </>
   );
 };

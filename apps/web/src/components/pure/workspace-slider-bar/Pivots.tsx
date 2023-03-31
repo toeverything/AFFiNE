@@ -76,20 +76,20 @@ export const Pivots = ({
 
   const [showPivot, setShowPivot] = useState(true);
 
+  const metas = useMemo(() => allMetas.filter(meta => !meta.trash), [allMetas]);
   const isPivotEmpty = useMemo(
-    () => allMetas.filter(meta => !meta.trash).length === 0,
-    [allMetas]
+    () => metas.filter(meta => meta.isPivots === true).length === 0,
+    [metas]
   );
 
   return (
     <>
-      <StyledListItem>
-        <StyledCollapseButton
-          onClick={useCallback(() => {
-            setShowPivot(!showPivot);
-          }, [showPivot])}
-          collapse={showPivot}
-        >
+      <StyledListItem
+        onClick={useCallback(() => {
+          setShowPivot(!showPivot);
+        }, [showPivot])}
+      >
+        <StyledCollapseButton collapse={showPivot}>
           <ArrowDownSmallIcon />
         </StyledCollapseButton>
         <PivotsIcon />
@@ -110,7 +110,7 @@ export const Pivots = ({
           <PivotInternal
             currentWorkspace={currentWorkspace}
             openPage={openPage}
-            allMetas={allMetas}
+            allMetas={metas}
           />
         )}
       </MuiCollapse>
