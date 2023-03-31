@@ -4,10 +4,11 @@
 import 'fake-indexeddb/auto';
 
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { uuidv4, Workspace } from '@blocksuite/store';
+import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import type { WorkspacePersist } from '../index';
 import { createIndexedDBProvider, dbVersion, setMergeCount } from '../index';
 
 async function getUpdates(id: string): Promise<ArrayBuffer[]> {
@@ -15,7 +16,8 @@ async function getUpdates(id: string): Promise<ArrayBuffer[]> {
   const store = await db
     .transaction('workspace', 'readonly')
     .objectStore('workspace');
-  const data = await store.get(id);
+  const data = (await store.get(id)) as WorkspacePersist | undefined;
+  assertExists(data, 'data should not be undefined');
   expect(data.id).toBe(id);
   return data.updates.map(({ update }) => update);
 }
@@ -57,7 +59,8 @@ describe('indexeddb provider', () => {
       const store = await db
         .transaction('workspace', 'readonly')
         .objectStore('workspace');
-      const data = await store.get(id);
+      const data = (await store.get(id)) as WorkspacePersist | undefined;
+      assertExists(data);
       expect(data.id).toBe(id);
       const testWorkspace = new Workspace({
         id: 'test',

@@ -30,17 +30,17 @@ export interface IndexedDBProvider {
   whenSynced: Promise<void>;
 }
 
-type UpdateMessage = {
+export type UpdateMessage = {
   timestamp: number;
   update: Uint8Array;
 };
 
-type WorkspacePersist = {
+export type WorkspacePersist = {
   id: string;
   updates: UpdateMessage[];
 };
 
-type WorkspaceMilestone = {
+export type WorkspaceMilestone = {
   id: string;
   milestone: Record<string, Uint8Array>;
 };
@@ -64,7 +64,8 @@ export interface OldYjsDB extends DBSchema {
 }
 
 export const createIndexedDBProvider = (
-  blockSuiteWorkspace: Workspace
+  blockSuiteWorkspace: Workspace,
+  dbName = 'affine-local'
 ): IndexedDBProvider => {
   let allDb: IDBDatabaseInfo[];
   let resolve: () => void;
@@ -118,7 +119,7 @@ export const createIndexedDBProvider = (
     }
   }
 
-  const dbPromise = openDB<BlockSuiteBinaryDB>('affine-local', dbVersion, {
+  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
   });
   const handleDestroy = async () => {
