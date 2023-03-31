@@ -26,6 +26,7 @@ import { HelpIsland } from '../components/pure/help-island';
 import { PageLoading } from '../components/pure/loading';
 import WorkSpaceSliderBar from '../components/pure/workspace-slider-bar';
 import { useAffineRefreshAuthToken } from '../hooks/affine/use-affine-refresh-auth-token';
+import { useSidebarResizing } from '../hooks/affine/use-sidebar-status';
 import { useCurrentPageId } from '../hooks/current/use-current-page-id';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useBlockSuiteWorkspaceHelper } from '../hooks/use-blocksuite-workspace-helper';
@@ -37,7 +38,12 @@ import { WorkspacePlugins } from '../plugins';
 import { ModalProvider } from '../providers/ModalProvider';
 import type { AllWorkspace } from '../shared';
 import { pathGenerator, publicPathGenerator } from '../shared';
-import { StyledPage, StyledToolWrapper, StyledWrapper } from './styles';
+import {
+  MainContainer,
+  MainContainerWrapper,
+  StyledPage,
+  StyledToolWrapper,
+} from './styles';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -246,6 +252,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const handleOpenQuickSearchModal = useCallback(() => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
+  const [resizingSidebar] = useSidebarResizing();
   const lock = useAtomValue(workspaceLockAtom);
   if (lock) {
     return <PageLoading />;
@@ -256,7 +263,7 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
       <Head>
         <title>{title}</title>
       </Head>
-      <StyledPage>
+      <StyledPage resizing={resizingSidebar}>
         <WorkSpaceSliderBar
           isPublicWorkspace={isPublicWorkspace}
           onOpenQuickSearchModal={handleOpenQuickSearchModal}
@@ -268,23 +275,25 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <StyledWrapper className="main-container">
-          <AffineWorkspaceEffect />
-          {children}
-          <StyledToolWrapper>
-            {/* fixme(himself65): remove this */}
-            <div id="toolWrapper" style={{ marginBottom: '12px' }}>
-              {/* Slot for block hub */}
-            </div>
-            {!isPublicWorkspace && (
-              <HelpIsland
-                showList={
-                  router.query.pageId ? undefined : ['whatNew', 'contact']
-                }
-              />
-            )}
-          </StyledToolWrapper>
-        </StyledWrapper>
+        <MainContainerWrapper>
+          <MainContainer className="main-container">
+            <AffineWorkspaceEffect />
+            {children}
+            <StyledToolWrapper>
+              {/* fixme(himself65): remove this */}
+              <div id="toolWrapper" style={{ marginBottom: '12px' }}>
+                {/* Slot for block hub */}
+              </div>
+              {!isPublicWorkspace && (
+                <HelpIsland
+                  showList={
+                    router.query.pageId ? undefined : ['whatNew', 'contact']
+                  }
+                />
+              )}
+            </StyledToolWrapper>
+          </MainContainer>
+        </MainContainerWrapper>
       </StyledPage>
       <QuickSearch />
     </>

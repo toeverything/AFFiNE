@@ -27,6 +27,7 @@ declare module '@mui/material/styles' {
       tooltipBackground: string;
       hoverBackground: string;
       innerHoverBackground: string;
+      modalBackground: string;
       // Use for the quick search tips background
       backgroundTertiaryColor: string;
       codeBackground: string;
@@ -103,6 +104,7 @@ declare module '@mui/material/styles' {
       tooltipBackground: string;
       hoverBackground: string;
       innerHoverBackground: string;
+      modalBackground: string;
       // Use for the quick search tips background
       backgroundTertiaryColor: string;
       codeBackground: string;

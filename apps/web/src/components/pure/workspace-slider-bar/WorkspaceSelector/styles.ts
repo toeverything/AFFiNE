@@ -2,7 +2,6 @@ import { displayFlex, textEllipsis } from '@affine/component';
 import { styled } from '@affine/component';
 export const StyledSelectorContainer = styled('div')(({ theme }) => {
   return {
-    marginTop: '4px',
     height: '58px',
     display: 'flex',
     alignItems: 'center',
@@ -10,7 +9,6 @@ export const StyledSelectorContainer = styled('div')(({ theme }) => {
     marginBottom: '16px',
     borderRadius: '8px',
     color: theme.colors.textColor,
-    position: 'relative',
     ':hover': {
       cursor: 'pointer',
       background: theme.colors.hoverBackground,
