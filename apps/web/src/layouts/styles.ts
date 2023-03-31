@@ -48,11 +48,15 @@ export const MainContainer = styled('div')(({ theme }) => {
 export const StyledToolWrapper = styled('div')(({ theme }) => {
   return {
     position: 'fixed',
-    right: 'calc((100vw - 640px) * 3 / 19 + 5px)',
+    right: '30px',
     bottom: '30px',
     zIndex: theme.zIndex.popover,
     [theme.breakpoints.down('md')]: {
-      right: '30px',
+      right: 'calc((100vw - 640px) * 3 / 19 + 5px)',
+    },
+    [theme.breakpoints.down('sm')]: {
+      right: '5px',
+      bottom: '5px',
     },
   };
 });
