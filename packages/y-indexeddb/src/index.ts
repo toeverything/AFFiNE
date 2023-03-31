@@ -1,10 +1,16 @@
-import { assertEquals, Workspace } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 
 let mergeCount = 500;
+
+export class EarlyDisconnectError extends Error {
+  constructor() {
+    super('Early disconnect');
+  }
+}
 
 export function setMergeCount(count: number) {
   mergeCount = count;
@@ -156,31 +162,21 @@ export const createIndexedDBProvider = (
                   ) {
                     return;
                   }
-                  console.log('upgrading the database');
                   const update = Workspace.Y.mergeUpdates(updates);
                   const workspaceTransaction = db
                     .transaction('workspace', 'readwrite')
                     .objectStore('workspace');
-                  assertEquals(blockSuiteWorkspace.id, name);
-                  const data = await workspaceTransaction.get(
-                    blockSuiteWorkspace.id
-                  );
+                  const data = await workspaceTransaction.get(name);
                   if (!data) {
+                    console.log('upgrading the database');
                     await workspaceTransaction.put({
-                      id: blockSuiteWorkspace.id,
+                      id: name,
                       updates: [
                         {
                           timestamp: Date.now(),
                           update,
                         },
                       ],
-                    });
-                    blockSuiteWorkspace.doc.transact(() => {
-                      Workspace.Y.applyUpdate(
-                        blockSuiteWorkspace.doc,
-                        update,
-                        indexeddbOrigin
-                      );
                     });
                   }
                 }
@@ -230,7 +226,7 @@ export const createIndexedDBProvider = (
     disconnect() {
       connect = false;
       if (early) {
-        reject(new Error('early disconnect'));
+        reject(new EarlyDisconnectError());
       }
       blockSuiteWorkspace.doc.off('update', handleUpdate);
       blockSuiteWorkspace.doc.off('destroy', handleDestroy);

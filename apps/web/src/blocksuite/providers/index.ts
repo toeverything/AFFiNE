@@ -5,7 +5,10 @@ import type {
   LocalIndexedDBProvider,
 } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
-import { createIndexedDBProvider as create } from '@toeverything/y-indexeddb';
+import {
+  createIndexedDBProvider as create,
+  EarlyDisconnectError,
+} from '@toeverything/y-indexeddb';
 
 import type { BlockSuiteWorkspace } from '../../shared';
 import { providerLogger } from '../logger';
@@ -69,9 +72,16 @@ const createIndexedDBProvider = (
     connect: () => {
       providerLogger.info('connect indexeddb provider', blockSuiteWorkspace.id);
       indexeddbProvider.connect();
-      indexeddbProvider.whenSynced.then(() => {
-        callbacks.forEach(cb => cb());
-      });
+      indexeddbProvider.whenSynced
+        .then(() => {
+          callbacks.forEach(cb => cb());
+        })
+        .catch(e => {
+          if (e instanceof EarlyDisconnectError) {
+            // skip the early disconnect
+            return;
+          }
+        });
     },
     disconnect: () => {
       assertExists(indexeddbProvider);
