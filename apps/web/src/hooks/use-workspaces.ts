@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
@@ -14,6 +15,8 @@ import type { AllWorkspace } from '../shared';
 export function useWorkspaces(): AllWorkspace[] {
   return useAtomValue(workspacesAtom);
 }
+
+const logger = new DebugLogger('use-workspaces');
 
 export function useWorkspacesHelper() {
   const workspaces = useWorkspaces();
@@ -48,6 +51,7 @@ export function useWorkspacesHelper() {
             flavour: WorkspaceFlavour.LOCAL,
           },
         ]);
+        logger.debug('created local workspace', id);
         return id;
       },
       [set]

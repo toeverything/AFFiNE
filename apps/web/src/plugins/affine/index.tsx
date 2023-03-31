@@ -131,6 +131,9 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
     },
     list: async () => {
       const allWorkspaces = getPersistenceAllWorkspace();
+      if (!getLoginStorage()) {
+        return allWorkspaces;
+      }
       try {
         const workspaces = await affineApis.getWorkspaces().then(workspaces => {
           return workspaces.map(workspace => {

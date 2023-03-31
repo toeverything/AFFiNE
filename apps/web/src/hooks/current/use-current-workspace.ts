@@ -1,5 +1,5 @@
+import { atomWithSyncStorage } from '@affine/jotai';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 import { useCallback } from 'react';
 
 import {
@@ -17,7 +17,7 @@ export const currentWorkspaceAtom = atom<Promise<AllWorkspace | null>>(
   }
 );
 
-export const lastWorkspaceIdAtom = atomWithStorage<string | null>(
+export const lastWorkspaceIdAtom = atomWithSyncStorage<string | null>(
   'last_workspace_id',
   null
 );
