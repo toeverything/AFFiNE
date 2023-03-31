@@ -1,4 +1,4 @@
-import { Workspace } from '@blocksuite/store';
+import { assertEquals, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
 
@@ -134,7 +134,7 @@ export const createIndexedDBProvider = (
       // only run promise below, otherwise the logic is incorrect
       const db = await dbPromise;
       if (!allDb) {
-        const allDb = await indexedDB.databases();
+        allDb = await indexedDB.databases();
         // run the migration
         await Promise.all(
           allDb.map(meta => {
@@ -152,18 +152,22 @@ export const createIndexedDBProvider = (
                   const updates = await t.getAll();
                   if (
                     !Array.isArray(updates) ||
-                    updates.every(update => update instanceof Uint8Array)
+                    !updates.every(update => update instanceof Uint8Array)
                   ) {
                     return;
                   }
+                  console.log('upgrading the database');
                   const update = Workspace.Y.mergeUpdates(updates);
                   const workspaceTransaction = db
                     .transaction('workspace', 'readwrite')
                     .objectStore('workspace');
-                  const data = await workspaceTransaction.get(name);
+                  assertEquals(blockSuiteWorkspace.id, name);
+                  const data = await workspaceTransaction.get(
+                    blockSuiteWorkspace.id
+                  );
                   if (!data) {
                     await workspaceTransaction.put({
-                      id: name,
+                      id: blockSuiteWorkspace.id,
                       updates: [
                         {
                           timestamp: Date.now(),
@@ -171,11 +175,13 @@ export const createIndexedDBProvider = (
                         },
                       ],
                     });
-                    Workspace.Y.applyUpdate(
-                      blockSuiteWorkspace.doc,
-                      update,
-                      indexeddbOrigin
-                    );
+                    blockSuiteWorkspace.doc.transact(() => {
+                      Workspace.Y.applyUpdate(
+                        blockSuiteWorkspace.doc,
+                        update,
+                        indexeddbOrigin
+                      );
+                    });
                   }
                 }
               );
@@ -212,13 +218,11 @@ export const createIndexedDBProvider = (
             },
           ],
         });
-        updates.forEach(update => {
-          Workspace.Y.applyUpdate(
-            blockSuiteWorkspace.doc,
-            update,
-            indexeddbOrigin
-          );
-        });
+        blockSuiteWorkspace.doc.transact(() => {
+          updates.forEach(update => {
+            Workspace.Y.applyUpdate(blockSuiteWorkspace.doc, update);
+          });
+        }, indexeddbOrigin as any);
       }
       early = false;
       resolve();
@@ -226,7 +230,7 @@ export const createIndexedDBProvider = (
     disconnect() {
       connect = false;
       if (early) {
-        reject();
+        reject(new Error('early disconnect'));
       }
       blockSuiteWorkspace.doc.off('update', handleUpdate);
       blockSuiteWorkspace.doc.off('destroy', handleDestroy);
