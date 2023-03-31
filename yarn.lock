@@ -69,6 +69,7 @@ __metadata:
   dependencies:
     "@affine/debug": "workspace:*"
     "@affine/i18n": "workspace:*"
+    "@affine/jotai": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230324040005-14417c2
     "@blocksuite/editor": 0.5.0-20230324040005-14417c2
     "@blocksuite/global": 0.5.0-20230324040005-14417c2
@@ -151,6 +152,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/jotai@workspace:*, @affine/jotai@workspace:packages/jotai":
+  version: 0.0.0-use.local
+  resolution: "@affine/jotai@workspace:packages/jotai"
+  dependencies:
+    "@affine/env": "workspace:*"
+    jotai: ^2.0.3
+  languageName: unknown
+  linkType: soft
+
 "@affine/octobase-node@workspace:packages/octobase-node":
   version: 0.0.0-use.local
   resolution: "@affine/octobase-node@workspace:packages/octobase-node"
@@ -175,6 +185,7 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/i18n": "workspace:*"
+    "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
     "@blocksuite/blocks": 0.5.0-20230324040005-14417c2

@@ -1,28 +1,19 @@
-import { atomWithStorage } from 'jotai/utils';
+import { atomWithSyncStorage } from '@affine/jotai';
 
 export type Visibility = Record<string, boolean>;
 
 const DEFAULT_VALUE = '0.0.0';
-//atomWithStorage always uses initial value when first render
-//https://github.com/pmndrs/jotai/discussions/1737
 
-function getInitialValue() {
-  if (typeof window !== 'undefined') {
-    const storedValue = window.localStorage.getItem('lastVersion');
-    if (storedValue) {
-      return JSON.parse(storedValue);
-    }
-  }
-  return DEFAULT_VALUE;
-}
-
-export const lastVersionAtom = atomWithStorage(
+export const lastVersionAtom = atomWithSyncStorage(
   'lastVersion',
-  getInitialValue()
+  DEFAULT_VALUE
 );
-export const guideHiddenAtom = atomWithStorage<Visibility>('guideHidden', {});
+export const guideHiddenAtom = atomWithSyncStorage<Visibility>(
+  'guideHidden',
+  {}
+);
 
-export const guideHiddenUntilNextUpdateAtom = atomWithStorage<Visibility>(
+export const guideHiddenUntilNextUpdateAtom = atomWithSyncStorage<Visibility>(
   'guideHiddenUntilNextUpdate',
   {}
 );
