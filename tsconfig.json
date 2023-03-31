@@ -22,6 +22,7 @@
       "@affine/templates/*": ["./packages/templates/src/*"],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/debug": ["./packages/debug"],
+      "@affine/jotai": ["./packages/jotai"],
       "@affine/env": ["./packages/env"],
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],

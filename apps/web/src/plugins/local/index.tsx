@@ -1,4 +1,3 @@
-import { DEFAULT_WORKSPACE_NAME } from '@affine/env';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { LoadPriority, WorkspaceFlavour } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
@@ -90,15 +89,6 @@ export const LocalPlugin: WorkspacePlugin<WorkspaceFlavour.LOCAL> = {
           )
         )
       ).filter(item => item !== null) as LocalWorkspace[];
-      if (data.length === 0) {
-        const blockSuiteWorkspace = createEmptyBlockSuiteWorkspace(
-          nanoid(),
-          (_: string) => undefined
-        );
-        blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-        await LocalPlugin.CRUD.create(blockSuiteWorkspace);
-        return LocalPlugin.CRUD.list();
-      }
       return data;
     },
   },

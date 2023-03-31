@@ -1,8 +1,8 @@
+import { atomWithSyncStorage } from '@affine/jotai';
 import { atom, useAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 
-const sideBarOpenAtom = atomWithStorage('sidebarOpen', true);
-const sideBarWidthAtom = atomWithStorage('sidebarWidth', 256);
+const sideBarOpenAtom = atomWithSyncStorage('sidebarOpen', true);
+const sideBarWidthAtom = atomWithSyncStorage('sidebarWidth', 256);
 const sidebarResizingAtom = atom(false);
 
 export function useSidebarStatus() {

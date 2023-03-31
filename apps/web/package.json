@@ -14,6 +14,7 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/i18n": "workspace:*",
+    "@affine/jotai": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/workspace": "workspace:*",
     "@blocksuite/blocks": "0.5.0-20230324040005-14417c2",

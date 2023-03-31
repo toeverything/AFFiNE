@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import React, { Suspense, useEffect } from 'react';
@@ -8,6 +9,8 @@ import { useCreateFirstWorkspace } from '../hooks/use-create-first-workspace';
 import { RouteLogic, useRouterHelper } from '../hooks/use-router-helper';
 import { useWorkspaces } from '../hooks/use-workspaces';
 import { WorkspaceSubPath } from '../shared';
+
+const logger = new DebugLogger('IndexPage');
 
 const IndexPageInner = () => {
   const router = useRouter();
@@ -28,11 +31,13 @@ const IndexPageInner = () => {
       const pageId =
         targetWorkspace.blockSuiteWorkspace.meta.pageMetas.at(0)?.id;
       if (pageId) {
+        logger.debug('Found target workspace. Jump to page', pageId);
         jumpToPage(targetWorkspace.id, pageId, RouteLogic.REPLACE);
         return;
       } else {
         const clearId = setTimeout(() => {
           dispose.dispose();
+          logger.debug('Found target workspace. Jump to all pages');
           jumpToSubPath(
             targetWorkspace.id,
             WorkspaceSubPath.ALL,
@@ -50,6 +55,7 @@ const IndexPageInner = () => {
         };
       }
     } else {
+      logger.debug('No target workspace. jump to all pages');
       // fixme: should create new workspace
       jumpToSubPath('ERROR', WorkspaceSubPath.ALL, RouteLogic.REPLACE);
     }

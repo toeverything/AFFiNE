@@ -15,6 +15,7 @@
   "dependencies": {
     "@affine/debug": "workspace:*",
     "@affine/i18n": "workspace:*",
+    "@affine/jotai": "workspace:*",
     "@blocksuite/blocks": "0.5.0-20230324040005-14417c2",
     "@blocksuite/editor": "0.5.0-20230324040005-14417c2",
     "@blocksuite/global": "0.5.0-20230324040005-14417c2",
