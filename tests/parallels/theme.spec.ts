@@ -20,6 +20,7 @@ test.describe('Change Theme', () => {
     );
     expect(themeMode).toBe('light');
 
+    await page.waitForTimeout(50);
     const rightMenu = page.getByTestId('editor-option-menu');
     const rightMenuBox = await rightMenu.boundingBox();
     const lightButton = page.getByTestId('change-theme-light');
