@@ -4,7 +4,13 @@ import type { DBSchema } from 'idb/build/entry';
 import type { IDBPDatabase } from 'idb/build/entry';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
-const mergeCount = 500;
+
+let mergeCount = 500;
+
+export function setMergeCount(count: number) {
+  mergeCount = count;
+}
+
 export const dbVersion = 1;
 export function upgradeDB(db: IDBPDatabase<BlockSuiteBinaryDB>) {
   db.createObjectStore('workspace', { keyPath: 'id' });
@@ -48,9 +54,9 @@ export const createIndexedDBProvider = (
   blockSuiteWorkspace: Workspace
 ): IndexedDBProvider => {
   let resolve: () => void;
-  const promise = new Promise<void>(_resolve => {
-    resolve = _resolve;
-  });
+  let reject: (reason?: unknown) => void;
+  let early = true;
+  let promise: Promise<void>;
   let connect = false;
   let destroy = false;
   async function handleUpdate(update: Uint8Array, origin: unknown) {
@@ -103,8 +109,14 @@ export const createIndexedDBProvider = (
     const db = await dbPromise;
     db.close();
   };
-  return {
+  const apis = {
     connect: async () => {
+      promise = new Promise<void>((_resolve, _reject) => {
+        early = true;
+        resolve = _resolve;
+        reject = _reject;
+      });
+      apis.whenSynced = promise;
       connect = true;
       blockSuiteWorkspace.doc.on('update', handleUpdate);
       blockSuiteWorkspace.doc.on('destroy', handleDestroy);
@@ -122,7 +134,23 @@ export const createIndexedDBProvider = (
           updates: [],
         });
       } else {
-        data.updates.forEach(({ update }) => {
+        const updates = data.updates.map(({ update }) => update);
+        const update = Workspace.Y.mergeUpdates(updates);
+        const newUpdate = Workspace.Y.diffUpdate(
+          Workspace.Y.encodeStateAsUpdate(blockSuiteWorkspace.doc),
+          update
+        );
+        store.put({
+          ...data,
+          updates: [
+            ...data.updates,
+            {
+              timestamp: Date.now(),
+              update: newUpdate,
+            },
+          ],
+        });
+        updates.forEach(update => {
           Workspace.Y.applyUpdate(
             blockSuiteWorkspace.doc,
             update,
@@ -130,10 +158,14 @@ export const createIndexedDBProvider = (
           );
         });
       }
+      early = false;
       resolve();
     },
     disconnect() {
       connect = false;
+      if (early) {
+        reject();
+      }
       blockSuiteWorkspace.doc.off('update', handleUpdate);
       blockSuiteWorkspace.doc.off('destroy', handleDestroy);
     },
@@ -143,4 +175,6 @@ export const createIndexedDBProvider = (
     },
     whenSynced: promise,
   };
+
+  return apis;
 };
