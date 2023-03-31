@@ -5,7 +5,7 @@ export const StyledSettingContainer = styled('div')(() => {
     display: 'flex',
     flexDirection: 'column',
     padding: '48px 0 0 48px',
-    height: 'calc(100vh - 60px)',
+    height: 'calc(100vh - 48px)',
   };
 });
 

@@ -16,11 +16,7 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import {
-  useMediaQuery,
-  useTheme as useMuiTheme,
-  useTheme,
-} from '@mui/material';
+import { useMediaQuery, useTheme } from '@mui/material';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useCallback, useMemo } from 'react';
@@ -106,7 +102,7 @@ export const PageList: React.FC<PageListProps> = ({
   const pageList = usePageMeta(blockSuiteWorkspace);
   const helper = usePageMetaHelper(blockSuiteWorkspace);
   const { t } = useTranslation();
-  const theme = useMuiTheme();
+  const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up('sm'));
   const isTrash = listType === 'trash';
   const record = useAtomValue(workspacePreferredModeAtom);
