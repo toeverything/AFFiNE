@@ -8,6 +8,7 @@ import assert from 'node:assert';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import type { PageBlockModel } from '@blocksuite/blocks';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
@@ -140,6 +141,26 @@ describe('usePageMetas', async () => {
     });
     rerender();
     expect(result.current[0].mode).toBe('page');
+  });
+
+  test('update title', () => {
+    const { result, rerender } = renderHook(() =>
+      usePageMeta(blockSuiteWorkspace)
+    );
+    expect(result.current.length).toBe(3);
+    expect(result.current[0].mode).not.exist;
+    const pageMetaHelperHook = renderHook(() =>
+      usePageMetaHelper(blockSuiteWorkspace)
+    );
+    expect(result.current[0].title).toBe('');
+    pageMetaHelperHook.result.current.setPageTitle('page0', 'test');
+    rerender();
+    const page = blockSuiteWorkspace.getPage('page0');
+    const pageBlocks = page.getBlockByFlavour('affine:page');
+    expect(pageBlocks.length).toBe(1);
+    const pageBlock = pageBlocks[0] as PageBlockModel;
+    expect(pageBlock.title.toString()).toBe('test');
+    expect(result.current[0].title).toBe('test');
   });
 });
 
