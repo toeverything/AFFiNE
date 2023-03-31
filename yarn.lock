@@ -1887,9 +1887,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@blocksuite/y-indexeddb@workspace:packages/y-indexeddb"
   dependencies:
+    "@blocksuite/blocks": 0.5.0-20230324040005-14417c2
     idb: ^7.1.1
   peerDependencies:
-    "@blocksuite/blocks": 0.5.0-20230324040005-14417c2
     "@blocksuite/store": 0.5.0-20230324040005-14417c2
     yjs: ^13.5.51
   languageName: unknown
