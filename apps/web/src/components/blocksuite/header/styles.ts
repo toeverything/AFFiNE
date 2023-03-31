@@ -14,6 +14,10 @@ export const StyledHeaderContainer = styled('div')<{ hasWarning: boolean }>(
       top: 0,
       background: theme.colors.pageBackground,
       zIndex: 1,
+      WebkitAppRegion: 'drag',
+      button: {
+        WebkitAppRegion: 'no-drag',
+      },
     };
   }
 );

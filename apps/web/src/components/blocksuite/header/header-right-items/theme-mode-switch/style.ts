@@ -4,7 +4,7 @@ import spring, { toString } from 'css-spring';
 
 const ANIMATE_DURATION = 400;
 
-export const StyledThemeModeSwitch = styled('div')(({ theme }) => {
+export const StyledThemeModeSwitch = styled('button')(({ theme }) => {
   return {
     width: '32px',
     height: '32px',

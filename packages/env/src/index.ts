@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../../../apps/electron/layers/preload/preload.autogen.d.ts" />
+
 import { assertEquals } from '@blocksuite/global/utils';
 import getConfig from 'next/config';
 import { z } from 'zod';
@@ -52,12 +55,6 @@ export type Environment = Browser | Server | Desktop;
 
 let environment: Environment | null = null;
 
-declare global {
-  interface Window {
-    CLIENT_APP?: boolean;
-  }
-}
-
 export function getEnvironment() {
   if (environment) {
     return environment;
@@ -73,7 +70,7 @@ export function getEnvironment() {
   } else {
     const uaHelper = getUaHelper();
     environment = {
-      isDesktop: window.CLIENT_APP,
+      isDesktop: window.appInfo?.electron,
       isBrowser: true,
       isServer: false,
       isDebug,

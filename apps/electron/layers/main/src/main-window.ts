@@ -2,6 +2,8 @@ import { BrowserWindow } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
+import { isMacOS } from '../../utils';
+
 const IS_DEV = process.env.NODE_ENV === 'development';
 
 async function createWindow() {
@@ -11,6 +13,8 @@ async function createWindow() {
   });
 
   const browserWindow = new BrowserWindow({
+    titleBarStyle: isMacOS() ? 'hidden' : 'default',
+    trafficLightPosition: { x: 10, y: 16 },
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
