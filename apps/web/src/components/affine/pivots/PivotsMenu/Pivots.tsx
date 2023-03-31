@@ -5,6 +5,7 @@ import type { MouseEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
+import { toast } from '../../../../utils';
 import { usePivotData } from '../hooks/usePivotData';
 import { usePivotHandler } from '../hooks/usePivotHandler';
 import { PivotRender } from '../PivotRender';
@@ -29,11 +30,15 @@ export const Pivots = ({
     pivotRender: PivotRender,
     blockSuiteWorkspace,
     onClick: (e, node) => {
+      const targetTitle = metas.find(m => m.id === node.id)?.title;
+
+      //
       handleDrop(currentMeta.id, node.id, {
         bottomLine: false,
         topLine: false,
         internal: true,
       });
+      toast(`Moved "${currentMeta.title}" to "${targetTitle}"`);
     },
   });
 
@@ -47,6 +52,7 @@ export const Pivots = ({
       <StyledPivot
         onClick={() => {
           setPageMeta(currentMeta.id, { isPivots: true });
+          toast(`Moved "${currentMeta.title}" to Pivots`);
         }}
       >
         <StyledCollapsedButton
