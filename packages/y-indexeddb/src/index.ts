@@ -106,9 +106,12 @@ export const createIndexedDBProvider = (
     if (data.updates.length > mergeCount) {
       const updates = data.updates.map(({ update }) => update);
       const doc = new Doc();
-      updates.forEach(update => {
-        applyUpdate(doc, update, indexeddbOrigin);
-      });
+      doc.transact(() => {
+        updates.forEach(update => {
+          applyUpdate(doc, update, indexeddbOrigin);
+        });
+      }, indexeddbOrigin);
+
       const update = encodeStateAsUpdate(doc);
       data = {
         id,
@@ -222,7 +225,7 @@ export const createIndexedDBProvider = (
           updates.forEach(update => {
             applyUpdate(doc, update);
           });
-        }, indexeddbOrigin as any);
+        }, indexeddbOrigin);
       }
       early = false;
       resolve();
