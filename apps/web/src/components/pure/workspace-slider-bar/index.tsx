@@ -10,7 +10,7 @@ import {
 import type { Page, PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import {
   useSidebarResizing,
@@ -27,6 +27,7 @@ import { StyledListItem } from './shared-styles';
 import {
   StyledLink,
   StyledNewPageButton,
+  StyledScrollWrapper,
   StyledSidebarSwitchWrapper,
   StyledSliderBar,
   StyledSliderBarInnerWrapper,
@@ -73,9 +74,10 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   onOpenWorkspaceListModal,
 }) => {
   const currentWorkspaceId = currentWorkspace?.id || null;
+  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
   const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
-  const pageMeta = usePageMeta(currentWorkspace?.blockSuiteWorkspace ?? null);
+  const pageMeta = usePageMeta(blockSuiteWorkspace ?? null);
   const onClickNewPage = useCallback(async () => {
     const page = await createPage();
     openPage(page.id);
@@ -84,6 +86,8 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
   const floatingSlider = useMediaQuery(theme.breakpoints.down('md'));
   const [sliderWidth, setSliderWidth] = useSidebarWidth();
   const [isResizing, setIsResizing] = useSidebarResizing();
+  const [isScrollAtTop, setIsScrollAtTop] = useState(true);
+
   const show = isPublicWorkspace ? false : sidebarOpen;
   const actualWidth = show
     ? floatingSlider
@@ -182,20 +186,29 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               </StyledLink>
             </StyledListItem>
 
-            <Favorite
-              currentPath={currentPath}
-              paths={paths}
-              currentPageId={currentPageId}
-              openPage={openPage}
-              currentWorkspace={currentWorkspace}
-            />
-            {config.enableSubpage && !!currentWorkspace && (
-              <Pivots
-                currentWorkspace={currentWorkspace}
+            <StyledScrollWrapper
+              showTopBorder={!isScrollAtTop}
+              onScroll={e => {
+                (e.target as HTMLDivElement).scrollTop === 0
+                  ? setIsScrollAtTop(true)
+                  : setIsScrollAtTop(false);
+              }}
+            >
+              <Favorite
+                currentPath={currentPath}
+                paths={paths}
+                currentPageId={currentPageId}
                 openPage={openPage}
-                allMetas={pageMeta}
+                currentWorkspace={currentWorkspace}
               />
-            )}
+              {config.enableSubpage && !!blockSuiteWorkspace && (
+                <Pivots
+                  blockSuiteWorkspace={blockSuiteWorkspace}
+                  openPage={openPage}
+                  allMetas={pageMeta}
+                />
+              )}
+            </StyledScrollWrapper>
 
             <StyledListItem
               active={

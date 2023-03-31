@@ -128,3 +128,14 @@ export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
     };
   }
 );
+
+export const StyledScrollWrapper = styled('div')<{
+  showTopBorder: boolean;
+}>(({ showTopBorder, theme }) => {
+  return {
+    maxHeight: '360px',
+    overflowY: 'auto',
+    borderTop: '1px solid',
+    borderColor: showTopBorder ? theme.colors.borderColor : 'transparent',
+  };
+});
