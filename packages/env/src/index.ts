@@ -52,6 +52,11 @@ export type Environment = Browser | Server | Desktop;
 
 let environment: Environment | null = null;
 
+declare global {
+  // eslint-disable-next-line no-var
+  var appInfo: Record<string, unknown>;
+}
+
 export function getEnvironment() {
   if (environment) {
     return environment;
