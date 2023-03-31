@@ -6,12 +6,12 @@ import type { IDBPDatabase } from 'idb/build/entry';
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 
 let mergeCount = 500;
-
 export function setMergeCount(count: number) {
   mergeCount = count;
 }
 
 export const dbVersion = 1;
+
 export function upgradeDB(db: IDBPDatabase<BlockSuiteBinaryDB>) {
   db.createObjectStore('workspace', { keyPath: 'id' });
   db.createObjectStore('milestone', { keyPath: 'id' });
@@ -59,6 +59,7 @@ export const createIndexedDBProvider = (
   let promise: Promise<void>;
   let connect = false;
   let destroy = false;
+
   async function handleUpdate(update: Uint8Array, origin: unknown) {
     const db = await dbPromise;
     if (!connect) {
@@ -71,7 +72,13 @@ export const createIndexedDBProvider = (
       .transaction('workspace', 'readwrite')
       .objectStore('workspace');
     const id = blockSuiteWorkspace.id;
-    const data = await store.get(id);
+    let data = await store.get(id);
+    if (!data) {
+      data = {
+        id,
+        updates: [],
+      };
+    }
     data.updates.push({
       timestamp: Date.now(),
       update,
@@ -83,26 +90,24 @@ export const createIndexedDBProvider = (
         Workspace.Y.applyUpdate(doc, update, indexeddbOrigin);
       });
       const update = Workspace.Y.encodeStateAsUpdate(doc);
-      store.put({
-        ...data,
+      data = {
+        id,
         updates: [
           {
             timestamp: Date.now(),
             update,
           },
         ],
-      });
+      };
+      await store.put(data);
     } else {
       await store.put(data);
     }
   }
-  const dbPromise = openDB<BlockSuiteBinaryDB>(
-    blockSuiteWorkspace.id,
-    dbVersion,
-    {
-      upgrade: upgradeDB,
-    }
-  );
+
+  const dbPromise = openDB<BlockSuiteBinaryDB>('affine-local', dbVersion, {
+    upgrade: upgradeDB,
+  });
   const handleDestroy = async () => {
     connect = true;
     destroy = true;
@@ -129,7 +134,7 @@ export const createIndexedDBProvider = (
         return;
       }
       if (!data) {
-        await db.add('workspace', {
+        await db.put('workspace', {
           id: blockSuiteWorkspace.id,
           updates: [],
         });
@@ -140,7 +145,7 @@ export const createIndexedDBProvider = (
           Workspace.Y.encodeStateAsUpdate(blockSuiteWorkspace.doc),
           update
         );
-        store.put({
+        await store.put({
           ...data,
           updates: [
             ...data.updates,
