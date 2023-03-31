@@ -54,7 +54,7 @@ let environment: Environment | null = null;
 
 declare global {
   // eslint-disable-next-line no-var
-  var appInfo: Record<string, unknown>;
+  var appInfo: undefined | Record<string, unknown>;
 }
 
 export function getEnvironment() {
