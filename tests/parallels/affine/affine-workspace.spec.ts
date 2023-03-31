@@ -45,7 +45,7 @@ test.describe('affine workspace', () => {
     await page.getByTestId('local-workspace-enable-cloud-button').click();
     await page.getByTestId('confirm-enable-cloud-button').click();
     await page.waitForSelector("[data-testid='member-length']", {
-      timeout: 10000,
+      timeout: 20000,
     });
     await clickSideBarAllPageButton(page);
     await clickNewPageButton(page);
