@@ -1,7 +1,6 @@
 import { Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
-import type { DBSchema } from 'idb/build/entry';
-import type { IDBPDatabase } from 'idb/build/entry';
+import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
 
@@ -56,7 +55,6 @@ export const createIndexedDBProvider = (
   let resolve: () => void;
   let reject: (reason?: unknown) => void;
   let early = true;
-  let promise: Promise<void>;
   let connect = false;
   let destroy = false;
 
@@ -116,12 +114,11 @@ export const createIndexedDBProvider = (
   };
   const apis = {
     connect: async () => {
-      promise = new Promise<void>((_resolve, _reject) => {
+      apis.whenSynced = new Promise<void>((_resolve, _reject) => {
         early = true;
         resolve = _resolve;
         reject = _reject;
       });
-      apis.whenSynced = promise;
       connect = true;
       blockSuiteWorkspace.doc.on('update', handleUpdate);
       blockSuiteWorkspace.doc.on('destroy', handleDestroy);
@@ -178,7 +175,7 @@ export const createIndexedDBProvider = (
       destroy = true;
       // todo
     },
-    whenSynced: promise,
+    whenSynced: Promise.resolve(),
   };
 
   return apis;
