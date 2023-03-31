@@ -191,15 +191,18 @@ input[type='number']::-webkit-outer-spin-button {
   position: relative;
   width: 100%;
   height: 100%;
+  padding: 0 2rem;
 }
 
 .affine-default-page-block-title-container {
   margin-top: 78px;
   margin-bottom: 40px;
+  transition: margin-top 0.2s;
 }
 
 .affine-default-page-block-container {
-  max-width: 686px;
+  transition: max-width 0.2s;
+  min-width: 550px;
 }
 
 affine-block-hub {

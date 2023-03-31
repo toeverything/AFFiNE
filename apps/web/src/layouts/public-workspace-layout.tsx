@@ -14,7 +14,7 @@ import {
 } from '../atoms/public-workspace';
 import { StyledTableContainer } from '../components/blocksuite/block-suite-page-list/page-list/styles';
 import { useRouterTitle } from '../hooks/use-router-title';
-import { StyledPage, StyledWrapper } from './styles';
+import { MainContainer, StyledPage } from './styles';
 
 const QuickSearchModal = dynamic(
   () => import('../components/pure/quick-search-modal')
@@ -46,9 +46,9 @@ const PublicWorkspaceLayoutInner: React.FC<React.PropsWithChildren> = props => {
         <title>{title}</title>
       </Head>
       <StyledPage>
-        <StyledWrapper className="main-container">
+        <MainContainer className="main-container">
           {props.children}
-        </StyledWrapper>
+        </MainContainer>
         <Suspense fallback="">
           {/* `publicBlockSuiteAtom` is available only when `publicWorkspaceIdAtom` loaded */}
           {workspaceId && <PublicQuickSearch />}

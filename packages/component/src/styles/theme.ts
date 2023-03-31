@@ -29,6 +29,7 @@ export const getLightTheme = (
       cardHoverBackground: '#f8f9ff',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
+      modalBackground: 'rgba(0, 0, 0, 0.6)',
 
       textColor: '#424149',
       secondaryTextColor: '#8E8D91',
@@ -83,6 +84,15 @@ export const getLightTheme = (
     radius: {
       popover: '10px',
     },
+    breakpoints: {
+      values: {
+        xs: 0,
+        sm: 640,
+        md: 960,
+        lg: 1280,
+        xl: 1920,
+      },
+    },
   };
 };
 
@@ -113,6 +123,7 @@ export const getDarkTheme = (
       cardHoverBackground: '#363636',
       warningBackground: '#FFF9C7',
       errorBackground: '#FFDED8',
+      modalBackground: 'rgba(0, 0, 0, 0.8)',
 
       textColor: '#fff',
       secondaryTextColor: '#8E8D91',
@@ -207,7 +218,6 @@ export const globalThemeVariables: (
     '--affine-paragraph-space': theme.space.paragraph,
     '--affine-popover-radius': theme.radius.popover,
 
-    '--affine-editor-width': '720px',
     '--affine-zoom': '1',
     '--affine-scale': 'calc(1 / var(--affine-zoom))',
   };

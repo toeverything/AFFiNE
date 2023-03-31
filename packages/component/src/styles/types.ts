@@ -27,6 +27,7 @@ export interface AffineTheme {
     tooltipBackground: string;
     hoverBackground: string;
     innerHoverBackground: string;
+    modalBackground: string;
     // Use for the quick search tips background
     backgroundTertiaryColor: string;
     codeBackground: string;
@@ -92,6 +93,15 @@ export interface AffineTheme {
   radius: {
     popover: string;
   };
+  breakpoints: {
+    values: {
+      xs: number;
+      sm: number;
+      md: number;
+      lg: number;
+      xl: number;
+    };
+  };
 }
 
 export interface AffineThemeCSSVariables {
@@ -150,7 +160,6 @@ export interface AffineThemeCSSVariables {
 
   '--affine-popover-radius': AffineTheme['radius']['popover'];
   // use for blocksuite
-  '--affine-editor-width': CSSProperties['width'];
   '--affine-zoom': CSSProperties['zoom'];
   '--affine-scale': string;
 }
