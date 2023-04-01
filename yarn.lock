@@ -34,10 +34,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/client-app@workspace:apps/desktop"
   dependencies:
-    "@blocksuite/blocks": 0.5.0-alpha.1
-    "@blocksuite/editor": 0.5.0-alpha.1
+    "@blocksuite/blocks": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/editor": 0.5.0-20230326033652-70ca43c
     "@blocksuite/icons": 2.1.2
-    "@blocksuite/store": 0.5.0-alpha.1
+    "@blocksuite/store": 0.5.0-20230326033652-70ca43c
     "@emotion/react": ^11.10.6
     "@emotion/styled": ^11.10.6
     "@tauri-apps/api": ^1.2.0
@@ -70,11 +70,11 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/jotai": "workspace:*"
-    "@blocksuite/blocks": 0.5.0-alpha.1
-    "@blocksuite/editor": 0.5.0-alpha.1
-    "@blocksuite/global": 0.5.0-alpha.2
+    "@blocksuite/blocks": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/editor": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/global": 0.5.0-20230326033652-70ca43c
     "@blocksuite/icons": 2.1.2
-    "@blocksuite/store": 0.5.0-alpha.1
+    "@blocksuite/store": 0.5.0-20230326033652-70ca43c
     "@emotion/cache": ^11.10.5
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
@@ -125,7 +125,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@blocksuite/global": 0.5.0-alpha.2
+    "@blocksuite/global": 0.5.0-20230326033652-70ca43c
     lit: ^2.7.0
     next: =13.2.3
     react: ^18.2.0
@@ -188,10 +188,10 @@ __metadata:
     "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/blocks": 0.5.0-alpha.1
-    "@blocksuite/editor": 0.5.0-alpha.1
+    "@blocksuite/blocks": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/editor": 0.5.0-20230326033652-70ca43c
     "@blocksuite/icons": ^2.1.2
-    "@blocksuite/store": 0.5.0-alpha.1
+    "@blocksuite/store": 0.5.0-20230326033652-70ca43c
     "@emotion/cache": ^11.10.5
     "@emotion/react": ^11.10.6
     "@emotion/server": ^11.10.0
@@ -243,8 +243,8 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
-    "@blocksuite/blocks": 0.5.0-alpha.1
-    "@blocksuite/store": 0.5.0-alpha.1
+    "@blocksuite/blocks": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/store": 0.5.0-20230326033652-70ca43c
     "@types/ws": ^8.5.4
     firebase: ^9.19.1
     jotai: ^2.0.3
@@ -1851,58 +1851,44 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/blocks@npm:0.5.0-alpha.1":
-  version: 0.5.0-alpha.1
-  resolution: "@blocksuite/blocks@npm:0.5.0-alpha.1"
+"@blocksuite/blocks@npm:0.5.0-20230326033652-70ca43c":
+  version: 0.5.0-20230326033652-70ca43c
+  resolution: "@blocksuite/blocks@npm:0.5.0-20230326033652-70ca43c"
   dependencies:
-    "@blocksuite/global": 0.5.0-alpha.1
-    "@blocksuite/phasor": 0.5.0-alpha.1
-    "@blocksuite/virgo": 0.5.0-alpha.1
+    "@blocksuite/global": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/phasor": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/virgo": 0.5.0-20230326033652-70ca43c
     "@popperjs/core": ^2.11.6
-    highlight.js: ^11.7.0
     hotkeys-js: ^3.10.1
     lit: ^2.6.1
+    marked: ^4.2.12
     shiki: ^0.14.1
-    zod: ^3.20.6
+    turndown: ^7.1.1
+    zod: ^3.21.4
   peerDependencies:
-    "@blocksuite/store": 0.5.0-alpha.1
-  checksum: f82e8a106b4ae13f4f1570f31ab03c9a739d6836e16cd21df3f47e2b61487bbbbe502605d5a86027606c6c7c63eedbcce9c978e80825f46f0c3a4d6666a09122
+    "@blocksuite/store": 0.5.0-20230326033652-70ca43c
+  checksum: 3c1696af5ce17ff17570d586926dbd6f6f4df3d639e321108b7df1a476a7cd4465e0457cc077a244a37662f8f2c9191f5503a928cb4647ba97b8dd22f3d7fc94
   languageName: node
   linkType: hard
 
-"@blocksuite/editor@npm:0.5.0-alpha.1":
-  version: 0.5.0-alpha.1
-  resolution: "@blocksuite/editor@npm:0.5.0-alpha.1"
+"@blocksuite/editor@npm:0.5.0-20230326033652-70ca43c":
+  version: 0.5.0-20230326033652-70ca43c
+  resolution: "@blocksuite/editor@npm:0.5.0-20230326033652-70ca43c"
   dependencies:
-    "@blocksuite/global": 0.5.0-alpha.1
+    "@blocksuite/global": 0.5.0-20230326033652-70ca43c
     lit: ^2.6.1
     marked: ^4.2.12
     turndown: ^7.1.1
   peerDependencies:
-    "@blocksuite/blocks": 0.5.0-alpha.1
-    "@blocksuite/store": 0.5.0-alpha.1
-  checksum: bd6052aa87439b3de6c8108f8c5480185740dc2b8286079f737e3f46e8c5fd76d152aea0b641e2397893c4a81cc3ef862886f6cc59d663e5a50b6770a4fc423b
+    "@blocksuite/blocks": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/store": 0.5.0-20230326033652-70ca43c
+  checksum: 28721b20ef15448aa7abd3552dae39dd9284b1d2ddd661d5fe7d8de32157376986ed4388ea4d23645aef842dcc71e163747ea8772b6a3fea973bda5146647148
   languageName: node
   linkType: hard
 
-"@blocksuite/global@npm:0.5.0-alpha.1":
-  version: 0.5.0-alpha.1
-  resolution: "@blocksuite/global@npm:0.5.0-alpha.1"
-  dependencies:
-    ansi-colors: ^4.1.3
-    zod: ^3.20.6
-  peerDependencies:
-    lit: ^2.6
-  peerDependenciesMeta:
-    lit:
-      optional: true
-  checksum: 98c4f14fd6cdb88ecaa8834f2a5297b5f017969ea20572d656fbb8759fc47edd6b2b45e33a511d2b330542ae8f811d8ff29ee099a39699ad7c4c161c06c03a31
-  languageName: node
-  linkType: hard
-
-"@blocksuite/global@npm:0.5.0-alpha.2":
-  version: 0.5.0-alpha.2
-  resolution: "@blocksuite/global@npm:0.5.0-alpha.2"
+"@blocksuite/global@npm:0.5.0-20230326033652-70ca43c":
+  version: 0.5.0-20230326033652-70ca43c
+  resolution: "@blocksuite/global@npm:0.5.0-20230326033652-70ca43c"
   dependencies:
     ansi-colors: ^4.1.3
     zod: ^3.21.4
@@ -1911,7 +1897,7 @@ __metadata:
   peerDependenciesMeta:
     lit:
       optional: true
-  checksum: efd30a94e5642e190c1da514f1e953317d86cdba176dbd2237aeb9b11f23953b36236ea1594c4cba668b96a1b6ddcdf9f80578c13fe9e6174590070931324aee
+  checksum: d5757b2a77ad1b71bfa7c61764ed5659bff9f974190fd60a4bf2a3bfaa5d2fab9fe1682fc609fd87ccb895d9a402d8f8e679e4a6d2d3693f12f9687fb4d6a2eb
   languageName: node
   linkType: hard
 
@@ -1925,53 +1911,53 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/phasor@npm:0.5.0-alpha.1":
-  version: 0.5.0-alpha.1
-  resolution: "@blocksuite/phasor@npm:0.5.0-alpha.1"
+"@blocksuite/phasor@npm:0.5.0-20230326033652-70ca43c":
+  version: 0.5.0-20230326033652-70ca43c
+  resolution: "@blocksuite/phasor@npm:0.5.0-20230326033652-70ca43c"
   dependencies:
-    "@blocksuite/global": 0.5.0-alpha.1
+    "@blocksuite/global": 0.5.0-20230326033652-70ca43c
     fractional-indexing: ^3.2.0
-    nanoid: ^4.0.1
     perfect-freehand: ^1.2.0
   peerDependencies:
+    nanoid: ^4
     yjs: ^13
-  checksum: 1a38f957f0eec55640ee357e59111b213eb238d349c0a23a0154b3cca00dfa95440a35b855d0043073d892b33c2f374e2ff5dbec9ce131f14f2c706b83bc575b
+  checksum: 2938c6fbf4230da1c13ad81fc84123ce44009cddf2d8c8729573112d73ca9eb0c0287b0dc0b9b8eb635dbe17c5406d0c395ece2a8ed90704fc639ffedfac096c
   languageName: node
   linkType: hard
 
-"@blocksuite/store@npm:0.5.0-alpha.1":
-  version: 0.5.0-alpha.1
-  resolution: "@blocksuite/store@npm:0.5.0-alpha.1"
+"@blocksuite/store@npm:0.5.0-20230326033652-70ca43c":
+  version: 0.5.0-20230326033652-70ca43c
+  resolution: "@blocksuite/store@npm:0.5.0-20230326033652-70ca43c"
   dependencies:
-    "@blocksuite/global": 0.5.0-alpha.1
-    "@blocksuite/virgo": 0.5.0-alpha.1
+    "@blocksuite/global": 0.5.0-20230326033652-70ca43c
+    "@blocksuite/virgo": 0.5.0-20230326033652-70ca43c
     "@types/flexsearch": ^0.7.3
     buffer: ^6.0.3
     flexsearch: 0.7.21
     idb-keyval: ^6.2.0
-    ky: ^0.33.2
-    lib0: ^0.2.63
+    ky: ^0.33.3
+    lib0: ^0.2.68
     merge: ^2.1.1
     nanoid: ^4.0.1
     y-protocols: ^1.0.5
-    y-webrtc: ^10.2.4
-    zod: ^3.20.6
+    y-webrtc: ^10.2.5
+    zod: ^3.21.4
   peerDependencies:
     yjs: ^13
-  checksum: 66768ee1d122c2857eeb4b2ad96b76e62ee81368c268c27109a7333eb4131cafddbb481ece65a1506dafdd0a01d854f896d12cbdae95cb7906a98833bf38b072
+  checksum: 92b7e498a85cf9e15933bfca9a148d76092db911418dcebaa20cb422d2cd01003fe57afcbfa53db0e3de00c064f9b5f39f631c340af1cb00fb3cd621e660f578
   languageName: node
   linkType: hard
 
-"@blocksuite/virgo@npm:0.5.0-alpha.1":
-  version: 0.5.0-alpha.1
-  resolution: "@blocksuite/virgo@npm:0.5.0-alpha.1"
+"@blocksuite/virgo@npm:0.5.0-20230326033652-70ca43c":
+  version: 0.5.0-20230326033652-70ca43c
+  resolution: "@blocksuite/virgo@npm:0.5.0-20230326033652-70ca43c"
   dependencies:
-    "@blocksuite/global": 0.5.0-alpha.1
-    zod: ^3.20.6
+    "@blocksuite/global": 0.5.0-20230326033652-70ca43c
+    zod: ^3.21.4
   peerDependencies:
     lit: ^2
     yjs: ^13
-  checksum: 7ba2e46af622252679e3f984e0fcadfdc901a7288ab7af436b85f734d39fbcdfe43d4baf8be5edf38438cad9bf10720953722400f8194752a8127b1241945fda
+  checksum: 21f6b70ecb3d2a47edb3b7bd5a4426aabd3f871cd380320b495b53229f587ec67e355828f1ed5aa2ae279868edf23b8de1832d613bb38e8b3b1620c7b92f18ba
   languageName: node
   linkType: hard
 
@@ -11550,13 +11536,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"highlight.js@npm:^11.7.0":
-  version: 11.7.0
-  resolution: "highlight.js@npm:11.7.0"
-  checksum: 19e3fb8b56f4b361b057a8523b989dfeb6479bbd1e29cec3fac6fa5c78d09927d5fa61b7dba6631fdb57cfdca9b3084aa4da49405ceaf4a67f67beae2ed5b77d
-  languageName: node
-  linkType: hard
-
 "hoist-non-react-statics@npm:^3.3.1, hoist-non-react-statics@npm:^3.3.2":
   version: 3.3.2
   resolution: "hoist-non-react-statics@npm:3.3.2"
@@ -13464,7 +13443,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ky@npm:^0.33.2, ky@npm:^0.33.3":
+"ky@npm:^0.33.3":
   version: 0.33.3
   resolution: "ky@npm:0.33.3"
   checksum: d1869e1f33c0165355f621b6726fcc1a9de20a31f4a826ca0cfd5753d83b9cba8723402d554a00194e0ee3959e0dda0638f4b99d54a3a7de928b55ff870b0bcc
@@ -13525,7 +13504,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lib0@npm:^0.2.35, lib0@npm:^0.2.42, lib0@npm:^0.2.63, lib0@npm:^0.2.72, lib0@npm:^0.2.73":
+"lib0@npm:^0.2.35, lib0@npm:^0.2.42, lib0@npm:^0.2.68, lib0@npm:^0.2.72, lib0@npm:^0.2.73":
   version: 0.2.73
   resolution: "lib0@npm:0.2.73"
   dependencies:
@@ -19189,7 +19168,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"y-webrtc@npm:^10.2.4":
+"y-webrtc@npm:^10.2.5":
   version: 10.2.5
   resolution: "y-webrtc@npm:10.2.5"
   dependencies:
@@ -19361,7 +19340,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.20.6, zod@npm:^3.21.4":
+"zod@npm:^3.21.4":
   version: 3.21.4
   resolution: "zod@npm:3.21.4"
   checksum: f185ba87342ff16f7a06686767c2b2a7af41110c7edf7c1974095d8db7a73792696bcb4a00853de0d2edeb34a5b2ea6a55871bc864227dace682a0a28de33e1f
