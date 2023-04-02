@@ -121,9 +121,13 @@ export const publicRuntimeConfigSchema = z.object({
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
 
-const { publicRuntimeConfig: config } = getConfig() as {
-  publicRuntimeConfig: PublicRuntimeConfig;
-};
+const { publicRuntimeConfig: config } =
+  getConfig() ??
+  ({
+    publicRuntimeConfig: {},
+  } as {
+    publicRuntimeConfig: PublicRuntimeConfig;
+  });
 
 publicRuntimeConfigSchema.parse(config);
 
