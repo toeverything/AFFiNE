@@ -1,18 +1,10 @@
 import { KeckProvider } from '@affine/workspace/affine/keck';
 import { getLoginStorage } from '@affine/workspace/affine/login';
-import type {
-  AffineWebSocketProvider,
-  LocalIndexedDBProvider,
-} from '@affine/workspace/type';
+import type { AffineWebSocketProvider } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
-import {
-  createIndexedDBProvider as create,
-  EarlyDisconnectError,
-} from '@toeverything/y-indexeddb';
 
 import type { BlockSuiteWorkspace } from '../../shared';
 import { providerLogger } from '../logger';
-import { createBroadCastChannelProvider } from './broad-cast-channel';
 
 const createAffineWebSocketProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
@@ -55,50 +47,4 @@ const createAffineWebSocketProvider = (
   };
 };
 
-const createIndexedDBProvider = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
-): LocalIndexedDBProvider => {
-  const indexeddbProvider = create(
-    blockSuiteWorkspace.id,
-    blockSuiteWorkspace.doc
-  );
-  const callbacks = new Set<() => void>();
-  return {
-    flavour: 'local-indexeddb',
-    callbacks,
-    // fixme: remove background long polling
-    background: true,
-    cleanup: () => {
-      indexeddbProvider.cleanup();
-      callbacks.clear();
-    },
-    connect: () => {
-      providerLogger.info('connect indexeddb provider', blockSuiteWorkspace.id);
-      indexeddbProvider.connect();
-      indexeddbProvider.whenSynced
-        .then(() => {
-          callbacks.forEach(cb => cb());
-        })
-        .catch(e => {
-          if (e instanceof EarlyDisconnectError) {
-            // skip the early disconnect
-            return;
-          }
-        });
-    },
-    disconnect: () => {
-      assertExists(indexeddbProvider);
-      providerLogger.info(
-        'disconnect indexeddb provider',
-        blockSuiteWorkspace.id
-      );
-      indexeddbProvider.disconnect();
-    },
-  };
-};
-
-export {
-  createAffineWebSocketProvider,
-  createBroadCastChannelProvider,
-  createIndexedDBProvider,
-};
+export { createAffineWebSocketProvider };

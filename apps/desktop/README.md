@@ -9,7 +9,7 @@ Please follow the Tauri [getting started guide](https://tauri.app/v1/guides/gett
 After the environment is ready, start development build:
 
 ```sh
-pnpm tauri dev
+yarn tauri dev
 ```
 
 ## Development
@@ -22,8 +22,8 @@ We will provide its binary binding soon, to replace the git-submodule, before Oc
 
 On this folder:
 
-- `pnpm dev:app` will start a vite server
-- `pnpm build:prerequisite` will link the Octobase and prepare affine dist html and tauri preload script, also will generate ts type from rs. You should run this before start your first development time.
+- `yarn dev:app` will start a vite server
+- `yarn build:prerequisite` will link the Octobase and prepare affine dist html and tauri preload script, also will generate ts type from rs. You should run this before start your first development time.
 
 On project root folder:
 
