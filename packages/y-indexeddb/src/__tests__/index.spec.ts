@@ -7,7 +7,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { applyUpdate, Doc } from 'yjs';
+import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspacePersist } from '../index';
 import {
@@ -185,6 +185,34 @@ describe('milestone', () => {
     });
     {
       const map = doc.getMap('map');
+      expect(map.get('1')).toBe(1);
+    }
+
+    const fn = vi.fn(() => true);
+    doc.gcFilter = fn;
+    expect(fn).toBeCalledTimes(0);
+
+    for (let i = 0; i < 1e5; i++) {
+      map.set(`${i}`, i + 1);
+    }
+    for (let i = 0; i < 1e5; i++) {
+      map.delete(`${i}`);
+    }
+    for (let i = 0; i < 1e5; i++) {
+      map.set(`${i}`, i - 1);
+    }
+
+    expect(fn).toBeCalled();
+
+    const doc2 = new Doc();
+    applyUpdate(doc2, encodeStateAsUpdate(doc));
+
+    revertUpdate(doc2, milestones.test1, {
+      map: 'Map',
+      array: 'Array',
+    });
+    {
+      const map = doc2.getMap('map');
       expect(map.get('1')).toBe(1);
     }
   });
