@@ -1,9 +1,14 @@
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+
 /** @type {import("next").NextConfig} */
 export default {
   reactStrictMode: true,
   experimental: {
     appDir: true,
   },
+  transpilePackages: ['@affine/workspace'],
   webpack: (config, { dev, isServer }) => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
     config.module.rules.push({

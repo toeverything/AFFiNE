@@ -239,9 +239,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/web@workspace:apps/web"
   dependencies:
+    "@affine/workspace": "workspace:*"
     "@types/react": ^18.0.31
     "@types/react-dom": ^18.0.11
     clsx: ^1.2.1
+    jotai: ^2.0.3
     next: ^13.2.5-canary.25
     react: 18.2.0
     react-dom: 18.2.0

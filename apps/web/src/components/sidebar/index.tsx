@@ -1,9 +1,10 @@
+import { CurrentWorkspace } from '../current-workspace';
 import styles from './index.module.css';
 
 export const Sidebar = () => {
   return (
     <div role="menubar" className={styles.sidebar}>
-      <div>Affine Workspace</div>
+      <CurrentWorkspace />
       <div>Workspace</div>
     </div>
   );

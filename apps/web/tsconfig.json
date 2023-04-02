@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,

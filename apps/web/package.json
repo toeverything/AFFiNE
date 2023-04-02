@@ -8,7 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
+    "@affine/workspace": "workspace:*",
     "clsx": "^1.2.1",
+    "jotai": "^2.0.3",
     "next": "^13.2.5-canary.25",
     "react": "18.2.0",
     "react-dom": "18.2.0",
