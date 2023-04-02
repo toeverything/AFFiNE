@@ -41,7 +41,7 @@ type Server = {
   isDebug: boolean;
 };
 
-interface Desktop extends BrowserBase {
+interface Desktop extends ChromeBrowser {
   isDesktop: true;
   isBrowser: true;
   isServer: false;
