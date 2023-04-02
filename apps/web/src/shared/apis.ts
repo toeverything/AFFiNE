@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import {
   createUserApis,
@@ -7,6 +8,11 @@ import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { parseIdToken, setLoginStorage } from '@affine/workspace/affine/login';
 import { jotaiStore } from '@affine/workspace/atom';
+import {
+  getMilestones,
+  markMilestone,
+  revertUpdate,
+} from '@toeverything/y-indexeddb';
 
 import { isValidIPAddress } from '../utils';
 
@@ -29,6 +35,8 @@ const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;
 Object.assign(affineApis, createUserApis(prefixUrl));
 Object.assign(affineApis, createWorkspaceApis(prefixUrl));
+
+const debugLogger = new DebugLogger('affine-debug-apis');
 
 if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_APIS = affineApis;
@@ -70,6 +78,38 @@ if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_DEBUG = {
     loginMockUser1,
     loginMockUser2,
+    markMilestone: async (name: string) => {
+      if (currentWorkspace) {
+        const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
+        const doc = blockSuiteWorkspace.doc;
+        await markMilestone(blockSuiteWorkspace.id, doc, name);
+        debugLogger.info('markMilestone', name, blockSuiteWorkspace.id);
+      }
+    },
+    listMilestone: async () => {
+      if (currentWorkspace) {
+        const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
+        const doc = blockSuiteWorkspace.doc;
+        const list = await getMilestones(blockSuiteWorkspace.id);
+        debugLogger.info('listMilestone', list);
+      }
+    },
+    revertMilestone: async (name: string) => {
+      if (currentWorkspace) {
+        const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
+        const doc = blockSuiteWorkspace.doc;
+        const list = await getMilestones(blockSuiteWorkspace.id);
+        if (!list) {
+          debugLogger.info('no milestone');
+          return;
+        }
+        debugLogger.info('listMilestone', list);
+        const milestone = list[name];
+        if (milestone) {
+          revertUpdate(doc, milestone, () => 'Map');
+        }
+      }
+    },
   };
 }
 

@@ -179,10 +179,9 @@ describe('milestone', () => {
       const map = snapshot.getMap('map');
       expect(map.get('1')).toBe(1);
     }
-    revertUpdate(doc, milestones.test1, {
-      map: 'Map',
-      array: 'Array',
-    });
+    revertUpdate(doc, milestones.test1, key =>
+      key === 'map' ? 'Map' : 'Array'
+    );
     {
       const map = doc.getMap('map');
       expect(map.get('1')).toBe(1);
@@ -207,10 +206,9 @@ describe('milestone', () => {
     const doc2 = new Doc();
     applyUpdate(doc2, encodeStateAsUpdate(doc));
 
-    revertUpdate(doc2, milestones.test1, {
-      map: 'Map',
-      array: 'Array',
-    });
+    revertUpdate(doc2, milestones.test1, key =>
+      key === 'map' ? 'Map' : 'Array'
+    );
     {
       const map = doc2.getMap('map');
       expect(map.get('1')).toBe(1);
