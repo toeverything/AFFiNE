@@ -1,0 +1,13 @@
+.sidebar {
+  width: 256px;
+  white-space: nowrap;
+  height: 100vh;
+  min-height: 450px;
+  background: rgb(251, 251, 252);
+  box-shadow: rgba(66, 65, 73, 0.14) 0px 0px 12px;
+  transition: width 0.15s ease 0s, padding 0.15s ease 0s;
+  position: relative;
+  z-index: 1000;
+  padding: 0 12px;
+  flex-shrink: 0;
+}

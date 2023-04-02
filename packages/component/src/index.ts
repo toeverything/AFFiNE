@@ -1,3 +1,4 @@
+'use client';
 export * from './components/ListSkeleton';
 export * from './styles';
 export * from './ui/breadcrumbs';

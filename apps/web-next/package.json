@@ -8,9 +8,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "clsx": "^1.2.1",
     "next": "^13.2.5-canary.25",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "styled-components": "^6.0.0-beta.14"
   },
   "devDependencies": {
     "@types/react": "^18.0.31",
