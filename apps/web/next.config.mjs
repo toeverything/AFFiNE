@@ -155,9 +155,11 @@ const withDebugLocal = debugLocal(
 
 const detectFirebaseConfig = () => {
   if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-    console.warn('NEXT_PUBLIC_FIREBASE_API_KEY not found, please check it');
+    console.warn(
+      'NEXT_PUBLIC_FIREBASE_API_KEY not found, affine cloud feature will be disabled.'
+    );
   } else {
-    console.info('NEXT_PUBLIC_FIREBASE_API_KEY found');
+    console.info('NEXT_PUBLIC_FIREBASE_API_KEY found.');
   }
 };
 detectFirebaseConfig();
@@ -169,7 +171,10 @@ if (process.env.SENTRY_AUTH_TOKEN) {
     silent: true,
   });
 } else {
-  console.log('Sentry not enabled, please set SENTRY_AUTH_TOKEN to enable it');
+  console.log(
+    'SENTRY_AUTH_TOKEN not found, Sentry monitoring feature will be disabled.'
+  );
+  delete config.sentry;
 }
 
 export default config;

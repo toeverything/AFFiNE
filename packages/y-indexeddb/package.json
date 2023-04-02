@@ -1,0 +1,36 @@
+{
+  "name": "@toeverything/y-indexeddb",
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "main": "dist/index.umd.cjs",
+    "module": "dist/index.js",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "require": "./dist/index.umd.cjs"
+      }
+    }
+  },
+  "dependencies": {
+    "idb": "^7.1.1"
+  },
+  "devDependencies": {
+    "@blocksuite/blocks": "0.5.0-20230324040005-14417c2",
+    "@blocksuite/store": "0.5.0-20230324040005-14417c2",
+    "vite": "^4.2.1",
+    "vite-plugin-dts": "^2.1.0"
+  },
+  "peerDependencies": {
+    "yjs": "^13.5.51"
+  }
+}

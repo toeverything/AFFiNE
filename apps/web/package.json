@@ -17,16 +17,16 @@
     "@affine/jotai": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/workspace": "workspace:*",
-    "@blocksuite/blocks": "0.5.0-20230324040005-14417c2",
-    "@blocksuite/editor": "0.5.0-20230324040005-14417c2",
-    "@blocksuite/icons": "^2.1.0",
-    "@blocksuite/store": "0.5.0-20230324040005-14417c2",
+    "@blocksuite/blocks": "0.5.0-20230326033652-70ca43c",
+    "@blocksuite/editor": "0.5.0-20230326033652-70ca43c",
+    "@blocksuite/icons": "^2.1.2",
+    "@blocksuite/store": "0.5.0-20230326033652-70ca43c",
     "@emotion/cache": "^11.10.5",
     "@emotion/react": "^11.10.6",
     "@emotion/server": "^11.10.0",
     "@emotion/styled": "^11.10.6",
     "@mui/material": "^5.11.15",
-    "@sentry/nextjs": "^7.45.0",
+    "@sentry/nextjs": "^7.46.0",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
@@ -38,7 +38,7 @@
     "react-dom": "^18.2.0",
     "react-is": "^18.2.0",
     "swr": "^2.1.1",
-    "y-indexeddb": "^9.0.9",
+    "y-indexeddb": "^9.0.10",
     "y-protocols": "^1.0.5",
     "yjs": "^13.5.51",
     "zod": "^3.21.4"
@@ -61,7 +61,7 @@
     "raw-loader": "^4.0.2",
     "redux": "^4.2.1",
     "swc-plugin-coverage-instrument": "=0.0.14",
-    "typescript": "^5.0.2",
-    "webpack": "^5.76.3"
+    "typescript": "^5.0.3",
+    "webpack": "^5.77.0"
   }
 }
