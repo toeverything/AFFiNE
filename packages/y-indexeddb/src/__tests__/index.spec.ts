@@ -7,9 +7,17 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspacePersist } from '../index';
-import { createIndexedDBProvider, dbVersion, setMergeCount } from '../index';
+import {
+  createIndexedDBProvider,
+  dbVersion,
+  getMilestones,
+  markMilestone,
+  revertUpdate,
+  setMergeCount,
+} from '../index';
 
 async function getUpdates(id: string): Promise<ArrayBuffer[]> {
   const db = await openDB('affine-local', dbVersion);
@@ -143,6 +151,69 @@ describe('indexeddb provider', () => {
     {
       const updates = await getUpdates(id);
       expect(updates.length).lessThanOrEqual(5);
+    }
+  });
+});
+
+describe('milestone', () => {
+  test('milestone', async () => {
+    const doc = new Doc();
+    const map = doc.getMap('map');
+    const array = doc.getArray('array');
+    map.set('1', 1);
+    array.push([1]);
+    await markMilestone('1', doc, 'test1');
+    const milestones = await getMilestones('1');
+    assertExists(milestones);
+    expect(milestones).toBeDefined();
+    expect(Object.keys(milestones).length).toBe(1);
+    expect(milestones.test1).toBeInstanceOf(Uint8Array);
+    const snapshot = new Doc();
+    applyUpdate(snapshot, milestones.test1);
+    {
+      const map = snapshot.getMap('map');
+      expect(map.get('1')).toBe(1);
+    }
+    map.set('1', 2);
+    {
+      const map = snapshot.getMap('map');
+      expect(map.get('1')).toBe(1);
+    }
+    revertUpdate(doc, milestones.test1, {
+      map: 'Map',
+      array: 'Array',
+    });
+    {
+      const map = doc.getMap('map');
+      expect(map.get('1')).toBe(1);
+    }
+
+    const fn = vi.fn(() => true);
+    doc.gcFilter = fn;
+    expect(fn).toBeCalledTimes(0);
+
+    for (let i = 0; i < 1e5; i++) {
+      map.set(`${i}`, i + 1);
+    }
+    for (let i = 0; i < 1e5; i++) {
+      map.delete(`${i}`);
+    }
+    for (let i = 0; i < 1e5; i++) {
+      map.set(`${i}`, i - 1);
+    }
+
+    expect(fn).toBeCalled();
+
+    const doc2 = new Doc();
+    applyUpdate(doc2, encodeStateAsUpdate(doc));
+
+    revertUpdate(doc2, milestones.test1, {
+      map: 'Map',
+      array: 'Array',
+    });
+    {
+      const map = doc2.getMap('map');
+      expect(map.get('1')).toBe(1);
     }
   });
 });

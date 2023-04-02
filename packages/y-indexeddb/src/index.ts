@@ -5,12 +5,56 @@ import {
   diffUpdate,
   Doc,
   encodeStateAsUpdate,
+  encodeStateVector,
   mergeUpdates,
+  UndoManager,
 } from 'yjs';
 
 const indexeddbOrigin = Symbol('indexeddb-provider-origin');
+const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
+
+type Metadata = Record<string, 'Text' | 'Map' | 'Array'>;
+
+export function revertUpdate(
+  doc: Doc,
+  snapshotUpdate: Uint8Array,
+  metadata: Metadata
+) {
+  const snapshotDoc = new Doc();
+  applyUpdate(snapshotDoc, snapshotUpdate, snapshotOrigin);
+
+  const currentStateVector = encodeStateVector(doc);
+  const snapshotStateVector = encodeStateVector(snapshotDoc);
+
+  const changesSinceSnapshotUpdate = encodeStateAsUpdate(
+    doc,
+    snapshotStateVector
+  );
+  const undoManager = new UndoManager(
+    [...snapshotDoc.share.keys()].map(key => {
+      if (metadata[key] === 'Text') {
+        return snapshotDoc.getText(key);
+      } else if (metadata[key] === 'Map') {
+        return snapshotDoc.getMap(key);
+      } else if (metadata[key] === 'Array') {
+        return snapshotDoc.getArray(key);
+      }
+      throw new Error('Unknown type');
+    }),
+    {
+      trackedOrigins: new Set([snapshotOrigin]),
+    }
+  );
+  applyUpdate(snapshotDoc, changesSinceSnapshotUpdate, snapshotOrigin);
+  undoManager.undo();
+  const revertChangesSinceSnapshotUpdate = encodeStateAsUpdate(
+    snapshotDoc,
+    currentStateVector
+  );
+  applyUpdate(doc, revertChangesSinceSnapshotUpdate, snapshotOrigin);
+}
 
 export class EarlyDisconnectError extends Error {
   constructor() {
@@ -68,6 +112,52 @@ export interface OldYjsDB extends DBSchema {
     value: Uint8Array;
   };
 }
+
+export const markMilestone = async (
+  id: string,
+  doc: Doc,
+  name: string,
+  dbName = 'affine-local'
+): Promise<void> => {
+  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+    upgrade: upgradeDB,
+  });
+  const db = await dbPromise;
+  const store = db
+    .transaction('milestone', 'readwrite')
+    .objectStore('milestone');
+  const milestone = await store.get('id');
+  const binary = encodeStateAsUpdate(doc);
+  if (!milestone) {
+    await store.put({
+      id,
+      milestone: {
+        [name]: binary,
+      },
+    });
+  } else {
+    milestone.milestone[name] = binary;
+    await store.put(milestone);
+  }
+};
+
+export const getMilestones = async (
+  id: string,
+  dbName = 'affine-local'
+): Promise<null | WorkspaceMilestone['milestone']> => {
+  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+    upgrade: upgradeDB,
+  });
+  const db = await dbPromise;
+  const store = db
+    .transaction('milestone', 'readonly')
+    .objectStore('milestone');
+  const milestone = await store.get(id);
+  if (!milestone) {
+    return null;
+  }
+  return milestone.milestone;
+};
 
 export const createIndexedDBProvider = (
   id: string,
