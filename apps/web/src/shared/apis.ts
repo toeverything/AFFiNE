@@ -8,11 +8,6 @@ import { currentAffineUserAtom } from '@affine/workspace/affine/atom';
 import type { LoginResponse } from '@affine/workspace/affine/login';
 import { parseIdToken, setLoginStorage } from '@affine/workspace/affine/login';
 import { jotaiStore } from '@affine/workspace/atom';
-import {
-  getMilestones,
-  markMilestone,
-  revertUpdate,
-} from '@toeverything/y-indexeddb';
 
 import { isValidIPAddress } from '../utils';
 
@@ -78,37 +73,6 @@ if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_DEBUG = {
     loginMockUser1,
     loginMockUser2,
-    markMilestone: async (name: string) => {
-      if (currentWorkspace) {
-        const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-        const doc = blockSuiteWorkspace.doc;
-        await markMilestone(blockSuiteWorkspace.id, doc, name);
-        debugLogger.info('markMilestone', name, blockSuiteWorkspace.id);
-      }
-    },
-    listMilestone: async () => {
-      if (currentWorkspace) {
-        const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-        const list = await getMilestones(blockSuiteWorkspace.id);
-        debugLogger.info('listMilestone', list);
-      }
-    },
-    revertMilestone: async (name: string) => {
-      if (currentWorkspace) {
-        const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-        const doc = blockSuiteWorkspace.doc;
-        const list = await getMilestones(blockSuiteWorkspace.id);
-        if (!list) {
-          debugLogger.info('no milestone');
-          return;
-        }
-        debugLogger.info('listMilestone', list);
-        const milestone = list[name];
-        if (milestone) {
-          revertUpdate(doc, milestone, () => 'Map');
-        }
-      }
-    },
   };
 }
 

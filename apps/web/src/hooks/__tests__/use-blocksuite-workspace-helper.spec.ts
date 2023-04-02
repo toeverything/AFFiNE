@@ -14,21 +14,21 @@ import { usePageMeta } from '../use-page-meta';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 
+function handleNewPage(page: Page) {
+  const pageBlockId = page.addBlock('affine:page', { title: '' });
+  const frameId = page.addBlock('affine:frame', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, frameId);
+}
+
 beforeEach(() => {
   blockSuiteWorkspace = new BlockSuiteWorkspace({
     id: 'test',
   })
     .register(AffineSchemas)
     .register(__unstableSchemas);
-  blockSuiteWorkspace.slots.pageAdded.on(pageId => {
-    const page = blockSuiteWorkspace.getPage(pageId) as Page;
-    const pageBlockId = page.addBlock('affine:page', { title: '' });
-    const frameId = page.addBlock('affine:frame', {}, pageBlockId);
-    page.addBlock('affine:paragraph', {}, frameId);
-  });
-  blockSuiteWorkspace.createPage('page0');
-  blockSuiteWorkspace.createPage('page1');
-  blockSuiteWorkspace.createPage('page2');
+  handleNewPage(blockSuiteWorkspace.createPage('page0'));
+  handleNewPage(blockSuiteWorkspace.createPage('page1'));
+  handleNewPage(blockSuiteWorkspace.createPage('page2'));
 });
 
 describe('useBlockSuiteWorkspaceHelper', () => {
@@ -45,5 +45,21 @@ describe('useBlockSuiteWorkspaceHelper', () => {
     expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
     pageMetaHook.rerender();
     expect(pageMetaHook.result.current.length).toBe(4);
+  });
+
+  test('milestone', async () => {
+    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
+    const helperHook = renderHook(() =>
+      useBlockSuiteWorkspaceHelper(blockSuiteWorkspace)
+    );
+    await helperHook.result.current.markMilestone('test');
+    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
+    handleNewPage(helperHook.result.current.createPage('page4'));
+    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(4);
+    expect(await helperHook.result.current.listMilestone()).toHaveProperty(
+      'test'
+    );
+    await helperHook.result.current.revertMilestone('test');
+    expect(blockSuiteWorkspace.meta.pageMetas.length).toBe(3);
   });
 });
