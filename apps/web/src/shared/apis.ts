@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { config } from '@affine/env';
 import {
   createUserApis,
@@ -29,6 +30,8 @@ const affineApis = {} as ReturnType<typeof createUserApis> &
   ReturnType<typeof createWorkspaceApis>;
 Object.assign(affineApis, createUserApis(prefixUrl));
 Object.assign(affineApis, createWorkspaceApis(prefixUrl));
+
+const debugLogger = new DebugLogger('affine-debug-apis');
 
 if (!globalThis.AFFINE_APIS) {
   globalThis.AFFINE_APIS = affineApis;

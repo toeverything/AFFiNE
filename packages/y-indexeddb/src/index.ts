@@ -15,12 +15,10 @@ const snapshotOrigin = Symbol('snapshot-origin');
 
 let mergeCount = 500;
 
-type Metadata = Record<string, 'Text' | 'Map' | 'Array'>;
-
 export function revertUpdate(
   doc: Doc,
   snapshotUpdate: Uint8Array,
-  metadata: Metadata
+  getMetadata: (key: string) => 'Text' | 'Map' | 'Array'
 ) {
   const snapshotDoc = new Doc();
   applyUpdate(snapshotDoc, snapshotUpdate, snapshotOrigin);
@@ -34,11 +32,12 @@ export function revertUpdate(
   );
   const undoManager = new UndoManager(
     [...snapshotDoc.share.keys()].map(key => {
-      if (metadata[key] === 'Text') {
+      const type = getMetadata(key);
+      if (type === 'Text') {
         return snapshotDoc.getText(key);
-      } else if (metadata[key] === 'Map') {
+      } else if (type === 'Map') {
         return snapshotDoc.getMap(key);
-      } else if (metadata[key] === 'Array') {
+      } else if (type === 'Array') {
         return snapshotDoc.getArray(key);
       }
       throw new Error('Unknown type');
