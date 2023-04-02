@@ -1,5 +1,5 @@
 import { displayFlex, styled } from '@affine/component';
-import { getEnvironment } from '@affine/env/index';
+import { getEnvironment } from '@affine/env';
 import Link from 'next/link';
 
 export const StyledSliderBarWrapper = styled('div')(() => {
