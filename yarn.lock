@@ -176,9 +176,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/web-legacy@workspace:apps/web":
+"@affine/web-legacy@workspace:apps/web-legacy":
   version: 0.0.0-use.local
-  resolution: "@affine/web-legacy@workspace:apps/web"
+  resolution: "@affine/web-legacy@workspace:apps/web-legacy"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/component": "workspace:*"
@@ -235,9 +235,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/web@workspace:apps/web-next":
+"@affine/web@workspace:apps/web":
   version: 0.0.0-use.local
-  resolution: "@affine/web@workspace:apps/web-next"
+  resolution: "@affine/web@workspace:apps/web"
   dependencies:
     "@types/react": ^18.0.31
     "@types/react-dom": ^18.0.11
