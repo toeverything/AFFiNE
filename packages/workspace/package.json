@@ -19,6 +19,7 @@
     "@affine/env": "workspace:*",
     "@blocksuite/blocks": "0.5.0-20230326033652-70ca43c",
     "@blocksuite/store": "0.5.0-20230326033652-70ca43c",
+    "@toeverything/y-indexeddb": "workspace:*",
     "firebase": "^9.19.1",
     "jotai": "^2.0.3",
     "js-base64": "^3.7.5",
