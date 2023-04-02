@@ -27,6 +27,17 @@ describe('crud', () => {
     expect(await CRUD.list()).toEqual([]);
   });
 
+  test('delete not exist', async () => {
+    expect(async () =>
+      CRUD.delete({
+        id: 'not_exist',
+        flavour: WorkspaceFlavour.LOCAL,
+        blockSuiteWorkspace: new Workspace({ id: 'test' }),
+        providers: [],
+      })
+    ).rejects.toThrowError();
+  });
+
   test('create & delete', async () => {
     const workspace = new Workspace({ id: 'test' })
       .register(AffineSchemas)
