@@ -176,21 +176,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/web-next@workspace:apps/web-next":
+"@affine/web-legacy@workspace:apps/web":
   version: 0.0.0-use.local
-  resolution: "@affine/web-next@workspace:apps/web-next"
-  dependencies:
-    "@types/react": ^18.0.31
-    "@types/react-dom": ^18.0.11
-    next: ^13.2.5-canary.25
-    react: 18.2.0
-    react-dom: 18.2.0
-  languageName: unknown
-  linkType: soft
-
-"@affine/web@workspace:apps/web":
-  version: 0.0.0-use.local
-  resolution: "@affine/web@workspace:apps/web"
+  resolution: "@affine/web-legacy@workspace:apps/web"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/component": "workspace:*"
@@ -244,6 +232,18 @@ __metadata:
     y-protocols: ^1.0.5
     yjs: ^13.5.51
     zod: ^3.21.4
+  languageName: unknown
+  linkType: soft
+
+"@affine/web@workspace:apps/web-next":
+  version: 0.0.0-use.local
+  resolution: "@affine/web@workspace:apps/web-next"
+  dependencies:
+    "@types/react": ^18.0.31
+    "@types/react-dom": ^18.0.11
+    next: ^13.2.5-canary.25
+    react: 18.2.0
+    react-dom: 18.2.0
   languageName: unknown
   linkType: soft
 

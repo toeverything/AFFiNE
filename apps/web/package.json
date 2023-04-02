@@ -1,5 +1,5 @@
 {
-  "name": "@affine/web",
+  "name": "@affine/web-legacy",
   "private": true,
   "scripts": {
     "dev": "node src/server.mjs",
