@@ -1,1 +1,1 @@
-import '../../apps/electron/layers/preload/preload.autogen.d.ts';
+import '../../apps/electron/layers/preload/preload.d.ts';
