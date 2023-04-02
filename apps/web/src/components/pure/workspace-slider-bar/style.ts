@@ -1,4 +1,5 @@
 import { displayFlex, styled } from '@affine/component';
+import { getEnvironment } from '@affine/env';
 import Link from 'next/link';
 
 export const StyledSliderBarWrapper = styled('div')(() => {
@@ -6,6 +7,9 @@ export const StyledSliderBarWrapper = styled('div')(() => {
     height: '100%',
     width: 'auto',
     position: 'relative',
+    'button, a': {
+      userSelect: 'none',
+    },
   };
 });
 
@@ -14,10 +18,13 @@ export const StyledSliderBar = styled('div')<{
   show: boolean;
   floating: boolean;
 }>(({ theme, show, floating, resizing }) => {
+  const env = getEnvironment();
+  const macosElectron = env.isDesktop && env.isMacOs;
   return {
     whiteSpace: 'nowrap',
     height: '100%',
-    background: theme.colors.hubBackground,
+    background:
+      !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
     zIndex: theme.zIndex.modal,
     transition: !resizing ? 'width .15s, padding .15s' : '',
     padding: show ? '0 4px' : '0',
@@ -33,10 +40,10 @@ export const StyledSliderBar = styled('div')<{
 });
 export const StyledSidebarSwitchWrapper = styled('div')(() => {
   return {
-    height: '48px',
+    height: '52px',
     flexShrink: 0,
     padding: '0 16px',
-    ...displayFlex('flex-start', 'center'),
+    ...displayFlex('flex-end', 'center'),
   };
 });
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
@@ -61,7 +68,7 @@ export const StyledLink = styled(Link)(() => {
 });
 export const StyledNewPageButton = styled('button')(({ theme }) => {
   return {
-    height: '48px',
+    height: '52px',
     ...displayFlex('flex-start', 'center'),
     borderTop: '1px solid',
     borderColor: theme.colors.borderColor,

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { getUaHelper } from './ua-helper';
 
 type BrowserBase = {
-  isDesktop: false;
+  isDesktop: boolean;
   isBrowser: true;
   isServer: false;
   isDebug: boolean;
@@ -41,22 +41,16 @@ type Server = {
   isDebug: boolean;
 };
 
-type Desktop = Browser & {
+interface Desktop extends ChromeBrowser {
   isDesktop: true;
   isBrowser: true;
   isServer: false;
   isDebug: boolean;
-};
+}
 
 export type Environment = Browser | Server | Desktop;
 
 let environment: Environment | null = null;
-
-declare global {
-  interface Window {
-    CLIENT_APP?: boolean;
-  }
-}
 
 export function getEnvironment() {
   if (environment) {
@@ -73,7 +67,7 @@ export function getEnvironment() {
   } else {
     const uaHelper = getUaHelper();
     environment = {
-      isDesktop: window.CLIENT_APP,
+      isDesktop: window.appInfo?.electron,
       isBrowser: true,
       isServer: false,
       isDebug,

@@ -64,6 +64,7 @@ export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
             lineHeight: '1',
             justifyContent: 'center',
             alignItems: 'center',
+            userSelect: 'none',
           }}
         >
           {(name || 'AFFiNE').substring(0, 1)}

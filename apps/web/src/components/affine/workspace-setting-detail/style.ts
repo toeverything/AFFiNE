@@ -4,15 +4,15 @@ export const StyledSettingContainer = styled('div')(() => {
   return {
     display: 'flex',
     flexDirection: 'column',
-    padding: '48px 0 0 48px',
-    height: 'calc(100vh - 48px)',
+    padding: '52px 0 0 52px',
+    height: 'calc(100vh - 52px)',
   };
 });
 
 export const StyledSettingSidebar = styled('div')(() => {
   {
     return {
-      marginTop: '48px',
+      marginTop: '52px',
     };
   }
 });

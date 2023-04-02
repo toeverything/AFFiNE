@@ -5,23 +5,27 @@ import {
   textEllipsis,
 } from '@affine/component';
 
-export const StyledHeaderContainer = styled('div')<{ hasWarning: boolean }>(
-  ({ theme, hasWarning }) => {
-    return {
-      height: hasWarning ? '96px' : '48px',
-      flexShrink: 0,
-      position: 'sticky',
-      top: 0,
-      background: theme.colors.pageBackground,
-      zIndex: 1,
-    };
-  }
-);
+export const StyledHeaderContainer = styled('div')<{
+  hasWarning: boolean;
+}>(({ theme, hasWarning }) => {
+  return {
+    height: hasWarning ? '96px' : '52px',
+    flexShrink: 0,
+    position: 'sticky',
+    top: 0,
+    background: theme.colors.pageBackground,
+    zIndex: 1,
+    WebkitAppRegion: 'drag',
+    button: {
+      WebkitAppRegion: 'no-drag',
+    },
+  };
+});
 export const StyledHeader = styled('div')<{ hasWarning: boolean }>(
   ({ theme }) => {
     return {
       flexShrink: 0,
-      height: '48px',
+      height: '52px',
       width: '100%',
       padding: '0 20px',
       ...displayFlex('space-between', 'center'),
@@ -56,6 +60,7 @@ export const StyledTitle = styled('div')(({ theme }) => {
       maxWidth: '180px',
     },
     transition: 'max-width .15s',
+    userSelect: 'none',
     ...textEllipsis(1),
   };
 });

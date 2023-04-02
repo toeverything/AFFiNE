@@ -12,6 +12,7 @@ export const StyledListItem = styled('div')<{
     cursor: 'pointer',
     marginBottom: '4px',
     position: 'relative',
+    userSelect: 'none',
     ...displayFlex('flex-start', 'center'),
     ...(disabled
       ? {
@@ -72,6 +73,7 @@ export const StyledCollapseItem = styled('div')<{
       : theme.colors.textColor,
     cursor: disable ? 'not-allowed' : 'pointer',
     background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
+    userSelect: 'none',
 
     span: {
       flexGrow: '1',

@@ -62,7 +62,7 @@ async function main() {
             build.onEnd(() => {
               generateAsync({
                 input: 'layers/preload/src/**/*.ts',
-                output: 'layers/preload/preload.autogen.d.ts',
+                output: 'layers/preload/preload.d.ts',
               });
               if (initialBuild) {
                 console.log(`[preload] has changed`);
