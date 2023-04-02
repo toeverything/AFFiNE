@@ -1,5 +1,4 @@
 import { assertEquals } from '@blocksuite/global/utils';
-import getConfig from 'next/config';
 import { z } from 'zod';
 
 import { getUaHelper } from './ua-helper';
@@ -121,13 +120,24 @@ export const publicRuntimeConfigSchema = z.object({
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;
 
-const { publicRuntimeConfig: config } =
-  getConfig() ??
-  ({
-    publicRuntimeConfig: {},
-  } as {
-    publicRuntimeConfig: PublicRuntimeConfig;
-  });
+const config = {
+  PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
+  BUILD_DATE: new Date().toISOString(),
+  gitVersion: '',
+  hash: '',
+  serverAPI: '',
+  editorVersion: '',
+  enableIndexedDBProvider: Boolean(process.env.ENABLE_IDB_PROVIDER ?? '1'),
+  enableBroadCastChannelProvider: Boolean(
+    process.env.ENABLE_BC_PROVIDER ?? '1'
+  ),
+  prefetchWorkspace: Boolean(process.env.PREFETCH_WORKSPACE ?? '1'),
+  exposeInternal: Boolean(process.env.EXPOSE_INTERNAL ?? '1'),
+  enableDebugPage: Boolean(
+    process.env.ENABLE_DEBUG_PAGE ?? process.env.NODE_ENV === 'development'
+  ),
+  enableSubpage: Boolean(process.env.ENABLE_SUBPAGE),
+};
 
 publicRuntimeConfigSchema.parse(config);
 
