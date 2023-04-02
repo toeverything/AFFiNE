@@ -23,7 +23,9 @@ import { isMacOS } from '../../utils';
  */
 
 contextBridge.exposeInMainWorld('apis', {
-  workspaceSync: (id: string) => ipcRenderer.invoke('workspaceSync', id),
+  workspaceSync: (id: string) => ipcRenderer.invoke('octo:workspace-sync', id),
+  // ui
+  changeTheme: (theme: string) => ipcRenderer.invoke('ui:theme-change', theme),
 });
 
 contextBridge.exposeInMainWorld('appInfo', {

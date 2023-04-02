@@ -7,6 +7,9 @@ interface Window {
    *
    * @see https://github.com/cawa-93/dts-for-context-bridge
    */
-  readonly apis: { workspaceSync: (id: string) => Promise<any> };
+  readonly apis: {
+    workspaceSync: (id: string) => Promise<any>;
+    changeTheme: (theme: string) => Promise<any>;
+  };
   readonly appInfo: { electron: boolean; isMacOS: boolean };
 }

@@ -27,6 +27,7 @@ export const StyledWorkspaceName = styled('div')(() => {
   return {
     lineHeight: '24px',
     fontWeight: 600,
+    userSelect: 'none',
     ...textEllipsis(1),
   };
 });
@@ -37,6 +38,7 @@ export const StyledWorkspaceStatus = styled('div')(({ theme }) => {
     ...displayFlex('flex-start', 'center'),
     fontSize: theme.font.sm,
     color: theme.colors.secondaryTextColor,
+    userSelect: 'none',
     svg: {
       color: theme.colors.iconColor,
       fontSize: theme.font.base,

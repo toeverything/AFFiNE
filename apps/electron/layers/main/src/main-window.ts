@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
@@ -13,14 +13,18 @@ async function createWindow() {
   });
 
   const browserWindow = new BrowserWindow({
-    titleBarStyle: isMacOS() ? 'hidden' : 'default',
-    trafficLightPosition: { x: 10, y: 16 },
+    titleBarStyle: isMacOS() ? 'hiddenInset' : 'default',
+    trafficLightPosition: { x: 20, y: 18 },
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
+    transparent: true,
+    visualEffectState: 'active',
+    vibrancy: 'under-window',
     height: mainWindowState.height,
     show: false, // Use 'ready-to-show' event to show window
     webPreferences: {
+      webgl: true,
       contextIsolation: true,
       sandbox: false,
       webviewTag: false, // The webview tag is not recommended. Consider alternatives like iframe or Electron's BrowserView. https://www.electronjs.org/docs/latest/api/webview-tag#warning
@@ -28,6 +32,8 @@ async function createWindow() {
       preload: join(__dirname, '../preload/index.js'),
     },
   });
+
+  nativeTheme.themeSource = 'light';
 
   mainWindowState.manage(browserWindow);
 

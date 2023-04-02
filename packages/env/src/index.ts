@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { getUaHelper } from './ua-helper';
 
 type BrowserBase = {
-  isDesktop: false;
+  isDesktop: boolean;
   isBrowser: true;
   isServer: false;
   isDebug: boolean;
@@ -41,12 +41,12 @@ type Server = {
   isDebug: boolean;
 };
 
-type Desktop = Browser & {
+interface Desktop extends BrowserBase {
   isDesktop: true;
   isBrowser: true;
   isServer: false;
   isDebug: boolean;
-};
+}
 
 export type Environment = Browser | Server | Desktop;
 

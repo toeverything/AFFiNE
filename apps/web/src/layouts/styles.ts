@@ -5,7 +5,6 @@ export const StyledPage = styled('div')<{ resizing?: boolean }>(
     return {
       cursor: resizing ? 'col-resize' : 'default',
       height: '100vh',
-      backgroundColor: theme.colors.pageBackground,
       transition: 'background-color .5s',
       display: 'flex',
       flexGrow: '1',
@@ -32,6 +31,7 @@ export const MainContainerWrapper = styled('div')(({ theme }) => {
     position: 'relative',
     maxWidth: '100vw',
     overflow: 'auto',
+    backgroundColor: theme.colors.pageBackground,
   };
 });
 
