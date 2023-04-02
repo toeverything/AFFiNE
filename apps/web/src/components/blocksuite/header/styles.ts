@@ -7,10 +7,7 @@ import {
 
 export const StyledHeaderContainer = styled('div')<{
   hasWarning: boolean;
-  sidebarOpen: boolean;
-}>(({ theme, hasWarning, sidebarOpen }) => {
-  const macDesktop = environment.isDesktop && environment.isMacOs;
-
+}>(({ theme, hasWarning }) => {
   return {
     height: hasWarning ? '96px' : '52px',
     flexShrink: 0,
