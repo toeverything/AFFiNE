@@ -254,6 +254,7 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
     ws: ^8.13.0
+    y-indexeddb: ^9.0.10
     y-protocols: ^1.0.5
     yjs: ^13.5.51
     zod: ^3.21.4

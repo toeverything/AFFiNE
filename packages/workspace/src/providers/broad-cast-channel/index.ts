@@ -1,4 +1,4 @@
-import type { BroadCastChannelProvider } from '@affine/workspace/type';
+import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import type { Awareness } from 'y-protocols/awareness';
 import {
@@ -6,8 +6,8 @@ import {
   encodeAwarenessUpdate,
 } from 'y-protocols/awareness';
 
-import { BlockSuiteWorkspace } from '../../../shared';
-import { providerLogger } from '../../logger';
+import type { BroadCastChannelProvider } from '../../type';
+import { localProviderLogger } from '../logger';
 import type {
   AwarenessChanges,
   BroadcastChannelMessageEvent,
@@ -86,7 +86,10 @@ export const createBroadCastChannelProvider = (
           onmessage: handleBroadcastChannelMessage,
         }
       );
-      providerLogger.info('connect broadcast channel', blockSuiteWorkspace.id);
+      localProviderLogger.info(
+        'connect broadcast channel',
+        blockSuiteWorkspace.id
+      );
       const docDiff = Y.encodeStateVector(doc);
       broadcastChannel.postMessage(['doc:diff', docDiff, awareness.clientID]);
       const docUpdateV2 = Y.encodeStateAsUpdate(doc);
@@ -101,7 +104,7 @@ export const createBroadCastChannelProvider = (
     },
     disconnect: () => {
       assertExists(broadcastChannel);
-      providerLogger.info(
+      localProviderLogger.info(
         'disconnect broadcast channel',
         blockSuiteWorkspace.id
       );
