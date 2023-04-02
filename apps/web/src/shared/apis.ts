@@ -89,7 +89,6 @@ if (!globalThis.AFFINE_APIS) {
     listMilestone: async () => {
       if (currentWorkspace) {
         const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-        const doc = blockSuiteWorkspace.doc;
         const list = await getMilestones(blockSuiteWorkspace.id);
         debugLogger.info('listMilestone', list);
       }
