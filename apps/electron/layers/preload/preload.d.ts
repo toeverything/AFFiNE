@@ -9,7 +9,8 @@ interface Window {
    */
   readonly apis: {
     workspaceSync: (id: string) => Promise<any>;
-    changeTheme: (theme: string) => Promise<any>;
+    onThemeChange: (theme: string) => Promise<any>;
+    onSidebarVisibilityChange: (visible: boolean) => Promise<any>;
   };
   readonly appInfo: { electron: boolean; isMacOS: boolean };
 }

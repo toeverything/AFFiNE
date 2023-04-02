@@ -70,19 +70,22 @@ async function createWindow() {
   return browserWindow;
 }
 
+// singleton
+let browserWindow: Electron.BrowserWindow | undefined;
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
 export async function restoreOrCreateWindow() {
-  let window = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
+  browserWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
 
-  if (window === undefined) {
-    window = await createWindow();
+  if (browserWindow === undefined) {
+    browserWindow = await createWindow();
   }
 
-  if (window.isMinimized()) {
-    window.restore();
+  if (browserWindow.isMinimized()) {
+    browserWindow.restore();
   }
 
-  window.focus();
+  browserWindow.focus();
+  return browserWindow;
 }

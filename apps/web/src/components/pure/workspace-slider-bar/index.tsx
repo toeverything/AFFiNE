@@ -10,7 +10,7 @@ import {
 import type { Page, PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import {
   useSidebarResizing,
@@ -112,6 +112,9 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
       { once: true }
     );
   }, [setIsResizing, setSidebarOpen, setSliderWidth]);
+  useEffect(() => {
+    window.apis?.onSidebarVisibilityChange(sidebarOpen);
+  }, [sidebarOpen]);
   return (
     <>
       <StyledSliderBarWrapper data-testid="sliderBar-root">

@@ -16,7 +16,6 @@ export const StyledHeaderContainer = styled('div')<{
     flexShrink: 0,
     position: 'sticky',
     top: 0,
-    paddingLeft: !sidebarOpen && macDesktop ? '60px' : '0',
     background: theme.colors.pageBackground,
     zIndex: 1,
     WebkitAppRegion: 'drag',
