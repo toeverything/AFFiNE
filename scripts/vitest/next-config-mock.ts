@@ -13,6 +13,7 @@ export default function getConfig() {
       prefetchWorkspace: false,
       exposeInternal: true,
       enableSubpage: true,
+      enableChangeLog: true,
     },
   };
 }

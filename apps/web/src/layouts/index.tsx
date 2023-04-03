@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { config } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
@@ -339,7 +340,11 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
               {!isPublicWorkspace && (
                 <HelpIsland
                   showList={
-                    router.query.pageId ? undefined : ['whatNew', 'contact']
+                    router.query.pageId
+                      ? undefined
+                      : config.enableChangeLog
+                      ? ['whatNew', 'contact']
+                      : ['contact']
                   }
                 />
               )}
