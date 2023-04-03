@@ -168,16 +168,12 @@ jobs:
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
       - name: make build
-        run: yarn make-macos-x64
+        run: yarn make-macos-arm64
         working-directory: apps/electron
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-
-      - name: make build
-        run: yarn make-macos-arm64
-        working-directory: apps/electron
 
       - name: Save arm64 artifacts
         run: |
