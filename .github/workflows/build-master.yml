@@ -134,10 +134,17 @@ jobs:
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+        volumes:
+          - ./github/container/octobase:/app
         ports:
           - 3000:3000
-        volumes:
-          - ./.github/container/octobase:/app
+        env:
+          SIGN_KEY: 'test123'
+          RUST_LOG: 'debug'
+          JWST_DEV: '1'
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
 
     steps:
       - uses: actions/checkout@v3
@@ -190,10 +197,17 @@ jobs:
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+        volumes:
+          - ./github/container/octobase:/app
         ports:
           - 3000:3000
-        volumes:
-          - ./.github/container/octobase:/app
+        env:
+          SIGN_KEY: 'test123'
+          RUST_LOG: 'debug'
+          JWST_DEV: '1'
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.ACTIONS_PACKAGE_PUBLISH }}
 
     steps:
       - uses: actions/checkout@v3
