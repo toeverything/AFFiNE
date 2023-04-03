@@ -66,9 +66,7 @@ export const AffinePlugin: WorkspacePlugin<WorkspaceFlavour.AFFINE> = {
       const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(
         blockSuiteWorkspace.doc
       );
-      const { id } = await affineApis.createWorkspace(
-        new Blob([binary.buffer])
-      );
+      const { id } = await affineApis.createWorkspace(binary);
       // fixme: syncing images
       const newWorkspaceId = id;
 
