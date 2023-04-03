@@ -1,4 +1,3 @@
-import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import {
   DeleteTemporarilyIcon,
@@ -199,7 +198,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
                 openPage={openPage}
                 currentWorkspace={currentWorkspace}
               />
-              {config.enableSubpage && !!blockSuiteWorkspace && (
+              {!!blockSuiteWorkspace && (
                 <Pivots
                   blockSuiteWorkspace={blockSuiteWorkspace}
                   openPage={openPage}
