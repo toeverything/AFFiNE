@@ -92,6 +92,7 @@ __metadata:
     "@storybook/react-vite": 7.0.0
     "@storybook/test-runner": 0.10.0-next.12
     "@storybook/testing-library": 0.0.14-next.2
+    "@toeverything/hooks": "workspace:*"
     "@types/react": ^18.0.31
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.0.11
@@ -7448,6 +7449,7 @@ __metadata:
     typescript: ^5.0.3
     vite: ^4.2.1
     vite-plugin-istanbul: ^4.0.1
+    vite-tsconfig-paths: ^4.0.8
     vitest: ^0.29.8
     vitest-fetch-mock: ^0.2.2
   languageName: unknown
@@ -18447,6 +18449,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tsconfck@npm:^2.1.0":
+  version: 2.1.1
+  resolution: "tsconfck@npm:2.1.1"
+  peerDependencies:
+    typescript: ^4.3.5 || ^5.0.0
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  bin:
+    tsconfck: bin/tsconfck.js
+  checksum: c531525f39763cbbd7e6dbf5e29f12a7ae67eb8712816c14d06a9db6cbdc9dda9ac3cd6db07ef645f8a4cdea906447ab44e2c8679e320871cf9dd598756e8c83
+  languageName: node
+  linkType: hard
+
 "tsconfig-paths@npm:^3.14.1":
   version: 3.14.2
   resolution: "tsconfig-paths@npm:3.14.2"
@@ -19095,6 +19111,22 @@ __metadata:
   peerDependencies:
     vite: ">=2.9.1 <= 5"
   checksum: 96a457afc57828f3d9f4c9a9e6915b94d6fe3d337271c5b9f06dc8d616c6b4a6789155e5b8fa717f3d986a0f19c735fe01f909434cc34ffa797a34def5bcab9f
+  languageName: node
+  linkType: hard
+
+"vite-tsconfig-paths@npm:^4.0.8":
+  version: 4.0.8
+  resolution: "vite-tsconfig-paths@npm:4.0.8"
+  dependencies:
+    debug: ^4.1.1
+    globrex: ^0.1.2
+    tsconfck: ^2.1.0
+  peerDependencies:
+    vite: "*"
+  peerDependenciesMeta:
+    vite:
+      optional: true
+  checksum: 4ec41f5d2eb167c1d7dfa6dd196ce253406c071671199239f9721fd5f8aee5b0107503a520ca996da67bad7d2750829534ec6e93801abe6d24fbc71d46ae8665
   languageName: node
   linkType: hard
 
