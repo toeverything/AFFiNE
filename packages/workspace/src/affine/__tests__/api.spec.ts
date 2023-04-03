@@ -236,6 +236,7 @@ describe('api', () => {
       const publicBinary = await workspaceApis.downloadWorkspace(id, true);
       expect(binary).toBeInstanceOf(ArrayBuffer);
       expect(publicBinary).toBeInstanceOf(ArrayBuffer);
+      expect(binary).toEqual(publicBinary);
       expect(binary.byteLength).toEqual(publicBinary.byteLength);
     },
     {
