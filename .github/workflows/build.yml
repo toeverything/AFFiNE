@@ -83,8 +83,6 @@ jobs:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
         ports:
           - 3000:3000
-        volumes:
-          - ./github/container/octobase:/app
         env:
           SIGN_KEY: 'test123'
           RUST_LOG: 'debug'
@@ -140,8 +138,6 @@ jobs:
     services:
       octobase:
         image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
-        volumes:
-          - ./github/container/octobase:/app
         ports:
           - 3000:3000
         env:
