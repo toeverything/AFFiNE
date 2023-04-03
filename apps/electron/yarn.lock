@@ -59,6 +59,7 @@ __metadata:
     "@storybook/react-vite": 7.0.0
     "@storybook/test-runner": 0.10.0-next.12
     "@storybook/testing-library": 0.0.14-next.2
+    "@toeverything/hooks": "workspace:*"
     "@types/react": ^18.0.31
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.0.11
@@ -5707,7 +5708,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/hooks@workspace:../../packages/hooks":
+"@toeverything/hooks@workspace:*, @toeverything/hooks@workspace:../../packages/hooks":
   version: 0.0.0-use.local
   resolution: "@toeverything/hooks@workspace:../../packages/hooks"
   languageName: unknown
