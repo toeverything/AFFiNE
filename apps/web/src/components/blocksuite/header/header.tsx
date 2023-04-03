@@ -7,6 +7,7 @@ import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
+import { ShareMenu } from './header-right-items/share-menu';
 import SyncUser from './header-right-items/SyncUser';
 import ThemeModeSwitch from './header-right-items/theme-mode-switch';
 import TrashButtonGroup from './header-right-items/TrashButtonGroup';
@@ -40,13 +41,15 @@ type HeaderRightItemNames =
   | 'editorOptionMenu'
   | 'trashButtonGroup'
   | 'themeModeSwitch'
-  | 'syncUser';
+  | 'syncUser'
+  | 'shareMenu';
 
 const HeaderRightItems: Record<HeaderRightItemNames, React.FC> = {
   editorOptionMenu: EditorOptionMenu,
   trashButtonGroup: TrashButtonGroup,
   themeModeSwitch: ThemeModeSwitch,
   syncUser: SyncUser,
+  shareMenu: ShareMenu,
 };
 
 export type HeaderProps = PropsWithChildren<{
