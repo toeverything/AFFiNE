@@ -52,7 +52,7 @@
     "@vitejs/plugin-react": "^3.1.0",
     "jest-mock": "^29.5.0",
     "storybook": "7.0.0",
-    "storybook-dark-mode-v7": "3.0.0-alpha.0",
+    "storybook-dark-mode": "^3.0.0",
     "typescript": "^5.0.3",
     "vite": "^4.2.1",
     "yjs": "^13.5.51"
