@@ -10,6 +10,7 @@ import {
   StyledModalWrapper,
   StyledRowButtonWrapper,
 } from './styles';
+
 export type ConfirmProps = {
   title?: string;
   content?: string;
@@ -35,7 +36,7 @@ export const Confirm = ({
 }: ConfirmProps) => {
   const { t } = useTranslation();
   return (
-    <Modal open={open}>
+    <Modal open={open} disablePortal={false}>
       <StyledModalWrapper>
         <ModalCloseButton
           onClick={() => {

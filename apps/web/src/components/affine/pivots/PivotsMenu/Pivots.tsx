@@ -1,3 +1,4 @@
+import type { TreeViewProps } from '@affine/component';
 import { MuiCollapse, TreeView } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { ArrowDownSmallIcon, PivotsIcon } from '@blocksuite/icons';
@@ -6,47 +7,23 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { usePageMetaHelper } from '../../../../hooks/use-page-meta';
 import { toast } from '../../../../utils';
-import { usePivotData } from '../hooks/usePivotData';
-import { usePivotHandler } from '../hooks/usePivotHandler';
-import { PivotRender } from '../PivotRender';
 import { StyledCollapsedButton, StyledPivot } from '../styles';
+import type { NodeRenderProps } from '../types';
 import EmptyItem from './EmptyItem';
 import type { PivotsMenuProps } from './PivotsMenu';
 
+export type PivotsProps = {
+  data: TreeViewProps<NodeRenderProps>['data'];
+} & Pick<PivotsMenuProps, 'blockSuiteWorkspace' | 'currentMeta'>;
 export const Pivots = ({
-  metas,
+  data,
   blockSuiteWorkspace,
   currentMeta,
-}: Pick<PivotsMenuProps, 'metas' | 'blockSuiteWorkspace' | 'currentMeta'>) => {
+}: PivotsProps) => {
   const { t } = useTranslation();
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [showPivot, setShowPivot] = useState(true);
-  const { handleDrop } = usePivotHandler({
-    blockSuiteWorkspace,
-    metas,
-  });
-  const { data } = usePivotData({
-    metas,
-    pivotRender: PivotRender,
-    blockSuiteWorkspace,
-    onClick: (e, node) => {
-      const targetTitle = metas.find(m => m.id === node.id)?.title;
-
-      //
-      handleDrop(currentMeta.id, node.id, {
-        bottomLine: false,
-        topLine: false,
-        internal: true,
-      });
-      toast(`Moved "${currentMeta.title}" to "${targetTitle}"`);
-    },
-  });
-
-  const isPivotEmpty = useMemo(
-    () => metas.filter(meta => !meta.trash).length === 0,
-    [metas]
-  );
-
+  const isPivotEmpty = useMemo(() => data.length === 0, [data]);
   return (
     <>
       <StyledPivot
