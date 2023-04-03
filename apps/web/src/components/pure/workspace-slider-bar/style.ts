@@ -1,6 +1,7 @@
 import { displayFlex, styled } from '@affine/component';
-import { getEnvironment } from '@affine/env';
 import Link from 'next/link';
+
+const macosElectron = environment.isDesktop && environment.isMacOs;
 
 export const StyledSliderBarWrapper = styled('div')(() => {
   return {
@@ -18,8 +19,6 @@ export const StyledSliderBar = styled('div')<{
   show: boolean;
   floating: boolean;
 }>(({ theme, show, floating, resizing }) => {
-  const env = getEnvironment();
-  const macosElectron = env.isDesktop && env.isMacOs;
   return {
     whiteSpace: 'nowrap',
     height: '100%',
@@ -43,7 +42,7 @@ export const StyledSidebarSwitchWrapper = styled('div')(() => {
     height: '52px',
     flexShrink: 0,
     padding: '0 16px',
-    ...displayFlex('flex-end', 'center'),
+    ...displayFlex(macosElectron ? 'flex-end' : 'flex-start', 'center'),
   };
 });
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
@@ -113,7 +112,7 @@ export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
       width: '12px',
       transform: 'translateX(50%)',
       cursor: 'col-resize',
-      zIndex: theme.zIndex.modal + 1,
+      zIndex: theme.zIndex.modal,
       userSelect: 'none',
       ':hover > *': {
         background: 'rgba(0, 0, 0, 0.1)',
