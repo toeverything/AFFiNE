@@ -7,8 +7,10 @@ export default {
   staticDirs: ['../../../apps/web/public'],
   addons: [
     '@storybook/addon-links',
-    'storybook-dark-mode',
+    '@storybook/addon-essentials',
     '@storybook/addon-interactions',
+    '@storybook/addon-storysource',
+    'storybook-dark-mode',
   ],
   framework: {
     name: '@storybook/react-vite',
