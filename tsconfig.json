@@ -28,7 +28,8 @@
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
-      "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"]
+      "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
+      "@toeverything/hooks/*": ["./packages/hooks/src/*"]
     }
   },
   "references": [
@@ -43,6 +44,9 @@
     },
     {
       "path": "./packages/component"
+    },
+    {
+      "path": "./packages/hooks"
     },
     {
       "path": "./packages/i18n"

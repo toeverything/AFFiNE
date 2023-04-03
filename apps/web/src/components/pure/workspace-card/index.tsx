@@ -2,10 +2,10 @@ import { useTranslation } from '@affine/i18n';
 import { PermissionType } from '@affine/workspace/affine/api';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import type React from 'react';
 import { useCallback } from 'react';
 
-import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
 import type { AllWorkspace } from '../../../shared';
 import {
   CloudWorkspaceIcon,

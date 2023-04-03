@@ -27,6 +27,7 @@
     "@emotion/styled": "^11.10.6",
     "@mui/material": "^5.11.15",
     "@sentry/nextjs": "^7.46.0",
+    "@toeverything/hooks": "workspace:*",
     "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.7",
