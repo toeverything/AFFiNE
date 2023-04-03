@@ -5552,6 +5552,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@toeverything/hooks@workspace:../../packages/hooks":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/hooks@workspace:../../packages/hooks"
+  languageName: unknown
+  linkType: soft
+
 "@toeverything/y-indexeddb@workspace:*, @toeverything/y-indexeddb@workspace:../../packages/y-indexeddb":
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:../../packages/y-indexeddb"
