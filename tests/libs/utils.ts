@@ -1,3 +1,4 @@
+import { faker } from '@faker-js/faker';
 import type { Page } from '@playwright/test';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -38,6 +39,16 @@ export async function getBuiltInUser() {
 }
 
 export async function createFakeUser() {
+  const userA = {
+    name: faker.name.fullName(),
+    email: faker.internet.email(),
+    password: faker.internet.password(),
+  };
+  const userB = {
+    name: faker.name.fullName(),
+    email: faker.internet.email(),
+    password: faker.internet.password(),
+  };
   try {
     const response = await Promise.all([
       fetch('http://127.0.0.1:3000/api/user/token', {
