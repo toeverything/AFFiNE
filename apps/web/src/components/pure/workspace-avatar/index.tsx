@@ -1,8 +1,8 @@
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import type React from 'react';
 import { memo } from 'react';
 
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-workspace-avatar-url';
 import type { AllWorkspace, BlockSuiteWorkspace } from '../../../shared';
 import { stringToColour } from '../../../utils';
 

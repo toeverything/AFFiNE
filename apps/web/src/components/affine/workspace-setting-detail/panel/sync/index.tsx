@@ -1,11 +1,11 @@
 import { Content, FlexWrapper, styled } from '@affine/component';
 import { Trans, useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import type React from 'react';
 
 import { useCurrentUser } from '../../../../../hooks/current/use-current-user';
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../../../../hooks/use-blocksuite-workspace-avatar-url';
 import { WorkspaceAvatar } from '../../../../pure/footer';
 import type { PanelProps } from '../../index';
 

@@ -1,23 +1,26 @@
+import type { Workspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useCallback } from 'react';
 import useSWR from 'swr';
 
-import { QueryKey } from '../plugins/affine/fetcher';
-import type { BlockSuiteWorkspace } from '../shared';
-
 export function useBlockSuiteWorkspaceAvatarUrl(
   // todo: remove `null` from type
-  blockSuiteWorkspace: BlockSuiteWorkspace | null
+  blockSuiteWorkspace: Workspace | null
 ) {
   const { data: avatar, mutate } = useSWR(
-    blockSuiteWorkspace
-      ? [
-          QueryKey.getImage,
-          blockSuiteWorkspace.id,
-          blockSuiteWorkspace.meta.avatar,
-        ]
+    blockSuiteWorkspace && blockSuiteWorkspace.meta.avatar
+      ? [blockSuiteWorkspace.id, blockSuiteWorkspace.meta.avatar]
       : null,
     {
+      fetcher: async ([id, avatar]) => {
+        assertExists(blockSuiteWorkspace);
+        const blobs = await blockSuiteWorkspace.blobs;
+        if (blobs) {
+          return blobs.get(avatar);
+        }
+        return null;
+      },
+      suspense: true,
       fallbackData: null,
     }
   );
