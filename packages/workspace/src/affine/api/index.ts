@@ -240,6 +240,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
         method: 'POST',
         body: encodedYDoc,
         headers: {
+          'Content-Type': 'application/octet-stream',
           Authorization: auth.token,
         },
       })
@@ -381,6 +382,17 @@ export function createWorkspaceApis(prefixUrl = '/') {
         .catch(e => {
           throw new RequestError(MessageCode.leaveWorkspaceFailed, e);
         });
+    },
+    downloadPublicWorkspacePage: async (
+      workspaceId: string,
+      pageId: string
+    ): Promise<ArrayBuffer> => {
+      return fetch(
+        prefixUrl + `api/public/workspace/${workspaceId}/${pageId}`,
+        {
+          method: 'GET',
+        }
+      ).then(r => r.arrayBuffer());
     },
     downloadWorkspace: async (
       workspaceId: string,
