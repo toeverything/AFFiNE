@@ -76,6 +76,10 @@ const nextConfig = {
     '@affine/debug',
     '@affine/env',
     '@affine/templates',
+    '@toeverything/hooks',
+    '@affine/workspace',
+    '@affine/jotai',
+    '@toeverything/y-indexeddb',
   ],
   publicRuntimeConfig: {
     PROJECT_NAME: process.env.npm_package_name ?? 'AFFiNE',
@@ -175,6 +179,14 @@ if (process.env.SENTRY_AUTH_TOKEN) {
     'SENTRY_AUTH_TOKEN not found, Sentry monitoring feature will be disabled.'
   );
   delete config.sentry;
+}
+
+if (process.env.PERFSEE_TOKEN) {
+  console.info('perfsee token found.');
+} else {
+  console.warn(
+    'perfsee token not found. performance monitoring will be disabled.'
+  );
 }
 
 export default config;
