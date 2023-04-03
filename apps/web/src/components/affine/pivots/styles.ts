@@ -48,6 +48,7 @@ export const StyledPivot = styled('div')<{
     cursor: disable ? 'not-allowed' : 'pointer',
     background: isOver ? alpha(theme.colors.primaryColor, 0.06) : '',
     fontSize: theme.font.base,
+    userSelect: 'none',
     span: {
       flexGrow: '1',
       textAlign: 'left',

@@ -91,7 +91,7 @@ export const StyledSubTitle = styled('div')(({ theme }) => {
     fontSize: '18px',
     fontWeight: '600',
     color: theme.colors.textColor,
-    marginTop: '48px',
+    marginTop: '52px',
     marginBottom: '8px',
     textAlign: 'center',
   };

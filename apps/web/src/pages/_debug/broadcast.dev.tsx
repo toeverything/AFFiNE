@@ -1,5 +1,6 @@
 import { Button } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
+import { createBroadCastChannelProvider } from '@affine/workspace/providers';
 import type { BroadCastChannelProvider } from '@affine/workspace/type';
 import { createEmptyBlockSuiteWorkspace } from '@affine/workspace/utils';
 import { nanoid } from '@blocksuite/store';
@@ -7,7 +8,6 @@ import { Typography } from '@mui/material';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { createBroadCastChannelProvider } from '../../blocksuite/providers';
 import PageList from '../../components/blocksuite/block-suite-page-list/page-list';
 import { StyledPage, StyledWrapper } from '../../layouts/styles';
 import { toast } from '../../utils';

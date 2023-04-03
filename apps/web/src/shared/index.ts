@@ -5,12 +5,6 @@ import type { ReactElement, ReactNode } from 'react';
 
 export { BlockSuiteWorkspace };
 
-declare global {
-  interface Window {
-    CLIENT_APP?: boolean;
-  }
-}
-
 export type AffineOfficialWorkspace = AffineWorkspace | LocalWorkspace;
 
 export type AllWorkspace = AffineOfficialWorkspace;

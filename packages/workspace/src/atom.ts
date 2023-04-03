@@ -1,6 +1,6 @@
+import { atomWithSyncStorage } from '@affine/jotai';
 import type { WorkspaceFlavour } from '@affine/workspace/type';
 import { createStore } from 'jotai/index';
-import { atomWithStorage } from 'jotai/utils';
 
 export type JotaiWorkspace = {
   id: string;
@@ -9,7 +9,7 @@ export type JotaiWorkspace = {
 
 // root primitive atom that stores the list of workspaces which could be used in the app
 // if a workspace is not in this list, it should not be used in the app
-export const jotaiWorkspacesAtom = atomWithStorage<JotaiWorkspace[]>(
+export const jotaiWorkspacesAtom = atomWithSyncStorage<JotaiWorkspace[]>(
   'jotai-workspaces',
   []
 );

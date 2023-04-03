@@ -152,7 +152,7 @@ legend {
   font-family: var(--affine-font-family);
 }
 body {
-  background: #fff;
+  background: transparent;
   overflow: hidden;
 }
 

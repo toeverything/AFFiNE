@@ -14,11 +14,11 @@ if (process.platform === 'win32') $.shell = 'pwsh';
  * Build affine dist html
  */
 cd(repoDirectory);
-await $`pnpm i -r`;
-await $`pnpm build`;
+await $`yarn install`;
+await $`yarn build`;
 cd(affineSrcDirectory);
 $.env.NEXT_BASE_PATH = '/affine-out';
-await $`pnpm build`;
-await $`pnpm export`;
+await $`yarn build`;
+await $`yarn export`;
 await fs.remove(publicAffineOutDirectory);
 await fs.move(affineSrcOutDirectory, publicAffineOutDirectory);

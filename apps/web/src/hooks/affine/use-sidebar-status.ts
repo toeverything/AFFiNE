@@ -1,8 +1,9 @@
+import { atomWithSyncStorage } from '@affine/jotai';
+import { useMediaQuery, useTheme } from '@mui/material';
 import { atom, useAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 
-const sideBarOpenAtom = atomWithStorage('sidebarOpen', true);
-const sideBarWidthAtom = atomWithStorage('sidebarWidth', 256);
+const sideBarOpenAtom = atomWithSyncStorage('sidebarOpen', true);
+const sideBarWidthAtom = atomWithSyncStorage('sidebarWidth', 256);
 const sidebarResizingAtom = atom(false);
 
 export function useSidebarStatus() {
@@ -11,6 +12,11 @@ export function useSidebarStatus() {
 
 export function useSidebarWidth() {
   return useAtom(sideBarWidthAtom);
+}
+
+export function useSidebarFloating() {
+  const theme = useTheme();
+  return useMediaQuery(theme.breakpoints.down('md'));
 }
 
 export function useSidebarResizing() {

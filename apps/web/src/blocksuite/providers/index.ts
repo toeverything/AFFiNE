@@ -1,15 +1,10 @@
 import { KeckProvider } from '@affine/workspace/affine/keck';
 import { getLoginStorage } from '@affine/workspace/affine/login';
-import type {
-  AffineWebSocketProvider,
-  LocalIndexedDBProvider,
-} from '@affine/workspace/type';
+import type { AffineWebSocketProvider } from '@affine/workspace/type';
 import { assertExists } from '@blocksuite/store';
-import { IndexeddbPersistence } from 'y-indexeddb';
 
 import type { BlockSuiteWorkspace } from '../../shared';
 import { providerLogger } from '../logger';
-import { createBroadCastChannelProvider } from './broad-cast-channel';
 
 const createAffineWebSocketProvider = (
   blockSuiteWorkspace: BlockSuiteWorkspace
@@ -52,46 +47,4 @@ const createAffineWebSocketProvider = (
   };
 };
 
-const createIndexedDBProvider = (
-  blockSuiteWorkspace: BlockSuiteWorkspace
-): LocalIndexedDBProvider => {
-  let indexeddbProvider: IndexeddbPersistence | null = null;
-  const callbacks = new Set<() => void>();
-  return {
-    flavour: 'local-indexeddb',
-    callbacks,
-    // fixme: remove background long polling
-    background: true,
-    cleanup: () => {
-      assertExists(indexeddbProvider);
-      indexeddbProvider.clearData();
-      callbacks.clear();
-      indexeddbProvider = null;
-    },
-    connect: () => {
-      providerLogger.info('connect indexeddb provider', blockSuiteWorkspace.id);
-      indexeddbProvider = new IndexeddbPersistence(
-        blockSuiteWorkspace.id,
-        blockSuiteWorkspace.doc
-      );
-      indexeddbProvider.whenSynced.then(() => {
-        callbacks.forEach(cb => cb());
-      });
-    },
-    disconnect: () => {
-      assertExists(indexeddbProvider);
-      providerLogger.info(
-        'disconnect indexeddb provider',
-        blockSuiteWorkspace.id
-      );
-      indexeddbProvider.destroy();
-      indexeddbProvider = null;
-    },
-  };
-};
-
-export {
-  createAffineWebSocketProvider,
-  createBroadCastChannelProvider,
-  createIndexedDBProvider,
-};
+export { createAffineWebSocketProvider };

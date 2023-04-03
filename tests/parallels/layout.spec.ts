@@ -9,8 +9,8 @@ test.describe('Layout ui', () => {
     await openHomePage(page);
     await waitMarkdownImported(page);
     await page.getByTestId('sliderBar-arrowButton-collapse').click();
-    const sliderBarArea = page.getByTestId('sliderBar-inner');
-    await expect(sliderBarArea).not.toBeVisible();
+    const sliderBarArea = page.getByTestId('sliderBar-root');
+    await expect(sliderBarArea).not.toBeInViewport();
   });
 
   test('Expand Sidebar', async ({ page }) => {
@@ -18,10 +18,10 @@ test.describe('Layout ui', () => {
     await waitMarkdownImported(page);
     await page.getByTestId('sliderBar-arrowButton-collapse').click();
     const sliderBarArea = page.getByTestId('sliderBar-inner');
-    await expect(sliderBarArea).not.toBeVisible();
+    await expect(sliderBarArea).not.toBeInViewport();
 
     await page.getByTestId('sliderBar-arrowButton-expand').click();
-    await expect(sliderBarArea).toBeVisible();
+    await expect(sliderBarArea).toBeInViewport();
   });
 
   test('Click resizer can close sidebar', async ({ page }) => {
@@ -31,7 +31,7 @@ test.describe('Layout ui', () => {
     await expect(sliderBarArea).toBeVisible();
 
     await page.getByTestId('sliderBar-resizer').click();
-    await expect(sliderBarArea).not.toBeVisible();
+    await expect(sliderBarArea).not.toBeInViewport();
   });
 
   test('Drag resizer can resize sidebar', async ({ page }) => {
@@ -58,7 +58,7 @@ test.describe('Layout ui', () => {
     const sliderBarModalBackground = page.getByTestId(
       'sliderBar-modalBackground'
     );
-    await expect(sliderBarArea).toBeVisible();
+    await expect(sliderBarArea).toBeInViewport();
     await expect(sliderBarModalBackground).not.toBeVisible();
 
     await page.setViewportSize({
@@ -72,6 +72,6 @@ test.describe('Layout ui', () => {
       force: true,
       position: { x: 600, y: 150 },
     });
-    await expect(sliderBarArea).not.toBeVisible();
+    await expect(sliderBarArea).not.toBeInViewport();
   });
 });

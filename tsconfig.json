@@ -22,11 +22,13 @@
       "@affine/templates/*": ["./packages/templates/src/*"],
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/debug": ["./packages/debug"],
+      "@affine/jotai": ["./packages/jotai"],
       "@affine/env": ["./packages/env"],
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],
       "@affine/workspace/*": ["./packages/workspace/src/*"],
-      "@affine-test/fixtures/*": ["./tests/fixtures/*"]
+      "@affine-test/fixtures/*": ["./tests/fixtures/*"],
+      "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"]
     }
   },
   "references": [

@@ -1,6 +1,8 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
+
+import { isMacOS } from '../../utils';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 
@@ -11,12 +13,18 @@ async function createWindow() {
   });
 
   const browserWindow = new BrowserWindow({
+    titleBarStyle: isMacOS() ? 'hiddenInset' : 'default',
+    trafficLightPosition: { x: 20, y: 18 },
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
+    transparent: true,
+    visualEffectState: 'active',
+    vibrancy: 'under-window',
     height: mainWindowState.height,
     show: false, // Use 'ready-to-show' event to show window
     webPreferences: {
+      webgl: true,
       contextIsolation: true,
       sandbox: false,
       webviewTag: false, // The webview tag is not recommended. Consider alternatives like iframe or Electron's BrowserView. https://www.electronjs.org/docs/latest/api/webview-tag#warning
@@ -24,6 +32,8 @@ async function createWindow() {
       preload: join(__dirname, '../preload/index.js'),
     },
   });
+
+  nativeTheme.themeSource = 'light';
 
   mainWindowState.manage(browserWindow);
 
@@ -60,19 +70,22 @@ async function createWindow() {
   return browserWindow;
 }
 
+// singleton
+let browserWindow: Electron.BrowserWindow | undefined;
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
 export async function restoreOrCreateWindow() {
-  let window = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
+  browserWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
 
-  if (window === undefined) {
-    window = await createWindow();
+  if (browserWindow === undefined) {
+    browserWindow = await createWindow();
   }
 
-  if (window.isMinimized()) {
-    window.restore();
+  if (browserWindow.isMinimized()) {
+    browserWindow.restore();
   }
 
-  window.focus();
+  browserWindow.focus();
+  return browserWindow;
 }

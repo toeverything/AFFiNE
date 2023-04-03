@@ -4,8 +4,9 @@ export const StyledPage = styled('div')<{ resizing?: boolean }>(
   ({ theme, resizing }) => {
     return {
       cursor: resizing ? 'col-resize' : 'default',
+      width: '100%',
+      position: 'relative',
       height: '100vh',
-      backgroundColor: theme.colors.pageBackground,
       transition: 'background-color .5s',
       display: 'flex',
       flexGrow: '1',
@@ -25,20 +26,24 @@ export const StyledWrapper = styled('div')(() => {
   };
 });
 
-export const MainContainerWrapper = styled('div')(({ theme }) => {
-  return {
-    display: 'flex',
-    flexGrow: 1,
-    position: 'relative',
-    maxWidth: '100vw',
-    overflow: 'auto',
-  };
-});
+export const MainContainerWrapper = styled('div')<{ resizing: boolean }>(
+  ({ theme, resizing }) => {
+    return {
+      display: 'flex',
+      flexGrow: 1,
+      position: 'relative',
+      maxWidth: '100vw',
+      overflow: 'auto',
+      transition: resizing ? '' : 'padding-left .25s',
+    };
+  }
+);
 
 export const MainContainer = styled('div')(({ theme }) => {
   return {
     position: 'relative',
     flexGrow: 1,
+    backgroundColor: theme.colors.pageBackground,
     [theme.breakpoints.up('md')]: {
       minWidth: '686px',
     },

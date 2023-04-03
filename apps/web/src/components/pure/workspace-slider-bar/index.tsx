@@ -8,11 +8,11 @@ import {
   SettingsIcon,
 } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
-import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
+  useSidebarFloating,
   useSidebarResizing,
   useSidebarStatus,
   useSidebarWidth,
@@ -82,18 +82,13 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
     const page = await createPage();
     openPage(page.id);
   }, [createPage, openPage]);
-  const theme = useTheme();
-  const floatingSlider = useMediaQuery(theme.breakpoints.down('md'));
+  const floatingSlider = useSidebarFloating();
   const [sliderWidth, setSliderWidth] = useSidebarWidth();
   const [isResizing, setIsResizing] = useSidebarResizing();
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
 
   const show = isPublicWorkspace ? false : sidebarOpen;
-  const actualWidth = show
-    ? floatingSlider
-      ? 'calc(10vw + 400px)'
-      : sliderWidth
-    : 0;
+  const actualWidth = floatingSlider ? 'calc(10vw + 400px)' : sliderWidth;
   const onResizeStart = useCallback(() => {
     let resized = false;
     function onMouseMove(e: MouseEvent) {
@@ -116,15 +111,18 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
       { once: true }
     );
   }, [setIsResizing, setSidebarOpen, setSliderWidth]);
+  useEffect(() => {
+    window.apis?.onSidebarVisibilityChange(sidebarOpen);
+  }, [sidebarOpen]);
   return (
     <>
-      <StyledSliderBarWrapper data-testid="sliderBar-root">
-        <StyledSliderBar
-          resizing={isResizing}
-          floating={floatingSlider}
-          style={{ width: actualWidth }}
-          show={show}
-        >
+      <StyledSliderBarWrapper
+        floating={floatingSlider}
+        show={show}
+        style={{ width: actualWidth }}
+        data-testid="sliderBar-root"
+      >
+        <StyledSliderBar>
           <StyledSidebarSwitchWrapper>
             <SidebarSwitch
               visible={sidebarOpen}

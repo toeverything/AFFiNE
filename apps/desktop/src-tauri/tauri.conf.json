@@ -1,7 +1,7 @@
 {
   "build": {
-    "beforeDevCommand": "pnpm dev:web",
-    "beforeBuildCommand": "pnpm build:preload && pnpm build:affine",
+    "beforeDevCommand": "yarn dev:web",
+    "beforeBuildCommand": "yarn build:preload && yarn build:affine",
     "devPath": "http://localhost:8080",
     "distDir": "../public",
     "withGlobalTauri": false

@@ -1,9 +1,9 @@
+import { atomWithSyncStorage } from '@affine/jotai';
 import { jotaiStore, jotaiWorkspacesAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 import { unstable_batchedUpdates } from 'react-dom';
 
 import { WorkspacePlugins } from '../plugins';
@@ -57,16 +57,12 @@ type View = { id: string; mode: 'page' | 'edgeless' };
 
 export type WorkspaceRecentViews = Record<string, View[]>;
 
-export const workspaceRecentViewsAtom = atomWithStorage<WorkspaceRecentViews>(
-  'recentViews',
-  {}
-);
+export const workspaceRecentViewsAtom =
+  atomWithSyncStorage<WorkspaceRecentViews>('recentViews', {});
 
 export type PreferredModeRecord = Record<Page['id'], 'page' | 'edgeless'>;
-export const workspacePreferredModeAtom = atomWithStorage<PreferredModeRecord>(
-  'preferredMode',
-  {}
-);
+export const workspacePreferredModeAtom =
+  atomWithSyncStorage<PreferredModeRecord>('preferredMode', {});
 
 export const workspaceRecentViresWriteAtom = atom<null, [string, View], View[]>(
   null,
