@@ -87,6 +87,7 @@ __metadata:
     "@storybook/addon-interactions": ^7.0.2
     "@storybook/addon-links": ^7.0.2
     "@storybook/addon-storysource": ^7.0.2
+    "@storybook/blocks": ^7.0.2
     "@storybook/builder-vite": ^7.0.2
     "@storybook/jest": ^0.1.0
     "@storybook/react": ^7.0.2
@@ -5044,7 +5045,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/blocks@npm:7.0.2":
+"@storybook/blocks@npm:7.0.2, @storybook/blocks@npm:^7.0.2":
   version: 7.0.2
   resolution: "@storybook/blocks@npm:7.0.2"
   dependencies:
