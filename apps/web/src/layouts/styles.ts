@@ -18,15 +18,19 @@ export const StyledPage = styled('div')<{ resizing?: boolean }>(
   }
 );
 
-export const StyledSpacer = styled('div')<{ resizing: boolean }>(
-  ({ resizing }) => {
-    return {
-      flexGrow: 1,
-      maxWidth: 'calc(100vw - 698px)',
-      transition: resizing ? '' : 'width .25s',
-    };
-  }
-);
+export const StyledSpacer = styled('div')<{
+  sidebarOpen: boolean;
+  resizing: boolean;
+  floating: boolean;
+}>(({ resizing, sidebarOpen, floating }) => {
+  return {
+    position: 'relative',
+    flexGrow: 1,
+    maxWidth: 'calc(100vw - 698px)',
+    minWidth: !floating && sidebarOpen ? '256px' : '0',
+    transition: resizing ? '' : 'width .3s, min-width .3s',
+  };
+});
 
 export const StyledWrapper = styled('div')(() => {
   return {
@@ -44,7 +48,6 @@ export const MainContainerWrapper = styled('div')<{ resizing: boolean }>(
       position: 'relative',
       maxWidth: '100vw',
       overflow: 'auto',
-      transition: resizing ? '' : 'width .25s',
     };
   }
 );
@@ -79,3 +82,36 @@ export const StyledToolWrapper = styled('div')(({ theme }) => {
     },
   };
 });
+
+export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
+  ({ theme }) => {
+    return {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: '12px',
+      transform: 'translateX(50%)',
+      cursor: 'col-resize',
+      zIndex: theme.zIndex.modal,
+      userSelect: 'none',
+      ':hover > *': {
+        background: 'rgba(0, 0, 0, 0.1)',
+      },
+    };
+  }
+);
+export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
+  ({ isResizing }) => {
+    return {
+      transition: 'background .15s .1s',
+      position: 'absolute',
+      top: 0,
+      right: '50%',
+      bottom: 0,
+      transform: 'translateX(0.5px)',
+      width: '2px',
+      background: isResizing ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
+    };
+  }
+);
