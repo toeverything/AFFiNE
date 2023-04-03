@@ -37,7 +37,6 @@ import {
   currentWorkspaceAtom,
   useCurrentWorkspace,
 } from '../current/use-current-workspace';
-import { useBlockSuiteWorkspaceName } from '../use-blocksuite-workspace-name';
 import { usePageMeta, usePageMetaHelper } from '../use-page-meta';
 import {
   REDIRECT_TIMEOUT,
@@ -299,21 +298,6 @@ describe('useSyncRouterWithCurrentWorkspaceAndPage', () => {
     await new Promise(resolve => setTimeout(resolve, REDIRECT_TIMEOUT + 50));
 
     expect(routerHook.result.current.asPath).toBe(`/workspace/${id}/page0`);
-  });
-});
-
-describe('useBlockSuiteWorkspaceName', () => {
-  test('basic', async () => {
-    blockSuiteWorkspace.meta.setName('test 1');
-    const workspaceNameHook = renderHook(() =>
-      useBlockSuiteWorkspaceName(blockSuiteWorkspace)
-    );
-    expect(workspaceNameHook.result.current[0]).toBe('test 1');
-    blockSuiteWorkspace.meta.setName('test 2');
-    workspaceNameHook.rerender();
-    expect(workspaceNameHook.result.current[0]).toBe('test 2');
-    workspaceNameHook.result.current[1]('test 3');
-    expect(blockSuiteWorkspace.meta.name).toBe('test 3');
   });
 });
 
