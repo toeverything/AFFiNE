@@ -1,4 +1,5 @@
 import { Button, FlexWrapper, MuiFade } from '@affine/component';
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
@@ -13,7 +14,6 @@ import {
   JoinedWorkspaceIcon,
   LocalWorkspaceIcon,
 } from '../../../../pure/icons';
-import { WorkspaceAvatar } from '../../../../pure/workspace-avatar';
 import type { PanelProps } from '../../index';
 import { StyledRow, StyledSettingKey } from '../../style';
 import { WorkspaceDeleteModal } from './delete';

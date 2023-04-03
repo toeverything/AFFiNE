@@ -1,10 +1,29 @@
-import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
+import type { Workspace } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import type React from 'react';
 import { memo } from 'react';
 
-import type { AllWorkspace, BlockSuiteWorkspace } from '../../../shared';
-import { stringToColour } from '../../../utils';
+function stringToColour(str: string) {
+  str = str || 'affine';
+  let colour = '#';
+  let hash = 0;
+  // str to hash
+  for (
+    let i = 0;
+    i < str.length;
+    hash = str.charCodeAt(i++) + ((hash << 5) - hash)
+  );
+
+  // int/hash to hex
+  for (
+    let i = 0;
+    i < 3;
+    colour += ('00' + ((hash >> (i++ * 8)) & 0xff).toString(16)).slice(-2)
+  );
+
+  return colour;
+}
 
 interface AvatarProps {
   size: number;
@@ -76,7 +95,7 @@ export const Avatar: React.FC<AvatarProps> = memo<AvatarProps>(function Avatar({
 
 export type WorkspaceUnitAvatarProps = {
   size?: number;
-  workspace: AllWorkspace | null;
+  workspace: LocalWorkspace | AffineWorkspace | null;
   style?: React.CSSProperties;
 };
 
@@ -84,7 +103,7 @@ export type BlockSuiteWorkspaceAvatar = Omit<
   WorkspaceUnitAvatarProps,
   'workspace'
 > & {
-  workspace: BlockSuiteWorkspace;
+  workspace: Workspace;
 };
 
 export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
@@ -99,7 +118,7 @@ export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
     <Avatar
       {...props}
       size={size}
-      name={workspace.meta.name ?? UNTITLED_WORKSPACE_NAME}
+      name={workspace.meta.name ?? 'Untitled'}
       avatar_url={avatar ?? ''}
       style={style}
     />

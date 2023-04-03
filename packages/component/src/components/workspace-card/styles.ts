@@ -1,5 +1,5 @@
-import { displayFlex, styled, textEllipsis } from '@affine/component';
-import { IconButton } from '@affine/component';
+import { displayFlex, styled, textEllipsis } from '../..';
+import { IconButton } from '../..';
 
 export const StyleWorkspaceInfo = styled('div')(({ theme }) => {
   return {

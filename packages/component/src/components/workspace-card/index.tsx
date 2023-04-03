@@ -1,19 +1,12 @@
 import { useTranslation } from '@affine/i18n';
 import { PermissionType } from '@affine/workspace/affine/api';
+import type { AffineWorkspace, LocalWorkspace } from '@affine/workspace/type';
 import { WorkspaceFlavour } from '@affine/workspace/type';
 import { SettingsIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import type React from 'react';
 import { useCallback } from 'react';
 
-import type { AllWorkspace } from '../../../shared';
-import {
-  CloudWorkspaceIcon,
-  JoinedWorkspaceIcon,
-  LocalDataIcon,
-  LocalWorkspaceIcon,
-  PublishIcon,
-} from '../icons';
 import { WorkspaceAvatar } from '../workspace-avatar';
 import {
   StyledCard,
@@ -21,8 +14,35 @@ import {
   StyleWorkspaceInfo,
   StyleWorkspaceTitle,
 } from './styles';
+
 export type WorkspaceTypeProps = {
-  workspace: AllWorkspace;
+  workspace: AffineWorkspace | LocalWorkspace;
+};
+
+import {
+  CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
+  JoinedWorkspaceIcon as DefaultJoinedWorkspaceIcon,
+  LocalDataIcon as DefaultLocalDataIcon,
+  LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
+  PublishIcon as DefaultPublishIcon,
+} from '@blocksuite/icons';
+
+const JoinedWorkspaceIcon = () => {
+  return <DefaultJoinedWorkspaceIcon style={{ color: '#FF646B' }} />;
+};
+const LocalWorkspaceIcon = () => {
+  return <DefaultLocalWorkspaceIcon style={{ color: '#FDBD32' }} />;
+};
+
+const CloudWorkspaceIcon = () => {
+  return <DefaultCloudWorkspaceIcon style={{ color: '#60A5FA' }} />;
+};
+
+const LocalDataIcon = () => {
+  return <DefaultLocalDataIcon style={{ color: '#62CD80' }} />;
+};
+const PublishIcon = () => {
+  return <DefaultPublishIcon style={{ color: '#8699FF' }} />;
 };
 
 const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
@@ -58,9 +78,9 @@ const WorkspaceType: React.FC<WorkspaceTypeProps> = ({ workspace }) => {
 
 export type WorkspaceCardProps = {
   currentWorkspaceId: string | null;
-  workspace: AllWorkspace;
-  onClick: (workspace: AllWorkspace) => void;
-  onSettingClick: (workspace: AllWorkspace) => void;
+  workspace: AffineWorkspace | LocalWorkspace;
+  onClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
+  onSettingClick: (workspace: AffineWorkspace | LocalWorkspace) => void;
 };
 
 export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
