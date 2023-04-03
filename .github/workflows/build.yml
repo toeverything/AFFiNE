@@ -17,6 +17,18 @@ jobs:
         uses: ./.github/actions/setup-node
       - run: yarn lint --max-warnings=0
 
+  install-all:
+    name: Install All Dependencies
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install All Dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          electron-workspace-install: true
+
   build-storybook:
     name: Build Storybook
     runs-on: ubuntu-latest
