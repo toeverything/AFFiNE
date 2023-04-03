@@ -1,11 +1,10 @@
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env';
+import type { Workspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
 import { useCallback, useEffect, useState } from 'react';
 
-import type { BlockSuiteWorkspace } from '../shared';
-
 export function useBlockSuiteWorkspaceName(
-  blockSuiteWorkspace: BlockSuiteWorkspace | null
+  blockSuiteWorkspace: Workspace | null
 ) {
   const [name, set] = useState(
     () => blockSuiteWorkspace?.meta.name ?? UNTITLED_WORKSPACE_NAME
