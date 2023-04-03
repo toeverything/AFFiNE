@@ -137,7 +137,7 @@ jobs:
         ports:
           - 3000:3000
         volumes:
-          - .github/container/octobase:/app
+          - ./.github/container/octobase:/app
 
     steps:
       - uses: actions/checkout@v3
@@ -193,7 +193,7 @@ jobs:
         ports:
           - 3000:3000
         volumes:
-          - .github/container/octobase:/app
+          - ./.github/container/octobase:/app
 
     steps:
       - uses: actions/checkout@v3
