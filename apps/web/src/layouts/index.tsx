@@ -47,6 +47,9 @@ import {
   MainContainer,
   MainContainerWrapper,
   StyledPage,
+  StyledSliderResizer,
+  StyledSliderResizerInner,
+  StyledSpacer,
   StyledToolWrapper,
 } from './styles';
 
@@ -255,14 +258,38 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const handleOpenQuickSearchModal = useCallback(() => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
-  const [resizingSidebar] = useSidebarResizing();
+  const [resizingSidebar, setIsResizing] = useSidebarResizing();
   const lock = useAtomValue(workspaceLockAtom);
-  const [sidebarOpen] = useSidebarStatus();
+  const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
   const sidebarFloating = useSidebarFloating();
-  const [sidebarWidth] = useSidebarWidth();
-  const paddingLeft =
-    sidebarFloating || !sidebarOpen ? '0' : `${sidebarWidth}px`;
+  const [sidebarWidth, setSliderWidth] = useSidebarWidth();
+  const actualSidebarWidth = sidebarFloating || !sidebarOpen ? 0 : sidebarWidth;
+  const width = `calc(100% - ${actualSidebarWidth}px)`;
   const [resizing] = useSidebarResizing();
+
+  const onResizeStart = useCallback(() => {
+    let resized = false;
+    function onMouseMove(e: MouseEvent) {
+      const newWidth = Math.min(480, Math.max(e.clientX, 256));
+      setSliderWidth(newWidth);
+      setIsResizing(true);
+      resized = true;
+    }
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener(
+      'mouseup',
+      () => {
+        // if not resized, toggle sidebar
+        if (!resized) {
+          setSidebarOpen(o => !o);
+        }
+        setIsResizing(false);
+        document.removeEventListener('mousemove', onMouseMove);
+      },
+      { once: true }
+    );
+  }, [setIsResizing, setSidebarOpen, setSliderWidth]);
+
   if (lock) {
     return <PageLoading />;
   }
@@ -284,10 +311,23 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <MainContainerWrapper
+        <StyledSpacer
+          floating={sidebarFloating}
           resizing={resizing}
-          style={{ paddingLeft: paddingLeft }}
+          sidebarOpen={sidebarOpen}
+          style={{ width: actualSidebarWidth }}
         >
+          {!sidebarFloating && sidebarOpen && (
+            <StyledSliderResizer
+              data-testid="sliderBar-resizer"
+              isResizing={resizing}
+              onMouseDown={onResizeStart}
+            >
+              <StyledSliderResizerInner isResizing={resizing} />
+            </StyledSliderResizer>
+          )}
+        </StyledSpacer>
+        <MainContainerWrapper resizing={resizing} style={{ width: width }}>
           <MainContainer className="main-container">
             <AffineWorkspaceEffect />
             {children}

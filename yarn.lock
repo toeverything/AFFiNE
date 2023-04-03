@@ -203,6 +203,7 @@ __metadata:
     "@sentry/nextjs": ^7.46.0
     "@swc-jotai/debug-label": ^0.0.9
     "@swc-jotai/react-refresh": ^0.0.7
+    "@toeverything/hooks": "workspace:*"
     "@types/react": ^18.0.31
     "@types/react-dom": ^18.0.11
     "@types/webpack-env": ^1.18.0
@@ -6147,6 +6148,12 @@ __metadata:
   checksum: 16319de685fbb7008f1ba667928f458b2d08196918002daca56996de80ef35e6d9de26e9e1ece7d00a004692b95a597cf9142fff0dc53f2f51606a776584f549
   languageName: node
   linkType: hard
+
+"@toeverything/hooks@workspace:*, @toeverything/hooks@workspace:packages/hooks":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/hooks@workspace:packages/hooks"
+  languageName: unknown
+  linkType: soft
 
 "@toeverything/y-indexeddb@workspace:*, @toeverything/y-indexeddb@workspace:packages/y-indexeddb":
   version: 0.0.0-use.local

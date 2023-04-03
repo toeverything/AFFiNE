@@ -1,6 +1,7 @@
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
+import { useBlockSuiteWorkspacePageTitle } from '@toeverything/hooks/use-blocksuite-workspace-page-title';
 import { useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
@@ -8,7 +9,6 @@ import type React from 'react';
 import { useCallback } from 'react';
 
 import { currentEditorAtom, workspacePreferredModeAtom } from '../atoms';
-import { useBlockSuiteWorkspacePageTitle } from '../hooks/use-blocksuite-workspace-page-title';
 import { usePageMeta } from '../hooks/use-page-meta';
 import type { BlockSuiteWorkspace } from '../shared';
 import { PageNotFoundError } from './affine/affine-error-eoundary';

@@ -1,8 +1,8 @@
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import type React from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import { useBlockSuiteWorkspaceName } from '../../../../hooks/use-blocksuite-workspace-name';
 import type { AllWorkspace } from '../../../../shared';
 import { WorkspaceAvatar } from '../../workspace-avatar';
 import {
