@@ -32,8 +32,6 @@ import {
   StyledSliderBarInnerWrapper,
   StyledSliderBarWrapper,
   StyledSliderModalBackground,
-  StyledSliderResizer,
-  StyledSliderResizerInner,
 } from './style';
 import { WorkspaceSelector } from './WorkspaceSelector';
 
@@ -81,38 +79,17 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
     openPage(page.id);
   }, [createPage, openPage]);
   const floatingSlider = useSidebarFloating();
-  const [sliderWidth, setSliderWidth] = useSidebarWidth();
-  const [isResizing, setIsResizing] = useSidebarResizing();
+  const [sliderWidth] = useSidebarWidth();
+  const [isResizing] = useSidebarResizing();
   const show = isPublicWorkspace ? false : sidebarOpen;
   const actualWidth = floatingSlider ? 'calc(10vw + 400px)' : sliderWidth;
-  const onResizeStart = useCallback(() => {
-    let resized = false;
-    function onMouseMove(e: MouseEvent) {
-      const newWidth = Math.min(480, Math.max(e.clientX, 256));
-      setSliderWidth(newWidth);
-      setIsResizing(true);
-      resized = true;
-    }
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener(
-      'mouseup',
-      () => {
-        // if not resized, toggle sidebar
-        if (!resized) {
-          setSidebarOpen(o => !o);
-        }
-        setIsResizing(false);
-        document.removeEventListener('mousemove', onMouseMove);
-      },
-      { once: true }
-    );
-  }, [setIsResizing, setSidebarOpen, setSliderWidth]);
   useEffect(() => {
     window.apis?.onSidebarVisibilityChange(sidebarOpen);
   }, [sidebarOpen]);
   return (
     <>
       <StyledSliderBarWrapper
+        resizing={isResizing}
         floating={floatingSlider}
         show={show}
         style={{ width: actualWidth }}
@@ -222,15 +199,6 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
             <PlusIcon /> {t('New Page')}
           </StyledNewPageButton>
         </StyledSliderBar>
-        {!floatingSlider && sidebarOpen && (
-          <StyledSliderResizer
-            data-testid="sliderBar-resizer"
-            isResizing={isResizing}
-            onMouseDown={onResizeStart}
-          >
-            <StyledSliderResizerInner isResizing={isResizing} />
-          </StyledSliderResizer>
-        )}
       </StyledSliderBarWrapper>
       <StyledSliderModalBackground
         data-testid="sliderBar-modalBackground"

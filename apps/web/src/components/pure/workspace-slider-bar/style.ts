@@ -6,7 +6,8 @@ const macosElectron = environment.isDesktop && environment.isMacOs;
 export const StyledSliderBarWrapper = styled('div')<{
   show: boolean;
   floating: boolean;
-}>(({ theme, show, floating }) => {
+  resizing: boolean;
+}>(({ theme, show, floating, resizing }) => {
   return {
     height: '100%',
     position: 'absolute',
@@ -14,12 +15,12 @@ export const StyledSliderBarWrapper = styled('div')<{
       userSelect: 'none',
     },
     zIndex: theme.zIndex.modal,
-    transition: 'transform .25s',
+    transition: resizing ? '' : 'transform .3s',
     transform: show ? 'translateX(0)' : 'translateX(-100%)',
     maxWidth: floating ? undefined : 'calc(100vw - 698px)',
     background:
       !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
-    borderRight: '1px solid',
+    borderRight: macosElectron ? '' : '1px solid',
     borderColor: theme.colors.borderColor,
   };
 });
@@ -41,6 +42,10 @@ export const StyledSidebarSwitchWrapper = styled('div')(() => {
     height: '52px',
     flexShrink: 0,
     padding: '0 16px',
+    WebkitAppRegion: 'drag',
+    button: {
+      WebkitAppRegion: 'no-drag',
+    },
     ...displayFlex(macosElectron ? 'flex-end' : 'flex-start', 'center'),
   };
 });
@@ -97,38 +102,6 @@ export const StyledSliderModalBackground = styled('div')<{ active: boolean }>(
       bottom: 0,
       zIndex: theme.zIndex.modal - 1,
       background: theme.colors.modalBackground,
-    };
-  }
-);
-export const StyledSliderResizer = styled('div')<{ isResizing: boolean }>(
-  () => {
-    return {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      width: '12px',
-      transform: 'translateX(50%)',
-      cursor: 'col-resize',
-      zIndex: 1,
-      userSelect: 'none',
-      ':hover > *': {
-        background: 'rgba(0, 0, 0, 0.1)',
-      },
-    };
-  }
-);
-export const StyledSliderResizerInner = styled('div')<{ isResizing: boolean }>(
-  ({ isResizing }) => {
-    return {
-      transition: 'background .15s .1s',
-      position: 'absolute',
-      top: 0,
-      right: '50%',
-      bottom: 0,
-      transform: 'translateX(0.5px)',
-      width: '2px',
-      background: isResizing ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
     };
   }
 );
