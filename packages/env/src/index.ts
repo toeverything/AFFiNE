@@ -111,6 +111,7 @@ export const publicRuntimeConfigSchema = z.object({
   // expose internal api to globalThis, **development only**
   exposeInternal: z.boolean(),
   enableSubpage: z.boolean(),
+  enableChangeLog: z.boolean(),
 });
 
 export type PublicRuntimeConfig = z.infer<typeof publicRuntimeConfigSchema>;

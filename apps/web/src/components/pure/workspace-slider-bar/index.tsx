@@ -109,7 +109,7 @@ export const WorkSpaceSliderBar: React.FC<WorkSpaceSliderBarProps> = ({
               currentWorkspace={currentWorkspace}
               onClick={onOpenWorkspaceListModal}
             />
-            <ChangeLog />
+            {config.enableChangeLog && <ChangeLog />}
             <StyledListItem
               data-testid="slider-bar-quick-search-button"
               onClick={useCallback(() => {
