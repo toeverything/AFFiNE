@@ -43,16 +43,16 @@ export const OperationButton = ({
   const { t } = useTranslation();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [operationOpen, setOperationOpen] = useState(false);
+  const [operationMenuOpen, setOperationMenuOpen] = useState(false);
   const [pivotsMenuOpen, setPivotsMenuOpen] = useState(false);
-  const [openConfirm, setOpenConfirm] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const menuIndex = useMemo(() => modalIndex + 1, [modalIndex]);
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
 
   return (
     <MuiClickAwayListener
       onClickAway={() => {
-        setOperationOpen(false);
+        setOperationMenuOpen(false);
         setPivotsMenuOpen(false);
       }}
     >
@@ -61,7 +61,7 @@ export const OperationButton = ({
           e.stopPropagation();
         }}
         onMouseLeave={() => {
-          setOperationOpen(false);
+          setOperationMenuOpen(false);
           setPivotsMenuOpen(false);
         }}
       >
@@ -69,7 +69,7 @@ export const OperationButton = ({
           ref={ref => setAnchorEl(ref)}
           size="small"
           onClick={() => {
-            setOperationOpen(!operationOpen);
+            setOperationMenuOpen(!operationMenuOpen);
           }}
           visible={isHover}
         >
@@ -79,14 +79,14 @@ export const OperationButton = ({
         <PureMenu
           width={256}
           anchorEl={anchorEl}
-          open={operationOpen}
+          open={operationMenuOpen}
           placement="bottom-start"
           zIndex={menuIndex}
         >
           <MenuItem
             onClick={() => {
               onAdd();
-              setOperationOpen(false);
+              setOperationMenuOpen(false);
               onMenuClose?.();
             }}
             icon={<PlusIcon />}
@@ -95,7 +95,7 @@ export const OperationButton = ({
           </MenuItem>
           <MenuItem
             onClick={() => {
-              setOperationOpen(false);
+              setOperationMenuOpen(false);
               setPivotsMenuOpen(true);
             }}
             icon={<MoveToIcon />}
@@ -105,7 +105,7 @@ export const OperationButton = ({
           <MenuItem
             onClick={() => {
               onRename?.();
-              setOperationOpen(false);
+              setOperationMenuOpen(false);
               onMenuClose?.();
             }}
             icon={<PenIcon />}
@@ -114,8 +114,8 @@ export const OperationButton = ({
           </MenuItem>
           <MoveToTrash
             onItemClick={() => {
-              setOperationOpen(false);
-              setOpenConfirm(true);
+              setOperationMenuOpen(false);
+              setConfirmModalOpen(true);
               onMenuClose?.();
             }}
           />
@@ -133,7 +133,7 @@ export const OperationButton = ({
           showRemovePivots={true}
         />
         <MoveToTrash.ConfirmModal
-          open={openConfirm}
+          open={confirmModalOpen}
           meta={currentMeta}
           onConfirm={() => {
             toast(t('Moved to Trash'));
@@ -144,7 +144,7 @@ export const OperationButton = ({
             onDelete();
           }}
           onCancel={() => {
-            setOpenConfirm(false);
+            setConfirmModalOpen(false);
           }}
         />
       </div>

@@ -59,6 +59,9 @@ export const PivotRender: TreeNode['render'] = (
           placeholder="Untitled"
           onClick={e => e.stopPropagation()}
           height={32}
+          onBlur={() => {
+            setShowRename(false);
+          }}
           onChange={value => {
             // FIXME: setPageTitle would make input blur, and can't input the Chinese character
             setPageTitle(node.id, value);
