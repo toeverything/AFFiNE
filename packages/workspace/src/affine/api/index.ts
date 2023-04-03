@@ -233,7 +233,9 @@ export function createWorkspaceApis(prefixUrl = '/') {
           throw new RequestError(MessageCode.getMembersFailed, e);
         });
     },
-    createWorkspace: async (encodedYDoc: Blob): Promise<{ id: string }> => {
+    createWorkspace: async (
+      encodedYDoc: ArrayBuffer
+    ): Promise<{ id: string }> => {
       const auth = getLoginStorage();
       assertExists(auth);
       return fetch(prefixUrl + 'api/workspace', {

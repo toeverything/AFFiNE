@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 
 import { MessageCode } from '@affine/env/constant';
 import { createStatusApis } from '@affine/workspace/affine/api/status';
-import { KeckProvider } from '@affine/workspace/affine/keck';
+import type { KeckProvider } from '@affine/workspace/affine/keck';
 import user1 from '@affine-test/fixtures/built-in-user1.json';
 import user2 from '@affine-test/fixtures/built-in-user2.json';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
@@ -70,10 +70,10 @@ beforeEach(() => {
 });
 
 beforeEach(() => {
-  affineAuth = createAffineAuth('http://localhost:3000/');
-  userApis = createUserApis('http://localhost:3000/');
-  workspaceApis = createWorkspaceApis('http://localhost:3000/');
-  statusApis = createStatusApis('http://localhost:3000/');
+  affineAuth = createAffineAuth('http://127.0.0.1:3000/');
+  userApis = createUserApis('http://127.0.0.1:3000/');
+  workspaceApis = createWorkspaceApis('http://127.0.0.1:3000/');
+  statusApis = createStatusApis('http://127.0.0.1:3000/');
 });
 
 beforeEach(async () => {
@@ -81,7 +81,7 @@ beforeEach(async () => {
 });
 
 beforeEach(async () => {
-  const data = await fetch('http://localhost:3000/api/user/token', {
+  const data = await fetch('http://127.0.0.1:3000/api/user/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -118,15 +118,7 @@ async function createWorkspace(
     callback(workspace);
   }
   const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
-  const data = await workspaceApi.createWorkspace(new Blob([binary]));
-  // fixme: remove KeckProvider
-  const provider = new KeckProvider(wsUrl, data.id, workspace.doc, {
-    params: { token: getLoginStorage()?.token },
-    // @ts-expect-error ignore the type
-    awareness: workspace.awarenessStore.awareness,
-    connect: false,
-  });
-  provider.connect();
+  const data = await workspaceApi.createWorkspace(binary);
   function waitForConnected(provider: KeckProvider) {
     return new Promise<void>(resolve => {
       provider.once('status', ({ status }: any) => {
@@ -135,16 +127,13 @@ async function createWorkspace(
       });
     });
   }
-  await waitForConnected(provider);
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  provider.disconnect();
   createWorkspaceResponseSchema.parse(data);
   return data.id;
 }
 
 describe('api', () => {
   test('built-in mock user', async () => {
-    const data = await fetch('http://localhost:3000/api/user/token', {
+    const data = await fetch('http://127.0.0.1:3000/api/user/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -156,7 +145,7 @@ describe('api', () => {
       }),
     }).then(r => r.json());
     loginResponseSchema.parse(data);
-    const data2 = await fetch('http://localhost:3000/api/user/token', {
+    const data2 = await fetch('http://127.0.0.1:3000/api/user/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -171,7 +160,7 @@ describe('api', () => {
   });
 
   test('failed', async () => {
-    workspaceApis = createWorkspaceApis('http://localhost:10086/404/');
+    workspaceApis = createWorkspaceApis('http://127.0.0.1:10086/404/');
     const listener = vi.fn(
       (
         e: CustomEvent<{
@@ -255,7 +244,7 @@ describe('api', () => {
       const path = require.resolve('@affine-test/fixtures/smile.png');
       const imageBuffer = await readFile(path);
       const binary = Workspace.Y.encodeStateAsUpdate(workspace.doc);
-      const data = await workspaceApis.createWorkspace(new Blob([binary]));
+      const data = await workspaceApis.createWorkspace(binary);
       createWorkspaceResponseSchema.parse(data);
       const workspaceId = data.id;
       const blobId = await workspaceApis.uploadBlob(
