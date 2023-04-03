@@ -117,7 +117,6 @@ export const StyledTextButton = styled('button', {
     // type = 'default',
   }) => {
     const { fontSize, borderRadius, padding, height } = getSize(size);
-    console.log('size', size, height);
 
     return {
       height,
