@@ -13,7 +13,6 @@ import {
   StyledIsland,
   StyledTriggerWrapper,
 } from './style';
-
 const ContactModal = dynamic(
   () =>
     import('@affine/component/contact-modal').then(({ ContactModal }) => ({
@@ -26,7 +25,9 @@ const ContactModal = dynamic(
 
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 export const HelpIsland = ({
-  showList = ['whatNew', 'contact', 'shortcuts'],
+  showList = config.enableChangeLog
+    ? ['whatNew', 'contact', 'shortcuts']
+    : ['contact', 'shortcuts'],
 }: {
   showList?: IslandItemNames[];
 }) => {
@@ -63,7 +64,7 @@ export const HelpIsland = ({
         <StyledAnimateWrapper
           style={{ height: spread ? `${showList.length * 44}px` : 0 }}
         >
-          {config.enableChangeLog && showList.includes('whatNew') && (
+          {showList.includes('whatNew') && (
             <Tooltip content={t("Discover what's new")} placement="left-end">
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
