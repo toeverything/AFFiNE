@@ -57,6 +57,9 @@
       "path": "./packages/workspace"
     },
     {
+      "path": "./packages/y-indexeddb"
+    },
+    {
       "path": "./tests/fixtures"
     }
   ],
