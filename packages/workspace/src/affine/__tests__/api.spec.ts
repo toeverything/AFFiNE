@@ -16,7 +16,6 @@ import type { Page } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import { faker } from '@faker-js/faker';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { WebSocket } from 'ws';
 import { applyUpdate } from 'yjs';
 
 import {
@@ -32,9 +31,6 @@ import {
   loginResponseSchema,
   setLoginStorage,
 } from '../login';
-
-// @ts-expect-error
-globalThis.WebSocket = WebSocket;
 
 let workspaceApis: ReturnType<typeof createWorkspaceApis>;
 let userApis: ReturnType<typeof createUserApis>;
