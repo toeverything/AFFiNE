@@ -134,11 +134,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Install Wix
-        uses: actions/checkout@v2
-        with:
-          repository: fbarresi/wix
-          path: wix
       - uses: actions/download-artifact@v3
         with:
           name: before-make-web-static
@@ -157,7 +152,6 @@ jobs:
         run: |
           mkdir -p builds
           mv apps/electron/out/make/zip/win32/x64/AFFiNE-win32-x64-${{ github.event.inputs.version }}.zip ./builds/affine-windows-x64-${{ github.event.inputs.version }}.zip
-          mv apps/electron/out/make/zip/win32/x64/AFFiNE-win32-x64-${{ github.event.inputs.version }}.msi ./builds/affine-windows-x64-${{ github.event.inputs.version }}.msi
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
@@ -203,4 +197,3 @@ jobs:
             ./RELEASES
             ./*.AppImage
             ./*.apk
-            ./*.msi

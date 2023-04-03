@@ -20,9 +20,5 @@ module.exports = {
         setupIcon: './resources/icons/icon.ico',
       },
     },
-    {
-      name: '@electron-forge/maker-squirrel',
-      config: {},
-    },
   ],
 };
