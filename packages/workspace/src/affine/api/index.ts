@@ -387,7 +387,7 @@ export function createWorkspaceApis(prefixUrl = '/') {
       published = false
     ): Promise<ArrayBuffer> => {
       if (published) {
-        return fetch(prefixUrl + `api/public/doc/${workspaceId}`, {
+        return fetch(prefixUrl + `api/public/workspace/${workspaceId}`, {
           method: 'GET',
         }).then(r => r.arrayBuffer());
       } else {
