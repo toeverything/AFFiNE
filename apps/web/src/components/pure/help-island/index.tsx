@@ -1,4 +1,5 @@
 import { MuiFade, Tooltip } from '@affine/component';
+import { config } from '@affine/env';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon, DoneIcon } from '@blocksuite/icons';
 import dynamic from 'next/dynamic';
@@ -62,7 +63,7 @@ export const HelpIsland = ({
         <StyledAnimateWrapper
           style={{ height: spread ? `${showList.length * 44}px` : 0 }}
         >
-          {showList.includes('whatNew') && (
+          {config.enableChangeLog && showList.includes('whatNew') && (
             <Tooltip content={t("Discover what's new")} placement="left-end">
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
