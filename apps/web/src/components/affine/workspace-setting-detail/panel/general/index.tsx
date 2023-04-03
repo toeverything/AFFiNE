@@ -1,12 +1,12 @@
 import { Button, FlexWrapper, MuiFade } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { WorkspaceFlavour } from '@affine/workspace/type';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import type React from 'react';
 import { useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../../hooks/affine/use-is-workspace-owner';
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../../../../hooks/use-blocksuite-workspace-avatar-url';
 import { Upload } from '../../../../pure/file-upload';
 import {
   CloudWorkspaceIcon,
