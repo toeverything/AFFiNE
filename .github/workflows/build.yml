@@ -80,7 +80,7 @@ jobs:
     needs: [build, build-storybook]
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:canary-f94f1fa59a3ae1e72f4c776ce6ddc18d86c65ed5-1653
         ports:
           - 3000:3000
         env:
@@ -137,7 +137,7 @@ jobs:
     environment: development
     services:
       octobase:
-        image: ghcr.io/toeverything/cloud-self-hosted:nightly-latest
+        image: ghcr.io/toeverything/cloud-self-hosted:canary-f94f1fa59a3ae1e72f4c776ce6ddc18d86c65ed5-1653
         ports:
           - 3000:3000
         env:
