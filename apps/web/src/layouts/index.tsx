@@ -47,6 +47,7 @@ import {
   MainContainer,
   MainContainerWrapper,
   StyledPage,
+  StyledSpacer,
   StyledToolWrapper,
 } from './styles';
 
@@ -260,8 +261,8 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const [sidebarOpen] = useSidebarStatus();
   const sidebarFloating = useSidebarFloating();
   const [sidebarWidth] = useSidebarWidth();
-  const paddingLeft =
-    sidebarFloating || !sidebarOpen ? '0' : `${sidebarWidth}px`;
+  const actualSidebarWidth = sidebarFloating || !sidebarOpen ? 0 : sidebarWidth;
+  const width = `calc(100% - ${actualSidebarWidth}px)`;
   const [resizing] = useSidebarResizing();
   if (lock) {
     return <PageLoading />;
@@ -284,10 +285,11 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <MainContainerWrapper
+        <StyledSpacer
           resizing={resizing}
-          style={{ paddingLeft: paddingLeft }}
-        >
+          style={{ width: actualSidebarWidth }}
+        />
+        <MainContainerWrapper resizing={resizing} style={{ width: width }}>
           <MainContainer className="main-container">
             <AffineWorkspaceEffect />
             {children}

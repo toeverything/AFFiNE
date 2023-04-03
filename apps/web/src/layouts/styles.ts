@@ -18,6 +18,16 @@ export const StyledPage = styled('div')<{ resizing?: boolean }>(
   }
 );
 
+export const StyledSpacer = styled('div')<{ resizing: boolean }>(
+  ({ resizing }) => {
+    return {
+      flexGrow: 1,
+      maxWidth: 'calc(100vw - 698px)',
+      transition: resizing ? '' : 'width .25s',
+    };
+  }
+);
+
 export const StyledWrapper = styled('div')(() => {
   return {
     flexGrow: 1,
@@ -27,14 +37,14 @@ export const StyledWrapper = styled('div')(() => {
 });
 
 export const MainContainerWrapper = styled('div')<{ resizing: boolean }>(
-  ({ theme, resizing }) => {
+  ({ resizing }) => {
     return {
       display: 'flex',
       flexGrow: 1,
       position: 'relative',
       maxWidth: '100vw',
       overflow: 'auto',
-      transition: resizing ? '' : 'padding-left .25s',
+      transition: resizing ? '' : 'width .25s',
     };
   }
 );
@@ -43,9 +53,13 @@ export const MainContainer = styled('div')(({ theme }) => {
   return {
     position: 'relative',
     flexGrow: 1,
+    maxWidth: '100%',
     backgroundColor: theme.colors.pageBackground,
     [theme.breakpoints.up('md')]: {
       minWidth: '686px',
+    },
+    [theme.breakpoints.down('sm')]: {
+      minWidth: '550px',
     },
   };
 });

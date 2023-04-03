@@ -18,6 +18,7 @@ async function createWindow() {
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
+    minWidth: 640,
     transparent: true,
     visualEffectState: 'active',
     vibrancy: 'under-window',
