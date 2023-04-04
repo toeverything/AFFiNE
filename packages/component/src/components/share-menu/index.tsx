@@ -1,7 +1,7 @@
-import { Menu } from '@affine/component';
 import { ExportIcon } from '@blocksuite/icons';
 import { useState } from 'react';
 
+import { Menu } from '../..';
 import Export from './Export';
 import SharePage from './SharePage';
 import ShareWorkspace from './ShareWorkspace';

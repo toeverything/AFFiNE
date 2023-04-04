@@ -1,4 +1,4 @@
-import { displayFlex, styled, TextButton } from '@affine/component';
+import { displayFlex, styled, TextButton } from '../..';
 
 export const StyledShareButton = styled(TextButton)(({ theme }) => {
   return {

@@ -1,3 +1,4 @@
+import { ShareMenu } from '@affine/component/share-menu';
 import { useTranslation } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
@@ -10,7 +11,6 @@ import {
 } from '../../../hooks/affine/use-sidebar-status';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
-import { ShareMenu } from './header-right-items/share-menu';
 import SyncUser from './header-right-items/SyncUser';
 import ThemeModeSwitch from './header-right-items/theme-mode-switch';
 import TrashButtonGroup from './header-right-items/TrashButtonGroup';
