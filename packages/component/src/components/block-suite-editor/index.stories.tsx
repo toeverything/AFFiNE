@@ -51,12 +51,6 @@ const Template: StoryFn<EditorProps> = (args: EditorProps) => {
 };
 export const Empty = Template.bind({});
 Empty.play = async ({ canvasElement }) => {
-  await new Promise<void>(resolve => {
-    document.addEventListener('blocksuite:ready', () => resolve(), {
-      once: true,
-    });
-  });
-
   const editorContainer = canvasElement.querySelector(
     '[data-testid="editor-test-page0"]'
   ) as HTMLDivElement;

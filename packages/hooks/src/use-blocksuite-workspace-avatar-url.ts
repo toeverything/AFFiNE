@@ -1,29 +1,27 @@
 import type { Workspace } from '@blocksuite/store';
 import { assertExists } from '@blocksuite/store';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 
 export function useBlockSuiteWorkspaceAvatarUrl(
-  // todo: remove `null` from type
-  blockSuiteWorkspace: Workspace | null
+  blockSuiteWorkspace: Workspace
 ) {
-  const { data: avatar, mutate } = useSWR(
-    blockSuiteWorkspace && blockSuiteWorkspace.meta.avatar
-      ? [blockSuiteWorkspace.id, blockSuiteWorkspace.meta.avatar]
-      : null,
-    {
-      fetcher: async ([id, avatar]) => {
-        assertExists(blockSuiteWorkspace);
-        const blobs = await blockSuiteWorkspace.blobs;
-        if (blobs) {
-          return blobs.get(avatar);
-        }
-        return null;
-      },
-      suspense: true,
-      fallbackData: null,
-    }
-  );
+  const [url, set] = useState(() => blockSuiteWorkspace.meta.avatar);
+  if (url !== blockSuiteWorkspace.meta.avatar) {
+    set(blockSuiteWorkspace.meta.avatar);
+  }
+  const { data: avatar, mutate } = useSWR(url, {
+    fetcher: async avatar => {
+      assertExists(blockSuiteWorkspace);
+      const blobs = await blockSuiteWorkspace.blobs;
+      if (blobs) {
+        return blobs.get(avatar);
+      }
+      return null;
+    },
+    suspense: true,
+    fallbackData: null,
+  });
   const setAvatar = useCallback(
     async (file: File) => {
       assertExists(blockSuiteWorkspace);
@@ -36,5 +34,15 @@ export function useBlockSuiteWorkspaceAvatarUrl(
     },
     [blockSuiteWorkspace, mutate]
   );
+  useEffect(() => {
+    if (blockSuiteWorkspace) {
+      const dispose = blockSuiteWorkspace.meta.commonFieldsUpdated.on(() => {
+        set(blockSuiteWorkspace.meta.avatar);
+      });
+      return () => {
+        dispose.dispose();
+      };
+    }
+  }, []);
   return [avatar ?? null, setAvatar] as const;
 }

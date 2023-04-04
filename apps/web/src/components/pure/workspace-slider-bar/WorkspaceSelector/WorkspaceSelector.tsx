@@ -5,6 +5,7 @@ import type React from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type { AllWorkspace } from '../../../../shared';
+import { workspaceAvatarStyle } from './index.css';
 import {
   StyledSelectorContainer,
   StyledSelectorWrapper,
@@ -29,9 +30,7 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
     <StyledSelectorContainer onClick={onClick} data-testid="current-workspace">
       <WorkspaceAvatar
         data-testid="workspace-avatar"
-        style={{
-          flexShrink: 0,
-        }}
+        className={workspaceAvatarStyle}
         size={40}
         workspace={currentWorkspace}
       />

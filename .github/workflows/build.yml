@@ -81,6 +81,33 @@ jobs:
           path: ./apps/web/.next
           if-no-files-found: error
 
+  storybook-test:
+    name: Storybook Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: [build-storybook]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Download storybook artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: storybook
+          path: ./packages/component/storybook-static
+      - name: Run storybook tests
+        working-directory: ./packages/component
+        run: |
+          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn test-storybook --coverage"
+      - name: Upload storybook test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/component/coverage/storybook/coverage-storybook.json
+          flags: storybook-test
+          name: affine
+          fail_ci_if_error: true
+
   e2e-test:
     name: E2E Test
     runs-on: ubuntu-latest

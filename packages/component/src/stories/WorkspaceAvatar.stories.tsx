@@ -2,7 +2,7 @@ import { WorkspaceFlavour } from '@affine/workspace/type';
 import { Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 
-import type { WorkspaceUnitAvatarProps } from '../components/workspace-avatar';
+import type { WorkspaceAvatarProps } from '../components/workspace-avatar';
 import { WorkspaceAvatar } from '../components/workspace-avatar';
 
 export default {
@@ -17,30 +17,63 @@ export default {
       },
     },
   },
-} satisfies Meta<WorkspaceUnitAvatarProps>;
+} satisfies Meta<WorkspaceAvatarProps>;
 
-const blockSuiteWorkspace = new Workspace({
+const basicBlockSuiteWorkspace = new Workspace({
   id: 'blocksuite-local',
+  blobOptionsGetter: (_: string) => undefined,
 });
 
-blockSuiteWorkspace.meta.setName('Hello World');
+basicBlockSuiteWorkspace.meta.setName('Hello World');
 
-export const Basic: StoryFn<WorkspaceUnitAvatarProps> = props => {
+export const Basic: StoryFn<WorkspaceAvatarProps> = props => {
   return (
-    <div>
-      <WorkspaceAvatar
-        {...props}
-        workspace={{
-          flavour: WorkspaceFlavour.LOCAL,
-          id: 'local',
-          blockSuiteWorkspace,
-          providers: [],
-        }}
-      />
-    </div>
+    <WorkspaceAvatar
+      {...props}
+      workspace={{
+        flavour: WorkspaceFlavour.LOCAL,
+        id: 'local',
+        blockSuiteWorkspace: basicBlockSuiteWorkspace,
+        providers: [],
+      }}
+    />
   );
 };
 
 Basic.args = {
+  size: 40,
+};
+
+const avatarBlockSuiteWorkspace = new Workspace({
+  id: 'blocksuite-local',
+  blobOptionsGetter: (_: string) => undefined,
+});
+
+avatarBlockSuiteWorkspace.meta.setName('Hello World');
+avatarBlockSuiteWorkspace.blobs.then(async blobs => {
+  if (blobs) {
+    const buffer = await (
+      await fetch(new URL('@affine-test/fixtures/smile.png', import.meta.url))
+    ).arrayBuffer();
+    const id = await blobs.set(new Blob([buffer], { type: 'image/png' }));
+    avatarBlockSuiteWorkspace.meta.setAvatar(id);
+  }
+});
+
+export const BlobExample: StoryFn<WorkspaceAvatarProps> = props => {
+  return (
+    <WorkspaceAvatar
+      {...props}
+      workspace={{
+        flavour: WorkspaceFlavour.LOCAL,
+        id: 'local',
+        blockSuiteWorkspace: avatarBlockSuiteWorkspace,
+        providers: [],
+      }}
+    />
+  );
+};
+
+BlobExample.args = {
   size: 40,
 };
