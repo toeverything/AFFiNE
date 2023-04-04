@@ -1,6 +1,8 @@
 import { Breadcrumbs, displayFlex, styled } from '@affine/component';
 import { useTranslation } from '@affine/i18n';
 import { PageIcon } from '@blocksuite/icons';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-blocksuite-workspace-avatar-url';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-blocksuite-workspace-name';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -15,8 +17,6 @@ import { QueryParamError } from '../../../components/affine/affine-error-eoundar
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { WorkspaceAvatar } from '../../../components/pure/footer';
 import { PageLoading } from '../../../components/pure/loading';
-import { useBlockSuiteWorkspaceAvatarUrl } from '../../../hooks/use-blocksuite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '../../../hooks/use-blocksuite-workspace-name';
 import { PublicWorkspaceLayout } from '../../../layouts/public-workspace-layout';
 import type { NextPageWithLayout } from '../../../shared';
 import { initPage } from '../../../utils';

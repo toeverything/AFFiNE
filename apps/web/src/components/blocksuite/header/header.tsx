@@ -4,7 +4,10 @@ import type { HTMLAttributes, PropsWithChildren } from 'react';
 import type React from 'react';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 
-import { useSidebarStatus } from '../../../hooks/affine/use-sidebar-status';
+import {
+  useSidebarFloating,
+  useSidebarStatus,
+} from '../../../hooks/affine/use-sidebar-status';
 import { SidebarSwitch } from '../../affine/sidebar-switch';
 import { EditorOptionMenu } from './header-right-items/EditorOptionMenu';
 import SyncUser from './header-right-items/SyncUser';
@@ -66,10 +69,16 @@ export const Header = forwardRef<
       setShowWarning(shouldShowWarning());
     }, []);
     const [open] = useSidebarStatus();
+    const sidebarFloating = useSidebarFloating();
     const { t } = useTranslation();
 
     return (
-      <StyledHeaderContainer ref={ref} hasWarning={showWarning} {...props}>
+      <StyledHeaderContainer
+        sidebarFloating={sidebarFloating && open}
+        ref={ref}
+        hasWarning={showWarning}
+        {...props}
+      >
         <BrowserWarning
           show={showWarning}
           onClose={() => {

@@ -233,13 +233,16 @@ export function createWorkspaceApis(prefixUrl = '/') {
           throw new RequestError(MessageCode.getMembersFailed, e);
         });
     },
-    createWorkspace: async (encodedYDoc: Blob): Promise<{ id: string }> => {
+    createWorkspace: async (
+      encodedYDoc: ArrayBuffer
+    ): Promise<{ id: string }> => {
       const auth = getLoginStorage();
       assertExists(auth);
       return fetch(prefixUrl + 'api/workspace', {
         method: 'POST',
         body: encodedYDoc,
         headers: {
+          'Content-Type': 'application/octet-stream',
           Authorization: auth.token,
         },
       })
@@ -382,12 +385,23 @@ export function createWorkspaceApis(prefixUrl = '/') {
           throw new RequestError(MessageCode.leaveWorkspaceFailed, e);
         });
     },
+    downloadPublicWorkspacePage: async (
+      workspaceId: string,
+      pageId: string
+    ): Promise<ArrayBuffer> => {
+      return fetch(
+        prefixUrl + `api/public/workspace/${workspaceId}/${pageId}`,
+        {
+          method: 'GET',
+        }
+      ).then(r => r.arrayBuffer());
+    },
     downloadWorkspace: async (
       workspaceId: string,
       published = false
     ): Promise<ArrayBuffer> => {
       if (published) {
-        return fetch(prefixUrl + `api/public/doc/${workspaceId}`, {
+        return fetch(prefixUrl + `api/public/workspace/${workspaceId}`, {
           method: 'GET',
         }).then(r => r.arrayBuffer());
       } else {

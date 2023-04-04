@@ -1,4 +1,4 @@
-import '../styles/globals.css';
+import '@affine/component/theme/global.css';
 
 import { config, setupGlobal } from '@affine/env';
 import { createI18n, I18nextProvider } from '@affine/i18n';
@@ -16,7 +16,6 @@ import { AffineErrorBoundary } from '../components/affine/affine-error-eoundary'
 import { ProviderComposer } from '../components/provider-composer';
 import { PageLoading } from '../components/pure/loading';
 import { MessageCenter } from '../components/pure/message-center';
-import { AffineSWRConfigProvider } from '../providers/AffineSWRConfigProvider';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import type { NextPageWithLayout } from '../shared';
 import createEmotionCache from '../utils/create-emotion-cache';
@@ -57,7 +56,6 @@ const App = function App({
             <ProviderComposer
               contexts={useMemo(
                 () => [
-                  <AffineSWRConfigProvider key="AffineSWRConfigProvider" />,
                   <Provider key="JotaiProvider" store={jotaiStore} />,
                   <ThemeProvider key="ThemeProvider" />,
                 ],

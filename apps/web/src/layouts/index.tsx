@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { config } from '@affine/env';
 import { setUpLanguage, useTranslation } from '@affine/i18n';
 import { createAffineGlobalChannel } from '@affine/workspace/affine/sync';
 import { jotaiWorkspacesAtom } from '@affine/workspace/atom';
@@ -9,14 +10,13 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import type React from 'react';
+import type { FC, PropsWithChildren } from 'react';
 import { Suspense, useCallback, useEffect } from 'react';
 
 import {
   currentWorkspaceIdAtom,
   openQuickSearchModalAtom,
   openWorkspacesModalAtom,
-  workspaceLockAtom,
 } from '../atoms';
 import {
   publicBlockSuiteAtom,
@@ -47,6 +47,9 @@ import {
   MainContainer,
   MainContainerWrapper,
   StyledPage,
+  StyledSliderResizer,
+  StyledSliderResizerInner,
+  StyledSpacer,
   StyledToolWrapper,
 } from './styles';
 
@@ -59,7 +62,7 @@ const QuickSearchModal = dynamic(
   () => import('../components/pure/quick-search-modal')
 );
 
-export const PublicQuickSearch: React.FC = () => {
+export const PublicQuickSearch: FC = () => {
   const blockSuiteWorkspace = useAtomValue(publicBlockSuiteAtom);
   const router = useRouter();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
@@ -75,7 +78,11 @@ export const PublicQuickSearch: React.FC = () => {
   );
 };
 
-export const QuickSearch: React.FC = () => {
+function DefaultProvider({ children }: PropsWithChildren) {
+  return <>{children}</>;
+}
+
+export const QuickSearch: FC = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const router = useRouter();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
@@ -106,7 +113,7 @@ const logger = new DebugLogger('workspace-layout');
 const affineGlobalChannel = createAffineGlobalChannel(
   WorkspacePlugins[WorkspaceFlavour.AFFINE].CRUD
 );
-export const WorkspaceLayout: React.FC<React.PropsWithChildren> =
+export const WorkspaceLayout: FC<PropsWithChildren> =
   function WorkspacesSuspense({ children }) {
     const { i18n } = useTranslation();
     useEffect(() => {
@@ -176,9 +183,7 @@ function AffineWorkspaceEffect() {
   return null;
 }
 
-export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
-  children,
-}) => {
+export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const [currentPageId] = useCurrentPageId();
   const workspaces = useWorkspaces();
@@ -255,20 +260,47 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
   const handleOpenQuickSearchModal = useCallback(() => {
     setOpenQuickSearchModalAtom(true);
   }, [setOpenQuickSearchModalAtom]);
-  const [resizingSidebar] = useSidebarResizing();
-  const lock = useAtomValue(workspaceLockAtom);
-  const [sidebarOpen] = useSidebarStatus();
+  const [resizingSidebar, setIsResizing] = useSidebarResizing();
+  const [sidebarOpen, setSidebarOpen] = useSidebarStatus();
   const sidebarFloating = useSidebarFloating();
-  const [sidebarWidth] = useSidebarWidth();
-  const paddingLeft =
-    sidebarFloating || !sidebarOpen ? '0' : `${sidebarWidth}px`;
+  const [sidebarWidth, setSliderWidth] = useSidebarWidth();
+  const actualSidebarWidth = sidebarFloating || !sidebarOpen ? 0 : sidebarWidth;
+  const width = `calc(100% - ${actualSidebarWidth}px)`;
   const [resizing] = useSidebarResizing();
-  if (lock) {
-    return <PageLoading />;
-  }
+
+  const onResizeStart = useCallback(() => {
+    let resized = false;
+    function onMouseMove(e: MouseEvent) {
+      const newWidth = Math.min(480, Math.max(e.clientX, 256));
+      setSliderWidth(newWidth);
+      setIsResizing(true);
+      resized = true;
+    }
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener(
+      'mouseup',
+      () => {
+        // if not resized, toggle sidebar
+        if (!resized) {
+          setSidebarOpen(o => !o);
+        }
+        setIsResizing(false);
+        document.removeEventListener('mousemove', onMouseMove);
+      },
+      { once: true }
+    );
+  }, [setIsResizing, setSidebarOpen, setSliderWidth]);
+
+  const Provider = currentWorkspace
+    ? WorkspacePlugins[currentWorkspace.flavour].UI.Provider
+    : DefaultProvider;
 
   return (
-    <>
+    <Provider
+      key={`${
+        currentWorkspace ? currentWorkspace.flavour : 'default'
+      }-provider`}
+    >
       <Head>
         <title>{title}</title>
       </Head>
@@ -284,10 +316,23 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
           currentPath={router.asPath.split('?')[0]}
           paths={isPublicWorkspace ? publicPathGenerator : pathGenerator}
         />
-        <MainContainerWrapper
+        <StyledSpacer
+          floating={sidebarFloating}
           resizing={resizing}
-          style={{ paddingLeft: paddingLeft }}
+          sidebarOpen={sidebarOpen}
+          style={{ width: actualSidebarWidth }}
         >
+          {!sidebarFloating && sidebarOpen && (
+            <StyledSliderResizer
+              data-testid="sliderBar-resizer"
+              isResizing={resizing}
+              onMouseDown={onResizeStart}
+            >
+              <StyledSliderResizerInner isResizing={resizing} />
+            </StyledSliderResizer>
+          )}
+        </StyledSpacer>
+        <MainContainerWrapper resizing={resizing} style={{ width: width }}>
           <MainContainer className="main-container">
             <AffineWorkspaceEffect />
             {children}
@@ -299,7 +344,11 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
               {!isPublicWorkspace && (
                 <HelpIsland
                   showList={
-                    router.query.pageId ? undefined : ['whatNew', 'contact']
+                    router.query.pageId
+                      ? undefined
+                      : config.enableChangeLog
+                      ? ['whatNew', 'contact']
+                      : ['contact']
                   }
                 />
               )}
@@ -308,6 +357,6 @@ export const WorkspaceLayoutInner: React.FC<React.PropsWithChildren> = ({
         </MainContainerWrapper>
       </StyledPage>
       <QuickSearch />
-    </>
+    </Provider>
   );
 };

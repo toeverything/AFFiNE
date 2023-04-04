@@ -1,0 +1,7 @@
+{
+  "name": "@toeverything/hooks",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "private": true
+}

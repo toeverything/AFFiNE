@@ -5,8 +5,9 @@ export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
     height: 'calc(100vh - 52px)',
     padding: '78px 72px',
+    maxWidth: '100%',
     overflowY: 'auto',
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       padding: '12px 24px',
     },
   };

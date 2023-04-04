@@ -6,7 +6,8 @@ const macosElectron = environment.isDesktop && environment.isMacOs;
 export const StyledSliderBarWrapper = styled('div')<{
   show: boolean;
   floating: boolean;
-}>(({ theme, show, floating }) => {
+  resizing: boolean;
+}>(({ theme, show, floating, resizing }) => {
   return {
     height: '100%',
     position: 'absolute',
@@ -14,12 +15,12 @@ export const StyledSliderBarWrapper = styled('div')<{
       userSelect: 'none',
     },
     zIndex: theme.zIndex.modal,
-    transition: 'transform .25s',
+    transition: resizing ? '' : 'transform .3s',
     transform: show ? 'translateX(0)' : 'translateX(-100%)',
     maxWidth: floating ? undefined : 'calc(100vw - 698px)',
     background:
       !floating && macosElectron ? 'transparent' : theme.colors.hubBackground,
-    borderRight: '1px solid',
+    borderRight: macosElectron ? '' : '1px solid',
     borderColor: theme.colors.borderColor,
   };
 });
@@ -41,6 +42,10 @@ export const StyledSidebarSwitchWrapper = styled('div')(() => {
     height: '52px',
     flexShrink: 0,
     padding: '0 16px',
+    WebkitAppRegion: 'drag',
+    button: {
+      WebkitAppRegion: 'no-drag',
+    },
     ...displayFlex(macosElectron ? 'flex-end' : 'flex-start', 'center'),
   };
 });
