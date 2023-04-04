@@ -30,6 +30,7 @@
     "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.15",
     "@toeverything/hooks": "workspace:*",
+    "kebab-case": "^1.0.2",
     "lit": "^2.7.0",
     "react": "^18.2.0",
     "react-dnd": "^16.0.1",
