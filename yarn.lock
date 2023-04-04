@@ -63,7 +63,7 @@ __metadata:
     "@storybook/test-runner": ^0.10.0
     "@storybook/testing-library": ^0.1.0
     "@toeverything/hooks": "workspace:*"
-    "@types/react": ^18.0.33
+    "@types/react": =18.0.31
     "@types/react-dnd": ^3.0.2
     "@types/react-dom": 18.0.11
     "@vanilla-extract/css": ^1.11.0
@@ -179,7 +179,7 @@ __metadata:
     "@swc-jotai/debug-label": ^0.0.9
     "@swc-jotai/react-refresh": ^0.0.7
     "@toeverything/hooks": "workspace:*"
-    "@types/react": ^18.0.33
+    "@types/react": =18.0.31
     "@types/react-dom": ^18.0.11
     "@types/webpack-env": ^1.18.0
     "@vanilla-extract/css": ^1.11.0
@@ -6580,7 +6580,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*, @types/react@npm:>=16":
+"@types/react@npm:*, @types/react@npm:=18.0.31, @types/react@npm:>=16":
   version: 18.0.31
   resolution: "@types/react@npm:18.0.31"
   dependencies:
@@ -6588,17 +6588,6 @@ __metadata:
     "@types/scheduler": "*"
     csstype: ^3.0.2
   checksum: 6befbd5587e266905b50fd6bbd7c1cacd557bddf99e6a9862ca2f1d06df3dca71b9d485a37d010479730f021aab93b852d417c714de5efc2f41be0ff4c09b4db
-  languageName: node
-  linkType: hard
-
-"@types/react@npm:^18.0.33":
-  version: 18.0.33
-  resolution: "@types/react@npm:18.0.33"
-  dependencies:
-    "@types/prop-types": "*"
-    "@types/scheduler": "*"
-    csstype: ^3.0.2
-  checksum: 4fbd2b2b6a26378bdfde121081a6406ec2d39e4ba87ea5f6897ab7bb2198713165e6fd703ad4ed7ba1d4f23ef54a4c9f108f3105c7ed8e136411ee6bdebc5669
   languageName: node
   linkType: hard
 

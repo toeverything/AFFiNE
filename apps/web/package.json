@@ -50,7 +50,7 @@
     "@rich-data/viewer": "^2.15.6",
     "@swc-jotai/debug-label": "^0.0.9",
     "@swc-jotai/react-refresh": "^0.0.7",
-    "@types/react": "^18.0.33",
+    "@types/react": "=18.0.31",
     "@types/react-dom": "^18.0.11",
     "@types/webpack-env": "^1.18.0",
     "@vanilla-extract/css": "^1.11.0",
